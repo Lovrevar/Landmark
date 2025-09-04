@@ -662,7 +662,6 @@ const SubcontractorManagement: React.FC = () => {
                     setSelectedSubcontractor(null)
                     setSubcontractorComments([])
                     setNewComment('')
-                    setCommentType('general')
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >

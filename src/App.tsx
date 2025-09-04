@@ -9,6 +9,7 @@ import Calendar from './components/Calendar'
 import TasksManagement from './components/TasksManagement'
 import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
+import SiteManagement from './components/SiteManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
@@ -87,7 +88,7 @@ function AppContent() {
           path="/site-management"
           element={
             <ProtectedRoute>
-              <SubcontractorManagement />
+              <SiteManagement />
             </ProtectedRoute>
           }
         />
