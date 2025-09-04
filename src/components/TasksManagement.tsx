@@ -1,0 +1,443 @@
+import React, { useState, useEffect } from 'react'
+import { supabase, Task, Project } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { Plus, Edit2, Trash2, Calendar, User, Building2 } from 'lucide-react'
+import { format } from 'date-fns'
+
+const TasksManagement: React.FC = () => {
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [newTask, setNewTask] = useState({
+    project_id: '',
+    name: '',
+    description: '',
+    assigned_to: '',
+    deadline: '',
+    status: 'Pending' as const,
+    progress: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  const userOptions = ['director', 'accountant', 'salesperson', 'supervisor']
+  const statusOptions = ['Pending', 'In Progress', 'Completed', 'Overdue']
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('deadline', { ascending: true })
+
+      if (tasksError) throw tasksError
+
+      // Fetch projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('name', { ascending: true })
+
+      if (projectsError) throw projectsError
+
+      setTasks(tasksData || [])
+      setProjects(projectsData || [])
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setNewTask({
+      project_id: '',
+      name: '',
+      description: '',
+      assigned_to: '',
+      deadline: '',
+      status: 'Pending',
+      progress: 0
+    })
+    setEditingTask(null)
+    setShowForm(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!newTask.name.trim() || !newTask.project_id || !newTask.assigned_to || !newTask.deadline) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      if (editingTask) {
+        // Update existing task
+        const { error } = await supabase
+          .from('tasks')
+          .update({
+            project_id: newTask.project_id,
+            name: newTask.name,
+            description: newTask.description,
+            assigned_to: newTask.assigned_to,
+            deadline: newTask.deadline,
+            status: newTask.status,
+            progress: newTask.progress
+          })
+          .eq('id', editingTask.id)
+
+        if (error) throw error
+      } else {
+        // Create new task
+        const { error } = await supabase
+          .from('tasks')
+          .insert({
+            project_id: newTask.project_id,
+            name: newTask.name,
+            description: newTask.description,
+            assigned_to: newTask.assigned_to,
+            deadline: newTask.deadline,
+            status: newTask.status,
+            progress: newTask.progress
+          })
+
+        if (error) throw error
+      }
+
+      resetForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error saving task:', error)
+      alert('Error saving task. Please try again.')
+    }
+  }
+
+  const handleEdit = (task: Task) => {
+    setEditingTask(task)
+    setNewTask({
+      project_id: task.project_id,
+      name: task.name,
+      description: task.description || '',
+      assigned_to: task.assigned_to,
+      deadline: task.deadline,
+      status: task.status,
+      progress: task.progress || 0
+    })
+    setShowForm(true)
+  }
+
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      alert('Error deleting task. Please try again.')
+    }
+  }
+
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId)
+    return project?.name || 'Unknown Project'
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'bg-green-100 text-green-800'
+      case 'In Progress': return 'bg-blue-100 text-blue-800'
+      case 'Overdue': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-12">Loading tasks...</div>
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
+          <p className="text-gray-600 mt-2">Create, assign, and manage project tasks</p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Task
+        </button>
+      </div>
+
+      {/* Task Form */}
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {editingTask ? 'Edit Task' : 'Create New Task'}
+          </h3>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Task Name *
+                </label>
+                <input
+                  type="text"
+                  value={newTask.name}
+                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter task name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project *
+                </label>
+                <select
+                  value={newTask.project_id}
+                  onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a project</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assign To *
+                </label>
+                <select
+                  value={newTask.assigned_to}
+                  onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select assignee</option>
+                  {userOptions.map(user => (
+                    <option key={user} value={user}>
+                      {user.charAt(0).toUpperCase() + user.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deadline *
+                </label>
+                <input
+                  type="date"
+                  value={newTask.deadline}
+                  onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <select
+                  value={newTask.status}
+                  onChange={(e) => setNewTask({ ...newTask, status: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter task description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Progress (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={newTask.progress}
+                  onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                {editingTask ? 'Update Task' : 'Create Task'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Tasks Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">All Tasks</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Task
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Project
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assigned To
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Deadline
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Progress
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tasks.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    No tasks found. Create your first task to get started!
+                  </td>
+                </tr>
+              ) : (
+                tasks.map((task) => {
+                  const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
+                  return (
+                    <tr key={task.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{task.name}</div>
+                          {task.description && (
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {task.description}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Building2 className="w-4 h-4 mr-2 text-gray-400" />
+                          {getProjectName(task.project_id)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <User className="w-4 h-4 mr-2 text-gray-400" />
+                          {task.assigned_to.charAt(0).toUpperCase() + task.assigned_to.slice(1)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                            {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                            {isOverdue && ' (Overdue)'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(task.status)}`}>
+                          {task.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${task.progress || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-900">{task.progress || 0}%</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEdit(task)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(task.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default TasksManagement

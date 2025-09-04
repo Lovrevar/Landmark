@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
 import TodoList from './components/TodoList'
 import Calendar from './components/Calendar'
+import TasksManagement from './components/TasksManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
@@ -45,6 +46,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <TodoList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksManagement />
             </ProtectedRoute>
           }
         />
