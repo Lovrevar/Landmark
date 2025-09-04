@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard'
 import TodoList from './components/TodoList'
 import Calendar from './components/Calendar'
 import TasksManagement from './components/TasksManagement'
+import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -71,6 +72,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ProjectDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subcontractors"
+          element={
+            <ProtectedRoute>
+              <SubcontractorManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/site-management"
+          element={
+            <ProtectedRoute>
+              <SubcontractorManagement />
             </ProtectedRoute>
           }
         />
