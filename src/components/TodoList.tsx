@@ -220,10 +220,20 @@ const TodoList: React.FC = () => {
       // Determine new status based on progress and permissions
       let newStatus = task.status
       
-      if (task.created_by === 'director' && task.created_by !== user?.username) {
+      if (task.created_by === 'director' && task.created_by !== user?.username && user?.role !== 'Supervision') {
         // For director-created tasks, only director can mark as completed
+        // Exception: Supervisors can complete subcontractor-related tasks
         if (newProgress === 100) {
           newStatus = 'In Progress' // Keep as In Progress, director must approve
+        } else if (newProgress > 0) {
+          newStatus = 'In Progress'
+        } else {
+          newStatus = 'Pending'
+        }
+      } else if (task.created_by === 'director' && user?.role === 'Supervision') {
+        // Supervisors can complete any director-created task (subcontractor oversight)
+        if (newProgress === 100) {
+          newStatus = 'Completed'
         } else if (newProgress > 0) {
           newStatus = 'In Progress'
         } else {
@@ -629,7 +639,9 @@ const TodoList: React.FC = () => {
                         }`}>
                           {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
                           {task.created_by === 'director' && task.progress === 100 && task.status !== 'Completed' && (
-                            <span className="ml-1 text-orange-600">• Awaiting Approval</span>
+                            <span className="ml-1 text-orange-600">
+                              {user?.role === 'Supervision' ? '• Ready for Completion' : '• Awaiting Approval'}
+                            </span>
                           )}
                         </span>
                       </div>
