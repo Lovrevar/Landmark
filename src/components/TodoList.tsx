@@ -6,7 +6,6 @@ import { format } from 'date-fns'
 
 interface TaskWithProject extends Task {
   project_name: string
-  created_by?: string
 }
 
 const TodoList: React.FC = () => {
@@ -64,8 +63,7 @@ const TodoList: React.FC = () => {
       
       const tasksWithProject = (tasksData || []).map(task => ({
         ...task,
-        project_name: task.projects.name,
-        created_by: 'director' // Assuming all project tasks are created by director
+        project_name: task.projects.name
       }))
       
       setAssignedTasks(tasksWithProject)
@@ -216,11 +214,37 @@ const TodoList: React.FC = () => {
 
   const updateTaskProgress = async (taskId: string, newProgress: number) => {
     try {
+      const task = assignedTasks.find(t => t.id === taskId)
+      if (!task) return
+
+      // Determine new status based on progress and permissions
+      let newStatus = task.status
+      
+      if (task.created_by === 'director' && task.created_by !== user?.username) {
+        // For director-created tasks, only director can mark as completed
+        if (newProgress === 100) {
+          newStatus = 'In Progress' // Keep as In Progress, director must approve
+        } else if (newProgress > 0) {
+          newStatus = 'In Progress'
+        } else {
+          newStatus = 'Pending'
+        }
+      } else {
+        // For own tasks, can set any status
+        if (newProgress === 100) {
+          newStatus = 'Completed'
+        } else if (newProgress > 0) {
+          newStatus = 'In Progress'
+        } else {
+          newStatus = 'Pending'
+        }
+      }
+
       const { error } = await supabase
         .from('tasks')
         .update({ 
           progress: newProgress,
-          status: newProgress === 100 ? 'Completed' : newProgress > 0 ? 'In Progress' : 'Pending'
+          status: newStatus
         })
         .eq('id', taskId)
 
@@ -281,17 +305,17 @@ const TodoList: React.FC = () => {
 
   const getTaskCardColor = (task: TaskWithProject) => {
     const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-    const isInProgress = task.status === 'In Progress'
     const isCompleted = task.status === 'Completed'
+    const isInProgress = task.status === 'In Progress'
     
-    if (isOverdue) return 'border-l-4 border-l-red-500 bg-red-50'
+    if (isOverdue) return 'border-l-4 border-l-red-500 bg-red-50 border-red-200'
     if (isCompleted) return 'border-l-4 border-l-green-500 bg-green-50'
-    if (isInProgress) return 'border-l-4 border-l-blue-500 bg-blue-50'
+    if (isInProgress) return 'border-l-4 border-l-green-500 bg-green-50'
     return 'border-l-4 border-l-gray-300 bg-white'
   }
 
   const canEditTask = (task: TaskWithProject) => {
-    return task.created_by === user?.username || task.created_by !== 'director'
+    return task.created_by === user?.username
   }
 
   if (loading) {
@@ -452,6 +476,9 @@ const TodoList: React.FC = () => {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">{selectedTask.name}</h3>
                   <p className="text-sm text-gray-600 mt-1">Project: {selectedTask.project_name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Created by: {selectedTask.created_by} • Assigned to: {selectedTask.assigned_to}
+                  </p>
                   <div className="flex items-center space-x-3 mt-2">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       selectedTask.status === 'Completed' ? 'bg-green-100 text-green-800' :
@@ -460,6 +487,9 @@ const TodoList: React.FC = () => {
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {selectedTask.status}
+                      {selectedTask.created_by === 'director' && selectedTask.progress === 100 && selectedTask.status !== 'Completed' && (
+                        <span className="ml-1">• Awaiting Director Approval</span>
+                      )}
                     </span>
                     <span className="text-sm text-gray-500">
                       Due: {format(new Date(selectedTask.deadline), 'MMM dd, yyyy')}
@@ -488,6 +518,29 @@ const TodoList: React.FC = () => {
                     }`}
                     style={{ width: `${selectedTask.progress || 0}%` }}
                   ></div>
+                </div>
+                {/* Progress Update Slider */}
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Update Progress: {selectedTask.progress || 0}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={selectedTask.progress || 0}
+                    onChange={(e) => {
+                      const newProgress = parseInt(e.target.value)
+                      updateTaskProgress(selectedTask.id, newProgress)
+                      setSelectedTask({ ...selectedTask, progress: newProgress })
+                    }}
+                    className="w-full"
+                  />
+                  {selectedTask.created_by === 'director' && selectedTask.created_by !== user?.username && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Note: Only the Director can mark director-created tasks as "Completed"
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -563,7 +616,10 @@ const TodoList: React.FC = () => {
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="font-medium text-gray-900">{task.name}</h3>
                         {!canEdit && (
-                          <Lock className="w-4 h-4 text-gray-400" title="Locked by Director" />
+                          <div className="flex items-center space-x-1">
+                            <Lock className="w-4 h-4 text-red-500" />
+                            <span className="text-xs text-red-600 font-medium">Director Task</span>
+                          </div>
                         )}
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           task.status === 'Completed' ? 'bg-green-100 text-green-800' :
@@ -572,6 +628,9 @@ const TodoList: React.FC = () => {
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
+                          {task.created_by === 'director' && task.progress === 100 && task.status !== 'Completed' && (
+                            <span className="ml-1 text-orange-600">• Awaiting Approval</span>
+                          )}
                         </span>
                       </div>
                       
@@ -612,19 +671,24 @@ const TodoList: React.FC = () => {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => openTaskDetails(task)}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                            className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-xs font-medium transition-colors duration-200"
                             title="View details and add comments"
                           >
-                            <MessageSquare className="w-4 h-4" />
+                            💬 Comment
                           </button>
                           {canEdit && (
                             <>
                             <button
                               onClick={() => handleEditTask(task)}
-                              className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                              className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs font-medium transition-colors duration-200"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              ✏️ Edit
                             </button>
+                            </>
+                          )}
+                          {/* Progress slider for all users on their assigned tasks */}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-600">Progress:</span>
                             <input
                               type="range"
                               min="0"
@@ -634,8 +698,8 @@ const TodoList: React.FC = () => {
                               className="w-20"
                               title="Update progress"
                             />
-                            </>
-                          )}
+                            <span className="text-xs text-gray-600 w-8">{task.progress || 0}%</span>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -36,6 +36,7 @@ export type Task = {
   name: string
   description: string
   assigned_to: string
+  created_by: string
   deadline: string
   status: 'Pending' | 'In Progress' | 'Completed' | 'Overdue'
   progress: number
