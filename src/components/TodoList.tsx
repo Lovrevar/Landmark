@@ -534,7 +534,6 @@ const TodoList: React.FC = () => {
                           {canEdit && (
                             <>
                             <button
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Item</h3>
                               className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs font-medium transition-colors duration-200"
                             >
                               ✏️ Edit
