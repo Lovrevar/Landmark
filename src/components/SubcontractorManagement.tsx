@@ -48,7 +48,6 @@ const SubcontractorManagement: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorWithProject | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [showWorkLogForm, setShowWorkLogForm] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
   const [newSubcontractor, setNewSubcontractor] = useState({
     name: '',
@@ -57,14 +56,6 @@ const SubcontractorManagement: React.FC = () => {
     progress: 0,
     deadline: '',
     cost: 0
-  })
-  const [newWorkLog, setNewWorkLog] = useState({
-    subcontractor_id: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    workers_count: 1,
-    work_description: '',
-    hours_worked: 8,
-    notes: ''
   })
   const [subcontractorComments, setSubcontractorComments] = useState<SubcontractorComment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -108,7 +99,7 @@ const SubcontractorManagement: React.FC = () => {
       const subcontractorsWithDetails = (subcontractorsData || []).map(sub => ({
         ...sub,
         project_name: 'Sunset Towers', // Simplified for demo
-        work_logs: [], // Would fetch from work_logs table
+        work_logs: [],
         payment_status: sub.progress > 80 ? 'paid' : sub.progress > 40 ? 'partial' : 'pending' as const,
         amount_paid: Math.round(sub.cost * (sub.progress / 100))
       }))
@@ -137,53 +128,22 @@ const SubcontractorManagement: React.FC = () => {
     }
   }
 
-  const addWorkLog = async () => {
-    if (!user || !newWorkLog.subcontractor_id || !newWorkLog.work_description.trim()) return
-
-    try {
-      const { error } = await supabase
-        .from('work_logs')
-        .insert({
-          subcontractor_id: newWorkLog.subcontractor_id,
-          date: newWorkLog.date,
-          workers_count: newWorkLog.workers_count,
-          work_description: newWorkLog.work_description,
-          hours_worked: newWorkLog.hours_worked,
-          notes: newWorkLog.notes,
-          created_by: user.username
-        })
-
-      if (error) throw error
-      
-      setNewWorkLog({
-        subcontractor_id: '',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        workers_count: 1,
-        work_description: '',
-        hours_worked: 8,
-        notes: ''
-      })
-      setShowWorkLogForm(false)
-      fetchData() // Refresh data to show new work log
-    } catch (error) {
-      console.error('Error adding work log:', error)
-      alert('Error adding work log. Please try again.')
-    }
-  }
-
   const fetchSubcontractorComments = async (subcontractorId: string) => {
     try {
       const { data, error } = await supabase
         .from('subcontractor_comments')
-        .select(`
-          *,
-          user:users(username, role)
-        `)
+        .select('*')
         .eq('subcontractor_id', subcontractorId)
-        .order('created_at', { ascending: false })
+          users!inner(username, role)
 
       if (error) throw error
-      setSubcontractorComments(data || [])
+      
+      const commentsWithUser = (data || []).map(comment => ({
+        ...comment,
+        user: comment.users
+      }))
+      
+      setSubcontractorComments(commentsWithUser)
     } catch (error) {
       console.error('Error fetching comments:', error)
     }
@@ -315,13 +275,6 @@ const SubcontractorManagement: React.FC = () => {
           <p className="text-gray-600 mt-2">Manage subcontractors and track on-site progress</p>
         </div>
         <div className="flex space-x-3">
-          <button
-            onClick={() => setShowWorkLogForm(true)}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Add Work Log
-          </button>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
