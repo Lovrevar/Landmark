@@ -10,10 +10,8 @@ const TasksManagement: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskComments, setTaskComments] = useState<any[]>([])
-  const [newComment, setNewComment] = useState('')
   const [newTask, setNewTask] = useState({
     project_id: '',
     name: '',
@@ -257,46 +255,6 @@ const TasksManagement: React.FC = () => {
     if (!user) return false
     // Can mark completed if it's own task or if supervisor can complete director tasks
     return task.created_by === user.username || (user.role === 'Supervision' && task.created_by === 'director')
-  }
-
-  const fetchTaskComments = async (taskId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('task_comments')
-        .select(`
-          *,
-          user:users(username, role)
-        `)
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      setTaskComments(data || [])
-    } catch (error) {
-      console.error('Error fetching comments:', error)
-    }
-  }
-
-  const addComment = async () => {
-    if (!user || !selectedTask || !newComment.trim()) return
-
-    try {
-      const { error } = await supabase
-        .from('task_comments')
-        .insert({
-          task_id: selectedTask.id,
-          user_id: user.id,
-          comment: newComment.trim()
-        })
-
-      if (error) throw error
-      
-      setNewComment('')
-      fetchTaskComments(selectedTask.id)
-    } catch (error) {
-      console.error('Error adding comment:', error)
-      alert('Error adding comment. Please try again.')
-    }
   }
 
   const getStatusColor = (status: string) => {
@@ -561,7 +519,7 @@ const TasksManagement: React.FC = () => {
                           {canEditTask(task) && (
                             <div className="flex items-center space-x-2">
                               <span className="text-sm text-gray-600">Update:</span>
-                              <input
+                              className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors duration-200"
                                 type="range"
                                 min="0"
                                 max="100"
@@ -632,9 +590,8 @@ const TasksManagement: React.FC = () => {
                               
                               if (!error) {
                                 fetchData()
-                              }
                             }}
-                            className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                            className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200"
                           >
                             Approve
                           </button>
@@ -677,7 +634,6 @@ const TasksManagement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedTask(null)
                     setTaskComments([])
                     setNewComment('')
                   }}
