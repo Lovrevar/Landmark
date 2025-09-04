@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, Project } from '../../lib/supabase'
 import { TrendingUp, DollarSign, Building2, Users } from 'lucide-react'
 
@@ -9,6 +10,7 @@ interface ProjectWithStats extends Project {
 }
 
 const DirectorDashboard: React.FC = () => {
+  const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [stats, setStats] = useState({
     totalProjects: 0,
@@ -321,7 +323,12 @@ const DirectorDashboard: React.FC = () => {
                 <tr key={project.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                      <button
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                      >
+                        {project.name}
+                      </button>
                       <div className="text-sm text-gray-500">{project.location}</div>
                     </div>
                   </td>
