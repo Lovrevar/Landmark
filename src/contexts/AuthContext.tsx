@@ -1,0 +1,73 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { supabase, User } from '../lib/supabase'
+
+interface AuthContextType {
+  user: User | null
+  login: (username: string, password: string) => Promise<boolean>
+  logout: () => void
+  loading: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+    setLoading(false)
+  }, [])
+
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single()
+
+      if (error || !data) {
+        return false
+      }
+
+      setUser(data)
+      localStorage.setItem('currentUser', JSON.stringify(data))
+      return true
+    } catch (error) {
+      console.error('Login error:', error)
+      return false
+    }
+  }
+
+  const logout = () => {
+    setUser(null)
+    localStorage.removeItem('currentUser')
+  }
+
+  const value = {
+    user,
+    login,
+    logout,
+    loading
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
