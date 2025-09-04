@@ -167,6 +167,16 @@ const TodoList: React.FC = () => {
     }
   }
 
+  const handleEditTask = (task: TaskWithProject) => {
+  setEditingTask(task)
+  setShowForm(true)
+  setNewTodo({
+    title: task.name,
+    description: task.description || '',
+    due_date: task.deadline || ''
+  })
+}
+
   const updateTaskProgress = async (taskId: string, newProgress: number) => {
     try {
       const task = assignedTasks.find(t => t.id === taskId)
