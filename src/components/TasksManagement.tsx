@@ -390,175 +390,181 @@ const TasksManagement: React.FC = () => {
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">All Tasks</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Task
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned To
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Deadline
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Progress
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Update Progress
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tasks.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    No tasks found. Create your first task to get started!
-                  </td>
-                </tr>
-              ) : (
-                tasks.map((task) => {
-                  const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-                  return (
-                    <tr key={task.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{task.name}</div>
-                          {task.description && (
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {task.description}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Building2 className="w-4 h-4 mr-2 text-gray-400" />
-                          {getProjectName(task.project_id)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <User className="w-4 h-4 mr-2 text-gray-400" />
-                          {task.assigned_to.charAt(0).toUpperCase() + task.assigned_to.slice(1)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
-                            {format(new Date(task.deadline), 'MMM dd, yyyy')}
-                            {isOverdue && ' (Overdue)'}
+        <div className="p-6">
+          {tasks.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No tasks found. Create your first task to get started!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {tasks.map((task) => {
+                const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
+                const needsApproval = task.progress === 100 && task.status !== 'Completed' && !canMarkCompleted(task)
+                
+                return (
+                  <div
+                    key={task.id}
+                    className={`p-6 rounded-xl border transition-all duration-200 ${
+                      isOverdue ? 'border-red-200 bg-red-50' :
+                      task.status === 'Completed' ? 'border-green-200 bg-green-50' :
+                      task.status === 'In Progress' ? 'border-blue-200 bg-blue-50' :
+                      'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{task.name}</h3>
+                          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                            task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                            isOverdue ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(task.status)}`}>
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                              style={{ width: `${task.progress || 0}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-900">{task.progress || 0}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {canEditTask(task) ? (
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={task.progress || 0}
-                              onChange={async (e) => {
-                                const newProgress = parseInt(e.target.value)
-                                let newStatus = task.status
-                                
-                                // Determine new status based on progress and permissions
-                                if (canMarkCompleted(task) && newProgress === 100) {
-                                  newStatus = 'Completed'
-                                } else if (newProgress === 100 && !canMarkCompleted(task)) {
-                                  newStatus = 'In Progress' // Can't mark as completed, keep as in progress
-                                } else if (newProgress > 0) {
-                                  newStatus = 'In Progress'
-                                } else {
-                                  newStatus = 'Pending'
-                                }
-                                
-                                try {
-                                  const { error } = await supabase
-                                    .from('tasks')
-                                    .update({ 
-                                      progress: newProgress,
-                                      status: newStatus
-                                    })
-                                    .eq('id', task.id)
-                                  
-                                  if (error) throw error
-                                  fetchData()
-                                } catch (error) {
-                                  console.error('Error updating task:', error)
-                                }
-                              }}
-                              className="w-20"
-                              title="Update progress"
-                            />
-                            <span className="text-xs text-gray-600 w-8">{task.progress || 0}%</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">Read-only</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          {canEditTask(task) && (
-                            <>
-                              <button
-                                onClick={() => handleEdit(task)}
-                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
-                                title="Edit task"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(task.id)}
-                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
-                                title="Delete task"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                          {!canMarkCompleted(task) && task.progress === 100 && task.status !== 'Completed' && (
-                            <span className="text-xs text-orange-600 font-medium">
-                              Awaiting Director Approval
+                          {needsApproval && (
+                            <span className="px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800">
+                              Awaiting Approval
                             </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                          <div className="flex items-center">
+                            <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-600">Project:</span>
+                            <span className="text-sm font-medium text-gray-900 ml-1">{getProjectName(task.project_id)}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <User className="w-4 h-4 text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-600">Assigned to:</span>
+                            <span className="text-sm font-medium text-gray-900 ml-1">
+                              {task.assigned_to.charAt(0).toUpperCase() + task.assigned_to.slice(1)}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-600">Due:</span>
+                            <span className={`text-sm font-medium ml-1 ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                              {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {task.description && (
+                          <p className="text-sm text-gray-600 mb-4">{task.description}</p>
+                        )}
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">Progress</span>
+                              <span className="text-sm font-medium text-gray-900">{task.progress || 0}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-3">
+                              <div 
+                                className={`h-3 rounded-full transition-all duration-300 ${
+                                  task.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
+                                }`}
+                                style={{ width: `${task.progress || 0}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          
+                          {canEditTask(task) && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">Update:</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={task.progress || 0}
+                                onChange={async (e) => {
+                                  const newProgress = parseInt(e.target.value)
+                                  let newStatus = task.status
+                                  
+                                  if (canMarkCompleted(task) && newProgress === 100) {
+                                    newStatus = 'Completed'
+                                  } else if (newProgress === 100 && !canMarkCompleted(task)) {
+                                    newStatus = 'In Progress'
+                                  } else if (newProgress > 0) {
+                                    newStatus = 'In Progress'
+                                  } else {
+                                    newStatus = 'Pending'
+                                  }
+                                  
+                                  try {
+                                    const { error } = await supabase
+                                      .from('tasks')
+                                      .update({ 
+                                        progress: newProgress,
+                                        status: newStatus
+                                      })
+                                      .eq('id', task.id)
+                                    
+                                    if (error) throw error
+                                    fetchData()
+                                  } catch (error) {
+                                    console.error('Error updating task:', error)
+                                  }
+                                }}
+                                className="w-24"
+                                title="Update progress"
+                              />
+                              <span className="text-sm font-medium text-gray-900 w-10">{task.progress || 0}%</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-2 ml-4">
+                        <button
+                          onClick={() => {
+                            setSelectedTask(task)
+                            fetchTaskComments(task.id)
+                          }}
+                          className="px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                        >
+                          Details
+                        </button>
+                        {canEditTask(task) && (
+                          <button
+                            onClick={() => handleDelete(task.id)}
+                            className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        {needsApproval && user?.role === 'Director' && (
+                          <button
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('tasks')
+                                .update({ status: 'Completed' })
+                                .eq('id', task.id)
+                              
+                              if (!error) {
+                                fetchData()
+                              }
+                            }}
+                            className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                          >
+                            Approve
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 border-t pt-3">
+                      Created by: {task.created_by} • 
+                      Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
       </div>
 
