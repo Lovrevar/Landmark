@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, Project, Subcontractor } from '../lib/supabase'
+import { supabase, Project, Subcontractor, SubcontractorComment } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   Building2, 
   ArrowRight, 
@@ -11,7 +12,10 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  MessageSquare,
+  Send,
+  X
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
@@ -32,9 +36,14 @@ interface ProjectPhase {
 }
 
 const SiteManagement: React.FC = () => {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithSubcontractors[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithSubcontractors | null>(null)
+  const [selectedSubcontractor, setSelectedSubcontractor] = useState<Subcontractor | null>(null)
+  const [subcontractorComments, setSubcontractorComments] = useState<any[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [commentType, setCommentType] = useState<'completed' | 'issue' | 'general'>('general')
   const [loading, setLoading] = useState(true)
 
   const projectPhases: ProjectPhase[] = [
@@ -71,6 +80,11 @@ const SiteManagement: React.FC = () => {
       subcontractorTypes: ['interior', 'flooring', 'painting', 'finishing']
     }
   ]
+
+  const getPhaseAllocation = (phaseIndex: number) => {
+    const allocations = [0.25, 0.35, 0.25, 0.15] // Foundation, Structural, Systems, Finishing
+    return allocations[phaseIndex] || 0
+  }
 
   useEffect(() => {
     fetchProjects()
@@ -146,6 +160,60 @@ const SiteManagement: React.FC = () => {
     return { status: 'Not Started', color: 'text-gray-600', bg: 'bg-gray-100' }
   }
 
+  const fetchSubcontractorComments = async (subcontractorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subcontractor_comments')
+        .select(`
+          *,
+          users!inner(username, role)
+        `)
+        .eq('subcontractor_id', subcontractorId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      
+      const commentsWithUser = (data || []).map(comment => ({
+        ...comment,
+        user: comment.users
+      }))
+      
+      setSubcontractorComments(commentsWithUser)
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+    }
+  }
+
+  const addSubcontractorComment = async () => {
+    if (!selectedSubcontractor || !newComment.trim()) return
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) return
+
+      const { error } = await supabase
+        .from('subcontractor_comments')
+        .insert({
+          subcontractor_id: selectedSubcontractor.id,
+          user_id: userData.user.id,
+          comment: newComment.trim(),
+          comment_type: commentType
+        })
+
+      if (error) throw error
+      
+      setNewComment('')
+      fetchSubcontractorComments(selectedSubcontractor.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
+    }
+  }
+
+  const openSubcontractorDetails = (subcontractor: Subcontractor) => {
+    setSelectedSubcontractor(subcontractor)
+    fetchSubcontractorComments(subcontractor.id)
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading site management...</div>
   }
@@ -200,6 +268,9 @@ const SiteManagement: React.FC = () => {
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900">{phase.name}</h3>
                         <p className="text-gray-600">{phase.description}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Budget: ${(selectedProject.budget * getPhaseAllocation(index)).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -303,7 +374,7 @@ const SiteManagement: React.FC = () => {
                             {/* Action Button */}
                             <div className="mt-3 pt-3 border-t border-gray-200">
                               <button
-                                onClick={() => navigate('/subcontractors')}
+                                onClick={() => openSubcontractorDetails(subcontractor)}
                                 className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors duration-200"
                               >
                                 Manage Details
@@ -345,6 +416,136 @@ const SiteManagement: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Subcontractor Details Modal */}
+      {selectedSubcontractor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedSubcontractor.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{selectedSubcontractor.contact}</p>
+                  <div className="flex items-center space-x-3 mt-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedSubcontractor.progress === 100 ? 'bg-green-100 text-green-800' :
+                      new Date(selectedSubcontractor.deadline) < new Date() && selectedSubcontractor.progress < 100 ? 'bg-red-100 text-red-800' :
+                      selectedSubcontractor.progress > 0 ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedSubcontractor.progress === 100 ? 'Completed' :
+                       new Date(selectedSubcontractor.deadline) < new Date() && selectedSubcontractor.progress < 100 ? 'Overdue' :
+                       selectedSubcontractor.progress > 0 ? 'In Progress' : 'Not Started'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedSubcontractor(null)
+                    setSubcontractorComments([])
+                    setNewComment('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mt-4">
+                <p className="text-gray-700">{selectedSubcontractor.job_description}</p>
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Progress</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedSubcontractor.progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        selectedSubcontractor.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
+                      }`}
+                      style={{ width: `${selectedSubcontractor.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Comments Section */}
+            <div className="flex-1 overflow-y-auto max-h-96 p-6">
+              <h4 className="font-medium text-gray-900 mb-4 flex items-center">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Supervision Comments
+              </h4>
+              
+              <div className="space-y-4 mb-4">
+                {subcontractorComments.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No supervision comments yet. Add the first comment!</p>
+                ) : (
+                  subcontractorComments.map((comment) => (
+                    <div key={comment.id} className={`p-4 rounded-lg border ${
+                      comment.comment_type === 'issue' ? 'bg-red-50 border-red-200' :
+                      comment.comment_type === 'completed' ? 'bg-green-50 border-green-200' :
+                      'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                          <span className="text-xs text-gray-500">({comment.user?.role})</span>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            comment.comment_type === 'issue' ? 'bg-red-100 text-red-800' :
+                            comment.comment_type === 'completed' ? 'bg-green-100 text-green-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {comment.comment_type === 'completed' ? 'Work Done' :
+                             comment.comment_type === 'issue' ? 'Issue' : 'Note'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{comment.comment}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Add Comment */}
+              <div className="border-t pt-4">
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Comment Type
+                  </label>
+                  <select
+                    value={commentType}
+                    onChange={(e) => setCommentType(e.target.value as 'completed' | 'issue' | 'general')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="general">General Note</option>
+                    <option value="completed">Work Completed</option>
+                    <option value="issue">Issue/Problem</option>
+                  </select>
+                </div>
+                <div className="flex space-x-3">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add supervision notes..."
+                    rows={3}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                  <button
+                    onClick={addSubcontractorComment}
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     )
   }
 
