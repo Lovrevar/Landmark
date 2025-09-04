@@ -16,6 +16,7 @@ const TodoList: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null)
   const [taskComments, setTaskComments] = useState<TaskComment[]>([])
   const [newComment, setNewComment] = useState('')
+  const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null)
   const [newTodo, setNewTodo] = useState({
     title: '',
     description: '',
