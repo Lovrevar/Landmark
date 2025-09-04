@@ -27,15 +27,29 @@ const DirectorDashboard: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
+      // Test basic connection
+      console.log('Testing Supabase connection...')
+      const { data: testData, error: testError } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1)
+      
+      console.log('Connection test result:', { testData, testError })
+      
       // Fetch projects with calculated stats
+      console.log('Fetching projects...')
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (projectsError) throw projectsError
+      if (projectsError) {
+        console.error('Projects query error:', projectsError)
+        throw projectsError
+      }
 
       console.log('Fetched projects:', projectsData)
+      console.log('Projects count:', projectsData?.length || 0)
 
       // Calculate stats for each project
       const projectsWithStats = await Promise.all(
