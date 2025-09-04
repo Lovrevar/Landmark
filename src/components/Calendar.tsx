@@ -26,9 +26,13 @@ const Calendar: React.FC = () => {
   const fetchEvents = async () => {
     if (!user) return
 
+    setLoading(true)
     try {
       const monthStart = startOfMonth(currentDate)
       const monthEnd = endOfMonth(currentDate)
+
+      console.log('Fetching events for user:', user.username)
+      console.log('Date range:', format(monthStart, 'yyyy-MM-dd'), 'to', format(monthEnd, 'yyyy-MM-dd'))
 
       // Fetch user todos
       const { data: todos, error: todoError } = await supabase
@@ -51,6 +55,9 @@ const Calendar: React.FC = () => {
 
       if (taskError) throw taskError
 
+      console.log('Fetched todos:', todos)
+      console.log('Fetched tasks:', tasks)
+
       const allEvents: CalendarEvent[] = [
         ...(todos || []).map(todo => ({
           id: todo.id,
@@ -67,6 +74,7 @@ const Calendar: React.FC = () => {
         }))
       ]
 
+      console.log('All events:', allEvents)
       setEvents(allEvents)
     } catch (error) {
       console.error('Error fetching events:', error)

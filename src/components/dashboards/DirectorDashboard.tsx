@@ -17,19 +17,25 @@ const DirectorDashboard: React.FC = () => {
     totalRevenue: 0
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
   }, [])
 
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
       // Fetch projects with calculated stats
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
+        .order('created_at', { ascending: false })
 
       if (projectsError) throw projectsError
+
+      console.log('Fetched projects:', projectsData)
 
       // Calculate stats for each project
       const projectsWithStats = await Promise.all(
@@ -79,8 +85,10 @@ const DirectorDashboard: React.FC = () => {
       const totalRevenue = projectsWithStats.reduce((sum, p) => sum + p.apartment_sales, 0)
 
       setStats({ totalProjects, activeProjects, totalBudget, totalRevenue })
+      console.log('Calculated stats:', { totalProjects, activeProjects, totalBudget, totalRevenue })
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError(error instanceof Error ? error.message : 'Failed to fetch data')
     } finally {
       setLoading(false)
     }
@@ -90,6 +98,92 @@ const DirectorDashboard: React.FC = () => {
     return <div className="text-center py-12">Loading dashboard...</div>
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">Error loading dashboard: {error}</div>
+        <button 
+          onClick={fetchData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Building2 className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Total Projects</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Active Projects</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeProjects}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Total Budget</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${stats.totalBudget.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${stats.totalRevenue.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
+          <p className="text-gray-600 mb-4">It looks like there are no projects in the database yet.</p>
+          <button 
+            onClick={fetchData}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="space-y-6">
       {/* Stats Cards */}

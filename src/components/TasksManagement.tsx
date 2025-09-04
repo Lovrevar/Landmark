@@ -29,6 +29,7 @@ const TasksManagement: React.FC = () => {
   }, [])
 
   const fetchData = async () => {
+    setLoading(true)
     try {
       // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
@@ -46,10 +47,14 @@ const TasksManagement: React.FC = () => {
 
       if (projectsError) throw projectsError
 
+      console.log('Fetched tasks:', tasksData)
+      console.log('Fetched projects:', projectsData)
+
       setTasks(tasksData || [])
       setProjects(projectsData || [])
     } catch (error) {
       console.error('Error fetching data:', error)
+      alert('Error fetching data. Please check the console for details.')
     } finally {
       setLoading(false)
     }
