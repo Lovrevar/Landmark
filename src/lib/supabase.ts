@@ -110,3 +110,16 @@ export type WorkLog = {
   created_by: string
   created_at: string
 }
+
+export type SubcontractorComment = {
+  id: string
+  subcontractor_id: string
+  user_id: string
+  comment: string
+  comment_type: 'completed' | 'issue' | 'general'
+  created_at: string
+  user?: {
+    username: string
+    role: string
+  }
+}

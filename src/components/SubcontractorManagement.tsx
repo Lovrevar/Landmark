@@ -835,7 +835,7 @@ const SubcontractorManagement: React.FC = () => {
               </div>
 
               {/* Work Logs Section */}
-              <div className="mt-6 border-t pt-6">
+              <div className="mt-6 border-t pt-6 mb-6">
                 <h4 className="font-medium text-gray-900 mb-4 flex items-center">
                   <FileText className="w-4 h-4 mr-2" />
                   Recent Work Logs
@@ -876,6 +876,82 @@ const SubcontractorManagement: React.FC = () => {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Comments Section */}
+              <div className="border-t pt-6">
+                <h4 className="font-medium text-gray-900 mb-4 flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Supervision Comments
+                </h4>
+                
+                {/* Add Comment Form */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Comment Type
+                    </label>
+                    <select
+                      value={commentType}
+                      onChange={(e) => setCommentType(e.target.value as 'completed' | 'issue' | 'general')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="general">General Note</option>
+                      <option value="completed">Work Completed</option>
+                      <option value="issue">Issue/Problem</option>
+                    </select>
+                  </div>
+                  <div className="flex space-x-3">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add supervision notes about what they did or didn't do..."
+                      rows={3}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                    <button
+                      onClick={addSubcontractorComment}
+                      disabled={!newComment.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {subcontractorComments.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-4">No supervision comments yet. Add the first comment!</p>
+                  ) : (
+                    subcontractorComments.map((comment) => (
+                      <div key={comment.id} className={`p-4 rounded-lg border ${
+                        comment.comment_type === 'issue' ? 'bg-red-50 border-red-200' :
+                        comment.comment_type === 'completed' ? 'bg-green-50 border-green-200' :
+                        'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                            <span className="text-xs text-gray-500">({comment.user?.role})</span>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              comment.comment_type === 'issue' ? 'bg-red-100 text-red-800' :
+                              comment.comment_type === 'completed' ? 'bg-green-100 text-green-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {comment.comment_type === 'completed' ? 'Work Done' :
+                               comment.comment_type === 'issue' ? 'Issue' : 'Note'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{comment.comment}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               {/* Quick Actions */}
