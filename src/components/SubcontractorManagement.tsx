@@ -15,7 +15,8 @@ import {
   MessageSquare,
   TrendingUp,
   Users,
-  Building2
+  Building2,
+  X
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
