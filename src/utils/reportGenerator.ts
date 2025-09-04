@@ -32,6 +32,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
     return false
   }
 
+  /*
   // Helper function to add text with word wrap
   const addText = (text: string, x: number, y: number, options: any = {}) => {
     const fontSize = options.fontSize || 10
@@ -51,7 +52,33 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
     
     return y + (lines.length * lineHeight)
   }
+*/
+  const addText = (text: string, x: number, y: number, options: any = {}) => {
+  const fontSize = options.fontSize || 10
+  const maxWidth = options.maxWidth || contentWidth
+  const lineHeight = options.lineHeight || fontSize * 0.35
 
+  pdf.setFontSize(fontSize)
+  if (options.style) pdf.setFont('helvetica', options.style)
+
+  if (options.color) {
+    if (Array.isArray(options.color)) {
+      pdf.setTextColor(options.color[0], options.color[1], options.color[2])
+    } else {
+      pdf.setTextColor(options.color)
+    }
+  }
+
+  const lines = pdf.splitTextToSize(text, maxWidth)
+
+  for (let i = 0; i < lines.length; i++) {
+    checkPageBreak(lineHeight)
+    pdf.text(lines[i], x, y + (i * lineHeight))
+  }
+
+  return y + (lines.length * lineHeight)
+}
+  
   // Header
   pdf.setFillColor(37, 99, 235) // Blue background
   pdf.rect(0, 0, pageWidth, 40, 'F')
