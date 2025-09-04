@@ -148,6 +148,51 @@ const TasksManagement: React.FC = () => {
     }
   }
 
+  const fetchTaskComments = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('task_comments')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+      
+      if (error) throw error
+      setTaskComments(data || [])
+    } catch (error) {
+      console.error('Error fetching task comments:', error)
+    }
+  }
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedTask) return
+
+    try {
+      const { error } = await supabase
+        .from('task_comments')
+        .insert([
+          {
+            task_id: selectedTask.id,
+            user_id: user?.id,
+            comment: newComment.trim()
+          }
+        ])
+
+      if (error) throw error
+      
+      setNewComment('')
+      fetchTaskComments(selectedTask.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
+    }
+  }
+
+  // Fetch comments when a task is selected
+  useEffect(() => {
+    if (selectedTask) {
+      fetchTaskComments(selectedTask.id)
+    }
+  }, [selectedTask])
+
   const handleEdit = (task: Task) => {
     if (!user) return
     
