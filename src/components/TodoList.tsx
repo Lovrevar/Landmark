@@ -167,7 +167,7 @@ const TodoList: React.FC = () => {
     }
   }
 
-  const handleEditTask = (task: TaskWithProject) => {
+  const handleEditTask = (task: TaskWithProject) => { //ja dodo
   setEditingTask(task)
   setShowForm(true)
   setNewTodo({
