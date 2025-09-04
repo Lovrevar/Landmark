@@ -16,18 +16,10 @@ const TodoList: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null)
   const [taskComments, setTaskComments] = useState<TaskComment[]>([])
   const [newComment, setNewComment] = useState('')
-  const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null)
   const [newTodo, setNewTodo] = useState({
     title: '',
     description: '',
     due_date: ''
-  })
-  const [newTask, setNewTask] = useState({
-    name: '',
-    description: '',
-    deadline: '',
-    status: 'Pending' as const,
-    progress: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -122,43 +114,6 @@ const TodoList: React.FC = () => {
   const openTaskDetails = (task: TaskWithProject) => {
     setSelectedTask(task)
     fetchTaskComments(task.id)
-  }
-
-  const addTask = async () => {
-    if (!user || !newTask.name.trim()) return
-
-    try {
-      // For now, we'll create tasks in the first available project
-      const { data: projects } = await supabase
-        .from('projects')
-        .select('id')
-        .limit(1)
-
-      if (!projects || projects.length === 0) {
-        alert('No projects available. Please create a project first.')
-        return
-      }
-
-      const { error } = await supabase
-        .from('tasks')
-        .insert({
-          project_id: projects[0].id,
-          name: newTask.name,
-          description: newTask.description,
-          assigned_to: user.username,
-          deadline: newTask.deadline,
-          status: newTask.status,
-          progress: newTask.progress
-        })
-
-      if (error) throw error
-
-      setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
-      setShowForm(false)
-      fetchData()
-    } catch (error) {
-      console.error('Error adding task:', error)
-    }
   }
 
   const addTodo = async () => {
@@ -265,48 +220,8 @@ const TodoList: React.FC = () => {
     }
   }
 
-  const handleEditTask = (task: TaskWithProject) => {
-    setEditingTask(task)
-    setNewTask({
-      name: task.name,
-      description: task.description || '',
-      deadline: task.deadline,
-      status: task.status,
-      progress: task.progress || 0
-    })
-    setShowForm(true)
-  }
-
-  const updateTask = async () => {
-    if (!editingTask || !newTask.name.trim()) return
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          name: newTask.name,
-          description: newTask.description,
-          deadline: newTask.deadline,
-          status: newTask.status,
-          progress: newTask.progress
-        })
-        .eq('id', editingTask.id)
-
-      if (error) throw error
-
-      setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
-      setEditingTask(null)
-      setShowForm(false)
-      fetchData()
-    } catch (error) {
-      console.error('Error updating task:', error)
-    }
-  }
-
   const resetForm = () => {
     setNewTodo({ title: '', description: '', due_date: '' })
-    setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
-    setEditingTask(null)
     setSelectedTask(null)
     setTaskComments([])
     setNewComment('')
@@ -402,78 +317,6 @@ const TodoList: React.FC = () => {
             </div>
           </div>
 
-          {/* Project Task Form */}
-          <div className="border-t pt-6">
-            <h4 className="text-md font-medium text-gray-800 mb-3">
-              {editingTask ? 'Edit Project Task' : 'Create Project Task'}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <input
-                  type="text"
-                  placeholder="Task name"
-                  value={newTask.name}
-                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <textarea
-                  placeholder="Task description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <input
-                  type="date"
-                  value={newTask.deadline}
-                  onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <select
-                  value={newTask.status}
-                  onChange={(e) => setNewTask({ ...newTask, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Progress: {newTask.progress}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={newTask.progress}
-                  onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) })}
-                  className="w-full"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-4">
-            <button
-              onClick={resetForm}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={editingTask ? updateTask : addTask}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              {editingTask ? 'Update Task' : 'Create Task'}
-            </button>
-          </div>
-          </div>
         </div>
       )}
 
