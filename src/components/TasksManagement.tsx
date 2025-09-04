@@ -3,6 +3,8 @@ import { supabase, Task, Project } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Plus, Edit2, Trash2, Calendar, User, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { Plus, Edit2, Trash2, Calendar, User, Building2, X, MessageSquare, Send } from 'lucide-react'
+
 
 const TasksManagement: React.FC = () => {
   const { user } = useAuth()
@@ -10,6 +12,9 @@ const TasksManagement: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [taskComments, setTaskComments] = useState<any[]>([])
+  const [newComment, setNewComment] = useState('')
   const [newTask, setNewTask] = useState({
     project_id: '',
     name: '',
