@@ -33,32 +33,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(JSON.parse(savedUser))
     }
     setLoading(false)
-  }, [])
-
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-
-      if (error || !data || data.length === 0) {
+      if (error || !users || users.length === 0) {
         return false
       }
 
-      // Check if password matches
-      const user = data[0]
-      if (user.password === password) {
-        setUser(user)
-        localStorage.setItem('currentUser', JSON.stringify(user))
-        return true
-      }
-      
-      return false
-    } catch (error) {
-      console.error('Login error:', error)
-      return false
-    }
+      const user = users[0]
+      setUser(user)
+      localStorage.setItem('currentUser', JSON.stringify(user))
+      return true
   }
 
   const logout = () => {
