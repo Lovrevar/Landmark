@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('currentUser', JSON.stringify(user))
       return true
   }
+  )
 
   const logout = () => {
     setUser(null)
