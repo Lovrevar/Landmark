@@ -1,28 +1,43 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase, Todo } from '../lib/supabase'
-import { Plus, CheckCircle2, Circle, Calendar, X } from 'lucide-react'
+import { supabase, Todo, Task } from '../lib/supabase'
+import { Plus, CheckCircle2, Circle, Calendar, X, Edit2, Lock } from 'lucide-react'
 import { format } from 'date-fns'
+
+interface TaskWithProject extends Task {
+  project_name: string
+  created_by?: string
+}
 
 const TodoList: React.FC = () => {
   const { user } = useAuth()
   const [todos, setTodos] = useState<Todo[]>([])
+  const [assignedTasks, setAssignedTasks] = useState<TaskWithProject[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null)
   const [newTodo, setNewTodo] = useState({
     title: '',
     description: '',
     due_date: ''
   })
+  const [newTask, setNewTask] = useState({
+    name: '',
+    description: '',
+    deadline: '',
+    status: 'Pending' as const,
+    progress: 0
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchTodos()
+    fetchData()
   }, [user])
 
-  const fetchTodos = async () => {
+  const fetchData = async () => {
     if (!user) return
 
     try {
+      // Fetch personal todos
       const { data, error } = await supabase
         .from('todos')
         .select('*')
@@ -31,10 +46,67 @@ const TodoList: React.FC = () => {
 
       if (error) throw error
       setTodos(data || [])
+
+      // Fetch assigned tasks from projects
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          projects!inner(name)
+        `)
+        .eq('assigned_to', user.username)
+        .order('deadline', { ascending: true })
+
+      if (tasksError) throw tasksError
+      
+      const tasksWithProject = (tasksData || []).map(task => ({
+        ...task,
+        project_name: task.projects.name,
+        created_by: 'director' // Assuming all project tasks are created by director
+      }))
+      
+      setAssignedTasks(tasksWithProject)
     } catch (error) {
       console.error('Error fetching todos:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const addTask = async () => {
+    if (!user || !newTask.name.trim()) return
+
+    try {
+      // For now, we'll create tasks in the first available project
+      const { data: projects } = await supabase
+        .from('projects')
+        .select('id')
+        .limit(1)
+
+      if (!projects || projects.length === 0) {
+        alert('No projects available. Please create a project first.')
+        return
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .insert({
+          project_id: projects[0].id,
+          name: newTask.name,
+          description: newTask.description,
+          assigned_to: user.username,
+          deadline: newTask.deadline,
+          status: newTask.status,
+          progress: newTask.progress
+        })
+
+      if (error) throw error
+
+      setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
+      setShowForm(false)
+      fetchData()
+    } catch (error) {
+      console.error('Error adding task:', error)
     }
   }
 
@@ -55,7 +127,7 @@ const TodoList: React.FC = () => {
 
       setNewTodo({ title: '', description: '', due_date: '' })
       setShowForm(false)
-      fetchTodos()
+      fetchData()
     } catch (error) {
       console.error('Error adding todo:', error)
     }
@@ -69,7 +141,7 @@ const TodoList: React.FC = () => {
         .eq('id', todoId)
 
       if (error) throw error
-      fetchTodos()
+      fetchData()
     } catch (error) {
       console.error('Error updating todo:', error)
     }
@@ -83,10 +155,87 @@ const TodoList: React.FC = () => {
         .eq('id', todoId)
 
       if (error) throw error
-      fetchTodos()
+      fetchData()
     } catch (error) {
       console.error('Error deleting todo:', error)
     }
+  }
+
+  const updateTaskProgress = async (taskId: string, newProgress: number) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          progress: newProgress,
+          status: newProgress === 100 ? 'Completed' : newProgress > 0 ? 'In Progress' : 'Pending'
+        })
+        .eq('id', taskId)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
+  const handleEditTask = (task: TaskWithProject) => {
+    setEditingTask(task)
+    setNewTask({
+      name: task.name,
+      description: task.description || '',
+      deadline: task.deadline,
+      status: task.status,
+      progress: task.progress || 0
+    })
+    setShowForm(true)
+  }
+
+  const updateTask = async () => {
+    if (!editingTask || !newTask.name.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          name: newTask.name,
+          description: newTask.description,
+          deadline: newTask.deadline,
+          status: newTask.status,
+          progress: newTask.progress
+        })
+        .eq('id', editingTask.id)
+
+      if (error) throw error
+
+      setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
+      setEditingTask(null)
+      setShowForm(false)
+      fetchData()
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
+  const resetForm = () => {
+    setNewTodo({ title: '', description: '', due_date: '' })
+    setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
+    setEditingTask(null)
+    setShowForm(false)
+  }
+
+  const getTaskCardColor = (task: TaskWithProject) => {
+    const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
+    const isInProgress = task.status === 'In Progress'
+    const isCompleted = task.status === 'Completed'
+    
+    if (isOverdue) return 'border-l-4 border-l-red-500 bg-red-50'
+    if (isCompleted) return 'border-l-4 border-l-green-500 bg-green-50'
+    if (isInProgress) return 'border-l-4 border-l-blue-500 bg-blue-50'
+    return 'border-l-4 border-l-gray-300 bg-white'
+  }
+
+  const canEditTask = (task: TaskWithProject) => {
+    return task.created_by === user?.username || task.created_by !== 'director'
   }
 
   if (loading) {
@@ -98,7 +247,7 @@ const TodoList: React.FC = () => {
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
-          <p className="text-gray-600 mt-2">Personal task management</p>
+          <p className="text-gray-600 mt-2">Personal todos and assigned project tasks</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -109,11 +258,17 @@ const TodoList: React.FC = () => {
         </button>
       </div>
 
-      {/* Add Todo Form */}
+      {/* Add Todo/Task Form */}
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {editingTask ? 'Edit Task' : 'Add New Item'}
+          </h3>
+          
+          {/* Personal Todo Form */}
+          <div className="mb-6">
+            <h4 className="text-md font-medium text-gray-800 mb-3">Personal Todo</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <input
                 type="text"
@@ -140,29 +295,198 @@ const TodoList: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={resetForm}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addTodo}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Add Todo
+              </button>
+            </div>
           </div>
-          <div className="flex justify-end space-x-3 mt-4">
+
+          {/* Project Task Form */}
+          <div className="border-t pt-6">
+            <h4 className="text-md font-medium text-gray-800 mb-3">
+              {editingTask ? 'Edit Project Task' : 'Create Project Task'}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <input
+                  type="text"
+                  placeholder="Task name"
+                  value={newTask.name}
+                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <textarea
+                  placeholder="Task description"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <input
+                  type="date"
+                  value={newTask.deadline}
+                  onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <select
+                  value={newTask.status}
+                  onChange={(e) => setNewTask({ ...newTask, status: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Progress: {newTask.progress}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={newTask.progress}
+                  onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-4">
             <button
-              onClick={() => setShowForm(false)}
+              onClick={resetForm}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
             >
               Cancel
             </button>
             <button
-              onClick={addTodo}
+              onClick={editingTask ? updateTask : addTask}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              Add Task
+              {editingTask ? 'Update Task' : 'Create Task'}
             </button>
+          </div>
           </div>
         </div>
       )}
 
-      {/* Todos List */}
+      {/* Project Tasks */}
+      {assignedTasks.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Tasks</h2>
+          <div className="space-y-3">
+            {assignedTasks.map((task) => {
+              const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
+              const canEdit = canEditTask(task)
+              
+              return (
+                <div
+                  key={task.id}
+                  className={`rounded-xl shadow-sm border border-gray-200 p-4 transition-all duration-200 ${getTaskCardColor(task)}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-medium text-gray-900">{task.name}</h3>
+                        {!canEdit && (
+                          <Lock className="w-4 h-4 text-gray-400" title="Locked by Director" />
+                        )}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                          task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                          isOverdue ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-2">
+                        Project: {task.project_name}
+                      </p>
+                      
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+                      )}
+                      
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+                          <span className={`text-sm ${
+                            isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
+                          }`}>
+                            Due {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-600">Progress</span>
+                            <span className="text-sm font-medium text-gray-900">{task.progress || 0}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                task.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
+                              }`}
+                              style={{ width: `${task.progress || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        {canEdit && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={task.progress || 0}
+                              onChange={(e) => updateTaskProgress(task.id, parseInt(e.target.value))}
+                              className="w-20"
+                              title="Update progress"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Personal Todos */}
       <div className="space-y-3">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Todos</h2>
         {todos.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-            <p className="text-gray-500">No tasks yet. Add your first task to get started!</p>
+            <p className="text-gray-500">No personal todos yet. Add your first todo to get started!</p>
           </div>
         ) : (
           todos.map((todo) => {
