@@ -673,6 +673,18 @@ const SubcontractorManagement: React.FC = () => {
             </div>
             
             <div className="p-6 max-h-96 overflow-y-auto">
+              {/* Auto-load comments when modal opens */}
+              {selectedSubcontractor && subcontractorComments.length === 0 && (
+                <div className="text-center py-4">
+                  <button
+                    onClick={() => fetchSubcontractorComments(selectedSubcontractor.id)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Load Comments
+                  </button>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Work Package Details */}
                 <div>
