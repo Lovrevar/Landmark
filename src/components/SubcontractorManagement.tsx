@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Subcontractor, Project, Task, WorkLog } from '../lib/supabase'
+import { supabase, Subcontractor, Project, Task, WorkLog, SubcontractorComment } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   Plus, 
@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Users,
   Building2,
-  X
+  X,
+  Send
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
@@ -65,6 +66,9 @@ const SubcontractorManagement: React.FC = () => {
     hours_worked: 8,
     notes: ''
   })
+  const [subcontractorComments, setSubcontractorComments] = useState<SubcontractorComment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [commentType, setCommentType] = useState<'completed' | 'issue' | 'general'>('general')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -164,6 +168,47 @@ const SubcontractorManagement: React.FC = () => {
     } catch (error) {
       console.error('Error adding work log:', error)
       alert('Error adding work log. Please try again.')
+    }
+  }
+
+  const fetchSubcontractorComments = async (subcontractorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subcontractor_comments')
+        .select(`
+          *,
+          user:users(username, role)
+        `)
+        .eq('subcontractor_id', subcontractorId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setSubcontractorComments(data || [])
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+    }
+  }
+
+  const addSubcontractorComment = async () => {
+    if (!user || !selectedSubcontractor || !newComment.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('subcontractor_comments')
+        .insert({
+          subcontractor_id: selectedSubcontractor.id,
+          user_id: user.id,
+          comment: newComment.trim(),
+          comment_type: commentType
+        })
+
+      if (error) throw error
+      
+      setNewComment('')
+      fetchSubcontractorComments(selectedSubcontractor.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      alert('Error adding comment. Please try again.')
     }
   }
 
@@ -763,10 +808,23 @@ const SubcontractorManagement: React.FC = () => {
                   <p className="text-sm text-gray-500 mt-1">Project: {selectedSubcontractor.project_name}</p>
                 </div>
                 <button
-                  onClick={() => setSelectedSubcontractor(null)}
+                  onClick={() => {
+                    setSelectedSubcontractor(null)
+                    setSubcontractorComments([])
+                    setNewComment('')
+                    setCommentType('general')
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => fetchSubcontractorComments(selectedSubcontractor.id)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Load Comments
                 </button>
               </div>
             </div>
