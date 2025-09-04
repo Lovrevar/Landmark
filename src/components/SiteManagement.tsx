@@ -414,8 +414,6 @@ const SiteManagement: React.FC = () => {
               <div className="text-sm text-gray-600">Total Costs</div>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Subcontractor Details Modal */}
       {selectedSubcontractor && (
@@ -546,6 +544,9 @@ const SiteManagement: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  )
+}
     )
   }
 
