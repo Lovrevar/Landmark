@@ -18,10 +18,30 @@ const DirectorDashboard: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [insertingData, setInsertingData] = useState(false)
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  const handleInsertDummyData = async () => {
+    setInsertingData(true)
+    try {
+      const { insertDummyData } = await import('../../utils/insertDummyData')
+      const success = await insertDummyData()
+      if (success) {
+        alert('Dummy data inserted successfully!')
+        fetchData() // Refresh the data
+      } else {
+        alert('Failed to insert dummy data. Check console for errors.')
+      }
+    } catch (error) {
+      console.error('Error importing or running insertDummyData:', error)
+      alert('Error inserting dummy data. Check console for details.')
+    } finally {
+      setInsertingData(false)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -188,12 +208,21 @@ const DirectorDashboard: React.FC = () => {
           <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
           <p className="text-gray-600 mb-4">It looks like there are no projects in the database yet.</p>
-          <button 
-            onClick={fetchData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Refresh Data
-          </button>
+          <div className="space-x-3">
+            <button 
+              onClick={fetchData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Refresh Data
+            </button>
+            <button 
+              onClick={handleInsertDummyData}
+              disabled={insertingData}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {insertingData ? 'Inserting...' : 'Insert Dummy Data'}
+            </button>
+          </div>
         </div>
       </div>
     )
