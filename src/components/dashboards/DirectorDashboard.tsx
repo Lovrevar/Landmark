@@ -132,6 +132,18 @@ const DirectorDashboard: React.FC = () => {
     }
   }
 
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true)
+    try {
+      await generateDirectorReport(projects)
+    } catch (error) {
+      console.error('Error generating report:', error)
+      alert('Failed to generate report. Please try again.')
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading dashboard...</div>
   }
