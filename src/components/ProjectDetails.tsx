@@ -37,6 +37,7 @@ const ProjectDetails: React.FC = () => {
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -118,6 +119,20 @@ const ProjectDetails: React.FC = () => {
     if (budgetUsed > 90 || timeUsed > 90 || project.overdue_tasks > 3) return 'high'
     if (budgetUsed > 70 || timeUsed > 70 || project.overdue_tasks > 1) return 'medium'
     return 'low'
+  }
+
+  const handleGenerateReport = async () => {
+    if (!project) return
+    
+    setGeneratingReport(true)
+    try {
+      const { generateProjectDetailReport } = await import('../../utils/reportGenerator')
+      await generateProjectDetailReport(project)
+    } catch (error) {
+      console.error('Error generating report:', error)
+    } finally {
+      setGeneratingReport(false)
+    }
   }
 
   if (loading) {
