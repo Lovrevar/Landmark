@@ -416,114 +416,6 @@ const SubcontractorManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Work Log Form */}
-      {showWorkLogForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Daily Work Log</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subcontractor *
-              </label>
-              <select
-                value={newWorkLog.subcontractor_id}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, subcontractor_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select subcontractor</option>
-                {subcontractors.map(sub => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date *
-              </label>
-              <input
-                type="date"
-                value={newWorkLog.date}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Workers Count
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={newWorkLog.workers_count}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, workers_count: parseInt(e.target.value) || 1 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hours Worked
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="24"
-                value={newWorkLog.hours_worked}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, hours_worked: parseInt(e.target.value) || 8 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Work Description *
-              </label>
-              <textarea
-                value={newWorkLog.work_description}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, work_description: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe the work completed today..."
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes & Issues
-              </label>
-              <textarea
-                value={newWorkLog.notes}
-                onChange={(e) => setNewWorkLog({ ...newWorkLog, notes: e.target.value })}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Any issues, delays, or special notes..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={() => setShowWorkLogForm(false)}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={addWorkLog}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              Add Work Log
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Subcontractor Form */}
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -858,16 +750,6 @@ const SubcontractorManagement: React.FC = () => {
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-gray-500">No work logs recorded yet</p>
-                    <button
-                      onClick={() => {
-                        setNewWorkLog({ ...newWorkLog, subcontractor_id: selectedSubcontractor.id })
-                        setSelectedSubcontractor(null)
-                        setShowWorkLogForm(true)
-                      }}
-                      className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                    >
-                      Add First Log
-                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -983,12 +865,6 @@ const SubcontractorManagement: React.FC = () => {
                   >
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Update Progress
-                  </button>
-                  <button
-                    className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Upload Photos
                   </button>
                 </div>
               </div>
