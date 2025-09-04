@@ -98,39 +98,138 @@ export const insertDummyData = async () => {
         .insert([
           {
             project_id: projects[0].id,
-            name: 'Foundation Inspection',
-            description: 'Inspect foundation work and structural integrity',
+            name: 'Foundation Quality Control',
+            description: 'Conduct comprehensive foundation inspection and structural integrity assessment',
             assigned_to: 'supervisor',
-            deadline: '2025-01-15',
+            deadline: '2024-09-15',
             status: 'In Progress',
-            progress: 80
+            progress: 75
           },
           {
             project_id: projects[0].id,
-            name: 'Budget Review Meeting',
-            description: 'Monthly budget review and expense analysis',
+            name: 'Q3 Financial Review',
+            description: 'Quarterly budget analysis and expense reconciliation for Sunset Towers',
             assigned_to: 'accountant',
-            deadline: '2025-01-18',
+            deadline: '2024-09-20',
+            status: 'In Progress',
+            progress: 60
+          },
+          {
+            project_id: projects[0].id,
+            name: 'Apartment Sales Campaign',
+            description: 'Launch marketing campaign for remaining units in Sunset Towers',
+            assigned_to: 'salesperson',
+            deadline: '2024-09-25',
+            status: 'Pending',
+            progress: 30
+          },
+          {
+            project_id: projects[0].id,
+            name: 'Project Status Report',
+            description: 'Compile comprehensive project status report for stakeholders',
+            assigned_to: 'director',
+            deadline: '2024-09-30',
+            status: 'Pending',
+            progress: 10
+          },
+          {
+            project_id: projects[1].id,
+            name: 'HVAC System Installation',
+            description: 'Oversee HVAC system installation and testing for office spaces',
+            assigned_to: 'supervisor',
+            deadline: '2024-09-18',
+            status: 'In Progress',
+            progress: 85
+          },
+          {
+            project_id: projects[1].id,
+            name: 'Office Space Pre-leasing',
+            description: 'Initiate pre-leasing activities for Green Valley Office Park',
+            assigned_to: 'salesperson',
+            deadline: '2024-09-22',
+            status: 'In Progress',
+            progress: 40
+          },
+          {
+            project_id: projects[1].id,
+            name: 'Contractor Payment Processing',
+            description: 'Process payments for completed work phases',
+            assigned_to: 'accountant',
+            deadline: '2024-09-12',
+            status: 'Completed',
+            progress: 100
+          },
+          {
+            project_id: projects[1].id,
+            name: 'Environmental Compliance Review',
+            description: 'Review environmental compliance and sustainability measures',
+            assigned_to: 'director',
+            deadline: '2024-09-28',
             status: 'Pending',
             progress: 0
           },
           {
-            project_id: projects[1].id,
-            name: 'Electrical Rough-in',
-            description: 'Complete electrical rough-in for office spaces',
+            project_id: projects[2].id,
+            name: 'Final Inspection Coordination',
+            description: 'Coordinate final inspections for Marina Bay Shopping Center',
             assigned_to: 'supervisor',
-            deadline: '2025-01-20',
-            status: 'In Progress',
-            progress: 45
+            deadline: '2024-09-10',
+            status: 'Completed',
+            progress: 100
           },
           {
-            project_id: projects[1].id,
-            name: 'Sales Report Preparation',
-            description: 'Prepare quarterly sales performance report',
+            project_id: projects[2].id,
+            name: 'Tenant Move-in Coordination',
+            description: 'Coordinate tenant move-in schedules and logistics',
             assigned_to: 'salesperson',
-            deadline: '2025-01-22',
+            deadline: '2024-09-14',
+            status: 'In Progress',
+            progress: 70
+          },
+          {
+            project_id: projects[2].id,
+            name: 'Final Cost Analysis',
+            description: 'Complete final cost analysis and project closure documentation',
+            assigned_to: 'accountant',
+            deadline: '2024-09-16',
+            status: 'In Progress',
+            progress: 90
+          },
+          {
+            project_id: projects[3].id,
+            name: 'Site Preparation Planning',
+            description: 'Develop comprehensive site preparation plan for Tech Campus',
+            assigned_to: 'director',
+            deadline: '2024-09-26',
+            status: 'In Progress',
+            progress: 35
+          },
+          {
+            project_id: projects[3].id,
+            name: 'Permit Application Review',
+            description: 'Review and submit all required construction permits',
+            assigned_to: 'supervisor',
+            deadline: '2024-09-24',
             status: 'Pending',
-            progress: 25
+            progress: 20
+          },
+          {
+            project_id: projects[3].id,
+            name: 'Budget Allocation Planning',
+            description: 'Plan budget allocation for Tech Campus Phase 1',
+            assigned_to: 'accountant',
+            deadline: '2024-09-29',
+            status: 'Pending',
+            progress: 15
+          },
+          {
+            project_id: projects[3].id,
+            name: 'Investor Presentation Prep',
+            description: 'Prepare presentation materials for investor meeting',
+            assigned_to: 'salesperson',
+            deadline: '2024-09-27',
+            status: 'Pending',
+            progress: 5
           }
         ])
         .select()
