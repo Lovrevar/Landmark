@@ -520,6 +520,13 @@ const SupervisionDashboard: React.FC = () => {
 
       {/* Project Details Modal */}
       {selectedProject && (
+        (() => {
+          const daysRemaining = selectedProject.end_date ? differenceInDays(new Date(selectedProject.end_date), new Date()) : null
+          const isProjectOverdue = daysRemaining !== null && daysRemaining < 0 && selectedProject.status !== 'Completed'
+          const phaseInfo = getProjectPhase(selectedProject.completion_percentage)
+          const budgetStatus = getBudgetStatus(selectedProject.total_spent, selectedProject.budget)
+          
+          return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
@@ -535,8 +542,8 @@ const SupervisionDashboard: React.FC = () => {
                     }`}>
                       {selectedProject.status}
                     </span>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getProjectPhase(selectedProject.completion_percentage).color} bg-gray-100`}>
-                      {getProjectPhase(selectedProject.completion_percentage).phase} Phase
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${phaseInfo.color} bg-gray-100`}>
+                      {phaseInfo.phase} Phase
                     </span>
                   </div>
                 </div>
@@ -852,6 +859,8 @@ const SupervisionDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+          )
+        })()
       )}
 
       {/* Quick Actions */}
