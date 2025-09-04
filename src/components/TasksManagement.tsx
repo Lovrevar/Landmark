@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Task, Project } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, Edit2, Trash2, Calendar, User, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Plus, Edit2, Trash2, Calendar, User, Building2, X, MessageSquare, Send } from 'lucide-react'
 
