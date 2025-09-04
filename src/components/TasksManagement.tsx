@@ -26,15 +26,22 @@ const TasksManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [user])
 
   const fetchData = async () => {
+    if (!user) return
+    
     setLoading(true)
     try {
-      // Fetch tasks
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
+      let tasksQuery = supabase.from('tasks').select('*')
+      
+      // Filter tasks based on user role
+      if (user.role === 'Supervision') {
+        // Supervisors only see tasks assigned to them
+        tasksQuery = tasksQuery.eq('assigned_to', user.username)
+      }
+      
+      const { data: tasksData, error: tasksError } = await tasksQuery
         .order('deadline', { ascending: true })
 
       if (tasksError) throw tasksError
@@ -77,25 +84,37 @@ const TasksManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!newTask.name.trim() || !newTask.project_id || !newTask.assigned_to || !newTask.deadline) {
+    if (!user || !newTask.name.trim() || !newTask.project_id || !newTask.assigned_to || !newTask.deadline) {
       alert('Please fill in all required fields')
       return
     }
 
     try {
       if (editingTask) {
+        // Check if user can edit this task
+        if (editingTask.created_by !== user.username && user.role !== 'Director') {
+          alert('You can only edit tasks you created')
+          return
+        }
+        
         // Update existing task
+        const updateData: any = {
+          project_id: newTask.project_id,
+          name: newTask.name,
+          description: newTask.description,
+          assigned_to: newTask.assigned_to,
+          deadline: newTask.deadline,
+          progress: newTask.progress
+        }
+        
+        // Only allow status changes for own tasks or if user is Director
+        if (editingTask.created_by === user.username || user.role === 'Director') {
+          updateData.status = newTask.status
+        }
+        
         const { error } = await supabase
           .from('tasks')
-          .update({
-            project_id: newTask.project_id,
-            name: newTask.name,
-            description: newTask.description,
-            assigned_to: newTask.assigned_to,
-            deadline: newTask.deadline,
-            status: newTask.status,
-            progress: newTask.progress
-          })
+          .update(updateData)
           .eq('id', editingTask.id)
 
         if (error) throw error
@@ -108,6 +127,7 @@ const TasksManagement: React.FC = () => {
             name: newTask.name,
             description: newTask.description,
             assigned_to: newTask.assigned_to,
+            created_by: user.username,
             deadline: newTask.deadline,
             status: newTask.status,
             progress: newTask.progress
@@ -125,6 +145,14 @@ const TasksManagement: React.FC = () => {
   }
 
   const handleEdit = (task: Task) => {
+    if (!user) return
+    
+    // Check if user can edit this task
+    if (task.created_by !== user.username && user.role !== 'Director') {
+      alert('You can only edit tasks you created')
+      return
+    }
+    
     setEditingTask(task)
     setNewTask({
       project_id: task.project_id,
@@ -139,6 +167,17 @@ const TasksManagement: React.FC = () => {
   }
 
   const handleDelete = async (taskId: string) => {
+    if (!user) return
+    
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    
+    // Check if user can delete this task
+    if (task.created_by !== user.username && user.role !== 'Director') {
+      alert('You can only delete tasks you created')
+      return
+    }
+    
     if (!confirm('Are you sure you want to delete this task?')) return
 
     try {
@@ -160,6 +199,16 @@ const TasksManagement: React.FC = () => {
     return project?.name || 'Unknown Project'
   }
 
+  const canEditTask = (task: Task) => {
+    if (!user) return false
+    return task.created_by === user.username || user.role === 'Director'
+  }
+
+  const canMarkCompleted = (task: Task) => {
+    if (!user) return false
+    // Can mark completed if it's own task or if supervisor can complete director tasks
+    return task.created_by === user.username || (user.role === 'Supervision' && task.created_by === 'director')
+  }
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-800'
@@ -354,6 +403,9 @@ const TasksManagement: React.FC = () => {
                   Progress
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Update Progress
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -417,20 +469,78 @@ const TasksManagement: React.FC = () => {
                           <span className="text-sm text-gray-900">{task.progress || 0}%</span>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {canEditTask(task) ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={task.progress || 0}
+                              onChange={async (e) => {
+                                const newProgress = parseInt(e.target.value)
+                                let newStatus = task.status
+                                
+                                // Determine new status based on progress and permissions
+                                if (canMarkCompleted(task) && newProgress === 100) {
+                                  newStatus = 'Completed'
+                                } else if (newProgress === 100 && !canMarkCompleted(task)) {
+                                  newStatus = 'In Progress' // Can't mark as completed, keep as in progress
+                                } else if (newProgress > 0) {
+                                  newStatus = 'In Progress'
+                                } else {
+                                  newStatus = 'Pending'
+                                }
+                                
+                                try {
+                                  const { error } = await supabase
+                                    .from('tasks')
+                                    .update({ 
+                                      progress: newProgress,
+                                      status: newStatus
+                                    })
+                                    .eq('id', task.id)
+                                  
+                                  if (error) throw error
+                                  fetchData()
+                                } catch (error) {
+                                  console.error('Error updating task:', error)
+                                }
+                              }}
+                              className="w-20"
+                              title="Update progress"
+                            />
+                            <span className="text-xs text-gray-600 w-8">{task.progress || 0}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">Read-only</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(task)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(task.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors duration-200"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canEditTask(task) && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(task)}
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                title="Edit task"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(task.id)}
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                title="Delete task"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {!canMarkCompleted(task) && task.progress === 100 && task.status !== 'Completed' && (
+                            <span className="text-xs text-orange-600 font-medium">
+                              Awaiting Director Approval
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
