@@ -12,6 +12,8 @@ const TasksManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskComments, setTaskComments] = useState<any[]>([])
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [newComment, setNewComment] = useState('')
   const [newTask, setNewTask] = useState({
     project_id: '',
     name: '',
@@ -263,6 +265,29 @@ const TasksManagement: React.FC = () => {
       case 'In Progress': return 'bg-blue-100 text-blue-800'
       case 'Overdue': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const addComment = async () => {
+    if (!newComment.trim() || !selectedTask) return
+
+    try {
+      const { error } = await supabase
+        .from('task_comments')
+        .insert([
+          {
+            task_id: selectedTask.id,
+            user_id: user?.id,
+            comment: newComment.trim()
+          }
+        ])
+
+      if (error) throw error
+      
+      setNewComment('')
+      fetchTaskComments(selectedTask.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
     }
   }
 
@@ -519,7 +544,7 @@ const TasksManagement: React.FC = () => {
                           {canEditTask(task) && (
                             <div className="flex items-center space-x-2">
                               <span className="text-sm text-gray-600">Update:</span>
-                              className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                              <input
                                 type="range"
                                 min="0"
                                 max="100"
@@ -590,6 +615,7 @@ const TasksManagement: React.FC = () => {
                               
                               if (!error) {
                                 fetchData()
+                              }
                             }}
                             className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200"
                           >
@@ -634,6 +660,7 @@ const TasksManagement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => {
+                    setSelectedTask(null)
                     setTaskComments([])
                     setNewComment('')
                   }}
