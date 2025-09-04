@@ -319,6 +319,7 @@ const TasksManagement: React.FC = () => {
                   value={newTask.status}
                   onChange={(e) => setNewTask({ ...newTask, status: e.target.value as any })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={editingTask && editingTask.created_by !== user?.username && user?.role !== 'Director'}
                 >
                   {statusOptions.map(status => (
                     <option key={status} value={status}>
@@ -326,6 +327,11 @@ const TasksManagement: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                {editingTask && editingTask.created_by !== user?.username && user?.role !== 'Director' && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    Only the task creator can change status
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
