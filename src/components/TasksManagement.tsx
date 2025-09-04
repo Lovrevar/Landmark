@@ -214,6 +214,24 @@ const TasksManagement: React.FC = () => {
     return task.created_by === user.username || (user.role === 'Supervision' && task.created_by === 'director')
   }
 
+  const fetchTaskComments = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('task_comments')
+        .select(`
+          *,
+          user:users(username, role)
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setTaskComments(data || [])
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+    }
+  }
+
   const addComment = async () => {
     if (!user || !selectedTask || !newComment.trim()) return
 
@@ -227,35 +245,12 @@ const TasksManagement: React.FC = () => {
         })
 
       if (error) throw error
-
+      
       setNewComment('')
       fetchTaskComments(selectedTask.id)
     } catch (error) {
       console.error('Error adding comment:', error)
-    }
-  }
-
-  const fetchTaskComments = async (taskId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('task_comments')
-        .select(`
-          *,
-          users!inner(username, role)
-        `)
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      
-      const commentsWithUser = (data || []).map(comment => ({
-        ...comment,
-        user: comment.users
-      }))
-      
-      setTaskComments(commentsWithUser)
-    } catch (error) {
-      console.error('Error fetching task comments:', error)
+      alert('Error adding comment. Please try again.')
     }
   }
 
@@ -608,9 +603,9 @@ const TasksManagement: React.FC = () => {
                     </div>
                   </div>
                 )
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </div>
 
