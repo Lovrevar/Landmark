@@ -132,9 +132,11 @@ const SubcontractorManagement: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('subcontractor_comments')
-        .select('*')
-        .eq('subcontractor_id', subcontractorId)
+        .select(`
+          *,
           users!inner(username, role)
+        `)
+        .eq('subcontractor_id', subcontractorId)
 
       if (error) throw error
       
