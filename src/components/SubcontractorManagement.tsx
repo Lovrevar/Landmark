@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Subcontractor, Project, Task } from '../lib/supabase'
+import { supabase, Subcontractor, Project, Task, WorkLog } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   Plus, 
@@ -134,13 +134,23 @@ const SubcontractorManagement: React.FC = () => {
   }
 
   const addWorkLog = async () => {
-    if (!newWorkLog.subcontractor_id || !newWorkLog.work_description.trim()) return
+    if (!user || !newWorkLog.subcontractor_id || !newWorkLog.work_description.trim()) return
 
     try {
-      // In a real app, this would insert into a work_logs table
-      console.log('Adding work log:', newWorkLog)
+      const { error } = await supabase
+        .from('work_logs')
+        .insert({
+          subcontractor_id: newWorkLog.subcontractor_id,
+          date: newWorkLog.date,
+          workers_count: newWorkLog.workers_count,
+          work_description: newWorkLog.work_description,
+          hours_worked: newWorkLog.hours_worked,
+          notes: newWorkLog.notes,
+          created_by: user.username
+        })
+
+      if (error) throw error
       
-      // For demo, we'll just show success and reset form
       setNewWorkLog({
         subcontractor_id: '',
         date: format(new Date(), 'yyyy-MM-dd'),
@@ -150,9 +160,10 @@ const SubcontractorManagement: React.FC = () => {
         notes: ''
       })
       setShowWorkLogForm(false)
-      alert('Work log added successfully!')
+      fetchData() // Refresh data to show new work log
     } catch (error) {
       console.error('Error adding work log:', error)
+      alert('Error adding work log. Please try again.')
     }
   }
 

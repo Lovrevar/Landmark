@@ -97,3 +97,16 @@ export type Todo = {
   due_date: string | null
   created_at: string
 }
+
+export type WorkLog = {
+  id: string
+  subcontractor_id: string
+  date: string
+  workers_count: number
+  work_description: string
+  hours_worked: number
+  notes: string
+  photos: string[]
+  created_by: string
+  created_at: string
+}
