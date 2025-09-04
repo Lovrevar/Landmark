@@ -41,15 +41,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from('users')
         .select('*')
         .eq('username', username)
-        .eq('password', password)
 
       if (error || !data || data.length === 0) {
         return false
       }
 
-      setUser(data[0])
-      localStorage.setItem('currentUser', JSON.stringify(data[0]))
-      return true
+      // Check if password matches
+      const user = data[0]
+      if (user.password === password) {
+        setUser(user)
+        localStorage.setItem('currentUser', JSON.stringify(user))
+        return true
+      }
+      
+      return false
     } catch (error) {
       console.error('Login error:', error)
       return false
