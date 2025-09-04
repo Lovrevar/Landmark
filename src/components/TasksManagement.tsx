@@ -557,6 +557,109 @@ const TasksManagement: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Task Details Modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedTask.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">Project: {getProjectName(selectedTask.project_id)}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Created by: {selectedTask.created_by} • Assigned to: {selectedTask.assigned_to}
+                  </p>
+                  <div className="flex items-center space-x-3 mt-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedTask.status)}`}>
+                      {selectedTask.status}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Due: {format(new Date(selectedTask.deadline), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedTask(null)
+                    setTaskComments([])
+                    setNewComment('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              {selectedTask.description && (
+                <p className="text-gray-700 mt-3">{selectedTask.description}</p>
+              )}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Progress</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedTask.progress || 0}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      selectedTask.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${selectedTask.progress || 0}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Comments Section */}
+            <div className="flex-1 overflow-y-auto max-h-96 p-6">
+              <h4 className="font-medium text-gray-900 mb-4 flex items-center">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Task Comments
+              </h4>
+              
+              <div className="space-y-4 mb-4">
+                {taskComments.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No comments yet. Add the first comment!</p>
+                ) : (
+                  taskComments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                          <span className="text-xs text-gray-500">({comment.user?.role})</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{comment.comment}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Add Comment */}
+              <div className="border-t pt-4">
+                <div className="flex space-x-3">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    rows={3}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                  <button
+                    onClick={addComment}
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

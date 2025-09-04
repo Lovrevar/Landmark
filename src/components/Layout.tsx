@@ -40,7 +40,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Supervision: [
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
-        { name: 'Tasks', icon: CheckSquare, path: '/tasks' },
         { name: 'Site Management', icon: Building2, path: '/site-management' }
       ]
     }
