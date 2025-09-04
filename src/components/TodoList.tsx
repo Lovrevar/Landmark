@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase, Todo, Task } from '../lib/supabase'
-import { Plus, CheckCircle2, Circle, Calendar, X, Edit2, Lock } from 'lucide-react'
+import { supabase, Todo, Task, TaskComment } from '../lib/supabase'
+import { Plus, CheckCircle2, Circle, Calendar, X, Edit2, Lock, MessageSquare, Send } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface TaskWithProject extends Task {
@@ -14,6 +14,9 @@ const TodoList: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
   const [assignedTasks, setAssignedTasks] = useState<TaskWithProject[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<TaskWithProject | null>(null)
+  const [taskComments, setTaskComments] = useState<TaskComment[]>([])
+  const [newComment, setNewComment] = useState('')
   const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null)
   const [newTodo, setNewTodo] = useState({
     title: '',
@@ -71,6 +74,56 @@ const TodoList: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchTaskComments = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('task_comments')
+        .select(`
+          *,
+          users!inner(username, role)
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      
+      const commentsWithUser = (data || []).map(comment => ({
+        ...comment,
+        user: comment.users
+      }))
+      
+      setTaskComments(commentsWithUser)
+    } catch (error) {
+      console.error('Error fetching task comments:', error)
+    }
+  }
+
+  const addComment = async () => {
+    if (!user || !selectedTask || !newComment.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('task_comments')
+        .insert({
+          task_id: selectedTask.id,
+          user_id: user.id,
+          comment: newComment.trim()
+        })
+
+      if (error) throw error
+
+      setNewComment('')
+      fetchTaskComments(selectedTask.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
+    }
+  }
+
+  const openTaskDetails = (task: TaskWithProject) => {
+    setSelectedTask(task)
+    fetchTaskComments(task.id)
   }
 
   const addTask = async () => {
@@ -220,6 +273,9 @@ const TodoList: React.FC = () => {
     setNewTodo({ title: '', description: '', due_date: '' })
     setNewTask({ name: '', description: '', deadline: '', status: 'Pending', progress: 0 })
     setEditingTask(null)
+    setSelectedTask(null)
+    setTaskComments([])
+    setNewComment('')
     setShowForm(false)
   }
 
@@ -387,6 +443,107 @@ const TodoList: React.FC = () => {
         </div>
       )}
 
+      {/* Task Details Modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedTask.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">Project: {selectedTask.project_name}</p>
+                  <div className="flex items-center space-x-3 mt-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedTask.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                      selectedTask.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      new Date(selectedTask.deadline) < new Date() ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedTask.status}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Due: {format(new Date(selectedTask.deadline), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedTask(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              {selectedTask.description && (
+                <p className="text-gray-700 mt-3">{selectedTask.description}</p>
+              )}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Progress</span>
+                  <span className="text-sm font-medium text-gray-900">{selectedTask.progress || 0}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      selectedTask.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${selectedTask.progress || 0}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Comments Section */}
+            <div className="flex-1 overflow-y-auto max-h-96 p-6">
+              <h4 className="font-medium text-gray-900 mb-4 flex items-center">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Progress Updates
+              </h4>
+              
+              <div className="space-y-4 mb-4">
+                {taskComments.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No progress updates yet. Add the first update!</p>
+                ) : (
+                  taskComments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                          <span className="text-xs text-gray-500">({comment.user?.role})</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{comment.comment}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Add Comment */}
+              <div className="border-t pt-4">
+                <div className="flex space-x-3">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a progress update..."
+                    rows={3}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                  <button
+                    onClick={addComment}
+                    disabled={!newComment.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Project Tasks */}
       {assignedTasks.length > 0 && (
         <div className="mb-8">
@@ -452,8 +609,16 @@ const TodoList: React.FC = () => {
                             ></div>
                           </div>
                         </div>
-                        {canEdit && (
-                          <div className="flex space-x-2">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => openTaskDetails(task)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                            title="View details and add comments"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                          {canEdit && (
+                            <>
                             <button
                               onClick={() => handleEditTask(task)}
                               className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
@@ -469,8 +634,9 @@ const TodoList: React.FC = () => {
                               className="w-20"
                               title="Update progress"
                             />
-                          </div>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
