@@ -3,57 +3,26 @@ import html2canvas from 'html2canvas'
 import { format } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 
-interface ProjectWithStats extends Project {
-  task_completion: number
-  total_expenses: number
-  apartment_sales: number
-  tasks: Task[]
-  subcontractors: Subcontractor[]
-  invoices: Invoice[]
-  apartments: Apartment[]
+// Global helper functions for PDF generation
+let pdf: jsPDF
+let pageWidth: number
+let pageHeight: number
+let margin: number
+let contentWidth: number
+let yPosition: number
+
+// Helper function to add new page if needed
+const checkPageBreak = (requiredHeight: number) => {
+  if (yPosition + requiredHeight > pageHeight - margin) {
+    pdf.addPage()
+    yPosition = margin
+    return true
+  }
+  return false
 }
 
-export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
-  const pdf = new jsPDF('p', 'mm', 'a4')
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const margin = 20
-  const contentWidth = pageWidth - (margin * 2)
-  
-  let yPosition = margin
-
-  // Helper function to add new page if needed
-  const checkPageBreak = (requiredHeight: number) => {
-    if (yPosition + requiredHeight > pageHeight - margin) {
-      pdf.addPage()
-      yPosition = margin
-      return true
-    }
-    return false
-  }
-
-  /*
-  // Helper function to add text with word wrap
-  const addText = (text: string, x: number, y: number, options: any = {}) => {
-    const fontSize = options.fontSize || 10
-    const maxWidth = options.maxWidth || contentWidth
-    const lineHeight = options.lineHeight || fontSize * 0.35
-    
-    pdf.setFontSize(fontSize)
-    if (options.style) pdf.setFont('helvetica', options.style)
-    if (options.color) pdf.setTextColor(options.color)
-    
-    const lines = pdf.splitTextToSize(text, maxWidth)
-    
-    for (let i = 0; i < lines.length; i++) {
-      checkPageBreak(lineHeight)
-      pdf.text(lines[i], x, y + (i * lineHeight))
-    }
-    
-    return y + (lines.length * lineHeight)
-  }
-*/
-  const addText = (text: string, x: number, y: number, options: any = {}) => {
+// Helper function to add text with word wrap
+const addText = (text: string, x: number, y: number, options: any = {}) => {
   const fontSize = options.fontSize || 10
   const maxWidth = options.maxWidth || contentWidth
   const lineHeight = options.lineHeight || fontSize * 0.35
@@ -78,6 +47,40 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
 
   return y + (lines.length * lineHeight)
 }
+
+// Helper function to add section headers
+const addSection = (title: string, color: number[] = [37, 99, 235]) => {
+  checkPageBreak(20)
+  pdf.setFillColor(color[0], color[1], color[2])
+  pdf.rect(margin, yPosition, contentWidth, 12, 'F')
+  
+  pdf.setTextColor(255, 255, 255)
+  pdf.setFontSize(12)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text(title, margin + 5, yPosition + 8)
+  
+  yPosition += 17
+  pdf.setTextColor(0, 0, 0)
+}
+
+interface ProjectWithStats extends Project {
+  task_completion: number
+  total_expenses: number
+  apartment_sales: number
+  tasks: Task[]
+  subcontractors: Subcontractor[]
+  invoices: Invoice[]
+  apartments: Apartment[]
+}
+
+export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
+  pdf = new jsPDF('p', 'mm', 'a4')
+  pageWidth = pdf.internal.pageSize.getWidth()
+  pageHeight = pdf.internal.pageSize.getHeight()
+  margin = 20
+  contentWidth = pageWidth - (margin * 2)
+  
+  yPosition = margin
   
   // Header
   pdf.setFillColor(37, 99, 235) // Blue background
@@ -311,37 +314,13 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
 }
 
 export const generateProjectDetailReport = async (project: any) => {
-  const pdf = new jsPDF('p', 'mm', 'a4')
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const margin = 20
-  const contentWidth = pageWidth - (margin * 2)
+  pdf = new jsPDF('p', 'mm', 'a4')
+  pageWidth = pdf.internal.pageSize.getWidth()
+  pageHeight = pdf.internal.pageSize.getHeight()
+  margin = 20
+  contentWidth = pageWidth - (margin * 2)
   
-  let yPosition = margin
-
-  // Helper functions
-  const checkPageBreak = (requiredHeight: number) => {
-    if (yPosition + requiredHeight > pageHeight - margin) {
-      pdf.addPage()
-      yPosition = margin
-      return true
-    }
-    return false
-  }
-
-  const addSection = (title: string, color: number[] = [37, 99, 235]) => {
-    checkPageBreak(20)
-    pdf.setFillColor(color[0], color[1], color[2])
-    pdf.rect(margin, yPosition, contentWidth, 12, 'F')
-    
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(12)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(title, margin + 5, yPosition + 8)
-    
-    yPosition += 17
-    pdf.setTextColor(0, 0, 0)
-  }
+  yPosition = margin
 
   // Header
   pdf.setFillColor(37, 99, 235)
