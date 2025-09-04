@@ -126,7 +126,7 @@ const ProjectDetails: React.FC = () => {
     
     setGeneratingReport(true)
     try {
-      const { generateProjectDetailReport } = await import('../../utils/reportGenerator')
+      const { generateProjectDetailReport } = await import('../utils/reportGenerator')
       await generateProjectDetailReport(project)
     } catch (error) {
       console.error('Error generating report:', error)
