@@ -213,6 +213,52 @@ const TasksManagement: React.FC = () => {
     // Can mark completed if it's own task or if supervisor can complete director tasks
     return task.created_by === user.username || (user.role === 'Supervision' && task.created_by === 'director')
   }
+
+  const addComment = async () => {
+    if (!user || !selectedTask || !newComment.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('task_comments')
+        .insert({
+          task_id: selectedTask.id,
+          user_id: user.id,
+          comment: newComment.trim()
+        })
+
+      if (error) throw error
+
+      setNewComment('')
+      fetchTaskComments(selectedTask.id)
+    } catch (error) {
+      console.error('Error adding comment:', error)
+    }
+  }
+
+  const fetchTaskComments = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('task_comments')
+        .select(`
+          *,
+          users!inner(username, role)
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      
+      const commentsWithUser = (data || []).map(comment => ({
+        ...comment,
+        user: comment.users
+      }))
+      
+      setTaskComments(commentsWithUser)
+    } catch (error) {
+      console.error('Error fetching task comments:', error)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-800'
