@@ -970,17 +970,6 @@ const SubcontractorManagement: React.FC = () => {
                 <div className="flex space-x-3">
                   <button
                     onClick={() => {
-                      setNewWorkLog({ ...newWorkLog, subcontractor_id: selectedSubcontractor.id })
-                      setSelectedSubcontractor(null)
-                      setShowWorkLogForm(true)
-                    }}
-                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Add Work Log
-                  </button>
-                  <button
-                    onClick={() => {
                       const newProgress = prompt(`Update progress for ${selectedSubcontractor.name} (0-100):`, selectedSubcontractor.progress.toString())
                       if (newProgress !== null) {
                         const progress = Math.min(100, Math.max(0, parseInt(newProgress) || 0))
