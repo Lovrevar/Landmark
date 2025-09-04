@@ -17,6 +17,13 @@ const TodoList: React.FC = () => {
   const [taskComments, setTaskComments] = useState<TaskComment[]>([])
   const [newComment, setNewComment] = useState('')
   const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [editTaskData, setEditTaskData] = useState({
+    name: '',
+    description: '',
+    deadline: '',
+    progress: 0
+  })
   const [newTodo, setNewTodo] = useState({
     title: '',
     description: '',
@@ -50,6 +57,7 @@ const TodoList: React.FC = () => {
           projects!inner(name)
         `)
         .eq('assigned_to', user.username)
+        .neq('status', 'Completed')
         .order('deadline', { ascending: true })
 
       if (tasksError) throw tasksError
@@ -169,14 +177,40 @@ const TodoList: React.FC = () => {
   }
 
   const handleEditTask = (task: TaskWithProject) => { //ja dodo
-  setEditingTask(task)
-  setShowForm(true)
-  setNewTodo({
-    title: task.name,
-    description: task.description || '',
-    due_date: task.deadline || ''
-  })
-}
+    setEditingTask(task)
+    setEditTaskData({
+      name: task.name,
+      description: task.description || '',
+      deadline: task.deadline,
+      progress: task.progress || 0
+    })
+    setShowEditForm(true)
+  }
+
+  const updateTask = async () => {
+    if (!editingTask || !editTaskData.name.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          name: editTaskData.name,
+          description: editTaskData.description,
+          deadline: editTaskData.deadline,
+          progress: editTaskData.progress
+        })
+        .eq('id', editingTask.id)
+
+      if (error) throw error
+
+      setShowEditForm(false)
+      setEditingTask(null)
+      setEditTaskData({ name: '', description: '', deadline: '', progress: 0 })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
 
   const updateTaskProgress = async (taskId: string, newProgress: number) => {
     try {
@@ -237,6 +271,9 @@ const TodoList: React.FC = () => {
     setTaskComments([])
     setNewComment('')
     setShowForm(false)
+    setShowEditForm(false)
+    setEditingTask(null)
+    setEditTaskData({ name: '', description: '', deadline: '', progress: 0 })
   }
 
   const getTaskCardColor = (task: TaskWithProject) => {
@@ -278,7 +315,7 @@ const TodoList: React.FC = () => {
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingTask ? 'Edit Task' : 'Add New Item'}
+            Add New Item
           </h3>
           
           {/* Personal Todo Form */}
@@ -545,6 +582,7 @@ const TodoList: React.FC = () => {
                           {canEdit && (
                             <>
                             <button
+                              onClick={() => handleEditTask(task)}
                               className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs font-medium transition-colors duration-200"
                             >
                               ✏️ Edit
