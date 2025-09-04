@@ -99,7 +99,6 @@ const SubcontractorManagement: React.FC = () => {
       const subcontractorsWithDetails = (subcontractorsData || []).map(sub => ({
         ...sub,
         project_name: 'Sunset Towers', // Simplified for demo
-        work_logs: [],
         payment_status: sub.progress > 80 ? 'paid' : sub.progress > 40 ? 'partial' : 'pending' as const,
         amount_paid: Math.round(sub.cost * (sub.progress / 100))
       }))
@@ -137,6 +136,7 @@ const SubcontractorManagement: React.FC = () => {
           users!inner(username, role)
         `)
         .eq('subcontractor_id', subcontractorId)
+        .order('created_at', { ascending: true })
 
       if (error) throw error
       
@@ -589,7 +589,10 @@ const SubcontractorManagement: React.FC = () => {
                 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => setSelectedSubcontractor(subcontractor)}
+                    onClick={() => {
+                      setSelectedSubcontractor(subcontractor)
+                      fetchSubcontractorComments(subcontractor.id)
+                    }}
                     className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-sm font-medium transition-colors duration-200"
                   >
                     View Details
@@ -667,12 +670,6 @@ const SubcontractorManagement: React.FC = () => {
                 </button>
               </div>
               <div className="mt-4">
-                <button
-                  onClick={() => fetchSubcontractorComments(selectedSubcontractor.id)}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Load Comments
-                </button>
               </div>
             </div>
             
@@ -737,40 +734,6 @@ const SubcontractorManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Work Logs Section */}
-              <div className="mt-6 border-t pt-6 mb-6">
-                <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Recent Work Logs
-                </h4>
-                
-                {selectedSubcontractor.work_logs.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No work logs recorded yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedSubcontractor.work_logs.slice(0, 3).map((log, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-gray-900">
-                            {format(new Date(log.date), 'MMM dd, yyyy')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {log.workers_count} workers, {log.hours_worked}h
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700">{log.work_description}</p>
-                        {log.notes && (
-                          <p className="text-sm text-gray-600 mt-1 italic">{log.notes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Comments Section */}
