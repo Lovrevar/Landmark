@@ -794,13 +794,28 @@ const ProjectDetails: React.FC = () => {
 
       {/* Export Actions */}
       <div className="mt-8 flex justify-end space-x-3">
-        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+        <button 
+          onClick={handleGenerateReport}
+          disabled={generatingReport}
+          className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors duration-200"
+        >
           <Download className="w-4 h-4 mr-2" />
-          Export PDF
+          {generatingReport ? 'Generating...' : 'Export PDF'}
         </button>
-        <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+        <button 
+          onClick={handleGenerateReport}
+          disabled={generatingReport}
+          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200"
+        >
           <FileText className="w-4 h-4 mr-2" />
-          Generate Report
+          {generatingReport ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Generating...
+            </>
+          ) : (
+            'Generate Report'
+          )}
         </button>
       </div>
     </div>

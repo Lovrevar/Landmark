@@ -373,6 +373,59 @@ const DirectorDashboard: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Report Generation */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Executive Reports</h2>
+            <p className="text-gray-600 mt-1">Generate comprehensive reports for stakeholders and investors</p>
+          </div>
+          <button
+            onClick={handleGenerateReport}
+            disabled={generatingReport || projects.length === 0}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            {generatingReport ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 mr-2" />
+                Generate Executive Report
+              </>
+            )}
+          </button>
+        </div>
+        
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <FileText className="w-5 h-5 text-blue-600 mr-2" />
+              <span className="font-medium text-blue-900">Executive Summary</span>
+            </div>
+            <p className="text-sm text-blue-700">Portfolio overview, financial performance, and key metrics</p>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
+              <span className="font-medium text-green-900">Project Analysis</span>
+            </div>
+            <p className="text-sm text-green-700">Detailed breakdown of each project's performance and status</p>
+          </div>
+          
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <Download className="w-5 h-5 text-orange-600 mr-2" />
+              <span className="font-medium text-orange-900">Risk Assessment</span>
+            </div>
+            <p className="text-sm text-orange-700">Risk analysis and recommendations for each project</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
