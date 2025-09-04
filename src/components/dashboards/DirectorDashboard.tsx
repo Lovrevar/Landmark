@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, Project } from '../../lib/supabase'
-import { TrendingUp, DollarSign, Building2, Users } from 'lucide-react'
+import { TrendingUp, DollarSign, Building2, Users, FileText, Download } from 'lucide-react'
+import { generateDirectorReport } from '../../utils/reportGenerator'
 
 interface ProjectWithStats extends Project {
   task_completion: number
@@ -21,6 +22,7 @@ const DirectorDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [insertingData, setInsertingData] = useState(false)
+  const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
     fetchData()
