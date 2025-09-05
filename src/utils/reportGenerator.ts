@@ -520,7 +520,7 @@ export const generateProjectDetailReport = async (project: any) => {
   pdf.setFontSize(8)
   pdf.setFont('helvetica', 'normal')
   pdf.setTextColor(107, 114, 128)
-  pdf.text('ConstructCorp - Confidential Project Report', margin, footerY)
+  pdf.text('LANDMARK GROUP - Confidential Project Report', margin, footerY)
   pdf.text(`Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, pageWidth - margin - 50, footerY)
 
   // Save the PDF
