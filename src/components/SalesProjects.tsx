@@ -212,6 +212,29 @@ const SalesProjects: React.FC = () => {
         contract_signed: false,
         notes: ''
       })
+      
+      // Update the selected project's apartments immediately
+      if (selectedProject) {
+        const updatedApartments = selectedProject.apartments.map(apt => 
+          apt.id === selectedApartment.id 
+            ? { ...apt, status: 'Sold' as const, buyer_name: `${customer.name} ${customer.surname}` }
+            : apt
+        )
+        
+        const soldCount = updatedApartments.filter(apt => apt.status === 'Sold').length
+        const availableCount = updatedApartments.filter(apt => apt.status === 'Available').length
+        
+        setSelectedProject({
+          ...selectedProject,
+          apartments: updatedApartments,
+          sold_apartments: soldCount,
+          available_apartments: availableCount,
+          total_revenue: updatedApartments
+            .filter(apt => apt.status === 'Sold')
+            .reduce((sum, apt) => sum + apt.price, 0)
+        })
+      }
+      
       await fetchData()
     } catch (error) {
       console.error('Error creating sale:', error)
