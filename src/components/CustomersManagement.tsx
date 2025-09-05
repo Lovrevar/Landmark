@@ -35,14 +35,16 @@ interface LeadWithDetails extends Lead {
 }
 
 const CustomersManagement: React.FC = () => {
-  const [customers, setCustomers] = useState<CustomerWithDetails[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [leads, setLeads] = useState<LeadWithDetails[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithDetails | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'buyers' | 'leads'>('buyers')
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showLeadForm, setShowLeadForm] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [editingLead, setEditingLead] = useState<LeadWithDetails | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [newCustomer, setNewCustomer] = useState({
     name: '',
@@ -52,7 +54,7 @@ const CustomersManagement: React.FC = () => {
     address: '',
     bank_account: '',
     id_number: '',
-    status: 'buyer' as const
+    status: 'interested' as const
   })
   const [newLead, setNewLead] = useState({
     customer_id: '',
@@ -75,6 +77,14 @@ const CustomersManagement: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (customersError) throw customersError
+
       // Fetch projects
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
@@ -82,114 +92,28 @@ const CustomersManagement: React.FC = () => {
         .order('name')
 
       if (projectsError) throw projectsError
+
+      // Fetch leads with customer and project details
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('leads')
+        .select(`
+          *,
+          customers!inner(*),
+          projects!inner(name)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (leadsError) throw leadsError
+
+      const leadsWithDetails = (leadsData || []).map(lead => ({
+        ...lead,
+        customer: lead.customers,
+        project_name: lead.projects.name
+      }))
+
+      setCustomers(customersData || [])
       setProjects(projectsData || [])
-
-      // For demo purposes, we'll create sample customer and lead data
-      // In a real app, you'd fetch from actual customers and leads tables
-      const sampleCustomers: CustomerWithDetails[] = [
-        {
-          id: 'customer-1',
-          name: 'John',
-          surname: 'Smith',
-          email: 'john.smith@email.com',
-          phone: '+1-555-0123',
-          address: '123 Oak Street, Downtown',
-          bank_account: 'XXXX-XXXX-XXXX-1234',
-          id_number: 'ID123456789',
-          status: 'buyer',
-          created_at: '2024-01-15T10:00:00Z',
-          total_purchases: 1,
-          total_spent: 450000,
-          last_purchase_date: '2024-01-15T10:00:00Z',
-          leads: []
-        },
-        {
-          id: 'customer-2',
-          name: 'Maria',
-          surname: 'Garcia',
-          email: 'maria.garcia@email.com',
-          phone: '+1-555-0124',
-          address: '456 Pine Avenue, Midtown',
-          bank_account: 'XXXX-XXXX-XXXX-5678',
-          id_number: 'ID987654321',
-          status: 'buyer',
-          created_at: '2024-02-20T14:30:00Z',
-          total_purchases: 1,
-          total_spent: 510000,
-          last_purchase_date: '2024-02-20T14:30:00Z',
-          leads: []
-        },
-        {
-          id: 'customer-3',
-          name: 'David',
-          surname: 'Johnson',
-          email: 'david.johnson@email.com',
-          phone: '+1-555-0125',
-          address: '789 Elm Drive, Uptown',
-          bank_account: 'XXXX-XXXX-XXXX-9012',
-          id_number: 'ID456789123',
-          status: 'interested',
-          created_at: '2024-03-10T09:15:00Z',
-          total_purchases: 0,
-          total_spent: 0,
-          last_purchase_date: null,
-          leads: []
-        },
-        {
-          id: 'customer-4',
-          name: 'Sarah',
-          surname: 'Wilson',
-          email: 'sarah.wilson@email.com',
-          phone: '+1-555-0126',
-          address: '321 Maple Lane, Westside',
-          bank_account: 'XXXX-XXXX-XXXX-3456',
-          id_number: 'ID789123456',
-          status: 'interested',
-          created_at: '2024-03-25T16:45:00Z',
-          total_purchases: 0,
-          total_spent: 0,
-          last_purchase_date: null,
-          leads: []
-        }
-      ]
-
-      const sampleLeads: LeadWithDetails[] = [
-        {
-          id: 'lead-1',
-          customer_id: 'customer-3',
-          project_id: projectsData?.[0]?.id || 'project-1',
-          apartment_preferences: '2-3 bedrooms, high floor, city view',
-          budget_range_min: 400000,
-          budget_range_max: 600000,
-          priority: 'high',
-          status: 'negotiating',
-          last_contact_date: '2024-08-28T10:00:00Z',
-          next_follow_up: '2024-09-05T14:00:00Z',
-          notes: 'Very interested in unit 301. Waiting for bank loan approval.',
-          created_at: '2024-03-10T09:15:00Z',
-          customer: sampleCustomers[2],
-          project_name: projectsData?.[0]?.name || 'Sunset Towers'
-        },
-        {
-          id: 'lead-2',
-          customer_id: 'customer-4',
-          project_id: projectsData?.[1]?.id || 'project-2',
-          apartment_preferences: '1-2 bedrooms, lower floor, garden view',
-          budget_range_min: 300000,
-          budget_range_max: 450000,
-          priority: 'medium',
-          status: 'viewing_scheduled',
-          last_contact_date: '2024-08-30T15:30:00Z',
-          next_follow_up: '2024-09-06T11:00:00Z',
-          notes: 'Scheduled for viewing this weekend. First-time buyer.',
-          created_at: '2024-03-25T16:45:00Z',
-          customer: sampleCustomers[3],
-          project_name: projectsData?.[1]?.name || 'Green Valley Office Park'
-        }
-      ]
-
-      setCustomers(sampleCustomers)
-      setLeads(sampleLeads)
+      setLeads(leadsWithDetails)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -198,20 +122,150 @@ const CustomersManagement: React.FC = () => {
   }
 
   const addCustomer = async () => {
-    if (!newCustomer.name.trim() || !newCustomer.email.trim()) return
-
-    // In a real app, you'd insert into the database
-    const customer: CustomerWithDetails = {
-      id: `customer-${Date.now()}`,
-      ...newCustomer,
-      created_at: new Date().toISOString(),
-      total_purchases: 0,
-      total_spent: 0,
-      last_purchase_date: null,
-      leads: []
+    if (!newCustomer.name.trim() || !newCustomer.email.trim()) {
+      alert('Please fill in required fields (name and email)')
+      return
     }
 
-    setCustomers([...customers, customer])
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert(newCustomer)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setCustomers([data, ...customers])
+      resetCustomerForm()
+    } catch (error) {
+      console.error('Error adding customer:', error)
+      alert('Error adding customer. Please check if email or ID number already exists.')
+    }
+  }
+
+  const updateCustomer = async () => {
+    if (!editingCustomer || !newCustomer.name.trim() || !newCustomer.email.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .update(newCustomer)
+        .eq('id', editingCustomer.id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setCustomers(customers.map(c => c.id === editingCustomer.id ? data : c))
+      resetCustomerForm()
+    } catch (error) {
+      console.error('Error updating customer:', error)
+      alert('Error updating customer.')
+    }
+  }
+
+  const deleteCustomer = async (customerId: string) => {
+    if (!confirm('Are you sure you want to delete this customer?')) return
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+
+      if (error) throw error
+
+      setCustomers(customers.filter(c => c.id !== customerId))
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      alert('Error deleting customer.')
+    }
+  }
+
+  const addLead = async () => {
+    if (!newLead.customer_id || !newLead.project_id) {
+      alert('Please select customer and project')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(newLead)
+        .select(`
+          *,
+          customers!inner(*),
+          projects!inner(name)
+        `)
+        .single()
+
+      if (error) throw error
+
+      const leadWithDetails = {
+        ...data,
+        customer: data.customers,
+        project_name: data.projects.name
+      }
+
+      setLeads([leadWithDetails, ...leads])
+      resetLeadForm()
+    } catch (error) {
+      console.error('Error adding lead:', error)
+      alert('Error adding lead.')
+    }
+  }
+
+  const updateLead = async () => {
+    if (!editingLead) return
+
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .update(newLead)
+        .eq('id', editingLead.id)
+        .select(`
+          *,
+          customers!inner(*),
+          projects!inner(name)
+        `)
+        .single()
+
+      if (error) throw error
+
+      const updatedLead = {
+        ...data,
+        customer: data.customers,
+        project_name: data.projects.name
+      }
+
+      setLeads(leads.map(l => l.id === editingLead.id ? updatedLead : l))
+      resetLeadForm()
+    } catch (error) {
+      console.error('Error updating lead:', error)
+      alert('Error updating lead.')
+    }
+  }
+
+  const deleteLead = async (leadId: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId)
+
+      if (error) throw error
+
+      setLeads(leads.filter(l => l.id !== leadId))
+    } catch (error) {
+      console.error('Error deleting lead:', error)
+      alert('Error deleting lead.')
+    }
+  }
+
+  const resetCustomerForm = () => {
     setNewCustomer({
       name: '',
       surname: '',
@@ -220,28 +274,13 @@ const CustomersManagement: React.FC = () => {
       address: '',
       bank_account: '',
       id_number: '',
-      status: 'buyer'
+      status: 'interested'
     })
+    setEditingCustomer(null)
     setShowCustomerForm(false)
   }
 
-  const addLead = async () => {
-    if (!newLead.customer_id || !newLead.project_id) return
-
-    const customer = customers.find(c => c.id === newLead.customer_id)
-    const project = projects.find(p => p.id === newLead.project_id)
-    
-    if (!customer || !project) return
-
-    const lead: LeadWithDetails = {
-      id: `lead-${Date.now()}`,
-      ...newLead,
-      created_at: new Date().toISOString(),
-      customer,
-      project_name: project.name
-    }
-
-    setLeads([...leads, lead])
+  const resetLeadForm = () => {
     setNewLead({
       customer_id: '',
       project_id: '',
@@ -254,7 +293,40 @@ const CustomersManagement: React.FC = () => {
       next_follow_up: '',
       notes: ''
     })
+    setEditingLead(null)
     setShowLeadForm(false)
+  }
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer)
+    setNewCustomer({
+      name: customer.name,
+      surname: customer.surname,
+      email: customer.email,
+      phone: customer.phone || '',
+      address: customer.address || '',
+      bank_account: customer.bank_account || '',
+      id_number: customer.id_number || '',
+      status: customer.status
+    })
+    setShowCustomerForm(true)
+  }
+
+  const handleEditLead = (lead: LeadWithDetails) => {
+    setEditingLead(lead)
+    setNewLead({
+      customer_id: lead.customer_id,
+      project_id: lead.project_id,
+      apartment_preferences: lead.apartment_preferences || '',
+      budget_range_min: lead.budget_range_min || 0,
+      budget_range_max: lead.budget_range_max || 0,
+      priority: lead.priority,
+      status: lead.status,
+      last_contact_date: lead.last_contact_date || '',
+      next_follow_up: lead.next_follow_up || '',
+      notes: lead.notes || ''
+    })
+    setShowLeadForm(true)
   }
 
   const filteredCustomers = customers.filter(customer =>
@@ -366,8 +438,7 @@ const CustomersManagement: React.FC = () => {
           {filteredCustomers.filter(c => c.status === 'buyer').map((customer) => (
             <div
               key={customer.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
-              onClick={() => setSelectedCustomer(customer)}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -376,42 +447,54 @@ const CustomersManagement: React.FC = () => {
                   </h3>
                   <p className="text-sm text-gray-600">{customer.email}</p>
                 </div>
-                <Eye className="w-5 h-5 text-gray-400" />
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => setSelectedCustomer(customer)}
+                    className="p-1 text-gray-400 hover:text-blue-600"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleEditCustomer(customer)}
+                    className="p-1 text-gray-400 hover:text-green-600"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteCustomer(customer.id)}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center">
                   <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-600">{customer.phone}</span>
+                  <span className="text-sm text-gray-600">{customer.phone || 'N/A'}</span>
                 </div>
                 <div className="flex items-center">
                   <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-600">{customer.address}</span>
+                  <span className="text-sm text-gray-600">{customer.address || 'N/A'}</span>
                 </div>
                 <div className="flex items-center">
                   <CreditCard className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-600">{customer.bank_account}</span>
+                  <span className="text-sm text-gray-600">{customer.bank_account || 'N/A'}</span>
                 </div>
               </div>
 
               <div className="border-t pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-green-600">{customer.total_purchases}</p>
-                    <p className="text-xs text-gray-600">Purchases</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-blue-600">${customer.total_spent.toLocaleString()}</p>
-                    <p className="text-xs text-gray-600">Total Spent</p>
-                  </div>
-                </div>
-                {customer.last_purchase_date && (
-                  <div className="mt-3 text-center">
-                    <p className="text-xs text-gray-500">
-                      Last purchase: {format(new Date(customer.last_purchase_date), 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                )}
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  customer.status === 'buyer' ? 'bg-green-100 text-green-800' :
+                  customer.status === 'interested' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {customer.status.toUpperCase()}
+                </span>
+                <p className="text-xs text-gray-500 mt-2">
+                  Added: {format(new Date(customer.created_at), 'MMM dd, yyyy')}
+                </p>
               </div>
             </div>
           ))}
@@ -424,8 +507,7 @@ const CustomersManagement: React.FC = () => {
           {filteredLeads.map((lead) => (
             <div
               key={lead.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
-              onClick={() => setSelectedLead(lead)}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -443,7 +525,26 @@ const CustomersManagement: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-1">{lead.customer.email}</p>
                   <p className="text-sm text-gray-600">Interested in: {lead.project_name}</p>
                 </div>
-                <Eye className="w-5 h-5 text-gray-400" />
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => setSelectedLead(lead)}
+                    className="p-1 text-gray-400 hover:text-blue-600"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleEditLead(lead)}
+                    className="p-1 text-gray-400 hover:text-green-600"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteLead(lead.id)}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -456,20 +557,26 @@ const CustomersManagement: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">Last Contact</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(lead.last_contact_date), 'MMM dd, yyyy')}
+                    {lead.last_contact_date ? format(new Date(lead.last_contact_date), 'MMM dd, yyyy') : 'N/A'}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Next Follow-up</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(lead.next_follow_up), 'MMM dd, yyyy')}
+                    {lead.next_follow_up ? format(new Date(lead.next_follow_up), 'MMM dd, yyyy') : 'N/A'}
                   </p>
                 </div>
               </div>
 
               <div className="border-t pt-3">
                 <p className="text-xs text-gray-500 mb-1">Preferences</p>
-                <p className="text-sm text-gray-700">{lead.apartment_preferences}</p>
+                <p className="text-sm text-gray-700">{lead.apartment_preferences || 'No specific preferences'}</p>
+                {lead.notes && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500 mb-1">Notes</p>
+                    <p className="text-sm text-gray-700">{lead.notes}</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -482,9 +589,11 @@ const CustomersManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Customer</h3>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                </h3>
                 <button
-                  onClick={() => setShowCustomerForm(false)}
+                  onClick={resetCustomerForm}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -560,20 +669,32 @@ const CustomersManagement: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={newCustomer.status}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="lead">Lead</option>
+                    <option value="interested">Interested</option>
+                    <option value="buyer">Buyer</option>
+                  </select>
+                </div>
               </div>
               
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowCustomerForm(false)}
+                  onClick={resetCustomerForm}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={addCustomer}
+                  onClick={editingCustomer ? updateCustomer : addCustomer}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  Add Customer
+                  {editingCustomer ? 'Update' : 'Add'} Customer
                 </button>
               </div>
             </div>
@@ -587,9 +708,11 @@ const CustomersManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Lead</h3>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingLead ? 'Edit Lead' : 'Add New Lead'}
+                </h3>
                 <button
-                  onClick={() => setShowLeadForm(false)}
+                  onClick={resetLeadForm}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -662,6 +785,29 @@ const CustomersManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={newLead.status}
+                    onChange={(e) => setNewLead({ ...newLead, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="viewing_scheduled">Viewing Scheduled</option>
+                    <option value="negotiating">Negotiating</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Contact</label>
+                  <input
+                    type="date"
+                    value={newLead.last_contact_date}
+                    onChange={(e) => setNewLead({ ...newLead, last_contact_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Next Follow-up</label>
                   <input
                     type="date"
@@ -693,16 +839,16 @@ const CustomersManagement: React.FC = () => {
               
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowLeadForm(false)}
+                  onClick={resetLeadForm}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={addLead}
+                  onClick={editingLead ? updateLead : addLead}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  Add Lead
+                  {editingLead ? 'Update' : 'Add'} Lead
                 </button>
               </div>
             </div>
@@ -738,7 +884,7 @@ const CustomersManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 text-blue-600 mr-2" />
-                      <span className="text-blue-800">{selectedCustomer.phone}</span>
+                      <span className="text-blue-800">{selectedCustomer.phone || 'N/A'}</span>
                     </div>
                     <div className="flex items-center">
                       <Mail className="w-4 h-4 text-blue-600 mr-2" />
@@ -746,7 +892,7 @@ const CustomersManagement: React.FC = () => {
                     </div>
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-blue-600 mr-2" />
-                      <span className="text-blue-800">{selectedCustomer.address}</span>
+                      <span className="text-blue-800">{selectedCustomer.address || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -756,35 +902,31 @@ const CustomersManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <CreditCard className="w-4 h-4 text-green-600 mr-2" />
-                      <span className="text-green-800">{selectedCustomer.bank_account}</span>
+                      <span className="text-green-800">{selectedCustomer.bank_account || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-green-700">ID Number:</span>
-                      <span className="font-medium text-green-900">{selectedCustomer.id_number}</span>
+                      <span className="font-medium text-green-900">{selectedCustomer.id_number || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-700">Total Spent:</span>
-                      <span className="font-bold text-green-900">${selectedCustomer.total_spent.toLocaleString()}</span>
+                      <span className="text-green-700">Status:</span>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedCustomer.status === 'buyer' ? 'bg-green-100 text-green-800' :
+                        selectedCustomer.status === 'interested' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedCustomer.status.toUpperCase()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-700">Purchases:</span>
-                      <span className="font-medium text-green-900">{selectedCustomer.total_purchases}</span>
+                      <span className="text-green-700">Added:</span>
+                      <span className="font-medium text-green-900">
+                        {format(new Date(selectedCustomer.created_at), 'MMM dd, yyyy')}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {selectedCustomer.last_purchase_date && (
-                <div className="mt-6 bg-purple-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-purple-900 mb-3">Purchase History</h4>
-                  <div className="flex items-center justify-between">
-                    <span className="text-purple-700">Last Purchase:</span>
-                    <span className="font-medium text-purple-900">
-                      {format(new Date(selectedCustomer.last_purchase_date), 'MMMM dd, yyyy')}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -830,11 +972,11 @@ const CustomersManagement: React.FC = () => {
                     </div>
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 text-blue-600 mr-2" />
-                      <span className="text-blue-800">{selectedLead.customer.phone}</span>
+                      <span className="text-blue-800">{selectedLead.customer.phone || 'N/A'}</span>
                     </div>
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-blue-600 mr-2" />
-                      <span className="text-blue-800">{selectedLead.customer.address}</span>
+                      <span className="text-blue-800">{selectedLead.customer.address || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -851,13 +993,13 @@ const CustomersManagement: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-green-700">Last Contact:</span>
                       <span className="font-medium text-green-900">
-                        {format(new Date(selectedLead.last_contact_date), 'MMM dd, yyyy')}
+                        {selectedLead.last_contact_date ? format(new Date(selectedLead.last_contact_date), 'MMM dd, yyyy') : 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-green-700">Next Follow-up:</span>
                       <span className="font-medium text-green-900">
-                        {format(new Date(selectedLead.next_follow_up), 'MMM dd, yyyy')}
+                        {selectedLead.next_follow_up ? format(new Date(selectedLead.next_follow_up), 'MMM dd, yyyy') : 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -866,7 +1008,7 @@ const CustomersManagement: React.FC = () => {
 
               <div className="bg-purple-50 p-4 rounded-lg mb-6">
                 <h4 className="font-semibold text-purple-900 mb-3">Apartment Preferences</h4>
-                <p className="text-purple-800">{selectedLead.apartment_preferences}</p>
+                <p className="text-purple-800">{selectedLead.apartment_preferences || 'No specific preferences'}</p>
               </div>
 
               {selectedLead.notes && (

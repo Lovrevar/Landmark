@@ -16,7 +16,8 @@ import {
   X,
   CreditCard,
   Banknote,
-  PiggyBank
+  PiggyBank,
+  UserPlus
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -38,15 +39,37 @@ interface ProjectWithApartments extends Project {
 
 const SalesProjects: React.FC = () => {
   const [projects, setProjects] = useState<ProjectWithApartments[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithApartments | null>(null)
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
+  const [showSaleModal, setShowSaleModal] = useState(false)
+  const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
+  const [saleData, setSaleData] = useState({
+    payment_method: 'bank_loan' as const,
+    down_payment: 0,
+    monthly_payment: 0,
+    next_payment_date: '',
+    contract_signed: false,
+    notes: ''
+  })
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    surname: '',
+    email: '',
+    phone: '',
+    address: '',
+    bank_account: '',
+    id_number: '',
+    status: 'buyer' as const
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchProjects()
+    fetchData()
   }, [])
 
-  const fetchProjects = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
       // Fetch projects
@@ -57,12 +80,24 @@ const SalesProjects: React.FC = () => {
 
       if (projectsError) throw projectsError
 
-      // Fetch apartments with project details
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (customersError) throw customersError
+
+      // Fetch apartments with sales data
       const { data: apartmentsData, error: apartmentsError } = await supabase
         .from('apartments')
         .select(`
           *,
-          projects!inner(name)
+          projects!inner(name),
+          sales(
+            *,
+            customers(*)
+          )
         `)
         .order('project_id')
         .order('floor')
@@ -70,39 +105,12 @@ const SalesProjects: React.FC = () => {
 
       if (apartmentsError) throw apartmentsError
 
-      // For demo purposes, we'll simulate customer and sale data
-      // In a real app, you'd fetch from customers and sales tables
+      // Process apartments with details
       const apartmentsWithDetails = (apartmentsData || []).map(apt => ({
         ...apt,
         project_name: apt.projects.name,
-        customer: apt.status === 'Sold' ? {
-          id: `customer-${apt.id}`,
-          name: apt.buyer_name?.split(' ')[0] || 'John',
-          surname: apt.buyer_name?.split(' ')[1] || 'Doe',
-          email: `${apt.buyer_name?.toLowerCase().replace(' ', '.')}@email.com` || 'john.doe@email.com',
-          phone: '+1-555-0123',
-          address: '123 Main St, City',
-          bank_account: 'XXXX-XXXX-XXXX-1234',
-          id_number: 'ID123456789',
-          status: 'buyer' as const,
-          created_at: apt.created_at
-        } : undefined,
-        sale: apt.status === 'Sold' ? {
-          id: `sale-${apt.id}`,
-          apartment_id: apt.id,
-          customer_id: `customer-${apt.id}`,
-          sale_price: apt.price,
-          payment_method: Math.random() > 0.5 ? 'bank_loan' as const : 'installments' as const,
-          down_payment: apt.price * 0.2,
-          total_paid: apt.price * (0.2 + Math.random() * 0.5),
-          remaining_amount: apt.price * (0.3 + Math.random() * 0.5),
-          next_payment_date: '2025-02-15',
-          monthly_payment: apt.price * 0.05,
-          sale_date: apt.created_at,
-          contract_signed: true,
-          notes: 'Regular payment schedule',
-          created_at: apt.created_at
-        } : undefined
+        customer: apt.sales?.[0]?.customers || undefined,
+        sale: apt.sales?.[0] || undefined
       }))
 
       // Group apartments by project and calculate stats
@@ -114,8 +122,8 @@ const SalesProjects: React.FC = () => {
         const available_apartments = projectApartments.filter(apt => apt.status === 'Available').length
         const reserved_apartments = projectApartments.filter(apt => apt.status === 'Reserved').length
         const total_revenue = projectApartments
-          .filter(apt => apt.status === 'Sold')
-          .reduce((sum, apt) => sum + apt.price, 0)
+          .filter(apt => apt.sale)
+          .reduce((sum, apt) => sum + (apt.sale?.sale_price || 0), 0)
         const average_price = total_apartments > 0 
           ? projectApartments.reduce((sum, apt) => sum + apt.price, 0) / total_apartments 
           : 0
@@ -133,6 +141,7 @@ const SalesProjects: React.FC = () => {
       })
 
       setProjects(projectsWithApartments)
+      setCustomers(customersData || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
     } finally {
@@ -140,21 +149,142 @@ const SalesProjects: React.FC = () => {
     }
   }
 
-  const updateApartmentStatus = async (apartmentId: string, newStatus: string, buyerName?: string) => {
-    const updateData: any = { status: newStatus }
-    if (newStatus === 'Sold' && buyerName) {
-      updateData.buyer_name = buyerName
-    } else if (newStatus === 'Available') {
-      updateData.buyer_name = null
+  const handleSellApartment = async () => {
+    if (!selectedApartment || !selectedCustomerId) return
+
+    try {
+      const customer = customers.find(c => c.id === selectedCustomerId)
+      if (!customer) return
+
+      // Calculate remaining amount
+      const remaining_amount = selectedApartment.price - saleData.down_payment
+
+      // Create sale record
+      const { data: saleRecord, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          apartment_id: selectedApartment.id,
+          customer_id: selectedCustomerId,
+          sale_price: selectedApartment.price,
+          payment_method: saleData.payment_method,
+          down_payment: saleData.down_payment,
+          total_paid: saleData.down_payment,
+          remaining_amount: remaining_amount,
+          next_payment_date: saleData.next_payment_date || null,
+          monthly_payment: saleData.monthly_payment,
+          contract_signed: saleData.contract_signed,
+          notes: saleData.notes
+        })
+        .select()
+        .single()
+
+      if (saleError) throw saleError
+
+      // Update apartment status and buyer
+      const { error: apartmentError } = await supabase
+        .from('apartments')
+        .update({ 
+          status: 'Sold',
+          buyer_name: `${customer.name} ${customer.surname}`
+        })
+        .eq('id', selectedApartment.id)
+
+      if (apartmentError) throw apartmentError
+
+      // Update customer status to buyer
+      const { error: customerError } = await supabase
+        .from('customers')
+        .update({ status: 'buyer' })
+        .eq('id', selectedCustomerId)
+
+      if (customerError) throw customerError
+
+      // Reset form and refresh data
+      setShowSaleModal(false)
+      setSelectedCustomerId('')
+      setSaleData({
+        payment_method: 'bank_loan',
+        down_payment: 0,
+        monthly_payment: 0,
+        next_payment_date: '',
+        contract_signed: false,
+        notes: ''
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error creating sale:', error)
+      alert('Error processing sale. Please try again.')
+    }
+  }
+
+  const addCustomer = async () => {
+    if (!newCustomer.name.trim() || !newCustomer.email.trim()) {
+      alert('Please fill in required fields (name and email)')
+      return
     }
 
-    const { error } = await supabase
-      .from('apartments')
-      .update(updateData)
-      .eq('id', apartmentId)
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert(newCustomer)
+        .select()
+        .single()
 
-    if (!error) {
-      fetchProjects()
+      if (error) throw error
+
+      setCustomers([...customers, data])
+      setSelectedCustomerId(data.id)
+      setNewCustomer({
+        name: '',
+        surname: '',
+        email: '',
+        phone: '',
+        address: '',
+        bank_account: '',
+        id_number: '',
+        status: 'buyer'
+      })
+      setShowCustomerForm(false)
+    } catch (error) {
+      console.error('Error adding customer:', error)
+      alert('Error adding customer. Please check if email or ID number already exists.')
+    }
+  }
+
+  const updateApartmentStatus = async (apartmentId: string, newStatus: string) => {
+    if (newStatus === 'Sold') {
+      // Open sale modal instead of direct update
+      const apartment = projects
+        .flatMap(p => p.apartments)
+        .find(apt => apt.id === apartmentId)
+      
+      if (apartment) {
+        setSelectedApartment(apartment)
+        setShowSaleModal(true)
+        // Set default down payment to 20%
+        setSaleData(prev => ({
+          ...prev,
+          down_payment: apartment.price * 0.2
+        }))
+      }
+      return
+    }
+
+    try {
+      const updateData: any = { status: newStatus }
+      if (newStatus === 'Available') {
+        updateData.buyer_name = null
+      }
+
+      const { error } = await supabase
+        .from('apartments')
+        .update(updateData)
+        .eq('id', apartmentId)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error updating apartment:', error)
     }
   }
 
@@ -332,10 +462,10 @@ const SalesProjects: React.FC = () => {
                         <span className="text-sm text-gray-600">Price:</span>
                         <span className="text-sm font-bold text-green-600">${apartment.price.toLocaleString()}</span>
                       </div>
-                      {apartment.buyer_name && (
+                      {apartment.customer && (
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600">Buyer:</span>
-                          <span className="text-sm font-medium">{apartment.buyer_name}</span>
+                          <span className="text-sm font-medium">{apartment.customer.name} {apartment.customer.surname}</span>
                         </div>
                       )}
                     </div>
@@ -363,19 +493,32 @@ const SalesProjects: React.FC = () => {
                     )}
 
                     {apartment.status !== 'Sold' && (
-                      <div className="mt-3 pt-3 border-t">
+                      <div className="mt-3 pt-3 border-t space-y-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            const buyerName = prompt('Enter buyer name:')
-                            if (buyerName) {
-                              updateApartmentStatus(apartment.id, 'Sold', buyerName)
-                            }
+                            setSelectedApartment(apartment)
+                            setShowSaleModal(true)
+                            setSaleData(prev => ({
+                              ...prev,
+                              down_payment: apartment.price * 0.2
+                            }))
                           }}
                           className="w-full px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200"
                         >
                           Mark as Sold
                         </button>
+                        {apartment.status === 'Available' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              updateApartmentStatus(apartment.id, 'Reserved')
+                            }}
+                            className="w-full px-3 py-1 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700 transition-colors duration-200"
+                          >
+                            Reserve
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -386,8 +529,305 @@ const SalesProjects: React.FC = () => {
         </div>
       )}
 
+      {/* Sale Modal */}
+      {showSaleModal && selectedApartment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Sell Unit {selectedApartment.number}
+                  </h3>
+                  <p className="text-gray-600 mt-1">
+                    {selectedApartment.project_name} • ${selectedApartment.price.toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSaleModal(false)
+                    setSelectedApartment(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {/* Customer Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Customer *
+                </label>
+                <div className="flex space-x-3">
+                  <select
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Choose existing customer</option>
+                    {customers.map(customer => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} {customer.surname} - {customer.email}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowCustomerForm(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    New Customer
+                  </button>
+                </div>
+              </div>
+
+              {/* Sale Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method
+                  </label>
+                  <select
+                    value={saleData.payment_method}
+                    onChange={(e) => setSaleData({ ...saleData, payment_method: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="credit">Credit</option>
+                    <option value="bank_loan">Bank Loan</option>
+                    <option value="installments">Installments</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Down Payment ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={saleData.down_payment}
+                    onChange={(e) => setSaleData({ ...saleData, down_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {saleData.payment_method === 'installments' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Monthly Payment ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={saleData.monthly_payment}
+                        onChange={(e) => setSaleData({ ...saleData, monthly_payment: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Next Payment Date
+                      </label>
+                      <input
+                        type="date"
+                        value={saleData.next_payment_date}
+                        onChange={(e) => setSaleData({ ...saleData, next_payment_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={saleData.contract_signed}
+                      onChange={(e) => setSaleData({ ...saleData, contract_signed: e.target.checked })}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Contract signed</span>
+                  </label>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={saleData.notes}
+                    onChange={(e) => setSaleData({ ...saleData, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Additional notes about the sale..."
+                  />
+                </div>
+              </div>
+
+              {/* Sale Summary */}
+              <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Sale Summary</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Sale Price:</p>
+                    <p className="font-bold text-lg">${selectedApartment.price.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Down Payment:</p>
+                    <p className="font-bold text-lg text-green-600">${saleData.down_payment.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Remaining Amount:</p>
+                    <p className="font-bold text-lg text-orange-600">
+                      ${(selectedApartment.price - saleData.down_payment).toLocaleString()}
+                    </p>
+                  </div>
+                  {saleData.payment_method === 'installments' && (
+                    <div>
+                      <p className="text-sm text-gray-600">Monthly Payment:</p>
+                      <p className="font-bold text-lg text-blue-600">${saleData.monthly_payment.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowSaleModal(false)
+                    setSelectedApartment(null)
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSellApartment}
+                  disabled={!selectedCustomerId}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  Complete Sale
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showCustomerForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Add New Customer</h3>
+                <button
+                  onClick={() => setShowCustomerForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                  <input
+                    type="text"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                  <input
+                    type="text"
+                    value={newCustomer.surname}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, surname: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={newCustomer.address}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account</label>
+                  <input
+                    type="text"
+                    value={newCustomer.bank_account}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, bank_account: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
+                  <input
+                    type="text"
+                    value={newCustomer.id_number}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, id_number: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCustomerForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addCustomer}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Add Customer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Apartment Details Modal */}
-      {selectedApartment && (
+      {selectedApartment && !showSaleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
