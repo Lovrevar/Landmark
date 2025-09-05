@@ -426,7 +426,7 @@ const CustomersManagement: React.FC = () => {
             }`}
           >
             <Users className="w-4 h-4 mr-2" />
-            Buyers ({customers.filter(c => c.status === 'buyer').length})
+            All Customers ({customers.length})
           </button>
           <button
             onClick={() => setActiveTab('leads')}
@@ -445,7 +445,7 @@ const CustomersManagement: React.FC = () => {
       {/* Buyers Tab */}
       {activeTab === 'buyers' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCustomers.filter(c => c.status === 'buyer').map((customer) => (
+          {filteredCustomers.map((customer) => (
             <div
               key={customer.id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
