@@ -172,6 +172,7 @@ const SalesProjects: React.FC = () => {
           remaining_amount: remaining_amount,
           next_payment_date: saleData.next_payment_date || null,
           monthly_payment: saleData.monthly_payment,
+          sale_date: new Date().toISOString().split('T')[0],
           contract_signed: saleData.contract_signed,
           notes: saleData.notes
         })
@@ -201,6 +202,7 @@ const SalesProjects: React.FC = () => {
 
       // Reset form and refresh data
       setShowSaleModal(false)
+      setSelectedApartment(null)
       setSelectedCustomerId('')
       setSaleData({
         payment_method: 'bank_loan',
@@ -210,7 +212,7 @@ const SalesProjects: React.FC = () => {
         contract_signed: false,
         notes: ''
       })
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error creating sale:', error)
       alert('Error processing sale. Please try again.')
@@ -232,7 +234,8 @@ const SalesProjects: React.FC = () => {
 
       if (error) throw error
 
-      setCustomers([...customers, data])
+      // Refresh customers list and select the new customer
+      await fetchData()
       setSelectedCustomerId(data.id)
       setNewCustomer({
         name: '',

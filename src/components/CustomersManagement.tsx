@@ -145,7 +145,8 @@ const CustomersManagement: React.FC = () => {
 
       if (error) throw error
 
-      setCustomers([data, ...customers])
+      // Refresh the entire customer list to ensure proper display
+      await fetchData()
       resetCustomerForm()
     } catch (error) {
       console.error('Error adding customer:', error)
