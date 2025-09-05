@@ -309,7 +309,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
 
   // Save the PDF
-  const fileName = `ConstructCorp_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
+  const fileName = `LANDMARK_GROUP_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
   pdf.save(fileName)
 }
 
