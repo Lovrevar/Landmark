@@ -123,3 +123,48 @@ export type SubcontractorComment = {
     role: string
   }
 }
+
+export type Customer = {
+  id: string
+  name: string
+  surname: string
+  email: string
+  phone: string
+  address: string
+  bank_account: string
+  id_number: string
+  status: 'buyer' | 'interested' | 'lead'
+  created_at: string
+}
+
+export type Sale = {
+  id: string
+  apartment_id: string
+  customer_id: string
+  sale_price: number
+  payment_method: 'cash' | 'credit' | 'bank_loan' | 'installments'
+  down_payment: number
+  total_paid: number
+  remaining_amount: number
+  next_payment_date: string | null
+  monthly_payment: number
+  sale_date: string
+  contract_signed: boolean
+  notes: string
+  created_at: string
+}
+
+export type Lead = {
+  id: string
+  customer_id: string
+  project_id: string
+  apartment_preferences: string
+  budget_range_min: number
+  budget_range_max: number
+  priority: 'high' | 'medium' | 'low'
+  status: 'new' | 'contacted' | 'viewing_scheduled' | 'negotiating' | 'closed'
+  last_contact_date: string
+  next_follow_up: string
+  notes: string
+  created_at: string
+}

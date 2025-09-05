@@ -10,6 +10,9 @@ import TasksManagement from './components/TasksManagement'
 import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
 import SiteManagement from './components/SiteManagement'
+import SalesProjects from './components/SalesProjects'
+import CustomersManagement from './components/CustomersManagement'
+import SalesReports from './components/SalesReports'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
@@ -89,6 +92,30 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <SiteManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-projects"
+          element={
+            <ProtectedRoute>
+              <SalesProjects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <CustomersManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-reports"
+          element={
+            <ProtectedRoute>
+              <SalesReports />
             </ProtectedRoute>
           }
         />

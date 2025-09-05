@@ -36,7 +36,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Sales: [
         { name: 'Apartments', icon: Home, path: '/apartments' },
-        { name: 'Projects', icon: Building2, path: '/projects' }
+        { name: 'Projects', icon: Building2, path: '/sales-projects' },
+        { name: 'Customers', icon: Users, path: '/customers' },
+        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
       ],
       Supervision: [
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
