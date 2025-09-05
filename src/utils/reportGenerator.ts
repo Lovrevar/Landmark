@@ -89,7 +89,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(24)
   pdf.setFont('helvetica', 'bold')
-  pdf.text('ConstructCorp', margin, 25)
+  pdf.text('LANDMARK GROUP', margin, 25)
   
   pdf.setFontSize(14)
   pdf.setFont('helvetica', 'normal')
