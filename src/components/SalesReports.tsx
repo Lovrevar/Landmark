@@ -384,7 +384,7 @@ const SalesReports: React.FC = () => {
         pdf.setTextColor(255, 255, 255)
         pdf.setFontSize(20)
         pdf.setFont('helvetica', 'bold')
-        pdf.text('ConstructCorp Customer Report', margin, 20)
+        pdf.text('LANDMARK GROUP Customer Report', margin, 20)
         
         pdf.setTextColor(0, 0, 0)
         yPosition = 45
