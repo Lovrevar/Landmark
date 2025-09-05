@@ -305,7 +305,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.setFontSize(8)
   pdf.setFont('helvetica', 'normal')
   pdf.setTextColor(107, 114, 128)
-  pdf.text('ConstructCorp - Confidential Executive Report', margin, footerY)
+  pdf.text('LANDMARK GROUP - Confidential Executive Report', margin, footerY)
   pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
 
   // Save the PDF
