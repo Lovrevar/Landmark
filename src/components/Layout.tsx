@@ -32,7 +32,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Accounting: [
         { name: 'Invoices', icon: Calculator, path: '/invoices' },
-        { name: 'Projects', icon: Building2, path: '/projects' }
+        { name: 'Projects', icon: Building2, path: '/sales-projects' },
+        { name: 'Customers', icon: Users, path: '/customers' },
+        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
       ],
       Sales: [
         { name: 'Apartments', icon: Home, path: '/apartments' },

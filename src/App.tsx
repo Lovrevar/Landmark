@@ -119,6 +119,30 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/sales-projects"
+          element={
+            <ProtectedRoute>
+              <SalesProjects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <CustomersManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-reports"
+          element={
+            <ProtectedRoute>
+              <SalesReports />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
