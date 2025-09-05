@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Customer, Lead, Project } from '../lib/supabase'
-import { createSalesTables } from '../utils/createTables'
 import { 
   Users, 
   Plus, 
@@ -78,9 +77,6 @@ const CustomersManagement: React.FC = () => {
   const initializeAndFetchData = async () => {
     setLoading(true)
     try {
-      // First try to create tables if they don't exist
-      await createSalesTables()
-      // Then fetch data
       await fetchData()
     } catch (error) {
       console.error('Error initializing:', error)
