@@ -462,7 +462,7 @@ const SalesReports: React.FC = () => {
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(107, 114, 128)
-      pdf.text('ConstructCorp - Sales Report', margin, footerY)
+      pdf.text('LANDMARK GROUP - Sales Report', margin, footerY)
       pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
 
       // Save the PDF
