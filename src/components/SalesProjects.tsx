@@ -1034,3 +1034,5 @@ const SalesProjects: React.FC = () => {
 }
 
 export default SalesProjects
+
+export default SalesProjects
