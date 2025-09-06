@@ -45,6 +45,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       Supervision: [
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' }
+      ],
+      Investment: [
+        { name: 'Banks', icon: Building2, path: '/banks' },
+        { name: 'Projects', icon: Building2, path: '/investment-projects' },
+        { name: 'Investors', icon: Users, path: '/investors' }
       ]
     }
 

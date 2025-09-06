@@ -169,47 +169,65 @@ export type Lead = {
   created_at: string
 }
 
-export type Customer = {
+export type Bank = {
   id: string
   name: string
-  surname: string
-  email: string
-  phone: string
-  address: string
-  bank_account: string
-  id_number: string
-  status: 'buyer' | 'interested' | 'lead'
+  contact_person: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  total_credit_limit: number
+  outstanding_debt: number
+  available_funds: number
+  interest_rate: number
+  relationship_start: string | null
+  notes: string
   created_at: string
 }
 
-export type Sale = {
+export type BankCredit = {
   id: string
-  apartment_id: string
-  customer_id: string
-  sale_price: number
-  payment_method: 'cash' | 'credit' | 'bank_loan' | 'installments'
-  down_payment: number
-  total_paid: number
-  remaining_amount: number
-  next_payment_date: string | null
+  bank_id: string
+  project_id: string | null
+  credit_type: 'term_loan' | 'line_of_credit' | 'construction_loan' | 'bridge_loan'
+  amount: number
+  interest_rate: number
+  start_date: string
+  maturity_date: string | null
+  outstanding_balance: number
   monthly_payment: number
-  sale_date: string
-  contract_signed: boolean
+  status: 'active' | 'paid' | 'defaulted'
+  purpose: string
+  created_at: string
+}
+
+export type Investor = {
+  id: string
+  name: string
+  type: 'individual' | 'institutional' | 'fund' | 'government'
+  contact_person: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  total_invested: number
+  expected_return: number
+  investment_start: string | null
+  risk_profile: 'conservative' | 'moderate' | 'aggressive'
+  preferred_sectors: string
   notes: string
   created_at: string
 }
 
-export type Lead = {
+export type ProjectInvestment = {
   id: string
-  customer_id: string
   project_id: string
-  apartment_preferences: string
-  budget_range_min: number
-  budget_range_max: number
-  priority: 'high' | 'medium' | 'low'
-  status: 'new' | 'contacted' | 'viewing_scheduled' | 'negotiating' | 'closed'
-  last_contact_date: string
-  next_follow_up: string
-  notes: string
+  investor_id: string | null
+  bank_id: string | null
+  investment_type: 'equity' | 'loan' | 'grant' | 'bond'
+  amount: number
+  percentage_stake: number
+  expected_return: number
+  investment_date: string
+  maturity_date: string | null
+  status: 'active' | 'completed' | 'defaulted'
+  terms: string
   created_at: string
 }

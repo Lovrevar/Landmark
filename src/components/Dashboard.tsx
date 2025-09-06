@@ -18,6 +18,8 @@ const Dashboard: React.FC = () => {
         return <SalesDashboard />
       case 'Supervision':
         return <SupervisionDashboard />
+      case 'Investment':
+        return <InvestmentDashboard />
       default:
         return <div>Role not recognized</div>
     }

@@ -143,6 +143,30 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/banks"
+          element={
+            <ProtectedRoute>
+              <BanksManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/investment-projects"
+          element={
+            <ProtectedRoute>
+              <InvestmentProjects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/investors"
+          element={
+            <ProtectedRoute>
+              <InvestorsManagement />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
