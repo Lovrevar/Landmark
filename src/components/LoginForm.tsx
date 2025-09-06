@@ -95,6 +95,7 @@ const LoginForm: React.FC = () => {
                 <div>Accounting: accountant / pass123</div>
                 <div>Sales: salesperson / pass123</div>
                 <div>Supervision: supervisor / pass123</div>
+                <div>Investor: investor / pass123</div>
               </div>
             </div>
           </div>
