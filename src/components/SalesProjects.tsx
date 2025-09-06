@@ -1032,3 +1032,5 @@ const SalesProjects: React.FC = () => {
     </div>
   )
 }
+
+export default SalesProjects
