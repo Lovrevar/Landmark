@@ -4,6 +4,7 @@ import DirectorDashboard from './dashboards/DirectorDashboard'
 import AccountingDashboard from './dashboards/AccountingDashboard'
 import SalesDashboard from './dashboards/SalesDashboard'
 import SupervisionDashboard from './dashboards/SupervisionDashboard'
+import InvestmentDashboard from './dashboards/InvestmentDashboard'
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth()
