@@ -25,7 +25,7 @@ const TasksManagement: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
 
-  const userOptions = ['director', 'accountant', 'salesperson', 'supervisor']
+  const userOptions = ['director', 'accountant', 'salesperson', 'supervisor', 'investor']
   const statusOptions = ['Pending', 'In Progress', 'Completed', 'Overdue']
 
   useEffect(() => {
