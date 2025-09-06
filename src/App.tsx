@@ -13,6 +13,9 @@ import SiteManagement from './components/SiteManagement'
 import SalesProjects from './components/SalesProjects'
 import CustomersManagement from './components/CustomersManagement'
 import SalesReports from './components/SalesReports'
+import BanksManagement from './components/BanksManagement'
+import InvestmentProjects from './components/InvestmentProjects'
+import InvestorsManagement from './components/InvestorsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
