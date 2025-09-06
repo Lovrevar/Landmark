@@ -35,6 +35,8 @@ const TasksManagement: React.FC = () => {
   const fetchData = async () => {
     if (!user) return
     
+    if (!user) return
+    
     setLoading(true)
     try {
       let tasksQuery = supabase.from('tasks').select('*')
@@ -593,20 +595,10 @@ const TasksManagement: React.FC = () => {
                             setSelectedTask(task)
                             fetchTaskComments(task.id)
                           }}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"
+                          className="px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200"
                         >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          Comments
+                          Details
                         </button>
-                        {canEditTask(task) && (
-                          <button
-                            onClick={() => handleEdit(task)}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"
-                          >
-                            <Edit2 className="w-4 h-4 mr-1" />
-                            Edit
-                          </button>
-                        )}
                         {canEditTask(task) && (
                           <button
                             onClick={() => handleDelete(task.id)}
@@ -711,9 +703,10 @@ const TasksManagement: React.FC = () => {
                 ) : (
                   taskComments.map((comment) => (
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="font-medium text-gray-900">
-                          {comment.user_id}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                          <span className="text-xs text-gray-500">({comment.user?.role})</span>
                         </div>
                         <span className="text-xs text-gray-500">
                           {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
