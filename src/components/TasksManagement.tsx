@@ -35,8 +35,6 @@ const TasksManagement: React.FC = () => {
   const fetchData = async () => {
     if (!user) return
     
-    if (!user) return
-    
     setLoading(true)
     try {
       let tasksQuery = supabase.from('tasks').select('*')
