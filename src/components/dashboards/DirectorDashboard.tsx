@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, Project } from '../../lib/supabase'
-import { TrendingUp, DollarSign, Building2, Users, FileText, Download } from 'lucide-react'
+import { TrendingUp, DollarSign, Building2, Users, FileText, Download, Plus, Edit2, Trash2, X } from 'lucide-react'
 import { generateDirectorReport } from '../../utils/reportGenerator'
 
 interface ProjectWithStats extends Project {
@@ -13,6 +13,17 @@ interface ProjectWithStats extends Project {
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
+  const [showProjectForm, setShowProjectForm] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [newProject, setNewProject] = useState({
+    name: '',
+    location: '',
+    start_date: '',
+    end_date: '',
+    budget: 0,
+    investor: '',
+    status: 'Planning' as const
+  })
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeProjects: 0,
@@ -45,6 +56,91 @@ const DirectorDashboard: React.FC = () => {
     } finally {
       setInsertingData(false)
     }
+  }
+
+  const addProject = async () => {
+    if (!newProject.name.trim() || !newProject.location.trim() || !newProject.start_date) {
+      alert('Please fill in required fields (name, location, start date)')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .insert(newProject)
+
+      if (error) throw error
+
+      resetProjectForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error adding project:', error)
+      alert('Error adding project. Please try again.')
+    }
+  }
+
+  const updateProject = async () => {
+    if (!editingProject || !newProject.name.trim() || !newProject.location.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update(newProject)
+        .eq('id', editingProject.id)
+
+      if (error) throw error
+
+      resetProjectForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error updating project:', error)
+      alert('Error updating project.')
+    }
+  }
+
+  const deleteProject = async (projectId: string) => {
+    if (!confirm('Are you sure you want to delete this project? This will also delete all associated tasks, apartments, and invoices.')) return
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      alert('Error deleting project.')
+    }
+  }
+
+  const resetProjectForm = () => {
+    setNewProject({
+      name: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      budget: 0,
+      investor: '',
+      status: 'Planning'
+    })
+    setEditingProject(null)
+    setShowProjectForm(false)
+  }
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project)
+    setNewProject({
+      name: project.name,
+      location: project.location,
+      start_date: project.start_date,
+      end_date: project.end_date || '',
+      budget: project.budget,
+      investor: project.investor || '',
+      status: project.status
+    })
+    setShowProjectForm(true)
   }
 
   const fetchData = async () => {
@@ -303,7 +399,16 @@ const DirectorDashboard: React.FC = () => {
       {/* Projects Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Project Overview</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Project Overview</h2>
+            <button
+              onClick={() => setShowProjectForm(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Project
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -379,12 +484,148 @@ const DirectorDashboard: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {project.investor || 'N/A'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditProject(project)}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                        title="Edit project"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteProject(project.id)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                        title="Delete project"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Project Form Modal */}
+      {showProjectForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingProject ? 'Edit Project' : 'Create New Project'}
+                </h3>
+                <button
+                  onClick={resetProjectForm}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</label>
+                  <input
+                    type="text"
+                    value={newProject.name}
+                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter project name"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                  <input
+                    type="text"
+                    value={newProject.location}
+                    onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter project location"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                  <input
+                    type="date"
+                    value={newProject.start_date}
+                    onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={newProject.end_date}
+                    onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget ($)</label>
+                  <input
+                    type="number"
+                    value={newProject.budget}
+                    onChange={(e) => setNewProject({ ...newProject, budget: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={newProject.status}
+                    onChange={(e) => setNewProject({ ...newProject, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="Planning">Planning</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Investor</label>
+                  <input
+                    type="text"
+                    value={newProject.investor}
+                    onChange={(e) => setNewProject({ ...newProject, investor: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter investor name (optional)"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={resetProjectForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingProject ? updateProject : addProject}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  {editingProject ? 'Update' : 'Create'} Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report Generation */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
