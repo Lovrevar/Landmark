@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { supabase, Task, Project } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { format } from 'date-fns'
-import { Plus, Edit2, Trash2, Calendar, User, Building2, X, MessageSquare, Send } from 'lucide-react'
+import { Plus, Edit2, Trash2, Calendar, User, Building2, X, MessageSquare, Send, CheckCircle, Clock } from 'lucide-react'
 
 
 const TasksManagement: React.FC = () => {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [showForm, setShowForm] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskComments, setTaskComments] = useState<any[]>([])
@@ -28,9 +29,76 @@ const TasksManagement: React.FC = () => {
   const userOptions = ['director', 'accountant', 'salesperson', 'supervisor', 'investor']
   const statusOptions = ['Pending', 'In Progress', 'Completed', 'Overdue']
 
+  const getTaskCategories = () => {
+    if (user?.role === 'Director') {
+      return [
+        { id: 'all', name: 'All Tasks', count: tasks.length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director').length },
+        { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
+        { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
+        { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
+        { id: 'salesperson', name: 'Sales', count: tasks.filter(t => t.assigned_to === 'salesperson').length },
+        { id: 'completed', name: 'Completed', count: tasks.filter(t => t.status === 'Completed').length }
+      ]
+    } else {
+      // For other roles, only show tasks assigned to them
+      const userTasks = tasks.filter(t => t.assigned_to === user?.username)
+      return [
+        { id: 'my_tasks', name: 'My Tasks', count: userTasks.length },
+        { id: 'completed', name: 'Completed', count: userTasks.filter(t => t.status === 'Completed').length }
+      ]
+    }
+  }
+
+  const getFilteredTasks = () => {
+    if (user?.role !== 'Director') {
+      // Non-directors only see their own tasks
+      const userTasks = tasks.filter(t => t.assigned_to === user?.username)
+      if (activeCategory === 'completed') {
+        return userTasks.filter(t => t.status === 'Completed')
+      }
+      return userTasks
+    }
+
+    // Director can see all tasks with filtering
+    switch (activeCategory) {
+      case 'for_approval':
+        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director')
+      case 'accountant':
+        return tasks.filter(t => t.assigned_to === 'accountant')
+      case 'supervisor':
+        return tasks.filter(t => t.assigned_to === 'supervisor')
+      case 'investor':
+        return tasks.filter(t => t.assigned_to === 'investor')
+      case 'salesperson':
+        return tasks.filter(t => t.assigned_to === 'salesperson')
+      case 'completed':
+        return tasks.filter(t => t.status === 'Completed')
+      default:
+        return tasks
+    }
+  }
+
   useEffect(() => {
     fetchData()
   }, [user])
+
+  const approveTask = async (taskId: string) => {
+    if (!confirm('Approve this task as completed?')) return
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: 'Completed' })
+        .eq('id', taskId)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error approving task:', error)
+      alert('Error approving task.')
+    }
+  }
 
   const fetchData = async () => {
     if (!user) return
@@ -454,21 +522,48 @@ const TasksManagement: React.FC = () => {
         </div>
       )}
 
+      {/* Task Categories */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          {getTaskCategories().map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                activeCategory === category.id
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              {category.name}
+              <span className="ml-2 px-2 py-0.5 bg-white rounded-full text-xs">
+                {category.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Tasks Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">All Tasks</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {getTaskCategories().find(cat => cat.id === activeCategory)?.name || 'Tasks'}
+          </h2>
         </div>
         <div className="p-6">
-          {tasks.length === 0 ? (
+          {getFilteredTasks().length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No tasks found. Create your first task to get started!</p>
+              <p className="text-gray-500">
+                {activeCategory === 'for_approval' ? 'No tasks awaiting approval.' : 'No tasks found in this category.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {tasks.map((task) => {
+              {getFilteredTasks().map((task) => {
                 const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
                 const needsApproval = task.progress === 100 && task.status !== 'Completed' && !canMarkCompleted(task)
+                const isForApproval = activeCategory === 'for_approval'
                 
                 return (
                   <div
@@ -608,18 +703,21 @@ const TasksManagement: React.FC = () => {
                         {needsApproval && user?.role === 'Director' && (
                           <button
                             onClick={async () => {
-                              const { error } = await supabase
-                                .from('tasks')
-                                .update({ status: 'Completed' })
-                                .eq('id', task.id)
-                              
-                              if (!error) {
-                                fetchData()
-                              }
+                              approveTask(task.id)
                             }}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium transition-colors duration-200"
+                            className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"
                           >
+                            <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
+                          </button>
+                        )}
+                        {isForApproval && user?.role === 'Director' && (
+                          <button
+                            onClick={() => approveTask(task.id)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Approve & Complete
                           </button>
                         )}
                       </div>
