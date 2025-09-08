@@ -116,7 +116,9 @@ const TasksManagement: React.FC = () => {
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
       // Non-directors see tasks they created and tasks assigned to them
-      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
+     // const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
+      const assignedTasks = tasks.filter(
+  t => t.assigned_to === user?.username && !(t.progress === 100 && t.status !== 'Completed'))
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
       
       switch (activeCategory) {
@@ -124,8 +126,14 @@ const TasksManagement: React.FC = () => {
           return createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username)
         case 'finished':
           return assignedTasks.filter(t => t.status === 'Completed')
-        case 'pending':
-          return assignedTasks.filter(t => t.status === 'Pending')
+        //case 'pending':
+         // return assignedTasks.filter(t => t.status === 'Pending')
+          case 'pending':
+  return tasks.filter(
+    t => t.assigned_to === user?.username && (
+      t.status === 'Pending' || (t.progress === 100 && t.status !== 'Completed')
+    )
+  )
         case 'assigned_to_me':
           return assignedTasks
         default:
