@@ -41,20 +41,20 @@ const TodoList: React.FC = () => {
   ]
 
   const getTaskCategories = () => {
-    const assignedToMeTasks = assignedTasks.filter(t => t.assigned_to === user?.username)
-    const createdByMeTasks = assignedTasks.filter(t => t.created_by === user?.username)
+    const assignedToMeTasks = assignedTasks.filter(t => t.assigned_to?.toLowerCase() === user?.username?.toLowerCase())
+    const createdByMeTasks = assignedTasks.filter(t => t.created_by?.toLowerCase() === user?.username?.toLowerCase())
     
     return [
       { id: 'assigned_to_me', name: 'Tasks Assigned to Me', count: assignedToMeTasks.filter(t => t.progress < 100 && t.status !== 'Completed').length },
       { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedToMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed').length },
       { id: 'finished_by_me', name: 'Completed', count: assignedToMeTasks.filter(t => t.status === 'Completed').length },
-      { id: 'for_approval_from_others', name: 'For Approval (Created by me)', count: createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to !== user?.username).length }
+      { id: 'for_approval_from_others', name: 'For Approval (Created by me)', count: createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase()).length }
     ]
   }
 
   const getFilteredTasks = () => {
-    const assignedToMeTasks = assignedTasks.filter(t => t.assigned_to === user?.username)
-    const createdByMeTasks = assignedTasks.filter(t => t.created_by === user?.username)
+    const assignedToMeTasks = assignedTasks.filter(t => t.assigned_to?.toLowerCase() === user?.username?.toLowerCase())
+    const createdByMeTasks = assignedTasks.filter(t => t.created_by?.toLowerCase() === user?.username?.toLowerCase())
     
     switch (activeCategory) {
       case 'assigned_to_me':
@@ -64,7 +64,7 @@ const TodoList: React.FC = () => {
       case 'finished':
         return assignedToMeTasks.filter(t => t.status?.trim() === 'Completed')
       case 'for_approval':
-        return createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to !== user?.username)
+        return createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase())
       default:
         return [...assignedToMeTasks, ...createdByMeTasks].filter((task, index, self) => 
           index === self.findIndex(t => t.id === task.id)
