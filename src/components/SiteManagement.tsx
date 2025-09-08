@@ -106,7 +106,7 @@ const SiteManagement: React.FC = () => {
 
       if (subError) throw subError*/
       // Fetch subcontractors with phase info
-const { data: subcontractorsWithPhaseData, error: subError1 } = await supabase
+const { data: subcontractorsWithPhaseData, error: subError } = await supabase
   .from('subcontractors')
   .select(`
     *,
@@ -123,7 +123,7 @@ const { data: allSubcontractorsData, error: subError2 } = await supabase
   .select('*')
   .order('name')
 
-//if (subError2) throw subError2
+if (subError2) throw subError2
 setExistingSubcontractors(allSubcontractorsData || [])
 
       // Enhance projects with phase and subcontractor data
