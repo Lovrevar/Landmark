@@ -217,21 +217,11 @@ const TodoList: React.FC = () => {
       const task = assignedTasks.find(t => t.id === taskId)
       if (!task) return
 
-      // Determine new status based on progress and permissions
+      // Determine new status based on progress and creator permissions
       let newStatus = task.status
       
-      if (task.created_by === 'director' && task.created_by !== user?.username && user?.role !== 'Supervision') {
-        // For director-created tasks, only director can mark as completed
-        // Exception: Supervisors can complete subcontractor-related tasks
-        if (newProgress === 100) {
-          newStatus = 'In Progress' // Keep as In Progress, director must approve
-        } else if (newProgress > 0) {
-          newStatus = 'In Progress'
-        } else {
-          newStatus = 'Pending'
-        }
-      } else if (task.created_by === 'director' && user?.role === 'Supervision') {
-        // Supervisors can complete any director-created task (subcontractor oversight)
+      // Only task creator can mark as completed
+      if (canCompleteTask(task)) {
         if (newProgress === 100) {
           newStatus = 'Completed'
         } else if (newProgress > 0) {
@@ -240,9 +230,9 @@ const TodoList: React.FC = () => {
           newStatus = 'Pending'
         }
       } else {
-        // For own tasks, can set any status
+        // Others can update progress but not mark as completed
         if (newProgress === 100) {
-          newStatus = 'Completed'
+          newStatus = 'In Progress' // Keep as In Progress, only creator can complete
         } else if (newProgress > 0) {
           newStatus = 'In Progress'
         } else {
@@ -288,6 +278,12 @@ const TodoList: React.FC = () => {
   }
 
   const canEditTask = (task: TaskWithProject) => {
+    // Anyone can edit tasks they created
+    return task.created_by === user?.username
+  }
+
+  const canCompleteTask = (task: TaskWithProject) => {
+    // Only task creator can mark as completed
     return task.created_by === user?.username
   }
 
@@ -389,7 +385,7 @@ const TodoList: React.FC = () => {
                     }`}>
                       {selectedTask.status}
                       {selectedTask.created_by === 'director' && selectedTask.progress === 100 && selectedTask.status !== 'Completed' && (
-                        <span className="ml-1">• Awaiting Director Approval</span>
+                        <span className="ml-1">• Only creator can complete</span>
                       )}
                     </span>
                     <span className="text-sm text-gray-500">
@@ -439,7 +435,7 @@ const TodoList: React.FC = () => {
                   />
                   {selectedTask.created_by === 'director' && selectedTask.created_by !== user?.username && (
                     <p className="text-xs text-orange-600 mt-1">
-                      Note: Only the Director can mark director-created tasks as "Completed"
+                      Note: Only the task creator can mark tasks as "Completed"
                     </p>
                   )}
                 </div>
@@ -519,7 +515,7 @@ const TodoList: React.FC = () => {
                         {!canEdit && (
                           <div className="flex items-center space-x-1">
                             <Lock className="w-4 h-4 text-red-500" />
-                            <span className="text-xs text-red-600 font-medium">Director Task</span>
+                            <span className="text-xs text-red-600 font-medium">Created by {task.created_by}</span>
                           </div>
                         )}
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -530,9 +526,7 @@ const TodoList: React.FC = () => {
                         }`}>
                           {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
                           {task.created_by === 'director' && task.progress === 100 && task.status !== 'Completed' && (
-                            <span className="ml-1 text-orange-600">
-                              {user?.role === 'Supervision' ? '• Ready for Completion' : '• Awaiting Approval'}
-                            </span>
+                            <span className="ml-1 text-orange-600">• Only creator can complete</span>
                           )}
                         </span>
                       </div>
@@ -601,7 +595,12 @@ const TodoList: React.FC = () => {
                               className="w-20"
                               title="Update progress"
                             />
-                            <span className="text-xs text-gray-600 w-8">{task.progress || 0}%</span>
+                            <span className="text-xs font-medium text-gray-900 w-8">{task.progress || 0}%</span>
+                            {!canCompleteTask(task) && task.progress === 100 && (
+                              <span className="text-xs text-orange-600">
+                                Only creator can complete
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

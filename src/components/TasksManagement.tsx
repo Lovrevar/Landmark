@@ -33,7 +33,7 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director').length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
         { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
         { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
         { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
@@ -42,7 +42,7 @@ const TasksManagement: React.FC = () => {
       ]
     } else {
       // For other roles, only show tasks assigned to them
-      const userTasks = tasks.filter(t => t.assigned_to === user?.username)
+      const userTasks = tasks.filter(t => t.assigned_to === user?.username || t.created_by === user?.username)
       return [
         { id: 'my_tasks', name: 'My Tasks', count: userTasks.length },
         { id: 'completed', name: 'Completed', count: userTasks.filter(t => t.status === 'Completed').length }
@@ -52,8 +52,10 @@ const TasksManagement: React.FC = () => {
 
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
-      // Non-directors only see their own tasks
-      const userTasks = tasks.filter(t => t.assigned_to === user?.username)
+      // Non-directors see tasks they created OR tasks assigned to them
+      const userTasks = tasks.filter(t => 
+        t.assigned_to === user?.username || t.created_by === user?.username
+      )
       if (activeCategory === 'completed') {
         return userTasks.filter(t => t.status === 'Completed')
       }
@@ -63,7 +65,7 @@ const TasksManagement: React.FC = () => {
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director')
+        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed')
       case 'accountant':
         return tasks.filter(t => t.assigned_to === 'accountant')
       case 'supervisor':
@@ -108,9 +110,9 @@ const TasksManagement: React.FC = () => {
       let tasksQuery = supabase.from('tasks').select('*')
       
       // Filter tasks based on user role
-      if (user.role === 'Supervision') {
-        // Supervisors only see tasks assigned to them
-        tasksQuery = tasksQuery.eq('assigned_to', user.username)
+      if (user.role !== 'Director') {
+        // Non-directors see tasks they created OR tasks assigned to them
+        tasksQuery = tasksQuery.or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
       }
       
       const { data: tasksData, error: tasksError } = await tasksQuery
@@ -318,13 +320,14 @@ const TasksManagement: React.FC = () => {
 
   const canEditTask = (task: Task) => {
     if (!user) return false
+    // Anyone can edit tasks they created, Director can edit all tasks
     return task.created_by === user.username || user.role === 'Director'
   }
 
   const canMarkCompleted = (task: Task) => {
     if (!user) return false
-    // Can mark completed if it's own task or if supervisor can complete director tasks
-    return task.created_by === user.username || (user.role === 'Supervision' && task.created_by === 'director')
+    // Only the task creator can mark it as completed
+    return task.created_by === user.username
   }
 
   const getStatusColor = (status: string) => {
@@ -648,14 +651,24 @@ const TasksManagement: React.FC = () => {
                                   const newProgress = parseInt(e.target.value)
                                   let newStatus = task.status
                                   
-                                  if (canMarkCompleted(task) && newProgress === 100) {
-                                    newStatus = 'Completed'
-                                  } else if (newProgress === 100 && !canMarkCompleted(task)) {
-                                    newStatus = 'In Progress'
-                                  } else if (newProgress > 0) {
-                                    newStatus = 'In Progress'
+                                  // Only task creator can mark as completed
+                                  if (canMarkCompleted(task)) {
+                                    if (newProgress === 100) {
+                                      newStatus = 'Completed'
+                                    } else if (newProgress > 0) {
+                                      newStatus = 'In Progress'
+                                    } else {
+                                      newStatus = 'Pending'
+                                    }
                                   } else {
-                                    newStatus = 'Pending'
+                                    // Others can only update progress, not mark as completed
+                                    if (newProgress === 100) {
+                                      newStatus = 'In Progress' // Keep as In Progress, only creator can complete
+                                    } else if (newProgress > 0) {
+                                      newStatus = 'In Progress'
+                                    } else {
+                                      newStatus = 'Pending'
+                                    }
                                   }
                                   
                                   try {
@@ -677,6 +690,11 @@ const TasksManagement: React.FC = () => {
                                 title="Update progress"
                               />
                               <span className="text-sm font-medium text-gray-900 w-10">{task.progress || 0}%</span>
+                              {!canMarkCompleted(task) && task.progress === 100 && (
+                                <span className="text-xs text-orange-600 ml-2">
+                                  Only creator can complete
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -703,7 +721,15 @@ const TasksManagement: React.FC = () => {
                         {needsApproval && user?.role === 'Director' && (
                           <button
                             onClick={async () => {
-                              approveTask(task.id)
+                              // Director can approve any task at 100% progress
+                              const { error } = await supabase
+                                .from('tasks')
+                                .update({ status: 'Completed' })
+                                .eq('id', task.id)
+                              
+                              if (!error) {
+                                fetchData()
+                              }
                             }}
                             className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"
                           >
@@ -713,7 +739,16 @@ const TasksManagement: React.FC = () => {
                         )}
                         {isForApproval && user?.role === 'Director' && (
                           <button
-                            onClick={() => approveTask(task.id)}
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('tasks')
+                                .update({ status: 'Completed' })
+                                .eq('id', task.id)
+                              
+                              if (!error) {
+                                fetchData()
+                              }
+                            }}
                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
                           >
                             <CheckCircle className="w-4 h-4 mr-2" />
@@ -724,8 +759,11 @@ const TasksManagement: React.FC = () => {
                     </div>
                     
                     <div className="text-xs text-gray-500 border-t pt-3">
-                      Created by: {task.created_by} • 
+                      Created by: {task.created_by.charAt(0).toUpperCase() + task.created_by.slice(1)} • 
                       Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}
+                      {task.created_by !== user?.username && (
+                        <span className="ml-2 text-orange-600">• Only creator can mark as completed</span>
+                      )}
                     </div>
                   </div>
                 )
