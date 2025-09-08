@@ -231,3 +231,16 @@ export type ProjectInvestment = {
   terms: string
   created_at: string
 }
+
+export type ProjectPhase = {
+  id: string
+  project_id: string
+  phase_number: number
+  phase_name: string
+  budget_allocated: number
+  budget_used: number
+  start_date: string | null
+  end_date: string | null
+  status: 'planning' | 'active' | 'completed' | 'on_hold'
+  created_at: string
+}
