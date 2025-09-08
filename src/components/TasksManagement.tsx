@@ -33,7 +33,7 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username).length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
         { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
         { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
         { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
@@ -57,8 +57,6 @@ const TasksManagement: React.FC = () => {
 
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
-      // Non-directors see tasks they created OR tasks assigned to them
-      const userTasks = tasks.filter(t => t.assigned_to === user?.username || t.created_by === user?.username)
       // Non-directors see tasks they created and tasks assigned to them
       const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
@@ -82,7 +80,7 @@ const TasksManagement: React.FC = () => {
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.status === 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username)
+        return tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director')
       case 'accountant':
         return tasks.filter(t => t.assigned_to === 'accountant')
       case 'supervisor':
@@ -765,14 +763,12 @@ const TasksManagement: React.FC = () => {
                             onClick={() => approveTask(task.id)}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
                           >
-                            <CheckCircle className="w-4 h-4 mr-2" />
                             Acknowledge
                           </button>
                         )}
                       </div>
                     </div>
-                    
-                    <div className="text-xs text-gray-500 border-t pt-3">
+                    <div className="text-xs text-gray-500 mt-3">
                       Created by: {task.created_by.charAt(0).toUpperCase() + task.created_by.slice(1)} • 
                       Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}
                       {!canMarkCompleted(task) && (
