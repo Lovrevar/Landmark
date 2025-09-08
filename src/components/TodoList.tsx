@@ -334,6 +334,7 @@ const TodoList: React.FC = () => {
   if (loading) {
     return <div className="text-center py-12">Loading tasks...</div>
   }
+    export default TodoList
 
   return (
     <div>
@@ -755,4 +756,4 @@ const TodoList: React.FC = () => {
   )
 }
 
-export default TodoList
+//export default TodoList
