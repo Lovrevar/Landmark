@@ -92,7 +92,6 @@ const LoginForm: React.FC = () => {
               <p className="font-medium mb-2">Demo Accounts:</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>Director: director / pass123</div>
-                <div>Accounting: accountant / pass123</div>
                 <div>Sales: salesperson / pass123</div>
                 <div>Supervision: supervisor / pass123</div>
                 <div>Investments: investor / pass123</div>
