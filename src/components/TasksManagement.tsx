@@ -33,7 +33,7 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
         { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
         { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
         { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
@@ -41,11 +41,16 @@ const TasksManagement: React.FC = () => {
         { id: 'completed', name: 'Completed', count: tasks.filter(t => t.status === 'Completed').length }
       ]
     } else {
-      // For other roles, only show tasks assigned to them
+      // For other roles, show tasks they created and tasks assigned to them
       const userTasks = tasks.filter(t => t.assigned_to === user?.username || t.created_by === user?.username)
+      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
+      const createdTasks = tasks.filter(t => t.created_by === user?.username)
+      
       return [
-        { id: 'my_tasks', name: 'My Tasks', count: userTasks.length },
-        { id: 'completed', name: 'Completed', count: userTasks.filter(t => t.status === 'Completed').length }
+        { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.status === 'Completed' && t.assigned_to !== user?.username).length },
+        { id: 'finished', name: 'Finished', count: assignedTasks.filter(t => t.status === 'Completed').length },
+        { id: 'pending', name: 'Pending', count: assignedTasks.filter(t => t.status === 'Pending').length },
+        { id: 'assigned_to_me', name: 'Tasks Assigned to me', count: assignedTasks.length }
       ]
     }
   }
@@ -54,18 +59,30 @@ const TasksManagement: React.FC = () => {
     if (user?.role !== 'Director') {
       // Non-directors see tasks they created OR tasks assigned to them
       const userTasks = tasks.filter(t => 
-        t.assigned_to === user?.username || t.created_by === user?.username
-      )
-      if (activeCategory === 'completed') {
-        return userTasks.filter(t => t.status === 'Completed')
+      // Non-directors see tasks they created and tasks assigned to them
+      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
+      const createdTasks = tasks.filter(t => t.created_by === user?.username)
+      
+      switch (activeCategory) {
+        case 'for_approval':
+          return createdTasks.filter(t => t.status === 'Completed' && t.assigned_to !== user?.username)
+        case 'finished':
+          return assignedTasks.filter(t => t.status === 'Completed')
+        case 'pending':
+          return assignedTasks.filter(t => t.status === 'Pending')
+        case 'assigned_to_me':
+          return assignedTasks
+        default:
+          return [...assignedTasks, ...createdTasks].filter((task, index, self) => 
+            index === self.findIndex(t => t.id === task.id)
+          )
       }
-      return userTasks
     }
 
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed')
+        return tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director')
       case 'accountant':
         return tasks.filter(t => t.assigned_to === 'accountant')
       case 'supervisor':
@@ -107,12 +124,18 @@ const TasksManagement: React.FC = () => {
     
     setLoading(true)
     try {
-      let tasksQuery = supabase.from('tasks').select('*')
+      let tasksQuery
       
       // Filter tasks based on user role
       if (user.role !== 'Director') {
         // Non-directors see tasks they created OR tasks assigned to them
-        tasksQuery = tasksQuery.or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
+        tasksQuery = supabase
+          .from('tasks')
+          .select('*')
+          .or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
+      } else {
+        // Director sees all tasks
+        tasksQuery = supabase.from('tasks').select('*')
       }
       
       const { data: tasksData, error: tasksError } = await tasksQuery
@@ -739,20 +762,11 @@ const TasksManagement: React.FC = () => {
                         )}
                         {isForApproval && user?.role === 'Director' && (
                           <button
-                            onClick={async () => {
-                              const { error } = await supabase
-                                .from('tasks')
-                                .update({ status: 'Completed' })
-                                .eq('id', task.id)
-                              
-                              if (!error) {
-                                fetchData()
-                              }
-                            }}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
+                            onClick={() => approveTask(task.id)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
                           >
                             <CheckCircle className="w-4 h-4 mr-2" />
-                            Approve & Complete
+                            Acknowledge
                           </button>
                         )}
                       </div>
@@ -761,7 +775,7 @@ const TasksManagement: React.FC = () => {
                     <div className="text-xs text-gray-500 border-t pt-3">
                       Created by: {task.created_by.charAt(0).toUpperCase() + task.created_by.slice(1)} • 
                       Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}
-                      {task.created_by !== user?.username && (
+                      {!canMarkCompleted(task) && (
                         <span className="ml-2 text-orange-600">• Only creator can mark as completed</span>
                       )}
                     </div>
