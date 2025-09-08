@@ -33,7 +33,7 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username).length },
         { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
         { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
         { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
@@ -82,7 +82,7 @@ const TasksManagement: React.FC = () => {
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director')
+        return tasks.filter(t => t.status === 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username)
       case 'accountant':
         return tasks.filter(t => t.assigned_to === 'accountant')
       case 'supervisor':
