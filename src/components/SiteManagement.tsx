@@ -59,6 +59,7 @@ const SiteManagement: React.FC = () => {
     end_date: string
   }>>([])
   const [newSubcontractor, setNewSubcontractor] = useState({
+    existing_subcontractor_id: '',
     name: '',
     contact: '',
     job_description: '',
@@ -68,6 +69,8 @@ const SiteManagement: React.FC = () => {
     phase_id: ''
   })
   const [loading, setLoading] = useState(true)
+  const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
+  const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
 
   useEffect(() => {
     fetchProjects()
@@ -139,6 +142,15 @@ const SiteManagement: React.FC = () => {
       })
 
       setProjects(projectsWithPhases)
+
+      // Fetch existing subcontractors
+      const { data: subcontractorsData, error: subError } = await supabase
+        .from('subcontractors')
+        .select('*')
+        .order('name')
+
+      if (subError) throw subError
+      setExistingSubcontractors(subcontractorsData || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
     } finally {
@@ -211,27 +223,78 @@ const SiteManagement: React.FC = () => {
   }
 
   const addSubcontractorToPhase = async () => {
-    if (!newSubcontractor.name.trim() || !newSubcontractor.phase_id || !newSubcontractor.cost) {
-      alert('Please fill in required fields')
-      return
-    }
-
     try {
-      const { error } = await supabase
-        .from('subcontractors')
-        .insert(newSubcontractor)
+      if (useExistingSubcontractor) {
+        // Link existing subcontractor to phase
+        if (!selectedPhase || !newSubcontractor.existing_subcontractor_id) {
+          alert('Please select a subcontractor')
+          return
+        }
 
-      if (error) throw error
+        if (newSubcontractor.cost > selectedPhase.budget_allocated - selectedPhase.budget_used) {
+          alert('Contract cost exceeds available phase budget')
+          return
+        }
 
-      // Update phase budget_used
-      const { error: phaseError } = await supabase
-        .from('project_phases')
-        .update({ 
-          budget_used: supabase.raw(`budget_used + ${newSubcontractor.cost}`)
-        })
-        .eq('id', newSubcontractor.phase_id)
+        // Update existing subcontractor with phase assignment
+        const { error: updateError } = await supabase
+          .from('subcontractors')
+          .update({ 
+            phase_id: selectedPhase.id,
+            cost: newSubcontractor.cost,
+            deadline: newSubcontractor.deadline,
+            job_description: newSubcontractor.job_description
+          })
+          .eq('id', newSubcontractor.existing_subcontractor_id)
 
-      if (phaseError) throw phaseError
+        if (updateError) throw updateError
+
+        // Update phase budget
+        const { error: phaseError } = await supabase
+          .from('project_phases')
+          .update({ 
+            budget_used: selectedPhase.budget_used + newSubcontractor.cost 
+          })
+          .eq('id', selectedPhase.id)
+
+        if (phaseError) throw phaseError
+      } else {
+        // Create new subcontractor
+        if (!selectedPhase || !newSubcontractor.name.trim() || !newSubcontractor.contact.trim()) {
+          alert('Please fill in required fields')
+          return
+        }
+
+        if (newSubcontractor.cost > selectedPhase.budget_allocated - selectedPhase.budget_used) {
+          alert('Contract cost exceeds available phase budget')
+          return
+        }
+
+        // Insert new subcontractor
+        const { error: insertError } = await supabase
+          .from('subcontractors')
+          .insert({
+            name: newSubcontractor.name,
+            contact: newSubcontractor.contact,
+            job_description: newSubcontractor.job_description,
+            progress: newSubcontractor.progress,
+            deadline: newSubcontractor.deadline,
+            cost: newSubcontractor.cost,
+            phase_id: selectedPhase.id
+          })
+
+        if (insertError) throw insertError
+
+        // Update phase budget
+        const { error: phaseError } = await supabase
+          .from('project_phases')
+          .update({ 
+            budget_used: selectedPhase.budget_used + newSubcontractor.cost 
+          })
+          .eq('id', selectedPhase.id)
+
+        if (phaseError) throw phaseError
+      }
 
       resetSubcontractorForm()
       fetchProjects()
@@ -243,6 +306,7 @@ const SiteManagement: React.FC = () => {
 
   const resetSubcontractorForm = () => {
     setNewSubcontractor({
+      existing_subcontractor_id: '',
       name: '',
       contact: '',
       job_description: '',
@@ -253,6 +317,7 @@ const SiteManagement: React.FC = () => {
     })
     setSelectedPhase(null)
     setShowSubcontractorForm(false)
+    setUseExistingSubcontractor(false)
   }
 
   const fetchSubcontractorComments = async (subcontractorId: string) => {
@@ -769,75 +834,176 @@ const SiteManagement: React.FC = () => {
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                    <input
-                      type="text"
-                      value={newSubcontractor.name}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter company name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Information *</label>
-                    <input
-                      type="text"
-                      value={newSubcontractor.contact}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, contact: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Email or phone"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost ($) *</label>
-                    <input
-                      type="number"
-                      value={newSubcontractor.cost}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, cost: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0"
-                      max={selectedPhase.budget_allocated - selectedPhase.budget_used}
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Max: ${(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
-                    <input
-                      type="date"
-                      value={newSubcontractor.deadline}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, deadline: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Initial Progress (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={newSubcontractor.progress}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, progress: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
-                    <textarea
-                      value={newSubcontractor.job_description}
-                      onChange={(e) => setNewSubcontractor({ ...newSubcontractor, job_description: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Describe the work package and responsibilities..."
-                    />
+                {/* Subcontractor Selection Type */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Subcontractor Selection
+                  </label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        checked={!useExistingSubcontractor}
+                        onChange={() => setUseExistingSubcontractor(false)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Create New Subcontractor</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        checked={useExistingSubcontractor}
+                        onChange={() => setUseExistingSubcontractor(true)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Select Existing Subcontractor</span>
+                    </label>
                   </div>
                 </div>
+
+                {useExistingSubcontractor ? (
+                  /* Existing Subcontractor Selection */
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Subcontractor *
+                      </label>
+                      <select
+                        value={newSubcontractor.existing_subcontractor_id}
+                        onChange={(e) => {
+                          const selectedSub = existingSubcontractors.find(sub => sub.id === e.target.value)
+                          setNewSubcontractor({ 
+                            ...newSubcontractor, 
+                            existing_subcontractor_id: e.target.value,
+                            name: selectedSub?.name || '',
+                            contact: selectedSub?.contact || '',
+                            job_description: selectedSub?.job_description || ''
+                          })
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Choose existing subcontractor</option>
+                        {existingSubcontractors.filter(sub => !sub.phase_id).map(subcontractor => (
+                          <option key={subcontractor.id} value={subcontractor.id}>
+                            {subcontractor.name} - {subcontractor.contact}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Contract Cost ($) *
+                        </label>
+                        <input
+                          type="number"
+                          value={newSubcontractor.cost}
+                          onChange={(e) => setNewSubcontractor({ ...newSubcontractor, cost: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Deadline *
+                        </label>
+                        <input
+                          type="date"
+                          value={newSubcontractor.deadline}
+                          onChange={(e) => setNewSubcontractor({ ...newSubcontractor, deadline: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Job Description for this Phase
+                      </label>
+                      <textarea
+                        value={newSubcontractor.job_description}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, job_description: e.target.value })}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Describe the work for this specific phase..."
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* New Subcontractor Form */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
+                      <input
+                        type="text"
+                        value={newSubcontractor.name}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter company name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact Information *</label>
+                      <input
+                        type="text"
+                        value={newSubcontractor.contact}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, contact: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Email or phone"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost ($) *</label>
+                      <input
+                        type="number"
+                        value={newSubcontractor.cost}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, cost: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                        max={selectedPhase.budget_allocated - selectedPhase.budget_used}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Max: ${(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                      <input
+                        type="date"
+                        value={newSubcontractor.deadline}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, deadline: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Initial Progress (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={newSubcontractor.progress}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, progress: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                      <textarea
+                        value={newSubcontractor.job_description}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, job_description: e.target.value })}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Describe the work package and responsibilities..."
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-end space-x-3 mt-6">
                   <button
