@@ -243,21 +243,12 @@ const TasksManagement: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('task_comments')
-        .select(`
-          *,
-          users!inner(username, role)
-        `)
+        .select('*')
         .eq('task_id', taskId)
         .order('created_at', { ascending: true })
       
       if (error) throw error
-      
-      const commentsWithUser = (data || []).map(comment => ({
-        ...comment,
-        user: comment.users
-      }))
-      
-      setTaskComments(commentsWithUser)
+      setTaskComments(data || [])
     } catch (error) {
       console.error('Error fetching task comments:', error)
     }
@@ -350,8 +341,8 @@ const TasksManagement: React.FC = () => {
 
   const canEditTask = (task: Task) => {
     if (!user) return false
-    // Anyone can edit tasks they created, tasks assigned to them, or Director can edit all tasks
-    return task.created_by === user.username || task.assigned_to === user.username || user.role === 'Director'
+    // Anyone can edit tasks they created, Director can edit all tasks
+    return task.created_by === user.username || user.role === 'Director'
   }
 
   const canMarkCompleted = (task: Task) => {
@@ -858,7 +849,7 @@ const TasksManagement: React.FC = () => {
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">{comment.user?.username || 'Unknown User'}</span>
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
                           <span className="text-xs text-gray-500">({comment.user?.role})</span>
                         </div>
                         <span className="text-xs text-gray-500">

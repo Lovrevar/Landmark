@@ -323,8 +323,7 @@ const TodoList: React.FC = () => {
 
   const canEditTask = (task: TaskWithProject) => {
     // Anyone can edit tasks they created
-    // Anyone can edit tasks they created or tasks assigned to them
-    return task.created_by === user.username || task.assigned_to === user.username
+    return task.created_by === user?.username
   }
 
   const canCompleteTask = (task: TaskWithProject) => {
@@ -335,7 +334,6 @@ const TodoList: React.FC = () => {
   if (loading) {
     return <div className="text-center py-12">Loading tasks...</div>
   }
-
 
   return (
     <div>
@@ -532,7 +530,7 @@ const TodoList: React.FC = () => {
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">{comment.user?.username || 'Unknown User'}</span>
+                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
                           <span className="text-xs text-gray-500">({comment.user?.role})</span>
                         </div>
                         <span className="text-xs text-gray-500">
@@ -755,6 +753,6 @@ const TodoList: React.FC = () => {
       </div>
     </div>
   )
-
 }
+
 export default TodoList
