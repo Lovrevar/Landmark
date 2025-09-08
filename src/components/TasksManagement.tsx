@@ -33,24 +33,24 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username).length },
-        { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
-        { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
-        { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
-        { id: 'salesperson', name: 'Sales', count: tasks.filter(t => t.assigned_to === 'salesperson').length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.created_by?.toLowerCase() === user?.username?.toLowerCase() && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase()).length },
+        { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to?.toLowerCase() === 'accountant').length },
+        { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to?.toLowerCase() === 'supervisor').length },
+        { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to?.toLowerCase() === 'investor').length },
+        { id: 'salesperson', name: 'Sales', count: tasks.filter(t => t.assigned_to?.toLowerCase() === 'salesperson').length },
         { id: 'completed', name: 'Completed', count: tasks.filter(t => t.status === 'Completed').length }
       ]
     } else {
       // For other roles, show tasks they created and tasks assigned to them
-      const userTasks = tasks.filter(t => t.assigned_to === user?.username || t.created_by === user?.username)
-      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
-      const createdTasks = tasks.filter(t => t.created_by === user?.username)
+      const userTasks = tasks.filter(t => t.assigned_to?.toLowerCase() === user?.username?.toLowerCase() || t.created_by?.toLowerCase() === user?.username?.toLowerCase())
+      const assignedTasks = tasks.filter(t => t.assigned_to?.toLowerCase() === user?.username?.toLowerCase())
+      const createdTasks = tasks.filter(t => t.created_by?.toLowerCase() === user?.username?.toLowerCase())
       
       return [
         { id: 'all', name: 'All Tasks', count: userTasks.length },
-        { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username).length },
+        { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase()).length },
         { id: 'assigned_to_me', name: 'Tasks Assigned to Me', count: assignedTasks.filter(t => t.progress < 100 || t.status === 'Completed').length },
-        { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedTasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
+        { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed').length },
         { id: 'finished', name: 'Completed', count: assignedTasks.filter(t => t.status === 'Completed').length }
       ]
     }
@@ -59,20 +59,20 @@ const TasksManagement: React.FC = () => {
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
       // Non-directors see tasks they created and tasks assigned to them
-      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
-      const createdTasks = tasks.filter(t => t.created_by === user?.username)
+      const assignedTasks = tasks.filter(t => t.assigned_to?.toLowerCase() === user?.username?.toLowerCase())
+      const createdTasks = tasks.filter(t => t.created_by?.toLowerCase() === user?.username?.toLowerCase())
       
       switch (activeCategory) {
         case 'for_approval':
-          return createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username)
+          return createdTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase())
         case 'assigned_to_me':
           return assignedTasks.filter(t => t.progress < 100 || t.status === 'Completed')
         case 'pending_creator_approval':
-          return assignedTasks.filter(t => t.progress === 100 && t.status !== 'Completed')
+          return assignedTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed')
         case 'finished':
           return assignedTasks.filter(t => t.status === 'Completed')
         default:
-          return [...assignedTasks, ...createdTasks].filter((task, index, self) => 
+          return [...assignedTasks, ...createdTasks].filter((task, index, self) =>
             index === self.findIndex(t => t.id === task.id)
           )
       }
@@ -81,15 +81,15 @@ const TasksManagement: React.FC = () => {
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === user?.username && t.assigned_to !== user?.username)
+        return tasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.created_by?.toLowerCase() === user?.username?.toLowerCase() && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase())
       case 'accountant':
-        return tasks.filter(t => t.assigned_to === 'accountant')
+        return tasks.filter(t => t.assigned_to?.toLowerCase() === 'accountant')
       case 'supervisor':
-        return tasks.filter(t => t.assigned_to === 'supervisor')
+        return tasks.filter(t => t.assigned_to?.toLowerCase() === 'supervisor')
       case 'investor':
-        return tasks.filter(t => t.assigned_to === 'investor')
+        return tasks.filter(t => t.assigned_to?.toLowerCase() === 'investor')
       case 'salesperson':
-        return tasks.filter(t => t.assigned_to === 'salesperson')
+        return tasks.filter(t => t.assigned_to?.toLowerCase() === 'salesperson')
       case 'completed':
         return tasks.filter(t => t.status === 'Completed')
       default:
@@ -131,7 +131,7 @@ const TasksManagement: React.FC = () => {
         tasksQuery = supabase
           .from('tasks')
           .select('*')
-          .or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
+          .or(`assigned_to.ilike.${user.username},created_by.ilike.${user.username}`)
       } else {
         // Director sees all tasks
         tasksQuery = supabase.from('tasks').select('*')
@@ -188,7 +188,7 @@ const TasksManagement: React.FC = () => {
     try {
       if (editingTask) {
         // Check if user can edit this task
-        if (editingTask.created_by !== user.username && user.role !== 'Director') {
+        if (editingTask.created_by?.toLowerCase() !== user.username?.toLowerCase() && user.role !== 'Director') {
           alert('You can only edit tasks you created')
           return
         }
@@ -204,7 +204,7 @@ const TasksManagement: React.FC = () => {
         }
         
         // Only allow status changes for own tasks or if user is Director
-        if (editingTask.created_by === user.username || user.role === 'Director') {
+        if (editingTask.created_by?.toLowerCase() === user.username?.toLowerCase() || user.role === 'Director') {
           updateData.status = newTask.status
         }
         
@@ -222,8 +222,8 @@ const TasksManagement: React.FC = () => {
             project_id: newTask.project_id,
             name: newTask.name,
             description: newTask.description,
-            assigned_to: newTask.assigned_to,
-            created_by: user.username,
+            assigned_to: newTask.assigned_to.toLowerCase(),
+            created_by: user.username.toLowerCase(),
             deadline: newTask.deadline,
             status: newTask.status,
             progress: newTask.progress
@@ -289,7 +289,7 @@ const TasksManagement: React.FC = () => {
     if (!user) return
     
     // Check if user can edit this task
-    if (task.created_by !== user.username && user.role !== 'Director') {
+    if (task.created_by?.toLowerCase() !== user.username?.toLowerCase() && user.role !== 'Director') {
       alert('You can only edit tasks you created')
       return
     }
@@ -314,7 +314,7 @@ const TasksManagement: React.FC = () => {
     if (!task) return
     
     // Check if user can delete this task
-    if (task.created_by !== user.username && user.role !== 'Director') {
+    if (task.created_by?.toLowerCase() !== user.username?.toLowerCase() && user.role !== 'Director') {
       alert('You can only delete tasks you created')
       return
     }
@@ -343,13 +343,13 @@ const TasksManagement: React.FC = () => {
   const canEditTask = (task: Task) => {
     if (!user) return false
     // Anyone can edit tasks they created, Director can edit all tasks
-    return task.created_by === user.username || user.role === 'Director'
+    return task.created_by?.toLowerCase() === user.username?.toLowerCase() || user.role === 'Director'
   }
 
   const canMarkCompleted = (task: Task) => {
     if (!user) return false
     // Only the task creator can mark it as completed
-    return task.created_by === user.username
+    return task.created_by?.toLowerCase() === user.username?.toLowerCase()
   }
 
   const getStatusColor = (status: string) => {
@@ -588,8 +588,8 @@ const TasksManagement: React.FC = () => {
               {getFilteredTasks().map((task) => {
                 const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
                 const needsApproval = task.progress === 100 && task.status !== 'Completed' && !canMarkCompleted(task)
-                const isReadyForApprovalByCreator = task.progress === 100 && task.status !== 'Completed' && task.created_by === user?.username && task.assigned_to !== user?.username
-                const isPendingCreatorApproval = task.progress === 100 && task.status !== 'Completed' && task.assigned_to === user?.username && task.created_by !== user?.username
+                const isReadyForApprovalByCreator = task.progress === 100 && task.status !== 'Completed' && task.created_by?.toLowerCase() === user?.username?.toLowerCase() && task.assigned_to?.toLowerCase() !== user?.username?.toLowerCase()
+                const isPendingCreatorApproval = task.progress === 100 && task.status !== 'Completed' && task.assigned_to?.toLowerCase() === user?.username?.toLowerCase() && task.created_by?.toLowerCase() !== user?.username?.toLowerCase()
                 
                 return (
                   <div

@@ -60,10 +60,10 @@ const TodoList: React.FC = () => {
       case 'assigned_to_me':
         return assignedToMeTasks.filter(t => t.progress < 100 && t.status !== 'Completed')
       case 'pending_creator_approval':
-        return assignedToMeTasks.filter(t => t.progress === 100 && t.status !== 'Completed')
+        return assignedToMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed')
       case 'finished':
         return assignedToMeTasks.filter(t => t.status?.trim() === 'Completed')
-      case 'for_approval':
+      case 'for_approval_from_others':
         return createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to?.toLowerCase() !== user?.username?.toLowerCase())
       default:
         return [...assignedToMeTasks, ...createdByMeTasks].filter((task, index, self) => 
@@ -99,7 +99,7 @@ const TodoList: React.FC = () => {
           *,
           projects!inner(name)
         `)
-        .or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
+        .or(`assigned_to.ilike.${user.username},created_by.ilike.${user.username}`)
         .order('deadline', { ascending: true })
 
       if (tasksError) throw tasksError
@@ -207,8 +207,8 @@ const TodoList: React.FC = () => {
             project_id: projectId,
             name: newTodo.title,
             description: newTodo.description,
-            assigned_to: newTodo.assigned_to,
-            created_by: user.username,
+            assigned_to: newTodo.assigned_to.toLowerCase(),
+            created_by: user.username.toLowerCase(),
             deadline: newTodo.due_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 7 days from now
             status: 'Pending',
             progress: 0
@@ -357,12 +357,12 @@ const TodoList: React.FC = () => {
 
   const canEditTask = (task: TaskWithProject) => {
     // Anyone can edit tasks they created
-    return task.created_by === user?.username
+    return task.created_by?.toLowerCase() === user?.username?.toLowerCase()
   }
 
   const canCompleteTask = (task: TaskWithProject) => {
     // Only task creator can mark as completed
-    return task.created_by === user?.username
+    return task.created_by?.toLowerCase() === user?.username?.toLowerCase()
   }
 
   if (loading) {
@@ -547,7 +547,7 @@ const TodoList: React.FC = () => {
                   </div>
                 )}
                 {/* Approve button for tasks created by current user */}
-                {selectedTask.progress === 100 && selectedTask.status !== 'Completed' && selectedTask.created_by === user?.username && selectedTask.assigned_to !== user?.username && (
+                {selectedTask.progress === 100 && selectedTask.status !== 'Completed' && selectedTask.created_by?.toLowerCase() === user?.username?.toLowerCase() && selectedTask.assigned_to?.toLowerCase() !== user?.username?.toLowerCase() && (
                   <div className="mt-3">
                     <button
                       onClick={async () => {
@@ -714,7 +714,7 @@ const TodoList: React.FC = () => {
               const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
               const canEdit = canEditTask(task)
               const isPendingApproval = task.progress === 100 && task.status !== 'Completed'
-              const isReadyForMyApproval = task.progress === 100 && task.status !== 'Completed' && task.created_by === user?.username && task.assigned_to !== user?.username
+              const isReadyForMyApproval = task.progress === 100 && task.status !== 'Completed' && task.created_by?.toLowerCase() === user?.username?.toLowerCase() && task.assigned_to?.toLowerCase() !== user?.username?.toLowerCase()
               
               return (
                 <div
@@ -803,7 +803,7 @@ const TodoList: React.FC = () => {
                             </button>
                           )}
                           {/* Progress slider for assigned tasks only */}
-                          {task.assigned_to === user?.username && task.status !== 'Completed' && (
+                          {task.assigned_to?.toLowerCase() === user?.username?.toLowerCase() && task.status !== 'Completed' && (
                             <div className="flex items-center space-x-2">
                               <span className="text-xs text-gray-600">Progress:</span>
                               <input
