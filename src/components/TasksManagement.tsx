@@ -28,7 +28,7 @@ const TasksManagement: React.FC = () => {
 
   const userOptions = ['director', 'accountant', 'salesperson', 'supervisor', 'investor']
   const statusOptions = ['Pending', 'In Progress', 'Completed', 'Overdue']
-/*
+
   const getTaskCategories = () => {
     if (user?.role === 'Director') {
       return [
@@ -56,62 +56,7 @@ const TasksManagement: React.FC = () => {
   }
   */
 
-  const getTaskCategories = () => {
-  if (user?.role === 'Director') {
-    return [
-      { id: 'all', name: 'All Tasks', count: tasks.length },
-      { 
-        id: 'for_approval', 
-        name: 'For Approval', 
-        count: tasks.filter(
-          t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director'
-        ).length 
-      },
-      { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
-      { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
-      { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
-      { id: 'salesperson', name: 'Sales', count: tasks.filter(t => t.assigned_to === 'salesperson').length },
-      { id: 'completed', name: 'Completed', count: tasks.filter(t => t.status === 'Completed').length }
-    ]
-  } else {
-    // For other roles, show tasks they created and tasks assigned to them
-    const userTasks = tasks.filter(
-      t => t.assigned_to === user?.username || t.created_by === user?.username
-    )
-    
-    // Exclude finished-but-not-approved tasks from "assignedTasks"
-    const assignedTasks = tasks.filter(
-      t => t.assigned_to === user?.username && !(t.progress === 100 && t.status !== 'Completed')
-    )
-    
-    const createdTasks = tasks.filter(t => t.created_by === user?.username)
-    
-    return [
-      { 
-        id: 'for_approval', 
-        name: 'For Approval', 
-        count: createdTasks.filter(
-          t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username
-        ).length 
-      },
-      { 
-        id: 'finished', 
-        name: 'Finished', 
-        count: assignedTasks.filter(t => t.status === 'Completed').length 
-      },
-      { 
-        id: 'pending', 
-        name: 'Pending', 
-        count: tasks.filter(
-          t => t.assigned_to === user?.username && (
-            t.status === 'Pending' || (t.progress === 100 && t.status !== 'Completed')
-          )
-        ).length 
-      },
-      { id: 'assigned_to_me', name: 'Tasks Assigned to me', count: assignedTasks.length }
-    ]
-  }
-}
+  
 
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
