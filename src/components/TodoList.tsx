@@ -253,7 +253,7 @@ const TodoList: React.FC = () => {
     }
   }
 
-  const handleEditTask = (task: TaskWithProject) => { //ja dodo
+  const handleEditTask = (task: TaskWithProject) => {
     setEditingTask(task)
     setEditTaskData({
       name: task.name,
@@ -563,11 +563,140 @@ const TodoList: React.FC = () => {
                       }}
                       className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
                       Approve Task Completion
                     </button>
                   </div>
                 )}
+                </div>
+                <button
+                  onClick={() => setSelectedTask(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Comments</h4>
+              
+              {taskComments.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
+              ) : (
+                <div className="space-y-4 mb-6">
+                  {taskComments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-900">{comment.user.username}</span>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{comment.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addComment()}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={addComment}
+                  disabled={!newComment.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Form Modal */}
+      {showEditForm && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Edit Task</h3>
+                <button
+                  onClick={() => setShowEditForm(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Task Name</label>
+                  <input
+                    type="text"
+                    value={editTaskData.name}
+                    onChange={(e) => setEditTaskData({ ...editTaskData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={editTaskData.description}
+                    onChange={(e) => setEditTaskData({ ...editTaskData, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                  <input
+                    type="date"
+                    value={editTaskData.deadline}
+                    onChange={(e) => setEditTaskData({ ...editTaskData, deadline: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Progress: {editTaskData.progress}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={editTaskData.progress}
+                    onChange={(e) => setEditTaskData({ ...editTaskData, progress: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowEditForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateTask}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Update Task
+                </button>
               </div>
             </div>
           </div>
@@ -704,10 +833,11 @@ const TodoList: React.FC = () => {
                               }}
                               className="px-3 py-1 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center"
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
                               Approve
                             </button>
                           )}
+                        </div>
                       </div>
                     </div>
                   </div>
