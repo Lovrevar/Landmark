@@ -97,14 +97,34 @@ const SiteManagement: React.FC = () => {
       if (phasesError) throw phasesError
 
       // Fetch subcontractors with phase info
-      const { data: subcontractorsData, error: subError } = await supabase
+      /*const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
         .select(`
           *,
           project_phases(phase_name)
         `)
 
-      if (subError) throw subError
+      if (subError) throw subError*/
+      // Fetch subcontractors with phase info
+const { data: subcontractorsWithPhaseData, error: subError1 } = await supabase
+  .from('subcontractors')
+  .select(`
+    *,
+    project_phases(phase_name)
+  `)
+
+if (subError1) throw subError1
+
+// ...
+
+// Fetch existing subcontractors (for dropdown form)
+const { data: allSubcontractorsData, error: subError2 } = await supabase
+  .from('subcontractors')
+  .select('*')
+  .order('name')
+
+if (subError2) throw subError2
+setExistingSubcontractors(allSubcontractorsData || [])
 
       // Enhance projects with phase and subcontractor data
       const projectsWithPhases = (projectsData || []).map(project => {
@@ -143,11 +163,11 @@ const SiteManagement: React.FC = () => {
 
       setProjects(projectsWithPhases)
 
-      // Fetch existing subcontractors
+     /* // Fetch existing subcontractors
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
         .select('*')
-        .order('name')
+        .order('name')*/
 
       if (subError) throw subError
       setExistingSubcontractors(subcontractorsData || [])
