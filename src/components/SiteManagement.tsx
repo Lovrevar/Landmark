@@ -97,14 +97,14 @@ const SiteManagement: React.FC = () => {
       if (phasesError) throw phasesError
 
       // Fetch subcontractors with phase info
-      const { data: subcontractorsData, error: subError } = await supabase
+      /*const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
         .select(`
           *,
           project_phases(phase_name)
         `)
 
-      if (subError) throw subError
+      if (subError) throw subError*/
 
       // Enhance projects with phase and subcontractor data
       const projectsWithPhases = (projectsData || []).map(project => {
