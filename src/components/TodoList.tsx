@@ -330,11 +330,11 @@ const TodoList: React.FC = () => {
     // Only task creator can mark as completed
     return task.created_by === user?.username
   }
-
+export default TodoList
   if (loading) {
     return <div className="text-center py-12">Loading tasks...</div>
   }
-    export default TodoList
+
 
   return (
     <div>
