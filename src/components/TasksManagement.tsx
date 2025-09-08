@@ -898,4 +898,4 @@ const TasksManagement: React.FC = () => {
   )
 }
 
-export default TasksManagement
+export default TasksManagement}
