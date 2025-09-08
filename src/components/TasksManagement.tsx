@@ -47,10 +47,11 @@ const TasksManagement: React.FC = () => {
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
       
       return [
+        { id: 'all', name: 'All Tasks', count: userTasks.length },
         { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username).length },
-        { id: 'finished', name: 'Finished', count: assignedTasks.filter(t => t.status === 'Completed').length },
-        { id: 'pending', name: 'Pending', count: assignedTasks.filter(t => t.status === 'Pending').length },
-        { id: 'assigned_to_me', name: 'Tasks Assigned to me', count: assignedTasks.length }
+        { id: 'assigned_to_me', name: 'Tasks Assigned to Me', count: assignedTasks.filter(t => t.progress < 100 || t.status === 'Completed').length },
+        { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedTasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
+        { id: 'finished', name: 'Completed', count: assignedTasks.filter(t => t.status === 'Completed').length }
       ]
     }
   }
@@ -64,12 +65,12 @@ const TasksManagement: React.FC = () => {
       switch (activeCategory) {
         case 'for_approval':
           return createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username)
+        case 'assigned_to_me':
+          return assignedTasks.filter(t => t.progress < 100 || t.status === 'Completed')
+        case 'pending_creator_approval':
+          return assignedTasks.filter(t => t.progress === 100 && t.status !== 'Completed')
         case 'finished':
           return assignedTasks.filter(t => t.status === 'Completed')
-        case 'pending':
-          return assignedTasks.filter(t => t.status === 'Pending')
-        case 'assigned_to_me':
-          return assignedTasks
         default:
           return [...assignedTasks, ...createdTasks].filter((task, index, self) => 
             index === self.findIndex(t => t.id === task.id)
@@ -587,13 +588,16 @@ const TasksManagement: React.FC = () => {
               {getFilteredTasks().map((task) => {
                 const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
                 const needsApproval = task.progress === 100 && task.status !== 'Completed' && !canMarkCompleted(task)
-                const isForApproval = activeCategory === 'for_approval'
+                const isReadyForApprovalByCreator = task.progress === 100 && task.status !== 'Completed' && task.created_by === user?.username && task.assigned_to !== user?.username
+                const isPendingCreatorApproval = task.progress === 100 && task.status !== 'Completed' && task.assigned_to === user?.username && task.created_by !== user?.username
                 
                 return (
                   <div
                     key={task.id}
-                    className={`p-6 rounded-xl border transition-all duration-200 ${
+                    className={`p-6 rounded-xl border-2 transition-all duration-200 ${
                       isOverdue ? 'border-red-200 bg-red-50' :
+                      isReadyForApprovalByCreator ? 'border-purple-200 bg-purple-50' :
+                      isPendingCreatorApproval ? 'border-orange-200 bg-orange-50' :
                       task.status === 'Completed' ? 'border-green-200 bg-green-50' :
                       task.status === 'In Progress' ? 'border-blue-200 bg-blue-50' :
                       'border-gray-200 bg-gray-50'
@@ -611,9 +615,14 @@ const TasksManagement: React.FC = () => {
                           }`}>
                             {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
                           </span>
-                          {needsApproval && (
+                          {isReadyForApprovalByCreator && (
                             <span className="px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800">
-                              Awaiting Approval
+                              Awaiting My Approval
+                            </span>
+                          )}
+                          {isPendingCreatorApproval && (
+                            <span className="px-3 py-1 text-sm font-semibold rounded-full bg-purple-100 text-purple-800">
+                              Pending Creator Approval
                             </span>
                           )}
                         </div>
@@ -739,10 +748,9 @@ const TasksManagement: React.FC = () => {
                             Delete
                           </button>
                         )}
-                        {needsApproval && canMarkCompleted(task) && (
+                        {isReadyForApprovalByCreator && (
                           <button
                             onClick={async () => {
-                              // Task creator can approve any task at 100% progress
                               const { error } = await supabase
                                 .from('tasks')
                                 .update({ status: 'Completed' })
@@ -758,21 +766,16 @@ const TasksManagement: React.FC = () => {
                             Approve
                           </button>
                         )}
-                        {isForApproval && canMarkCompleted(task) && (
-                          <button
-                            onClick={() => approveTask(task.id)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
-                          >
-                            Acknowledge
-                          </button>
-                        )}
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 mt-3">
                       Created by: {task.created_by.charAt(0).toUpperCase() + task.created_by.slice(1)} • 
                       Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}
-                      {!canMarkCompleted(task) && (
-                        <span className="ml-2 text-orange-600">• Only creator can mark as completed</span>
+                      {isPendingCreatorApproval && (
+                        <span className="ml-2 text-purple-600">• Waiting for creator approval</span>
+                      )}
+                      {isReadyForApprovalByCreator && (
+                        <span className="ml-2 text-orange-600">• Ready for your approval</span>
                       )}
                     </div>
                   </div>

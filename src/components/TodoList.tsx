@@ -40,6 +40,40 @@ const TodoList: React.FC = () => {
     { value: 'investor', label: 'Investor' }
   ]
 
+  const getTaskCategories = () => {
+    const assignedTasks = assignedTasks.filter(t => t.assigned_to === user?.username)
+    const createdTasks = assignedTasks.filter(t => t.created_by === user?.username)
+    
+    return [
+      { id: 'assigned_to_me', name: 'Tasks Assigned to Me', count: assignedTasks.filter(t => t.progress < 100 || t.status === 'Completed').length },
+      { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedTasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
+      { id: 'finished', name: 'Completed', count: assignedTasks.filter(t => t.status === 'Completed').length },
+      { id: 'for_approval', name: 'For Approval (Created by me)', count: createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username).length }
+    ]
+  }
+
+  const getFilteredTasks = () => {
+    const assignedToMe = assignedTasks.filter(t => t.assigned_to === user?.username)
+    const createdByMe = assignedTasks.filter(t => t.created_by === user?.username)
+    
+    switch (activeCategory) {
+      case 'assigned_to_me':
+        return assignedToMe.filter(t => t.progress < 100 || t.status === 'Completed')
+      case 'pending_creator_approval':
+        return assignedToMe.filter(t => t.progress === 100 && t.status !== 'Completed')
+      case 'finished':
+        return assignedToMe.filter(t => t.status === 'Completed')
+      case 'for_approval':
+        return createdByMe.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username)
+      default:
+        return [...assignedToMe, ...createdByMe].filter((task, index, self) => 
+          index === self.findIndex(t => t.id === task.id)
+        )
+    }
+  }
+
+  const [activeCategory, setActiveCategory] = useState('assigned_to_me')
+
   useEffect(() => {
     fetchData()
   }, [user])
@@ -58,15 +92,14 @@ const TodoList: React.FC = () => {
       if (error) throw error
       setTodos(data || [])
 
-      // Fetch assigned tasks from projects
+      // Fetch tasks assigned to user AND tasks created by user
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select(`
           *,
           projects!inner(name)
         `)
-        .eq('assigned_to', user.username)
-        .neq('status', 'Completed')
+        .or(`assigned_to.eq.${user.username},created_by.eq.${user.username}`)
         .order('deadline', { ascending: true })
 
       if (tasksError) throw tasksError
@@ -313,11 +346,12 @@ const TodoList: React.FC = () => {
   const getTaskCardColor = (task: TaskWithProject) => {
     const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
     const isCompleted = task.status === 'Completed'
-    const isInProgress = task.status === 'In Progress'
+    const isPendingApproval = task.progress === 100 && task.status !== 'Completed'
     
     if (isOverdue) return 'border-l-4 border-l-red-500 bg-red-50 border-red-200'
     if (isCompleted) return 'border-l-4 border-l-green-500 bg-green-50'
-    if (isInProgress) return 'border-l-4 border-l-green-500 bg-green-50'
+    if (isPendingApproval) return 'border-l-4 border-l-purple-500 bg-purple-50 border-purple-200'
+    if (task.status === 'In Progress') return 'border-l-4 border-l-blue-500 bg-blue-50'
     return 'border-l-4 border-l-gray-300 bg-white'
   }
 
@@ -349,6 +383,28 @@ const TodoList: React.FC = () => {
           <Plus className="w-4 h-4 mr-2" />
           Add Task
         </button>
+      </div>
+
+      {/* Task Categories */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          {getTaskCategories().map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                activeCategory === category.id
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              {category.name}
+              <span className="ml-2 px-2 py-0.5 bg-white rounded-full text-xs">
+                {category.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Add Todo/Task Form */}
@@ -459,108 +515,59 @@ const TodoList: React.FC = () => {
                     <span className="text-sm text-gray-500">
                       Due: {format(new Date(selectedTask.deadline), 'MMM dd, yyyy')}
                     </span>
-                    {selectedTask.created_by !== user?.username && (
+                    {selectedTask.progress === 100 && selectedTask.status !== 'Completed' && selectedTask.assigned_to === user?.username && (
                       <span className="text-xs text-orange-600">
-                        Only creator can complete
+                        Awaiting creator approval
                       </span>
                     )}
                   </div>
-                </div>
-                <button
-                  onClick={() => setSelectedTask(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              {selectedTask.description && (
-                <p className="text-gray-700 mt-3">{selectedTask.description}</p>
-              )}
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Progress</span>
-                  <span className="text-sm font-medium text-gray-900">{selectedTask.progress || 0}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      selectedTask.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
-                    }`}
-                    style={{ width: `${selectedTask.progress || 0}%` }}
-                  ></div>
-                </div>
-                {/* Progress Update Slider */}
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Update Progress: {selectedTask.progress || 0}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedTask.progress || 0}
-                    onChange={(e) => {
-                      const newProgress = parseInt(e.target.value)
-                      updateTaskProgress(selectedTask.id, newProgress)
-                      setSelectedTask({ ...selectedTask, progress: newProgress })
-                    }}
-                    className="w-full"
-                  />
-                  {!canCompleteTask(selectedTask) && selectedTask.progress === 100 && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      Note: Only the task creator can mark tasks as "Completed"
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Comments Section */}
-            <div className="flex-1 overflow-y-auto max-h-96 p-6">
-              <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Progress Updates
-              </h4>
-              
-              <div className="space-y-4 mb-4">
-                {taskComments.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No progress updates yet. Add the first update!</p>
-                ) : (
-                  taskComments.map((comment) => (
-                    <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
-                          <span className="text-xs text-gray-500">({comment.user?.role})</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
-                        </span>
-                      </div>
-                      <p className="text-gray-700">{comment.comment}</p>
-                    </div>
-                  ))
+                {/* Progress Update Slider - only for assigned tasks */}
+                {selectedTask.assigned_to === user?.username && selectedTask.status !== 'Completed' && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Update Progress: {selectedTask.progress || 0}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={selectedTask.progress || 0}
+                      onChange={(e) => {
+                        const newProgress = parseInt(e.target.value)
+                        updateTaskProgress(selectedTask.id, newProgress)
+                        setSelectedTask({ ...selectedTask, progress: newProgress })
+                      }}
+                      className="w-full"
+                    />
+                    {selectedTask.progress === 100 && (
+                      <p className="text-xs text-purple-600 mt-1">
+                        Task marked as complete - awaiting creator approval
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-              
-              {/* Add Comment */}
-              <div className="border-t pt-4">
-                <div className="flex space-x-3">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a progress update..."
-                    rows={3}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                  <button
-                    onClick={addComment}
-                    disabled={!newComment.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Approve button for tasks created by current user */}
+                {selectedTask.progress === 100 && selectedTask.status !== 'Completed' && selectedTask.created_by === user?.username && selectedTask.assigned_to !== user?.username && (
+                  <div className="mt-3">
+                    <button
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from('tasks')
+                          .update({ status: 'Completed' })
+                          .eq('id', selectedTask.id)
+                        
+                        if (!error) {
+                          setSelectedTask({ ...selectedTask, status: 'Completed' })
+                          fetchData()
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve Task Completion
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -568,13 +575,17 @@ const TodoList: React.FC = () => {
       )}
 
       {/* Project Tasks */}
-      {assignedTasks.length > 0 && (
+      {getFilteredTasks().length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Tasks</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            {getTaskCategories().find(cat => cat.id === activeCategory)?.name || 'Project Tasks'}
+          </h2>
           <div className="space-y-3">
-            {assignedTasks.map((task) => {
+            {getFilteredTasks().map((task) => {
               const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
               const canEdit = canEditTask(task)
+              const isPendingApproval = task.progress === 100 && task.status !== 'Completed'
+              const isReadyForMyApproval = task.progress === 100 && task.status !== 'Completed' && task.created_by === user?.username && task.assigned_to !== user?.username
               
               return (
                 <div
@@ -598,8 +609,104 @@ const TodoList: React.FC = () => {
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
-                          {task.created_by === 'director' && task.progress === 100 && task.status !== 'Completed' && (
-                            <span className="ml-1 text-orange-600">• Only creator can complete</span>
+                        </span>
+                        {isPendingApproval && task.assigned_to === user?.username && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Awaiting Approval
+                          </span>
+                        )}
+                        {isReadyForMyApproval && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Ready for Approval
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-2">
+                        Project: {task.project_name}
+                      </p>
+                      
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+                      )}
+                      
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+                          <span className={`text-sm ${
+                            isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
+                          }`}>
+                            Due {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-600">Progress</span>
+                            <span className="text-sm font-medium text-gray-900">{task.progress || 0}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                task.status === 'Completed' ? 'bg-green-600' : 
+                                isPendingApproval ? 'bg-purple-600' : 'bg-blue-600'
+                              }`}
+                              style={{ width: `${task.progress || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => openTaskDetails(task)}
+                            className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-xs font-medium transition-colors duration-200"
+                            title="View details and add comments"
+                          >
+                            💬 Comment
+                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs font-medium transition-colors duration-200"
+                            >
+                              ✏️ Edit
+                            </button>
+                          )}
+                          {/* Progress slider for assigned tasks only */}
+                          {task.assigned_to === user?.username && task.status !== 'Completed' && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-600">Progress:</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={task.progress || 0}
+                                onChange={(e) => updateTaskProgress(task.id, parseInt(e.target.value))}
+                                className="w-20"
+                                title="Update progress"
+                              />
+                              <span className="text-xs font-medium text-gray-900 w-8">{task.progress || 0}%</span>
+                            </div>
+                          )}
+                          {/* Approve button for tasks created by current user */}
+                          {isReadyForMyApproval && (
+                            <button
+                              onClick={async () => {
+                                const { error } = await supabase
+                                  .from('tasks')
+                                  .update({ status: 'Completed' })
+                                  .eq('id', task.id)
+                                
+                                if (!error) {
+                                  fetchData()
+                                }
+                              }}
+                              className="px-3 py-1 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </button>
                           )}
                         </span>
                       </div>
