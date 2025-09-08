@@ -33,7 +33,7 @@ const TasksManagement: React.FC = () => {
     if (user?.role === 'Director') {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
-        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
+        { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
         { id: 'accountant', name: 'Accountant', count: tasks.filter(t => t.assigned_to === 'accountant').length },
         { id: 'supervisor', name: 'Supervisor', count: tasks.filter(t => t.assigned_to === 'supervisor').length },
         { id: 'investor', name: 'Investor', count: tasks.filter(t => t.assigned_to === 'investor').length },
@@ -47,7 +47,7 @@ const TasksManagement: React.FC = () => {
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
       
       return [
-        { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.status === 'Completed' && t.assigned_to !== user?.username).length },
+        { id: 'for_approval', name: 'For Approval', count: createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username).length },
         { id: 'finished', name: 'Finished', count: assignedTasks.filter(t => t.status === 'Completed').length },
         { id: 'pending', name: 'Pending', count: assignedTasks.filter(t => t.status === 'Pending').length },
         { id: 'assigned_to_me', name: 'Tasks Assigned to me', count: assignedTasks.length }
@@ -63,7 +63,7 @@ const TasksManagement: React.FC = () => {
       
       switch (activeCategory) {
         case 'for_approval':
-          return createdTasks.filter(t => t.status === 'Completed' && t.assigned_to !== user?.username)
+          return createdTasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.assigned_to !== user?.username)
         case 'finished':
           return assignedTasks.filter(t => t.status === 'Completed')
         case 'pending':
@@ -80,7 +80,7 @@ const TasksManagement: React.FC = () => {
     // Director can see all tasks with filtering
     switch (activeCategory) {
       case 'for_approval':
-        return tasks.filter(t => t.status === 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director')
+        return tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director')
       case 'accountant':
         return tasks.filter(t => t.assigned_to === 'accountant')
       case 'supervisor':
