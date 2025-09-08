@@ -30,7 +30,7 @@ const TasksManagement: React.FC = () => {
   const statusOptions = ['Pending', 'In Progress', 'Completed', 'Overdue']
 
   const getTaskCategories = () => {
-    if (user?.role === 'Director') {
+    if (task.created_by === user?.username) {
       return [
         { id: 'all', name: 'All Tasks', count: tasks.length },
         { id: 'for_approval', name: 'For Approval', count: tasks.filter(t => t.progress === 100 && t.status !== 'Completed' && t.created_by === 'director' && t.assigned_to !== 'director').length },
