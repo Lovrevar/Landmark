@@ -55,11 +55,10 @@ const TasksManagement: React.FC = () => {
     }
   }
 
-  
-
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
       // Non-directors see tasks they created and tasks assigned to them
+      const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
       
       switch (activeCategory) {
@@ -68,8 +67,7 @@ const TasksManagement: React.FC = () => {
         case 'finished':
           return assignedTasks.filter(t => t.status === 'Completed')
         case 'pending':
-         return assignedTasks.filter(t => t.status === 'Pending')
-          case 'pending':
+          return assignedTasks.filter(t => t.status === 'Pending')
         case 'assigned_to_me':
           return assignedTasks
         default:
@@ -769,7 +767,7 @@ const TasksManagement: React.FC = () => {
                             Approve
                           </button>
                         )}
-                        {isForApproval &&task.created_by === user?.username && (
+                        {isForApproval && user?.role === 'Director' && (
                           <button
                             onClick={() => approveTask(task.id)}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"

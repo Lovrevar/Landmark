@@ -325,7 +325,6 @@ const TodoList: React.FC = () => {
     // Anyone can edit tasks they created
     // Anyone can edit tasks they created or tasks assigned to them
     return task.created_by === user.username || task.assigned_to === user.username
-  }
 
   const canCompleteTask = (task: TaskWithProject) => {
     // Only task creator can mark as completed
@@ -335,7 +334,6 @@ const TodoList: React.FC = () => {
   if (loading) {
     return <div className="text-center py-12">Loading tasks...</div>
   }
-
 
   return (
     <div>
@@ -755,6 +753,6 @@ const TodoList: React.FC = () => {
       </div>
     </div>
   )
-
 }
+
 export default TodoList
