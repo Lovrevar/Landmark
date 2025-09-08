@@ -323,8 +323,8 @@ const TodoList: React.FC = () => {
 
   const canEditTask = (task: TaskWithProject) => {
     // Anyone can edit tasks they created
-    return task.created_by === user?.username
-  }
+    // Anyone can edit tasks they created or tasks assigned to them
+    return task.created_by === user.username || task.assigned_to === user.username
 
   const canCompleteTask = (task: TaskWithProject) => {
     // Only task creator can mark as completed
@@ -530,7 +530,7 @@ const TodoList: React.FC = () => {
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-gray-900">{comment.user?.username}</span>
+                          <span className="font-medium text-gray-900">{comment.user?.username || 'Unknown User'}</span>
                           <span className="text-xs text-gray-500">({comment.user?.role})</span>
                         </div>
                         <span className="text-xs text-gray-500">
