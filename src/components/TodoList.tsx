@@ -325,6 +325,7 @@ const TodoList: React.FC = () => {
     // Anyone can edit tasks they created
     // Anyone can edit tasks they created or tasks assigned to them
     return task.created_by === user.username || task.assigned_to === user.username
+  }
 
   const canCompleteTask = (task: TaskWithProject) => {
     // Only task creator can mark as completed
