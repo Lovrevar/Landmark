@@ -671,7 +671,7 @@ const TodoList: React.FC = () => {
                             <span className="text-xs font-medium text-gray-900 w-8">{task.progress || 0}%</span>
                             {!canCompleteTask(task) && task.progress === 100 && (
                               <span className="text-xs text-orange-600">
-                                Only creator can complete
+                                Awaiting approval
                               </span>
                             )}
                           </div>
