@@ -58,7 +58,7 @@ const TasksManagement: React.FC = () => {
   const getFilteredTasks = () => {
     if (user?.role !== 'Director') {
       // Non-directors see tasks they created OR tasks assigned to them
-      const userTasks = tasks.filter(t => 
+      const userTasks = tasks.filter(t => t.assigned_to === user?.username || t.created_by === user?.username)
       // Non-directors see tasks they created and tasks assigned to them
       const assignedTasks = tasks.filter(t => t.assigned_to === user?.username)
       const createdTasks = tasks.filter(t => t.created_by === user?.username)
