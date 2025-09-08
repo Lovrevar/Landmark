@@ -46,7 +46,7 @@ const TodoList: React.FC = () => {
     
     return [
       { id: 'assigned_to_me', name: 'Tasks Assigned to Me', count: assignedToMeTasks.filter(t => t.progress < 100 && t.status !== 'Completed').length },
-      { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedToMeTasks.filter(t => t.progress === 100 && t.status !== 'Completed').length },
+      { id: 'pending_creator_approval', name: 'Pending Approval', count: assignedToMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed').length },
       { id: 'finished_by_me', name: 'Completed', count: assignedToMeTasks.filter(t => t.status === 'Completed').length },
       { id: 'for_approval_from_others', name: 'For Approval (Created by me)', count: createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to !== user?.username).length }
     ]
@@ -62,7 +62,7 @@ const TodoList: React.FC = () => {
       case 'pending_creator_approval':
         return assignedToMeTasks.filter(t => t.progress === 100 && t.status !== 'Completed')
       case 'finished':
-        return assignedToMeTasks.filter(t => t.status === 'Completed')
+        return assignedToMeTasks.filter(t => t.status?.trim() === 'Completed')
       case 'for_approval':
         return createdByMeTasks.filter(t => t.progress === 100 && t.status?.trim() !== 'Completed' && t.assigned_to !== user?.username)
       default:
