@@ -33,11 +33,11 @@ const TodoList: React.FC = () => {
   const [loading, setLoading] = useState(true)
 
   const userOptions = [
-    { value: 'director', label: 'Director' },
-    { value: 'accountant', label: 'Accountant' },
-    { value: 'salesperson', label: 'Sales Person' },
-    { value: 'supervisor', label: 'Supervisor' },
-    { value: 'investor', label: 'Investor' }
+    { value: 'director', label: 'director' },
+    { value: 'accountant', label: 'accountant' },
+    { value: 'salesperson', label: 'sales Person' },
+    { value: 'supervisor', label: 'supervisor' },
+    { value: 'investor', label: 'investor' }
   ]
 
   const getTaskCategories = () => {
