@@ -27,9 +27,18 @@ const TodoList: React.FC = () => {
   const [newTodo, setNewTodo] = useState({
     title: '',
     description: '',
-    due_date: ''
+    due_date: '',
+    assigned_to: ''
   })
   const [loading, setLoading] = useState(true)
+
+  const userOptions = [
+    { value: 'director', label: 'Director' },
+    { value: 'accountant', label: 'Accountant' },
+    { value: 'salesperson', label: 'Sales Person' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'investor', label: 'Investor' }
+  ]
 
   useEffect(() => {
     fetchData()
@@ -126,21 +135,56 @@ const TodoList: React.FC = () => {
   }
 
   const addTodo = async () => {
-    if (!user || !newTodo.title.trim()) return
+    if (!user || !newTodo.title.trim() || !newTodo.assigned_to) {
+      alert('Please fill in title and select who to assign the task to')
+      return
+    }
 
     try {
-      const { error } = await supabase
-        .from('todos')
-        .insert({
-          user_id: user.id,
-          title: newTodo.title,
-          description: newTodo.description,
-          due_date: newTodo.due_date || null
-        })
+      if (newTodo.assigned_to === user.username) {
+        // Create personal todo
+        const { error } = await supabase
+          .from('todos')
+          .insert({
+            user_id: user.id,
+            title: newTodo.title,
+            description: newTodo.description,
+            due_date: newTodo.due_date || null
+          })
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        // Create task for someone else - need to find a project to assign it to
+        // For now, we'll use the first available project or create without project
+        const { data: projectsData } = await supabase
+          .from('projects')
+          .select('id')
+          .limit(1)
 
-      setNewTodo({ title: '', description: '', due_date: '' })
+        const projectId = projectsData?.[0]?.id
+        
+        if (!projectId) {
+          alert('No projects available. Please create a project first to assign tasks.')
+          return
+        }
+
+        const { error } = await supabase
+          .from('tasks')
+          .insert({
+            project_id: projectId,
+            name: newTodo.title,
+            description: newTodo.description,
+            assigned_to: newTodo.assigned_to,
+            created_by: user.username,
+            deadline: newTodo.due_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 7 days from now
+            status: 'Pending',
+            progress: 0
+          })
+
+        if (error) throw error
+      }
+
+      setNewTodo({ title: '', description: '', due_date: '', assigned_to: '' })
       setShowForm(false)
       fetchData()
     } catch (error) {
@@ -256,7 +300,7 @@ const TodoList: React.FC = () => {
   }
 
   const resetForm = () => {
-    setNewTodo({ title: '', description: '', due_date: '' })
+    setNewTodo({ title: '', description: '', due_date: '', assigned_to: '' })
     setSelectedTask(null)
     setTaskComments([])
     setNewComment('')
@@ -316,34 +360,57 @@ const TodoList: React.FC = () => {
           
           {/* Personal Todo Form */}
           <div className="mb-6">
-            <h4 className="text-md font-medium text-gray-800 mb-3">Personal Todo</h4>
+            <h4 className="text-md font-medium text-gray-800 mb-3">Create Task</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <input
-                type="text"
-                placeholder="Task title"
-                value={newTodo.title}
-                onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <textarea
-                placeholder="Description (optional)"
-                value={newTodo.description}
-                onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <input
-                type="date"
-                value={newTodo.due_date}
-                onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Task Title *</label>
+                <input
+                  type="text"
+                  placeholder="Enter task title"
+                  value={newTodo.title}
+                  onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign To *</label>
+                <select
+                  value={newTodo.assigned_to}
+                  onChange={(e) => setNewTodo({ ...newTodo, assigned_to: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select assignee</option>
+                  {userOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                <input
+                  type="date"
+                  value={newTodo.due_date}
+                  onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  placeholder="Task description (optional)"
+                  value={newTodo.description}
+                  onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
             <div className="flex justify-end space-x-3 mt-4">
               <button
@@ -354,9 +421,10 @@ const TodoList: React.FC = () => {
               </button>
               <button
                 onClick={addTodo}
+                disabled={!newTodo.title.trim() || !newTodo.assigned_to}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Add Todo
+                {newTodo.assigned_to === user?.username ? 'Add Personal Todo' : 'Create Task'}
               </button>
             </div>
           </div>
@@ -391,6 +459,11 @@ const TodoList: React.FC = () => {
                     <span className="text-sm text-gray-500">
                       Due: {format(new Date(selectedTask.deadline), 'MMM dd, yyyy')}
                     </span>
+                    {selectedTask.created_by !== user?.username && (
+                      <span className="text-xs text-orange-600">
+                        Only creator can complete
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button
@@ -433,7 +506,7 @@ const TodoList: React.FC = () => {
                     }}
                     className="w-full"
                   />
-                  {selectedTask.created_by === 'director' && selectedTask.created_by !== user?.username && (
+                  {!canCompleteTask(selectedTask) && selectedTask.progress === 100 && (
                     <p className="text-xs text-orange-600 mt-1">
                       Note: Only the task creator can mark tasks as "Completed"
                     </p>
