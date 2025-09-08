@@ -113,7 +113,7 @@ const { data: subcontractorsWithPhaseData, error: subError1 } = await supabase
     project_phases(phase_name)
   `)
 
-if (subError1) throw subError1
+if (subError) throw subError
 
 // ...
 
@@ -123,7 +123,7 @@ const { data: allSubcontractorsData, error: subError2 } = await supabase
   .select('*')
   .order('name')
 
-if (subError2) throw subError2
+//if (subError2) throw subError2
 setExistingSubcontractors(allSubcontractorsData || [])
 
       // Enhance projects with phase and subcontractor data
