@@ -129,7 +129,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       // Enhance projects with phase and subcontractor data
       const projectsWithPhases = (projectsData || []).map(project => {
         const projectPhases = (phasesData || []).filter(phase => phase.project_id === project.id)
-        const projectSubcontractors = (subcontractorsData || []).filter(sub => {
+        const projectSubcontractors = (subcontractorsWithPhaseData || []).filter(sub => {
           // For projects without phases, include all subcontractors
           if (projectPhases.length === 0) return true
           // For projects with phases, only include subcontractors assigned to phases of this project
@@ -170,7 +170,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
         .order('name')*/
 
       if (subError) throw subError
-      setExistingSubcontractors(subcontractorsData || [])
+      setExistingSubcontractors(subcontractorsWithPhaseData || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
     } finally {
