@@ -189,6 +189,7 @@ const SubcontractorManagement: React.FC = () => {
           .update(newSubcontractor)
           .eq('id', editingSubcontractor.id)
           .select('*')
+          .select('*')
 
         if (error) throw error
 
@@ -210,6 +211,7 @@ const SubcontractorManagement: React.FC = () => {
           .from('subcontractors')
           .insert(newSubcontractor)
           .select('*')
+          .select('*')
 
         if (error) throw error
 
@@ -227,10 +229,8 @@ const SubcontractorManagement: React.FC = () => {
       }
 
       resetForm()
-      // fetchData() // Remove this call since we're updating state directly
     } catch (error) {
       console.error('Error saving subcontractor:', error)
-      // If there's an error, still call fetchData to ensure consistency
       fetchData()
     }
   }

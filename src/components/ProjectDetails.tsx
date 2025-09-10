@@ -34,6 +34,7 @@ interface ProjectWithDetails extends Project {
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -42,9 +43,8 @@ const ProjectDetails: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchProjectDetails(id)
-      location.key
     }
-  }, [id])
+  }, [id, location.key])
 
   const fetchProjectDetails = async (projectId: string) => {
     try {
