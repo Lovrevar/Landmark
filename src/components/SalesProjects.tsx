@@ -52,6 +52,8 @@ const SalesProjects: React.FC = () => {
   const [editingApartment, setEditingApartment] = useState<Apartment | null>(null)
   const [showSaleForm, setShowSaleForm] = useState(false)
   const [apartmentToSell, setApartmentToSell] = useState<Apartment | null>(null)
+  const [existingCustomers, setExistingCustomers] = useState<Customer[]>([])
+  const [useExistingCustomer, setUseExistingCustomer] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [saleData, setSaleData] = useState({
     payment_method: 'bank_loan' as const,
@@ -95,6 +97,20 @@ const SalesProjects: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('name')
+
+      if (error) throw error
+      setExistingCustomers(data || [])
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -493,6 +509,8 @@ const SalesProjects: React.FC = () => {
 
   const handleMarkAsSold = (apartment: Apartment) => {
     setApartmentToSell(apartment)
+    setUseExistingCustomer(false)
+    setSelectedCustomerId('')
     setSaleData({
       buyer_name: '',
       sale_price: apartment.price,
@@ -503,35 +521,41 @@ const SalesProjects: React.FC = () => {
       contract_signed: false,
       notes: ''
     })
+    fetchCustomers()
     setShowSaleForm(true)
   }
 
   const completeSale = async () => {
-    if (!apartmentToSell || !saleData.buyer_name.trim()) {
-      alert('Please enter buyer name')
+    if (!apartmentToSell) return
+
+    if (!useExistingCustomer && (!saleData.buyer_name.trim() || !saleData.buyer_email.trim())) {
+      alert('Please fill in buyer name and email for new customer')
+      return
+    }
+
+    if (useExistingCustomer && !selectedCustomerId) {
+      alert('Please select an existing customer')
       return
     }
 
     try {
-      // First, find or create the customer
-      const { data: existingCustomer, error: customerSearchError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('name', saleData.buyer_name.split(' ')[0])
-        .eq('surname', saleData.buyer_name.split(' ').slice(1).join(' ') || '')
-        .single()
-
-      let customerId = existingCustomer?.id
-
-      if (!existingCustomer) {
+      let customerId = ''
+      
+      if (useExistingCustomer) {
+        customerId = selectedCustomerId
+      } else {
         // Create new customer
-        const nameParts = saleData.buyer_name.trim().split(' ')
+        const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
+        const lastName = lastNameParts.join(' ')
+        
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
-            name: nameParts[0],
-            surname: nameParts.slice(1).join(' ') || '',
-            email: `${saleData.buyer_name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+            name: firstName,
+            surname: lastName,
+            email: saleData.buyer_email,
+            phone: saleData.buyer_phone || '',
+            address: saleData.buyer_address || '',
             status: 'buyer'
           })
           .select()
@@ -546,7 +570,9 @@ const SalesProjects: React.FC = () => {
         .from('apartments')
         .update({
           status: 'Sold',
-          buyer_name: saleData.buyer_name
+          buyer_name: useExistingCustomer 
+            ? existingCustomers.find(c => c.id === selectedCustomerId)?.name + ' ' + existingCustomers.find(c => c.id === selectedCustomerId)?.surname
+            : saleData.buyer_name
         })
         .eq('id', apartmentToSell.id)
 
@@ -578,7 +604,9 @@ const SalesProjects: React.FC = () => {
             ? { 
                 ...apt, 
                 status: 'Sold' as const, 
-                buyer_name: saleData.buyer_name,
+                buyer_name: useExistingCustomer 
+                  ? existingCustomers.find(c => c.id === selectedCustomerId)?.name + ' ' + existingCustomers.find(c => c.id === selectedCustomerId)?.surname
+                  : saleData.buyer_name,
                 sale_info: {
                   sale_price: saleData.sale_price,
                   payment_method: saleData.payment_method,
@@ -603,7 +631,20 @@ const SalesProjects: React.FC = () => {
       }
 
       resetSaleForm()
-      fetchData() // Refresh projects list
+      fetchData()
+      
+      // Update the apartment in local state immediately
+      setApartments(prev => prev.map(apt => 
+        apt.id === apartmentToSell.id 
+          ? { 
+              ...apt, 
+              status: 'Sold' as const,
+              buyer_name: useExistingCustomer 
+                ? existingCustomers.find(c => c.id === selectedCustomerId)?.name + ' ' + existingCustomers.find(c => c.id === selectedCustomerId)?.surname
+                : saleData.buyer_name
+            }
+          : apt
+      ))
     } catch (error) {
       console.error('Error completing sale:', error)
       alert('Error completing sale. Please try again.')
@@ -611,6 +652,9 @@ const SalesProjects: React.FC = () => {
   }
 
   const resetSaleForm = () => {
+    setApartmentToSell(null)
+    setUseExistingCustomer(false)
+    setSelectedCustomerId('')
     setSaleData({
       buyer_name: '',
       sale_price: 0,
@@ -621,7 +665,6 @@ const SalesProjects: React.FC = () => {
       contract_signed: false,
       notes: ''
     })
-    setApartmentToSell(null)
     setShowSaleForm(false)
   }
 
@@ -1062,26 +1105,108 @@ const SalesProjects: React.FC = () => {
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Buyer Name *</label>
-                  <input
-                    type="text"
-                    value={saleData.buyer_name}
-                    onChange={(e) => setSaleData({ ...saleData, buyer_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter buyer's full name"
-                    required
-                  />
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Sale Details</h3>
+              
+              {/* Customer Selection Toggle */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4 mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      checked={!useExistingCustomer}
+                      onChange={() => {
+                        setUseExistingCustomer(false)
+                        setSelectedCustomerId('')
+                      }}
+                      className="mr-2"
+                    />
+                    Create New Customer
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      checked={useExistingCustomer}
+                      onChange={() => setUseExistingCustomer(true)}
+                      className="mr-2"
+                    />
+                    Select Existing Customer
+                  </label>
                 </div>
                 
+                {useExistingCustomer ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Customer *</label>
+                    <select
+                      value={selectedCustomerId}
+                      onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Choose existing customer</option>
+                      {existingCustomers.map(customer => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name} {customer.surname} ({customer.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Buyer Name *</label>
+                      <input
+                        type="text"
+                        value={saleData.buyer_name}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Full name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                      <input
+                        type="email"
+                        value={saleData.buyer_email}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="buyer@email.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                      <input
+                        type="tel"
+                        value={saleData.buyer_phone}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <input
+                        type="text"
+                        value={saleData.buyer_address}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_address: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Address"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price *</label>
                   <input
                     type="number"
                     value={saleData.sale_price}
                     onChange={(e) => setSaleData({ ...saleData, sale_price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
                 
