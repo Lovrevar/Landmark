@@ -64,6 +64,7 @@ const SalesProjects: React.FC = () => {
     number: '',
     floor: 1,
     size_m2: 0,
+    price_per_sqm: 0,
     price: 0
   })
   const [bulkCreate, setBulkCreate] = useState({
@@ -199,6 +200,47 @@ const SalesProjects: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Calculate price when size_m2 or price_per_sqm changes
+  const calculatePrice = (size: number, pricePerSqm: number) => {
+    return size * pricePerSqm
+  }
+
+  const handleSizeChange = (size: number) => {
+    const calculatedPrice = calculatePrice(size, newApartment.price_per_sqm)
+    setNewApartment({ 
+      ...newApartment, 
+      size_m2: size, 
+      price: calculatedPrice 
+    })
+  }
+
+  const handlePricePerSqmChange = (pricePerSqm: number) => {
+    const calculatedPrice = calculatePrice(newApartment.size_m2, pricePerSqm)
+    setNewApartment({ 
+      ...newApartment, 
+      price_per_sqm: pricePerSqm, 
+      price: calculatedPrice 
+    })
+  }
+
+  const handleBulkSizeChange = (size: number) => {
+    const calculatedPrice = calculatePrice(size, bulkCreate.price_per_sqm)
+    setBulkCreate({ 
+      ...bulkCreate, 
+      size_m2: size, 
+      price: calculatedPrice 
+    })
+  }
+
+  const handleBulkPricePerSqmChange = (pricePerSqm: number) => {
+    const calculatedPrice = calculatePrice(bulkCreate.size_m2, pricePerSqm)
+    setBulkCreate({ 
+      ...bulkCreate, 
+      price_per_sqm: pricePerSqm, 
+      price: calculatedPrice 
+    })
   }
 
   const addApartment = async () => {
@@ -489,6 +531,7 @@ const SalesProjects: React.FC = () => {
       number: '',
       floor: 1,
       size_m2: 0,
+      price_per_sqm: 0,
       price: 0
     })
     setEditingApartment(null)
@@ -534,6 +577,7 @@ const SalesProjects: React.FC = () => {
       number: apartment.number,
       floor: apartment.floor,
       size_m2: apartment.size_m2,
+      price_per_sqm: 0,
       price: apartment.price
     })
     setShowAddApartmentForm(true)
@@ -910,21 +954,34 @@ const SalesProjects: React.FC = () => {
                     min="0"
                     step="0.1"
                     value={newApartment.size_m2}
-                    onChange={(e) => setNewApartment({ ...newApartment, size_m2: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => handleSizeChange(parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price per m² ($) *</label>
                   <input
                     type="number"
-                    min="0"
-                    value={newApartment.price}
-                    onChange={(e) => setNewApartment({ ...newApartment, price: parseFloat(e.target.value) || 0 })}
+                    step="0.01"
+                    value={newApartment.price_per_sqm}
+                    onChange={(e) => handlePricePerSqmChange(parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Price ($)</label>
+                  <input
+                    type="number"
+                    value={newApartment.price}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                    placeholder="Calculated automatically"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Calculated: {newApartment.size_m2} m² × ${newApartment.price_per_sqm}/m² = ${newApartment.price.toLocaleString()}
+                  </p>
                 </div>
               </div>
               
