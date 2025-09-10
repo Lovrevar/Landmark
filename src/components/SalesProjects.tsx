@@ -60,6 +60,10 @@ const SalesProjects: React.FC = () => {
   const [editingApartment, setEditingApartment] = useState<Apartment | null>(null)
   const [apartmentForSale, setApartmentForSale] = useState<Apartment | null>(null)
   const [customerMode, setCustomerMode] = useState<'new' | 'existing'>('new')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'reserved' | 'sold'>('all')
+  const [selectedApartmentIds, setSelectedApartmentIds] = useState<string[]>([])
+  const [showBulkPriceUpdateModal, setShowBulkPriceUpdateModal] = useState(false)
+  const [newPricePerSqm, setNewPricePerSqm] = useState<number>(0)
   const [newApartment, setNewApartment] = useState({
     number: '',
     floor: 1,
@@ -95,7 +99,6 @@ const SalesProjects: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [])
-  const [filterStatus, setFilterStatus] = useState<'all' | 'Available' | 'Reserved' | 'Sold'>('all')
   // Filtered list gpt
   const filteredApartments = apartments.filter(apt => 
     filterStatus === 'all' ? true : apt.status === filterStatus)
@@ -398,6 +401,77 @@ const SalesProjects: React.FC = () => {
     }
   }
 
+  const getFilteredApartments = () => {
+    if (filterStatus === 'all') return apartments
+    return apartments.filter(apt => {
+      switch (filterStatus) {
+        case 'available': return apt.status === 'Available'
+        case 'reserved': return apt.status === 'Reserved'
+        case 'sold': return apt.status === 'Sold'
+        default: return true
+      }
+    })
+  }
+
+  const handleApartmentSelection = (apartmentId: string, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedApartmentIds(prev => [...prev, apartmentId])
+    } else {
+      setSelectedApartmentIds(prev => prev.filter(id => id !== apartmentId))
+    }
+  }
+
+  const handleSelectAll = (isSelected: boolean) => {
+    if (isSelected) {
+      const filteredApartmentIds = getFilteredApartments().map(apt => apt.id)
+      setSelectedApartmentIds(filteredApartmentIds)
+    } else {
+      setSelectedApartmentIds([])
+    }
+  }
+
+  const handleBulkPriceUpdate = async () => {
+    if (selectedApartmentIds.length === 0 || newPricePerSqm <= 0) {
+      alert('Please select apartments and enter a valid price per sqm')
+      return
+    }
+
+    if (!confirm(`Update price per sqm to €${newPricePerSqm} for ${selectedApartmentIds.length} selected apartments?`)) {
+      return
+    }
+
+    try {
+      // Update each selected apartment
+      for (const apartmentId of selectedApartmentIds) {
+        const apartment = apartments.find(apt => apt.id === apartmentId)
+        if (apartment) {
+          const newTotalPrice = apartment.size_m2 * newPricePerSqm
+          
+          const { error } = await supabase
+            .from('apartments')
+            .update({ 
+              price: newTotalPrice
+            })
+            .eq('id', apartmentId)
+
+          if (error) throw error
+        }
+      }
+
+      // Clear selections and close modal
+      setSelectedApartmentIds([])
+      setShowBulkPriceUpdateModal(false)
+      setNewPricePerSqm(0)
+      
+      // Refresh data
+      fetchApartments()
+      alert(`Successfully updated prices for ${selectedApartmentIds.length} apartments`)
+    } catch (error) {
+      console.error('Error updating apartment prices:', error)
+      alert('Error updating apartment prices. Please try again.')
+    }
+  }
+
   const completeSale = async () => {
     if (!apartmentForSale) return
 
@@ -628,9 +702,29 @@ const SalesProjects: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Sales Projects</h1>
-        <p className="text-gray-600 mt-2">Manage apartment sales and customer relationships</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Sales Projects</h1>
+          <p className="text-gray-600 mt-2">Manage apartment sales and customer relationships</p>
+        </div>
+        <div className="flex space-x-3">
+          {selectedApartmentIds.length > 0 && (
+            <button
+              onClick={() => setShowBulkPriceUpdateModal(true)}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+            >
+              <DollarSign className="w-4 h-4 mr-2" />
+              Update Prices ({selectedApartmentIds.length})
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddApartmentForm(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Apartment
+          </button>
+        </div>
       </div>
 
       {/* Projects Grid */}
@@ -694,6 +788,46 @@ const SalesProjects: React.FC = () => {
         ))}
       </div>
 
+      {/* Apartment Status Filter */}
+      {selectedProject && (
+        <div className="mb-6">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-gray-700">Filter by status:</span>
+            <div className="flex space-x-2">
+              {[
+                { value: 'all', label: 'All', count: apartments.length },
+                { value: 'available', label: 'Available', count: apartments.filter(apt => apt.status === 'Available').length },
+                { value: 'reserved', label: 'Reserved', count: apartments.filter(apt => apt.status === 'Reserved').length },
+                { value: 'sold', label: 'Sold', count: apartments.filter(apt => apt.status === 'Sold').length }
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => {
+                    setFilterStatus(filter.value as any)
+                    setSelectedApartmentIds([]) // Clear selections when changing filter
+                  }}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    filterStatus === filter.value
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                  }`}
+                >
+                  {filter.label}
+                  <span className="ml-2 px-2 py-0.5 bg-white rounded-full text-xs">
+                    {filter.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {selectedApartmentIds.length > 0 && (
+              <span className="text-sm text-blue-600 font-medium">
+                {selectedApartmentIds.length} selected
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Selected Project Details */}
       {selectedProject && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -749,11 +883,30 @@ const SalesProjects: React.FC = () => {
 
           {/* Apartments Grid */}
           <div className="p-6">
-            {apartments.length === 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Apartments</h2>
+              {getFilteredApartments().length > 0 && (
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedApartmentIds.length === getFilteredApartments().length}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Select All</span>
+                </label>
+              )}
+            </div>
+            {getFilteredApartments().length === 0 ? (
               <div className="text-center py-12">
                 <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Apartments</h3>
-                <p className="text-gray-600 mb-4">This project doesn't have any apartments yet.</p>
+                <p className="text-gray-600 mb-4">
+                  {filterStatus === 'all' 
+                    ? 'This project doesn\'t have any apartments yet.' 
+                    : `No ${filterStatus} apartments found.`
+                  }
+                </p>
                 <button
                   onClick={() => setShowBulkCreateForm(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -763,12 +916,14 @@ const SalesProjects: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {apartments.map((apartment) => (
+                {getFilteredApartments().map((apartment) => (
                   <div
                     key={apartment.id}
                     onClick={(e) => handleApartmentClick(apartment.id, e)}
                     className={`rounded-xl shadow-sm border p-4 transition-all duration-200 cursor-pointer ${
-                      selectedApartments.has(apartment.id)
+                      selectedApartmentIds.includes(apartment.id)
+                        ? 'ring-2 ring-blue-500 bg-blue-50'
+                        : selectedApartments.has(apartment.id)
                         ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                         : apartment.status === 'Sold' 
                           ? 'border-green-200 bg-green-50 hover:shadow-md'
@@ -777,6 +932,26 @@ const SalesProjects: React.FC = () => {
                             : 'border-gray-200 bg-white hover:shadow-md'
                     }`}
                   >
+                    {/* Selection Checkbox */}
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedApartmentIds.includes(apartment.id)}
+                          onChange={(e) => handleApartmentSelection(apartment.id, e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">Select</span>
+                      </label>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
+                        apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {apartment.status}
+                      </span>
+                    </div>
+
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
@@ -810,8 +985,12 @@ const SalesProjects: React.FC = () => {
                         <span className="text-sm font-medium">{apartment.size_m2} m²</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Price:</span>
-                        <span className="text-sm font-bold text-green-600">${apartment.price.toLocaleString()}</span>
+                        <span className="text-sm text-gray-600">Price per m²:</span>
+                        <span className="text-sm font-medium">€{(apartment.price / apartment.size_m2).toFixed(0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Total Price:</span>
+                        <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
                       </div>
                       
                       {apartment.status === 'Sold' && apartment.sale_info && (
@@ -1141,6 +1320,106 @@ const SalesProjects: React.FC = () => {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
                   Create {calculateBulkPreview().totalApartments} Apartments
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Price Update Modal */}
+      {showBulkPriceUpdateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Update Apartment Prices</h3>
+                <button
+                  onClick={() => {
+                    setShowBulkPriceUpdateModal(false)
+                    setNewPricePerSqm(0)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  You are about to update the price per square meter for {selectedApartmentIds.length} selected apartments.
+                </p>
+                
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Selected Apartments:</h4>
+                  <div className="space-y-1">
+                    {selectedApartmentIds.slice(0, 5).map(id => {
+                      const apt = apartments.find(a => a.id === id)
+                      return apt ? (
+                        <div key={id} className="text-sm text-blue-800">
+                          Unit {apt.number} - {apt.size_m2}m² - Current: €{(apt.price / apt.size_m2).toFixed(0)}/m²
+                        </div>
+                      ) : null
+                    })}
+                    {selectedApartmentIds.length > 5 && (
+                      <div className="text-sm text-blue-600">
+                        +{selectedApartmentIds.length - 5} more apartments
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Price per Square Meter (€)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={newPricePerSqm}
+                  onChange={(e) => setNewPricePerSqm(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter new price per sqm"
+                />
+                
+                {newPricePerSqm > 0 && selectedApartmentIds.length > 0 && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Price Preview:</p>
+                    {selectedApartmentIds.slice(0, 3).map(id => {
+                      const apt = apartments.find(a => a.id === id)
+                      return apt ? (
+                        <div key={id} className="text-sm text-gray-700">
+                          Unit {apt.number}: {apt.size_m2}m² × €{newPricePerSqm} = €{(apt.size_m2 * newPricePerSqm).toLocaleString()}
+                        </div>
+                      ) : null
+                    })}
+                    {selectedApartmentIds.length > 3 && (
+                      <div className="text-sm text-gray-500">
+                        +{selectedApartmentIds.length - 3} more apartments will be updated
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowBulkPriceUpdateModal(false)
+                    setNewPricePerSqm(0)
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkPriceUpdate}
+                  disabled={newPricePerSqm <= 0}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  Update Prices
                 </button>
               </div>
             </div>
