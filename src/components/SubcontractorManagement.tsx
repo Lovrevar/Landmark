@@ -194,6 +194,7 @@ const SubcontractorManagement: React.FC = () => {
         const { error } = await supabase
           .from('subcontractors')
           .insert(newSubcontractor)
+          .select(newSubcontractor)
 
         if (error) throw error
       }
