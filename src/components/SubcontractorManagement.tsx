@@ -28,6 +28,13 @@ interface SubcontractorWithProject extends Subcontractor {
   amount_paid: number
 }
 
+interface ProjectPhase {
+  id: string
+  project_id: string
+  phase_name: string
+  project_name: string
+}
+
 interface WorkLog {
   id: string
   subcontractor_id: string
@@ -45,6 +52,7 @@ const SubcontractorManagement: React.FC = () => {
   const { user } = useAuth()
   const [subcontractors, setSubcontractors] = useState<SubcontractorWithProject[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [projectPhases, setProjectPhases] = useState<ProjectPhase[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorWithProject | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -55,7 +63,8 @@ const SubcontractorManagement: React.FC = () => {
     job_description: '',
     progress: 0,
     deadline: '',
-    cost: 0
+    cost: 0,
+    phase_id: ''
   })
   const [subcontractorComments, setSubcontractorComments] = useState<SubcontractorComment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -77,10 +86,36 @@ const SubcontractorManagement: React.FC = () => {
 
       if (projectsError) throw projectsError
 
+      // Fetch project phases with project names
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          project_id,
+          phase_name,
+          projects!inner(name)
+        `)
+        .order('project_id')
+        .order('phase_number')
+
+      if (phasesError) throw phasesError
+
+      const phasesWithProjectName = (phasesData || []).map(phase => ({
+        id: phase.id,
+        project_id: phase.project_id,
+        phase_name: phase.phase_name,
+        project_name: phase.projects.name
+      }))
+
       // Fetch subcontractors
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
-        .select('*')
+        .select(`
+          *,
+          project_phases(
+            projects(name)
+          )
+        `)
         .order('deadline', { ascending: true })
 
       if (subError) throw subError
@@ -94,16 +129,15 @@ const SubcontractorManagement: React.FC = () => {
 
       if (tasksError) throw tasksError
 
-      // For now, we'll simulate work logs and payment status
-      // In a real app, these would come from separate tables
       const subcontractorsWithDetails = (subcontractorsData || []).map(sub => ({
         ...sub,
-        project_name: 'Sunset Towers', // Simplified for demo
+        project_name: sub.project_phases?.projects?.name || 'No Project',
         payment_status: sub.progress > 80 ? 'paid' : sub.progress > 40 ? 'partial' : 'pending' as const,
         amount_paid: Math.round(sub.cost * (sub.progress / 100))
       }))
 
       setProjects(projectsData || [])
+      setProjectPhases(phasesWithProjectName)
       setSubcontractors(subcontractorsWithDetails)
       setTasks(tasksData || [])
     } catch (error) {
@@ -188,49 +222,57 @@ const SubcontractorManagement: React.FC = () => {
           .from('subcontractors')
           .update(newSubcontractor)
           .eq('id', editingSubcontractor.id)
-          .select('*')
-          .select('*')
+          .select(`
+            *,
+            project_phases(
+              projects(name)
+            )
+          `)
+          .single()
 
         if (error) throw error
 
-        if (data && data[0]) {
-          // Update the existing subcontractor in the state
-          const updatedSubcontractor = {
-            ...data[0],
-            project_name: 'Sunset Towers', // Simplified for demo
-            payment_status: data[0].progress > 80 ? 'paid' : data[0].progress > 40 ? 'partial' : 'pending' as const,
-            amount_paid: Math.round(data[0].cost * (data[0].progress / 100))
-          }
-          
-          setSubcontractors(prev => 
-            prev.map(sub => sub.id === editingSubcontractor.id ? updatedSubcontractor : sub)
-          )
+        // Update the existing subcontractor in the state
+        const updatedSubcontractor = {
+          ...data,
+          project_name: data.project_phases?.projects?.name || 'No Project',
+          payment_status: data.progress > 80 ? 'paid' : data.progress > 40 ? 'partial' : 'pending' as const,
+          amount_paid: Math.round(data.cost * (data.progress / 100))
         }
+        
+        setSubcontractors(prev => 
+          prev.map(sub => sub.id === editingSubcontractor.id ? updatedSubcontractor : sub)
+        )
       } else {
         const { data, error } = await supabase
           .from('subcontractors')
           .insert(newSubcontractor)
-          .select('*')
-          .select('*')
+          .select(`
+            *,
+            project_phases(
+              projects(name)
+            )
+          `)
+          .single()
 
         if (error) throw error
 
-        if (data && data[0]) {
-          // Add the new subcontractor to the state immediately
-          const newSubcontractorWithDetails = {
-            ...data[0],
-            project_name: 'Sunset Towers', // Simplified for demo
-            payment_status: data[0].progress > 80 ? 'paid' : data[0].progress > 40 ? 'partial' : 'pending' as const,
-            amount_paid: Math.round(data[0].cost * (data[0].progress / 100))
-          }
-          
-          setSubcontractors(prev => [newSubcontractorWithDetails, ...prev])
+        // Add the new subcontractor to the state immediately
+        const newSubcontractorWithDetails = {
+          ...data,
+          project_name: data.project_phases?.projects?.name || 'No Project',
+          payment_status: data.progress > 80 ? 'paid' : data.progress > 40 ? 'partial' : 'pending' as const,
+          amount_paid: Math.round(data.cost * (data.progress / 100)),
+          work_logs: []
         }
+        
+        setSubcontractors(prev => [newSubcontractorWithDetails, ...prev])
       }
 
       resetForm()
     } catch (error) {
       console.error('Error saving subcontractor:', error)
+      alert('Error saving subcontractor. Please try again.')
       fetchData()
     }
   }
@@ -242,7 +284,8 @@ const SubcontractorManagement: React.FC = () => {
       job_description: '',
       progress: 0,
       deadline: '',
-      cost: 0
+      cost: 0,
+      phase_id: ''
     })
     setEditingSubcontractor(null)
     setShowForm(false)
@@ -256,7 +299,8 @@ const SubcontractorManagement: React.FC = () => {
       job_description: subcontractor.job_description,
       progress: subcontractor.progress,
       deadline: subcontractor.deadline,
-      cost: subcontractor.cost
+      cost: subcontractor.cost,
+      phase_id: subcontractor.phase_id || ''
     })
     setShowForm(true)
   }
@@ -480,6 +524,25 @@ const SubcontractorManagement: React.FC = () => {
                   placeholder="Email or phone"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Phase *
+                </label>
+                <select
+                  value={newSubcontractor.phase_id}
+                  onChange={(e) => setNewSubcontractor({ ...newSubcontractor, phase_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select project phase</option>
+                  {projectPhases.map(phase => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.project_name} - {phase.phase_name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

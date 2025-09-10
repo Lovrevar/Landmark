@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { supabase, Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
+import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectPhase } from '../lib/supabase'
 import { 
   ArrowLeft, 
   Building2, 
@@ -19,9 +19,13 @@ import {
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
+interface SubcontractorWithProjectName extends Subcontractor {
+  project_name: string
+}
+
 interface ProjectWithDetails extends Project {
   tasks: Task[]
-  subcontractors: Subcontractor[]
+  subcontractors: SubcontractorWithProjectName[]
   invoices: Invoice[]
   apartments: Apartment[]
   completion_percentage: number
@@ -57,16 +61,39 @@ const ProjectDetails: React.FC = () => {
 
       if (projectError) throw projectError
 
+      // Fetch project phases for this project
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', projectId)
+
+      if (phasesError) throw phasesError
+
+      const phaseIds = (phasesData || []).map(phase => phase.id)
+
       // Fetch related data
       const [tasksResult, subcontractorsResult, invoicesResult, apartmentsResult] = await Promise.all([
         supabase.from('tasks').select('*').eq('project_id', projectId).order('deadline'),
-        supabase.from('subcontractors').select('*').order('deadline'),
+        phaseIds.length > 0 
+          ? supabase.from('subcontractors')
+              .select(`
+                *,
+                project_phases!inner(
+                  projects!inner(name)
+                )
+              `)
+              .in('phase_id', phaseIds)
+              .order('deadline')
+          : { data: [], error: null },
         supabase.from('invoices').select('*').eq('project_id', projectId).order('due_date'),
         supabase.from('apartments').select('*').eq('project_id', projectId).order('floor', { ascending: true })
       ])
 
       const tasks = tasksResult.data || []
-      const subcontractors = subcontractorsResult.data || []
+      const subcontractorsWithProjectName = (subcontractorsResult.data || []).map(sub => ({
+        ...sub,
+        project_name: sub.project_phases?.projects?.name || projectData.name
+      }))
       const invoices = invoicesResult.data || []
       const apartments = apartmentsResult.data || []
 
@@ -85,7 +112,7 @@ const ProjectDetails: React.FC = () => {
       setProject({
         ...projectData,
         tasks,
-        subcontractors,
+        subcontractors: subcontractorsWithProjectName,
         invoices,
         apartments,
         completion_percentage,
