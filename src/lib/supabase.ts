@@ -74,6 +74,16 @@ export type Apartment = {
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
+  sale_info?: {
+    sale_price: number
+    payment_method: string
+    down_payment: number
+    total_paid: number
+    remaining_amount: number
+    monthly_payment: number
+    sale_date: string
+    contract_signed: boolean
+  }
 }
 
 export type TaskComment = {

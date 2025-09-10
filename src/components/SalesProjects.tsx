@@ -43,11 +43,15 @@ const SalesProjects: React.FC = () => {
   const [projects, setProjects] = useState<ProjectWithApartments[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithApartments | null>(null)
+  const [selectedApartments, setSelectedApartments] = useState<Set<string>>(new Set())
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [showSaleModal, setShowSaleModal] = useState(false)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showApartmentForm, setShowApartmentForm] = useState(false)
+  const [showBulkForm, setShowBulkForm] = useState(false)
   const [editingApartment, setEditingApartment] = useState<Apartment | null>(null)
+  const [showSaleForm, setShowSaleForm] = useState(false)
+  const [apartmentToSell, setApartmentToSell] = useState<Apartment | null>(null)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [saleData, setSaleData] = useState({
     payment_method: 'bank_loan' as const,
@@ -86,7 +90,6 @@ const SalesProjects: React.FC = () => {
     price_per_m2: 5000,
     floor_price_increment: 5000
   })
-  const [showBulkForm, setShowBulkForm] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -437,6 +440,191 @@ const SalesProjects: React.FC = () => {
     setShowBulkForm(false)
   }
 
+  const handleApartmentClick = (apartmentId: string, event: React.MouseEvent) => {
+    if (event.ctrlKey || event.metaKey) {
+      // Multi-select with Ctrl/Cmd
+      const newSelected = new Set(selectedApartments)
+      if (newSelected.has(apartmentId)) {
+        newSelected.delete(apartmentId)
+      } else {
+        newSelected.add(apartmentId)
+      }
+      setSelectedApartments(newSelected)
+    } else {
+      // Single select
+      setSelectedApartments(new Set([apartmentId]))
+    }
+  }
+
+  const deleteSelectedApartments = async () => {
+    if (selectedApartments.size === 0) return
+    
+    if (!confirm(`Are you sure you want to delete ${selectedApartments.size} apartment(s)?`)) return
+
+    try {
+      const { error } = await supabase
+        .from('apartments')
+        .delete()
+        .in('id', Array.from(selectedApartments))
+
+      if (error) throw error
+
+      // Update local state immediately
+      if (selectedProject) {
+        const updatedApartments = selectedProject.apartments.filter(apt => !selectedApartments.has(apt.id))
+        setSelectedProject({
+          ...selectedProject,
+          apartments: updatedApartments,
+          total_units: updatedApartments.length,
+          available_units: updatedApartments.filter(apt => apt.status === 'Available').length,
+          sold_units: updatedApartments.filter(apt => apt.status === 'Sold').length,
+          reserved_units: updatedApartments.filter(apt => apt.status === 'Reserved').length,
+          total_revenue: updatedApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
+        })
+      }
+      
+      setSelectedApartments(new Set())
+      fetchData() // Refresh the projects list
+    } catch (error) {
+      console.error('Error deleting apartments:', error)
+      alert('Error deleting apartments.')
+    }
+  }
+
+  const handleMarkAsSold = (apartment: Apartment) => {
+    setApartmentToSell(apartment)
+    setSaleData({
+      buyer_name: '',
+      sale_price: apartment.price,
+      payment_method: 'bank_loan',
+      down_payment: Math.round(apartment.price * 0.2), // 20% default
+      monthly_payment: 0,
+      sale_date: format(new Date(), 'yyyy-MM-dd'),
+      contract_signed: false,
+      notes: ''
+    })
+    setShowSaleForm(true)
+  }
+
+  const completeSale = async () => {
+    if (!apartmentToSell || !saleData.buyer_name.trim()) {
+      alert('Please enter buyer name')
+      return
+    }
+
+    try {
+      // First, find or create the customer
+      const { data: existingCustomer, error: customerSearchError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('name', saleData.buyer_name.split(' ')[0])
+        .eq('surname', saleData.buyer_name.split(' ').slice(1).join(' ') || '')
+        .single()
+
+      let customerId = existingCustomer?.id
+
+      if (!existingCustomer) {
+        // Create new customer
+        const nameParts = saleData.buyer_name.trim().split(' ')
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            name: nameParts[0],
+            surname: nameParts.slice(1).join(' ') || '',
+            email: `${saleData.buyer_name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+            status: 'buyer'
+          })
+          .select()
+          .single()
+
+        if (customerError) throw customerError
+        customerId = newCustomer.id
+      }
+
+      // Update apartment status and buyer
+      const { error: apartmentError } = await supabase
+        .from('apartments')
+        .update({
+          status: 'Sold',
+          buyer_name: saleData.buyer_name
+        })
+        .eq('id', apartmentToSell.id)
+
+      if (apartmentError) throw apartmentError
+
+      // Create sale record
+      const { error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          apartment_id: apartmentToSell.id,
+          customer_id: customerId,
+          sale_price: saleData.sale_price,
+          payment_method: saleData.payment_method,
+          down_payment: saleData.down_payment,
+          total_paid: saleData.down_payment,
+          remaining_amount: saleData.sale_price - saleData.down_payment,
+          monthly_payment: saleData.monthly_payment,
+          sale_date: saleData.sale_date,
+          contract_signed: saleData.contract_signed,
+          notes: saleData.notes
+        })
+
+      if (saleError) throw saleError
+
+      // Update local state immediately with complete sale information
+      if (selectedProject) {
+        const updatedApartments = selectedProject.apartments.map(apt => 
+          apt.id === apartmentToSell.id 
+            ? { 
+                ...apt, 
+                status: 'Sold' as const, 
+                buyer_name: saleData.buyer_name,
+                sale_info: {
+                  sale_price: saleData.sale_price,
+                  payment_method: saleData.payment_method,
+                  down_payment: saleData.down_payment,
+                  total_paid: saleData.down_payment,
+                  remaining_amount: saleData.sale_price - saleData.down_payment,
+                  monthly_payment: saleData.monthly_payment,
+                  sale_date: saleData.sale_date,
+                  contract_signed: saleData.contract_signed
+                }
+              }
+            : apt
+        )
+        
+        setSelectedProject({
+          ...selectedProject,
+          apartments: updatedApartments,
+          sold_units: updatedApartments.filter(apt => apt.status === 'Sold').length,
+          available_units: updatedApartments.filter(apt => apt.status === 'Available').length,
+          total_revenue: updatedApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + (apt.sale_info?.sale_price || apt.price), 0)
+        })
+      }
+
+      resetSaleForm()
+      fetchData() // Refresh projects list
+    } catch (error) {
+      console.error('Error completing sale:', error)
+      alert('Error completing sale. Please try again.')
+    }
+  }
+
+  const resetSaleForm = () => {
+    setSaleData({
+      buyer_name: '',
+      sale_price: 0,
+      payment_method: 'bank_loan',
+      down_payment: 0,
+      monthly_payment: 0,
+      sale_date: format(new Date(), 'yyyy-MM-dd'),
+      contract_signed: false,
+      notes: ''
+    })
+    setApartmentToSell(null)
+    setShowSaleForm(false)
+  }
+
   const handleEditApartment = (apartment: ApartmentWithDetails) => {
     setEditingApartment(apartment)
     setNewApartment({
@@ -677,129 +865,331 @@ const SalesProjects: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* Apartments Grid */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {selectedProject.apartments.map((apartment) => (
-                    <div
-                      key={apartment.id}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        apartment.status === 'Sold' ? 'border-green-200 bg-green-50' :
-                        apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50' :
-                        'border-blue-200 bg-blue-50'
-                      }`}
-                      onClick={() => setSelectedApartment(apartment)}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                          <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                <div>
+                  {/* Apartments Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedProject.apartments.map((apartment) => (
+                      <div
+                        key={apartment.id}
+                        onClick={(e) => handleApartmentClick(apartment.id, e)}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
+                          selectedApartments.has(apartment.id) 
+                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' :
+                          apartment.status === 'Sold' ? 'border-green-200 bg-green-50 hover:bg-green-100' :
+                          apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100' :
+                          'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
+                            <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                          </div>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
+                            apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {apartment.status}
+                          </span>
                         </div>
-                        <div className="flex space-x-1">
+                        
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">Size:</span>
+                            <span className="font-medium">{apartment.size_m2} m²</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">Price:</span>
+                            <span className="font-bold text-green-600">${apartment.price.toLocaleString()}</span>
+                          </div>
+                          {apartment.buyer_name && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">Buyer:</span>
+                              <span className="font-medium text-gray-900">{apartment.buyer_name}</span>
+                            </div>
+                          )}
+                          {apartment.sale_info && (
+                            <>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">Sale Price:</span>
+                                <span className="font-bold text-green-600">${apartment.sale_info.sale_price.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">Payment:</span>
+                                <span className="font-medium text-gray-900 capitalize">{apartment.sale_info.payment_method.replace('_', ' ')}</span>
+                              </div>
+                              {apartment.sale_info.down_payment > 0 && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600">Down Payment:</span>
+                                  <span className="font-medium text-gray-900">${apartment.sale_info.down_payment.toLocaleString()}</span>
+                                </div>
+                              )}
+                              {apartment.sale_info.monthly_payment > 0 && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600">Monthly:</span>
+                                  <span className="font-medium text-gray-900">${apartment.sale_info.monthly_payment.toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">Sale Date:</span>
+                                <span className="font-medium text-gray-900">{format(new Date(apartment.sale_info.sale_date), 'MMM dd, yyyy')}</span>
+                              </div>
+                              {apartment.sale_info.remaining_amount > 0 && (
+                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs text-blue-700">Payment Progress</span>
+                                    <span className="text-xs font-medium text-blue-900">
+                                      ${apartment.sale_info.total_paid.toLocaleString()} / ${apartment.sale_info.sale_price.toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-blue-200 rounded-full h-1.5">
+                                    <div 
+                                      className="bg-blue-600 h-1.5 rounded-full"
+                                      style={{ width: `${(apartment.sale_info.total_paid / apartment.sale_info.sale_price) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="text-xs text-blue-700 mt-1">
+                                    Remaining: ${apartment.sale_info.remaining_amount.toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-2 mt-3">
+                          {apartment.status === 'Available' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMarkAsSold(apartment)
+                              }}
+                              className="px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-xs font-medium transition-colors duration-200"
+                            >
+                              Mark Sold
+                            </button>
+                          )}
+                          {apartment.status === 'Available' && (
+                            <button
+                              onClick={() => updateApartmentStatus(apartment.id, 'Reserved')}
+                              className="px-2 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-xs font-medium transition-colors duration-200"
+                            >
+                              Reserve
+                            </button>
+                          )}
+                          {apartment.status === 'Reserved' && (
+                            <button
+                              onClick={() => updateApartmentStatus(apartment.id, 'Available')}
+                              className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-xs font-medium transition-colors duration-200"
+                            >
+                              Make Available
+                            </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               handleEditApartment(apartment)
                             }}
-                            className="p-1 text-gray-400 hover:text-blue-600"
-                            title="Edit apartment"
+                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               deleteApartment(apartment.id)
                             }}
-                            className="p-1 text-gray-400 hover:text-red-600"
-                            title="Delete apartment"
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      
-                      <div className="space-y-2 mb-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Size:</span>
-                          <span className="text-sm font-medium">{apartment.size_m2} m²</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Price:</span>
-                          <span className="text-sm font-bold text-green-600">${apartment.price.toLocaleString()}</span>
-                        </div>
-                        {apartment.customer && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Buyer:</span>
-                            <span className="text-sm font-medium">{apartment.customer.name} {apartment.customer.surname}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mb-3">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                          apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {apartment.status}
+                    ))}
+                  </div>
+                  
+                  {/* Multi-select actions */}
+                  {selectedApartments.size > 0 && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-900">
+                          {selectedApartments.size} apartment(s) selected
                         </span>
-                      </div>
-
-                      {apartment.sale && (
-                        <div className="border-t pt-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-1">
-                              {getPaymentMethodIcon(apartment.sale.payment_method)}
-                              <span className="text-xs text-gray-600 capitalize">
-                                {apartment.sale.payment_method.replace('_', ' ')}
-                              </span>
-                            </div>
-                            <span className="text-xs font-medium text-gray-900">
-                              ${apartment.sale.total_paid.toLocaleString()} paid
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div 
-                              className="bg-green-600 h-1.5 rounded-full"
-                              style={{ width: `${(apartment.sale.total_paid / apartment.sale.sale_price) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
-
-                      {apartment.status !== 'Sold' && (
-                        <div className="mt-3 pt-3 border-t space-y-2">
+                        <div className="flex space-x-2">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedApartment(apartment)
-                              setShowSaleModal(true)
-                              setSaleData(prev => ({
-                                ...prev,
-                                down_payment: apartment.price * 0.2
-                              }))
-                            }}
-                            className="w-full px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+                            onClick={() => setSelectedApartments(new Set())}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-sm transition-colors duration-200"
                           >
-                            Mark as Sold
+                            Clear Selection
                           </button>
-                          {apartment.status === 'Available' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                updateApartmentStatus(apartment.id, 'Reserved')
-                              }}
-                              className="w-full px-3 py-1 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700 transition-colors duration-200"
-                            >
-                              Reserve
-                            </button>
-                          )}
+                          <button
+                            onClick={deleteSelectedApartments}
+                            className="px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors duration-200"
+                          >
+                            Delete Selected
+                          </button>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sale Form Modal */}
+      {showSaleForm && apartmentToSell && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Complete Sale - Unit {apartmentToSell.number}
+                </h3>
+                <button
+                  onClick={resetSaleForm}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-gray-600 mt-1">
+                Floor {apartmentToSell.floor} • {apartmentToSell.size_m2} m² • ${apartmentToSell.price.toLocaleString()}
+              </p>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Buyer Name *</label>
+                  <input
+                    type="text"
+                    value={saleData.buyer_name}
+                    onChange={(e) => setSaleData({ ...saleData, buyer_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter buyer's full name"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price ($)</label>
+                  <input
+                    type="number"
+                    value={saleData.sale_price}
+                    onChange={(e) => setSaleData({ ...saleData, sale_price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                  <select
+                    value={saleData.payment_method}
+                    onChange={(e) => setSaleData({ ...saleData, payment_method: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="credit">Credit</option>
+                    <option value="bank_loan">Bank Loan</option>
+                    <option value="installments">Installments</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Down Payment ($)</label>
+                  <input
+                    type="number"
+                    value={saleData.down_payment}
+                    onChange={(e) => setSaleData({ ...saleData, down_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment ($)</label>
+                  <input
+                    type="number"
+                    value={saleData.monthly_payment}
+                    onChange={(e) => setSaleData({ ...saleData, monthly_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Date</label>
+                  <input
+                    type="date"
+                    value={saleData.sale_date}
+                    onChange={(e) => setSaleData({ ...saleData, sale_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={saleData.contract_signed}
+                      onChange={(e) => setSaleData({ ...saleData, contract_signed: e.target.checked })}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Contract Signed</span>
+                  </label>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={saleData.notes}
+                    onChange={(e) => setSaleData({ ...saleData, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Additional sale notes..."
+                  />
+                </div>
+              </div>
+              
+              {/* Sale Summary */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Sale Summary</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sale Price:</span>
+                    <span className="font-medium">${saleData.sale_price.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Down Payment:</span>
+                    <span className="font-medium">${saleData.down_payment.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Remaining:</span>
+                    <span className="font-medium">${(saleData.sale_price - saleData.down_payment).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Monthly Payment:</span>
+                    <span className="font-medium">${saleData.monthly_payment.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={resetSaleForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={completeSale}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Complete Sale
+                </button>
+              </div>
             </div>
           </div>
         </div>
