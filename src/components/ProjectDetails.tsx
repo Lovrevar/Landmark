@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase, Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { 
   ArrowLeft, 
@@ -42,6 +42,7 @@ const ProjectDetails: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchProjectDetails(id)
+      location.key
     }
   }, [id])
 
