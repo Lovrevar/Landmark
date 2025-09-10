@@ -99,6 +99,7 @@ const SalesProjects: React.FC = () => {
   // Filtered list gpt
   const filteredApartments = apartments.filter(apt => 
     filterStatus === 'all' ? true : apt.status === filterStatus)
+  
   const fetchData = async () => {
     setLoading(true)
     try {
