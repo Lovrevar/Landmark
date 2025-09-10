@@ -184,25 +184,54 @@ const SubcontractorManagement: React.FC = () => {
 
     try {
       if (editingSubcontractor) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('subcontractors')
           .update(newSubcontractor)
           .eq('id', editingSubcontractor.id)
+          .select('*')
 
         if (error) throw error
+
+        if (data && data[0]) {
+          // Update the existing subcontractor in the state
+          const updatedSubcontractor = {
+            ...data[0],
+            project_name: 'Sunset Towers', // Simplified for demo
+            payment_status: data[0].progress > 80 ? 'paid' : data[0].progress > 40 ? 'partial' : 'pending' as const,
+            amount_paid: Math.round(data[0].cost * (data[0].progress / 100))
+          }
+          
+          setSubcontractors(prev => 
+            prev.map(sub => sub.id === editingSubcontractor.id ? updatedSubcontractor : sub)
+          )
+        }
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('subcontractors')
           .insert(newSubcontractor)
           .select('*')
 
         if (error) throw error
+
+        if (data && data[0]) {
+          // Add the new subcontractor to the state immediately
+          const newSubcontractorWithDetails = {
+            ...data[0],
+            project_name: 'Sunset Towers', // Simplified for demo
+            payment_status: data[0].progress > 80 ? 'paid' : data[0].progress > 40 ? 'partial' : 'pending' as const,
+            amount_paid: Math.round(data[0].cost * (data[0].progress / 100))
+          }
+          
+          setSubcontractors(prev => [newSubcontractorWithDetails, ...prev])
+        }
       }
 
       resetForm()
-      fetchData()
+      // fetchData() // Remove this call since we're updating state directly
     } catch (error) {
       console.error('Error saving subcontractor:', error)
+      // If there's an error, still call fetchData to ensure consistency
+      fetchData()
     }
   }
 
