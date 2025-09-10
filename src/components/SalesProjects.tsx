@@ -17,7 +17,9 @@ import {
   CreditCard,
   Banknote,
   PiggyBank,
-  UserPlus
+  UserPlus,
+  Trash2,
+  Copy
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -44,6 +46,8 @@ const SalesProjects: React.FC = () => {
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [showSaleModal, setShowSaleModal] = useState(false)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [showApartmentForm, setShowApartmentForm] = useState(false)
+  const [editingApartment, setEditingApartment] = useState<Apartment | null>(null)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [saleData, setSaleData] = useState({
     payment_method: 'bank_loan' as const,
@@ -63,6 +67,26 @@ const SalesProjects: React.FC = () => {
     id_number: '',
     status: 'buyer' as const
   })
+  const [newApartment, setNewApartment] = useState({
+    project_id: '',
+    number: '',
+    floor: 1,
+    size_m2: 0,
+    price: 0,
+    status: 'Available' as const
+  })
+  const [bulkApartmentData, setBulkApartmentData] = useState({
+    project_id: '',
+    start_floor: 1,
+    end_floor: 10,
+    apartments_per_floor: 4,
+    base_size: 85,
+    size_variation: 10,
+    base_price: 450000,
+    price_per_m2: 5000,
+    floor_price_increment: 5000
+  })
+  const [showBulkForm, setShowBulkForm] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -277,6 +301,155 @@ const SalesProjects: React.FC = () => {
     }
   }
 
+  const addApartment = async () => {
+    if (!newApartment.project_id || !newApartment.number.trim() || !newApartment.size_m2 || !newApartment.price) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('apartments')
+        .insert(newApartment)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      await fetchData()
+      resetApartmentForm()
+    } catch (error) {
+      console.error('Error adding apartment:', error)
+      alert('Error adding apartment. Please check if apartment number already exists.')
+    }
+  }
+
+  const updateApartment = async () => {
+    if (!editingApartment || !newApartment.number.trim() || !newApartment.size_m2 || !newApartment.price) return
+
+    try {
+      const { error } = await supabase
+        .from('apartments')
+        .update({
+          number: newApartment.number,
+          floor: newApartment.floor,
+          size_m2: newApartment.size_m2,
+          price: newApartment.price,
+          status: newApartment.status
+        })
+        .eq('id', editingApartment.id)
+
+      if (error) throw error
+
+      await fetchData()
+      resetApartmentForm()
+    } catch (error) {
+      console.error('Error updating apartment:', error)
+      alert('Error updating apartment.')
+    }
+  }
+
+  const deleteApartment = async (apartmentId: string) => {
+    if (!confirm('Are you sure you want to delete this apartment?')) return
+
+    try {
+      const { error } = await supabase
+        .from('apartments')
+        .delete()
+        .eq('id', apartmentId)
+
+      if (error) throw error
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting apartment:', error)
+      alert('Error deleting apartment.')
+    }
+  }
+
+  const bulkCreateApartments = async () => {
+    if (!bulkApartmentData.project_id) {
+      alert('Please select a project')
+      return
+    }
+
+    try {
+      const apartments = []
+      
+      for (let floor = bulkApartmentData.start_floor; floor <= bulkApartmentData.end_floor; floor++) {
+        for (let apt = 1; apt <= bulkApartmentData.apartments_per_floor; apt++) {
+          const apartmentNumber = `${floor}${apt.toString().padStart(2, '0')}`
+          const sizeVariation = (Math.random() - 0.5) * bulkApartmentData.size_variation
+          const size = Math.round(bulkApartmentData.base_size + sizeVariation)
+          const floorPremium = (floor - 1) * bulkApartmentData.floor_price_increment
+          const price = Math.round(bulkApartmentData.base_price + (size * bulkApartmentData.price_per_m2) + floorPremium)
+
+          apartments.push({
+            project_id: bulkApartmentData.project_id,
+            number: apartmentNumber,
+            floor: floor,
+            size_m2: size,
+            price: price,
+            status: 'Available'
+          })
+        }
+      }
+
+      const { error } = await supabase
+        .from('apartments')
+        .insert(apartments)
+
+      if (error) throw error
+
+      await fetchData()
+      resetBulkForm()
+      alert(`Successfully created ${apartments.length} apartments!`)
+    } catch (error) {
+      console.error('Error bulk creating apartments:', error)
+      alert('Error creating apartments. Some apartment numbers may already exist.')
+    }
+  }
+
+  const resetApartmentForm = () => {
+    setNewApartment({
+      project_id: '',
+      number: '',
+      floor: 1,
+      size_m2: 0,
+      price: 0,
+      status: 'Available'
+    })
+    setEditingApartment(null)
+    setShowApartmentForm(false)
+  }
+
+  const resetBulkForm = () => {
+    setBulkApartmentData({
+      project_id: '',
+      start_floor: 1,
+      end_floor: 10,
+      apartments_per_floor: 4,
+      base_size: 85,
+      size_variation: 10,
+      base_price: 450000,
+      price_per_m2: 5000,
+      floor_price_increment: 5000
+    })
+    setShowBulkForm(false)
+  }
+
+  const handleEditApartment = (apartment: ApartmentWithDetails) => {
+    setEditingApartment(apartment)
+    setNewApartment({
+      project_id: apartment.project_id,
+      number: apartment.number,
+      floor: apartment.floor,
+      size_m2: apartment.size_m2,
+      price: apartment.price,
+      status: apartment.status
+    })
+    setShowApartmentForm(true)
+  }
+
   const updateApartmentStatus = async (apartmentId: string, newStatus: string) => {
     if (newStatus === 'Sold') {
       // Open sale modal instead of direct update
@@ -443,8 +616,206 @@ const SalesProjects: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setNewApartment({ ...newApartment, project_id: selectedProject.id })
+                      setShowApartmentForm(true)
+                    }}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Apartment
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBulkApartmentData({ ...bulkApartmentData, project_id: selectedProject.id })
+                      setShowBulkForm(true)
+                    }}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Bulk Create
+                  </button>
+                  <button
+                    onClick={() => setSelectedProject(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {selectedProject.apartments.length === 0 ? (
+                <div className="text-center py-12">
+                  <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Apartments Yet</h3>
+                  <p className="text-gray-600 mb-4">This project doesn't have any apartments. Add some to start managing sales.</p>
+                  <div className="flex justify-center space-x-3">
+                    <button
+                      onClick={() => {
+                        setNewApartment({ ...newApartment, project_id: selectedProject.id })
+                        setShowApartmentForm(true)
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Single Apartment
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBulkApartmentData({ ...bulkApartmentData, project_id: selectedProject.id })
+                        setShowBulkForm(true)
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Bulk Create Apartments
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Apartments Grid */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedProject.apartments.map((apartment) => (
+                    <div
+                      key={apartment.id}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        apartment.status === 'Sold' ? 'border-green-200 bg-green-50' :
+                        apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50' :
+                        'border-blue-200 bg-blue-50'
+                      }`}
+                      onClick={() => setSelectedApartment(apartment)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
+                          <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditApartment(apartment)
+                            }}
+                            className="p-1 text-gray-400 hover:text-blue-600"
+                            title="Edit apartment"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteApartment(apartment.id)
+                            }}
+                            className="p-1 text-gray-400 hover:text-red-600"
+                            title="Delete apartment"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Size:</span>
+                          <span className="text-sm font-medium">{apartment.size_m2} m²</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Price:</span>
+                          <span className="text-sm font-bold text-green-600">${apartment.price.toLocaleString()}</span>
+                        </div>
+                        {apartment.customer && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Buyer:</span>
+                            <span className="text-sm font-medium">{apartment.customer.name} {apartment.customer.surname}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mb-3">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
+                          apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {apartment.status}
+                        </span>
+                      </div>
+
+                      {apartment.sale && (
+                        <div className="border-t pt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-1">
+                              {getPaymentMethodIcon(apartment.sale.payment_method)}
+                              <span className="text-xs text-gray-600 capitalize">
+                                {apartment.sale.payment_method.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <span className="text-xs font-medium text-gray-900">
+                              ${apartment.sale.total_paid.toLocaleString()} paid
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-green-600 h-1.5 rounded-full"
+                              style={{ width: `${(apartment.sale.total_paid / apartment.sale.sale_price) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {apartment.status !== 'Sold' && (
+                        <div className="mt-3 pt-3 border-t space-y-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedApartment(apartment)
+                              setShowSaleModal(true)
+                              setSaleData(prev => ({
+                                ...prev,
+                                down_payment: apartment.price * 0.2
+                              }))
+                            }}
+                            className="w-full px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+                          >
+                            Mark as Sold
+                          </button>
+                          {apartment.status === 'Available' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateApartmentStatus(apartment.id, 'Reserved')
+                              }}
+                              className="w-full px-3 py-1 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700 transition-colors duration-200"
+                            >
+                              Reserve
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Apartment Form Modal */}
+      {showApartmentForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingApartment ? 'Edit Apartment' : 'Add New Apartment'}
+                </h3>
                 <button
-                  onClick={() => setSelectedProject(null)}
+                  onClick={resetApartmentForm}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -452,103 +823,262 @@ const SalesProjects: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              {/* Apartments Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedProject.apartments.map((apartment) => (
-                  <div
-                    key={apartment.id}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                      apartment.status === 'Sold' ? 'border-green-200 bg-green-50' :
-                      apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50' :
-                      'border-blue-200 bg-blue-50'
-                    }`}
-                    onClick={() => setSelectedApartment(apartment)}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                  <select
+                    value={newApartment.project_id}
+                    onChange={(e) => setNewApartment({ ...newApartment, project_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    disabled={!!editingApartment}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                        <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                        apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {apartment.status}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Size:</span>
-                        <span className="text-sm font-medium">{apartment.size_m2} m²</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Price:</span>
-                        <span className="text-sm font-bold text-green-600">${apartment.price.toLocaleString()}</span>
-                      </div>
-                      {apartment.customer && (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Buyer:</span>
-                          <span className="text-sm font-medium">{apartment.customer.name} {apartment.customer.surname}</span>
-                        </div>
-                      )}
-                    </div>
+                    <option value="">Select project</option>
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Apartment Number *</label>
+                  <input
+                    type="text"
+                    value={newApartment.number}
+                    onChange={(e) => setNewApartment({ ...newApartment, number: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 101, A-205"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newApartment.floor}
+                    onChange={(e) => setNewApartment({ ...newApartment, floor: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Size (m²) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.1"
+                    value={newApartment.size_m2}
+                    onChange={(e) => setNewApartment({ ...newApartment, size_m2: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price ($) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newApartment.price}
+                    onChange={(e) => setNewApartment({ ...newApartment, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={newApartment.status}
+                    onChange={(e) => setNewApartment({ ...newApartment, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Reserved">Reserved</option>
+                    <option value="Sold">Sold</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={resetApartmentForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingApartment ? updateApartment : addApartment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  {editingApartment ? 'Update' : 'Add'} Apartment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-                    {apartment.sale && (
-                      <div className="border-t pt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-1">
-                            {getPaymentMethodIcon(apartment.sale.payment_method)}
-                            <span className="text-xs text-gray-600 capitalize">
-                              {apartment.sale.payment_method.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <span className="text-xs font-medium text-gray-900">
-                            ${apartment.sale.total_paid.toLocaleString()} paid
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            className="bg-green-600 h-1.5 rounded-full"
-                            style={{ width: `${(apartment.sale.total_paid / apartment.sale.sale_price) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
+      {/* Bulk Create Apartments Modal */}
+      {showBulkForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Bulk Create Apartments</h3>
+                <button
+                  onClick={resetBulkForm}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                  <select
+                    value={bulkApartmentData.project_id}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, project_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select project</option>
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-1"></div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Floor</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.start_floor}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, start_floor: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Floor</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.end_floor}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, end_floor: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Apartments per Floor</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.apartments_per_floor}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, apartments_per_floor: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Base Size (m²)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.base_size}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, base_size: parseInt(e.target.value) || 85 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Size Variation (±m²)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkApartmentData.size_variation}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, size_variation: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Base Price ($)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.base_price}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, base_price: parseInt(e.target.value) || 450000 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price per m² ($)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkApartmentData.price_per_m2}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, price_per_m2: parseInt(e.target.value) || 5000 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor Price Increment ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkApartmentData.floor_price_increment}
+                    onChange={(e) => setBulkApartmentData({ ...bulkApartmentData, floor_price_increment: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
 
-                    {apartment.status !== 'Sold' && (
-                      <div className="mt-3 pt-3 border-t space-y-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedApartment(apartment)
-                            setShowSaleModal(true)
-                            setSaleData(prev => ({
-                              ...prev,
-                              down_payment: apartment.price * 0.2
-                            }))
-                          }}
-                          className="w-full px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200"
-                        >
-                          Mark as Sold
-                        </button>
-                        {apartment.status === 'Available' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              updateApartmentStatus(apartment.id, 'Reserved')
-                            }}
-                            className="w-full px-3 py-1 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700 transition-colors duration-200"
-                          >
-                            Reserve
-                          </button>
-                        )}
-                      </div>
-                    )}
+              {/* Preview */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Preview</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Total Apartments:</p>
+                    <p className="font-bold text-lg text-blue-600">
+                      {(bulkApartmentData.end_floor - bulkApartmentData.start_floor + 1) * bulkApartmentData.apartments_per_floor}
+                    </p>
                   </div>
-                ))}
+                  <div>
+                    <p className="text-gray-600">Floors:</p>
+                    <p className="font-medium">{bulkApartmentData.start_floor} - {bulkApartmentData.end_floor}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Size Range:</p>
+                    <p className="font-medium">
+                      {bulkApartmentData.base_size - bulkApartmentData.size_variation} - {bulkApartmentData.base_size + bulkApartmentData.size_variation} m²
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-gray-600">
+                  <p>• Apartment numbers will be generated as: FloorNumber + ApartmentNumber (e.g., 101, 102, 201, 202)</p>
+                  <p>• Prices will vary based on size and floor level</p>
+                  <p>• All apartments will be created with "Available" status</p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={resetBulkForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={bulkCreateApartments}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Create {(bulkApartmentData.end_floor - bulkApartmentData.start_floor + 1) * bulkApartmentData.apartments_per_floor} Apartments
+                </button>
               </div>
             </div>
           </div>
