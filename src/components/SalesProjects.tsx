@@ -95,7 +95,11 @@ const SalesProjects: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [])
-
+  const [filterStatus, setFilterStatus] = useState<'all' | 'Available' | 'Reserved' | 'Sold'>('all')
+  // Filtered list gpt
+  const filteredApartments = apartments.filter(apt => 
+    filterStatus === 'all' ? true : apt.status === filterStatus
+)
   const fetchData = async () => {
     setLoading(true)
     try {
