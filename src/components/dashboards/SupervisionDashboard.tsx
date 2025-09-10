@@ -18,8 +18,14 @@ import {
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
+interface FetchedSubcontractor extends Subcontractor {
+  project_phases: {
+    project_id: string
+  }
+}
+
 interface ProjectWithDetails extends Project {
-  subcontractors: Subcontractor[]
+  subcontractors: FetchedSubcontractor[]
   tasks: Task[]
   invoices: Invoice[]
   total_spent: number
@@ -31,7 +37,7 @@ interface ProjectWithDetails extends Project {
 const SupervisionDashboard: React.FC = () => {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithDetails[]>([])
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([])
+  const [subcontractors, setSubcontractors] = useState<FetchedSubcontractor[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithDetails | null>(null)
   const [stats, setStats] = useState({
@@ -59,9 +65,12 @@ const SupervisionDashboard: React.FC = () => {
       if (projectsError) throw projectsError
 
       // Fetch all subcontractors
-      const { data: subcontractorsData, error: subError } = await supabase
+      const { data: allSubcontractorsData, error: subError } = await supabase
         .from('subcontractors')
-        .select('*')
+        .select(`
+          *,
+          project_phases!inner(project_id)
+        `)
         .order('deadline', { ascending: true })
 
       if (subError) throw subError
@@ -85,8 +94,10 @@ const SupervisionDashboard: React.FC = () => {
       // Enhance projects with detailed information
       const projectsWithDetails = await Promise.all(
         (projectsData || []).map(async (project) => {
-          // Get project-specific data
-          const projectSubcontractors = subcontractorsData || []
+          // Filter subcontractors for this specific project
+          const projectSubcontractors = (allSubcontractorsData || []).filter(sub => 
+            sub.project_phases.project_id === project.id
+          )
           const projectTasks = (tasksData || []).filter(task => task.project_id === project.id)
           const projectInvoices = (invoicesData || []).filter(inv => inv.project_id === project.id)
 
@@ -114,13 +125,13 @@ const SupervisionDashboard: React.FC = () => {
       )
 
       setProjects(projectsWithDetails)
-      setSubcontractors(subcontractorsData || [])
+      setSubcontractors(allSubcontractorsData || [])
       setTasks(tasksData || [])
 
       // Calculate overall stats
       const totalProjects = projectsWithDetails.length
       const activeProjects = projectsWithDetails.filter(p => p.status === 'In Progress').length
-      const totalSubcontractors = subcontractorsData?.length || 0
+      const totalSubcontractors = allSubcontractorsData?.length || 0
       const onTimeProjects = projectsWithDetails.filter(p => 
         p.end_date ? new Date(p.end_date) >= new Date() : true
       ).length
