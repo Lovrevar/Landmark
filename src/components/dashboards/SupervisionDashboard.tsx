@@ -139,6 +139,7 @@ const SupervisionDashboard: React.FC = () => {
         p.end_date ? new Date(p.end_date) < new Date() && p.status !== 'Completed' : false
       ).length
       const totalCosts = subcontractorsData?.reduce((sum, sub) => sum + sub.cost, 0) || 0
+      const totalCosts = allSubcontractorsData?.reduce((sum, sub) => sum + sub.cost, 0) || 0
 
       setStats({ 
         totalProjects, 
