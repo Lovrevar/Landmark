@@ -31,7 +31,7 @@ const LoginForm: React.FC = () => {
             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <Building2 className="w-8 h-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">LANDMARK GROUP</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Construction Project Management</h1>
             <p className="text-gray-600 mt-2">Project Management Portal</p>
           </div>
 
