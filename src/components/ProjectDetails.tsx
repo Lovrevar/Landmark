@@ -1,42 +1,36 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectPhase, ProjectMilestone } from '../lib/supabase'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { 
-  ArrowLeft, 
   Building2, 
   Calendar, 
   DollarSign, 
   Users, 
-  Home, 
-  AlertTriangle,
-  TrendingUp,
-  FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Download,
-  Bell,
-  Target,
+  CheckSquare, 
+  Home,
+  ArrowLeft,
   Plus,
   Edit2,
   Trash2,
-  X
+  X,
+  Target,
+  CheckCircle,
+  Circle,
+  Clock,
+  AlertTriangle
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
-interface SubcontractorWithProjectName extends Subcontractor {
-  project_name: string
-}
-
 interface ProjectWithDetails extends Project {
   tasks: Task[]
-  subcontractors: SubcontractorWithProjectName[]
+  subcontractors: Subcontractor[]
   invoices: Invoice[]
   apartments: Apartment[]
   milestones: ProjectMilestone[]
-  completion_percentage: number
   total_spent: number
   total_revenue: number
+  completion_percentage: number
   overdue_tasks: number
   pending_invoices: number
 }
@@ -44,10 +38,9 @@ interface ProjectWithDetails extends Project {
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
+  const { user } = useAuth()
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
   const [newMilestone, setNewMilestone] = useState({
@@ -56,70 +49,90 @@ const ProjectDetails: React.FC = () => {
     completed: false,
     order_index: 0
   })
-  const [generatingReport, setGeneratingReport] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (id) {
-      fetchProjectDetails(id)
+      fetchProjectDetails()
     }
-  }, [id, location.key])
+  }, [id])
 
-  const fetchProjectDetails = async (projectId: string) => {
+  const fetchProjectDetails = async () => {
+    if (!id) return
+
+    setLoading(true)
     try {
       // Fetch project
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', projectId)
+        .eq('id', id)
         .single()
 
       if (projectError) throw projectError
 
-      // Fetch project phases for this project
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('id')
-        .eq('project_id', projectId)
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('project_id', id)
+        .order('deadline', { ascending: true })
 
-      if (phasesError) throw phasesError
+      if (tasksError) throw tasksError
 
-      const phaseIds = (phasesData || []).map(phase => phase.id)
+      // Fetch subcontractors
+      const { data: subcontractorsData, error: subError } = await supabase
+        .from('subcontractors')
+        .select(`
+          *,
+          project_phases!inner(project_id)
+        `)
+        .eq('project_phases.project_id', id)
+        .order('deadline', { ascending: true })
 
-      // Fetch related data
-      const [tasksResult, subcontractorsResult, invoicesResult, apartmentsResult, milestonesResult] = await Promise.all([
-        supabase.from('tasks').select('*').eq('project_id', projectId).order('deadline'),
-        phaseIds.length > 0 
-          ? supabase.from('subcontractors')
-              .select(`
-                *,
-                project_phases!inner(
-                  projects!inner(name)
-                )
-              `)
-              .in('phase_id', phaseIds)
-              .order('deadline')
-          : { data: [], error: null },
-        supabase.from('invoices').select('*').eq('project_id', projectId).order('due_date'),
-        supabase.from('apartments').select('*').eq('project_id', projectId).order('floor', { ascending: true }),
-        supabase.from('project_milestones').select('*').eq('project_id', projectId).order('order_index', { ascending: true })
-      ])
+      if (subError) throw subError
 
-      const tasks = tasksResult.data || []
-      const subcontractorsWithProjectName = (subcontractorsResult.data || []).map(sub => ({
-        ...sub,
-        project_name: sub.project_phases?.projects?.name || projectData.name
-      }))
-      const invoices = invoicesResult.data || []
-      const apartments = apartmentsResult.data || []
-      const milestones = milestonesResult.data || []
+      // Fetch invoices
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('project_id', id)
+        .order('due_date', { ascending: true })
 
-      // Calculate metrics
-      const completion_percentage = tasks.length > 0 
-        ? Math.round(tasks.reduce((sum, task) => sum + (task.progress || 0), 0) / tasks.length)
-        : 0
+      if (invoicesError) throw invoicesError
+
+      // Fetch apartments
+      const { data: apartmentsData, error: apartmentsError } = await supabase
+        .from('apartments')
+        .select('*')
+        .eq('project_id', id)
+        .order('floor', { ascending: true })
+        .order('number', { ascending: true })
+
+      if (apartmentsError) throw apartmentsError
+
+      // Fetch milestones
+      const { data: milestonesData, error: milestonesError } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', id)
+        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      if (milestonesError) throw milestonesError
+
+      // Calculate project statistics
+      const tasks = tasksData || []
+      const subcontractors = subcontractorsData || []
+      const invoices = invoicesData || []
+      const apartments = apartmentsData || []
+      const milestones = milestonesData || []
 
       const total_spent = invoices.filter(inv => inv.paid).reduce((sum, inv) => sum + inv.amount, 0)
       const total_revenue = apartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
+      const completion_percentage = tasks.length > 0 
+        ? Math.round(tasks.reduce((sum, task) => sum + (task.progress || 0), 0) / tasks.length)
+        : 0
       const overdue_tasks = tasks.filter(task => 
         new Date(task.deadline) < new Date() && task.status !== 'Completed'
       ).length
@@ -128,12 +141,13 @@ const ProjectDetails: React.FC = () => {
       setProject({
         ...projectData,
         tasks,
-        subcontractors: subcontractorsWithProjectName,
+        subcontractors,
         invoices,
         apartments,
-        completion_percentage,
+        milestones,
         total_spent,
         total_revenue,
+        completion_percentage,
         overdue_tasks,
         pending_invoices
       })
@@ -144,43 +158,8 @@ const ProjectDetails: React.FC = () => {
     }
   }
 
-  const getTaskStatusColor = (task: Task) => {
-    const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-    if (isOverdue) return 'border-l-4 border-l-red-500 bg-red-50'
-    if (task.status === 'Completed') return 'border-l-4 border-l-green-500 bg-green-50'
-    if (task.status === 'In Progress') return 'border-l-4 border-l-blue-500 bg-blue-50'
-    return 'border-l-4 border-l-gray-300 bg-gray-50'
-  }
-
-  const getRiskLevel = () => {
-    if (!project) return 'low'
-    const budgetUsed = (project.total_spent / project.budget) * 100
-    const timeUsed = project.end_date 
-      ? ((new Date().getTime() - new Date(project.start_date).getTime()) / 
-         (new Date(project.end_date).getTime() - new Date(project.start_date).getTime())) * 100
-      : 0
-
-    if (budgetUsed > 90 || timeUsed > 90 || project.overdue_tasks > 3) return 'high'
-    if (budgetUsed > 70 || timeUsed > 70 || project.overdue_tasks > 1) return 'medium'
-    return 'low'
-  }
-
-  const handleGenerateReport = async () => {
-    if (!project) return
-    
-    setGeneratingReport(true)
-    try {
-      const { generateProjectDetailReport } = await import('../utils/reportGenerator')
-      await generateProjectDetailReport(project)
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setGeneratingReport(false)
-    }
-  }
-
   const addMilestone = async () => {
-    if (!project || !newMilestone.name.trim()) {
+    if (!newMilestone.name.trim() || !id) {
       alert('Please enter milestone name')
       return
     }
@@ -189,7 +168,7 @@ const ProjectDetails: React.FC = () => {
       const { error } = await supabase
         .from('project_milestones')
         .insert({
-          project_id: project.id,
+          project_id: id,
           name: newMilestone.name,
           due_date: newMilestone.due_date || null,
           completed: newMilestone.completed,
@@ -199,7 +178,7 @@ const ProjectDetails: React.FC = () => {
       if (error) throw error
 
       resetMilestoneForm()
-      fetchProjectDetails(project.id)
+      fetchProjectDetails()
     } catch (error) {
       console.error('Error adding milestone:', error)
       alert('Error adding milestone. Please try again.')
@@ -223,7 +202,7 @@ const ProjectDetails: React.FC = () => {
       if (error) throw error
 
       resetMilestoneForm()
-      fetchProjectDetails(project!.id)
+      fetchProjectDetails()
     } catch (error) {
       console.error('Error updating milestone:', error)
       alert('Error updating milestone.')
@@ -240,7 +219,7 @@ const ProjectDetails: React.FC = () => {
         .eq('id', milestoneId)
 
       if (error) throw error
-      fetchProjectDetails(project!.id)
+      fetchProjectDetails()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       alert('Error deleting milestone.')
@@ -255,7 +234,7 @@ const ProjectDetails: React.FC = () => {
         .eq('id', milestoneId)
 
       if (error) throw error
-      fetchProjectDetails(project!.id)
+      fetchProjectDetails()
     } catch (error) {
       console.error('Error updating milestone:', error)
     }
@@ -283,6 +262,14 @@ const ProjectDetails: React.FC = () => {
     setShowMilestoneForm(true)
   }
 
+  const getMilestoneStatus = (milestone: ProjectMilestone) => {
+    if (milestone.completed) return { status: 'Completed', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' }
+    if (milestone.due_date && new Date(milestone.due_date) < new Date()) {
+      return { status: 'Overdue', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' }
+    }
+    return { status: 'In Progress', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading project details...</div>
   }
@@ -291,9 +278,17 @@ const ProjectDetails: React.FC = () => {
     return <div className="text-center py-12">Project not found</div>
   }
 
-  const riskLevel = getRiskLevel()
-  const profitability = project.total_revenue - project.total_spent
-  const remainingBudget = project.budget - project.total_spent
+  const milestoneStats = {
+    total: project.milestones.length,
+    completed: project.milestones.filter(m => m.completed).length,
+    overdue: project.milestones.filter(m => 
+      !m.completed && m.due_date && new Date(m.due_date) < new Date()
+    ).length
+  }
+
+  const milestoneProgress = milestoneStats.total > 0 
+    ? (milestoneStats.completed / milestoneStats.total) * 100 
+    : 0
 
   return (
     <div>
@@ -301,32 +296,89 @@ const ProjectDetails: React.FC = () => {
       <div className="mb-6">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </button>
-        <div className="flex items-center justify-between">
+        
+        <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-            <p className="text-gray-600 mt-1">{project.location}</p>
+            <p className="text-gray-600 mt-2">{project.location}</p>
+            <div className="flex items-center space-x-4 mt-3">
+              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                project.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {project.status}
+              </span>
+              <span className="text-sm text-gray-500">
+                Budget: ${project.budget.toLocaleString()}
+              </span>
+              <span className="text-sm text-gray-500">
+                Investor: {project.investor || 'N/A'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-              project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-              project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {project.status}
-            </span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              riskLevel === 'high' ? 'bg-red-100 text-red-800' :
-              riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-green-100 text-green-800'
-            }`}>
-              {riskLevel.toUpperCase()} RISK
-            </span>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <CheckSquare className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Tasks</p>
+              <p className="text-2xl font-bold text-gray-900">{project.tasks.length}</p>
+              <p className="text-xs text-gray-500">{project.completion_percentage}% complete</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Revenue</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${(project.total_revenue / 1000000).toFixed(1)}M
+              </p>
+              <p className="text-xs text-gray-500">From sales</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Users className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Subcontractors</p>
+              <p className="text-2xl font-bold text-gray-900">{project.subcontractors.length}</p>
+              <p className="text-xs text-gray-500">Active contracts</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Target className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Milestones</p>
+              <p className="text-2xl font-bold text-gray-900">{milestoneStats.completed}/{milestoneStats.total}</p>
+              <p className="text-xs text-gray-500">{milestoneProgress.toFixed(0)}% complete</p>
+            </div>
           </div>
         </div>
       </div>
@@ -336,16 +388,14 @@ const ProjectDetails: React.FC = () => {
         <nav className="flex space-x-8">
           {[
             { id: 'overview', name: 'Overview', icon: Building2 },
-            { id: 'timeline', name: 'Timeline & Progress', icon: Clock },
             { id: 'milestones', name: 'Milestones', icon: Target },
-            { id: 'financial', name: 'Financial', icon: DollarSign },
+            { id: 'tasks', name: 'Tasks', icon: CheckSquare },
             { id: 'subcontractors', name: 'Subcontractors', icon: Users },
-            { id: 'sales', name: 'Sales', icon: Home },
-            { id: 'risks', name: 'Risks & Issues', icon: AlertTriangle }
+            { id: 'apartments', name: 'Apartments', icon: Home }
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                 activeTab === tab.id
                   ? 'bg-blue-100 text-blue-700'
@@ -360,272 +410,109 @@ const ProjectDetails: React.FC = () => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Completion</p>
-                  <p className="text-2xl font-bold text-gray-900">{project.completion_percentage}%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Budget Used</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {((project.total_spent / project.budget) * 100).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Overdue Tasks</p>
-                  <p className="text-2xl font-bold text-gray-900">{project.overdue_tasks}</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Project Overview</h2>
+            
+            {/* Project Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Project Details</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Start Date:</span>
+                    <span className="font-medium">{format(new Date(project.start_date), 'MMM dd, yyyy')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">End Date:</span>
+                    <span className="font-medium">
+                      {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : 'TBD'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Budget:</span>
+                    <span className="font-medium">${project.budget.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Spent:</span>
+                    <span className="font-medium">${project.total_spent.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Revenue:</span>
+                    <span className="font-medium text-green-600">${project.total_revenue.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Home className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Units Sold</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {project.apartments.filter(apt => apt.status === 'Sold').length}/{project.apartments.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Project Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Information</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{project.location}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Investor:</span>
-                  <span className="font-medium">{project.investor || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Start Date:</span>
-                  <span className="font-medium">{format(new Date(project.start_date), 'MMM dd, yyyy')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">End Date:</span>
-                  <span className="font-medium">
-                    {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : 'TBD'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Days Remaining:</span>
-                  <span className="font-medium">
-                    {project.end_date ? differenceInDays(new Date(project.end_date), new Date()) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Budget:</span>
-                  <span className="font-medium">${project.budget.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Amount Spent:</span>
-                  <span className="font-medium">${project.total_spent.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining Budget:</span>
-                  <span className={`font-medium ${remainingBudget < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    ${remainingBudget.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sales Revenue:</span>
-                  <span className="font-medium">${project.total_revenue.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between border-t pt-3">
-                  <span className="text-gray-600">Expected Profit:</span>
-                  <span className={`font-bold ${profitability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${profitability.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'timeline' && (
-        <div className="space-y-6">
-          {/* Progress Overview */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Progress</h3>
-            <div className="mb-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">Project Completion</span>
-                <span className="text-sm font-medium">{project.completion_percentage}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${project.completion_percentage}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tasks I Created */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Tasks I Created</h3>
-            </div>
-            <div className="p-6 space-y-3">
-              {project.tasks.filter(task => task.created_by === 'director').map((task) => {
-                const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-                const needsApproval = task.progress === 100 && task.status !== 'Completed'
-                
-                return (
-                  <div
-                    key={task.id}
-                    className={`p-4 rounded-lg border transition-all duration-200 ${getTaskStatusColor(task)}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="font-medium text-gray-900">{task.name}</h4>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            isOverdue ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
-                          </span>
-                          {needsApproval && (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                              Needs Approval
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-2">
-                          Assigned to: <span className="font-medium">{task.assigned_to}</span>
-                        </p>
-                        
-                        {task.description && (
-                          <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                        )}
-                        
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 text-gray-400 mr-1" />
-                            <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                              Due {format(new Date(task.deadline), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">Progress:</span>
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  task.status === 'Completed' ? 'bg-green-600' : 'bg-blue-600'
-                                }`}
-                                style={{ width: `${task.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium">{task.progress || 0}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {needsApproval && (
-                        <button
-                          onClick={async () => {
-                            const { error } = await supabase
-                              .from('tasks')
-                              .update({ status: 'Completed' })
-                              .eq('id', task.id)
-                            
-                            if (!error) {
-                              fetchProjectDetails(project.id)
-                            }
-                          }}
-                          className="px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200"
-                        >
-                          Approve Completion
-                        </button>
-                      )}
+              
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Progress Summary</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-600">Task Completion</span>
+                      <span className="font-medium">{project.completion_percentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${project.completion_percentage}%` }}
+                      ></div>
                     </div>
                   </div>
-                )
-              })}
-              
-              {project.tasks.filter(task => task.created_by === 'director').length === 0 && (
-                <p className="text-gray-500 text-center py-8">No tasks created yet</p>
-              )}
+                  
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-600">Milestone Progress</span>
+                      <span className="font-medium">{milestoneProgress.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-purple-600 h-2 rounded-full"
+                        style={{ width: `${milestoneProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{project.overdue_tasks}</p>
+                      <p className="text-xs text-gray-600">Overdue Tasks</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-orange-600">{project.pending_invoices}</p>
+                      <p className="text-xs text-gray-600">Pending Invoices</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'milestones' && (
-        <div className="space-y-6">
-          {/* Milestones Header */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Project Milestones</h3>
+        {/* Milestones Tab */}
+        {activeTab === 'milestones' && (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Project Milestones</h2>
               <button
-                onClick={() => {
-                  setNewMilestone({
-                    name: '',
-                    due_date: '',
-                    completed: false,
-                    order_index: project.milestones.length + 1
-                  })
-                  setShowMilestoneForm(true)
-                }}
+                onClick={() => setShowMilestoneForm(true)}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Milestone
               </button>
             </div>
-            
-            {/* Milestone Progress Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Milestone Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-blue-700">Total Milestones</span>
                   <Target className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-2xl font-bold text-blue-900">{project.milestones.length}</p>
+                <p className="text-2xl font-bold text-blue-900">{milestoneStats.total}</p>
               </div>
               
               <div className="bg-green-50 p-4 rounded-lg">
@@ -633,650 +520,356 @@ const ProjectDetails: React.FC = () => {
                   <span className="text-sm text-green-700">Completed</span>
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 </div>
-                <p className="text-2xl font-bold text-green-900">
-                  {project.milestones.filter(m => m.completed).length}
-                </p>
+                <p className="text-2xl font-bold text-green-900">{milestoneStats.completed}</p>
               </div>
               
-              <div className="bg-orange-50 p-4 rounded-lg">
+              <div className="bg-red-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-orange-700">Progress</span>
-                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm text-red-700">Overdue</span>
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
                 </div>
-                <p className="text-2xl font-bold text-orange-900">
-                  {project.milestones.length > 0 
-                    ? Math.round((project.milestones.filter(m => m.completed).length / project.milestones.length) * 100)
-                    : 0
-                  }%
-                </p>
+                <p className="text-2xl font-bold text-red-900">{milestoneStats.overdue}</p>
               </div>
             </div>
-            
-            {/* Progress Bar */}
-            {project.milestones.length > 0 && (
-              <div className="mt-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">Milestone Progress</span>
-                  <span className="text-sm font-medium">
-                    {Math.round((project.milestones.filter(m => m.completed).length / project.milestones.length) * 100)}%
-                  </span>
+
+            {/* Overall Progress */}
+            <div className="mb-6">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Overall Milestone Progress</span>
+                <span className="text-sm font-medium text-gray-900">{milestoneProgress.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${milestoneProgress}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Milestone Form */}
+            {showMilestoneForm && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {editingMilestone ? 'Edit Milestone' : 'Add New Milestone'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Milestone Name *</label>
+                    <input
+                      type="text"
+                      value={newMilestone.name}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., Contracts Signed, Foundation Complete, Building No.1 Finished"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Due Date</label>
+                    <input
+                      type="date"
+                      value={newMilestone.due_date}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Order Position</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newMilestone.order_index}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, order_index: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="completed"
+                      checked={newMilestone.completed}
+                      onChange={(e) => setNewMilestone({ ...newMilestone, completed: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="completed" className="ml-2 text-sm text-gray-700">
+                      Mark as completed
+                    </label>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${(project.milestones.filter(m => m.completed).length / project.milestones.length) * 100}%` 
-                    }}
-                  ></div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={resetMilestoneForm}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={editingMilestone ? updateMilestone : addMilestone}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    {editingMilestone ? 'Update' : 'Add'} Milestone
+                  </button>
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Milestones List */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Milestone Timeline</h3>
-            </div>
-            <div className="p-6">
-              {project.milestones.length === 0 ? (
-                <div className="text-center py-12">
-                  <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Milestones Yet</h3>
-                  <p className="text-gray-600 mb-4">Add milestones to track project progress and key achievements.</p>
-                  <button
-                    onClick={() => {
-                      setNewMilestone({
-                        name: '',
-                        due_date: '',
-                        completed: false,
-                        order_index: 1
-                      })
-                      setShowMilestoneForm(true)
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    Add First Milestone
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {project.milestones.map((milestone, index) => {
-                    const isOverdue = milestone.due_date && !milestone.completed && new Date(milestone.due_date) < new Date()
-                    
-                    return (
-                      <div
-                        key={milestone.id}
-                        className={`p-6 rounded-xl border-2 transition-all duration-200 ${
-                          milestone.completed ? 'border-green-200 bg-green-50' :
-                          isOverdue ? 'border-red-200 bg-red-50' :
-                          'border-gray-200 bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-4 flex-1">
-                            {/* Milestone Number Circle */}
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                              milestone.completed ? 'bg-green-600 text-white' :
-                              isOverdue ? 'bg-red-600 text-white' :
-                              'bg-blue-600 text-white'
-                            }`}>
-                              {milestone.order_index || index + 1}
+            {/* Milestones List */}
+            {project.milestones.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Milestones Yet</h3>
+                <p className="text-gray-600 mb-4">Start tracking your project progress by adding milestones</p>
+                <button
+                  onClick={() => setShowMilestoneForm(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Add First Milestone
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {project.milestones.map((milestone, index) => {
+                  const status = getMilestoneStatus(milestone)
+                  const isOverdue = milestone.due_date && new Date(milestone.due_date) < new Date() && !milestone.completed
+                  
+                  return (
+                    <div
+                      key={milestone.id}
+                      className={`p-6 rounded-lg border-2 transition-all duration-200 ${status.bg} ${status.border}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-4 flex-1">
+                          {/* Milestone Number Circle */}
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                            milestone.completed ? 'bg-green-600' : 
+                            isOverdue ? 'bg-red-600' : 'bg-blue-600'
+                          }`}>
+                            {milestone.completed ? (
+                              <CheckCircle className="w-6 h-6" />
+                            ) : (
+                              <span>{index + 1}</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                milestone.completed ? 'bg-green-100 text-green-800' :
+                                isOverdue ? 'bg-red-100 text-red-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {status.status}
+                              </span>
                             </div>
                             
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h4 className="text-lg font-semibold text-gray-900">{milestone.name}</h4>
-                                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                                  milestone.completed ? 'bg-green-100 text-green-800' :
-                                  isOverdue ? 'bg-red-100 text-red-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {milestone.completed ? 'Completed' : isOverdue ? 'Overdue' : 'In Progress'}
-                                </span>
-                              </div>
-                              
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
                               {milestone.due_date && (
-                                <div className="flex items-center mb-3">
-                                  <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                                  <span className={`text-sm ${
-                                    isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'
-                                  }`}>
-                                    Due: {format(new Date(milestone.due_date), 'MMM dd, yyyy')}
+                                <div className="flex items-center">
+                                  <Calendar className="w-4 h-4 mr-1" />
+                                  <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                                    Target: {format(new Date(milestone.due_date), 'MMM dd, yyyy')}
                                     {isOverdue && ` (${Math.abs(differenceInDays(new Date(milestone.due_date), new Date()))} days overdue)`}
                                   </span>
                                 </div>
                               )}
-                              
-                              <div className="flex items-center space-x-3">
-                                <button
-                                  onClick={() => toggleMilestoneCompletion(milestone.id, milestone.completed)}
-                                  className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
-                                    milestone.completed 
-                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                      : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                  }`}
-                                >
-                                  {milestone.completed ? (
-                                    <>
-                                      <XCircle className="w-4 h-4 mr-1" />
-                                      Mark Incomplete
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                      Mark Complete
-                                    </>
-                                  )}
-                                </button>
+                              <div className="flex items-center">
+                                <span>Order: {milestone.order_index}</span>
                               </div>
                             </div>
                           </div>
-                          
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditMilestone(milestone)}
-                              className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteMilestone(milestone.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => toggleMilestoneCompletion(milestone.id, milestone.completed)}
+                            className={`p-2 rounded-lg transition-colors duration-200 ${
+                              milestone.completed 
+                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+                                : 'bg-green-100 text-green-600 hover:bg-green-200'
+                            }`}
+                            title={milestone.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                          >
+                            {milestone.completed ? <Circle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleEditMilestone(milestone)}
+                            className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+                            title="Edit milestone"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteMilestone(milestone.id)}
+                            className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
+                            title="Delete milestone"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tasks Tab */}
+        {activeTab === 'tasks' && (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Project Tasks</h2>
+            {project.tasks.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No tasks assigned to this project</p>
+            ) : (
+              <div className="space-y-4">
+                {project.tasks.map((task) => {
+                  const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
+                  return (
+                    <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-medium text-gray-900">{task.name}</h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                              isOverdue ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
+                            </span>
+                          </div>
+                          {task.description && (
+                            <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center space-x-4">
+                            <span className="text-sm text-gray-600">
+                              Assigned to: {task.assigned_to}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              Due: {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full"
+                                style={{ width: `${task.progress || 0}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium">{task.progress || 0}%</span>
                           </div>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'financial' && (
-        <div className="space-y-6">
-          {/* Financial Overview */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Budget Breakdown</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Budget</span>
-                  <span className="font-bold text-lg">${project.budget.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Amount Spent</span>
-                  <span className="font-medium">${project.total_spent.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Remaining Budget</span>
-                  <span className={`font-medium ${remainingBudget < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    ${remainingBudget.toLocaleString()}
-                  </span>
-                </div>
-                <div className="pt-3 border-t">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm text-gray-600">Budget Utilization</span>
-                    <span className="text-sm font-medium">
-                      {((project.total_spent / project.budget) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        (project.total_spent / project.budget) > 0.9 ? 'bg-red-600' :
-                        (project.total_spent / project.budget) > 0.7 ? 'bg-yellow-600' :
-                        'bg-green-600'
-                      }`}
-                      style={{ width: `${Math.min(100, (project.total_spent / project.budget) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
+            )}
+          </div>
+        )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue & Profitability</h3>
+        {/* Subcontractors Tab */}
+        {activeTab === 'subcontractors' && (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Subcontractors</h2>
+            {project.subcontractors.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No subcontractors assigned to this project</p>
+            ) : (
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Sales Revenue</span>
-                  <span className="font-medium">${project.total_revenue.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Costs</span>
-                  <span className="font-medium">${project.total_spent.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center pt-3 border-t">
-                  <span className="text-gray-600">Expected Profit</span>
-                  <span className={`font-bold text-lg ${profitability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${profitability.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Profit Margin</span>
-                  <span className={`font-medium ${profitability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {project.total_revenue > 0 ? ((profitability / project.total_revenue) * 100).toFixed(1) : '0'}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Invoices */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Invoices & Payments</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Overdue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {project.invoices.map((invoice) => {
-                    const daysOverdue = !invoice.paid ? differenceInDays(new Date(), new Date(invoice.due_date)) : 0
-                    return (
-                      <tr key={invoice.id}>
-                        <td className="px-6 py-4 text-sm font-medium">${invoice.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-sm">{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            invoice.paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {invoice.paid ? 'Paid' : 'Unpaid'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {daysOverdue > 0 ? (
-                            <span className="text-red-600 font-medium">{daysOverdue} days</span>
-                          ) : (
-                            <span className="text-gray-500">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'subcontractors' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Subcontractors & Work Packages</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contractor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deadline</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
                 {project.subcontractors.map((sub) => {
                   const isOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
                   return (
-                    <tr key={sub.id}>
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="font-medium text-gray-900">{sub.name}</div>
-                          <div className="text-sm text-gray-500">{sub.contact}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                        {sub.job_description}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className={`h-2 rounded-full ${sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'}`}
-                              style={{ width: `${sub.progress}%` }}
-                            ></div>
+                    <div key={sub.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900 mb-2">{sub.name}</h3>
+                          <p className="text-sm text-gray-600 mb-2">{sub.job_description}</p>
+                          <div className="flex items-center space-x-4">
+                            <span className="text-sm text-gray-600">
+                              Contact: {sub.contact}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              Cost: ${sub.cost.toLocaleString()}
+                            </span>
+                            <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                              Due: {format(new Date(sub.deadline), 'MMM dd, yyyy')}
+                            </span>
                           </div>
-                          <span className="text-sm font-medium">{sub.progress}%</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}>
-                          {format(new Date(sub.deadline), 'MMM dd, yyyy')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium">${sub.cost.toLocaleString()}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          sub.progress === 100 ? 'bg-green-100 text-green-800' :
-                          isOverdue ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {sub.progress === 100 ? 'Completed' : isOverdue ? 'Overdue' : 'In Progress'}
-                        </span>
-                      </td>
-                    </tr>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
+                                }`}
+                                style={{ width: `${sub.progress}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium">{sub.progress}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'sales' && (
-        <div className="space-y-6">
-          {/* Sales Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Home className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Units</p>
-                  <p className="text-2xl font-bold text-gray-900">{project.apartments.length}</p>
-                </div>
+        {/* Apartments Tab */}
+        {activeTab === 'apartments' && (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Apartments</h2>
+            {project.apartments.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No apartments defined for this project</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {project.apartments.map((apartment) => (
+                  <div key={apartment.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Unit {apartment.number}</h3>
+                        <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
+                        apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {apartment.status}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Size:</span>
+                        <span className="text-sm font-medium">{apartment.size_m2} m²</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Price:</span>
+                        <span className="text-sm font-medium">${apartment.price.toLocaleString()}</span>
+                      </div>
+                      {apartment.buyer_name && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Buyer:</span>
+                          <span className="text-sm font-medium">{apartment.buyer_name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Units Sold</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {project.apartments.filter(apt => apt.status === 'Sold').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Sales Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${project.total_revenue.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-
-          {/* Apartments Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Apartment Sales Status</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size (m²)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buyer</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {project.apartments.map((apartment) => (
-                    <tr key={apartment.id}>
-                      <td className="px-6 py-4 font-medium">{apartment.number}</td>
-                      <td className="px-6 py-4 text-sm">{apartment.floor}</td>
-                      <td className="px-6 py-4 text-sm">{apartment.size_m2}</td>
-                      <td className="px-6 py-4 text-sm font-medium">${apartment.price.toLocaleString()}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                          apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {apartment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">{apartment.buyer_name || 'N/A'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'risks' && (
-        <div className="space-y-6">
-          {/* Risk Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Overdue Tasks</p>
-                  <p className="text-2xl font-bold text-gray-900">{project.overdue_tasks}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Pending Invoices</p>
-                  <p className="text-2xl font-bold text-gray-900">{project.pending_invoices}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className={`p-2 rounded-lg ${
-                  remainingBudget < 0 ? 'bg-red-100' : 'bg-green-100'
-                }`}>
-                  <DollarSign className={`w-6 h-6 ${
-                    remainingBudget < 0 ? 'text-red-600' : 'text-green-600'
-                  }`} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Budget Status</p>
-                  <p className={`text-2xl font-bold ${
-                    remainingBudget < 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {remainingBudget < 0 ? 'Over' : 'Under'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Critical Alerts */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Bell className="w-5 h-5 mr-2 text-orange-600" />
-              Critical Alerts
-            </h3>
-            <div className="space-y-3">
-              {project.overdue_tasks > 0 && (
-                <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <XCircle className="w-5 h-5 text-red-600 mr-3" />
-                  <span className="text-red-800">
-                    {project.overdue_tasks} task(s) are overdue and require immediate attention
-                  </span>
-                </div>
-              )}
-              
-              {remainingBudget < 0 && (
-                <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600 mr-3" />
-                  <span className="text-red-800">
-                    Project is over budget by ${Math.abs(remainingBudget).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              
-              {project.pending_invoices > 0 && (
-                <div className="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <Clock className="w-5 h-5 text-yellow-600 mr-3" />
-                  <span className="text-yellow-800">
-                    {project.pending_invoices} invoice(s) pending payment
-                  </span>
-                </div>
-              )}
-
-              {project.overdue_tasks === 0 && remainingBudget >= 0 && project.pending_invoices === 0 && (
-                <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                  <span className="text-green-800">No critical issues detected</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Milestone Form Modal */}
-      {showMilestoneForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingMilestone ? 'Edit Milestone' : 'Add New Milestone'}
-                </h3>
-                <button
-                  onClick={resetMilestoneForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Milestone Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={newMilestone.name}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Foundation Complete, Building No.1 Finished"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Target Date
-                  </label>
-                  <input
-                    type="date"
-                    value={newMilestone.due_date}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Order Position
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newMilestone.order_index}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, order_index: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="1"
-                  />
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="completed"
-                    checked={newMilestone.completed}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, completed: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="completed" className="ml-2 block text-sm text-gray-700">
-                    Mark as completed
-                  </label>
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={resetMilestoneForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingMilestone ? updateMilestone : addMilestone}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {editingMilestone ? 'Update' : 'Add'} Milestone
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Actions */}
-      <div className="mt-8 flex justify-end space-x-3">
-        <button 
-          onClick={handleGenerateReport}
-          disabled={generatingReport}
-          className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors duration-200"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          {generatingReport ? 'Generating...' : 'Export PDF'}
-        </button>
-        <button 
-          onClick={handleGenerateReport}
-          disabled={generatingReport}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200"
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          {generatingReport ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Generating...
-            </>
-          ) : (
-            'Generate Report'
-          )}
-        </button>
+        )}
       </div>
     </div>
   )

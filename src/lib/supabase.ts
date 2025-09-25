@@ -262,5 +262,6 @@ export type ProjectMilestone = {
   due_date: string | null
   completed: boolean
   order_index: number
+  order_index: number
   created_at: string
 }
