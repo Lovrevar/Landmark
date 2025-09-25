@@ -492,7 +492,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     onChange={(e) => updatePhaseCount(parseInt(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {[3, 4, 5, 6, 7, 8].map(count => (
+                    {[1, 2, 3, 4, 5, 6].map(count => (
                       <option key={count} value={count}>{count} Phases</option>
                     ))}
                   </select>
