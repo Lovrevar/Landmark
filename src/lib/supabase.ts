@@ -254,3 +254,13 @@ export type ProjectPhase = {
   status: 'planning' | 'active' | 'completed' | 'on_hold'
   created_at: string
 }
+
+export type ProjectMilestone = {
+  id: string
+  project_id: string
+  name: string
+  due_date: string | null
+  completed: boolean
+  order_index: number
+  created_at: string
+}

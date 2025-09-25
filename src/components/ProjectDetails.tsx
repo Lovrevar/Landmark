@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectPhase } from '../lib/supabase'
+import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectPhase, ProjectMilestone } from '../lib/supabase'
 import { 
   ArrowLeft, 
   Building2, 
@@ -15,7 +15,12 @@ import {
   CheckCircle,
   XCircle,
   Download,
-  Bell
+  Bell,
+  Target,
+  Plus,
+  Edit2,
+  Trash2,
+  X
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
@@ -28,6 +33,7 @@ interface ProjectWithDetails extends Project {
   subcontractors: SubcontractorWithProjectName[]
   invoices: Invoice[]
   apartments: Apartment[]
+  milestones: ProjectMilestone[]
   completion_percentage: number
   total_spent: number
   total_revenue: number
@@ -42,6 +48,14 @@ const ProjectDetails: React.FC = () => {
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showMilestoneForm, setShowMilestoneForm] = useState(false)
+  const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
+  const [newMilestone, setNewMilestone] = useState({
+    name: '',
+    due_date: '',
+    completed: false,
+    order_index: 0
+  })
   const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
@@ -72,7 +86,7 @@ const ProjectDetails: React.FC = () => {
       const phaseIds = (phasesData || []).map(phase => phase.id)
 
       // Fetch related data
-      const [tasksResult, subcontractorsResult, invoicesResult, apartmentsResult] = await Promise.all([
+      const [tasksResult, subcontractorsResult, invoicesResult, apartmentsResult, milestonesResult] = await Promise.all([
         supabase.from('tasks').select('*').eq('project_id', projectId).order('deadline'),
         phaseIds.length > 0 
           ? supabase.from('subcontractors')
@@ -86,7 +100,8 @@ const ProjectDetails: React.FC = () => {
               .order('deadline')
           : { data: [], error: null },
         supabase.from('invoices').select('*').eq('project_id', projectId).order('due_date'),
-        supabase.from('apartments').select('*').eq('project_id', projectId).order('floor', { ascending: true })
+        supabase.from('apartments').select('*').eq('project_id', projectId).order('floor', { ascending: true }),
+        supabase.from('project_milestones').select('*').eq('project_id', projectId).order('order_index', { ascending: true })
       ])
 
       const tasks = tasksResult.data || []
@@ -96,6 +111,7 @@ const ProjectDetails: React.FC = () => {
       }))
       const invoices = invoicesResult.data || []
       const apartments = apartmentsResult.data || []
+      const milestones = milestonesResult.data || []
 
       // Calculate metrics
       const completion_percentage = tasks.length > 0 
@@ -163,6 +179,110 @@ const ProjectDetails: React.FC = () => {
     }
   }
 
+  const addMilestone = async () => {
+    if (!project || !newMilestone.name.trim()) {
+      alert('Please enter milestone name')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('project_milestones')
+        .insert({
+          project_id: project.id,
+          name: newMilestone.name,
+          due_date: newMilestone.due_date || null,
+          completed: newMilestone.completed,
+          order_index: newMilestone.order_index
+        })
+
+      if (error) throw error
+
+      resetMilestoneForm()
+      fetchProjectDetails(project.id)
+    } catch (error) {
+      console.error('Error adding milestone:', error)
+      alert('Error adding milestone. Please try again.')
+    }
+  }
+
+  const updateMilestone = async () => {
+    if (!editingMilestone || !newMilestone.name.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('project_milestones')
+        .update({
+          name: newMilestone.name,
+          due_date: newMilestone.due_date || null,
+          completed: newMilestone.completed,
+          order_index: newMilestone.order_index
+        })
+        .eq('id', editingMilestone.id)
+
+      if (error) throw error
+
+      resetMilestoneForm()
+      fetchProjectDetails(project!.id)
+    } catch (error) {
+      console.error('Error updating milestone:', error)
+      alert('Error updating milestone.')
+    }
+  }
+
+  const deleteMilestone = async (milestoneId: string) => {
+    if (!confirm('Are you sure you want to delete this milestone?')) return
+
+    try {
+      const { error } = await supabase
+        .from('project_milestones')
+        .delete()
+        .eq('id', milestoneId)
+
+      if (error) throw error
+      fetchProjectDetails(project!.id)
+    } catch (error) {
+      console.error('Error deleting milestone:', error)
+      alert('Error deleting milestone.')
+    }
+  }
+
+  const toggleMilestoneCompletion = async (milestoneId: string, completed: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('project_milestones')
+        .update({ completed: !completed })
+        .eq('id', milestoneId)
+
+      if (error) throw error
+      fetchProjectDetails(project!.id)
+    } catch (error) {
+      console.error('Error updating milestone:', error)
+    }
+  }
+
+  const resetMilestoneForm = () => {
+    setNewMilestone({
+      name: '',
+      due_date: '',
+      completed: false,
+      order_index: 0
+    })
+    setEditingMilestone(null)
+    setShowMilestoneForm(false)
+  }
+
+  const handleEditMilestone = (milestone: ProjectMilestone) => {
+    setEditingMilestone(milestone)
+    setNewMilestone({
+      name: milestone.name,
+      due_date: milestone.due_date || '',
+      completed: milestone.completed,
+      order_index: milestone.order_index
+    })
+    setShowMilestoneForm(true)
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading project details...</div>
   }
@@ -217,6 +337,7 @@ const ProjectDetails: React.FC = () => {
           {[
             { id: 'overview', name: 'Overview', icon: Building2 },
             { id: 'timeline', name: 'Timeline & Progress', icon: Clock },
+            { id: 'milestones', name: 'Milestones', icon: Target },
             { id: 'financial', name: 'Financial', icon: DollarSign },
             { id: 'subcontractors', name: 'Subcontractors', icon: Users },
             { id: 'sales', name: 'Sales', icon: Home },
@@ -468,6 +589,209 @@ const ProjectDetails: React.FC = () => {
               
               {project.tasks.filter(task => task.created_by === 'director').length === 0 && (
                 <p className="text-gray-500 text-center py-8">No tasks created yet</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'milestones' && (
+        <div className="space-y-6">
+          {/* Milestones Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Project Milestones</h3>
+              <button
+                onClick={() => {
+                  setNewMilestone({
+                    name: '',
+                    due_date: '',
+                    completed: false,
+                    order_index: project.milestones.length + 1
+                  })
+                  setShowMilestoneForm(true)
+                }}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Milestone
+              </button>
+            </div>
+            
+            {/* Milestone Progress Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-blue-700">Total Milestones</span>
+                  <Target className="w-4 h-4 text-blue-600" />
+                </div>
+                <p className="text-2xl font-bold text-blue-900">{project.milestones.length}</p>
+              </div>
+              
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-green-700">Completed</span>
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                </div>
+                <p className="text-2xl font-bold text-green-900">
+                  {project.milestones.filter(m => m.completed).length}
+                </p>
+              </div>
+              
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-orange-700">Progress</span>
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                </div>
+                <p className="text-2xl font-bold text-orange-900">
+                  {project.milestones.length > 0 
+                    ? Math.round((project.milestones.filter(m => m.completed).length / project.milestones.length) * 100)
+                    : 0
+                  }%
+                </p>
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            {project.milestones.length > 0 && (
+              <div className="mt-4">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-gray-600">Milestone Progress</span>
+                  <span className="text-sm font-medium">
+                    {Math.round((project.milestones.filter(m => m.completed).length / project.milestones.length) * 100)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${(project.milestones.filter(m => m.completed).length / project.milestones.length) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Milestones List */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Milestone Timeline</h3>
+            </div>
+            <div className="p-6">
+              {project.milestones.length === 0 ? (
+                <div className="text-center py-12">
+                  <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Milestones Yet</h3>
+                  <p className="text-gray-600 mb-4">Add milestones to track project progress and key achievements.</p>
+                  <button
+                    onClick={() => {
+                      setNewMilestone({
+                        name: '',
+                        due_date: '',
+                        completed: false,
+                        order_index: 1
+                      })
+                      setShowMilestoneForm(true)
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Add First Milestone
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {project.milestones.map((milestone, index) => {
+                    const isOverdue = milestone.due_date && !milestone.completed && new Date(milestone.due_date) < new Date()
+                    
+                    return (
+                      <div
+                        key={milestone.id}
+                        className={`p-6 rounded-xl border-2 transition-all duration-200 ${
+                          milestone.completed ? 'border-green-200 bg-green-50' :
+                          isOverdue ? 'border-red-200 bg-red-50' :
+                          'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4 flex-1">
+                            {/* Milestone Number Circle */}
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                              milestone.completed ? 'bg-green-600 text-white' :
+                              isOverdue ? 'bg-red-600 text-white' :
+                              'bg-blue-600 text-white'
+                            }`}>
+                              {milestone.order_index || index + 1}
+                            </div>
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <h4 className="text-lg font-semibold text-gray-900">{milestone.name}</h4>
+                                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                                  milestone.completed ? 'bg-green-100 text-green-800' :
+                                  isOverdue ? 'bg-red-100 text-red-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {milestone.completed ? 'Completed' : isOverdue ? 'Overdue' : 'In Progress'}
+                                </span>
+                              </div>
+                              
+                              {milestone.due_date && (
+                                <div className="flex items-center mb-3">
+                                  <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                  <span className={`text-sm ${
+                                    isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'
+                                  }`}>
+                                    Due: {format(new Date(milestone.due_date), 'MMM dd, yyyy')}
+                                    {isOverdue && ` (${Math.abs(differenceInDays(new Date(milestone.due_date), new Date()))} days overdue)`}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center space-x-3">
+                                <button
+                                  onClick={() => toggleMilestoneCompletion(milestone.id, milestone.completed)}
+                                  className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                    milestone.completed 
+                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  }`}
+                                >
+                                  {milestone.completed ? (
+                                    <>
+                                      <XCircle className="w-4 h-4 mr-1" />
+                                      Mark Incomplete
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      Mark Complete
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditMilestone(milestone)}
+                              className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteMilestone(milestone.id)}
+                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </div>
           </div>
@@ -830,6 +1154,99 @@ const ProjectDetails: React.FC = () => {
                   <span className="text-green-800">No critical issues detected</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Milestone Form Modal */}
+      {showMilestoneForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingMilestone ? 'Edit Milestone' : 'Add New Milestone'}
+                </h3>
+                <button
+                  onClick={resetMilestoneForm}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Milestone Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMilestone.name}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Foundation Complete, Building No.1 Finished"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newMilestone.due_date}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Order Position
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newMilestone.order_index}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, order_index: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1"
+                  />
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="completed"
+                    checked={newMilestone.completed}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, completed: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="completed" className="ml-2 block text-sm text-gray-700">
+                    Mark as completed
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={resetMilestoneForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingMilestone ? updateMilestone : addMilestone}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  {editingMilestone ? 'Update' : 'Add'} Milestone
+                </button>
+              </div>
             </div>
           </div>
         </div>
