@@ -46,8 +46,7 @@ const ProjectDetails: React.FC = () => {
   const [newMilestone, setNewMilestone] = useState({
     name: '',
     due_date: '',
-    completed: false,
-    order_index: 0
+    completed: false
   })
   const [loading, setLoading] = useState(true)
 
@@ -116,7 +115,6 @@ const ProjectDetails: React.FC = () => {
         .from('project_milestones')
         .select('*')
         .eq('project_id', id)
-        .order('order_index', { ascending: true })
         .order('created_at', { ascending: true })
 
       if (milestonesError) throw milestonesError
@@ -171,8 +169,7 @@ const ProjectDetails: React.FC = () => {
           project_id: id,
           name: newMilestone.name,
           due_date: newMilestone.due_date || null,
-          completed: newMilestone.completed,
-          order_index: newMilestone.order_index
+          completed: newMilestone.completed
         })
 
       if (error) throw error
@@ -194,8 +191,7 @@ const ProjectDetails: React.FC = () => {
         .update({
           name: newMilestone.name,
           due_date: newMilestone.due_date || null,
-          completed: newMilestone.completed,
-          order_index: newMilestone.order_index
+          completed: newMilestone.completed
         })
         .eq('id', editingMilestone.id)
 
@@ -244,8 +240,7 @@ const ProjectDetails: React.FC = () => {
     setNewMilestone({
       name: '',
       due_date: '',
-      completed: false,
-      order_index: 0
+      completed: false
     })
     setEditingMilestone(null)
     setShowMilestoneForm(false)
@@ -256,8 +251,7 @@ const ProjectDetails: React.FC = () => {
     setNewMilestone({
       name: milestone.name,
       due_date: milestone.due_date || '',
-      completed: milestone.completed,
-      order_index: milestone.order_index
+      completed: milestone.completed
     })
     setShowMilestoneForm(true)
   }
@@ -573,17 +567,6 @@ const ProjectDetails: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Order Position</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newMilestone.order_index}
-                      onChange={(e) => setNewMilestone({ ...newMilestone, order_index: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                  </div>
                   <div className="md:col-span-2 flex items-center">
                     <input
                       type="checkbox"
@@ -676,7 +659,7 @@ const ProjectDetails: React.FC = () => {
                                 </div>
                               )}
                               <div className="flex items-center">
-                                <span>Order: {milestone.order_index}</span>
+                                <span>Created: {format(new Date(milestone.created_at), 'MMM dd')}</span>
                               </div>
                             </div>
                           </div>
