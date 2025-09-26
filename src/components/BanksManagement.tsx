@@ -43,7 +43,7 @@ const BanksManagement: React.FC = () => {
     usage_expiration_date: '',
     grace_period: 0
     purpose: '',
-    repayment_type: 'monthly'
+    repayment_type: 'monthly',
     repayment_type: 'monthly' as const
   const [loading, setLoading] = useState(true)
 
