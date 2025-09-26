@@ -711,7 +711,7 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Terms</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortage</label>
                   <textarea
                     value={newInvestment.terms}
                     onChange={(e) => setNewInvestment({ ...newInvestment, terms: e.target.value })}
