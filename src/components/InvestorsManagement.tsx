@@ -372,7 +372,7 @@ const InvestorsManagement: React.FC = () => {
             {/* Investment Stats */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">${(investor.total_committed / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-green-600">€{(investor.total_committed / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Committed</p>
               </div>
               <div className="text-center">
@@ -498,7 +498,7 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Invested ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Invested (€)</label>
                   <input
                     type="number"
                     value={newInvestor.total_invested}
@@ -620,7 +620,7 @@ const InvestorsManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (€) *</label>
                   <input
                     type="number"
                     value={newInvestment.amount}
@@ -745,7 +745,7 @@ const InvestorsManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-green-700">Total Committed:</span>
-                      <span className="font-medium text-green-900">${selectedInvestor.total_committed.toLocaleString()}</span>
+                      <span className="font-medium text-green-900">€{selectedInvestor.total_committed.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-green-700">Active Investments:</span>
@@ -806,7 +806,7 @@ const InvestorsManagement: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-purple-700">Avg. Investment:</span>
                       <span className="font-medium text-purple-900">
-                        ${selectedInvestor.investments.length > 0 
+                        €{selectedInvestor.investments.length > 0 
                           ? (selectedInvestor.total_committed / selectedInvestor.investments.length).toLocaleString()
                           : '0'
                         }
@@ -866,7 +866,7 @@ const InvestorsManagement: React.FC = () => {
                               <p className="text-sm text-gray-600 mb-2">{investment.terms}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-gray-900">${investment.amount.toLocaleString()}</p>
+                              <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString()}</p>
                               <p className="text-sm text-gray-600">{investment.expected_return}% ROI</p>
                             </div>
                           </div>
