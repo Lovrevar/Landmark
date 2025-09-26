@@ -644,7 +644,7 @@ const InvestorsManagement: React.FC = () => {
                     {newInvestment.expected_return > 0 
                       ? `${((1 + newInvestment.expected_return / 100) * 100).toFixed(0)}%`
                       : '100%'
-                    } (2x = 200%)
+                    }
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Calculated from expected return rate
