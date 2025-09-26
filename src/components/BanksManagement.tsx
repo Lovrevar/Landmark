@@ -42,7 +42,7 @@ const BanksManagement: React.FC = () => {
     purpose: '',
     usage_expiration_date: '',
     grace_period: 0,
-    credit_seniority: 'senior',
+    credit_seniority: 'senior' as 'junior' | 'senior',
     repayment_type: 'monthly' as const
   })
   const [loading, setLoading] = useState(true)
@@ -217,7 +217,11 @@ const BanksManagement: React.FC = () => {
       maturity_date: '',
       outstanding_balance: 0,
       monthly_payment: 0,
-      purpose: ''
+      purpose: '',
+      usage_expiration_date: '',
+      grace_period: 0,
+      credit_seniority: 'senior',
+      repayment_type: 'monthly'
     })
     setShowCreditForm(false)
   }
@@ -593,7 +597,7 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment (€)</label>
                   <input
                     type="number"
                     value={newCredit.monthly_payment}
@@ -791,7 +795,7 @@ const BanksManagement: React.FC = () => {
                       <span className="text-orange-700">Relationship:</span>
                       <span className="font-medium text-orange-900">
                         {selectedBank.relationship_start 
-                          ? `${differenceInDays(new Date(), new Date(selectedBank.relationship_start)) / 365 | 0}y`
+                          ? `${Math.floor(differenceInDays(new Date(), new Date(selectedBank.relationship_start)) / 365)}y`
                           : 'New'
                         }
                       </span>
@@ -842,7 +846,7 @@ const BanksManagement: React.FC = () => {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-gray-900">${credit.amount.toLocaleString()}</p>
+                              <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString()}</p>
                               <p className="text-sm text-gray-600">{credit.interest_rate}% APR</p>
                             </div>
                           </div>
@@ -850,11 +854,11 @@ const BanksManagement: React.FC = () => {
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                             <div>
                               <p className="text-xs text-gray-500">Outstanding Balance</p>
-                              <p className="text-sm font-medium text-red-600">${credit.outstanding_balance.toLocaleString()}</p>
+                              <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Monthly Payment</p>
-                              <p className="text-sm font-medium text-gray-900">${credit.monthly_payment.toLocaleString()}</p>
+                              <p className="text-sm font-medium text-gray-900">€{credit.monthly_payment.toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Maturity Date</p>
