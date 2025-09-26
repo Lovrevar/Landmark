@@ -700,7 +700,7 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortgages (Insurance) (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortgages (€)</label>
                   <input
                     type="number"
                     step="0.01"
