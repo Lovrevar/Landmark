@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../lib/supabase'
-import { 
-  Building2, 
-  Plus, 
-  DollarSign, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  Edit2,
-  Trash2,
-  Eye,
-  X,
-  CreditCard,
-  Percent,
-  Clock
-} from 'lucide-react'
+import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
 interface BankWithCredits extends Bank {
