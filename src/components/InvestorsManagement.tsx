@@ -648,15 +648,57 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Money Multiple</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Cashflow (€)</label>
                   <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                    {newInvestment.expected_return > 0 
-                      ? `${((1 + newInvestment.expected_return / 100) * 100).toFixed(0)}%`
-                      : '100%'
-                    }
+                    {(() => {
+                      if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
+                        return 'Enter amount, dates, and IRR to calculate'
+                      }
+                      
+                      const principal = newInvestment.amount
+                      const annualRate = newInvestment.expected_return / 100
+                      const startDate = new Date(newInvestment.investment_date)
+                      const maturityDate = new Date(newInvestment.maturity_date)
+                      const years = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                      
+                      if (years <= 0) return 'Invalid date range'
+                      
+                      // Calculate yearly cashflow using compound interest
+                      const yearlyCashflow = (principal * annualRate * Math.pow(1 + annualRate, years)) / 
+                                           (Math.pow(1 + annualRate, years) - 1)
+                      
+                      return `€${yearlyCashflow.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                    })()}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Calculated from expected return rate
+                    Annual payment amount based on IRR and investment period
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Money Multiple</label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    {(() => {
+                      if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
+                        return 'Enter amount, dates, and IRR to calculate'
+                      }
+                      
+                      const principal = newInvestment.amount
+                      const annualRate = newInvestment.expected_return / 100
+                      const startDate = new Date(newInvestment.investment_date)
+                      const maturityDate = new Date(newInvestment.maturity_date)
+                      const years = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                      
+                      if (years <= 0) return 'Invalid date range'
+                      
+                      // Calculate total return using compound interest
+                      const totalReturn = principal * Math.pow(1 + annualRate, years)
+                      const moneyMultiple = totalReturn / principal
+                      
+                      return `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)`
+                    })()}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Total return multiple (e.g., 1.25x = 125% = €7.5M from €6M)
                   </p>
                 </div>
                 <div>
