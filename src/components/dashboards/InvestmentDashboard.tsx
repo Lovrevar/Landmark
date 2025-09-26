@@ -264,7 +264,7 @@ const InvestmentDashboard: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Monthly Payments:</span>
-              <span className="font-medium">${financialSummary.total_monthly_payments.toLocaleString()}</span>
+              <span className="font-medium">€{financialSummary.total_monthly_payments.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Upcoming Maturities:</span>
