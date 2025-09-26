@@ -42,7 +42,7 @@ const InvestorsManagement: React.FC = () => {
     maturity_date: '',
     terms: '',
     mortgages_insurance: 0,
-    notes: ''
+    notes: '',
     usage_expiration_date: '',
     grace_period: 0
     usage_expiration_date: '',
