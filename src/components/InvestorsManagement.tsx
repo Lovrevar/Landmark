@@ -639,6 +639,29 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Money Multiple</label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    {newInvestment.expected_return > 0 
+                      ? `${((1 + newInvestment.expected_return / 100) * 100).toFixed(0)}%`
+                      : '100%'
+                    } (2x = 200%)
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Calculated from expected return rate
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Seniority</label>
+                  <select
+                    value={newInvestment.credit_seniority}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, credit_seniority: e.target.value as 'junior' | 'senior' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="senior">Senior</option>
+                    <option value="junior">Junior</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Investment Date *</label>
                   <input
                     type="date"
@@ -688,7 +711,7 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortages</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Terms</label>
                   <textarea
                     value={newInvestment.terms}
                     onChange={(e) => setNewInvestment({ ...newInvestment, terms: e.target.value })}
@@ -880,6 +903,11 @@ const InvestorsManagement: React.FC = () => {
                                   {investment.investment_type.toUpperCase()}
                                 </span>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                  investment.credit_seniority === 'senior' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {investment.credit_seniority?.toUpperCase() || 'SENIOR'}
+                                </span>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                   investment.status === 'active' ? 'bg-green-100 text-green-800' :
                                   investment.status === 'completed' ? 'bg-gray-100 text-gray-800' :
                                   'bg-red-100 text-red-800'
@@ -896,7 +924,13 @@ const InvestorsManagement: React.FC = () => {
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString()}</p>
-                              <p className="text-sm text-gray-600">{investment.expected_return}% ROI</p>
+                              <p className="text-sm text-gray-600">{investment.expected_return}% IRR</p>
+                              {investment.mortgages_insurance > 0 && (
+                                <p className="text-xs text-orange-600">+€{investment.mortgages_insurance.toLocaleString()} mortgages</p>
+                              )}
+                              <p className="text-xs text-blue-600">
+                                {((1 + investment.expected_return / 100) * 100).toFixed(0)}% money multiple
+                              </p>
                             </div>
                           </div>
 
@@ -911,6 +945,35 @@ const InvestorsManagement: React.FC = () => {
                               <p className="text-xs text-gray-500">Ownership Stake</p>
                               <p className="text-sm font-medium text-gray-900">{investment.percentage_stake}%</p>
                             </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Credit Seniority</p>
+                              <p className={`text-sm font-medium ${
+                                investment.credit_seniority === 'senior' ? 'text-blue-600' : 'text-orange-600'
+                              }`}>
+                                {investment.credit_seniority?.charAt(0).toUpperCase() + investment.credit_seniority?.slice(1) || 'Senior'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Additional Investment Details */}
+                          {(investment.mortgages_insurance > 0 || investment.notes) && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              {investment.mortgages_insurance > 0 && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500">Mortgages (Insurance)</p>
+                                  <p className="text-sm font-medium text-orange-600">€{investment.mortgages_insurance.toLocaleString()}</p>
+                                </div>
+                              )}
+                              {investment.notes && (
+                                <div>
+                                  <p className="text-xs text-gray-500">Notes</p>
+                                  <p className="text-sm text-gray-700">{investment.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                             <div>
                               <p className="text-xs text-gray-500">Maturity Date</p>
                               <p className={`text-sm font-medium ${isMaturing ? 'text-orange-600' : 'text-gray-900'}`}>

@@ -210,6 +210,7 @@ export type BankCredit = {
   created_at: string
   usage_expiration_date: string | null
   grace_period: number
+  credit_seniority: 'junior' | 'senior'
 }
 
 export type Investor = {
@@ -246,6 +247,7 @@ export type ProjectInvestment = {
   created_at: string
   usage_expiration_date: string | null
   grace_period: number
+  credit_seniority: 'junior' | 'senior'
 }
 
 export type ProjectPhase = {
