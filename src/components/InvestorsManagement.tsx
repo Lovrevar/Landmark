@@ -698,7 +698,7 @@ const InvestorsManagement: React.FC = () => {
                     })()}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Total return multiple (e.g., 1.25x = 125% = €7.5M from €6M)
+                    Total return multiple
                   </p>
                 </div>
                 <div>
