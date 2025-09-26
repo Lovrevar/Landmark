@@ -603,6 +603,7 @@ const InvestorsManagement: React.FC = () => {
                     <option value="loan">Loan</option>
                     <option value="grant">Grant</option>
                     <option value="bond">Bond</option>
+                    <option value="bond">Bridge</option>
                   </select>
                 </div>
                 <div>
