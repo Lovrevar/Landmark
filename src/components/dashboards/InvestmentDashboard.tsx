@@ -197,7 +197,7 @@ const InvestmentDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Portfolio Value</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${(financialSummary.total_portfolio_value / 1000000).toFixed(1)}M
+                €{(financialSummary.total_portfolio_value / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -211,7 +211,7 @@ const InvestmentDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Total Debt</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${(financialSummary.total_debt / 1000000).toFixed(1)}M
+                €{(financialSummary.total_debt / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -225,7 +225,7 @@ const InvestmentDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Total Equity</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${(financialSummary.total_equity / 1000000).toFixed(1)}M
+                €{(financialSummary.total_equity / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -287,7 +287,7 @@ const InvestmentDashboard: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Invested:</span>
-              <span className="font-medium">${(financialSummary.total_equity / 1000000).toFixed(1)}M</span>
+              <span className="font-medium">€{(financialSummary.total_equity / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Avg. Expected Return:</span>
@@ -395,7 +395,7 @@ const InvestmentDashboard: React.FC = () => {
                         <p className="text-sm text-gray-500">Investor: {project.investor || 'Multiple'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">${project.budget.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
                         <p className="text-sm text-gray-600">Total Budget</p>
                       </div>
                     </div>
@@ -403,13 +403,13 @@ const InvestmentDashboard: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-xs text-blue-700">Equity Investment</p>
-                        <p className="text-lg font-bold text-blue-900">${project.total_investment.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-blue-900">€{project.total_investment.toLocaleString()}</p>
                         <p className="text-xs text-blue-600">{project.equity_percentage.toFixed(1)}% of budget</p>
                       </div>
                       
                       <div className="bg-red-50 p-3 rounded-lg">
                         <p className="text-xs text-red-700">Debt Financing</p>
-                        <p className="text-lg font-bold text-red-900">${project.total_debt.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-red-900">€{project.total_debt.toLocaleString()}</p>
                         <p className="text-xs text-red-600">{project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% of budget</p>
                       </div>
                       
@@ -467,13 +467,13 @@ const InvestmentDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Total Credit Lines:</span>
               <span className="font-medium">
-                ${(banks.reduce((sum, bank) => sum + bank.total_credit_limit, 0) / 1000000).toFixed(1)}M
+                €{(banks.reduce((sum, bank) => sum + bank.total_credit_limit, 0) / 1000000).toFixed(1)}M
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Available Credit:</span>
               <span className="font-medium text-green-600">
-                ${(banks.reduce((sum, bank) => sum + bank.available_funds, 0) / 1000000).toFixed(1)}M
+                €{(banks.reduce((sum, bank) => sum + bank.available_funds, 0) / 1000000).toFixed(1)}M
               </span>
             </div>
           </div>
@@ -498,7 +498,7 @@ const InvestmentDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Total Committed:</span>
               <span className="font-medium">
-                ${(investors.reduce((sum, inv) => sum + inv.total_invested, 0) / 1000000).toFixed(1)}M
+                €{(investors.reduce((sum, inv) => sum + inv.total_invested, 0) / 1000000).toFixed(1)}M
               </span>
             </div>
             <div className="flex justify-between">
@@ -573,7 +573,7 @@ const InvestmentDashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-900">New equity investment secured</p>
-                <p className="text-sm text-gray-600">Pacific Real Estate Group invested $2.5M in Sunset Towers</p>
+                <p className="text-sm text-gray-600">Pacific Real Estate Group invested €2.5M in Sunset Towers</p>
               </div>
               <span className="text-sm text-gray-500">{format(new Date(), 'MMM dd')}</span>
             </div>
@@ -584,7 +584,7 @@ const InvestmentDashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-900">Credit facility approved</p>
-                <p className="text-sm text-gray-600">First National Bank approved $1.2M construction loan</p>
+                <p className="text-sm text-gray-600">First National Bank approved €1.2M construction loan</p>
               </div>
               <span className="text-sm text-gray-500">{format(new Date(), 'MMM dd')}</span>
             </div>
