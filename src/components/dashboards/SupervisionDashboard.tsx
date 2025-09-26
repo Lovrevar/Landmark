@@ -257,7 +257,7 @@ const SupervisionDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Total Costs</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${stats.totalCosts.toLocaleString()}
+                €{stats.totalCosts.toLocaleString()}
               </p>
             </div>
           </div>
@@ -613,21 +613,21 @@ const SupervisionDashboard: React.FC = () => {
                   <div className="space-y-2">
                     <div>
                       <p className={`text-sm ${budgetStatus.color}`}>Total Budget</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>${selectedProject.budget.toLocaleString()}</p>
+                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.budget.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className={`text-sm ${budgetStatus.color}`}>Amount Spent</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>${selectedProject.total_spent.toLocaleString()}</p>
+                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.total_spent.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className={`text-sm ${budgetStatus.color}`}>Remaining</p>
                       <p className={`font-medium ${budgetStatus.color}`}>
-                        ${(selectedProject.budget - selectedProject.total_spent).toLocaleString()}
+                        €{(selectedProject.budget - selectedProject.total_spent).toLocaleString()}
                       </p>
                     </div>
                     <div>
                       <p className={`text-sm ${budgetStatus.color}`}>Subcontractor Costs</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>${selectedProject.subcontractor_costs.toLocaleString()}</p>
+                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.subcontractor_costs.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -733,7 +733,7 @@ const SupervisionDashboard: React.FC = () => {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Contract Value</p>
-                                  <p className="text-sm font-medium text-gray-900">${sub.cost.toLocaleString()}</p>
+                                  <p className="text-sm font-medium text-gray-900">€{sub.cost.toLocaleString()}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Contact</p>
