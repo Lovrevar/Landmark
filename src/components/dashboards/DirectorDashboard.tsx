@@ -574,7 +574,7 @@ const DirectorDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget (€)</label>
                   <input
                     type="number"
                     value={newProject.budget}
