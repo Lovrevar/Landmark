@@ -188,7 +188,7 @@ const InvestmentProjects: React.FC = () => {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">${project.budget.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
                 <p className="text-sm text-gray-600">Total Budget</p>
                 <button
                   onClick={() => setSelectedProject(project)}
@@ -207,7 +207,7 @@ const InvestmentProjects: React.FC = () => {
                   <span className="text-sm text-green-700">Equity Investment</span>
                   <ArrowUpRight className="w-4 h-4 text-green-600" />
                 </div>
-                <p className="text-lg font-bold text-green-900">${project.total_investment.toLocaleString()}</p>
+                <p className="text-lg font-bold text-green-900">€{project.total_investment.toLocaleString()}</p>
                 <p className="text-xs text-green-600">
                   {project.budget > 0 ? ((project.total_investment / project.budget) * 100).toFixed(1) : '0'}% of budget
                 </p>
@@ -333,7 +333,7 @@ const InvestmentProjects: React.FC = () => {
                       {selectedProject.risk_level} Risk
                     </span>
                     <span className="text-sm text-gray-500">
-                      Budget: ${selectedProject.budget.toLocaleString()}
+                      Budget: €{selectedProject.budget.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -354,7 +354,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-blue-700">Total Budget</span>
                     <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
-                  <p className="text-xl font-bold text-blue-900">${selectedProject.budget.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-blue-900">€{selectedProject.budget.toLocaleString()}</p>
                   <p className="text-xs text-blue-600">Project value</p>
                 </div>
 
@@ -363,7 +363,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-green-700">Equity Investment</span>
                     <ArrowUpRight className="w-4 h-4 text-green-600" />
                   </div>
-                  <p className="text-xl font-bold text-green-900">${selectedProject.total_investment.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-green-900">€{selectedProject.total_investment.toLocaleString()}</p>
                   <p className="text-xs text-green-600">
                     {selectedProject.budget > 0 ? ((selectedProject.total_investment / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
                   </p>
@@ -374,7 +374,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-red-700">Debt Financing</span>
                     <ArrowDownRight className="w-4 h-4 text-red-600" />
                   </div>
-                  <p className="text-xl font-bold text-red-900">${selectedProject.total_debt.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-red-900">€{selectedProject.total_debt.toLocaleString()}</p>
                   <p className="text-xs text-red-600">
                     {selectedProject.budget > 0 ? ((selectedProject.total_debt / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
                   </p>
@@ -416,7 +416,7 @@ const InvestmentProjects: React.FC = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-green-600">${investment.amount.toLocaleString()}</p>
+                                <p className="font-bold text-green-600">€{investment.amount.toLocaleString()}</p>
                                 <p className="text-xs text-green-600">{investment.expected_return}% ROI</p>
                               </div>
                             </div>
@@ -451,8 +451,8 @@ const InvestmentProjects: React.FC = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-red-600">${credit.outstanding_balance.toLocaleString()}</p>
-                                <p className="text-xs text-red-600">${credit.monthly_payment.toLocaleString()}/mo</p>
+                                <p className="font-bold text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
+                                <p className="text-xs text-red-600">€{credit.monthly_payment.toLocaleString()}/mo</p>
                               </div>
                             </div>
                             <p className="text-xs text-gray-600">
