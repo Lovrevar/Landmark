@@ -44,8 +44,6 @@ const InvestorsManagement: React.FC = () => {
     mortgages_insurance: 0,
     notes: '',
     usage_expiration_date: '',
-    grace_period: 0,
-    usage_expiration_date: '',
     grace_period: 0
   })
   const [loading, setLoading] = useState(true)
