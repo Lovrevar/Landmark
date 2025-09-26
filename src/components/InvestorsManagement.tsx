@@ -181,9 +181,16 @@ const InvestorsManagement: React.FC = () => {
     }
 
     try {
+      // Extract investment type and seniority from the combined value
+      const [investmentType, seniority] = newInvestment.investment_type.split('_')
+      
       const { error } = await supabase
         .from('project_investments')
-        .insert(newInvestment)
+        .insert({
+          ...newInvestment,
+          investment_type: investmentType,
+          credit_seniority: seniority
+        })
 
       if (error) throw error
 
@@ -217,7 +224,7 @@ const InvestorsManagement: React.FC = () => {
     setNewInvestment({
       investor_id: '',
       project_id: '',
-      investment_type: 'equity',
+      investment_type: 'equity_senior',
       amount: 0,
       percentage_stake: 0,
       expected_return: 0,
@@ -225,7 +232,9 @@ const InvestorsManagement: React.FC = () => {
       maturity_date: '',
       terms: '',
       mortgages_insurance: 0,
-      notes: ''
+      notes: '',
+      usage_expiration_date: '',
+      grace_period: 0
     })
     setShowInvestmentForm(false)
   }
@@ -601,10 +610,14 @@ const InvestorsManagement: React.FC = () => {
                     onChange={(e) => setNewInvestment({ ...newInvestment, investment_type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="equity">Equity</option>
-                    <option value="loan">Loan</option>
-                    <option value="grant">Grant</option>
-                    <option value="bond">Bond</option>
+                    <option value="equity_senior">Equity Senior</option>
+                    <option value="equity_junior">Equity Junior</option>
+                    <option value="loan_senior">Loan Senior</option>
+                    <option value="loan_junior">Loan Junior</option>
+                    <option value="grant_senior">Grant Senior</option>
+                    <option value="grant_junior">Grant Junior</option>
+                    <option value="bond_senior">Bond Senior</option>
+                    <option value="bond_junior">Bond Junior</option>
                     <option value="bridge">Bridge</option>
                   </select>
                 </div>
@@ -649,17 +662,6 @@ const InvestorsManagement: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">
                     Calculated from expected return rate
                   </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Seniority</label>
-                  <select
-                    value={newInvestment.credit_seniority}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, credit_seniority: e.target.value as 'junior' | 'senior' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="senior">Senior</option>
-                    <option value="junior">Junior</option>
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Investment Date *</label>

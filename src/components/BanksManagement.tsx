@@ -211,10 +211,16 @@ const BanksManagement: React.FC = () => {
     }
 
     try {
+      // Extract credit type and seniority from the combined value
+      const [creditType, seniority] = newCredit.credit_type.split('_')
+      const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
+      
       const { error } = await supabase
         .from('bank_credits')
         .insert({
           ...newCredit,
+          credit_type: actualCreditType,
+          credit_seniority: seniority,
           outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
           monthly_payment: calculateRateAmount()
         })
@@ -250,7 +256,7 @@ const BanksManagement: React.FC = () => {
     setNewCredit({
       bank_id: '',
       project_id: '',
-      credit_type: 'construction_loan',
+      credit_type: 'construction_loan_senior',
       amount: 0,
       interest_rate: 0,
       start_date: '',
@@ -610,10 +616,14 @@ const BanksManagement: React.FC = () => {
                     onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="construction_loan">Construction Loan</option>
-                    <option value="term_loan">Term Loan</option>
-                    <option value="line_of_credit">Line of Credit</option>
-                    <option value="bridge_loan">Bridge Loan</option>
+                    <option value="construction_loan_senior">Construction Loan Senior</option>
+                    <option value="construction_loan_junior">Construction Loan Junior</option>
+                    <option value="term_loan_senior">Term Loan Senior</option>
+                    <option value="term_loan_junior">Term Loan Junior</option>
+                    <option value="line_of_credit_senior">Line of Credit Senior</option>
+                    <option value="line_of_credit_junior">Line of Credit Junior</option>
+                    <option value="bridge_loan_senior">Bridge Loan Senior</option>
+                    <option value="bridge_loan_junior">Bridge Loan Junior</option>
                   </select>
                 </div>
                 <div>
@@ -948,7 +958,7 @@ const BanksManagement: React.FC = () => {
                               <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500">Monthly Payment</p>
+                              <p className="text-xs text-gray-500">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment</p>
                               <p className="text-sm font-medium text-gray-900">€{credit.monthly_payment.toLocaleString()}</p>
                             </div>
                             <div>
