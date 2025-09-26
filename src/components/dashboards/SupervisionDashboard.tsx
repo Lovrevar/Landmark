@@ -811,7 +811,7 @@ const SupervisionDashboard: React.FC = () => {
                   ].map((phase) => (
                     <div key={phase.phase} className={`p-4 rounded-lg border ${phase.color}`}>
                       <h5 className="font-medium text-gray-900 mb-2">{phase.phase}</h5>
-                      <p className="text-sm text-gray-600 mb-2">Budget: ${phase.budget.toLocaleString()}</p>
+                      <p className="text-sm text-gray-600 mb-2">Budget: €{phase.budget.toLocaleString()}</p>
                       <p className="text-sm text-gray-600 mb-2">Duration: {phase.timeframe}</p>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Recommended Contractors:</p>
