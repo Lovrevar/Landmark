@@ -239,6 +239,8 @@ export type ProjectInvestment = {
   maturity_date: string | null
   status: 'active' | 'completed' | 'defaulted'
   terms: string
+  mortgages_insurance: number
+  notes: string
   created_at: string
 }
 

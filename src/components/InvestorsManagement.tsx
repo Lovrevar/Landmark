@@ -58,7 +58,9 @@ const InvestorsManagement: React.FC = () => {
     expected_return: 0,
     investment_date: '',
     maturity_date: '',
-    terms: ''
+    terms: '',
+    mortgages_insurance: 0,
+    notes: ''
   })
   const [loading, setLoading] = useState(true)
 
@@ -237,7 +239,9 @@ const InvestorsManagement: React.FC = () => {
       expected_return: 0,
       investment_date: '',
       maturity_date: '',
-      terms: ''
+      terms: '',
+      mortgages_insurance: 0,
+      notes: ''
     })
     setShowInvestmentForm(false)
   }
@@ -668,6 +672,17 @@ const InvestorsManagement: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortgages (Insurance) (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newInvestment.mortgages_insurance}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, mortgages_insurance: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Amount of mortgages/insurance"
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Investment Terms</label>
                   <textarea
@@ -676,6 +691,16 @@ const InvestorsManagement: React.FC = () => {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Terms and conditions of the investment..."
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={newInvestment.notes}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Additional notes about this investment..."
                   />
                 </div>
               </div>
@@ -868,6 +893,11 @@ const InvestorsManagement: React.FC = () => {
                             <div className="text-right">
                               <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString()}</p>
                               <p className="text-sm text-gray-600">{investment.expected_return}% ROI</p>
+                              {investment.mortgages_insurance > 0 && (
+                                <p className="text-xs text-orange-600">
+                                  Mortgages: €{investment.mortgages_insurance.toLocaleString()}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -889,6 +919,24 @@ const InvestorsManagement: React.FC = () => {
                               </p>
                             </div>
                           </div>
+                          
+                          {/* Additional Investment Details */}
+                          {(investment.mortgages_insurance > 0 || investment.notes) && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              {investment.mortgages_insurance > 0 && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500">Mortgages (Insurance)</p>
+                                  <p className="text-sm font-medium text-orange-600">€{investment.mortgages_insurance.toLocaleString()}</p>
+                                </div>
+                              )}
+                              {investment.notes && (
+                                <div>
+                                  <p className="text-xs text-gray-500">Notes</p>
+                                  <p className="text-sm text-gray-700">{investment.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
