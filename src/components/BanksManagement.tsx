@@ -348,11 +348,11 @@ const BanksManagement: React.FC = () => {
             {/* Credit Stats */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">${(bank.total_credit_limit / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-blue-600">€{(bank.total_credit_limit / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Credit Limit</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">${(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-red-600">€{(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Outstanding</p>
               </div>
             </div>
@@ -457,7 +457,7 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Credit Limit ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Credit Limit (€)</label>
                   <input
                     type="number"
                     value={newBank.total_credit_limit}
@@ -466,7 +466,7 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Outstanding Debt ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Outstanding Debt (€)</label>
                   <input
                     type="number"
                     value={newBank.outstanding_debt}
@@ -475,7 +475,7 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Funds ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Funds (€)</label>
                   <input
                     type="number"
                     value={newBank.available_funds}
@@ -586,7 +586,7 @@ const BanksManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (€) *</label>
                   <input
                     type="number"
                     value={newCredit.amount}
@@ -701,15 +701,15 @@ const BanksManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-blue-700">Total Limit:</span>
-                      <span className="font-medium text-blue-900">${selectedBank.total_credit_limit.toLocaleString()}</span>
+                      <span className="font-medium text-blue-900">€{selectedBank.total_credit_limit.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Outstanding:</span>
-                      <span className="font-medium text-blue-900">${selectedBank.outstanding_debt.toLocaleString()}</span>
+                      <span className="font-medium text-blue-900">€{selectedBank.outstanding_debt.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Available:</span>
-                      <span className="font-medium text-blue-900">${selectedBank.available_funds.toLocaleString()}</span>
+                      <span className="font-medium text-blue-900">€{selectedBank.available_funds.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Utilization:</span>
