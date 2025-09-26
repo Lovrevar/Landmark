@@ -610,14 +610,10 @@ const InvestorsManagement: React.FC = () => {
                     onChange={(e) => setNewInvestment({ ...newInvestment, investment_type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="equity_senior">Equity Senior</option>
-                    <option value="equity_junior">Equity Junior</option>
-                    <option value="loan_senior">Loan Senior</option>
-                    <option value="loan_junior">Loan Junior</option>
-                    <option value="grant_senior">Grant Senior</option>
-                    <option value="grant_junior">Grant Junior</option>
-                    <option value="bond_senior">Bond Senior</option>
-                    <option value="bond_junior">Bond Junior</option>
+                    <option value="equity_senior">Equity</option>
+                    <option value="loan_senior">Loan</option>
+                    <option value="grant_senior">Grant</option>
+                    <option value="bond_senior">Bond</option>
                     <option value="bridge">Bridge</option>
                   </select>
                 </div>
