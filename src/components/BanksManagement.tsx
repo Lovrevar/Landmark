@@ -616,14 +616,11 @@ const BanksManagement: React.FC = () => {
                     onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="construction_loan_senior">Construction Loan Senior</option>
-                    <option value="construction_loan_junior">Construction Loan Junior</option>
-                    <option value="term_loan_senior">Term Loan Senior</option>
-                    <option value="term_loan_junior">Term Loan Junior</option>
+                    <option value="construction_loan_senior">Construction Loan</option>
+                    <option value="term_loan_senior">Term Loan</option>
                     <option value="line_of_credit_senior">Line of Credit Senior</option>
                     <option value="line_of_credit_junior">Line of Credit Junior</option>
-                    <option value="bridge_loan_senior">Bridge Loan Senior</option>
-                    <option value="bridge_loan_junior">Bridge Loan Junior</option>
+                    <option value="bridge_loan_senior">Bridge Loan</option>
                   </select>
                 </div>
                 <div>
