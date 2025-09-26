@@ -781,7 +781,7 @@ const SalesProjects: React.FC = () => {
             <div className="border-t pt-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Revenue</span>
-                <span className="font-bold text-green-600">${project.total_revenue.toLocaleString()}</span>
+                <span className="font-bold text-green-600">€{project.total_revenue.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -1001,23 +1001,23 @@ const SalesProjects: React.FC = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">Sale Price:</span>
-                            <span className="text-sm font-bold text-green-600">${apartment.sale_info.sale_price.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-green-600">€{apartment.sale_info.sale_price.toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">Down Payment:</span>
-                            <span className="text-sm font-medium">${apartment.sale_info.down_payment.toLocaleString()}</span>
+                            <span className="text-sm font-medium">€{apartment.sale_info.down_payment.toLocaleString()}</span>
                           </div>
                           {apartment.sale_info.monthly_payment > 0 && (
                             <div className="flex justify-between">
                               <span className="text-sm text-gray-600">Monthly:</span>
-                              <span className="text-sm font-medium">${apartment.sale_info.monthly_payment.toLocaleString()}</span>
+                              <span className="text-sm font-medium">€{apartment.sale_info.monthly_payment.toLocaleString()}</span>
                             </div>
                           )}
                           <div className="mt-2">
                             <div className="flex justify-between mb-1">
                               <span className="text-xs text-gray-500">Payment Progress</span>
                               <span className="text-xs font-medium">
-                                ${apartment.sale_info.total_paid.toLocaleString()} / ${apartment.sale_info.sale_price.toLocaleString()}
+                                €{apartment.sale_info.total_paid.toLocaleString()} / €{apartment.sale_info.sale_price.toLocaleString()}
                               </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -1143,7 +1143,7 @@ const SalesProjects: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price per m² ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price per m² (€) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1154,7 +1154,7 @@ const SalesProjects: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Price ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Price (€)</label>
                   <input
                     type="number"
                     value={newApartment.price}
@@ -1163,7 +1163,7 @@ const SalesProjects: React.FC = () => {
                     placeholder="Calculated automatically"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Calculated: {newApartment.size_m2} m² × ${newApartment.price_per_sqm}/m² = ${newApartment.price.toLocaleString()}
+                    Calculated: {newApartment.size_m2} m² × €{newApartment.price_per_sqm}/m² = €{newApartment.price.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1266,7 +1266,7 @@ const SalesProjects: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor Premium ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor Premium (€)</label>
                   <input
                     type="number"
                     min="0"
@@ -1296,13 +1296,13 @@ const SalesProjects: React.FC = () => {
                   <div>
                     <span className="text-blue-700">Avg. Price:</span>
                     <span className="font-medium text-blue-900 ml-2">
-                      ${calculateBulkPreview().avgPrice.toLocaleString()}
+                      €{calculateBulkPreview().avgPrice.toLocaleString()}
                     </span>
                   </div>
                   <div>
                     <span className="text-blue-700">Total Value:</span>
                     <span className="font-medium text-blue-900 ml-2">
-                      ${calculateBulkPreview().totalValue.toLocaleString()}
+                      €{calculateBulkPreview().totalValue.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1546,7 +1546,7 @@ const SalesProjects: React.FC = () => {
               {/* Sale Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price (€) *</label>
                   <input
                     type="number"
                     min="0"
@@ -1570,7 +1570,7 @@ const SalesProjects: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Down Payment ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Down Payment (€)</label>
                   <input
                     type="number"
                     min="0"
@@ -1580,7 +1580,7 @@ const SalesProjects: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment (€)</label>
                   <input
                     type="number"
                     min="0"
@@ -1618,11 +1618,11 @@ const SalesProjects: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Sale Price:</span>
-                    <span className="font-medium text-gray-900 ml-2">${saleData.sale_price.toLocaleString()}</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.sale_price.toLocaleString()}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Down Payment:</span>
-                    <span className="font-medium text-gray-900 ml-2">${saleData.down_payment.toLocaleString()}</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.down_payment.toLocaleString()}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Remaining:</span>
@@ -1632,7 +1632,7 @@ const SalesProjects: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-600">Monthly Payment:</span>
-                    <span className="font-medium text-gray-900 ml-2">${saleData.monthly_payment.toLocaleString()}</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.monthly_payment.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
