@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Investor, ProjectInvestment, Project } from '../lib/supabase'
-import { 
-  Users, 
-  Plus, 
-  DollarSign, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  TrendingUp,
-  Building2,
-  Target,
-  Edit2,
-  Trash2,
-  Eye,
-  X,
-  PieChart,
-  Briefcase,
-  User,
-  Building
-} from 'lucide-react'
+import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
 interface InvestorWithInvestments extends Investor {
@@ -893,11 +875,6 @@ const InvestorsManagement: React.FC = () => {
                             <div className="text-right">
                               <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString()}</p>
                               <p className="text-sm text-gray-600">{investment.expected_return}% ROI</p>
-                              {investment.mortgages_insurance > 0 && (
-                                <p className="text-xs text-orange-600">
-                                  Mortgages: €{investment.mortgages_insurance.toLocaleString()}
-                                </p>
-                              )}
                             </div>
                           </div>
 
@@ -919,24 +896,6 @@ const InvestorsManagement: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          
-                          {/* Additional Investment Details */}
-                          {(investment.mortgages_insurance > 0 || investment.notes) && (
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                              {investment.mortgages_insurance > 0 && (
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500">Mortgages (Insurance)</p>
-                                  <p className="text-sm font-medium text-orange-600">€{investment.mortgages_insurance.toLocaleString()}</p>
-                                </div>
-                              )}
-                              {investment.notes && (
-                                <div>
-                                  <p className="text-xs text-gray-500">Notes</p>
-                                  <p className="text-sm text-gray-700">{investment.notes}</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       )
                     })}
