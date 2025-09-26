@@ -231,7 +231,7 @@ export type ProjectInvestment = {
   project_id: string
   investor_id: string | null
   bank_id: string | null
-  investment_type: 'equity' | 'loan' | 'grant' | 'bond'
+  investment_type: 'equity' | 'loan' | 'grant' | 'bond' | 'bridge'
   amount: number
   percentage_stake: number
   expected_return: number
