@@ -417,7 +417,7 @@ const InvestmentProjects: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-green-600">€{investment.amount.toLocaleString()}</p>
-                                <p className="text-xs text-green-600">{investment.expected_return}% ROI</p>
+                                <p className="text-xs text-green-600">{investment.expected_return}Expected Return</p>
                               </div>
                             </div>
                             <p className="text-xs text-gray-600">
