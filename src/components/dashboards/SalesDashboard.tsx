@@ -127,7 +127,7 @@ const SalesDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Revenue</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${stats.totalRevenue.toLocaleString()}
+                €{stats.totalRevenue.toLocaleString()}
               </p>
             </div>
           </div>
@@ -185,7 +185,7 @@ const SalesDashboard: React.FC = () => {
                     {apartment.size_m2}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${apartment.price.toLocaleString()}
+                    €{apartment.price.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
