@@ -211,6 +211,7 @@ export type BankCredit = {
   usage_expiration_date: string | null
   grace_period: number
   credit_seniority: 'junior' | 'senior'
+  repayment_type: 'monthly' | 'yearly'
 }
 
 export type Investor = {
