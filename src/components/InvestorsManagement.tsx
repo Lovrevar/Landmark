@@ -231,6 +231,7 @@ const InvestorsManagement: React.FC = () => {
       expected_return: 0,
       investment_date: '',
       maturity_date: '',
+      payment_schedule: 'yearly',
       terms: '',
       mortgages_insurance: 0,
       notes: '',
