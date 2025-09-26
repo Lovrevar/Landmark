@@ -231,7 +231,6 @@ const InvestorsManagement: React.FC = () => {
       expected_return: 0,
       investment_date: '',
       maturity_date: '',
-      payment_schedule: 'yearly',
       terms: '',
       mortgages_insurance: 0,
       notes: '',
@@ -640,7 +639,7 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">IRR</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">IRR (%)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -650,30 +649,63 @@ const InvestorsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Cashflow (€)</label>
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                    {(() => {
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Schedule</label>
+                  <select
+                    value={newInvestment.payment_schedule}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, payment_schedule: e.target.value as 'monthly' | 'yearly' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="yearly">Yearly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {newInvestment.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow (€)
+                  </label>
+                  <input
+                    type="text"
+                    value={(() => {
                       if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
                         return 'Enter amount, dates, and IRR to calculate'
                       }
                       
                       const principal = newInvestment.amount
                       const annualRate = newInvestment.expected_return / 100
+                      const gracePeriodYears = newInvestment.grace_period / 365
                       const startDate = new Date(newInvestment.investment_date)
                       const maturityDate = new Date(newInvestment.maturity_date)
-                      const years = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                      const totalYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                       
-                      if (years <= 0) return 'Invalid date range'
+                      if (totalYears <= 0) return 'Invalid date range'
                       
-                      // Calculate yearly cashflow using compound interest
-                      const yearlyCashflow = (principal * annualRate * Math.pow(1 + annualRate, years)) / 
-                                           (Math.pow(1 + annualRate, years) - 1)
+                      const repaymentYears = Math.max(0.1, totalYears - gracePeriodYears)
                       
-                      return `€${yearlyCashflow.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      if (annualRate === 0) {
+                        const payment = newInvestment.payment_schedule === 'yearly' 
+                          ? principal / repaymentYears
+                          : principal / (repaymentYears * 12)
+                        return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      }
+                      
+                      let payment
+                      if (newInvestment.payment_schedule === 'yearly') {
+                        payment = (principal * annualRate * Math.pow(1 + annualRate, repaymentYears)) / 
+                                 (Math.pow(1 + annualRate, repaymentYears) - 1)
+                      } else {
+                        const monthlyRate = annualRate / 12
+                        const totalMonths = repaymentYears * 12
+                        payment = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
+                                 (Math.pow(1 + monthlyRate, totalMonths) - 1)
+                      }
+                      
+                      return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                     })()}
-                  </div>
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    Annual payment amount based on IRR and investment period
+                    {newInvestment.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period
                   </p>
                 </div>
                 <div>
