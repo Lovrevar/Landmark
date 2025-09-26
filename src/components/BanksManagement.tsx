@@ -39,9 +39,7 @@ const BanksManagement: React.FC = () => {
     maturity_date: '',
     outstanding_balance: 0,
     monthly_payment: 0,
-    purpose: ''
-    usage_expiration_date: '',
-    grace_period: 0
+    purpose: '',
     usage_expiration_date: '',
     grace_period: 0
   })
