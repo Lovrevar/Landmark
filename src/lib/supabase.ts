@@ -208,6 +208,8 @@ export type BankCredit = {
   status: 'active' | 'paid' | 'defaulted'
   purpose: string
   created_at: string
+  usage_expiration_date: string | null
+  grace_period: number
 }
 
 export type Investor = {
@@ -242,6 +244,8 @@ export type ProjectInvestment = {
   mortgages_insurance: number
   notes: string
   created_at: string
+  usage_expiration_date: string | null
+  grace_period: number
 }
 
 export type ProjectPhase = {

@@ -43,6 +43,10 @@ const InvestorsManagement: React.FC = () => {
     terms: '',
     mortgages_insurance: 0,
     notes: ''
+    usage_expiration_date: '',
+    grace_period: 0
+    usage_expiration_date: '',
+    grace_period: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -653,6 +657,25 @@ const InvestorsManagement: React.FC = () => {
                     value={newInvestment.maturity_date}
                     onChange={(e) => setNewInvestment({ ...newInvestment, maturity_date: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Usage Expiration Date</label>
+                  <input
+                    type="date"
+                    value={newInvestment.usage_expiration_date}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, usage_expiration_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (days)</label>
+                  <input
+                    type="number"
+                    value={newInvestment.grace_period}
+                    onChange={(e) => setNewInvestment({ ...newInvestment, grace_period: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0"
                   />
                 </div>
                 <div>
