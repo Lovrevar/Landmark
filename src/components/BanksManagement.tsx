@@ -732,7 +732,7 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (days)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (months)</label>
                   <input
                     type="number"
                     value={newCredit.grace_period}
