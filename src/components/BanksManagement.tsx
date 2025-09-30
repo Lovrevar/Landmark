@@ -665,7 +665,7 @@ const BanksManagement: React.FC = () => {
                       
                       const principal = newCredit.amount
                       const annualRate = newCredit.interest_rate / 100
-                      const gracePeriodYears = newCredit.grace_period / 365
+                      const gracePeriodYears = newCredit.grace_period / 12
                       
                       let maturityYears = 10 // default
                       if (newCredit.maturity_date && newCredit.start_date) {
