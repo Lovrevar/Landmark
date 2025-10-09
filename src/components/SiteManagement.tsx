@@ -138,7 +138,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
           // For projects with phases, only include subcontractors assigned to phases of this project
           return projectPhases.some(phase => phase.id === sub.phase_id)
         })
-        
+
         const total_budget_realized = projectSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
         const total_subcontractor_cost = projectSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
         const completion_percentage = total_subcontractor_cost > 0
@@ -165,6 +165,14 @@ setExistingSubcontractors(allSubcontractorsData || [])
       })
 
       setProjects(projectsWithPhases)
+
+      // Update selectedProject if it exists to show refreshed data
+      if (selectedProject) {
+        const updatedSelectedProject = projectsWithPhases.find(p => p.id === selectedProject.id)
+        if (updatedSelectedProject) {
+          setSelectedProject(updatedSelectedProject)
+        }
+      }
 
      /* // Fetch existing subcontractors
       const { data: subcontractorsData, error: subError } = await supabase
