@@ -141,9 +141,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       const projectsWithPhases = (projectsData || []).map(project => {
         const projectPhases = (phasesData || []).filter(phase => phase.project_id === project.id)
         const projectSubcontractors = (subcontractorsWithPhaseData || []).filter(sub => {
-          // For projects without phases, include all subcontractors
-          if (projectPhases.length === 0) return true
-          // For projects with phases, only include subcontractors assigned to phases of this project
+          // Only include subcontractors assigned to phases of this project
           return projectPhases.some(phase => phase.id === sub.phase_id)
         })
 
