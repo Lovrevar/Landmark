@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, Project, Subcontractor, SubcontractorComment, ProjectPhase } from '../lib/supabase'
+import { supabase, Project, Subcontractor, SubcontractorComment, ProjectPhase, Contract, WirePayment } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   Building2, 
@@ -78,9 +78,9 @@ const SiteManagement: React.FC = () => {
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [wirePayments, setWirePayments] = useState<any[]>([])
+  const [wirePayments, setWirePayments] = useState<WirePayment[]>([])
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
-  const [editingPayment, setEditingPayment] = useState<any>(null)
+  const [editingPayment, setEditingPayment] = useState<WirePayment | null>(null)
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
 
   useEffect(() => {
@@ -370,29 +370,57 @@ setExistingSubcontractors(allSubcontractorsData || [])
       return
     }
 
+    if (!user?.id) {
+      alert('You must be logged in to record payments')
+      return
+    }
+
     try {
+      // Ensure budget_realized exists and is a number
+      const currentBudgetRealized = selectedSubcontractorForPayment.budget_realized || 0
+
       // Create wire payment record
-      const { error: paymentError } = await supabase
+      const { data: paymentData, error: paymentError } = await supabase
         .from('wire_payments')
         .insert({
           subcontractor_id: selectedSubcontractorForPayment.id,
+          contract_id: selectedSubcontractorForPayment.contract_id || null,
           amount: paymentAmount,
           payment_date: paymentDate || null,
           notes: paymentNotes || null,
-          created_by: user?.id
+          created_by: user.id
         })
+        .select()
 
-      if (paymentError) throw paymentError
+      if (paymentError) {
+        console.error('Payment insert error:', paymentError)
+        throw new Error(`Failed to create payment record: ${paymentError.message}`)
+      }
 
       // Update subcontractor's budget_realized
-      const newRealizedAmount = selectedSubcontractorForPayment.budget_realized + paymentAmount
+      const newRealizedAmount = currentBudgetRealized + paymentAmount
 
       const { error: updateError } = await supabase
         .from('subcontractors')
         .update({ budget_realized: newRealizedAmount })
         .eq('id', selectedSubcontractorForPayment.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('Budget update error:', updateError)
+        throw new Error(`Failed to update budget: ${updateError.message}`)
+      }
+
+      // If there's a contract, update its budget_realized too
+      if (selectedSubcontractorForPayment.contract_id) {
+        const { error: contractUpdateError } = await supabase
+          .from('contracts')
+          .update({ budget_realized: newRealizedAmount })
+          .eq('id', selectedSubcontractorForPayment.contract_id)
+
+        if (contractUpdateError) {
+          console.error('Contract update error:', contractUpdateError)
+        }
+      }
 
       setShowPaymentModal(false)
       setPaymentAmount(0)
@@ -401,9 +429,10 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setSelectedSubcontractorForPayment(null)
 
       await fetchProjects()
-    } catch (error) {
+      alert('Payment recorded successfully!')
+    } catch (error: any) {
       console.error('Error adding payment:', error)
-      alert('Error recording payment.')
+      alert(error.message || 'Error recording payment. Please check the console for details.')
     }
   }
 
@@ -428,7 +457,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
     setShowPaymentHistory(true)
   }
 
-  const openEditPayment = (payment: any) => {
+  const openEditPayment = (payment: WirePayment) => {
     setEditingPayment(payment)
     setShowEditPaymentModal(true)
   }
@@ -439,9 +468,15 @@ setExistingSubcontractors(allSubcontractorsData || [])
       return
     }
 
+    if (!selectedSubcontractorForPayment) {
+      alert('No subcontractor selected')
+      return
+    }
+
     try {
       const oldAmount = wirePayments.find(p => p.id === editingPayment.id)?.amount || 0
       const amountDifference = editingPayment.amount - oldAmount
+      const currentBudgetRealized = selectedSubcontractorForPayment.budget_realized || 0
 
       // Update wire payment record
       const { error: paymentError } = await supabase
@@ -453,63 +488,100 @@ setExistingSubcontractors(allSubcontractorsData || [])
         })
         .eq('id', editingPayment.id)
 
-      if (paymentError) throw paymentError
+      if (paymentError) {
+        console.error('Payment update error:', paymentError)
+        throw new Error(`Failed to update payment: ${paymentError.message}`)
+      }
 
       // Update subcontractor's budget_realized
-      if (selectedSubcontractorForPayment) {
-        const newRealizedAmount = selectedSubcontractorForPayment.budget_realized + amountDifference
+      const newRealizedAmount = currentBudgetRealized + amountDifference
 
-        const { error: updateError } = await supabase
-          .from('subcontractors')
+      const { error: updateError } = await supabase
+        .from('subcontractors')
+        .update({ budget_realized: newRealizedAmount })
+        .eq('id', selectedSubcontractorForPayment.id)
+
+      if (updateError) {
+        console.error('Budget update error:', updateError)
+        throw new Error(`Failed to update budget: ${updateError.message}`)
+      }
+
+      // If there's a contract, update its budget_realized too
+      if (selectedSubcontractorForPayment.contract_id) {
+        const { error: contractUpdateError } = await supabase
+          .from('contracts')
           .update({ budget_realized: newRealizedAmount })
-          .eq('id', selectedSubcontractorForPayment.id)
+          .eq('id', selectedSubcontractorForPayment.contract_id)
 
-        if (updateError) throw updateError
+        if (contractUpdateError) {
+          console.error('Contract update error:', contractUpdateError)
+        }
       }
 
       setShowEditPaymentModal(false)
       setEditingPayment(null)
       await fetchProjects()
-      if (selectedSubcontractorForPayment) {
-        await fetchWirePayments(selectedSubcontractorForPayment.id)
-      }
-    } catch (error) {
+      await fetchWirePayments(selectedSubcontractorForPayment.id)
+      alert('Payment updated successfully!')
+    } catch (error: any) {
       console.error('Error updating payment:', error)
-      alert('Error updating payment.')
+      alert(error.message || 'Error updating payment. Please check the console for details.')
     }
   }
 
   const deleteWirePayment = async (paymentId: string, amount: number) => {
     if (!confirm('Are you sure you want to delete this payment? This will adjust the total paid amount.')) return
 
+    if (!selectedSubcontractorForPayment) {
+      alert('No subcontractor selected')
+      return
+    }
+
     try {
+      const currentBudgetRealized = selectedSubcontractorForPayment.budget_realized || 0
+
       // Delete wire payment record
       const { error: deleteError } = await supabase
         .from('wire_payments')
         .delete()
         .eq('id', paymentId)
 
-      if (deleteError) throw deleteError
+      if (deleteError) {
+        console.error('Payment delete error:', deleteError)
+        throw new Error(`Failed to delete payment: ${deleteError.message}`)
+      }
 
       // Update subcontractor's budget_realized
-      if (selectedSubcontractorForPayment) {
-        const newRealizedAmount = selectedSubcontractorForPayment.budget_realized - amount
+      const newRealizedAmount = Math.max(0, currentBudgetRealized - amount)
 
-        const { error: updateError } = await supabase
-          .from('subcontractors')
-          .update({ budget_realized: Math.max(0, newRealizedAmount) })
-          .eq('id', selectedSubcontractorForPayment.id)
+      const { error: updateError } = await supabase
+        .from('subcontractors')
+        .update({ budget_realized: newRealizedAmount })
+        .eq('id', selectedSubcontractorForPayment.id)
 
-        if (updateError) throw updateError
+      if (updateError) {
+        console.error('Budget update error:', updateError)
+        throw new Error(`Failed to update budget: ${updateError.message}`)
+      }
+
+      // If there's a contract, update its budget_realized too
+      if (selectedSubcontractorForPayment.contract_id) {
+        const { error: contractUpdateError } = await supabase
+          .from('contracts')
+          .update({ budget_realized: newRealizedAmount })
+          .eq('id', selectedSubcontractorForPayment.contract_id)
+
+        if (contractUpdateError) {
+          console.error('Contract update error:', contractUpdateError)
+        }
       }
 
       await fetchProjects()
-      if (selectedSubcontractorForPayment) {
-        await fetchWirePayments(selectedSubcontractorForPayment.id)
-      }
-    } catch (error) {
+      await fetchWirePayments(selectedSubcontractorForPayment.id)
+      alert('Payment deleted successfully!')
+    } catch (error: any) {
       console.error('Error deleting payment:', error)
-      alert('Error deleting payment.')
+      alert(error.message || 'Error deleting payment. Please check the console for details.')
     }
   }
 

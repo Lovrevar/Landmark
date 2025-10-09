@@ -62,6 +62,41 @@ export type Subcontractor = {
   cost: number
   budget_realized: number
   created_at: string
+  phase_id?: string | null
+  contract_id?: string | null
+  progress?: number
+}
+
+export type Contract = {
+  id: string
+  contract_number: string
+  project_id: string
+  phase_id: string | null
+  subcontractor_id: string
+  job_description: string
+  contract_amount: number
+  budget_realized: number
+  start_date: string | null
+  end_date: string | null
+  status: 'draft' | 'active' | 'completed' | 'terminated'
+  terms: string
+  signed: boolean
+  signed_date: string | null
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
+export type WirePayment = {
+  id: string
+  contract_id: string | null
+  subcontractor_id: string
+  amount: number
+  payment_date: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type Apartment = {

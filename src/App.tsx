@@ -16,6 +16,7 @@ import SalesReports from './components/SalesReports'
 import BanksManagement from './components/BanksManagement'
 import InvestmentProjects from './components/InvestmentProjects'
 import InvestorsManagement from './components/InvestorsManagement'
+import PaymentsManagement from './components/PaymentsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth()
@@ -167,6 +168,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <InvestorsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute>
+              <PaymentsManagement />
             </ProtectedRoute>
           }
         />

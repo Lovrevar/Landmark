@@ -1,14 +1,15 @@
 import React, { ReactNode } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { 
-  Building2, 
-  LogOut, 
-  BarChart3, 
-  Calculator, 
-  Home, 
-  Users, 
+import {
+  Building2,
+  LogOut,
+  BarChart3,
+  Calculator,
+  Home,
+  Users,
   CheckSquare,
-  Calendar
+  Calendar,
+  DollarSign
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -28,10 +29,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const roleSpecificItems = {
       Director: [
         { name: 'Projects', icon: Building2, path: '/projects' },
-        { name: 'All Tasks', icon: CheckSquare, path: '/tasks' }
+        { name: 'All Tasks', icon: CheckSquare, path: '/tasks' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
       Accounting: [
         { name: 'Invoices', icon: Calculator, path: '/invoices' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' },
         { name: 'Projects', icon: Building2, path: '/sales-projects' },
         { name: 'Customers', icon: Users, path: '/customers' },
         { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
@@ -44,7 +47,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Supervision: [
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
-        { name: 'Site Management', icon: Building2, path: '/site-management' }
+        { name: 'Site Management', icon: Building2, path: '/site-management' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
       Investment: [
         { name: 'Banks', icon: Building2, path: '/banks' },
