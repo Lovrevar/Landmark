@@ -210,9 +210,16 @@ setExistingSubcontractors(allSubcontractorsData || [])
     if (!selectedProject) return
 
     const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-    if (totalAllocated !== selectedProject.budget) {
-      alert(`Total allocated budget (${totalAllocated.toLocaleString()}) must equal project budget (${selectedProject.budget.toLocaleString()})`)
-      return
+    const budgetDifference = totalAllocated - selectedProject.budget
+
+    if (budgetDifference !== 0) {
+      const message = budgetDifference > 0
+        ? `Total allocated budget ($${totalAllocated.toLocaleString()}) exceeds project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        : `Total allocated budget ($${totalAllocated.toLocaleString()}) is less than project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+
+      if (!confirm(message)) {
+        return
+      }
     }
 
     try {
@@ -573,22 +580,40 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     <div>
                       <p className="text-sm text-gray-600">Total Allocated</p>
                       <p className={`text-lg font-bold ${
-                        phases.reduce((sum, p) => sum + p.budget_allocated, 0) === selectedProject.budget 
-                          ? 'text-green-600' : 'text-red-600'
+                        phases.reduce((sum, p) => sum + p.budget_allocated, 0) === selectedProject.budget
+                          ? 'text-green-600'
+                          : phases.reduce((sum, p) => sum + p.budget_allocated, 0) > selectedProject.budget
+                          ? 'text-orange-600'
+                          : 'text-blue-600'
                       }`}>
                         ${phases.reduce((sum, p) => sum + p.budget_allocated, 0).toLocaleString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Remaining</p>
+                      <p className="text-sm text-gray-600">Difference</p>
                       <p className={`text-lg font-bold ${
-                        selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) === 0 
-                          ? 'text-green-600' : 'text-orange-600'
+                        selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) === 0
+                          ? 'text-green-600'
+                          : selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) < 0
+                          ? 'text-orange-600'
+                          : 'text-blue-600'
                       }`}>
-                        ${(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()}
+                        {selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) === 0
+                          ? 'Matched'
+                          : selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) > 0
+                          ? `$${(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} under`
+                          : `$${Math.abs(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} over`
+                        }
                       </p>
                     </div>
                   </div>
+                  {phases.reduce((sum, p) => sum + p.budget_allocated, 0) !== selectedProject.budget && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <span className="font-medium">Note:</span> Phase budgets don't match the project budget. You can proceed with this allocation, but be aware of the difference when managing costs.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -602,8 +627,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   </button>
                   <button
                     onClick={createProjectPhases}
-                    disabled={phases.reduce((sum, p) => sum + p.budget_allocated, 0) !== selectedProject.budget}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   >
                     Create Phases
                   </button>
