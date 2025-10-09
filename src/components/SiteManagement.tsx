@@ -725,35 +725,31 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     </div>
                     
                     {/* Phase Metrics */}
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-sm text-blue-700">Budget Allocated</p>
-                        <p className="text-lg font-bold text-blue-900">${phase.budget_allocated.toLocaleString()}</p>
-                      </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <p className="text-sm text-gray-700">Contract Cost</p>
                         <p className="text-lg font-bold text-gray-900">${totalContractCost.toLocaleString()}</p>
                       </div>
                       <div className="bg-teal-50 p-3 rounded-lg">
-                        <p className="text-sm text-teal-700">Budget Realized</p>
+                        <p className="text-sm text-teal-700">Paid Out</p>
                         <p className="text-lg font-bold text-teal-900">${totalBudgetRealized.toLocaleString()}</p>
                       </div>
-                      <div className={`p-3 rounded-lg ${
-                        costVariance > 0 ? 'bg-red-50' : costVariance < 0 ? 'bg-green-50' : 'bg-gray-50'
-                      }`}>
-                        <p className={`text-sm ${
-                          costVariance > 0 ? 'text-red-700' : costVariance < 0 ? 'text-green-700' : 'text-gray-700'
-                        }`}>Variance</p>
-                        <p className={`text-lg font-bold ${
-                          costVariance > 0 ? 'text-red-900' : costVariance < 0 ? 'text-green-900' : 'text-gray-900'
-                        }`}>
-                          {costVariance > 0 ? '+' : ''}${costVariance.toLocaleString()}
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <p className="text-sm text-orange-700">Unpaid Contracts</p>
+                        <p className="text-lg font-bold text-orange-900">
+                          ${(totalContractCost - totalBudgetRealized).toLocaleString()}
                         </p>
                       </div>
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-sm text-blue-700">Available</p>
-                        <p className="text-lg font-bold text-blue-900">
-                          ${(phase.budget_allocated - totalBudgetRealized).toLocaleString()}
+                      <div className={`p-3 rounded-lg ${
+                        (phase.budget_allocated - totalContractCost) < 0 ? 'bg-red-50' : 'bg-green-50'
+                      }`}>
+                        <p className={`text-sm ${
+                          (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-700' : 'text-green-700'
+                        }`}>Available Budget</p>
+                        <p className={`text-lg font-bold ${
+                          (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-900' : 'text-green-900'
+                        }`}>
+                          ${(phase.budget_allocated - totalContractCost).toLocaleString()}
                         </p>
                       </div>
                     </div>
