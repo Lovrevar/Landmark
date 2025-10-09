@@ -66,6 +66,7 @@ const SiteManagement: React.FC = () => {
     progress: 0,
     deadline: '',
     cost: 0,
+    budget_realized: 0,
     phase_id: ''
   })
   const [loading, setLoading] = useState(true)
@@ -307,6 +308,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
             progress: newSubcontractor.progress,
             deadline: newSubcontractor.deadline,
             cost: newSubcontractor.cost,
+            budget_realized: newSubcontractor.budget_realized,
             phase_id: selectedPhase.id
           })
 
@@ -340,6 +342,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       progress: 0,
       deadline: '',
       cost: 0,
+      budget_realized: 0,
       phase_id: ''
     })
     setSelectedPhase(null)
@@ -642,10 +645,10 @@ setExistingSubcontractors(allSubcontractorsData || [])
           <div className="space-y-6">
             {selectedProject.phases.map((phase, index) => {
               const phaseSubcontractors = selectedProject.subcontractors.filter(sub => sub.phase_id === phase.id)
-              const phaseProgress = phaseSubcontractors.length > 0
-                ? Math.round(phaseSubcontractors.reduce((sum, sub) => sum + sub.progress, 0) / phaseSubcontractors.length)
-                : 0
-              const budgetUtilization = phase.budget_allocated > 0 ? (phase.budget_used / phase.budget_allocated) * 100 : 0
+              const totalBudgetRealized = phaseSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
+              const totalContractCost = phaseSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
+              const costVariance = totalBudgetRealized - totalContractCost
+              const budgetUtilization = phase.budget_allocated > 0 ? (totalBudgetRealized / phase.budget_allocated) * 100 : 0
 
               return (
                 <div key={phase.id} className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -686,46 +689,58 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     </div>
                     
                     {/* Phase Metrics */}
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-sm text-blue-700">Budget Allocated</p>
                         <p className="text-lg font-bold text-blue-900">${phase.budget_allocated.toLocaleString()}</p>
                       </div>
-                      <div className="bg-red-50 p-3 rounded-lg">
-                        <p className="text-sm text-red-700">Budget Used</p>
-                        <p className="text-lg font-bold text-red-900">${phase.budget_used.toLocaleString()}</p>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-sm text-gray-700">Contract Cost</p>
+                        <p className="text-lg font-bold text-gray-900">${totalContractCost.toLocaleString()}</p>
                       </div>
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-sm text-green-700">Available Budget</p>
-                        <p className="text-lg font-bold text-green-900">
-                          ${(phase.budget_allocated - phase.budget_used).toLocaleString()}
+                      <div className="bg-teal-50 p-3 rounded-lg">
+                        <p className="text-sm text-teal-700">Budget Realized</p>
+                        <p className="text-lg font-bold text-teal-900">${totalBudgetRealized.toLocaleString()}</p>
+                      </div>
+                      <div className={`p-3 rounded-lg ${
+                        costVariance > 0 ? 'bg-red-50' : costVariance < 0 ? 'bg-green-50' : 'bg-gray-50'
+                      }`}>
+                        <p className={`text-sm ${
+                          costVariance > 0 ? 'text-red-700' : costVariance < 0 ? 'text-green-700' : 'text-gray-700'
+                        }`}>Variance</p>
+                        <p className={`text-lg font-bold ${
+                          costVariance > 0 ? 'text-red-900' : costVariance < 0 ? 'text-green-900' : 'text-gray-900'
+                        }`}>
+                          {costVariance > 0 ? '+' : ''}${costVariance.toLocaleString()}
                         </p>
                       </div>
-                      <div className="bg-purple-50 p-3 rounded-lg">
-                        <p className="text-sm text-purple-700">Progress</p>
-                        <p className="text-lg font-bold text-purple-900">{phaseProgress}%</p>
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-sm text-blue-700">Available</p>
+                        <p className="text-lg font-bold text-blue-900">
+                          ${(phase.budget_allocated - totalBudgetRealized).toLocaleString()}
+                        </p>
                       </div>
                     </div>
 
                     {/* Budget Utilization Bar */}
                     <div className="mt-4">
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm text-gray-600">Budget Utilization</span>
+                        <span className="text-sm text-gray-600">Budget Utilization (Realized vs Allocated)</span>
                         <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
+                        <div
                           className={`h-3 rounded-full transition-all duration-300 ${
                             budgetUtilization > 100 ? 'bg-red-600' :
                             budgetUtilization > 80 ? 'bg-orange-600' :
-                            'bg-green-600'
+                            'bg-teal-600'
                           }`}
                           style={{ width: `${Math.min(100, budgetUtilization)}%` }}
                         ></div>
                       </div>
                       {budgetUtilization > 100 && (
                         <p className="text-xs text-red-600 mt-1">
-                          Over budget by ${(phase.budget_used - phase.budget_allocated).toLocaleString()}
+                          Over budget by ${(totalBudgetRealized - phase.budget_allocated).toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -751,14 +766,16 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {phaseSubcontractors.map((subcontractor) => {
-                          const isOverdue = new Date(subcontractor.deadline) < new Date() && subcontractor.progress < 100
+                          const isOverdue = new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost
                           const daysUntilDeadline = differenceInDays(new Date(subcontractor.deadline), new Date())
+                          const subVariance = subcontractor.budget_realized - subcontractor.cost
+                          const realizationPercent = subcontractor.cost > 0 ? (subcontractor.budget_realized / subcontractor.cost) * 100 : 0
 
                           return (
                             <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                              isOverdue ? 'border-red-200 bg-red-50' :
-                              subcontractor.progress === 100 ? 'border-green-200 bg-green-50' :
-                              subcontractor.progress > 0 ? 'border-blue-200 bg-blue-50' :
+                              subVariance > 0 ? 'border-red-200 bg-red-50' :
+                              subVariance < 0 ? 'border-green-200 bg-green-50' :
+                              realizationPercent > 0 ? 'border-blue-200 bg-blue-50' :
                               'border-gray-200 bg-gray-50'
                             }`}>
                               <div className="flex items-start justify-between mb-3">
@@ -768,23 +785,27 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                   <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
                                 </div>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  subcontractor.progress === 100 ? 'bg-green-100 text-green-800' :
-                                  isOverdue ? 'bg-red-100 text-red-800' :
-                                  subcontractor.progress > 0 ? 'bg-blue-100 text-blue-800' :
+                                  subVariance > 0 ? 'bg-red-100 text-red-800' :
+                                  subVariance < 0 ? 'bg-green-100 text-green-800' :
+                                  realizationPercent >= 100 ? 'bg-blue-100 text-blue-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {subcontractor.progress}%
+                                  {realizationPercent.toFixed(0)}%
                                 </span>
                               </div>
 
-                              {/* Progress Bar */}
+                              {/* Realization Progress Bar */}
                               <div className="mb-3">
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-xs text-gray-600">Realization</span>
+                                  <span className="text-xs font-medium">{realizationPercent.toFixed(0)}%</span>
+                                </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div 
+                                  <div
                                     className={`h-2 rounded-full transition-all duration-300 ${
-                                      subcontractor.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
+                                      realizationPercent >= 100 ? 'bg-teal-600' : 'bg-blue-600'
                                     }`}
-                                    style={{ width: `${subcontractor.progress}%` }}
+                                    style={{ width: `${Math.min(100, realizationPercent)}%` }}
                                   ></div>
                                 </div>
                               </div>
@@ -798,19 +819,21 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-gray-600">Cost:</span>
+                                  <span className="text-gray-600">Contract:</span>
                                   <span className="font-medium text-gray-900">${subcontractor.cost.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-gray-600">Status:</span>
+                                  <span className="text-gray-600">Realized:</span>
+                                  <span className="font-medium text-teal-600">${subcontractor.budget_realized.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600">Variance:</span>
                                   <span className={`font-medium ${
-                                    subcontractor.progress === 100 ? 'text-green-600' :
-                                    isOverdue ? 'text-red-600' :
-                                    'text-blue-600'
+                                    subVariance > 0 ? 'text-red-600' :
+                                    subVariance < 0 ? 'text-green-600' :
+                                    'text-gray-900'
                                   }`}>
-                                    {subcontractor.progress === 100 ? 'Completed' :
-                                     isOverdue ? `${Math.abs(daysUntilDeadline)}d overdue` :
-                                     daysUntilDeadline >= 0 ? `${daysUntilDeadline}d left` : 'Overdue'}
+                                    {subVariance > 0 ? '+' : ''}${subVariance.toLocaleString()}
                                   </span>
                                 </div>
                               </div>
@@ -1026,15 +1049,18 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Initial Progress (%)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Budget Realized ($)</label>
                       <input
                         type="number"
                         min="0"
-                        max="100"
-                        value={newSubcontractor.progress}
-                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, progress: parseInt(e.target.value) || 0 })}
+                        value={newSubcontractor.budget_realized}
+                        onChange={(e) => setNewSubcontractor({ ...newSubcontractor, budget_realized: parseFloat(e.target.value) || 0 })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Actual amount paid to subcontractor
+                      </p>
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>

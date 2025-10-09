@@ -61,6 +61,7 @@ export type Subcontractor = {
   progress: number
   deadline: string
   cost: number
+  budget_realized: number
   created_at: string
 }
 
