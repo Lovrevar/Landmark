@@ -416,12 +416,63 @@ setExistingSubcontractors(allSubcontractorsData || [])
       // Ensure budget_realized exists and is a number
       const currentBudgetRealized = selectedSubcontractorForPayment.budget_realized || 0
 
+      let contractId = selectedSubcontractorForPayment.contract_id
+
+      // If no contract exists, create one automatically
+      if (!contractId && selectedSubcontractorForPayment.phase_id) {
+        // Get phase and project information
+        const { data: phaseData, error: phaseError } = await supabase
+          .from('project_phases')
+          .select('project_id, phase_name')
+          .eq('id', selectedSubcontractorForPayment.phase_id)
+          .single()
+
+        if (phaseError) throw phaseError
+
+        // Count existing contracts to generate contract number
+        const { count } = await supabase
+          .from('contracts')
+          .select('*', { count: 'exact', head: true })
+
+        const contractNumber = `CNT-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, '0')}`
+
+        // Create contract
+        const { data: newContract, error: contractError } = await supabase
+          .from('contracts')
+          .insert({
+            contract_number: contractNumber,
+            project_id: phaseData.project_id,
+            phase_id: selectedSubcontractorForPayment.phase_id,
+            subcontractor_id: selectedSubcontractorForPayment.id,
+            job_description: selectedSubcontractorForPayment.job_description || 'Construction work',
+            contract_amount: selectedSubcontractorForPayment.cost,
+            budget_realized: currentBudgetRealized,
+            end_date: selectedSubcontractorForPayment.deadline,
+            status: 'active'
+          })
+          .select()
+          .single()
+
+        if (contractError) {
+          console.error('Contract creation error:', contractError)
+          throw new Error(`Failed to create contract: ${contractError.message}`)
+        }
+
+        contractId = newContract.id
+
+        // Update subcontractor with contract_id
+        await supabase
+          .from('subcontractors')
+          .update({ contract_id: contractId })
+          .eq('id', selectedSubcontractorForPayment.id)
+      }
+
       // Create wire payment record
       const { data: paymentData, error: paymentError } = await supabase
         .from('wire_payments')
         .insert({
           subcontractor_id: selectedSubcontractorForPayment.id,
-          contract_id: selectedSubcontractorForPayment.contract_id || null,
+          contract_id: contractId,
           amount: paymentAmount,
           payment_date: paymentDate || null,
           notes: paymentNotes || null,
@@ -447,12 +498,12 @@ setExistingSubcontractors(allSubcontractorsData || [])
         throw new Error(`Failed to update budget: ${updateError.message}`)
       }
 
-      // If there's a contract, update its budget_realized too
-      if (selectedSubcontractorForPayment.contract_id) {
+      // Update contract's budget_realized
+      if (contractId) {
         const { error: contractUpdateError } = await supabase
           .from('contracts')
           .update({ budget_realized: newRealizedAmount })
-          .eq('id', selectedSubcontractorForPayment.contract_id)
+          .eq('id', contractId)
 
         if (contractUpdateError) {
           console.error('Contract update error:', contractUpdateError)
