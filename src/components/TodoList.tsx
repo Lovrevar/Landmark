@@ -219,7 +219,7 @@ const TodoList: React.FC = () => {
 
       setNewTodo({ title: '', description: '', due_date: '', assigned_to: '' })
       setShowForm(false)
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding todo:', error)
     }
@@ -233,7 +233,7 @@ const TodoList: React.FC = () => {
         .eq('id', todoId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating todo:', error)
     }
@@ -247,7 +247,7 @@ const TodoList: React.FC = () => {
         .eq('id', todoId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting todo:', error)
     }
@@ -283,7 +283,7 @@ const TodoList: React.FC = () => {
       setShowEditForm(false)
       setEditingTask(null)
       setEditTaskData({ name: '', description: '', deadline: '', progress: 0 })
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating task:', error)
     }
@@ -326,7 +326,7 @@ const TodoList: React.FC = () => {
         .eq('id', taskId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating task:', error)
     }
@@ -558,7 +558,7 @@ const TodoList: React.FC = () => {
                         
                         if (!error) {
                           setSelectedTask({ ...selectedTask, status: 'Completed' })
-                          fetchData()
+                          await fetchData()
                         }
                       }}
                       className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
@@ -828,7 +828,7 @@ const TodoList: React.FC = () => {
                                   .eq('id', task.id)
                                 
                                 if (!error) {
-                                  fetchData()
+                                  await fetchData()
                                 }
                               }}
                               className="px-3 py-1 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center"

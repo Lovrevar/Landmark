@@ -72,7 +72,7 @@ const DirectorDashboard: React.FC = () => {
       if (error) throw error
 
       resetProjectForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding project:', error)
       alert('Error adding project. Please try again.')
@@ -91,7 +91,7 @@ const DirectorDashboard: React.FC = () => {
       if (error) throw error
 
       resetProjectForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating project:', error)
       alert('Error updating project.')
@@ -108,7 +108,7 @@ const DirectorDashboard: React.FC = () => {
         .eq('id', projectId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting project:', error)
       alert('Error deleting project.')

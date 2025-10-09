@@ -30,7 +30,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check if user is already logged in
     const savedUser = localStorage.getItem('currentUser')
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (err) {
+        console.error('Error parsing saved user:', err)
+        localStorage.removeItem('currentUser')
+      }
     }
     setLoading(false)
   }, [])
@@ -38,15 +43,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('Attempting login for:', username)
-      
+
+      // Clear any existing user data first
+      localStorage.removeItem('currentUser')
+      setUser(null)
+
       const { data: users, error } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
         .eq('password', password)
-      
+
       console.log('Query result:', { users, error })
-      
+
       if (error || !users || users.length === 0) {
         console.log('Login failed: no matching user found')
         return false
@@ -66,6 +75,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null)
     localStorage.removeItem('currentUser')
+    // Force a small delay to ensure state is cleared
+    setTimeout(() => {
+      window.location.href = '/'
+    }, 100)
   }
 
   const value = {

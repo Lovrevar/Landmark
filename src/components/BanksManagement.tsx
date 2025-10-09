@@ -122,7 +122,7 @@ const BanksManagement: React.FC = () => {
       if (error) throw error
 
       resetBankForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding bank:', error)
       alert('Error adding bank. Please try again.')
@@ -141,7 +141,7 @@ const BanksManagement: React.FC = () => {
       if (error) throw error
 
       resetBankForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating bank:', error)
       alert('Error updating bank.')
@@ -158,7 +158,7 @@ const BanksManagement: React.FC = () => {
         .eq('id', bankId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting bank:', error)
       alert('Error deleting bank.')
@@ -228,7 +228,7 @@ const BanksManagement: React.FC = () => {
       if (error) throw error
 
       resetCreditForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding credit:', error)
       alert('Error adding credit facility.')

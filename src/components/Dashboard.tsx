@@ -12,15 +12,15 @@ const Dashboard: React.FC = () => {
   const renderDashboard = () => {
     switch (user?.role) {
       case 'Director':
-        return <DirectorDashboard />
+        return <DirectorDashboard key={user.id} />
       case 'Accounting':
-        return <AccountingDashboard />
+        return <AccountingDashboard key={user.id} />
       case 'Sales':
-        return <SalesDashboard />
+        return <SalesDashboard key={user.id} />
       case 'Supervision':
-        return <SupervisionDashboard />
+        return <SupervisionDashboard key={user.id} />
       case 'Investment':
-        return <InvestmentDashboard />
+        return <InvestmentDashboard key={user.id} />
       default:
         return <div>Role not recognized</div>
     }

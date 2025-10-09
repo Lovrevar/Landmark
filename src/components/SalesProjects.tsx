@@ -464,7 +464,7 @@ const SalesProjects: React.FC = () => {
       setNewPricePerSqm(0)
       
       // Refresh data
-      fetchData()
+      await fetchData()
       alert(`Successfully updated prices for ${selectedApartmentIds.length} apartments`)
     } catch (error) {
       console.error('Error updating apartment prices:', error)

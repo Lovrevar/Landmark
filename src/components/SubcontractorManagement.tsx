@@ -155,7 +155,7 @@ const SubcontractorManagement: React.FC = () => {
         .eq('id', subcontractorId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating progress:', error)
     }
@@ -273,7 +273,7 @@ const SubcontractorManagement: React.FC = () => {
     } catch (error) {
       console.error('Error saving subcontractor:', error)
       alert('Error saving subcontractor. Please try again.')
-      fetchData()
+      await fetchData()
     }
   }
 
@@ -315,7 +315,7 @@ const SubcontractorManagement: React.FC = () => {
         .eq('id', subcontractorId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting subcontractor:', error)
     }

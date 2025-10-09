@@ -245,7 +245,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
       setShowPhaseSetup(false)
       setPhases([])
-      fetchProjects()
+      await fetchProjects()
     } catch (error) {
       console.error('Error creating phases:', error)
       alert('Error creating project phases.')
@@ -327,7 +327,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       }
 
       resetSubcontractorForm()
-      fetchProjects()
+      await fetchProjects()
     } catch (error) {
       console.error('Error adding subcontractor:', error)
       alert('Error adding subcontractor to phase.')
@@ -369,7 +369,9 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setShowPaymentModal(false)
       setPaymentAmount(0)
       setSelectedSubcontractorForPayment(null)
-      fetchProjects()
+
+      // Refresh data immediately to show updated payment
+      await fetchProjects()
     } catch (error) {
       console.error('Error adding payment:', error)
       alert('Error recording payment.')
@@ -414,9 +416,9 @@ setExistingSubcontractors(allSubcontractorsData || [])
         })
 
       if (error) throw error
-      
+
       setNewComment('')
-      fetchSubcontractorComments(selectedSubcontractor.id)
+      await fetchSubcontractorComments(selectedSubcontractor.id)
     } catch (error) {
       console.error('Error adding comment:', error)
     }
@@ -437,7 +439,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
         .eq('id', phaseId)
 
       if (error) throw error
-      fetchProjects()
+      await fetchProjects()
     } catch (error) {
       console.error('Error deleting phase:', error)
       alert('Error deleting phase.')

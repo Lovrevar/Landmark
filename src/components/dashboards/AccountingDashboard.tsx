@@ -68,7 +68,7 @@ const AccountingDashboard: React.FC = () => {
       .eq('id', invoiceId)
 
     if (!error) {
-      fetchData()
+      await fetchData()
     }
   }
 

@@ -71,7 +71,7 @@ const SalesDashboard: React.FC = () => {
       .eq('id', apartmentId)
 
     if (!error) {
-      fetchData()
+      await fetchData()
     }
   }
 

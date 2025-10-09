@@ -132,7 +132,7 @@ const InvestorsManagement: React.FC = () => {
       if (error) throw error
 
       resetInvestorForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding investor:', error)
       alert('Error adding investor. Please try again.')
@@ -151,7 +151,7 @@ const InvestorsManagement: React.FC = () => {
       if (error) throw error
 
       resetInvestorForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error updating investor:', error)
       alert('Error updating investor.')
@@ -168,7 +168,7 @@ const InvestorsManagement: React.FC = () => {
         .eq('id', investorId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting investor:', error)
       alert('Error deleting investor.')
@@ -196,7 +196,7 @@ const InvestorsManagement: React.FC = () => {
       if (error) throw error
 
       resetInvestmentForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error adding investment:', error)
       alert('Error adding investment.')

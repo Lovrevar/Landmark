@@ -111,7 +111,7 @@ const TasksManagement: React.FC = () => {
         .eq('id', taskId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error approving task:', error)
       alert('Error approving task.')
@@ -233,7 +233,7 @@ const TasksManagement: React.FC = () => {
       }
 
       resetForm()
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error saving task:', error)
       alert('Error saving task. Please try again.')
@@ -328,7 +328,7 @@ const TasksManagement: React.FC = () => {
         .eq('id', taskId)
 
       if (error) throw error
-      fetchData()
+      await fetchData()
     } catch (error) {
       console.error('Error deleting task:', error)
       alert('Error deleting task. Please try again.')
@@ -711,7 +711,7 @@ const TasksManagement: React.FC = () => {
                                       .eq('id', task.id)
                                     
                                     if (error) throw error
-                                    fetchData()
+                                    await fetchData()
                                   } catch (error) {
                                     console.error('Error updating task:', error)
                                   }
@@ -757,7 +757,7 @@ const TasksManagement: React.FC = () => {
                                 .eq('id', task.id)
                               
                               if (!error) {
-                                fetchData()
+                                await fetchData()
                               }
                             }}
                             className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"

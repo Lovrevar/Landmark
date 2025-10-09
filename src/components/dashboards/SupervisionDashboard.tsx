@@ -162,7 +162,7 @@ const SupervisionDashboard: React.FC = () => {
       .eq('id', subcontractorId)
 
     if (!error) {
-      fetchData()
+      await fetchData()
     }
   }
 
