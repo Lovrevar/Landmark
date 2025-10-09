@@ -70,12 +70,18 @@ const SiteManagement: React.FC = () => {
   })
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
   const [selectedSubcontractorForPayment, setSelectedSubcontractorForPayment] = useState<Subcontractor | null>(null)
   const [loading, setLoading] = useState(true)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [wirePayments, setWirePayments] = useState<any[]>([])
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<any>(null)
+  const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
 
   useEffect(() => {
     fetchProjects()
@@ -367,24 +373,145 @@ setExistingSubcontractors(allSubcontractorsData || [])
     }
 
     try {
+      // Create wire payment record
+      const { error: paymentError } = await supabase
+        .from('wire_payments')
+        .insert({
+          subcontractor_id: selectedSubcontractorForPayment.id,
+          amount: paymentAmount,
+          payment_date: paymentDate || null,
+          notes: paymentNotes || null,
+          created_by: user?.id
+        })
+
+      if (paymentError) throw paymentError
+
+      // Update subcontractor's budget_realized
       const newRealizedAmount = selectedSubcontractorForPayment.budget_realized + paymentAmount
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('subcontractors')
         .update({ budget_realized: newRealizedAmount })
         .eq('id', selectedSubcontractorForPayment.id)
 
-      if (error) throw error
+      if (updateError) throw updateError
 
       setShowPaymentModal(false)
       setPaymentAmount(0)
+      setPaymentDate('')
+      setPaymentNotes('')
       setSelectedSubcontractorForPayment(null)
 
-      // Refresh data immediately to show updated payment
       await fetchProjects()
     } catch (error) {
       console.error('Error adding payment:', error)
       alert('Error recording payment.')
+    }
+  }
+
+  const fetchWirePayments = async (subcontractorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('wire_payments')
+        .select('*')
+        .eq('subcontractor_id', subcontractorId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setWirePayments(data || [])
+    } catch (error) {
+      console.error('Error fetching wire payments:', error)
+    }
+  }
+
+  const openPaymentHistory = async (subcontractor: Subcontractor) => {
+    setSelectedSubcontractorForPayment(subcontractor)
+    await fetchWirePayments(subcontractor.id)
+    setShowPaymentHistory(true)
+  }
+
+  const openEditPayment = (payment: any) => {
+    setEditingPayment(payment)
+    setShowEditPaymentModal(true)
+  }
+
+  const updateWirePayment = async () => {
+    if (!editingPayment || editingPayment.amount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      const oldAmount = wirePayments.find(p => p.id === editingPayment.id)?.amount || 0
+      const amountDifference = editingPayment.amount - oldAmount
+
+      // Update wire payment record
+      const { error: paymentError } = await supabase
+        .from('wire_payments')
+        .update({
+          amount: editingPayment.amount,
+          payment_date: editingPayment.payment_date || null,
+          notes: editingPayment.notes || null
+        })
+        .eq('id', editingPayment.id)
+
+      if (paymentError) throw paymentError
+
+      // Update subcontractor's budget_realized
+      if (selectedSubcontractorForPayment) {
+        const newRealizedAmount = selectedSubcontractorForPayment.budget_realized + amountDifference
+
+        const { error: updateError } = await supabase
+          .from('subcontractors')
+          .update({ budget_realized: newRealizedAmount })
+          .eq('id', selectedSubcontractorForPayment.id)
+
+        if (updateError) throw updateError
+      }
+
+      setShowEditPaymentModal(false)
+      setEditingPayment(null)
+      await fetchProjects()
+      if (selectedSubcontractorForPayment) {
+        await fetchWirePayments(selectedSubcontractorForPayment.id)
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error)
+      alert('Error updating payment.')
+    }
+  }
+
+  const deleteWirePayment = async (paymentId: string, amount: number) => {
+    if (!confirm('Are you sure you want to delete this payment? This will adjust the total paid amount.')) return
+
+    try {
+      // Delete wire payment record
+      const { error: deleteError } = await supabase
+        .from('wire_payments')
+        .delete()
+        .eq('id', paymentId)
+
+      if (deleteError) throw deleteError
+
+      // Update subcontractor's budget_realized
+      if (selectedSubcontractorForPayment) {
+        const newRealizedAmount = selectedSubcontractorForPayment.budget_realized - amount
+
+        const { error: updateError } = await supabase
+          .from('subcontractors')
+          .update({ budget_realized: Math.max(0, newRealizedAmount) })
+          .eq('id', selectedSubcontractorForPayment.id)
+
+        if (updateError) throw updateError
+      }
+
+      await fetchProjects()
+      if (selectedSubcontractorForPayment) {
+        await fetchWirePayments(selectedSubcontractorForPayment.id)
+      }
+    } catch (error) {
+      console.error('Error deleting payment:', error)
+      alert('Error deleting payment.')
     }
   }
 
@@ -916,16 +1043,24 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
                               {/* Action Buttons */}
                               <div className="space-y-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedSubcontractorForPayment(subcontractor)
-                                    setShowPaymentModal(true)
-                                  }}
-                                  className="w-full px-3 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-                                >
-                                  <DollarSign className="w-4 h-4 mr-1" />
-                                  Wire Payment
-                                </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedSubcontractorForPayment(subcontractor)
+                                      setShowPaymentModal(true)
+                                    }}
+                                    className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                                  >
+                                    <DollarSign className="w-3 h-3 mr-1" />
+                                    Wire
+                                  </button>
+                                  <button
+                                    onClick={() => openPaymentHistory(subcontractor)}
+                                    className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                                  >
+                                    Payments
+                                  </button>
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
                                   <button
                                     onClick={() => openEditSubcontractor(subcontractor)}
@@ -1401,6 +1536,34 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   </p>
                 </div>
 
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty if date is not yet known
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Add any notes about this payment"
+                  />
+                </div>
+
                 {paymentAmount > 0 && (
                   <div className={`p-3 rounded-lg mb-4 ${
                     (selectedSubcontractorForPayment.budget_realized + paymentAmount) > selectedSubcontractorForPayment.cost
@@ -1427,6 +1590,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     onClick={() => {
                       setShowPaymentModal(false)
                       setPaymentAmount(0)
+                      setPaymentDate('')
+                      setPaymentNotes('')
                       setSelectedSubcontractorForPayment(null)
                     }}
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
@@ -1572,6 +1737,186 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <button
                     onClick={updateSubcontractor}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment History Modal */}
+        {showPaymentHistory && selectedSubcontractorForPayment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Payment History</h3>
+                    <p className="text-sm text-gray-600 mt-1">{selectedSubcontractorForPayment.name}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPaymentHistory(false)
+                      setSelectedSubcontractorForPayment(null)
+                      setWirePayments([])
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-sm text-gray-600">Contract Amount</p>
+                      <p className="text-lg font-bold text-gray-900">${selectedSubcontractorForPayment.cost.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Paid</p>
+                      <p className="text-lg font-bold text-teal-600">${selectedSubcontractorForPayment.budget_realized.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Remaining</p>
+                      <p className="text-lg font-bold text-orange-600">
+                        ${Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <h4 className="font-semibold text-gray-900 mb-3">All Payments ({wirePayments.length})</h4>
+
+                {wirePayments.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No payments recorded yet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {wirePayments.map((payment) => (
+                      <div key={payment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <span className="text-lg font-bold text-gray-900">${payment.amount.toLocaleString()}</span>
+                              {payment.payment_date && (
+                                <span className="text-sm text-gray-600">
+                                  {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
+                                </span>
+                              )}
+                              {!payment.payment_date && (
+                                <span className="text-sm text-gray-400 italic">Date not set</span>
+                              )}
+                            </div>
+                            {payment.notes && (
+                              <p className="text-sm text-gray-600 mb-2">{payment.notes}</p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                              Created {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2 ml-4">
+                            <button
+                              onClick={() => openEditPayment(payment)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => deleteWirePayment(payment.id, payment.amount)}
+                              className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Payment Modal */}
+        {showEditPaymentModal && editingPayment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Edit Payment</h3>
+                  <button
+                    onClick={() => {
+                      setShowEditPaymentModal(false)
+                      setEditingPayment(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Amount ($) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editingPayment.amount}
+                    onChange={(e) => setEditingPayment({ ...editingPayment, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={editingPayment.payment_date || ''}
+                    onChange={(e) => setEditingPayment({ ...editingPayment, payment_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={editingPayment.notes || ''}
+                    onChange={(e) => setEditingPayment({ ...editingPayment, notes: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Add any notes about this payment"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowEditPaymentModal(false)
+                      setEditingPayment(null)
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={updateWirePayment}
+                    disabled={editingPayment.amount <= 0}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     Save Changes
                   </button>
