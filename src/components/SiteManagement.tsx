@@ -84,8 +84,45 @@ const SiteManagement: React.FC = () => {
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
 
   useEffect(() => {
-    fetchProjects()
+    const initializeData = async () => {
+      await recalculateAllPhaseBudgets()
+      await fetchProjects()
+    }
+    initializeData()
   }, [])
+
+  const recalculateAllPhaseBudgets = async () => {
+    try {
+      // Get all phases
+      const { data: phases, error: phasesError } = await supabase
+        .from('project_phases')
+        .select('id')
+
+      if (phasesError) throw phasesError
+
+      // For each phase, recalculate budget_used
+      for (const phase of phases || []) {
+        const { data: phaseSubcontractors, error: subError } = await supabase
+          .from('subcontractors')
+          .select('cost')
+          .eq('phase_id', phase.id)
+
+        if (subError) {
+          console.error(`Error fetching subcontractors for phase ${phase.id}:`, subError)
+          continue
+        }
+
+        const budgetUsed = (phaseSubcontractors || []).reduce((sum, sub) => sum + sub.cost, 0)
+
+        await supabase
+          .from('project_phases')
+          .update({ budget_used: budgetUsed })
+          .eq('id', phase.id)
+      }
+    } catch (error) {
+      console.error('Error recalculating phase budgets:', error)
+    }
+  }
 
   const fetchProjects = async () => {
     setLoading(true)
@@ -662,6 +699,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
     if (!editingSubcontractor) return
 
     try {
+      // Update the subcontractor
       const { error } = await supabase
         .from('subcontractors')
         .update({
@@ -676,6 +714,28 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
       if (error) throw error
 
+      // If the subcontractor has a phase, recalculate the phase's budget_used
+      if (editingSubcontractor.phase_id) {
+        // Get all subcontractors for this phase
+        const { data: phaseSubcontractors, error: subError } = await supabase
+          .from('subcontractors')
+          .select('cost')
+          .eq('phase_id', editingSubcontractor.phase_id)
+
+        if (subError) throw subError
+
+        // Calculate new budget_used
+        const newBudgetUsed = (phaseSubcontractors || []).reduce((sum, sub) => sum + sub.cost, 0)
+
+        // Update the phase's budget_used
+        const { error: updateError } = await supabase
+          .from('project_phases')
+          .update({ budget_used: newBudgetUsed })
+          .eq('id', editingSubcontractor.phase_id)
+
+        if (updateError) throw updateError
+      }
+
       setShowEditModal(false)
       setEditingSubcontractor(null)
       await fetchProjects()
@@ -689,12 +749,45 @@ setExistingSubcontractors(allSubcontractorsData || [])
     if (!confirm('Are you sure you want to delete this subcontractor?')) return
 
     try {
-      const { error } = await supabase
+      // First, get the subcontractor to find its cost and phase
+      const { data: subcontractor, error: fetchError } = await supabase
+        .from('subcontractors')
+        .select('cost, phase_id')
+        .eq('id', subcontractorId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Delete the subcontractor
+      const { error: deleteError } = await supabase
         .from('subcontractors')
         .delete()
         .eq('id', subcontractorId)
 
-      if (error) throw error
+      if (deleteError) throw deleteError
+
+      // If the subcontractor was assigned to a phase, recalculate the phase's budget_used
+      if (subcontractor.phase_id) {
+        // Get all remaining subcontractors for this phase
+        const { data: remainingSubcontractors, error: subError } = await supabase
+          .from('subcontractors')
+          .select('cost')
+          .eq('phase_id', subcontractor.phase_id)
+
+        if (subError) throw subError
+
+        // Calculate new budget_used
+        const newBudgetUsed = (remainingSubcontractors || []).reduce((sum, sub) => sum + sub.cost, 0)
+
+        // Update the phase's budget_used
+        const { error: updateError } = await supabase
+          .from('project_phases')
+          .update({ budget_used: newBudgetUsed })
+          .eq('id', subcontractor.phase_id)
+
+        if (updateError) throw updateError
+      }
+
       await fetchProjects()
     } catch (error) {
       console.error('Error deleting subcontractor:', error)
