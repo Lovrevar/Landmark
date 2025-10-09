@@ -74,6 +74,8 @@ const SiteManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
+  const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     fetchProjects()
@@ -451,6 +453,55 @@ setExistingSubcontractors(allSubcontractorsData || [])
     } catch (error) {
       console.error('Error deleting phase:', error)
       alert('Error deleting phase.')
+    }
+  }
+
+  const openEditSubcontractor = (subcontractor: Subcontractor) => {
+    setEditingSubcontractor(subcontractor)
+    setShowEditModal(true)
+  }
+
+  const updateSubcontractor = async () => {
+    if (!editingSubcontractor) return
+
+    try {
+      const { error } = await supabase
+        .from('subcontractors')
+        .update({
+          name: editingSubcontractor.name,
+          contact: editingSubcontractor.contact,
+          job_description: editingSubcontractor.job_description,
+          deadline: editingSubcontractor.deadline,
+          cost: editingSubcontractor.cost,
+          progress: editingSubcontractor.progress || 0
+        })
+        .eq('id', editingSubcontractor.id)
+
+      if (error) throw error
+
+      setShowEditModal(false)
+      setEditingSubcontractor(null)
+      await fetchProjects()
+    } catch (error) {
+      console.error('Error updating subcontractor:', error)
+      alert('Error updating subcontractor.')
+    }
+  }
+
+  const deleteSubcontractor = async (subcontractorId: string) => {
+    if (!confirm('Are you sure you want to delete this subcontractor?')) return
+
+    try {
+      const { error } = await supabase
+        .from('subcontractors')
+        .delete()
+        .eq('id', subcontractorId)
+
+      if (error) throw error
+      await fetchProjects()
+    } catch (error) {
+      console.error('Error deleting subcontractor:', error)
+      alert('Error deleting subcontractor.')
     }
   }
 
@@ -875,12 +926,26 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                   <DollarSign className="w-4 h-4 mr-1" />
                                   Wire Payment
                                 </button>
-                                <button
-                                  onClick={() => openSubcontractorDetails(subcontractor)}
-                                  className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors duration-200"
-                                >
-                                  Manage Details
-                                </button>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <button
+                                    onClick={() => openEditSubcontractor(subcontractor)}
+                                    className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => openSubcontractorDetails(subcontractor)}
+                                    className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
+                                  >
+                                    Details
+                                  </button>
+                                  <button
+                                    onClick={() => deleteSubcontractor(subcontractor.id)}
+                                    className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )
@@ -1374,6 +1439,141 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     Record Payment
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Subcontractor Modal */}
+        {showEditModal && editingSubcontractor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Edit Subcontractor</h3>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingSubcontractor(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                  <input
+                    type="text"
+                    value={editingSubcontractor.name}
+                    onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact *</label>
+                  <input
+                    type="text"
+                    value={editingSubcontractor.contact}
+                    onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, contact: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Phone or email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Description *</label>
+                  <textarea
+                    value={editingSubcontractor.job_description}
+                    onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, job_description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost ($) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editingSubcontractor.cost}
+                      onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, cost: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Deadline *</label>
+                    <input
+                      type="date"
+                      value={editingSubcontractor.deadline}
+                      onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, deadline: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Work Progress: {editingSubcontractor.progress || 0}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={editingSubcontractor.progress || 0}
+                    onChange={(e) => setEditingSubcontractor({ ...editingSubcontractor, progress: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Not Started</span>
+                    <span>In Progress</span>
+                    <span>Completed</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Progress indicates work completion status, independent of payment
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Paid:</span>
+                      <span className="font-medium text-gray-900">${editingSubcontractor.budget_realized.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Remaining:</span>
+                      <span className="font-medium text-orange-600">
+                        ${Math.max(0, editingSubcontractor.cost - editingSubcontractor.budget_realized).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingSubcontractor(null)
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={updateSubcontractor}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Save Changes
                   </button>
                 </div>
               </div>
