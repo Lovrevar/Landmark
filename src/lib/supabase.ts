@@ -58,7 +58,6 @@ export type Subcontractor = {
   name: string
   contact: string
   job_description: string
-  progress: number
   deadline: string
   cost: number
   budget_realized: number

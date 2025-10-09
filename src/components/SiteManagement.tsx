@@ -63,12 +63,14 @@ const SiteManagement: React.FC = () => {
     name: '',
     contact: '',
     job_description: '',
-    progress: 0,
     deadline: '',
     cost: 0,
     budget_realized: 0,
     phase_id: ''
   })
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [selectedSubcontractorForPayment, setSelectedSubcontractorForPayment] = useState<Subcontractor | null>(null)
   const [loading, setLoading] = useState(true)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
@@ -137,14 +139,14 @@ setExistingSubcontractors(allSubcontractorsData || [])
           return projectPhases.some(phase => phase.id === sub.phase_id)
         })
         
-        const completion_percentage = projectSubcontractors.length > 0
-          ? Math.round(projectSubcontractors.reduce((sum, sub) => sum + sub.progress, 0) / projectSubcontractors.length)
+        const total_budget_realized = projectSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
+        const total_subcontractor_cost = projectSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
+        const completion_percentage = total_subcontractor_cost > 0
+          ? Math.round((total_budget_realized / total_subcontractor_cost) * 100)
           : 0
 
-        const total_subcontractor_cost = projectSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
-        
-        const overdue_subcontractors = projectSubcontractors.filter(sub => 
-          new Date(sub.deadline) < new Date() && sub.progress < 100
+        const overdue_subcontractors = projectSubcontractors.filter(sub =>
+          new Date(sub.deadline) < new Date() && sub.budget_realized < sub.cost
         ).length
 
         const has_phases = projectPhases.length > 0
@@ -305,7 +307,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
             name: newSubcontractor.name,
             contact: newSubcontractor.contact,
             job_description: newSubcontractor.job_description,
-            progress: newSubcontractor.progress,
             deadline: newSubcontractor.deadline,
             cost: newSubcontractor.cost,
             budget_realized: newSubcontractor.budget_realized,
@@ -339,7 +340,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
       name: '',
       contact: '',
       job_description: '',
-      progress: 0,
       deadline: '',
       cost: 0,
       budget_realized: 0,
@@ -348,6 +348,32 @@ setExistingSubcontractors(allSubcontractorsData || [])
     setSelectedPhase(null)
     setShowSubcontractorForm(false)
     setUseExistingSubcontractor(false)
+  }
+
+  const addPaymentToSubcontractor = async () => {
+    if (!selectedSubcontractorForPayment || paymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      const newRealizedAmount = selectedSubcontractorForPayment.budget_realized + paymentAmount
+
+      const { error } = await supabase
+        .from('subcontractors')
+        .update({ budget_realized: newRealizedAmount })
+        .eq('id', selectedSubcontractorForPayment.id)
+
+      if (error) throw error
+
+      setShowPaymentModal(false)
+      setPaymentAmount(0)
+      setSelectedSubcontractorForPayment(null)
+      fetchProjects()
+    } catch (error) {
+      console.error('Error adding payment:', error)
+      alert('Error recording payment.')
+    }
   }
 
   const fetchSubcontractorComments = async (subcontractorId: string) => {
@@ -769,13 +795,14 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           const isOverdue = new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost
                           const daysUntilDeadline = differenceInDays(new Date(subcontractor.deadline), new Date())
                           const subVariance = subcontractor.budget_realized - subcontractor.cost
-                          const realizationPercent = subcontractor.cost > 0 ? (subcontractor.budget_realized / subcontractor.cost) * 100 : 0
+                          const isPaid = subcontractor.budget_realized >= subcontractor.cost
+                          const remainingToPay = Math.max(0, subcontractor.cost - subcontractor.budget_realized)
 
                           return (
                             <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
                               subVariance > 0 ? 'border-red-200 bg-red-50' :
-                              subVariance < 0 ? 'border-green-200 bg-green-50' :
-                              realizationPercent > 0 ? 'border-blue-200 bg-blue-50' :
+                              isPaid && subVariance === 0 ? 'border-green-200 bg-green-50' :
+                              subcontractor.budget_realized > 0 ? 'border-blue-200 bg-blue-50' :
                               'border-gray-200 bg-gray-50'
                             }`}>
                               <div className="flex items-start justify-between mb-3">
@@ -784,38 +811,24 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                   <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
                                   <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
                                 </div>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                                   subVariance > 0 ? 'bg-red-100 text-red-800' :
-                                  subVariance < 0 ? 'bg-green-100 text-green-800' :
-                                  realizationPercent >= 100 ? 'bg-blue-100 text-blue-800' :
+                                  isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
+                                  subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {realizationPercent.toFixed(0)}%
+                                  {subVariance > 0 ? 'Over Budget' :
+                                   isPaid && subVariance === 0 ? 'Paid' :
+                                   subcontractor.budget_realized > 0 ? 'Partial' : 'Unpaid'}
                                 </span>
                               </div>
 
-                              {/* Realization Progress Bar */}
-                              <div className="mb-3">
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-xs text-gray-600">Realization</span>
-                                  <span className="text-xs font-medium">{realizationPercent.toFixed(0)}%</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                      realizationPercent >= 100 ? 'bg-teal-600' : 'bg-blue-600'
-                                    }`}
-                                    style={{ width: `${Math.min(100, realizationPercent)}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-
                               {/* Details */}
-                              <div className="space-y-2 text-xs">
+                              <div className="space-y-2 text-xs mb-3">
                                 <div className="flex items-center justify-between">
                                   <span className="text-gray-600">Deadline:</span>
                                   <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                                    {format(new Date(subcontractor.deadline), 'MMM dd')}
+                                    {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -823,23 +836,39 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                   <span className="font-medium text-gray-900">${subcontractor.cost.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-gray-600">Realized:</span>
+                                  <span className="text-gray-600">Paid:</span>
                                   <span className="font-medium text-teal-600">${subcontractor.budget_realized.toLocaleString()}</span>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-600">Variance:</span>
-                                  <span className={`font-medium ${
+                                {remainingToPay > 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600">Remaining:</span>
+                                    <span className="font-medium text-orange-600">${remainingToPay.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                                  <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                                  <span className={`font-bold ${
                                     subVariance > 0 ? 'text-red-600' :
                                     subVariance < 0 ? 'text-green-600' :
                                     'text-gray-900'
                                   }`}>
-                                    {subVariance > 0 ? '+' : ''}${subVariance.toLocaleString()}
+                                    {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}${Math.abs(subVariance).toLocaleString()}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* Action Button */}
-                              <div className="mt-3 pt-3 border-t border-gray-200">
+                              {/* Action Buttons */}
+                              <div className="space-y-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedSubcontractorForPayment(subcontractor)
+                                    setShowPaymentModal(true)
+                                  }}
+                                  className="w-full px-3 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                                >
+                                  <DollarSign className="w-4 h-4 mr-1" />
+                                  Wire Payment
+                                </button>
                                 <button
                                   onClick={() => openSubcontractorDetails(subcontractor)}
                                   className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors duration-200"
@@ -1106,14 +1135,14 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     <p className="text-sm text-gray-600 mt-1">{selectedSubcontractor.contact}</p>
                     <div className="flex items-center space-x-3 mt-2">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        selectedSubcontractor.progress === 100 ? 'bg-green-100 text-green-800' :
-                        new Date(selectedSubcontractor.deadline) < new Date() && selectedSubcontractor.progress < 100 ? 'bg-red-100 text-red-800' :
-                        selectedSubcontractor.progress > 0 ? 'bg-blue-100 text-blue-800' :
+                        selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'bg-red-100 text-red-800' :
+                        selectedSubcontractor.budget_realized === selectedSubcontractor.cost ? 'bg-green-100 text-green-800' :
+                        selectedSubcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {selectedSubcontractor.progress === 100 ? 'Completed' :
-                         new Date(selectedSubcontractor.deadline) < new Date() && selectedSubcontractor.progress < 100 ? 'Overdue' :
-                         selectedSubcontractor.progress > 0 ? 'In Progress' : 'Not Started'}
+                        {selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'Over Budget' :
+                         selectedSubcontractor.budget_realized === selectedSubcontractor.cost ? 'Fully Paid' :
+                         selectedSubcontractor.budget_realized > 0 ? 'Partial Payment' : 'Unpaid'}
                       </span>
                     </div>
                   </div>
@@ -1130,18 +1159,34 @@ setExistingSubcontractors(allSubcontractorsData || [])
                 </div>
                 <div className="mt-4">
                   <p className="text-gray-700">{selectedSubcontractor.job_description}</p>
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Progress</span>
-                      <span className="text-sm font-medium text-gray-900">{selectedSubcontractor.progress}%</span>
+                  <div className="mt-4 grid grid-cols-3 gap-4">
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">Contract Amount</p>
+                      <p className="text-lg font-bold text-gray-900">${selectedSubcontractor.cost.toLocaleString()}</p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          selectedSubcontractor.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
-                        }`}
-                        style={{ width: `${selectedSubcontractor.progress}%` }}
-                      ></div>
+                    <div className="bg-teal-50 p-3 rounded-lg">
+                      <p className="text-xs text-teal-700 mb-1">Paid Amount</p>
+                      <p className="text-lg font-bold text-teal-900">${selectedSubcontractor.budget_realized.toLocaleString()}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${
+                      selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'bg-red-50' :
+                      selectedSubcontractor.budget_realized < selectedSubcontractor.cost ? 'bg-green-50' :
+                      'bg-gray-50'
+                    }`}>
+                      <p className={`text-xs mb-1 ${
+                        selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'text-red-700' :
+                        selectedSubcontractor.budget_realized < selectedSubcontractor.cost ? 'text-green-700' :
+                        'text-gray-600'
+                      }`}>Gain/Loss</p>
+                      <p className={`text-lg font-bold ${
+                        selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'text-red-900' :
+                        selectedSubcontractor.budget_realized < selectedSubcontractor.cost ? 'text-green-900' :
+                        'text-gray-900'
+                      }`}>
+                        {selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? '-' :
+                         selectedSubcontractor.budget_realized < selectedSubcontractor.cost ? '+' : ''}
+                        ${Math.abs(selectedSubcontractor.budget_realized - selectedSubcontractor.cost).toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1225,6 +1270,111 @@ setExistingSubcontractors(allSubcontractorsData || [])
           </div>
         )}
 
+        {/* Payment Modal */}
+        {showPaymentModal && selectedSubcontractorForPayment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Wire Payment</h3>
+                    <p className="text-sm text-gray-600 mt-1">{selectedSubcontractorForPayment.name}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false)
+                      setPaymentAmount(0)
+                      setSelectedSubcontractorForPayment(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-600">Contract Amount:</span>
+                    <span className="text-sm font-medium text-gray-900">${selectedSubcontractorForPayment.cost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-600">Already Paid:</span>
+                    <span className="text-sm font-medium text-teal-600">${selectedSubcontractorForPayment.budget_realized.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Remaining:</span>
+                    <span className="text-sm font-bold text-orange-600">
+                      ${Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Amount ($) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Enter payment amount"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can pay any amount, including more than the contract value
+                  </p>
+                </div>
+
+                {paymentAmount > 0 && (
+                  <div className={`p-3 rounded-lg mb-4 ${
+                    (selectedSubcontractorForPayment.budget_realized + paymentAmount) > selectedSubcontractorForPayment.cost
+                      ? 'bg-red-50 border border-red-200'
+                      : 'bg-blue-50 border border-blue-200'
+                  }`}>
+                    <p className={`text-sm ${
+                      (selectedSubcontractorForPayment.budget_realized + paymentAmount) > selectedSubcontractorForPayment.cost
+                        ? 'text-red-700'
+                        : 'text-blue-700'
+                    }`}>
+                      <span className="font-medium">New Total Paid:</span> ${(selectedSubcontractorForPayment.budget_realized + paymentAmount).toLocaleString()}
+                    </p>
+                    {(selectedSubcontractorForPayment.budget_realized + paymentAmount) > selectedSubcontractorForPayment.cost && (
+                      <p className="text-sm text-red-700 mt-1">
+                        <span className="font-medium">Loss:</span> ${((selectedSubcontractorForPayment.budget_realized + paymentAmount) - selectedSubcontractorForPayment.cost).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false)
+                      setPaymentAmount(0)
+                      setSelectedSubcontractorForPayment(null)
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addPaymentToSubcontractor}
+                    disabled={paymentAmount <= 0}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  >
+                    Record Payment
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Project Summary */}
         <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Summary</h3>
@@ -1235,17 +1385,19 @@ setExistingSubcontractors(allSubcontractorsData || [])
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {selectedProject.subcontractors.filter(s => s.progress === 100).length}
+                {selectedProject.subcontractors.filter(s => s.budget_realized >= s.cost).length}
               </div>
-              <div className="text-sm text-gray-600">Completed Work</div>
+              <div className="text-sm text-gray-600">Fully Paid</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{selectedProject.overdue_subcontractors}</div>
-              <div className="text-sm text-gray-600">Overdue</div>
+              <div className="text-2xl font-bold text-gray-600">${selectedProject.total_subcontractor_cost.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">Contract Total</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">${selectedProject.total_subcontractor_cost.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Total Costs</div>
+              <div className="text-2xl font-bold text-teal-600">
+                ${selectedProject.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Total Paid</div>
             </div>
           </div>
         </div>
