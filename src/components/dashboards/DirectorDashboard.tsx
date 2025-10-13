@@ -45,7 +45,6 @@ const DirectorDashboard: React.FC = () => {
       const { insertDummyData } = await import('../../utils/insertDummyData')
       const success = await insertDummyData()
       if (success) {
-        alert('Dummy data inserted successfully!')
         fetchData() // Refresh the data
       } else {
         alert('Failed to insert dummy data. Check console for errors.')
