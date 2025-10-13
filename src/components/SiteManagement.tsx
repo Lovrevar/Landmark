@@ -33,6 +33,7 @@ interface ProjectWithPhases extends Project {
   overdue_subcontractors: number
   has_phases: boolean
   total_budget_allocated: number
+  total_paid_out: number
 }
 
 interface SubcontractorWithPhase extends Subcontractor {
@@ -203,6 +204,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
+        const total_paid_out = projectSubcontractors.reduce((sum, sub) => sum + (sub.budget_realized || 0), 0)
 
         return {
           ...project,
@@ -212,7 +214,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
           total_subcontractor_cost,
           overdue_subcontractors,
           has_phases,
-          total_budget_allocated
+          total_budget_allocated,
+          total_paid_out
         }
       })
 
@@ -967,11 +970,16 @@ setExistingSubcontractors(allSubcontractorsData || [])
               <h1 className="text-3xl font-bold text-gray-900">{selectedProject.name}</h1>
               <p className="text-gray-600 mt-1">{selectedProject.location}</p>
               <p className="text-sm text-gray-500 mt-1">
-                Budget: ${selectedProject.budget.toLocaleString()} 
+                Budget: ${selectedProject.budget.toLocaleString()}
                 {selectedProject.has_phases && (
-                  <span className="ml-2">
-                    • Allocated: ${selectedProject.total_budget_allocated.toLocaleString()}
-                  </span>
+                  <>
+                    <span className="ml-2">
+                      • Allocated: ${selectedProject.total_budget_allocated.toLocaleString()}
+                    </span>
+                    <span className="ml-2 text-teal-600 font-medium">
+                      • Paid out: ${selectedProject.total_paid_out.toLocaleString()}
+                    </span>
+                  </>
                 )}
               </p>
             </div>
@@ -2495,9 +2503,14 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     <p className="text-gray-600">Budget</p>
                     <p className="font-medium text-gray-900">${(project.budget / 1000000).toFixed(1)}M</p>
                     {project.has_phases && (
-                      <p className="text-xs text-gray-500">
-                        ${(project.total_budget_allocated / 1000000).toFixed(1)}M allocated
-                      </p>
+                      <>
+                        <p className="text-xs text-gray-500">
+                          ${(project.total_budget_allocated / 1000000).toFixed(1)}M allocated
+                        </p>
+                        <p className="text-xs text-teal-600 font-medium">
+                          ${(project.total_paid_out / 1000000).toFixed(1)}M paid out
+                        </p>
+                      </>
                     )}
                   </div>
                   <div>
