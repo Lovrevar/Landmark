@@ -141,10 +141,11 @@ const SiteManagement: React.FC = () => {
       const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
         .select('*')
-        .order('project_id', { ascending: true })
         .order('phase_number', { ascending: true })
 
       if (phasesError) throw phasesError
+
+      console.log('Fetched phases:', phasesData)
 
       // Fetch subcontractors with phase info
       /*const { data: subcontractorsData, error: subError } = await supabase
@@ -196,6 +197,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
+
+        console.log(`Project ${project.name}: has ${projectPhases.length} phases, has_phases=${has_phases}`)
 
         return {
           ...project,
