@@ -465,7 +465,6 @@ const SalesProjects: React.FC = () => {
       
       // Refresh data
       await fetchData()
-      alert(`Successfully updated prices for ${selectedApartmentIds.length} apartments`)
     } catch (error) {
       console.error('Error updating apartment prices:', error)
       alert('Error updating apartment prices. Please try again.')
