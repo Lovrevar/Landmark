@@ -517,7 +517,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setSelectedSubcontractorForPayment(null)
 
       await fetchProjects()
-      alert('Payment recorded successfully!')
     } catch (error: any) {
       console.error('Error adding payment:', error)
       alert(error.message || 'Error recording payment. Please check the console for details.')
@@ -610,7 +609,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setEditingPayment(null)
       await fetchProjects()
       await fetchWirePayments(selectedSubcontractorForPayment.id)
-      alert('Payment updated successfully!')
     } catch (error: any) {
       console.error('Error updating payment:', error)
       alert(error.message || 'Error updating payment. Please check the console for details.')
