@@ -82,6 +82,15 @@ const SiteManagement: React.FC = () => {
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
   const [editingPayment, setEditingPayment] = useState<WirePayment | null>(null)
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
+  const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
+  const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null)
+  const [editPhaseForm, setEditPhaseForm] = useState({
+    phase_name: '',
+    budget_allocated: 0,
+    start_date: '',
+    end_date: '',
+    status: 'planning' as 'planning' | 'active' | 'completed' | 'on_hold'
+  })
 
   useEffect(() => {
     const initializeData = async () => {
@@ -300,6 +309,116 @@ setExistingSubcontractors(allSubcontractorsData || [])
     } catch (error) {
       console.error('Error creating phases:', error)
       alert('Error creating project phases.')
+    }
+  }
+
+  const openEditPhaseModal = (phase: ProjectPhase) => {
+    setEditingPhase(phase)
+    setEditPhaseForm({
+      phase_name: phase.phase_name,
+      budget_allocated: phase.budget_allocated,
+      start_date: phase.start_date || '',
+      end_date: phase.end_date || '',
+      status: phase.status
+    })
+    setShowEditPhaseModal(true)
+  }
+
+  const updatePhase = async () => {
+    if (!editingPhase || !selectedProject) return
+
+    if (!editPhaseForm.phase_name.trim()) {
+      alert('Phase name is required')
+      return
+    }
+
+    try {
+      const budgetDifference = editPhaseForm.budget_allocated - editingPhase.budget_allocated
+
+      if (editPhaseForm.budget_allocated < editingPhase.budget_used) {
+        if (!confirm(
+          `Warning: New budget ($${editPhaseForm.budget_allocated.toLocaleString()}) is less than already allocated amount ($${editingPhase.budget_used.toLocaleString()}).\n\n` +
+          `This means you're reducing the budget below what's already committed to subcontractors.\n\n` +
+          `Do you want to proceed anyway?`
+        )) {
+          return
+        }
+      }
+
+      const otherPhasesTotalBudget = selectedProject.phases
+        .filter(p => p.id !== editingPhase.id)
+        .reduce((sum, p) => sum + p.budget_allocated, 0)
+
+      const newTotalAllocated = otherPhasesTotalBudget + editPhaseForm.budget_allocated
+      const projectBudgetDiff = newTotalAllocated - selectedProject.budget
+
+      if (projectBudgetDiff !== 0) {
+        const message = projectBudgetDiff > 0
+          ? `Total allocated budget across all phases ($${newTotalAllocated.toLocaleString()}) will exceed project budget by $${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
+          : `Total allocated budget across all phases ($${newTotalAllocated.toLocaleString()}) will be less than project budget by $${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
+
+        if (!confirm(message)) {
+          return
+        }
+      }
+
+      const { error } = await supabase
+        .from('project_phases')
+        .update({
+          phase_name: editPhaseForm.phase_name,
+          budget_allocated: editPhaseForm.budget_allocated,
+          start_date: editPhaseForm.start_date || null,
+          end_date: editPhaseForm.end_date || null,
+          status: editPhaseForm.status
+        })
+        .eq('id', editingPhase.id)
+
+      if (error) throw error
+
+      setShowEditPhaseModal(false)
+      setEditingPhase(null)
+      await fetchProjects()
+    } catch (error) {
+      console.error('Error updating phase:', error)
+      alert('Error updating phase. Please try again.')
+    }
+  }
+
+  const deletePhase = async (phase: ProjectPhase) => {
+    if (!selectedProject) return
+
+    if (phase.budget_used > 0) {
+      alert('Cannot delete phase with active subcontractor assignments. Please remove or reassign all subcontractors first.')
+      return
+    }
+
+    if (!confirm(`Are you sure you want to delete phase "${phase.phase_name}"?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('project_phases')
+        .delete()
+        .eq('id', phase.id)
+
+      if (error) throw error
+
+      const remainingPhases = selectedProject.phases
+        .filter(p => p.id !== phase.id)
+        .sort((a, b) => a.phase_number - b.phase_number)
+
+      for (let i = 0; i < remainingPhases.length; i++) {
+        await supabase
+          .from('project_phases')
+          .update({ phase_number: i + 1 })
+          .eq('id', remainingPhases[i].id)
+      }
+
+      await fetchProjects()
+    } catch (error) {
+      console.error('Error deleting phase:', error)
+      alert('Error deleting phase. Please try again.')
     }
   }
 
@@ -722,23 +841,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
     fetchSubcontractorComments(subcontractor.id)
   }
 
-  const deletePhase = async (phaseId: string) => {
-    if (!confirm('Are you sure you want to delete this phase? This will unassign all subcontractors from this phase.')) return
-
-    try {
-      const { error } = await supabase
-        .from('project_phases')
-        .delete()
-        .eq('id', phaseId)
-
-      if (error) throw error
-      await fetchProjects()
-    } catch (error) {
-      console.error('Error deleting phase:', error)
-      alert('Error deleting phase.')
-    }
-  }
-
   const openEditSubcontractor = (subcontractor: Subcontractor) => {
     setEditingSubcontractor(subcontractor)
     setShowEditModal(true)
@@ -1094,6 +1196,20 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           <p className="text-lg font-bold text-gray-900">${phase.budget_allocated.toLocaleString()}</p>
                           <p className="text-sm text-gray-600">Allocated Budget</p>
                         </div>
+                        <button
+                          onClick={() => openEditPhaseModal(phase)}
+                          className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+                          title="Edit phase"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deletePhase(phase)}
+                          className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
+                          title="Delete phase"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => {
                             setSelectedPhase(phase)
@@ -1535,6 +1651,147 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     Add Subcontractor
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Phase Modal */}
+        {showEditPhaseModal && editingPhase && selectedProject && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Edit Phase</h3>
+                    <p className="text-gray-600 mt-1">
+                      Phase {editingPhase.phase_number} • Budget Used: ${editingPhase.budget_used.toLocaleString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditPhaseModal(false)
+                      setEditingPhase(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phase Name *</label>
+                    <input
+                      type="text"
+                      value={editPhaseForm.phase_name}
+                      onChange={(e) => setEditPhaseForm({ ...editPhaseForm, phase_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter phase name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated ($) *</label>
+                    <input
+                      type="number"
+                      value={editPhaseForm.budget_allocated}
+                      onChange={(e) => setEditPhaseForm({ ...editPhaseForm, budget_allocated: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0"
+                      required
+                    />
+                    {editPhaseForm.budget_allocated < editingPhase.budget_used && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Warning: Budget is less than already allocated amount (${editingPhase.budget_used.toLocaleString()})
+                      </p>
+                    )}
+                    {editPhaseForm.budget_allocated >= editingPhase.budget_used && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Available after update: ${(editPhaseForm.budget_allocated - editingPhase.budget_used).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                      <input
+                        type="date"
+                        value={editPhaseForm.start_date}
+                        onChange={(e) => setEditPhaseForm({ ...editPhaseForm, start_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                      <input
+                        type="date"
+                        value={editPhaseForm.end_date}
+                        onChange={(e) => setEditPhaseForm({ ...editPhaseForm, end_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={editPhaseForm.status}
+                      onChange={(e) => setEditPhaseForm({ ...editPhaseForm, status: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="planning">Planning</option>
+                      <option value="active">Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="on_hold">On Hold</option>
+                    </select>
+                  </div>
+
+                  {(() => {
+                    const otherPhasesTotalBudget = selectedProject.phases
+                      .filter(p => p.id !== editingPhase.id)
+                      .reduce((sum, p) => sum + p.budget_allocated, 0)
+                    const newTotalAllocated = otherPhasesTotalBudget + editPhaseForm.budget_allocated
+                    const projectBudgetDiff = newTotalAllocated - selectedProject.budget
+
+                    return projectBudgetDiff !== 0 && (
+                      <div className={`p-4 rounded-lg border ${
+                        projectBudgetDiff > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
+                      }`}>
+                        <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
+                          <span className="font-medium">Note:</span> After this update, total phase budgets
+                          ({' $' + newTotalAllocated.toLocaleString()}) will be {' '}
+                          {projectBudgetDiff > 0
+                            ? `$${Math.abs(projectBudgetDiff).toLocaleString()} over`
+                            : `$${Math.abs(projectBudgetDiff).toLocaleString()} under`
+                          } the project budget.
+                        </p>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowEditPhaseModal(false)
+                      setEditingPhase(null)
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={updatePhase}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Update Phase
                   </button>
                 </div>
               </div>
