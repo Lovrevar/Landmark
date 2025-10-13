@@ -82,8 +82,6 @@ const SiteManagement: React.FC = () => {
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
   const [editingPayment, setEditingPayment] = useState<WirePayment | null>(null)
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
-  const [editingPhase, setEditingPhase] = useState<{ id: string; phase_name: string; budget_allocated: number; start_date: string | null; end_date: string | null } | null>(null)
-  const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
 
   useEffect(() => {
     const initializeData = async () => {
@@ -141,11 +139,10 @@ const SiteManagement: React.FC = () => {
       const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
         .select('*')
+        .order('project_id', { ascending: true })
         .order('phase_number', { ascending: true })
 
       if (phasesError) throw phasesError
-
-      console.log('Fetched phases:', phasesData)
 
       // Fetch subcontractors with phase info
       /*const { data: subcontractorsData, error: subError } = await supabase
@@ -197,8 +194,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-
-        console.log(`Project ${project.name}: has ${projectPhases.length} phases, has_phases=${has_phases}`)
 
         return {
           ...project,
@@ -522,6 +517,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setSelectedSubcontractorForPayment(null)
 
       await fetchProjects()
+      alert('Payment recorded successfully!')
     } catch (error: any) {
       console.error('Error adding payment:', error)
       alert(error.message || 'Error recording payment. Please check the console for details.')
@@ -614,6 +610,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
       setEditingPayment(null)
       await fetchProjects()
       await fetchWirePayments(selectedSubcontractorForPayment.id)
+      alert('Payment updated successfully!')
     } catch (error: any) {
       console.error('Error updating payment:', error)
       alert(error.message || 'Error updating payment. Please check the console for details.')
@@ -669,6 +666,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
       await fetchProjects()
       await fetchWirePayments(selectedSubcontractorForPayment.id)
+      alert('Payment deleted successfully!')
     } catch (error: any) {
       console.error('Error deleting payment:', error)
       alert(error.message || 'Error deleting payment. Please check the console for details.')
@@ -740,43 +738,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
     } catch (error) {
       console.error('Error deleting phase:', error)
       alert('Error deleting phase.')
-    }
-  }
-
-  const openEditPhase = (phase: { id: string; phase_name: string; budget_allocated: number; start_date: string | null; end_date: string | null }) => {
-    setEditingPhase({
-      id: phase.id,
-      phase_name: phase.phase_name,
-      budget_allocated: phase.budget_allocated,
-      start_date: phase.start_date,
-      end_date: phase.end_date
-    })
-    setShowEditPhaseModal(true)
-  }
-
-  const updatePhase = async () => {
-    if (!editingPhase) return
-
-    try {
-      const { error } = await supabase
-        .from('project_phases')
-        .update({
-          phase_name: editingPhase.phase_name,
-          budget_allocated: editingPhase.budget_allocated,
-          start_date: editingPhase.start_date,
-          end_date: editingPhase.end_date
-        })
-        .eq('id', editingPhase.id)
-
-      if (error) throw error
-
-      setShowEditPhaseModal(false)
-      setEditingPhase(null)
-      await fetchProjects()
-      alert('Phase updated successfully!')
-    } catch (error) {
-      console.error('Error updating phase:', error)
-      alert('Error updating phase.')
     }
   }
 
@@ -1135,13 +1096,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           <p className="text-lg font-bold text-gray-900">${phase.budget_allocated.toLocaleString()}</p>
                           <p className="text-sm text-gray-600">Allocated Budget</p>
                         </div>
-                        <button
-                          onClick={() => openEditPhase(phase)}
-                          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          Edit Phase
-                        </button>
                         <button
                           onClick={() => {
                             setSelectedPhase(phase)
@@ -2321,95 +2275,6 @@ setExistingSubcontractors(allSubcontractorsData || [])
           <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
           <p className="text-gray-600">No construction projects available for site management.</p>
-        </div>
-      )}
-
-      {/* Edit Phase Modal */}
-      {showEditPhaseModal && editingPhase && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Edit Phase</h3>
-                <button
-                  onClick={() => {
-                    setShowEditPhaseModal(false)
-                    setEditingPhase(null)
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phase Name *</label>
-                <input
-                  type="text"
-                  value={editingPhase.phase_name}
-                  onChange={(e) => setEditingPhase({ ...editingPhase, phase_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated ($) *</label>
-                <input
-                  type="number"
-                  value={editingPhase.budget_allocated}
-                  onChange={(e) => setEditingPhase({ ...editingPhase, budget_allocated: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                  <input
-                    type="date"
-                    value={editingPhase.start_date || ''}
-                    onChange={(e) => setEditingPhase({ ...editingPhase, start_date: e.target.value || null })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                  <input
-                    type="date"
-                    value={editingPhase.end_date || ''}
-                    onChange={(e) => setEditingPhase({ ...editingPhase, end_date: e.target.value || null })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowEditPhaseModal(false)
-                    setEditingPhase(null)
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={updatePhase}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
