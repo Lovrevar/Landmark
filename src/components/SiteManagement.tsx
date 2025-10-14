@@ -1372,7 +1372,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                                     subVariance < 0 ? 'text-green-600' :
                                     'text-gray-900'
                                   }`}>
-                                    {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}${Math.abs(subVariance).toLocaleString()}
+                                    {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString()}
                                   </span>
                                 </div>
                               </div>
@@ -1845,11 +1845,11 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div className="mt-4 grid grid-cols-3 gap-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Contract Amount</p>
-                      <p className="text-lg font-bold text-gray-900">${selectedSubcontractor.cost.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-gray-900">€{selectedSubcontractor.cost.toLocaleString()}</p>
                     </div>
                     <div className="bg-teal-50 p-3 rounded-lg">
                       <p className="text-xs text-teal-700 mb-1">Paid Amount</p>
-                      <p className="text-lg font-bold text-teal-900">${selectedSubcontractor.budget_realized.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-teal-900">€{selectedSubcontractor.budget_realized.toLocaleString()}</p>
                     </div>
                     <div className={`p-3 rounded-lg ${
                       selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? 'bg-red-50' :
