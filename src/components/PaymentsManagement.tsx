@@ -312,7 +312,7 @@ const PaymentsManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
-                        ${payment.amount.toLocaleString()}
+                        €{payment.amount.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -337,7 +337,7 @@ const PaymentsManagement: React.FC = () => {
             <div className="text-sm text-blue-900">
               <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
               <span className="font-semibold">
-                ${filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
               </span>
             </div>
           </div>
