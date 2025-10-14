@@ -1,5 +1,5 @@
-import React, { ReactNode } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import React, { ReactNode, useState } from 'react'
+import { useAuth, Profile } from '../contexts/AuthContext'
 import {
   Building2,
   LogOut,
@@ -7,9 +7,10 @@ import {
   Calculator,
   Home,
   Users,
-  CheckSquare,
   Calendar,
-  DollarSign
+  DollarSign,
+  ChevronDown,
+  User
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -17,47 +18,42 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useAuth()
+  const { currentProfile, setCurrentProfile, logout } = useAuth()
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   const getMenuItems = () => {
-    const commonItems = [
-      { name: 'Dashboard', icon: BarChart3, path: '/' },
-      { name: 'My Tasks', icon: CheckSquare, path: '/todos' },
-      { name: 'Calendar', icon: Calendar, path: '/calendar' }
-    ]
-
-    const roleSpecificItems = {
+    const menuConfig = {
       Director: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Projects', icon: Building2, path: '/projects' },
-        { name: 'All Tasks', icon: CheckSquare, path: '/tasks' },
         { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
-      Accounting: [
-        { name: 'Invoices', icon: Calculator, path: '/invoices' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' },
-        { name: 'Projects', icon: Building2, path: '/sales-projects' },
-        { name: 'Customers', icon: Users, path: '/customers' },
-        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
+      Supervisor: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Calendar', icon: Calendar, path: '/calendar' },
+        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
+        { name: 'Site Management', icon: Building2, path: '/site-management' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
-      Sales: [
+      Salesperson: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Apartments', icon: Home, path: '/apartments' },
         { name: 'Projects', icon: Building2, path: '/sales-projects' },
         { name: 'Customers', icon: Users, path: '/customers' },
         { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
       ],
-      Supervision: [
-        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
-        { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' }
-      ],
-      Investment: [
+      Investor: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Investors', icon: Users, path: '/investors' }
       ]
     }
 
-    return [...commonItems, ...(roleSpecificItems[user?.role as keyof typeof roleSpecificItems] || [])]
+    return menuConfig[currentProfile] || menuConfig.Director
   }
 
   const menuItems = getMenuItems()
@@ -72,9 +68,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-xl font-bold text-gray-900">Construction Project Management</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                Welcome, {user?.username} ({user?.role})
-              </span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="font-medium">{currentProfile}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    {(['Director', 'Supervisor', 'Salesperson', 'Investor'] as Profile[]).map((profile) => (
+                      <button
+                        key={profile}
+                        onClick={() => {
+                          setCurrentProfile(profile)
+                          setShowProfileDropdown(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 ${
+                          currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                        }`}
+                      >
+                        {profile}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={logout}
                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-red-600 transition-colors duration-200"

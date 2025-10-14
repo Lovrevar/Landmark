@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { supabase, User } from '../lib/supabase'
+
+export type Profile = 'Director' | 'Supervisor' | 'Salesperson' | 'Investor'
 
 interface AuthContextType {
-  user: User | null
+  isAuthenticated: boolean
+  currentProfile: Profile
+  setCurrentProfile: (profile: Profile) => void
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   loading: boolean
@@ -23,66 +26,53 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentProfile, setCurrentProfile] = useState<Profile>('Director')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('currentUser')
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (err) {
-        console.error('Error parsing saved user:', err)
-        localStorage.removeItem('currentUser')
+    const savedAuth = localStorage.getItem('isAuthenticated')
+    const savedProfile = localStorage.getItem('currentProfile')
+
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true)
+      if (savedProfile && ['Director', 'Supervisor', 'Salesperson', 'Investor'].includes(savedProfile)) {
+        setCurrentProfile(savedProfile as Profile)
       }
     }
     setLoading(false)
   }, [])
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      console.log('Attempting login for:', username)
-
-      // Clear any existing user data first
-      localStorage.removeItem('currentUser')
-      setUser(null)
-
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-
-      console.log('Query result:', { users, error })
-
-      if (error || !users || users.length === 0) {
-        console.log('Login failed: no matching user found')
-        return false
-      }
-
-      const user = users[0]
-      setUser(user)
-      localStorage.setItem('currentUser', JSON.stringify(user))
-      console.log('Login successful for user:', user)
+    if (username === 'admin' && password === 'admin') {
+      setIsAuthenticated(true)
+      setCurrentProfile('Director')
+      localStorage.setItem('isAuthenticated', 'true')
+      localStorage.setItem('currentProfile', 'Director')
       return true
-    } catch (err) {
-      console.error('Login error:', err)
-      return false
     }
+    return false
   }
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem('currentUser')
-    // Force a small delay to ensure state is cleared
+    setIsAuthenticated(false)
+    setCurrentProfile('Director')
+    localStorage.removeItem('isAuthenticated')
+    localStorage.removeItem('currentProfile')
     setTimeout(() => {
       window.location.href = '/'
     }, 100)
   }
 
+  const handleSetCurrentProfile = (profile: Profile) => {
+    setCurrentProfile(profile)
+    localStorage.setItem('currentProfile', profile)
+  }
+
   const value = {
-    user,
+    isAuthenticated,
+    currentProfile,
+    setCurrentProfile: handleSetCurrentProfile,
     login,
     logout,
     loading

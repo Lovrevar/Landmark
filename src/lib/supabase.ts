@@ -14,9 +14,11 @@ export type User = {
   id: string
   username: string
   password: string
-  role: 'Director' | 'Accounting' | 'Sales' | 'Supervision'
+  role: 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
   created_at: string
 }
+
+export type Profile = 'Director' | 'Supervisor' | 'Salesperson' | 'Investor'
 
 export type Project = {
   id: string

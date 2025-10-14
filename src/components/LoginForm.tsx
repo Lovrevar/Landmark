@@ -32,7 +32,7 @@ const LoginForm: React.FC = () => {
               <Building2 className="w-8 h-8 text-blue-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Construction Project Management</h1>
-            <p className="text-gray-600 mt-2">Project Management Portal</p>
+            <p className="text-gray-600 mt-2">Admin Portal</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -88,14 +88,9 @@ const LoginForm: React.FC = () => {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              <p className="font-medium mb-2">Demo Accounts:</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>Director: director / pass123</div>
-                <div>Sales: salesperson / pass123</div>
-                <div>Supervision: supervisor / pass123</div>
-                <div>Investments: investor / pass123</div>
-              </div>
+            <div className="text-sm text-gray-600 text-center">
+              <p className="font-medium mb-2">Admin Access</p>
+              <p className="text-xs">Use admin credentials to access all company profiles</p>
             </div>
           </div>
         </div>
