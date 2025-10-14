@@ -10,7 +10,11 @@ import UnitForm from './forms/UnitForm'
 import BulkUnitForm from './forms/BulkUnitForm'
 import LinkingModal from './forms/LinkingModal'
 import SaleForm from './forms/SaleForm'
+import { ApartmentWirePaymentModal } from './forms/ApartmentWirePaymentModal'
+import { ApartmentPaymentHistoryModal } from './forms/ApartmentPaymentHistoryModal'
+import { apartmentPaymentService } from './services/apartmentPaymentService'
 import type { ProjectWithBuildings, BuildingWithUnits, ApartmentWithSaleInfo, UnitType, ViewMode } from './types/salesTypes'
+import type { ApartmentPayment } from '../../lib/supabase'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<ProjectWithBuildings | null>(null)
@@ -27,6 +31,14 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showSaleForm, setShowSaleForm] = useState(false)
   const [selectedApartmentForLinking, setSelectedApartmentForLinking] = useState<ApartmentWithSaleInfo | null>(null)
   const [unitForSale, setUnitForSale] = useState<{unit: any, type: UnitType} | null>(null)
+
+  const [showApartmentWireModal, setShowApartmentWireModal] = useState(false)
+  const [showApartmentPaymentsModal, setShowApartmentPaymentsModal] = useState(false)
+  const [selectedApartmentForPayment, setSelectedApartmentForPayment] = useState<any>(null)
+  const [apartmentPaymentAmount, setApartmentPaymentAmount] = useState(0)
+  const [apartmentPaymentDate, setApartmentPaymentDate] = useState('')
+  const [apartmentPaymentNotes, setApartmentPaymentNotes] = useState('')
+  const [apartmentPayments, setApartmentPayments] = useState<ApartmentPayment[]>([])
 
   const {
     projects,
@@ -111,6 +123,87 @@ const SalesProjectsEnhanced: React.FC = () => {
     if (unitType === 'apartment') return 'Apartments'
     if (unitType === 'garage') return 'Garages'
     return 'Repositories'
+  }
+
+  const handleApartmentWirePayment = (apartmentId: string) => {
+    const apartment = selectedBuilding?.apartments.find(a => a.id === apartmentId)
+    if (apartment && apartment.sale_info) {
+      setSelectedApartmentForPayment(apartment)
+      setApartmentPaymentAmount(0)
+      setApartmentPaymentDate('')
+      setApartmentPaymentNotes('')
+      setShowApartmentWireModal(true)
+    }
+  }
+
+  const handleViewApartmentPayments = async (apartmentId: string) => {
+    const apartment = selectedBuilding?.apartments.find(a => a.id === apartmentId)
+    if (apartment && apartment.sale_info) {
+      setSelectedApartmentForPayment(apartment)
+      const payments = await apartmentPaymentService.fetchPayments(apartmentId)
+      setApartmentPayments(payments)
+      setShowApartmentPaymentsModal(true)
+    }
+  }
+
+  const handleSubmitApartmentPayment = async () => {
+    if (!selectedApartmentForPayment || apartmentPaymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    const success = await apartmentPaymentService.createPayment(
+      selectedApartmentForPayment.id,
+      apartmentPaymentAmount,
+      apartmentPaymentDate || null,
+      apartmentPaymentNotes || null
+    )
+
+    if (success) {
+      setShowApartmentWireModal(false)
+      setSelectedApartmentForPayment(null)
+      if (selectedProject && selectedBuilding) {
+        const updatedProject = projects.find(p => p.id === selectedProject.id)
+        if (updatedProject) {
+          setSelectedProject(updatedProject)
+          const updatedBuilding = updatedProject.buildings.find(b => b.id === selectedBuilding.id)
+          if (updatedBuilding) {
+            setSelectedBuilding(updatedBuilding)
+          }
+        }
+      }
+    } else {
+      alert('Failed to record payment')
+    }
+  }
+
+  const handleDeleteApartmentPayment = async (paymentId: string, amount: number) => {
+    if (!selectedApartmentForPayment || !confirm('Are you sure you want to delete this payment?')) {
+      return
+    }
+
+    const success = await apartmentPaymentService.deletePayment(
+      paymentId,
+      selectedApartmentForPayment.id,
+      amount
+    )
+
+    if (success) {
+      const updatedPayments = await apartmentPaymentService.fetchPayments(selectedApartmentForPayment.id)
+      setApartmentPayments(updatedPayments)
+      if (selectedProject && selectedBuilding) {
+        const updatedProject = projects.find(p => p.id === selectedProject.id)
+        if (updatedProject) {
+          setSelectedProject(updatedProject)
+          const updatedBuilding = updatedProject.buildings.find(b => b.id === selectedBuilding.id)
+          if (updatedBuilding) {
+            setSelectedBuilding(updatedBuilding)
+          }
+        }
+      }
+    } else {
+      alert('Failed to delete payment')
+    }
   }
 
   if (loading) {
@@ -207,6 +300,8 @@ const SalesProjectsEnhanced: React.FC = () => {
           }}
           onUnlinkGarage={unlinkGarage}
           onUnlinkRepository={unlinkRepository}
+          onWirePayment={handleApartmentWirePayment}
+          onViewPayments={handleViewApartmentPayments}
         />
       )}
 
@@ -260,6 +355,37 @@ const SalesProjectsEnhanced: React.FC = () => {
         }}
         onSubmit={handleCompleteSale}
       />
+
+      {selectedApartmentForPayment && selectedApartmentForPayment.sale_info && (
+        <>
+          <ApartmentWirePaymentModal
+            visible={showApartmentWireModal}
+            onClose={() => setShowApartmentWireModal(false)}
+            apartmentNumber={selectedApartmentForPayment.number}
+            salePrice={selectedApartmentForPayment.sale_info.sale_price}
+            totalPaid={selectedApartmentForPayment.sale_info.total_paid}
+            remaining={selectedApartmentForPayment.sale_info.remaining_amount}
+            amount={apartmentPaymentAmount}
+            paymentDate={apartmentPaymentDate}
+            notes={apartmentPaymentNotes}
+            onAmountChange={setApartmentPaymentAmount}
+            onDateChange={setApartmentPaymentDate}
+            onNotesChange={setApartmentPaymentNotes}
+            onSubmit={handleSubmitApartmentPayment}
+          />
+
+          <ApartmentPaymentHistoryModal
+            visible={showApartmentPaymentsModal}
+            onClose={() => setShowApartmentPaymentsModal(false)}
+            apartmentNumber={selectedApartmentForPayment.number}
+            salePrice={selectedApartmentForPayment.sale_info.sale_price}
+            totalPaid={selectedApartmentForPayment.sale_info.total_paid}
+            remaining={selectedApartmentForPayment.sale_info.remaining_amount}
+            payments={apartmentPayments}
+            onDeletePayment={handleDeleteApartmentPayment}
+          />
+        </>
+      )}
     </div>
   )
 }
