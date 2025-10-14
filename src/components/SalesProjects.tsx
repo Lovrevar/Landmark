@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase, Project, Apartment, Customer, Sale } from '../lib/supabase'
 import { 
   Building2, 
@@ -50,7 +49,6 @@ interface ProjectWithApartments extends Project {
 }
 
 const SalesProjects: React.FC = () => {
-  const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithApartments[]>([])
   const [apartments, setApartments] = useState<ApartmentWithSale[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -780,20 +778,10 @@ const SalesProjects: React.FC = () => {
             </div>
 
             <div className="border-t pt-3">
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Revenue</span>
                 <span className="font-bold text-green-600">€{project.total_revenue.toLocaleString()}</span>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  navigate(`/sales-projects/${project.id}/buildings`)
-                }}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Manage Buildings
-              </button>
             </div>
           </div>
         ))}
