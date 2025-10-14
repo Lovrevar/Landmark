@@ -8,6 +8,7 @@ import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
 import SiteManagement from './components/SiteManagement'
 import SalesProjects from './components/SalesProjects'
+import BuildingManagement from './components/BuildingManagement'
 import CustomersManagement from './components/CustomersManagement'
 import SalesReports from './components/SalesReports'
 import BanksManagement from './components/BanksManagement'
@@ -85,6 +86,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CustomersManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-projects/:projectId/buildings"
+          element={
+            <ProtectedRoute>
+              <BuildingManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-projects/:projectId/buildings/:buildingId"
+          element={
+            <ProtectedRoute>
+              <BuildingManagement />
             </ProtectedRoute>
           }
         />
