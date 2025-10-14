@@ -1201,7 +1201,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       </div>
                       <div className="flex items-center space-x-4">
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">${phase.budget_allocated.toLocaleString()}</p>
+                          <p className="text-lg font-bold text-gray-900">€{phase.budget_allocated.toLocaleString()}</p>
                           <p className="text-sm text-gray-600">Allocated Budget</p>
                         </div>
                         <button
