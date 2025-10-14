@@ -284,27 +284,6 @@ const DirectorDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
-          <p className="text-gray-600 mb-4">It looks like there are no projects in the database yet.</p>
-          <div className="space-x-3">
-            <button 
-              onClick={fetchData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Refresh Data
-            </button>
-            <button 
-              onClick={handleInsertDummyData}
-              disabled={insertingData}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {insertingData ? 'Inserting...' : 'Insert Dummy Data'}
-            </button>
-          </div>
-        </div>
       </div>
     )
   }
