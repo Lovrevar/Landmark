@@ -2418,7 +2418,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
               <div className="text-sm text-gray-600">Fully Paid</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">${selectedProject.total_subcontractor_cost.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-600">€{selectedProject.total_subcontractor_cost.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Contract Total</div>
             </div>
             <div className="text-center">
