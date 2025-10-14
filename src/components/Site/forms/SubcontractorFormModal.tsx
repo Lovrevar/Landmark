@@ -113,7 +113,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   required
                 >
                   <option value="">Choose existing subcontractor</option>
-                  {existingSubcontractors.filter(sub => !sub.phase_id).map(subcontractor => (
+                  {existingSubcontractors.map(subcontractor => (
                     <option key={subcontractor.id} value={subcontractor.id}>
                       {subcontractor.name} - {subcontractor.contact}
                     </option>
