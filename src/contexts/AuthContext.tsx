@@ -27,7 +27,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentProfile, setCurrentProfile] = useState<Profile>('Director')
+  const [currentProfile, setCurrentProfile] = useState<Profile>('General')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
