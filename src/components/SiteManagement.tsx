@@ -1989,7 +1989,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-sm font-medium text-gray-700">Remaining:</span>
                     <span className="text-sm font-bold text-orange-600">
-                      ${Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
+                      €{Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
                     </span>
                   </div>
                 </div>
