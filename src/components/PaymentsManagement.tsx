@@ -186,7 +186,7 @@ const PaymentsManagement: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Total Amount</h3>
             <DollarSign className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">${stats.totalAmount.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString()}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -203,7 +203,7 @@ const PaymentsManagement: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
             <TrendingUp className="w-5 h-5 text-teal-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">${stats.amountThisMonth.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString()}</p>
         </div>
       </div>
 
