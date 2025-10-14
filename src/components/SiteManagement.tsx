@@ -2052,11 +2052,11 @@ setExistingSubcontractors(allSubcontractorsData || [])
                         ? 'text-red-700'
                         : 'text-blue-700'
                     }`}>
-                      <span className="font-medium">New Total Paid:</span> ${(selectedSubcontractorForPayment.budget_realized + paymentAmount).toLocaleString()}
+                      <span className="font-medium">New Total Paid:</span> €{(selectedSubcontractorForPayment.budget_realized + paymentAmount).toLocaleString()}
                     </p>
                     {(selectedSubcontractorForPayment.budget_realized + paymentAmount) > selectedSubcontractorForPayment.cost && (
                       <p className="text-sm text-red-700 mt-1">
-                        <span className="font-medium">Loss:</span> ${((selectedSubcontractorForPayment.budget_realized + paymentAmount) - selectedSubcontractorForPayment.cost).toLocaleString()}
+                        <span className="font-medium">Loss:</span> €{((selectedSubcontractorForPayment.budget_realized + paymentAmount) - selectedSubcontractorForPayment.cost).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -2141,7 +2141,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost ($) *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€) *</label>
                     <input
                       type="number"
                       min="0"
@@ -2190,12 +2190,12 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div className="mt-2 space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Paid:</span>
-                      <span className="font-medium text-gray-900">${editingSubcontractor.budget_realized.toLocaleString()}</span>
+                      <span className="font-medium text-gray-900">€{editingSubcontractor.budget_realized.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Remaining:</span>
                       <span className="font-medium text-orange-600">
-                        ${Math.max(0, editingSubcontractor.cost - editingSubcontractor.budget_realized).toLocaleString()}
+                        €{Math.max(0, editingSubcontractor.cost - editingSubcontractor.budget_realized).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -2251,16 +2251,16 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <p className="text-sm text-gray-600">Contract Amount</p>
-                      <p className="text-lg font-bold text-gray-900">${selectedSubcontractorForPayment.cost.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-gray-900">€{selectedSubcontractorForPayment.cost.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Total Paid</p>
-                      <p className="text-lg font-bold text-teal-600">${selectedSubcontractorForPayment.budget_realized.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-teal-600">€{selectedSubcontractorForPayment.budget_realized.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Remaining</p>
                       <p className="text-lg font-bold text-orange-600">
-                        ${Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
+                        €{Math.max(0, selectedSubcontractorForPayment.cost - selectedSubcontractorForPayment.budget_realized).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -2501,7 +2501,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Budget</p>
-                    <p className="font-medium text-gray-900">${(project.budget / 1000000).toFixed(1)}M</p>
+                    <p className="font-medium text-gray-900">€{(project.budget / 1000000).toFixed(1)}M</p>
                     {project.has_phases && (
                       <>
                         <p className="text-xs text-gray-500">
