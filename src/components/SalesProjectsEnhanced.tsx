@@ -532,7 +532,7 @@ const SalesProjectsEnhanced: React.FC = () => {
   const getUnitLabel = (unitType: UnitType) => {
     if (unitType === 'apartment') return 'Apartments'
     if (unitType === 'garage') return 'Garages'
-    return 'Repositoriess'
+    return 'Repository'
   }
 
   const calculateBulkPreview = () => {
