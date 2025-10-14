@@ -340,7 +340,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
       if (editPhaseForm.budget_allocated < editingPhase.budget_used) {
         if (!confirm(
-          `Warning: New budget ($${editPhaseForm.budget_allocated.toLocaleString()}) is less than already allocated amount ($${editingPhase.budget_used.toLocaleString()}).\n\n` +
+          `Warning: New budget ($${editPhaseForm.budget_allocated.toLocaleString()}) is less than already allocated amount (€${editingPhase.budget_used.toLocaleString()}).\n\n` +
           `This means you're reducing the budget below what's already committed to subcontractors.\n\n` +
           `Do you want to proceed anyway?`
         )) {
@@ -1114,7 +1114,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Total Project Budget</p>
-                      <p className="text-lg font-bold text-gray-900">${selectedProject.budget.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-gray-900">€{selectedProject.budget.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Total Allocated</p>
