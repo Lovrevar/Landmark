@@ -1,13 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-
-export type CompanyProfile = 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
+import { supabase, User } from '../lib/supabase'
 
 interface AuthContextType {
-  isAuthenticated: boolean
-  currentProfile: CompanyProfile
+  user: User | null
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
-  switchProfile: (profile: CompanyProfile) => void
   loading: boolean
 }
 
@@ -26,55 +23,68 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentProfile, setCurrentProfile] = useState<CompanyProfile>('Director')
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const savedAuth = localStorage.getItem('adminAuthenticated')
-    const savedProfile = localStorage.getItem('currentProfile')
-
-    if (savedAuth === 'true') {
-      setIsAuthenticated(true)
-      if (savedProfile) {
-        setCurrentProfile(savedProfile as CompanyProfile)
+    // Check if user is already logged in
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (err) {
+        console.error('Error parsing saved user:', err)
+        localStorage.removeItem('currentUser')
       }
     }
     setLoading(false)
   }, [])
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    if (username === 'admin' && password === 'admin') {
-      setIsAuthenticated(true)
-      setCurrentProfile('Director')
-      localStorage.setItem('adminAuthenticated', 'true')
-      localStorage.setItem('currentProfile', 'Director')
+    try {
+      console.log('Attempting login for:', username)
+
+      // Clear any existing user data first
+      localStorage.removeItem('currentUser')
+      setUser(null)
+
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+
+      console.log('Query result:', { users, error })
+
+      if (error || !users || users.length === 0) {
+        console.log('Login failed: no matching user found')
+        return false
+      }
+
+      const user = users[0]
+      setUser(user)
+      localStorage.setItem('currentUser', JSON.stringify(user))
+      console.log('Login successful for user:', user)
       return true
+    } catch (err) {
+      console.error('Login error:', err)
+      return false
     }
-    return false
   }
 
   const logout = () => {
-    setIsAuthenticated(false)
-    setCurrentProfile('Director')
-    localStorage.removeItem('adminAuthenticated')
-    localStorage.removeItem('currentProfile')
+    setUser(null)
+    localStorage.removeItem('currentUser')
+    // Force a small delay to ensure state is cleared
     setTimeout(() => {
       window.location.href = '/'
     }, 100)
   }
 
-  const switchProfile = (profile: CompanyProfile) => {
-    setCurrentProfile(profile)
-    localStorage.setItem('currentProfile', profile)
-  }
-
   const value = {
-    isAuthenticated,
-    currentProfile,
+    user,
     login,
     logout,
-    switchProfile,
     loading
   }
 

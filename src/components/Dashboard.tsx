@@ -7,22 +7,22 @@ import SupervisionDashboard from './dashboards/SupervisionDashboard'
 import InvestmentDashboard from './dashboards/InvestmentDashboard'
 
 const Dashboard: React.FC = () => {
-  const { currentProfile } = useAuth()
+  const { user } = useAuth()
 
   const renderDashboard = () => {
-    switch (currentProfile) {
+    switch (user?.role) {
       case 'Director':
-        return <DirectorDashboard />
+        return <DirectorDashboard key={user.id} />
       case 'Accounting':
-        return <AccountingDashboard />
+        return <AccountingDashboard key={user.id} />
       case 'Sales':
-        return <SalesDashboard />
+        return <SalesDashboard key={user.id} />
       case 'Supervision':
-        return <SupervisionDashboard />
+        return <SupervisionDashboard key={user.id} />
       case 'Investment':
-        return <InvestmentDashboard />
+        return <InvestmentDashboard key={user.id} />
       default:
-        return <div>Profile not recognized</div>
+        return <div>Role not recognized</div>
     }
   }
 
@@ -30,7 +30,7 @@ const Dashboard: React.FC = () => {
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">{currentProfile} Overview</p>
+        <p className="text-gray-600 mt-2">{user?.role} Overview</p>
       </div>
       {renderDashboard()}
     </div>

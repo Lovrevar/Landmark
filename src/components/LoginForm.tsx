@@ -38,7 +38,7 @@ const LoginForm: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Username
+                Username
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -48,7 +48,7 @@ const LoginForm: React.FC = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter admin username"
+                  placeholder="Enter your username"
                   required
                 />
               </div>
@@ -56,7 +56,7 @@ const LoginForm: React.FC = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Password
+                Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -66,7 +66,7 @@ const LoginForm: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter admin password"
+                  placeholder="Enter your password"
                   required
                 />
               </div>
@@ -86,6 +86,18 @@ const LoginForm: React.FC = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              <p className="font-medium mb-2">Demo Accounts:</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>Director: director / pass123</div>
+                <div>Sales: salesperson / pass123</div>
+                <div>Supervision: supervisor / pass123</div>
+                <div>Investments: investor / pass123</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

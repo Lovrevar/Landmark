@@ -1,5 +1,5 @@
-import React, { ReactNode, useState, useEffect, useRef } from 'react'
-import { useAuth, CompanyProfile } from '../contexts/AuthContext'
+import React, { ReactNode } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import {
   Building2,
   LogOut,
@@ -7,13 +7,9 @@ import {
   Calculator,
   Home,
   Users,
+  CheckSquare,
   Calendar,
-  DollarSign,
-  ChevronDown,
-  Briefcase,
-  TrendingUp,
-  HardHat,
-  PieChart
+  DollarSign
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -21,50 +17,50 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { currentProfile, logout, switchProfile } = useAuth()
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const { user, logout } = useAuth()
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileMenu(false)
-      }
+  const getMenuItems = () => {
+    const commonItems = [
+      { name: 'Dashboard', icon: BarChart3, path: '/' },
+      { name: 'My Tasks', icon: CheckSquare, path: '/todos' },
+      { name: 'Calendar', icon: Calendar, path: '/calendar' }
+    ]
+
+    const roleSpecificItems = {
+      Director: [
+        { name: 'Projects', icon: Building2, path: '/projects' },
+        { name: 'All Tasks', icon: CheckSquare, path: '/tasks' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' }
+      ],
+      Accounting: [
+        { name: 'Invoices', icon: Calculator, path: '/invoices' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' },
+        { name: 'Projects', icon: Building2, path: '/sales-projects' },
+        { name: 'Customers', icon: Users, path: '/customers' },
+        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
+      ],
+      Sales: [
+        { name: 'Apartments', icon: Home, path: '/apartments' },
+        { name: 'Projects', icon: Building2, path: '/sales-projects' },
+        { name: 'Customers', icon: Users, path: '/customers' },
+        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
+      ],
+      Supervision: [
+        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
+        { name: 'Site Management', icon: Building2, path: '/site-management' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' }
+      ],
+      Investment: [
+        { name: 'Banks', icon: Building2, path: '/banks' },
+        { name: 'Projects', icon: Building2, path: '/investment-projects' },
+        { name: 'Investors', icon: Users, path: '/investors' }
+      ]
     }
 
-    if (showProfileMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+    return [...commonItems, ...(roleSpecificItems[user?.role as keyof typeof roleSpecificItems] || [])]
+  }
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showProfileMenu])
-
-  const profiles: { name: CompanyProfile; icon: any; color: string }[] = [
-    { name: 'Director', icon: Briefcase, color: 'text-blue-600' },
-    { name: 'Accounting', icon: Calculator, color: 'text-green-600' },
-    { name: 'Sales', icon: TrendingUp, color: 'text-purple-600' },
-    { name: 'Supervision', icon: HardHat, color: 'text-orange-600' },
-    { name: 'Investment', icon: PieChart, color: 'text-cyan-600' }
-  ]
-
-  const currentProfileData = profiles.find(p => p.name === currentProfile) || profiles[0]
-  const ProfileIcon = currentProfileData.icon
-
-  const menuItems = [
-    { name: 'Dashboard', icon: BarChart3, path: '/' },
-    { name: 'Calendar', icon: Calendar, path: '/calendar' },
-    { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
-    { name: 'Site Management', icon: Building2, path: '/site-management' },
-    { name: 'Sales Projects', icon: Building2, path: '/sales-projects' },
-    { name: 'Customers', icon: Users, path: '/customers' },
-    { name: 'Sales Reports', icon: BarChart3, path: '/sales-reports' },
-    { name: 'Banks', icon: Building2, path: '/banks' },
-    { name: 'Investment Projects', icon: Building2, path: '/investment-projects' },
-    { name: 'Investors', icon: Users, path: '/investors' },
-    { name: 'Payments', icon: DollarSign, path: '/payments' }
-  ]
+  const menuItems = getMenuItems()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,45 +72,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-xl font-bold text-gray-900">Construction Project Management</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                >
-                  <ProfileIcon className={`w-5 h-5 ${currentProfileData.color}`} />
-                  <span className="text-sm font-medium text-gray-900">{currentProfile}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                </button>
-
-                {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <div className="px-3 py-2 border-b border-gray-200">
-                      <p className="text-xs text-gray-500 uppercase font-semibold">Switch Profile</p>
-                    </div>
-                    {profiles.map((profile) => {
-                      const Icon = profile.icon
-                      return (
-                        <button
-                          key={profile.name}
-                          onClick={() => {
-                            switchProfile(profile.name)
-                            setShowProfileMenu(false)
-                          }}
-                          className={`w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-gray-50 transition-colors duration-200 ${
-                            currentProfile === profile.name ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <Icon className={`w-5 h-5 ${profile.color}`} />
-                          <span className="text-gray-900">{profile.name}</span>
-                          {currentProfile === profile.name && (
-                            <span className="ml-auto text-blue-600 text-xs font-medium">Active</span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <span className="text-sm text-gray-700">
+                Welcome, {user?.username} ({user?.role})
+              </span>
               <button
                 onClick={logout}
                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-red-600 transition-colors duration-200"
