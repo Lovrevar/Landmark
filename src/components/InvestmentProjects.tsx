@@ -218,7 +218,7 @@ const InvestmentProjects: React.FC = () => {
                   <span className="text-sm text-red-700">Debt Financing</span>
                   <ArrowDownRight className="w-4 h-4 text-red-600" />
                 </div>
-                <p className="text-lg font-bold text-red-900">${project.total_debt.toLocaleString()}</p>
+                <p className="text-lg font-bold text-red-900">€{project.total_debt.toLocaleString()}</p>
                 <p className="text-xs text-red-600">
                   {project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% of budget
                 </p>
