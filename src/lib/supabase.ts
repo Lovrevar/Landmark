@@ -18,7 +18,7 @@ export type User = {
   created_at: string
 }
 
-export type Profile = 'Director' | 'Supervisor' | 'Salesperson' | 'Investor'
+export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
 
 export type Project = {
   id: string

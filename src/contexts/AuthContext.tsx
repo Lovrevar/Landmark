@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-export type Profile = 'Director' | 'Supervisor' | 'Salesperson' | 'Investor'
+export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (savedAuth === 'true') {
       setIsAuthenticated(true)
-      if (savedProfile && ['Director', 'Supervisor', 'Salesperson', 'Investor'].includes(savedProfile)) {
+      if (savedProfile && ['General', 'Supervision', 'Sales', 'Funding'].includes(savedProfile)) {
         setCurrentProfile(savedProfile as Profile)
       }
     }
@@ -46,9 +46,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     if (username === 'admin' && password === 'admin') {
       setIsAuthenticated(true)
-      setCurrentProfile('Director')
+      setCurrentProfile('General')
       localStorage.setItem('isAuthenticated', 'true')
-      localStorage.setItem('currentProfile', 'Director')
+      localStorage.setItem('currentProfile', 'General')
       return true
     }
     return false
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setIsAuthenticated(false)
-    setCurrentProfile('Director')
+    setCurrentProfile('General')
     localStorage.removeItem('isAuthenticated')
     localStorage.removeItem('currentProfile')
     setTimeout(() => {

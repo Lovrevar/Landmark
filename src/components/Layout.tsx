@@ -23,20 +23,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const getMenuItems = () => {
     const menuConfig = {
-      Director: [
+      General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Projects', icon: Building2, path: '/projects' },
         { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
-      Supervisor: [
+      Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
-      Salesperson: [
+      Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Apartments', icon: Home, path: '/apartments' },
@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Customers', icon: Users, path: '/customers' },
         { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
       ],
-      Investor: [
+      Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Banks', icon: Building2, path: '/banks' },
@@ -53,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ]
     }
 
-    return menuConfig[currentProfile] || menuConfig.Director
+    return menuConfig[currentProfile] || menuConfig.General
   }
 
   const menuItems = getMenuItems()
@@ -80,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    {(['Director', 'Supervisor', 'Salesperson', 'Investor'] as Profile[]).map((profile) => (
+                    {(['General', 'Supervision', 'Sales', 'Funding'] as Profile[]).map((profile) => (
                       <button
                         key={profile}
                         onClick={() => {
