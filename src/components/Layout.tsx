@@ -25,20 +25,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const menuConfig = {
       General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Projects', icon: Building2, path: '/projects' },
         { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
       Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Payments', icon: DollarSign, path: '/payments' }
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Apartments', icon: Home, path: '/apartments' },
         { name: 'Projects', icon: Building2, path: '/sales-projects' },
         { name: 'Customers', icon: Users, path: '/customers' },
@@ -46,7 +43,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Calendar', icon: Calendar, path: '/calendar' },
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Investors', icon: Users, path: '/investors' }

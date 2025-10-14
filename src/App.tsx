@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginForm from './components/LoginForm'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
-import Calendar from './components/Calendar'
 import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
 import SiteManagement from './components/SiteManagement'
@@ -46,14 +45,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <Calendar />
             </ProtectedRoute>
           }
         />
