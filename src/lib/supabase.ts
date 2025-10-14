@@ -101,9 +101,45 @@ export type WirePayment = {
   updated_at: string
 }
 
+export type Building = {
+  id: string
+  project_id: string
+  name: string
+  description: string | null
+  total_floors: number
+  created_at: string
+}
+
+export type Garage = {
+  id: string
+  building_id: string
+  number: string
+  floor: number
+  size_m2: number
+  price: number
+  status: 'Available' | 'Reserved' | 'Sold'
+  buyer_name: string | null
+  created_at: string
+}
+
+export type Repository = {
+  id: string
+  building_id: string
+  number: string
+  floor: number
+  size_m2: number
+  price: number
+  status: 'Available' | 'Reserved' | 'Sold'
+  buyer_name: string | null
+  created_at: string
+}
+
 export type Apartment = {
   id: string
   project_id: string
+  building_id: string | null
+  garage_id: string | null
+  repository_id: string | null
   number: string
   floor: number
   size_m2: number
