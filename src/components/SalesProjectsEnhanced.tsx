@@ -58,6 +58,7 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showBuildingForm, setShowBuildingForm] = useState(false)
   const [showBuildingQuantityForm, setShowBuildingQuantityForm] = useState(false)
   const [showUnitForm, setShowUnitForm] = useState(false)
+  const [showBulkUnitForm, setShowBulkUnitForm] = useState(false)
   const [showLinkingModal, setShowLinkingModal] = useState(false)
   const [selectedApartmentForLinking, setSelectedApartmentForLinking] = useState<Apartment | null>(null)
 
@@ -74,6 +75,17 @@ const SalesProjectsEnhanced: React.FC = () => {
     floor: 1,
     size_m2: 0,
     price: 0
+  })
+
+  const [bulkCreate, setBulkCreate] = useState({
+    floor_start: 1,
+    floor_end: 10,
+    units_per_floor: 4,
+    base_size: 85,
+    size_variation: 15,
+    base_price_per_m2: 5000,
+    floor_increment: 10000,
+    number_prefix: ''
   })
 
   const [loading, setLoading] = useState(true)
@@ -324,6 +336,74 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
+  const bulkCreateUnits = async () => {
+    if (!selectedBuilding) {
+      alert('Please select a building')
+      return
+    }
+
+    try {
+      const building = selectedBuilding
+      const unitsToCreate = []
+
+      let tableName = ''
+      if (activeUnitType === 'apartment') tableName = 'apartments'
+      else if (activeUnitType === 'garage') tableName = 'garages'
+      else if (activeUnitType === 'repository') tableName = 'repositories'
+
+      const prefix = bulkCreate.number_prefix || (
+        activeUnitType === 'apartment' ? 'A' :
+        activeUnitType === 'garage' ? 'G' : 'R'
+      )
+
+      for (let floor = bulkCreate.floor_start; floor <= bulkCreate.floor_end; floor++) {
+        for (let unit = 1; unit <= bulkCreate.units_per_floor; unit++) {
+          const sizeVariation = (Math.random() - 0.5) * bulkCreate.size_variation
+          const size = Math.round(bulkCreate.base_size + sizeVariation)
+          const floorPremium = (floor - bulkCreate.floor_start) * bulkCreate.floor_increment
+          const price = Math.round((size * bulkCreate.base_price_per_m2) + floorPremium)
+
+          const unitData: any = {
+            building_id: building.id,
+            number: `${prefix}${floor}${unit.toString().padStart(2, '0')}`,
+            floor: floor,
+            size_m2: size,
+            price: price,
+            status: 'Available'
+          }
+
+          if (activeUnitType === 'apartment') {
+            unitData.project_id = building.project_id
+          }
+
+          unitsToCreate.push(unitData)
+        }
+      }
+
+      const { error } = await supabase
+        .from(tableName)
+        .insert(unitsToCreate)
+
+      if (error) throw error
+
+      setShowBulkUnitForm(false)
+      setBulkCreate({
+        floor_start: 1,
+        floor_end: 10,
+        units_per_floor: 4,
+        base_size: 85,
+        size_variation: 15,
+        base_price_per_m2: 5000,
+        floor_increment: 10000,
+        number_prefix: ''
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error bulk creating units:', error)
+      alert('Error creating units. Please try again.')
+    }
+  }
+
   const deleteUnit = async (unitId: string, unitType: UnitType) => {
     if (!confirm(`Are you sure you want to delete this ${unitType}?`)) return
 
@@ -455,6 +535,17 @@ const SalesProjectsEnhanced: React.FC = () => {
     return 'Repositories'
   }
 
+  const calculateBulkPreview = () => {
+    const floors = bulkCreate.floor_end - bulkCreate.floor_start + 1
+    const totalUnits = floors * bulkCreate.units_per_floor
+    const avgSize = bulkCreate.base_size
+    const avgPrice = (avgSize * bulkCreate.base_price_per_m2) +
+      ((bulkCreate.floor_start + bulkCreate.floor_end) / 2 - bulkCreate.floor_start) * bulkCreate.floor_increment
+    const totalValue = totalUnits * avgPrice
+
+    return { totalUnits, avgSize, avgPrice, totalValue }
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading sales projects...</div>
   }
@@ -490,16 +581,25 @@ const SalesProjectsEnhanced: React.FC = () => {
             </>
           )}
           {viewMode === 'units' && selectedBuilding && (
-            <button
-              onClick={() => {
-                setNewUnit({ ...newUnit, building_id: selectedBuilding.id })
-                setShowUnitForm(true)
-              }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add {getUnitLabel(activeUnitType).slice(0, -1)}
-            </button>
+            <>
+              <button
+                onClick={() => setShowBulkUnitForm(true)}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+              >
+                <Building2 className="w-4 h-4 mr-2" />
+                Bulk Create {getUnitLabel(activeUnitType)}
+              </button>
+              <button
+                onClick={() => {
+                  setNewUnit({ ...newUnit, building_id: selectedBuilding.id })
+                  setShowUnitForm(true)
+                }}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1035,6 +1135,194 @@ const SalesProjectsEnhanced: React.FC = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Add {getUnitLabel(activeUnitType).slice(0, -1)}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Unit Form Modal */}
+      {showBulkUnitForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Bulk Create {getUnitLabel(activeUnitType)}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowBulkUnitForm(false)
+                    setBulkCreate({
+                      floor_start: 1,
+                      floor_end: 10,
+                      units_per_floor: 4,
+                      base_size: 85,
+                      size_variation: 15,
+                      base_price_per_m2: 5000,
+                      floor_increment: 10000,
+                      number_prefix: ''
+                    })
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Floor</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.floor_start}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, floor_start: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Floor</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.floor_end}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, floor_end: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Units per Floor</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkCreate.units_per_floor}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, units_per_floor: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Number Prefix (optional)</label>
+                  <input
+                    type="text"
+                    value={bulkCreate.number_prefix}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, number_prefix: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={activeUnitType === 'apartment' ? 'A' : activeUnitType === 'garage' ? 'G' : 'R'}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Default: {activeUnitType === 'apartment' ? 'A' : activeUnitType === 'garage' ? 'G' : 'R'}
+                    (e.g., A101, G202)
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Base Size (m²)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.base_size}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, base_size: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Size Variation (±m²)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.size_variation}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, size_variation: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Base Price per m²</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.base_price_per_m2}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, base_price_per_m2: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor Premium (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkCreate.floor_increment}
+                    onChange={(e) => setBulkCreate({ ...bulkCreate, floor_increment: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Additional price per floor above start floor
+                  </p>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                <h4 className="font-semibold text-blue-900 mb-2">Preview</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-blue-700">Total {getUnitLabel(activeUnitType)}:</span>
+                    <span className="font-medium text-blue-900 ml-2">
+                      {calculateBulkPreview().totalUnits}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Avg. Size:</span>
+                    <span className="font-medium text-blue-900 ml-2">
+                      {calculateBulkPreview().avgSize} m²
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Avg. Price:</span>
+                    <span className="font-medium text-blue-900 ml-2">
+                      €{Math.round(calculateBulkPreview().avgPrice).toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Total Value:</span>
+                    <span className="font-medium text-blue-900 ml-2">
+                      €{Math.round(calculateBulkPreview().totalValue).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-3">
+                  Units will be numbered: {bulkCreate.number_prefix || (activeUnitType === 'apartment' ? 'A' : activeUnitType === 'garage' ? 'G' : 'R')}
+                  {bulkCreate.floor_start}01, {bulkCreate.number_prefix || (activeUnitType === 'apartment' ? 'A' : activeUnitType === 'garage' ? 'G' : 'R')}
+                  {bulkCreate.floor_start}02, etc.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowBulkUnitForm(false)
+                    setBulkCreate({
+                      floor_start: 1,
+                      floor_end: 10,
+                      units_per_floor: 4,
+                      base_size: 85,
+                      size_variation: 15,
+                      base_price_per_m2: 5000,
+                      floor_increment: 10000,
+                      number_prefix: ''
+                    })
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={bulkCreateUnits}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Create {calculateBulkPreview().totalUnits} {getUnitLabel(activeUnitType)}
                 </button>
               </div>
             </div>
