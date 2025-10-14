@@ -680,7 +680,7 @@ const BanksManagement: React.FC = () => {
                         const payment = newCredit.repayment_type === 'yearly' 
                           ? principal / repaymentYears
                           : principal / (repaymentYears * 12)
-                        return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        return `${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                       }
                       
                       let payment
