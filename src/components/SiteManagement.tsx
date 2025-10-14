@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './Site/types/siteTypes'
@@ -35,6 +35,15 @@ const SiteManagement: React.FC = () => {
   } = useSiteData()
 
   const [selectedProject, setSelectedProject] = useState<ProjectWithPhases | null>(null)
+
+  useEffect(() => {
+    if (selectedProject) {
+      const updatedProject = projects.find(p => p.id === selectedProject.id)
+      if (updatedProject) {
+        setSelectedProject(updatedProject)
+      }
+    }
+  }, [projects])
   const [showPhaseSetup, setShowPhaseSetup] = useState(false)
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null)

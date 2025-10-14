@@ -52,9 +52,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <span className="ml-2">
                     • Allocated: €{project.total_budget_allocated.toLocaleString()}
                   </span>
-                  <span className="ml-2 text-teal-600 font-medium">
-                    • Paid out: €{project.total_paid_out.toLocaleString()}
-                  </span>
                 </>
               )}
             </p>
