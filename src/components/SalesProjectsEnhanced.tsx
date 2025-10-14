@@ -60,7 +60,10 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showUnitForm, setShowUnitForm] = useState(false)
   const [showBulkUnitForm, setShowBulkUnitForm] = useState(false)
   const [showLinkingModal, setShowLinkingModal] = useState(false)
+  const [showSaleForm, setShowSaleForm] = useState(false)
   const [selectedApartmentForLinking, setSelectedApartmentForLinking] = useState<Apartment | null>(null)
+  const [unitForSale, setUnitForSale] = useState<{unit: Apartment | Garage | Repository, type: UnitType} | null>(null)
+  const [customerMode, setCustomerMode] = useState<'new' | 'existing'>('new')
 
   const [buildingQuantity, setBuildingQuantity] = useState(1)
   const [newBuilding, setNewBuilding] = useState({
@@ -86,6 +89,21 @@ const SalesProjectsEnhanced: React.FC = () => {
     base_price_per_m2: 5000,
     floor_increment: 10000,
     number_prefix: ''
+  })
+
+  const [saleData, setSaleData] = useState({
+    customer_id: '',
+    sale_price: 0,
+    payment_method: 'bank_loan' as const,
+    down_payment: 0,
+    monthly_payment: 0,
+    sale_date: format(new Date(), 'yyyy-MM-dd'),
+    contract_signed: false,
+    notes: '',
+    buyer_name: '',
+    buyer_email: '',
+    buyer_phone: '',
+    buyer_address: ''
   })
 
   const [loading, setLoading] = useState(true)
@@ -139,10 +157,90 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       if (customersError) throw customersError
 
+      // Fetch sales data
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          customers(name, surname, email, phone)
+        `)
+
+      if (salesError) throw salesError
+
+      // Enhance units with sale information
+      const enhancedApartments = (apartmentsData || []).map(apartment => {
+        const sale = (salesData || []).find(s => s.apartment_id === apartment.id)
+        if (sale && apartment.status === 'Sold') {
+          return {
+            ...apartment,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : apartment.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return apartment
+      })
+
+      const enhancedGarages = (garagesData || []).map(garage => {
+        const sale = (salesData || []).find(s => s.garage_id === garage.id)
+        if (sale && garage.status === 'Sold') {
+          return {
+            ...garage,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : garage.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return garage
+      })
+
+      const enhancedRepositories = (repositoriesData || []).map(repository => {
+        const sale = (salesData || []).find(s => s.repository_id === repository.id)
+        if (sale && repository.status === 'Sold') {
+          return {
+            ...repository,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : repository.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return repository
+      })
+
       const buildingsWithUnits = (buildingsData || []).map(building => {
-        const buildingApartments = (apartmentsData || []).filter(apt => apt.building_id === building.id)
-        const buildingGarages = (garagesData || []).filter(gar => gar.building_id === building.id)
-        const buildingRepositories = (repositoriesData || []).filter(rep => rep.building_id === building.id)
+        const buildingApartments = enhancedApartments.filter(apt => apt.building_id === building.id)
+        const buildingGarages = enhancedGarages.filter(gar => gar.building_id === building.id)
+        const buildingRepositories = enhancedRepositories.filter(rep => rep.building_id === building.id)
 
         const total_apartments = buildingApartments.length
         const total_garages = buildingGarages.length
@@ -192,9 +290,9 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       setProjects(projectsWithBuildings)
       setBuildings(buildingsWithUnits)
-      setApartments(apartmentsData || [])
-      setGarages(garagesData || [])
-      setRepositories(repositoriesData || [])
+      setApartments(enhancedApartments)
+      setGarages(enhancedGarages)
+      setRepositories(enhancedRepositories)
       setCustomers(customersData || [])
 
       if (selectedProject) {
@@ -506,6 +604,122 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
+  const handleSellUnit = (unit: Apartment | Garage | Repository, unitType: UnitType) => {
+    setUnitForSale({ unit, type: unitType })
+    setSaleData(prev => ({
+      ...prev,
+      sale_price: unit.price
+    }))
+    setShowSaleForm(true)
+  }
+
+  const resetSaleForm = () => {
+    setSaleData({
+      customer_id: '',
+      sale_price: 0,
+      payment_method: 'bank_loan',
+      down_payment: 0,
+      monthly_payment: 0,
+      sale_date: format(new Date(), 'yyyy-MM-dd'),
+      contract_signed: false,
+      notes: '',
+      buyer_name: '',
+      buyer_email: '',
+      buyer_phone: '',
+      buyer_address: ''
+    })
+    setCustomerMode('new')
+    setUnitForSale(null)
+    setShowSaleForm(false)
+  }
+
+  const completeSale = async () => {
+    if (!unitForSale) return
+
+    try {
+      let customerId = saleData.customer_id
+
+      // Create new customer if needed
+      if (customerMode === 'new') {
+        if (!saleData.buyer_name.trim() || !saleData.buyer_email.trim()) {
+          alert('Please fill in buyer name and email')
+          return
+        }
+
+        const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
+        const lastName = lastNameParts.join(' ') || firstName
+
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            name: firstName,
+            surname: lastName,
+            email: saleData.buyer_email,
+            phone: saleData.buyer_phone || '',
+            address: saleData.buyer_address || '',
+            status: 'buyer'
+          })
+          .select()
+          .single()
+
+        if (customerError) throw customerError
+        customerId = newCustomer.id
+      }
+
+      // Calculate remaining amount
+      const remaining_amount = saleData.sale_price - saleData.down_payment
+
+      // Determine which ID field to use based on unit type
+      const unitIdField = unitForSale.type === 'apartment' ? 'apartment_id'
+                        : unitForSale.type === 'garage' ? 'garage_id'
+                        : 'repository_id'
+
+      // Create sale record
+      const { data: saleRecord, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          [unitIdField]: unitForSale.unit.id,
+          customer_id: customerId,
+          sale_price: saleData.sale_price,
+          payment_method: saleData.payment_method,
+          down_payment: saleData.down_payment,
+          total_paid: saleData.down_payment,
+          remaining_amount: remaining_amount,
+          monthly_payment: saleData.monthly_payment,
+          sale_date: saleData.sale_date,
+          contract_signed: saleData.contract_signed,
+          notes: saleData.notes
+        })
+        .select()
+        .single()
+
+      if (saleError) throw saleError
+
+      // Update unit status and buyer name
+      let tableName = ''
+      if (unitForSale.type === 'apartment') tableName = 'apartments'
+      else if (unitForSale.type === 'garage') tableName = 'garages'
+      else if (unitForSale.type === 'repository') tableName = 'repositories'
+
+      const { error: unitError } = await supabase
+        .from(tableName)
+        .update({
+          status: 'Sold',
+          buyer_name: saleData.buyer_name
+        })
+        .eq('id', unitForSale.unit.id)
+
+      if (unitError) throw unitError
+
+      alert('Sale completed successfully!')
+      resetSaleForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error completing sale:', error)
+      alert('Error completing sale. Please try again.')
+    }
+  }
+
   const getFilteredUnits = (unitType: UnitType) => {
     if (!selectedBuilding) return []
 
@@ -532,7 +746,7 @@ const SalesProjectsEnhanced: React.FC = () => {
   const getUnitLabel = (unitType: UnitType) => {
     if (unitType === 'apartment') return 'Apartments'
     if (unitType === 'garage') return 'Garages'
-    return 'Storages'
+    return 'Repositories'
   }
 
   const calculateBulkPreview = () => {
@@ -851,6 +1065,45 @@ const SalesProjectsEnhanced: React.FC = () => {
                       <span className="text-sm font-bold text-green-600">€{unit.price.toLocaleString()}</span>
                     </div>
 
+                    {unit.status === 'Sold' && (unit as any).sale_info && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Buyer:</span>
+                          <span className="text-sm font-medium">{(unit as any).sale_info.buyer_name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Sale Price:</span>
+                          <span className="text-sm font-bold text-green-600">€{(unit as any).sale_info.sale_price.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Down Payment:</span>
+                          <span className="text-sm font-medium">€{(unit as any).sale_info.down_payment.toLocaleString()}</span>
+                        </div>
+                        {(unit as any).sale_info.monthly_payment > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Monthly:</span>
+                            <span className="text-sm font-medium">€{(unit as any).sale_info.monthly_payment.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-500">Payment Progress</span>
+                            <span className="text-xs font-medium">
+                              €{(unit as any).sale_info.total_paid.toLocaleString()} / €{(unit as any).sale_info.sale_price.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="bg-green-600 h-1.5 rounded-full"
+                              style={{
+                                width: `${(unit as any).sale_info.sale_price > 0 ? ((unit as any).sale_info.total_paid / (unit as any).sale_info.sale_price) * 100 : 0}%`
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
                     {linkedGarage && (
                       <div className="flex justify-between items-center text-sm bg-orange-100 px-2 py-1 rounded">
                         <span className="text-orange-700">Garage: {linkedGarage.number}</span>
@@ -905,7 +1158,7 @@ const SalesProjectsEnhanced: React.FC = () => {
                             </button>
                           )}
                           <button
-                            onClick={() => updateUnitStatus(unit.id, activeUnitType, 'Sold')}
+                            onClick={() => handleSellUnit(unit, activeUnitType)}
                             className="px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-xs font-medium"
                           >
                             Sell
@@ -1425,6 +1678,246 @@ const SalesProjectsEnhanced: React.FC = () => {
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sale Form Modal */}
+      {showSaleForm && unitForSale && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Complete Sale - Unit {unitForSale.unit.number}
+                </h3>
+                <button
+                  onClick={resetSaleForm}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Customer Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Customer</label>
+                <div className="flex space-x-4 mb-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="new"
+                      checked={customerMode === 'new'}
+                      onChange={(e) => setCustomerMode(e.target.value as 'new' | 'existing')}
+                      className="mr-2"
+                    />
+                    Create New Customer
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="existing"
+                      checked={customerMode === 'existing'}
+                      onChange={(e) => setCustomerMode(e.target.value as 'new' | 'existing')}
+                      className="mr-2"
+                    />
+                    Select Existing Customer
+                  </label>
+                </div>
+
+                {customerMode === 'existing' ? (
+                  <select
+                    value={saleData.customer_id}
+                    onChange={(e) => {
+                      const customer = customers.find(c => c.id === e.target.value)
+                      setSaleData({
+                        ...saleData,
+                        customer_id: e.target.value,
+                        buyer_name: customer ? `${customer.name} ${customer.surname}` : '',
+                        buyer_email: customer?.email || '',
+                        buyer_phone: customer?.phone || ''
+                      })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map(customer => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} {customer.surname} - {customer.email}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                      <input
+                        type="text"
+                        value={saleData.buyer_name}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="John Smith"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                      <input
+                        type="email"
+                        value={saleData.buyer_email}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="john@example.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                      <input
+                        type="tel"
+                        value={saleData.buyer_phone}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <input
+                        type="text"
+                        value={saleData.buyer_address}
+                        onChange={(e) => setSaleData({ ...saleData, buyer_address: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="123 Main St, City, State"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sale Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price (€) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={saleData.sale_price}
+                    onChange={(e) => setSaleData({ ...saleData, sale_price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                  <select
+                    value={saleData.payment_method}
+                    onChange={(e) => setSaleData({ ...saleData, payment_method: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="credit">Credit</option>
+                    <option value="bank_loan">Bank Loan</option>
+                    <option value="installments">Installments</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Down Payment (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={saleData.down_payment}
+                    onChange={(e) => setSaleData({ ...saleData, down_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Payment (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={saleData.monthly_payment}
+                    onChange={(e) => setSaleData({ ...saleData, monthly_payment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sale Date</label>
+                  <input
+                    type="date"
+                    value={saleData.sale_date}
+                    onChange={(e) => setSaleData({ ...saleData, sale_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="contract_signed"
+                    checked={saleData.contract_signed}
+                    onChange={(e) => setSaleData({ ...saleData, contract_signed: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <label htmlFor="contract_signed" className="text-sm font-medium text-gray-700">
+                    Contract Signed
+                  </label>
+                </div>
+              </div>
+
+              {/* Sale Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Sale Summary</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Sale Price:</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.sale_price.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Down Payment:</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.down_payment.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Remaining:</span>
+                    <span className="font-medium text-gray-900 ml-2">
+                      €{(saleData.sale_price - saleData.down_payment).toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Monthly Payment:</span>
+                    <span className="font-medium text-gray-900 ml-2">€{saleData.monthly_payment.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <textarea
+                  value={saleData.notes}
+                  onChange={(e) => setSaleData({ ...saleData, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Additional sale notes..."
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={resetSaleForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={completeSale}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Complete Sale
                 </button>
               </div>
             </div>
