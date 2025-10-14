@@ -1774,7 +1774,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       }`}>
                         <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
                           <span className="font-medium">Note:</span> After this update, total phase budgets
-                          ({' $' + newTotalAllocated.toLocaleString()}) will be {' '}
+                          ({' €' + newTotalAllocated.toLocaleString()}) will be {' '}
                           {projectBudgetDiff > 0
                             ? `€${Math.abs(projectBudgetDiff).toLocaleString()} over`
                             : `€${Math.abs(projectBudgetDiff).toLocaleString()} under`
