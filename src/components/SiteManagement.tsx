@@ -1868,7 +1868,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       }`}>
                         {selectedSubcontractor.budget_realized > selectedSubcontractor.cost ? '-' :
                          selectedSubcontractor.budget_realized < selectedSubcontractor.cost ? '+' : ''}
-                        ${Math.abs(selectedSubcontractor.budget_realized - selectedSubcontractor.cost).toLocaleString()}
+                        €{Math.abs(selectedSubcontractor.budget_realized - selectedSubcontractor.cost).toLocaleString()}
                       </p>
                     </div>
                   </div>
