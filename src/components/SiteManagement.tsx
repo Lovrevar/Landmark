@@ -970,7 +970,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
               <h1 className="text-3xl font-bold text-gray-900">{selectedProject.name}</h1>
               <p className="text-gray-600 mt-1">{selectedProject.location}</p>
               <p className="text-sm text-gray-500 mt-1">
-                Budget: ${selectedProject.budget.toLocaleString()}
+                Budget: €{selectedProject.budget.toLocaleString()}
                 {selectedProject.has_phases && (
                   <>
                     <span className="ml-2">
