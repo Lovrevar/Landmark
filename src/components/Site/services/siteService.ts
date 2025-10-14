@@ -172,6 +172,26 @@ export const createSubcontractor = async (data: {
   if (error) throw error
 }
 
+export const createSubcontractorWithReturn = async (data: {
+  name: string
+  contact: string
+  job_description: string
+  deadline: string
+  cost: number
+  budget_realized: number
+  phase_id: string
+}) => {
+  const { data: newSubcontractor, error } = await supabase
+    .from('subcontractors')
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return newSubcontractor
+}
+
 export const linkSubcontractorToPhase = async (
   subcontractorId: string,
   phaseId: string,

@@ -204,6 +204,23 @@ export const useSiteData = () => {
           return false
         }
 
+        const phaseData = await siteService.getPhaseInfo(phase.id)
+        const timestamp = Date.now().toString().slice(-6)
+        const contractCount = await siteService.getContractCount()
+        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
+
+        const newContract = await siteService.createContract({
+          contract_number: contractNumber,
+          project_id: phaseData.project_id,
+          phase_id: phase.id,
+          subcontractor_id: data.existing_subcontractor_id,
+          job_description: data.job_description,
+          contract_amount: data.cost,
+          budget_realized: data.budget_realized || 0,
+          end_date: data.deadline,
+          status: 'active'
+        })
+
         await siteService.linkSubcontractorToPhase(
           data.existing_subcontractor_id,
           phase.id,
@@ -211,6 +228,8 @@ export const useSiteData = () => {
           data.deadline,
           data.job_description
         )
+
+        await siteService.updateSubcontractorContract(data.existing_subcontractor_id, newContract.id)
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           alert('Please fill in required fields')
@@ -222,7 +241,12 @@ export const useSiteData = () => {
           return false
         }
 
-        await siteService.createSubcontractor({
+        const phaseData = await siteService.getPhaseInfo(phase.id)
+        const timestamp = Date.now().toString().slice(-6)
+        const contractCount = await siteService.getContractCount()
+        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
+
+        const newSubcontractor = await siteService.createSubcontractorWithReturn({
           name: data.name,
           contact: data.contact,
           job_description: data.job_description,
@@ -231,14 +255,32 @@ export const useSiteData = () => {
           budget_realized: data.budget_realized || 0,
           phase_id: phase.id
         })
+
+        const newContract = await siteService.createContract({
+          contract_number: contractNumber,
+          project_id: phaseData.project_id,
+          phase_id: phase.id,
+          subcontractor_id: newSubcontractor.id,
+          job_description: data.job_description,
+          contract_amount: data.cost,
+          budget_realized: data.budget_realized || 0,
+          end_date: data.deadline,
+          status: 'active'
+        })
+
+        await siteService.updateSubcontractorContract(newSubcontractor.id, newContract.id)
       }
 
       await siteService.recalculatePhaseBudget(phase.id)
       await fetchProjects()
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding subcontractor:', error)
-      alert('Error adding subcontractor to phase.')
+      if (error.message?.includes('duplicate key value violates unique constraint')) {
+        alert('Contract number already exists. Please try again.')
+      } else {
+        alert('Error adding subcontractor to phase.')
+      }
       return false
     }
   }
@@ -319,8 +361,9 @@ export const useSiteData = () => {
       if (!contractId && subcontractor.phase_id) {
         console.log('Creating new contract for subcontractor')
         const phaseData = await siteService.getPhaseInfo(subcontractor.phase_id)
+        const timestamp = Date.now().toString().slice(-6)
         const contractCount = await siteService.getContractCount()
-        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(5, '0')}`
+        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
 
         const newContract = await siteService.createContract({
           contract_number: contractNumber,
