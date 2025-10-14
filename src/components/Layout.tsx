@@ -65,7 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Construction Project Management</h1>
+              <h1 className="text-xl font-bold text-gray-900">Landmark</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
