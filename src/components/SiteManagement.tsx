@@ -115,7 +115,29 @@ const SiteManagement: React.FC = () => {
   }
 
   const handleAddPayment = async () => {
-    if (!selectedSubcontractorForPayment || !user?.id) return
+    console.log('handleAddPayment called', {
+      hasSubcontractor: !!selectedSubcontractorForPayment,
+      hasUser: !!user?.id,
+      paymentAmount,
+      paymentDate,
+      paymentNotes
+    })
+
+    if (!selectedSubcontractorForPayment) {
+      alert('No subcontractor selected')
+      return
+    }
+
+    if (!user?.id) {
+      alert('User not authenticated. Please log in again.')
+      return
+    }
+
+    if (paymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
     const success = await addPaymentToSubcontractor(
       selectedSubcontractorForPayment,
       paymentAmount,
@@ -123,7 +145,9 @@ const SiteManagement: React.FC = () => {
       paymentNotes,
       user.id
     )
+
     if (success) {
+      alert('Payment recorded successfully!')
       setShowPaymentModal(false)
       setPaymentAmount(0)
       setPaymentDate('')
@@ -207,7 +231,11 @@ const SiteManagement: React.FC = () => {
             setShowSubcontractorForm(true)
           }}
           onWirePayment={(sub) => {
+            console.log('Opening wire payment modal for:', sub.name)
             setSelectedSubcontractorForPayment(sub)
+            setPaymentAmount(0)
+            setPaymentDate('')
+            setPaymentNotes('')
             setShowPaymentModal(true)
           }}
           onOpenPaymentHistory={openPaymentHistory}

@@ -29,6 +29,16 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 }) => {
   if (!visible || !subcontractor) return null
 
+  const handleSubmit = () => {
+    console.log('WirePaymentModal: Record Payment button clicked', {
+      amount,
+      paymentDate,
+      notes,
+      subcontractor: subcontractor.name
+    })
+    onSubmit()
+  }
+
   const newTotalPaid = subcontractor.budget_realized + amount
   const wouldBeOverBudget = newTotalPaid > subcontractor.cost
 
@@ -144,7 +154,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={onSubmit}
+              onClick={handleSubmit}
               disabled={amount <= 0}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >

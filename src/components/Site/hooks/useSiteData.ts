@@ -296,6 +296,14 @@ export const useSiteData = () => {
     notes: string,
     userId: string
   ) => {
+    console.log('addPaymentToSubcontractor called', {
+      subcontractor,
+      amount,
+      paymentDate,
+      notes,
+      userId
+    })
+
     if (amount <= 0) {
       alert('Please enter a valid payment amount')
       return false
@@ -305,7 +313,11 @@ export const useSiteData = () => {
       const currentBudgetRealized = subcontractor.budget_realized || 0
       let contractId = subcontractor.contract_id
 
+      console.log('Current budget realized:', currentBudgetRealized)
+      console.log('Contract ID:', contractId)
+
       if (!contractId && subcontractor.phase_id) {
+        console.log('Creating new contract for subcontractor')
         const phaseData = await siteService.getPhaseInfo(subcontractor.phase_id)
         const contractCount = await siteService.getContractCount()
         const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(5, '0')}`
@@ -323,9 +335,11 @@ export const useSiteData = () => {
         })
 
         contractId = newContract.id
+        console.log('Created contract:', contractId)
         await siteService.updateSubcontractorContract(subcontractor.id, contractId)
       }
 
+      console.log('Creating wire payment record')
       await siteService.createWirePayment({
         subcontractor_id: subcontractor.id,
         contract_id: contractId,
@@ -336,14 +350,19 @@ export const useSiteData = () => {
       })
 
       const newRealizedAmount = currentBudgetRealized + amount
+      console.log('New realized amount:', newRealizedAmount)
 
+      console.log('Updating subcontractor budget realized')
       await siteService.updateSubcontractorBudgetRealized(subcontractor.id, newRealizedAmount)
 
       if (contractId) {
+        console.log('Updating contract budget realized')
         await siteService.updateContractBudgetRealized(contractId, newRealizedAmount)
       }
 
+      console.log('Fetching updated projects')
       await fetchProjects()
+      console.log('Payment successfully recorded')
       return true
     } catch (error: any) {
       console.error('Error adding payment:', error)
