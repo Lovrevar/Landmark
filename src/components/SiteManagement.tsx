@@ -1125,7 +1125,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           ? 'text-orange-600'
                           : 'text-blue-600'
                       }`}>
-                        ${phases.reduce((sum, p) => sum + p.budget_allocated, 0).toLocaleString()}
+                        €{phases.reduce((sum, p) => sum + p.budget_allocated, 0).toLocaleString()}
                       </p>
                     </div>
                     <div>
