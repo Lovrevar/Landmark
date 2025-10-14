@@ -838,7 +838,7 @@ const ProjectDetails: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Price:</span>
-                        <span className="text-sm font-medium">${apartment.price.toLocaleString()}</span>
+                        <span className="text-sm font-medium">€{apartment.price.toLocaleString()}</span>
                       </div>
                       {apartment.buyer_name && (
                         <div className="flex justify-between">
