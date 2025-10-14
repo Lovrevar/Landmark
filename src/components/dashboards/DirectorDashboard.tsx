@@ -374,7 +374,7 @@ const DirectorDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Total Budget</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${stats.totalBudget.toLocaleString()}
+                €{stats.totalBudget.toLocaleString()}
               </p>
             </div>
           </div>
@@ -388,7 +388,7 @@ const DirectorDashboard: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Revenue</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${stats.totalRevenue.toLocaleString()}
+                €{stats.totalRevenue.toLocaleString()}
               </p>
             </div>
           </div>
