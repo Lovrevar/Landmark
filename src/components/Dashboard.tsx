@@ -10,13 +10,13 @@ const Dashboard: React.FC = () => {
 
   const renderDashboard = () => {
     switch (currentProfile) {
-      case 'Director':
+      case 'General':
         return <DirectorDashboard key={currentProfile} />
-      case 'Salesperson':
+      case 'Sales':
         return <SalesDashboard key={currentProfile} />
-      case 'Supervisor':
+      case 'Supervision':
         return <SupervisionDashboard key={currentProfile} />
-      case 'Investor':
+      case 'Funding':
         return <InvestmentDashboard key={currentProfile} />
       default:
         return <DirectorDashboard key={currentProfile} />
