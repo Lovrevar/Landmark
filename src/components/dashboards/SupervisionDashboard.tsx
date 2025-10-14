@@ -678,7 +678,7 @@ const SupervisionDashboard: React.FC = () => {
                           {((phaseData.budget / selectedProject.budget) * 100).toFixed(0)}%
                         </span>
                       </div>
-                      <p className="text-lg font-bold text-gray-900">${phaseData.budget.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-gray-900">€{phaseData.budget.toLocaleString()}</p>
                       <p className="text-xs text-gray-600 mt-1">Allocated budget</p>
                     </div>
                   ))}
