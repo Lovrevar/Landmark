@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, Project, Task, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../lib/supabase'
+import { supabase, Project, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   Building2, 
@@ -23,15 +23,12 @@ import {
 import { format, differenceInDays } from 'date-fns'
 
 interface ProjectWithDetails extends Project {
-  tasks: Task[]
   subcontractors: Subcontractor[]
   invoices: Invoice[]
   apartments: Apartment[]
   milestones: ProjectMilestone[]
   total_spent: number
   total_revenue: number
-  completion_percentage: number
-  overdue_tasks: number
   pending_invoices: number
 }
 
@@ -40,7 +37,7 @@ const ProjectDetails: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
   const [newMilestone, setNewMilestone] = useState({
@@ -69,15 +66,6 @@ const ProjectDetails: React.FC = () => {
         .single()
 
       if (projectError) throw projectError
-
-      // Fetch tasks
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('project_id', id)
-        .order('deadline', { ascending: true })
-
-      if (tasksError) throw tasksError
 
       // Fetch subcontractors
       const { data: subcontractorsData, error: subError } = await supabase
@@ -120,7 +108,6 @@ const ProjectDetails: React.FC = () => {
       if (milestonesError) throw milestonesError
 
       // Calculate project statistics
-      const tasks = tasksData || []
       const subcontractors = subcontractorsData || []
       const invoices = invoicesData || []
       const apartments = apartmentsData || []
@@ -128,25 +115,16 @@ const ProjectDetails: React.FC = () => {
 
       const total_spent = invoices.filter(inv => inv.paid).reduce((sum, inv) => sum + inv.amount, 0)
       const total_revenue = apartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
-      const completion_percentage = tasks.length > 0 
-        ? Math.round(tasks.reduce((sum, task) => sum + (task.progress || 0), 0) / tasks.length)
-        : 0
-      const overdue_tasks = tasks.filter(task => 
-        new Date(task.deadline) < new Date() && task.status !== 'Completed'
-      ).length
       const pending_invoices = invoices.filter(inv => !inv.paid).length
 
       setProject({
         ...projectData,
-        tasks,
         subcontractors,
         invoices,
         apartments,
         milestones,
         total_spent,
         total_revenue,
-        completion_percentage,
-        overdue_tasks,
         pending_invoices
       })
     } catch (error) {
@@ -324,19 +302,6 @@ const ProjectDetails: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <CheckSquare className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Tasks</p>
-              <p className="text-2xl font-bold text-gray-900">{project.tasks.length}</p>
-              <p className="text-xs text-gray-500">{project.completion_percentage}% complete</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <DollarSign className="w-6 h-6 text-green-600" />
             </div>
@@ -383,7 +348,6 @@ const ProjectDetails: React.FC = () => {
           {[
             { id: 'overview', name: 'Overview', icon: Building2 },
             { id: 'milestones', name: 'Milestones', icon: Target },
-            { id: 'tasks', name: 'Tasks', icon: CheckSquare },
             { id: 'subcontractors', name: 'Subcontractors', icon: Users },
             { id: 'apartments', name: 'Apartments', icon: Home }
           ].map((tab) => (
@@ -445,39 +409,20 @@ const ProjectDetails: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">Task Completion</span>
-                      <span className="font-medium">{project.completion_percentage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${project.completion_percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
                       <span className="text-gray-600">Milestone Progress</span>
                       <span className="font-medium">{milestoneProgress.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-purple-600 h-2 rounded-full"
                         style={{ width: `${milestoneProgress}%` }}
                       ></div>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-red-600">{project.overdue_tasks}</p>
-                      <p className="text-xs text-gray-600">Overdue Tasks</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">{project.pending_invoices}</p>
-                      <p className="text-xs text-gray-600">Pending Invoices</p>
-                    </div>
+
+                  <div className="text-center mt-4">
+                    <p className="text-2xl font-bold text-orange-600">{project.pending_invoices}</p>
+                    <p className="text-xs text-gray-600">Pending Invoices</p>
                   </div>
                 </div>
               </div>
@@ -701,64 +646,6 @@ const ProjectDetails: React.FC = () => {
           </div>
         )}
 
-        {/* Tasks Tab */}
-        {activeTab === 'tasks' && (
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Project Tasks</h2>
-            {project.tasks.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No tasks assigned to this project</p>
-            ) : (
-              <div className="space-y-4">
-                {project.tasks.map((task) => {
-                  const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-                  return (
-                    <div key={task.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="font-medium text-gray-900">{task.name}</h3>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                              isOverdue ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
-                            </span>
-                          </div>
-                          {task.description && (
-                            <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                          )}
-                          <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600">
-                              Assigned to: {task.assigned_to}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              Due: {format(new Date(task.deadline), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${task.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium">{task.progress || 0}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Subcontractors Tab */}
         {activeTab === 'subcontractors' && (
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Subcontractors</h2>

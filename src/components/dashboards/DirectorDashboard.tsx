@@ -5,7 +5,6 @@ import { TrendingUp, DollarSign, Building2, Users, FileText, Download, Plus, Edi
 import { generateDirectorReport } from '../../utils/reportGenerator'
 
 interface ProjectWithStats extends Project {
-  task_completion: number
   total_expenses: number
   apartment_sales: number
 }
@@ -173,16 +172,6 @@ const DirectorDashboard: React.FC = () => {
       // Calculate stats for each project
       const projectsWithStats = await Promise.all(
         (projectsData || []).map(async (project) => {
-          // Get task completion percentage
-          const { data: tasks } = await supabase
-            .from('tasks')
-            .select('progress')
-            .eq('project_id', project.id)
-
-          const taskCompletion = tasks && tasks.length > 0
-            ? tasks.reduce((sum, task) => sum + task.progress, 0) / tasks.length
-            : 0
-
           // Get total expenses from invoices
           const { data: invoices } = await supabase
             .from('invoices')
@@ -202,7 +191,6 @@ const DirectorDashboard: React.FC = () => {
 
           return {
             ...project,
-            task_completion: Math.round(taskCompletion),
             total_expenses: totalExpenses,
             apartment_sales: apartmentSales
           }
@@ -420,9 +408,6 @@ const DirectorDashboard: React.FC = () => {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Completion
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Budget
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -459,17 +444,6 @@ const DirectorDashboard: React.FC = () => {
                     }`}>
                       {project.status}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${project.task_completion}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-900">{project.task_completion}%</span>
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     €{project.budget.toLocaleString()}

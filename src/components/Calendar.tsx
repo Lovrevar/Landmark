@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Todo, Task } from '../lib/supabase'
+import { supabase, Todo } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Calendar as CalendarIcon, Clock } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
@@ -8,7 +8,7 @@ interface CalendarEvent {
   id: string
   title: string
   date: string
-  type: 'todo' | 'task'
+  type: 'todo'
   completed?: boolean
 }
 
@@ -45,18 +45,7 @@ const Calendar: React.FC = () => {
 
       if (todoError) throw todoError
 
-      // Fetch tasks assigned to user
-      const { data: tasks, error: taskError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('assigned_to', user.username)
-        .gte('deadline', format(monthStart, 'yyyy-MM-dd'))
-        .lte('deadline', format(monthEnd, 'yyyy-MM-dd'))
-
-      if (taskError) throw taskError
-
       console.log('Fetched todos:', todos)
-      console.log('Fetched tasks:', tasks)
 
       const allEvents: CalendarEvent[] = [
         ...(todos || []).map(todo => ({
@@ -65,12 +54,6 @@ const Calendar: React.FC = () => {
           date: todo.due_date!,
           type: 'todo' as const,
           completed: todo.completed
-        })),
-        ...(tasks || []).map(task => ({
-          id: task.id,
-          title: task.name,
-          date: task.deadline,
-          type: 'task' as const
         }))
       ]
 
@@ -214,7 +197,7 @@ const Calendar: React.FC = () => {
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{event.title}</p>
                     <p className="text-sm text-gray-500">
-                      {event.type === 'todo' ? 'Personal Task' : 'Project Task'}
+                      Personal Task
                     </p>
                   </div>
                 </div>

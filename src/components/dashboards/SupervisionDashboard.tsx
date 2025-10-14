@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, Subcontractor, Task, Project, Invoice } from '../../lib/supabase'
+import { supabase, Subcontractor, Project, Invoice } from '../../lib/supabase'
 import { 
   Users, 
   Clock, 
@@ -26,19 +26,16 @@ interface FetchedSubcontractor extends Subcontractor {
 
 interface ProjectWithDetails extends Project {
   subcontractors: FetchedSubcontractor[]
-  tasks: Task[]
   invoices: Invoice[]
   total_spent: number
   subcontractor_costs: number
   overdue_subcontractors: number
-  completion_percentage: number
 }
 
 const SupervisionDashboard: React.FC = () => {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectWithDetails[]>([])
   const [subcontractors, setSubcontractors] = useState<FetchedSubcontractor[]>([])
-  const [tasks, setTasks] = useState<Task[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithDetails | null>(null)
   const [stats, setStats] = useState({
     totalProjects: 0,
@@ -75,15 +72,6 @@ const SupervisionDashboard: React.FC = () => {
 
       if (subError) throw subError
 
-      // Fetch supervision tasks
-      const { data: tasksData, error: taskError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('assigned_to', 'supervisor')
-        .order('deadline', { ascending: true })
-
-      if (taskError) throw taskError
-
       // Fetch invoices for cost tracking
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
@@ -98,7 +86,6 @@ const SupervisionDashboard: React.FC = () => {
           const projectSubcontractors = (allSubcontractorsData || []).filter(sub => 
             sub.project_phases.project_id === project.id
           )
-          const projectTasks = (tasksData || []).filter(task => task.project_id === project.id)
           const projectInvoices = (invoicesData || []).filter(inv => inv.project_id === project.id)
 
           // Calculate metrics
@@ -107,26 +94,20 @@ const SupervisionDashboard: React.FC = () => {
           const overdue_subcontractors = projectSubcontractors.filter(sub => 
             new Date(sub.deadline) < new Date() && sub.progress < 100
           ).length
-          const completion_percentage = projectTasks.length > 0 
-            ? Math.round(projectTasks.reduce((sum, task) => sum + (task.progress || 0), 0) / projectTasks.length)
-            : 0
 
           return {
             ...project,
             subcontractors: projectSubcontractors,
-            tasks: projectTasks,
             invoices: projectInvoices,
             total_spent,
             subcontractor_costs,
-            overdue_subcontractors,
-            completion_percentage
+            overdue_subcontractors
           }
         })
       )
 
       setProjects(projectsWithDetails)
       setSubcontractors(allSubcontractorsData || [])
-      setTasks(tasksData || [])
 
       // Calculate overall stats
       const totalProjects = projectsWithDetails.length
@@ -261,76 +242,6 @@ const SupervisionDashboard: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* My Supervision Tasks */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <HardHat className="w-5 h-5 mr-2 text-blue-600" />
-            My Supervision Tasks
-          </h2>
-        </div>
-        <div className="p-6">
-          {tasks.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No supervision tasks assigned</p>
-          ) : (
-            <div className="space-y-3">
-              {tasks.map((task) => {
-                const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'Completed'
-                const taskColor = isOverdue ? 'border-l-4 border-l-red-500 bg-red-50' :
-                                task.status === 'Completed' ? 'border-l-4 border-l-green-500 bg-green-50' :
-                                task.status === 'In Progress' ? 'border-l-4 border-l-green-500 bg-green-50' :
-                                'border-l-4 border-l-gray-300 bg-gray-50'
-
-                return (
-                  <div key={task.id} className={`p-4 rounded-lg border transition-all duration-200 ${taskColor}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-medium text-gray-900">{task.name}</h3>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            task.status === 'In Progress' ? 'bg-green-100 text-green-800' :
-                            isOverdue ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {isOverdue && task.status !== 'Completed' ? 'Overdue' : task.status}
-                          </span>
-                        </div>
-                        
-                        {task.description && (
-                          <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                        )}
-                        
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 text-gray-400 mr-1" />
-                            <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                              Due {format(new Date(task.deadline), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">Progress:</span>
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  task.status === 'Completed' ? 'bg-green-600' : 'bg-green-600'
-                                }`}
-                                style={{ width: `${task.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium">{task.progress || 0}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       </div>
 
@@ -650,10 +561,6 @@ const SupervisionDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-green-700">Active Tasks</p>
-                      <p className="font-medium text-green-900">{selectedProject.tasks.length}</p>
-                    </div>
-                    <div>
                       <p className="text-sm text-green-700">Subcontractors</p>
                       <p className="font-medium text-green-900">{selectedProject.subcontractors.length}</p>
                     </div>
@@ -884,14 +791,6 @@ const SupervisionDashboard: React.FC = () => {
           >
             <Users className="w-6 h-6 text-blue-600 mr-3" />
             <span className="font-medium text-blue-900">Manage Subcontractors</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/tasks')}
-            className="flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors duration-200"
-          >
-            <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-            <span className="font-medium text-green-900">View All Tasks</span>
           </button>
           
           <button
