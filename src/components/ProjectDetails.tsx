@@ -427,11 +427,11 @@ const ProjectDetails: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Budget:</span>
-                    <span className="font-medium">${project.budget.toLocaleString()}</span>
+                    <span className="font-medium">€{project.budget.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Spent:</span>
-                    <span className="font-medium">${project.total_spent.toLocaleString()}</span>
+                    <span className="font-medium">€{project.total_spent.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Revenue:</span>
@@ -779,7 +779,7 @@ const ProjectDetails: React.FC = () => {
                               Contact: {sub.contact}
                             </span>
                             <span className="text-sm text-gray-600">
-                              Cost: ${sub.cost.toLocaleString()}
+                              Cost: €{sub.cost.toLocaleString()}
                             </span>
                             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                               Due: {format(new Date(sub.deadline), 'MMM dd, yyyy')}
