@@ -280,8 +280,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
 
     if (budgetDifference !== 0) {
       const message = budgetDifference > 0
-        ? `Total allocated budget ($${totalAllocated.toLocaleString()}) exceeds project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget ($${totalAllocated.toLocaleString()}) is less than project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        ? `Total allocated budget (€${totalAllocated.toLocaleString()}) exceeds project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        : `Total allocated budget (€${totalAllocated.toLocaleString()}) is less than project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
 
       if (!confirm(message)) {
         return
