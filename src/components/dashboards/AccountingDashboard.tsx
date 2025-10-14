@@ -172,7 +172,7 @@ const AccountingDashboard: React.FC = () => {
                       {invoice.subcontractor_name || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${invoice.amount.toLocaleString()}
+                      €{invoice.amount.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
