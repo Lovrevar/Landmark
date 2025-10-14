@@ -561,7 +561,7 @@ const CustomersManagement: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">Budget Range</p>
                   <p className="text-sm font-medium text-gray-900">
-                    €{lead.budget_range_min.toLocaleString()} - ${lead.budget_range_max.toLocaleString()}
+                    €{lead.budget_range_min.toLocaleString()} - €{lead.budget_range_max.toLocaleString()}
                   </p>
                 </div>
                 <div>
