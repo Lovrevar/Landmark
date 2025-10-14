@@ -310,7 +310,7 @@ const ProjectDetails: React.FC = () => {
                 {project.status}
               </span>
               <span className="text-sm text-gray-500">
-                Budget: ${project.budget.toLocaleString()}
+                Budget: €{project.budget.toLocaleString()}
               </span>
               <span className="text-sm text-gray-500">
                 Investor: {project.investor || 'N/A'}
@@ -343,7 +343,7 @@ const ProjectDetails: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Revenue</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${(project.total_revenue / 1000000).toFixed(1)}M
+                €{(project.total_revenue / 1000000).toFixed(1)}M
               </p>
               <p className="text-xs text-gray-500">From sales</p>
             </div>
