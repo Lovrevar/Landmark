@@ -1064,7 +1064,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated ($)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated (€)</label>
                           <input
                             type="number"
                             value={phase.budget_allocated}
