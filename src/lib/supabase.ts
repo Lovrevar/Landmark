@@ -101,6 +101,17 @@ export type WirePayment = {
   updated_at: string
 }
 
+export type ApartmentPayment = {
+  id: string
+  apartment_id: string
+  amount: number
+  payment_date: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Building = {
   id: string
   project_id: string
