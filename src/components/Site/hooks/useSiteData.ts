@@ -209,11 +209,23 @@ export const useSiteData = () => {
         const contractCount = await siteService.getContractCount()
         const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
 
+        const existingSub = await siteService.getSubcontractorById(data.existing_subcontractor_id)
+
+        const newSubcontractor = await siteService.createSubcontractorWithReturn({
+          name: existingSub.name,
+          contact: existingSub.contact,
+          job_description: data.job_description,
+          deadline: data.deadline,
+          cost: data.cost,
+          budget_realized: data.budget_realized || 0,
+          phase_id: phase.id
+        })
+
         const newContract = await siteService.createContract({
           contract_number: contractNumber,
           project_id: phaseData.project_id,
           phase_id: phase.id,
-          subcontractor_id: data.existing_subcontractor_id,
+          subcontractor_id: newSubcontractor.id,
           job_description: data.job_description,
           contract_amount: data.cost,
           budget_realized: data.budget_realized || 0,
@@ -221,15 +233,7 @@ export const useSiteData = () => {
           status: 'active'
         })
 
-        await siteService.linkSubcontractorToPhase(
-          data.existing_subcontractor_id,
-          phase.id,
-          data.cost,
-          data.deadline,
-          data.job_description
-        )
-
-        await siteService.updateSubcontractorContract(data.existing_subcontractor_id, newContract.id)
+        await siteService.updateSubcontractorContract(newSubcontractor.id, newContract.id)
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           alert('Please fill in required fields')

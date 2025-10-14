@@ -48,6 +48,18 @@ export const fetchAllSubcontractors = async () => {
   return allSubcontractorsData || []
 }
 
+export const getSubcontractorById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('subcontractors')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+
+  return data
+}
+
 export const recalculatePhaseBudget = async (phaseId: string) => {
   const { data: phaseSubcontractors, error: subError } = await supabase
     .from('subcontractors')
