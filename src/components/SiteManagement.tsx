@@ -1984,7 +1984,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-gray-600">Already Paid:</span>
-                    <span className="text-sm font-medium text-teal-600">${selectedSubcontractorForPayment.budget_realized.toLocaleString()}</span>
+                    <span className="text-sm font-medium text-teal-600">€{selectedSubcontractorForPayment.budget_realized.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-sm font-medium text-gray-700">Remaining:</span>
