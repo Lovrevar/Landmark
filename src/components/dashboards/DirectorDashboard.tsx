@@ -294,7 +294,7 @@ const DirectorDashboard: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm text-gray-600">Total Budget</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats.totalBudget.toLocaleString()}
+                  €{stats.totalBudget.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -308,7 +308,7 @@ const DirectorDashboard: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm text-gray-600">Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats.totalRevenue.toLocaleString()}
+                  €{stats.totalRevenue.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -472,13 +472,13 @@ const DirectorDashboard: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${project.budget.toLocaleString()}
+                    €{project.budget.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${project.total_expenses.toLocaleString()}
+                    €{project.total_expenses.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${project.apartment_sales.toLocaleString()}
+                    €{project.apartment_sales.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {project.investor || 'N/A'}

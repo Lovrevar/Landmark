@@ -231,7 +231,7 @@ const PaymentsManagement: React.FC = () => {
             >
               <option value="all">All Payments</option>
               <option value="recent">Recent (7 days)</option>
-              <option value="large">Large (&gt; $10k)</option>
+              <option value="large">Large (&gt; €10k)</option>
             </select>
           </div>
 
