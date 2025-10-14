@@ -2279,7 +2279,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <span className="text-lg font-bold text-gray-900">${payment.amount.toLocaleString()}</span>
+                              <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString()}</span>
                               {payment.payment_date && (
                                 <span className="text-sm text-gray-600">
                                   {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
