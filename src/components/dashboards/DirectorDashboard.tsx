@@ -38,24 +38,6 @@ const DirectorDashboard: React.FC = () => {
     fetchData()
   }, [])
 
-  const handleInsertDummyData = async () => {
-    setInsertingData(true)
-    try {
-      const { insertDummyData } = await import('../../utils/insertDummyData')
-      const success = await insertDummyData()
-      if (success) {
-        fetchData() // Refresh the data
-      } else {
-        alert('Failed to insert dummy data. Check console for errors.')
-      }
-    } catch (error) {
-      console.error('Error importing or running insertDummyData:', error)
-      alert('Error inserting dummy data. Check console for details.')
-    } finally {
-      setInsertingData(false)
-    }
-  }
-
   const addProject = async () => {
     if (!newProject.name.trim() || !newProject.location.trim() || !newProject.start_date) {
       alert('Please fill in required fields (name, location, start date)')
