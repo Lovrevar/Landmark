@@ -435,7 +435,7 @@ const ProjectDetails: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Revenue:</span>
-                    <span className="font-medium text-green-600">${project.total_revenue.toLocaleString()}</span>
+                    <span className="font-medium text-green-600">€{project.total_revenue.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
