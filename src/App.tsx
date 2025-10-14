@@ -4,9 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginForm from './components/LoginForm'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
-import TodoList from './components/TodoList'
 import Calendar from './components/Calendar'
-import TasksManagement from './components/TasksManagement'
 import SubcontractorManagement from './components/SubcontractorManagement'
 import ProjectDetails from './components/ProjectDetails'
 import SiteManagement from './components/SiteManagement'
@@ -19,7 +17,7 @@ import InvestorsManagement from './components/InvestorsManagement'
 import PaymentsManagement from './components/PaymentsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
     return (
@@ -32,7 +30,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     )
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <LoginForm />
   }
 
@@ -48,22 +46,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/todos"
-          element={
-            <ProtectedRoute>
-              <TodoList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <TasksManagement />
             </ProtectedRoute>
           }
         />
