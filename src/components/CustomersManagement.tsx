@@ -561,7 +561,7 @@ const CustomersManagement: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">Budget Range</p>
                   <p className="text-sm font-medium text-gray-900">
-                    ${lead.budget_range_min.toLocaleString()} - ${lead.budget_range_max.toLocaleString()}
+                    €{lead.budget_range_min.toLocaleString()} - ${lead.budget_range_max.toLocaleString()}
                   </p>
                 </div>
                 <div>
@@ -997,7 +997,7 @@ const CustomersManagement: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-green-700">Budget Range:</span>
                       <span className="font-medium text-green-900">
-                        ${selectedLead.budget_range_min.toLocaleString()} - ${selectedLead.budget_range_max.toLocaleString()}
+                        €{selectedLead.budget_range_min.toLocaleString()} - ${selectedLead.budget_range_max.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
