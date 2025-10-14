@@ -1776,8 +1776,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
                           <span className="font-medium">Note:</span> After this update, total phase budgets
                           ({' $' + newTotalAllocated.toLocaleString()}) will be {' '}
                           {projectBudgetDiff > 0
-                            ? `$${Math.abs(projectBudgetDiff).toLocaleString()} over`
-                            : `$${Math.abs(projectBudgetDiff).toLocaleString()} under`
+                            ? `€${Math.abs(projectBudgetDiff).toLocaleString()} over`
+                            : `€${Math.abs(projectBudgetDiff).toLocaleString()} under`
                           } the project budget.
                         </p>
                       </div>
@@ -2342,7 +2342,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Amount ($) *
+                    Payment Amount (€) *
                   </label>
                   <input
                     type="number"
@@ -2423,7 +2423,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-teal-600">
-                ${selectedProject.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString()}
+                €{selectedProject.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Total Paid</div>
             </div>
@@ -2505,10 +2505,10 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     {project.has_phases && (
                       <>
                         <p className="text-xs text-gray-500">
-                          ${(project.total_budget_allocated / 1000000).toFixed(1)}M allocated
+                          €{(project.total_budget_allocated / 1000000).toFixed(1)}M allocated
                         </p>
                         <p className="text-xs text-teal-600 font-medium">
-                          ${(project.total_paid_out / 1000000).toFixed(1)}M paid out
+                          €{(project.total_paid_out / 1000000).toFixed(1)}M paid out
                         </p>
                       </>
                     )}
@@ -2517,7 +2517,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     <p className="text-gray-600">Subcontractors</p>
                     <p className="font-medium text-gray-900">{project.subcontractors.length}</p>
                     <p className="text-xs text-gray-500">
-                      ${(project.total_subcontractor_cost / 1000000).toFixed(1)}M costs
+                      €{(project.total_subcontractor_cost / 1000000).toFixed(1)}M costs
                     </p>
                   </div>
                 </div>
