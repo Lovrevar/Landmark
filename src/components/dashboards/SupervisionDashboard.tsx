@@ -426,10 +426,10 @@ const SupervisionDashboard: React.FC = () => {
                           <DollarSign className="w-4 h-4 text-gray-400" />
                         </div>
                         <p className="text-sm font-medium text-gray-900">
-                          ${project.budget.toLocaleString()}
+                          €{project.budget.toLocaleString()}
                         </p>
                         <p className="text-sm text-gray-600">
-                          ${project.total_spent.toLocaleString()} spent
+                          €{project.total_spent.toLocaleString()} spent
                         </p>
                         <p className={`text-xs font-medium mt-1 ${budgetStatus.color}`}>
                           {((project.total_spent / project.budget) * 100).toFixed(1)}% used
@@ -445,7 +445,7 @@ const SupervisionDashboard: React.FC = () => {
                           {project.subcontractors.length} active
                         </p>
                         <p className="text-sm text-gray-600">
-                          ${project.subcontractor_costs.toLocaleString()} total
+                          €{project.subcontractor_costs.toLocaleString()} total
                         </p>
                         {project.overdue_subcontractors > 0 && (
                           <p className="text-xs font-medium text-red-600 mt-1">
