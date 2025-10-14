@@ -974,10 +974,10 @@ setExistingSubcontractors(allSubcontractorsData || [])
                 {selectedProject.has_phases && (
                   <>
                     <span className="ml-2">
-                      • Allocated: ${selectedProject.total_budget_allocated.toLocaleString()}
+                      • Allocated: €{selectedProject.total_budget_allocated.toLocaleString()}
                     </span>
                     <span className="ml-2 text-teal-600 font-medium">
-                      • Paid out: ${selectedProject.total_paid_out.toLocaleString()}
+                      • Paid out: €{selectedProject.total_paid_out.toLocaleString()}
                     </span>
                   </>
                 )}
@@ -1016,7 +1016,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">Setup Project Phases</h3>
                     <p className="text-gray-600 mt-1">
-                      Distribute ${selectedProject.budget.toLocaleString()} budget across construction phases
+                      Distribute €{selectedProject.budget.toLocaleString()} budget across construction phases
                     </p>
                   </div>
                   <button
@@ -1140,8 +1140,8 @@ setExistingSubcontractors(allSubcontractorsData || [])
                         {selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) === 0
                           ? 'Matched'
                           : selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0) > 0
-                          ? `$${(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} under`
-                          : `$${Math.abs(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} over`
+                          ? `€${(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} under`
+                          : `€${Math.abs(selectedProject.budget - phases.reduce((sum, p) => sum + p.budget_allocated, 0)).toLocaleString()} over`
                         }
                       </p>
                     </div>
@@ -1251,7 +1251,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       <div className="bg-orange-50 p-3 rounded-lg">
                         <p className="text-sm text-orange-700">Unpaid Contracts</p>
                         <p className="text-lg font-bold text-orange-900">
-                          ${(totalContractCost - totalBudgetRealized).toLocaleString()}
+                          €{(totalContractCost - totalBudgetRealized).toLocaleString()}
                         </p>
                       </div>
                       <div className={`p-3 rounded-lg ${
@@ -1263,7 +1263,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                         <p className={`text-lg font-bold ${
                           (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-900' : 'text-green-900'
                         }`}>
-                          ${(phase.budget_allocated - totalContractCost).toLocaleString()}
+                          €{(phase.budget_allocated - totalContractCost).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -1286,7 +1286,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       </div>
                       {budgetUtilization > 100 && (
                         <p className="text-xs text-red-600 mt-1">
-                          Over budget by ${(totalBudgetRealized - phase.budget_allocated).toLocaleString()}
+                          Over budget by €{(totalBudgetRealized - phase.budget_allocated).toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -1459,7 +1459,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">Add Subcontractor</h3>
                     <p className="text-gray-600 mt-1">
-                      {selectedPhase.phase_name} • Available Budget: ${(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
+                      {selectedPhase.phase_name} • Available Budget: €{(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
                     </p>
                   </div>
                   <button
@@ -1533,7 +1533,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Contract Cost ($) *
+                          Contract Cost (€) *
                         </label>
                         <input
                           type="number"
@@ -1596,7 +1596,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost ($) *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€) *</label>
                       <input
                         type="number"
                         value={newSubcontractor.cost}
@@ -1607,7 +1607,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                         required
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Max: ${(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
+                        Max: €{(selectedPhase.budget_allocated - selectedPhase.budget_used).toLocaleString()}
                       </p>
                     </div>
                     <div>
@@ -1620,7 +1620,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Budget Realized ($)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Budget Realized (€)</label>
                       <input
                         type="number"
                         min="0"
@@ -1675,7 +1675,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">Edit Phase</h3>
                     <p className="text-gray-600 mt-1">
-                      Phase {editingPhase.phase_number} • Budget Used: ${editingPhase.budget_used.toLocaleString()}
+                      Phase {editingPhase.phase_number} • Budget Used: €{editingPhase.budget_used.toLocaleString()}
                     </p>
                   </div>
                   <button
@@ -1705,7 +1705,7 @@ setExistingSubcontractors(allSubcontractorsData || [])
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated ($) *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated (€) *</label>
                     <input
                       type="number"
                       value={editPhaseForm.budget_allocated}
@@ -1716,12 +1716,12 @@ setExistingSubcontractors(allSubcontractorsData || [])
                     />
                     {editPhaseForm.budget_allocated < editingPhase.budget_used && (
                       <p className="text-xs text-red-600 mt-1">
-                        Warning: Budget is less than already allocated amount (${editingPhase.budget_used.toLocaleString()})
+                        Warning: Budget is less than already allocated amount (€{editingPhase.budget_used.toLocaleString()})
                       </p>
                     )}
                     {editPhaseForm.budget_allocated >= editingPhase.budget_used && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Available after update: ${(editPhaseForm.budget_allocated - editingPhase.budget_used).toLocaleString()}
+                        Available after update: €{(editPhaseForm.budget_allocated - editingPhase.budget_used).toLocaleString()}
                       </p>
                     )}
                   </div>
