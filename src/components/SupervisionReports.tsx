@@ -9,7 +9,8 @@ import {
   Download,
   FileText,
   Activity,
-  AlertCircle
+  AlertCircle,
+  ClipboardCheck
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
 
@@ -18,6 +19,25 @@ interface MonthlyData {
   contracts: number
   payments: number
   budget_used: number
+}
+
+interface WorkLog {
+  id: string
+  date: string
+  subcontractor_id: string
+  work_description: string
+  status: string
+  color: string
+  notes: string | null
+  blocker_details: string | null
+  created_at: string
+  subcontractors?: {
+    name: string
+  }
+  contracts?: {
+    contract_number: string
+    job_description: string
+  }
 }
 
 interface ProjectSupervisionReport {
@@ -32,11 +52,13 @@ interface ProjectSupervisionReport {
   completed_phases: number
   total_subcontractors: number
   total_payments: number
+  total_work_logs: number
   monthly_data: MonthlyData[]
   contracts: Contract[]
   phases: ProjectPhase[]
   subcontractors: Subcontractor[]
   payments: WirePayment[]
+  work_logs: WorkLog[]
 }
 
 const SupervisionReports: React.FC = () => {
@@ -121,10 +143,25 @@ const SupervisionReports: React.FC = () => {
 
       if (subcontractorsError) throw subcontractorsError
 
+      const { data: workLogsData, error: workLogsError } = await supabase
+        .from('work_logs')
+        .select(`
+          *,
+          subcontractors!work_logs_subcontractor_id_fkey (name),
+          contracts!work_logs_contract_id_fkey (contract_number, job_description)
+        `)
+        .eq('project_id', selectedProject)
+        .gte('date', dateRange.start)
+        .lte('date', dateRange.end)
+        .order('date', { ascending: false })
+
+      if (workLogsError) throw workLogsError
+
       const contracts = contractsData || []
       const phases = phasesData || []
       const payments = paymentsData || []
       const subcontractors = subcontractorsData || []
+      const work_logs = workLogsData || []
 
       const contractSubcontractorIds = contracts.map(c => c.subcontractor_id)
       const projectSubcontractors = subcontractors.filter(s =>
@@ -141,6 +178,7 @@ const SupervisionReports: React.FC = () => {
       const completed_phases = phases.filter(p => p.status === 'completed').length
       const total_subcontractors = projectSubcontractors.length
       const total_payments = payments.reduce((sum, p) => sum + p.amount, 0)
+      const total_work_logs = work_logs.length
 
       const startDate = new Date(dateRange.start)
       const endDate = new Date(dateRange.end)
@@ -180,11 +218,13 @@ const SupervisionReports: React.FC = () => {
         completed_phases,
         total_subcontractors,
         total_payments,
+        total_work_logs,
         monthly_data,
         contracts,
         phases,
         subcontractors: projectSubcontractors,
-        payments
+        payments,
+        work_logs
       })
     } catch (error) {
       console.error('Error generating project report:', error)
@@ -276,7 +316,8 @@ const SupervisionReports: React.FC = () => {
         ['Total Phases', projectReport.total_phases.toString()],
         ['Completed Phases', projectReport.completed_phases.toString()],
         ['Total Subcontractors', projectReport.total_subcontractors.toString()],
-        ['Total Payments', `€${projectReport.total_payments.toLocaleString()}`]
+        ['Total Payments', `€${projectReport.total_payments.toLocaleString()}`],
+        ['Work Logs', projectReport.total_work_logs.toString()]
       ]
 
       overviewData.forEach(([label, value], index) => {
@@ -340,6 +381,56 @@ const SupervisionReports: React.FC = () => {
         pdf.setTextColor(0, 0, 0)
         pdf.setFont('helvetica', 'normal')
       })
+
+      yPosition += (projectReport.contracts.length * 8) + 15
+
+      checkPageBreak(40)
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      yPosition = addText('Work Logs Summary', margin, yPosition, { fontSize: 14, style: 'bold', color: [37, 99, 235] })
+      yPosition += 10
+
+      pdf.setTextColor(0, 0, 0)
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+
+      if (projectReport.work_logs.length === 0) {
+        pdf.text('No work logs recorded during this period', margin + 5, yPosition)
+        yPosition += 10
+      } else {
+        projectReport.work_logs.slice(0, 10).forEach((log, index) => {
+          checkPageBreak(12)
+          const y = yPosition + (index * 12)
+
+          pdf.setFont('helvetica', 'bold')
+          pdf.text(`${format(new Date(log.date), 'MMM dd, yyyy')} - ${log.subcontractors?.name || 'Unknown'}`, margin + 5, y)
+
+          pdf.setFont('helvetica', 'normal')
+          const descriptionLines = pdf.splitTextToSize(log.work_description, contentWidth - 10)
+          pdf.text(descriptionLines[0], margin + 5, y + 4)
+
+          if (log.contracts) {
+            pdf.setFontSize(8)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text(`Contract: ${log.contracts.contract_number}`, margin + 5, y + 8)
+            pdf.setTextColor(0, 0, 0)
+            pdf.setFontSize(9)
+          }
+        })
+
+        if (projectReport.work_logs.length > 10) {
+          yPosition += (10 * 12) + 5
+          checkPageBreak(6)
+          pdf.setFont('helvetica', 'italic')
+          pdf.setTextColor(100, 100, 100)
+          pdf.text(`... and ${projectReport.work_logs.length - 10} more work logs`, margin + 5, yPosition)
+          pdf.setTextColor(0, 0, 0)
+          yPosition += 10
+        } else {
+          yPosition += (projectReport.work_logs.length * 12) + 10
+        }
+      }
 
       const footerY = pageHeight - 15
       pdf.setFontSize(8)
@@ -486,7 +577,7 @@ const SupervisionReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -531,6 +622,18 @@ const SupervisionReports: React.FC = () => {
                 <div className="ml-4">
                   <p className="text-sm text-gray-600">Phases Done</p>
                   <p className="text-2xl font-bold text-gray-900">{projectReport.completed_phases}/{projectReport.total_phases}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex items-center">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <ClipboardCheck className="w-6 h-6 text-teal-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-600">Work Logs</p>
+                  <p className="text-2xl font-bold text-gray-900">{projectReport.total_work_logs}</p>
                 </div>
               </div>
             </div>
@@ -620,6 +723,63 @@ const SupervisionReports: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <ClipboardCheck className="w-5 h-5 mr-2 text-blue-600" />
+              Work Logs ({projectReport.total_work_logs})
+            </h2>
+            {projectReport.work_logs.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <p className="text-gray-600">No work logs recorded during this period</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projectReport.work_logs.slice(0, 10).map((log) => (
+                  <div
+                    key={log.id}
+                    className="border-l-4 rounded-lg p-4 bg-gray-50 border border-gray-200"
+                    style={{ borderLeftColor: log.color || 'blue' }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="font-semibold text-gray-900">{log.subcontractors?.name || 'Unknown'}</h3>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            {log.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        {log.contracts && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            Contract: {log.contracts.contract_number} - {log.contracts.job_description}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-700">{log.work_description}</p>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(log.date), 'MMM dd, yyyy')}
+                      </span>
+                    </div>
+                    {log.blocker_details && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs font-medium text-red-800">Issue: {log.blocker_details}</p>
+                      </div>
+                    )}
+                    {log.notes && (
+                      <div className="mt-2 p-2 bg-white rounded border border-gray-200">
+                        <p className="text-xs text-gray-600">{log.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {projectReport.work_logs.length > 10 && (
+                  <div className="text-center py-3 text-sm text-gray-600">
+                    ... and {projectReport.work_logs.length - 10} more work logs. Full details in PDF export.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
