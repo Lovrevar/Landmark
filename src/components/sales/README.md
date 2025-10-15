@@ -1,11 +1,15 @@
-# Sales Feature Module
+# Sales Module
 
 Ovaj modul upravlja prodajnim procesima, projektima, zgradama i jedinicama (stanovi, garaže, spremišta).
+
+## 📍 Lokacija
+
+`/src/components/sales/` - Sales modul je dio components direktorija
 
 ## 📁 Struktura
 
 ```
-sales/
+components/sales/
 ├── components/           # React komponente
 │   ├── views/           # Glavne view komponente (Projects, Buildings, Units)
 │   ├── shared/          # Reusable komponente (Cards, Filters, Badges)
@@ -104,10 +108,10 @@ npm run build        # Testiraj build
 ## 📝 Primjer Korištenja
 
 ```tsx
-import { SalesProjectsPage } from '@/features/sales'
+import SalesProjectsPage from './components/sales/components/SalesProjectsPage'
 
-// U App.tsx ili routes
-<Route path="/sales" element={<SalesProjectsPage />} />
+// U App.tsx
+<Route path="/sales-projects" element={<SalesProjectsPage />} />
 ```
 
 ## 🔄 Refaktoring History
