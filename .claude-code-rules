@@ -1,0 +1,282 @@
+# Claude Code Rules for This Project
+
+## CRITICAL: Modular Architecture Enforcement
+
+This project follows a strict modular architecture. You MUST NEVER convert components back to monolithic structure.
+
+## Mandatory Component Structure
+
+ALL feature modules MUST follow this structure:
+
+```
+src/components/[FeatureName]/
+├── types/           # ONLY TypeScript types and interfaces
+├── services/        # ONLY API calls and business logic functions
+├── hooks/           # ONLY custom React hooks
+├── views/           # ONLY presentational components
+└── forms/           # ONLY modal and form components
+```
+
+## Layer Rules - STRICTLY ENFORCE
+
+### Types Layer (`/types`)
+- ✅ TypeScript interfaces, types, enums
+- ❌ NO functions
+- ❌ NO React components
+- ❌ NO business logic
+
+### Services Layer (`/services`)
+- ✅ API calls and data fetching
+- ✅ Business logic and data transformation
+- ✅ Validation functions
+- ❌ NO React components or JSX
+- ❌ NO React hooks (useState, useEffect)
+- ❌ NO direct UI rendering
+
+### Hooks Layer (`/hooks`)
+- ✅ Custom React hooks (must start with 'use')
+- ✅ State management with useState, useEffect
+- ✅ Calls to service layer functions
+- ❌ NO direct API calls (use services instead)
+- ❌ NO JSX or rendering logic
+
+### Views Layer (`/views`)
+- ✅ Presentational React components
+- ✅ Receives data via props
+- ✅ Local UI state (dropdowns, toggles)
+- ❌ NO API calls or data fetching
+- ❌ NO complex business logic
+- ❌ NO direct database operations
+
+### Forms Layer (`/forms`)
+- ✅ Modal and form components
+- ✅ Form validation and submission
+- ✅ Can call service functions
+- ❌ NO complex business logic (delegate to services)
+
+## File Size Limits - ENFORCE
+
+- **Target**: 150-250 lines per file
+- **Maximum**: 300 lines per file
+- **Action Required**: If a file exceeds 300 lines, STOP and refactor into smaller components before continuing
+
+## When Creating New Components
+
+ALWAYS:
+1. Determine which feature module it belongs to
+2. Create folder structure if it doesn't exist (types/services/hooks/views/forms)
+3. Put the component in the correct layer
+4. Keep each file under 300 lines
+5. Follow single responsibility principle
+
+NEVER:
+1. Create monolithic components with multiple responsibilities
+2. Mix presentation and business logic in the same file
+3. Put API calls directly in view components
+4. Create components without considering the layer structure
+5. Import from other feature modules (use shared utils instead)
+
+## When Modifying Existing Components
+
+BEFORE making changes:
+1. Check if the file is over 300 lines
+2. If yes, refactor FIRST before adding new features
+3. Identify if new code belongs in a different layer
+4. Extract reusable logic to appropriate layer
+
+NEVER:
+1. Add more code to already large files
+2. Mix responsibilities (e.g., adding API calls to view components)
+3. Convert modular structure back to monolithic
+
+## Code Organization Rules
+
+### Import Order
+```typescript
+// 1. React
+import React, { useState } from 'react'
+
+// 2. Third-party
+import { Icon } from 'lucide-react'
+
+// 3. Types
+import { Project } from '../types/siteTypes'
+
+// 4. Services
+import { siteService } from '../services/siteService'
+
+// 5. Hooks
+import { useSiteData } from '../hooks/useSiteData'
+
+// 6. Views
+import { ProjectCard } from './ProjectCard'
+```
+
+### Module Boundaries
+- ❌ NEVER import from another feature module: `../Sales/services/salesService`
+- ✅ Share code through top-level folders: `../../lib/utils` or `../../utils/helpers`
+
+## Component Extraction Guidelines
+
+Extract to a new component when:
+1. A section has distinct responsibility
+2. Code is repeated in multiple places
+3. A block exceeds 50 lines
+4. Component file approaches 300 lines
+5. Logic could be reused elsewhere
+
+## Refactoring Triggers
+
+You MUST refactor when you notice:
+1. File exceeds 300 lines
+2. Multiple useState calls (5+) in one component
+3. Nested ternary operators (more than 2 levels)
+4. API calls in view components
+5. Business logic in view components
+6. Duplicate code across components
+
+## Example: Correct vs Incorrect
+
+### ❌ INCORRECT - Monolithic
+
+```typescript
+export const SiteManagement = () => {
+  // 500+ lines of code
+  const [projects, setProjects] = useState([])
+
+  const fetchProjects = async () => {
+    const { data } = await supabase.from('projects').select('*')
+    setProjects(data)
+  }
+
+  const calculateBudget = (project) => {
+    // Complex business logic
+  }
+
+  return (
+    <div>
+      {/* Complex rendering logic */}
+      {projects.map(project => (
+        <div>
+          {/* Inline component rendering */}
+          {/* More inline logic */}
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+### ✅ CORRECT - Modular
+
+```typescript
+// hooks/useSiteData.ts
+export const useSiteData = () => {
+  const [projects, setProjects] = useState([])
+
+  const loadProjects = async () => {
+    const data = await siteService.fetchProjects()
+    setProjects(data)
+  }
+
+  return { projects, loadProjects }
+}
+
+// services/siteService.ts
+export const siteService = {
+  async fetchProjects() {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+    if (error) throw error
+    return data
+  },
+
+  calculateBudget(project: Project) {
+    // Business logic
+  }
+}
+
+// views/ProjectsGrid.tsx (80 lines)
+export const ProjectsGrid: React.FC<Props> = ({ projects, onSelect }) => {
+  return (
+    <div className="grid">
+      {projects.map(project => (
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onClick={() => onSelect(project)}
+        />
+      ))}
+    </div>
+  )
+}
+
+// views/ProjectCard.tsx (50 lines)
+export const ProjectCard: React.FC<Props> = ({ project, onClick }) => {
+  return <div onClick={onClick}>...</div>
+}
+```
+
+## Decision Tree for Component Creation
+
+```
+Creating new component?
+│
+├─ Is it > 50 lines? ────────────────────► YES ─► Check if it can be split
+│                                                   into smaller components
+├─ Does it fetch data? ──────────────────► YES ─► Create hook + service
+│
+├─ Does it have business logic? ─────────► YES ─► Move to service layer
+│
+├─ Is it presentational only? ───────────► YES ─► Put in views/
+│
+├─ Is it a form or modal? ───────────────► YES ─► Put in forms/
+│
+└─ Does it define types? ────────────────► YES ─► Put in types/
+```
+
+## Special Instructions for AI
+
+When user asks to:
+- "Add a feature" → Create separate files for types, services, hooks, views
+- "Fix a bug" → Check if file needs refactoring first
+- "Modify component" → Verify it's in correct layer before changing
+- "Create new page" → Set up full module structure
+
+## Enforcement Actions
+
+If you catch yourself about to:
+1. Create a 400-line component → STOP, break it down first
+2. Add API call to a view component → STOP, use hooks + services
+3. Put business logic in a view → STOP, move to service layer
+4. Import from another feature module → STOP, use shared utilities
+
+## Success Criteria
+
+A well-structured component module has:
+- ✅ Clear separation: types, services, hooks, views, forms
+- ✅ Each file under 300 lines
+- ✅ Single responsibility per file
+- ✅ No cross-feature imports
+- ✅ Reusable services and hooks
+- ✅ Pure presentational views
+- ✅ Easy to test each layer independently
+
+## Reference Implementation
+
+See existing modules as reference:
+- `src/components/Site/` - Excellent example of modular structure
+- `src/components/Sales/` - Well-organized feature module
+
+ALWAYS follow these patterns when creating or modifying components.
+
+---
+
+## Final Rule
+
+**WHEN IN DOUBT**: Split it up. It's easier to combine later than to untangle a monolithic component.
+
+**NEVER**: Convert well-structured modular code back to monolithic structure.
+
+**ALWAYS**: Ask yourself: "Which layer does this belong to?" before writing code.
