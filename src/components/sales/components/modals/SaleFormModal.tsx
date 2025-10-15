@@ -1,7 +1,7 @@
 import React from 'react'
 import { X } from 'lucide-react'
 import { SaleData, UnitType } from '../../types'
-import { Customer, Apartment, Garage, Repository } from '../../../../lib/supabase'
+import { Customer, Apartment, Garage, Repository } from '../../../../../lib/supabase'
 
 interface SaleFormModalProps {
   isOpen: boolean
