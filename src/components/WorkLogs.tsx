@@ -172,16 +172,23 @@ const WorkLogs: React.FC = () => {
           contract_number,
           job_description,
           subcontractor_id,
+          status,
           subcontractors (name)
         `)
         .eq('phase_id', phaseId)
         .in('status', ['active', 'draft'])
         .order('contract_number')
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching contracts:', error)
+        throw error
+      }
+
+      console.log('Fetched contracts for phase:', phaseId, 'Count:', data?.length, 'Data:', data)
       setContracts(data || [])
     } catch (error) {
       console.error('Error fetching contracts:', error)
+      setContracts([])
     }
   }
 
@@ -313,7 +320,7 @@ const WorkLogs: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phase
+                    Phase *
                   </label>
                   <select
                     value={formData.phase_id}
@@ -323,10 +330,10 @@ const WorkLogs: React.FC = () => {
                         phase_id: e.target.value,
                         contract_id: ''
                       })
-                      setContracts([])
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!formData.project_id}
+                    required
                   >
                     <option value="">Select Phase</option>
                     {phases.map((phase) => (
@@ -349,13 +356,24 @@ const WorkLogs: React.FC = () => {
                   disabled={!formData.phase_id}
                   required
                 >
-                  <option value="">Select Contract</option>
+                  <option value="">
+                    {!formData.phase_id
+                      ? 'Select Phase First'
+                      : contracts.length === 0
+                        ? 'No active contracts in this phase'
+                        : 'Select Contract'}
+                  </option>
                   {contracts.map((contract) => (
                     <option key={contract.id} value={contract.id}>
                       {contract.contract_number} - {contract.subcontractors?.name} - {contract.job_description}
                     </option>
                   ))}
                 </select>
+                {formData.phase_id && contracts.length === 0 && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    No active contracts found for this phase. Make sure contracts exist in Site Management.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
