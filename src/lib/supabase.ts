@@ -227,8 +227,23 @@ export type Customer = {
   address: string
   bank_account: string
   id_number: string
-  status: 'buyer' | 'interested' | 'lead'
+  status: 'buyer' | 'interested' | 'lead' | 'hot_lead' | 'negotiating' | 'backed_out'
   created_at: string
+  customer_number?: number
+  preferences?: {
+    budget_min?: number
+    budget_max?: number
+    preferred_size_min?: number
+    preferred_size_max?: number
+    preferred_floor?: string
+    preferred_location?: string
+    bedrooms?: number
+    notes?: string
+  }
+  last_contact_date?: string
+  backed_out_reason?: string
+  notes?: string
+  priority?: 'hot' | 'warm' | 'cold'
 }
 
 export type Sale = {
