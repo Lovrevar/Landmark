@@ -24,11 +24,11 @@ interface WorkLog {
   date: string
   subcontractor_id: string
   subcontractor_name?: string
-  workers_count: number
-  hours_worked: number
   work_description: string
   notes: string
-  photos: string[]
+  status: string
+  color: string
+  blocker_details?: string
   created_at: string
 }
 
@@ -83,8 +83,8 @@ const SupervisionDashboard: React.FC = () => {
         .from('work_logs')
         .select(`
           *,
-          subcontractors (name),
-          contracts (contract_number, job_description)
+          subcontractors!work_logs_subcontractor_id_fkey (name),
+          contracts!work_logs_contract_id_fkey (contract_number, job_description)
         `)
         .eq('date', today)
         .order('created_at', { ascending: false })
@@ -145,7 +145,6 @@ const SupervisionDashboard: React.FC = () => {
         })
       )
 
-      const activeWorkersToday = logsWithNames.reduce((sum, log) => sum + (log.workers_count || 0), 0)
       const uniqueSites = new Set(logsWithNames.map(log => log.subcontractor_id)).size
       const overdueCount = subcontractorStatusData.filter(s => s.is_overdue).length
       const criticalDeadlines = subcontractorStatusData.filter(
@@ -155,7 +154,7 @@ const SupervisionDashboard: React.FC = () => {
       setTodayLogs(logsWithNames)
       setSubcontractorStatus(subcontractorStatusData)
       setStats({
-        active_workers: activeWorkersToday,
+        active_workers: logsWithNames.length,
         sites_worked_today: uniqueSites,
         work_logs_today: logsWithNames.length,
         subcontractors_active: subcontractorStatusData.filter(s => s.recent_work_logs > 0).length,
@@ -198,14 +197,14 @@ const SupervisionDashboard: React.FC = () => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-600">Active Workers</p>
+              <p className="text-xs text-gray-600">Active Crews</p>
               <p className="text-2xl font-bold text-blue-600">{stats.active_workers}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <HardHat className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">On site today</p>
+          <p className="text-xs text-gray-500 mt-1">Working today</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
@@ -329,7 +328,11 @@ const SupervisionDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {todayLogs.map((log) => (
-                    <div key={log.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div
+                      key={log.id}
+                      className="border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white border border-gray-200"
+                      style={{ borderLeftColor: log.color || 'blue' }}
+                    >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900 mb-1">{log.subcontractor_name}</h3>
@@ -338,36 +341,19 @@ const SupervisionDashboard: React.FC = () => {
                               Contract: {log.contracts.contract_number} - {log.contracts.job_description}
                             </p>
                           )}
-                          <p className="text-sm text-gray-600">{log.work_description}</p>
+                          <p className="text-sm text-gray-600 mt-2">{log.work_description}</p>
                         </div>
                         <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                           {format(new Date(log.created_at), 'HH:mm')}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 mb-3">
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <div className="flex items-center text-blue-600 mb-1">
-                            <Users className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Workers</span>
-                          </div>
-                          <p className="text-lg font-bold text-blue-900">{log.workers_count}</p>
+                      {log.blocker_details && (
+                        <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
+                          <p className="text-xs font-medium text-red-800 mb-1">Issue Details:</p>
+                          <p className="text-sm text-red-700">{log.blocker_details}</p>
                         </div>
-                        <div className="bg-purple-50 p-3 rounded-lg">
-                          <div className="flex items-center text-purple-600 mb-1">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Hours</span>
-                          </div>
-                          <p className="text-lg font-bold text-purple-900">{log.hours_worked}</p>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-lg">
-                          <div className="flex items-center text-green-600 mb-1">
-                            <Camera className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Photos</span>
-                          </div>
-                          <p className="text-lg font-bold text-green-900">{log.photos?.length || 0}</p>
-                        </div>
-                      </div>
+                      )}
 
                       {log.notes && (
                         <div className="bg-gray-50 p-3 rounded-lg">
