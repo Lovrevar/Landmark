@@ -695,6 +695,18 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       if (saleError) throw saleError
 
+      // Update customer status to 'buyer' if using existing customer
+      if (customerMode === 'existing' && customerId) {
+        const { error: customerUpdateError } = await supabase
+          .from('customers')
+          .update({ status: 'buyer' })
+          .eq('id', customerId)
+
+        if (customerUpdateError) {
+          console.error('Error updating customer status:', customerUpdateError)
+        }
+      }
+
       // Update unit status and buyer name
       let tableName = ''
       if (unitForSale.type === 'apartment') tableName = 'apartments'
