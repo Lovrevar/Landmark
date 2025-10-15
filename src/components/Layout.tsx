@@ -32,7 +32,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' }
+        { name: 'Payments', icon: DollarSign, path: '/payments' },
+        { name: 'Reports', icon: BarChart3, path: '/supervision-reports' }
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
