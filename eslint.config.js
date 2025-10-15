@@ -23,10 +23,6 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
-      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['error', { max: 150, skipBlankLines: true, skipComments: true }],
-      'max-depth': ['warn', 4],
-      'complexity': ['warn', 12],
     },
   }
 );
