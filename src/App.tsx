@@ -17,6 +17,7 @@ import PaymentsManagement from './components/PaymentsManagement'
 import ApartmentManagement from './components/ApartmentManagement'
 import SalesPaymentsManagement from './components/SalesPaymentsManagement'
 import SupervisionReports from './components/SupervisionReports'
+import WorkLogs from './components/WorkLogs'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -176,6 +177,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <SupervisionReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/work-logs"
+          element={
+            <ProtectedRoute>
+              <WorkLogs />
             </ProtectedRoute>
           }
         />

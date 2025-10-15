@@ -11,7 +11,8 @@ import {
   Calendar,
   DollarSign,
   ChevronDown,
-  User
+  User,
+  ClipboardCheck
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -32,6 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Payments', icon: DollarSign, path: '/payments' },

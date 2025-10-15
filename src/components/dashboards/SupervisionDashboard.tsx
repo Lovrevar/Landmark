@@ -83,7 +83,8 @@ const SupervisionDashboard: React.FC = () => {
         .from('work_logs')
         .select(`
           *,
-          subcontractors (name)
+          subcontractors (name),
+          contracts (contract_number, job_description)
         `)
         .eq('date', today)
         .order('created_at', { ascending: false })
@@ -332,6 +333,11 @@ const SupervisionDashboard: React.FC = () => {
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900 mb-1">{log.subcontractor_name}</h3>
+                          {log.contracts && (
+                            <p className="text-xs text-gray-500 mb-1">
+                              Contract: {log.contracts.contract_number} - {log.contracts.job_description}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-600">{log.work_description}</p>
                         </div>
                         <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
