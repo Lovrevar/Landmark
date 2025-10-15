@@ -167,27 +167,21 @@ const WorkLogs: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          job_description,
-          subcontractor_id,
-          status,
-          subcontractors (name)
-        `)
+        .select('id, contract_number, job_description, subcontractor_id, status, subcontractors(name)')
         .eq('phase_id', phaseId)
         .in('status', ['active', 'draft'])
         .order('contract_number')
 
       if (error) {
-        console.error('Error fetching contracts:', error)
+        console.error('Error fetching contracts - Full error:', JSON.stringify(error, null, 2))
+        alert(`Error loading contracts: ${error.message}`)
         throw error
       }
 
       console.log('Fetched contracts for phase:', phaseId, 'Count:', data?.length, 'Data:', data)
       setContracts(data || [])
     } catch (error) {
-      console.error('Error fetching contracts:', error)
+      console.error('Error fetching contracts - Caught:', error)
       setContracts([])
     }
   }
