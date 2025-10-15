@@ -6,15 +6,15 @@ import {
   Plus,
   X,
   Calendar,
-  Users,
-  Clock,
   AlertTriangle,
   CheckCircle2,
   Loader,
   AlertCircle,
-  Wrench,
   CloudRain,
-  Package
+  Package,
+  Edit2,
+  Trash2,
+  Palette
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -28,10 +28,8 @@ interface WorkLog {
   status: 'work_finished' | 'in_progress' | 'blocker' | 'quality_issue' | 'waiting_materials' | 'weather_delay'
   work_description: string
   blocker_details: string | null
-  workers_count: number
-  hours_worked: number
   notes: string
-  photos: string[]
+  color: string
   created_at: string
   contracts?: {
     contract_number: string
@@ -85,6 +83,7 @@ const WorkLogs: React.FC = () => {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingLog, setEditingLog] = useState<WorkLog | null>(null)
   const [formData, setFormData] = useState({
     project_id: '',
     phase_id: '',
@@ -93,9 +92,8 @@ const WorkLogs: React.FC = () => {
     status: 'in_progress' as WorkLog['status'],
     work_description: '',
     blocker_details: '',
-    workers_count: 0,
-    hours_worked: 0,
-    notes: ''
+    notes: '',
+    color: 'blue'
   })
 
   useEffect(() => {
@@ -129,10 +127,10 @@ const WorkLogs: React.FC = () => {
         .from('work_logs')
         .select(`
           *,
-          contracts (contract_number, job_description),
-          subcontractors (name),
-          projects (name),
-          project_phases (phase_name)
+          contracts!work_logs_contract_id_fkey (contract_number, job_description),
+          subcontractors!work_logs_subcontractor_id_fkey (name),
+          projects!work_logs_project_id_fkey (name),
+          project_phases!work_logs_phase_id_fkey (phase_name)
         `)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -197,27 +195,46 @@ const WorkLogs: React.FC = () => {
     if (!selectedContract) return
 
     try {
-      const { error } = await supabase.from('work_logs').insert([
-        {
-          contract_id: formData.contract_id,
-          project_id: formData.project_id,
-          phase_id: formData.phase_id || null,
-          subcontractor_id: selectedContract.subcontractor_id,
-          date: formData.date,
-          status: formData.status,
-          work_description: formData.work_description,
-          blocker_details: formData.status === 'blocker' ? formData.blocker_details : null,
-          workers_count: formData.workers_count,
-          hours_worked: formData.hours_worked,
-          notes: formData.notes,
-          photos: [],
-          created_by: user?.id
-        }
-      ])
+      if (editingLog) {
+        const { error } = await supabase
+          .from('work_logs')
+          .update({
+            contract_id: formData.contract_id,
+            project_id: formData.project_id,
+            phase_id: formData.phase_id || null,
+            subcontractor_id: selectedContract.subcontractor_id,
+            date: formData.date,
+            status: formData.status,
+            work_description: formData.work_description,
+            blocker_details: formData.status === 'blocker' || formData.status === 'quality_issue' ? formData.blocker_details : null,
+            notes: formData.notes,
+            color: formData.color
+          })
+          .eq('id', editingLog.id)
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('work_logs').insert([
+          {
+            contract_id: formData.contract_id,
+            project_id: formData.project_id,
+            phase_id: formData.phase_id || null,
+            subcontractor_id: selectedContract.subcontractor_id,
+            date: formData.date,
+            status: formData.status,
+            work_description: formData.work_description,
+            blocker_details: formData.status === 'blocker' || formData.status === 'quality_issue' ? formData.blocker_details : null,
+            notes: formData.notes,
+            color: formData.color,
+            created_by: user?.id
+          }
+        ])
+
+        if (error) throw error
+      }
 
       setShowForm(false)
+      setEditingLog(null)
       setFormData({
         project_id: '',
         phase_id: '',
@@ -226,14 +243,48 @@ const WorkLogs: React.FC = () => {
         status: 'in_progress',
         work_description: '',
         blocker_details: '',
-        workers_count: 0,
-        hours_worked: 0,
-        notes: ''
+        notes: '',
+        color: 'blue'
       })
       fetchData()
     } catch (error) {
-      console.error('Error creating work log:', error)
-      alert('Failed to create work log')
+      console.error('Error saving work log:', error)
+      alert('Failed to save work log')
+    }
+  }
+
+  const handleEdit = (log: WorkLog) => {
+    setEditingLog(log)
+    setFormData({
+      project_id: log.project_id,
+      phase_id: log.phase_id || '',
+      contract_id: log.contract_id,
+      date: log.date,
+      status: log.status,
+      work_description: log.work_description,
+      blocker_details: log.blocker_details || '',
+      notes: log.notes || '',
+      color: log.color
+    })
+    if (log.project_id) fetchPhases(log.project_id)
+    if (log.phase_id) fetchContracts(log.phase_id)
+    setShowForm(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this work log?')) return
+
+    try {
+      const { error } = await supabase
+        .from('work_logs')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting work log:', error)
+      alert('Failed to delete work log')
     }
   }
 
@@ -260,7 +311,21 @@ const WorkLogs: React.FC = () => {
           <p className="text-gray-600 mt-1">Track subcontractor activities and site observations</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingLog(null)
+            setFormData({
+              project_id: '',
+              phase_id: '',
+              contract_id: '',
+              date: format(new Date(), 'yyyy-MM-dd'),
+              status: 'in_progress',
+              work_description: '',
+              blocker_details: '',
+              notes: '',
+              color: 'blue'
+            })
+            setShowForm(true)
+          }}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -272,9 +337,14 @@ const WorkLogs: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">New Work Log</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {editingLog ? 'Edit Work Log' : 'New Work Log'}
+              </h2>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingLog(null)
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500" />
@@ -416,49 +486,20 @@ const WorkLogs: React.FC = () => {
                 />
               </div>
 
-              {formData.status === 'blocker' && (
+              {(formData.status === 'blocker' || formData.status === 'quality_issue') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Blocker Details
+                    {formData.status === 'blocker' ? 'Blocker Details' : 'Issue Details'}
                   </label>
                   <textarea
                     value={formData.blocker_details}
                     onChange={(e) => setFormData({ ...formData, blocker_details: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows={2}
-                    placeholder="Describe what is blocking the work..."
+                    placeholder={formData.status === 'blocker' ? 'Describe what is blocking the work...' : 'Describe the quality issue...'}
                   />
                 </div>
               )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Workers Count
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.workers_count}
-                    onChange={(e) => setFormData({ ...formData, workers_count: Number(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    min="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hours Worked
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={formData.hours_worked}
-                    onChange={(e) => setFormData({ ...formData, hours_worked: Number(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    min="0"
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,6 +514,27 @@ const WorkLogs: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Palette className="w-4 h-4 inline mr-1" />
+                  Color (for dashboard)
+                </label>
+                <div className="grid grid-cols-8 gap-2">
+                  {['blue', 'green', 'red', 'yellow', 'orange', 'purple', 'pink', 'gray'].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, color })}
+                      className={`h-10 rounded-lg border-2 transition-all ${
+                        formData.color === color ? 'border-gray-900 scale-110' : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: color === 'yellow' ? '#fbbf24' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : color === 'pink' ? '#ec4899' : color === 'gray' ? '#6b7280' : color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
@@ -485,7 +547,7 @@ const WorkLogs: React.FC = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Create Work Log
+                  {editingLog ? 'Update Work Log' : 'Create Work Log'}
                 </button>
               </div>
             </form>
@@ -510,7 +572,11 @@ const WorkLogs: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {workLogs.map((log) => (
-                <div key={log.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={log.id}
+                  className="border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white border border-gray-200"
+                  style={{ borderLeftColor: log.color || 'blue' }}
+                >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
@@ -524,14 +590,30 @@ const WorkLogs: React.FC = () => {
                         Contract: {log.contracts?.contract_number} - {log.contracts?.job_description}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center text-gray-600 text-sm mb-1">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {format(new Date(log.date), 'MMM dd, yyyy')}
+                    <div className="flex items-start space-x-2">
+                      <div className="text-right mr-2">
+                        <div className="flex items-center text-gray-600 text-sm mb-1">
+                          <Calendar className="w-4 h-4 mr-1" />
+                          {format(new Date(log.date), 'MMM dd, yyyy')}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Logged {format(new Date(log.created_at), 'MMM dd, HH:mm')}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        Logged {format(new Date(log.created_at), 'MMM dd, HH:mm')}
-                      </p>
+                      <button
+                        onClick={() => handleEdit(log)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(log.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -541,31 +623,12 @@ const WorkLogs: React.FC = () => {
 
                   {log.blocker_details && (
                     <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
-                      <p className="text-xs font-medium text-red-800 mb-1">Blocker Details:</p>
+                      <p className="text-xs font-medium text-red-800 mb-1">
+                        {log.status === 'blocker' ? 'Blocker Details:' : 'Issue Details:'}
+                      </p>
                       <p className="text-sm text-red-700">{log.blocker_details}</p>
                     </div>
                   )}
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {log.workers_count > 0 && (
-                      <div className="bg-blue-50 p-2 rounded-lg">
-                        <div className="flex items-center text-blue-600 mb-1">
-                          <Users className="w-3 h-3 mr-1" />
-                          <span className="text-xs font-medium">Workers</span>
-                        </div>
-                        <p className="text-sm font-bold text-blue-900">{log.workers_count}</p>
-                      </div>
-                    )}
-                    {log.hours_worked > 0 && (
-                      <div className="bg-purple-50 p-2 rounded-lg">
-                        <div className="flex items-center text-purple-600 mb-1">
-                          <Clock className="w-3 h-3 mr-1" />
-                          <span className="text-xs font-medium">Hours</span>
-                        </div>
-                        <p className="text-sm font-bold text-purple-900">{log.hours_worked}</p>
-                      </div>
-                    )}
-                  </div>
 
                   {log.notes && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
