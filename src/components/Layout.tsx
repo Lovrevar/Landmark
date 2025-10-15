@@ -1,4 +1,5 @@
 import React, { ReactNode, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth, Profile } from '../contexts/AuthContext'
 import {
   Building2,
@@ -20,6 +21,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout } = useAuth()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const navigate = useNavigate()
 
   const getMenuItems = () => {
     const menuConfig = {
@@ -84,6 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         onClick={() => {
                           setCurrentProfile(profile)
                           setShowProfileDropdown(false)
+                          navigate('/')
                         }}
                         className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 ${
                           currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
