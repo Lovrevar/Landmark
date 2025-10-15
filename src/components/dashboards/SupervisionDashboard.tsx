@@ -1,806 +1,596 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase, Subcontractor, Project, Invoice } from '../../lib/supabase'
-import { 
-  Users, 
-  Clock, 
-  DollarSign, 
-  AlertTriangle, 
-  Building2, 
-  Calendar,
+import { supabase } from '../../lib/supabase'
+import {
+  ClipboardCheck,
+  Users,
+  AlertTriangle,
   TrendingUp,
-  CheckCircle,
+  Calendar,
+  Clock,
+  CheckCircle2,
   XCircle,
-  Plus,
-  Eye,
+  Camera,
+  FileText,
+  HardHat,
+  AlertCircle,
   Wrench,
-  HardHat
+  BarChart3,
+  Activity
 } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format, isToday, parseISO, differenceInDays } from 'date-fns'
 
-interface FetchedSubcontractor extends Subcontractor {
-  project_phases: {
-    project_id: string
-  }
+interface WorkLog {
+  id: string
+  date: string
+  subcontractor_id: string
+  subcontractor_name?: string
+  workers_count: number
+  hours_worked: number
+  work_description: string
+  notes: string
+  photos: string[]
+  created_at: string
 }
 
-interface ProjectWithDetails extends Project {
-  subcontractors: FetchedSubcontractor[]
-  invoices: Invoice[]
-  total_spent: number
-  subcontractor_costs: number
-  overdue_subcontractors: number
+interface SubcontractorStatus {
+  id: string
+  name: string
+  project_name: string
+  deadline: string
+  progress: number
+  cost: number
+  budget_realized: number
+  days_until_deadline: number
+  is_overdue: boolean
+  recent_work_logs: number
+  last_activity: string | null
+}
+
+interface DailyStats {
+  active_workers: number
+  sites_worked_today: number
+  work_logs_today: number
+  subcontractors_active: number
+  overdue_tasks: number
+  critical_deadlines: number
 }
 
 const SupervisionDashboard: React.FC = () => {
-  const navigate = useNavigate()
-  const [projects, setProjects] = useState<ProjectWithDetails[]>([])
-  const [subcontractors, setSubcontractors] = useState<FetchedSubcontractor[]>([])
-  const [selectedProject, setSelectedProject] = useState<ProjectWithDetails | null>(null)
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    activeProjects: 0,
-    totalSubcontractors: 0,
-    onTimeProjects: 0,
-    overdueProjects: 0,
-    totalCosts: 0
+  const [todayLogs, setTodayLogs] = useState<WorkLog[]>([])
+  const [subcontractorStatus, setSubcontractorStatus] = useState<SubcontractorStatus[]>([])
+  const [stats, setStats] = useState<DailyStats>({
+    active_workers: 0,
+    sites_worked_today: 0,
+    work_logs_today: 0,
+    subcontractors_active: 0,
+    overdue_tasks: 0,
+    critical_deadlines: 0
   })
   const [loading, setLoading] = useState(true)
+  const [selectedView, setSelectedView] = useState<'today' | 'status' | 'issues'>('today')
 
   useEffect(() => {
-    fetchData()
+    fetchSupervisionData()
   }, [])
 
-  const fetchData = async () => {
+  const fetchSupervisionData = async () => {
     try {
-      // Fetch projects with related data
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('start_date', { ascending: false })
+      setLoading(true)
 
-      if (projectsError) throw projectsError
+      const today = format(new Date(), 'yyyy-MM-dd')
 
-      // Fetch all subcontractors
-      const { data: allSubcontractorsData, error: subError } = await supabase
-        .from('subcontractors')
+      const { data: workLogs, error: logsError } = await supabase
+        .from('work_logs')
         .select(`
           *,
-          project_phases!inner(project_id)
+          subcontractors (name)
+        `)
+        .eq('date', today)
+        .order('created_at', { ascending: false })
+
+      if (logsError) throw logsError
+
+      const { data: allSubcontractors, error: subError } = await supabase
+        .from('subcontractors')
+        .select(`
+          id,
+          name,
+          deadline,
+          progress,
+          cost,
+          budget_realized,
+          phase_id,
+          project_phases!inner (
+            project_id,
+            projects (name)
+          )
         `)
         .order('deadline', { ascending: true })
 
       if (subError) throw subError
 
-      // Fetch invoices for cost tracking
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('*')
+      const logsWithNames = (workLogs || []).map(log => ({
+        ...log,
+        subcontractor_name: log.subcontractors?.name || 'Unknown'
+      }))
 
-      if (invoicesError) throw invoicesError
+      const subcontractorStatusData: SubcontractorStatus[] = await Promise.all(
+        (allSubcontractors || []).map(async (sub: any) => {
+          const daysUntilDeadline = differenceInDays(parseISO(sub.deadline), new Date())
+          const isOverdue = daysUntilDeadline < 0 && sub.progress < 100
 
-      // Enhance projects with detailed information
-      const projectsWithDetails = await Promise.all(
-        (projectsData || []).map(async (project) => {
-          // Filter subcontractors for this specific project
-          const projectSubcontractors = (allSubcontractorsData || []).filter(sub => 
-            sub.project_phases.project_id === project.id
-          )
-          const projectInvoices = (invoicesData || []).filter(inv => inv.project_id === project.id)
+          const { data: recentLogs } = await supabase
+            .from('work_logs')
+            .select('id, date')
+            .eq('subcontractor_id', sub.id)
+            .gte('date', format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'))
+            .order('date', { ascending: false })
 
-          // Calculate metrics
-          const total_spent = projectInvoices.filter(inv => inv.paid).reduce((sum, inv) => sum + inv.amount, 0)
-          const subcontractor_costs = projectSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
-          const overdue_subcontractors = projectSubcontractors.filter(sub => 
-            new Date(sub.deadline) < new Date() && sub.progress < 100
-          ).length
+          const lastActivity = recentLogs && recentLogs.length > 0 ? recentLogs[0].date : null
 
           return {
-            ...project,
-            subcontractors: projectSubcontractors,
-            invoices: projectInvoices,
-            total_spent,
-            subcontractor_costs,
-            overdue_subcontractors
+            id: sub.id,
+            name: sub.name,
+            project_name: sub.project_phases?.projects?.name || 'Unknown Project',
+            deadline: sub.deadline,
+            progress: sub.progress,
+            cost: sub.cost,
+            budget_realized: sub.budget_realized,
+            days_until_deadline: daysUntilDeadline,
+            is_overdue: isOverdue,
+            recent_work_logs: recentLogs?.length || 0,
+            last_activity: lastActivity
           }
         })
       )
 
-      setProjects(projectsWithDetails)
-      setSubcontractors(allSubcontractorsData || [])
-
-      // Calculate overall stats
-      const totalProjects = projectsWithDetails.length
-      const activeProjects = projectsWithDetails.filter(p => p.status === 'In Progress').length
-      const totalSubcontractors = allSubcontractorsData?.length || 0
-      const onTimeProjects = projectsWithDetails.filter(p => 
-        p.end_date ? new Date(p.end_date) >= new Date() : true
+      const activeWorkersToday = logsWithNames.reduce((sum, log) => sum + (log.workers_count || 0), 0)
+      const uniqueSites = new Set(logsWithNames.map(log => log.subcontractor_id)).size
+      const overdueCount = subcontractorStatusData.filter(s => s.is_overdue).length
+      const criticalDeadlines = subcontractorStatusData.filter(
+        s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
       ).length
-      const overdueProjects = projectsWithDetails.filter(p => 
-        p.end_date ? new Date(p.end_date) < new Date() && p.status !== 'Completed' : false
-      ).length
-      const totalCosts = allSubcontractorsData?.reduce((sum, sub) => sum + sub.cost, 0) || 0
 
-      setStats({ 
-        totalProjects, 
-        activeProjects, 
-        totalSubcontractors, 
-        onTimeProjects, 
-        overdueProjects, 
-        totalCosts 
+      setTodayLogs(logsWithNames)
+      setSubcontractorStatus(subcontractorStatusData)
+      setStats({
+        active_workers: activeWorkersToday,
+        sites_worked_today: uniqueSites,
+        work_logs_today: logsWithNames.length,
+        subcontractors_active: subcontractorStatusData.filter(s => s.recent_work_logs > 0).length,
+        overdue_tasks: overdueCount,
+        critical_deadlines: criticalDeadlines
       })
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching supervision data:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const updateProgress = async (subcontractorId: string, newProgress: number) => {
-    const { error } = await supabase
-      .from('subcontractors')
-      .update({ progress: newProgress })
-      .eq('id', subcontractorId)
-
-    if (!error) {
-      await fetchData()
-    }
-  }
-
-  const getProjectPhase = (completion: number) => {
-    if (completion >= 90) return { phase: 'Finishing', color: 'text-purple-600' }
-    if (completion >= 70) return { phase: 'Installations', color: 'text-blue-600' }
-    if (completion >= 40) return { phase: 'Structural', color: 'text-orange-600' }
-    if (completion >= 10) return { phase: 'Foundation', color: 'text-yellow-600' }
-    return { phase: 'Planning', color: 'text-gray-600' }
-  }
-
-  const getBudgetStatus = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100
-    if (percentage > 90) return { status: 'Critical', color: 'text-red-600', bg: 'bg-red-50' }
-    if (percentage > 75) return { status: 'Warning', color: 'text-orange-600', bg: 'bg-orange-50' }
-    return { status: 'Good', color: 'text-green-600', bg: 'bg-green-50' }
   }
 
   if (loading) {
     return <div className="text-center py-12">Loading supervision dashboard...</div>
   }
 
+  const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)
+  const criticalDeadlines = subcontractorStatus.filter(
+    s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
+  )
+  const needsAttention = subcontractorStatus.filter(
+    s => s.recent_work_logs === 0 && s.progress < 100
+  )
+
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Site Supervision</h1>
+          <p className="text-gray-600 mt-1">Daily operations and quality control</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Today</p>
+          <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'EEEE, MMMM dd, yyyy')}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Active Workers</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.active_workers}</p>
+            </div>
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+              <HardHat className="w-6 h-6 text-blue-600" />
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">On site today</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Work Logs</p>
+              <p className="text-2xl font-bold text-green-600">{stats.work_logs_today}</p>
+            </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeProjects}</p>
+              <ClipboardCheck className="w-6 h-6 text-green-600" />
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Submitted today</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Active Sites</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.sites_worked_today}</p>
+            </div>
             <div className="p-2 bg-purple-100 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Subcontractors</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalSubcontractors}</p>
+              <Wrench className="w-6 h-6 text-purple-600" />
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Work in progress</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Active Crews</p>
+              <p className="text-2xl font-bold text-teal-600">{stats.subcontractors_active}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">On Time</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.onTimeProjects}</p>
+            <div className="p-2 bg-teal-100 rounded-lg">
+              <Users className="w-6 h-6 text-teal-600" />
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">This week</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Overdue</p>
+              <p className="text-2xl font-bold text-red-600">{stats.overdue_tasks}</p>
+            </div>
             <div className="p-2 bg-red-100 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">At Risk</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.overdueProjects}</p>
-            </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Need action</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-orange-600" />
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Critical</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.critical_deadlines}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Costs</p>
-              <p className="text-2xl font-bold text-gray-900">
-                €{stats.totalCosts.toLocaleString()}
-              </p>
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Clock className="w-6 h-6 text-orange-600" />
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Due this week</p>
         </div>
       </div>
 
-      {/* Projects Overview */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Building2 className="w-5 h-5 mr-2 text-blue-600" />
-            Projects Under Supervision
-          </h2>
-        </div>
-        <div className="p-6">
-          {projects.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No projects available</p>
-          ) : (
-            <div className="space-y-6">
-              {projects.map((project) => {
-                const phaseInfo = getProjectPhase(project.completion_percentage)
-                const budgetStatus = getBudgetStatus(project.total_spent, project.budget)
-                const daysRemaining = project.end_date ? differenceInDays(new Date(project.end_date), new Date()) : null
-                const isProjectOverdue = daysRemaining !== null && daysRemaining < 0 && project.status !== 'Completed'
+      <div className="flex space-x-2 border-b border-gray-200">
+        <button
+          onClick={() => setSelectedView('today')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            selectedView === 'today'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Activity className="w-4 h-4 inline mr-2" />
+          Today's Activity
+        </button>
+        <button
+          onClick={() => setSelectedView('status')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            selectedView === 'status'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 inline mr-2" />
+          Contractor Status
+        </button>
+        <button
+          onClick={() => setSelectedView('issues')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            selectedView === 'issues'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <AlertCircle className="w-4 h-4 inline mr-2" />
+          Issues & Alerts
+        </button>
+      </div>
 
-                return (
-                  <div key={project.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                    {/* Project Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{project.name}</h3>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {project.status}
-                          </span>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${phaseInfo.color} bg-gray-100`}>
-                            {phaseInfo.phase} Phase
-                          </span>
-                          {project.overdue_subcontractors > 0 && (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                              {project.overdue_subcontractors} Overdue
-                            </span>
-                          )}
+      {selectedView === 'today' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <ClipboardCheck className="w-5 h-5 mr-2 text-blue-600" />
+                Today's Work Logs ({todayLogs.length})
+              </h2>
+            </div>
+            <div className="p-6">
+              {todayLogs.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">No work logs submitted today</p>
+                  <p className="text-sm text-gray-500">Work logs will appear here as they are submitted</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {todayLogs.map((log) => (
+                    <div key={log.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 mb-1">{log.subcontractor_name}</h3>
+                          <p className="text-sm text-gray-600">{log.work_description}</p>
                         </div>
-                        <p className="text-gray-600 mb-2">{project.location}</p>
-                        <p className="text-sm text-gray-500">Investor: {project.investor || 'N/A'}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setSelectedProject(project)}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-sm font-medium transition-colors duration-200"
-                        >
-                          <Eye className="w-4 h-4 mr-1 inline" />
-                          View Details
-                        </button>
-                        <button
-                          onClick={() => navigate(`/projects/${project.id}`)}
-                          className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-md text-sm font-medium transition-colors duration-200"
-                        >
-                          <Wrench className="w-4 h-4 mr-1 inline" />
-                          Manage
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Project Metrics Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Timeline</span>
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {format(new Date(project.start_date), 'MMM dd, yyyy')}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          to {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : 'TBD'}
-                        </p>
-                        {daysRemaining !== null && (
-                          <p className={`text-xs font-medium mt-1 ${
-                            isProjectOverdue ? 'text-red-600' : daysRemaining < 30 ? 'text-orange-600' : 'text-green-600'
-                          }`}>
-                            {daysRemaining >= 0 ? `${daysRemaining} days left` : `${Math.abs(daysRemaining)} days overdue`}
-                          </p>
-                        )}
+                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                          {format(new Date(log.created_at), 'HH:mm')}
+                        </span>
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Budget Status</span>
-                          <DollarSign className="w-4 h-4 text-gray-400" />
+                      <div className="grid grid-cols-3 gap-4 mb-3">
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <div className="flex items-center text-blue-600 mb-1">
+                            <Users className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Workers</span>
+                          </div>
+                          <p className="text-lg font-bold text-blue-900">{log.workers_count}</p>
                         </div>
-                        <p className="text-sm font-medium text-gray-900">
-                          €{project.budget.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          €{project.total_spent.toLocaleString()} spent
-                        </p>
-                        <p className={`text-xs font-medium mt-1 ${budgetStatus.color}`}>
-                          {((project.total_spent / project.budget) * 100).toFixed(1)}% used
-                        </p>
+                        <div className="bg-purple-50 p-3 rounded-lg">
+                          <div className="flex items-center text-purple-600 mb-1">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Hours</span>
+                          </div>
+                          <p className="text-lg font-bold text-purple-900">{log.hours_worked}</p>
+                        </div>
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <div className="flex items-center text-green-600 mb-1">
+                            <Camera className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Photos</span>
+                          </div>
+                          <p className="text-lg font-bold text-green-900">{log.photos?.length || 0}</p>
+                        </div>
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Subcontractors</span>
-                          <Users className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {project.subcontractors.length} active
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          €{project.subcontractor_costs.toLocaleString()} total
-                        </p>
-                        {project.overdue_subcontractors > 0 && (
-                          <p className="text-xs font-medium text-red-600 mt-1">
-                            {project.overdue_subcontractors} overdue
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Completion</span>
-                          <TrendingUp className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-sm font-medium text-gray-900">{project.completion_percentage}%</p>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${project.completion_percentage}%` }}
-                          ></div>
-                        </div>
-                        <p className={`text-xs font-medium mt-1 ${phaseInfo.color}`}>
-                          {phaseInfo.phase}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quick Subcontractor Overview */}
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium text-gray-900 mb-3">Active Subcontractors</h4>
-                      {project.subcontractors.length === 0 ? (
-                        <p className="text-gray-500 text-sm">No subcontractors assigned yet</p>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {project.subcontractors.slice(0, 6).map((sub) => {
-                            const isSubOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
-                            return (
-                              <div key={sub.id} className={`p-3 rounded-lg border ${
-                                isSubOverdue ? 'border-red-200 bg-red-50' :
-                                sub.progress === 100 ? 'border-green-200 bg-green-50' :
-                                'border-gray-200 bg-gray-50'
-                              }`}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-medium text-gray-900 truncate">
-                                    {sub.name}
-                                  </span>
-                                  <span className={`text-xs font-semibold ${
-                                    isSubOverdue ? 'text-red-600' :
-                                    sub.progress === 100 ? 'text-green-600' :
-                                    'text-blue-600'
-                                  }`}>
-                                    {sub.progress}%
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                                  <div 
-                                    className={`h-1.5 rounded-full ${
-                                      isSubOverdue ? 'bg-red-500' :
-                                      sub.progress === 100 ? 'bg-green-500' :
-                                      'bg-blue-500'
-                                    }`}
-                                    style={{ width: `${sub.progress}%` }}
-                                  ></div>
-                                </div>
-                                <p className="text-xs text-gray-600 truncate">{sub.job_description}</p>
-                                <p className={`text-xs font-medium mt-1 ${
-                                  isSubOverdue ? 'text-red-600' : 'text-gray-500'
-                                }`}>
-                                  Due: {format(new Date(sub.deadline), 'MMM dd')}
-                                </p>
-                              </div>
-                            )
-                          })}
+                      {log.notes && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
+                          <p className="text-sm text-gray-600">{log.notes}</p>
                         </div>
                       )}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Project Details Modal */}
-      {selectedProject && (
-        (() => {
-          const daysRemaining = selectedProject.end_date ? differenceInDays(new Date(selectedProject.end_date), new Date()) : null
-          const isProjectOverdue = daysRemaining !== null && daysRemaining < 0 && selectedProject.status !== 'Completed'
-          const phaseInfo = getProjectPhase(selectedProject.completion_percentage)
-          const budgetStatus = getBudgetStatus(selectedProject.total_spent, selectedProject.budget)
-          
-          return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">{selectedProject.name}</h3>
-                  <p className="text-gray-600 mt-1">{selectedProject.location}</p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedProject.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      selectedProject.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedProject.status}
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${phaseInfo.color} bg-gray-100`}>
-                      {phaseInfo.phase} Phase
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedProject(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              {/* Project Information Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                {/* Timeline Information */}
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Project Timeline
-                  </h4>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm text-blue-700">Start Date</p>
-                      <p className="font-medium text-blue-900">{format(new Date(selectedProject.start_date), 'MMM dd, yyyy')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-blue-700">Target Completion</p>
-                      <p className="font-medium text-blue-900">
-                        {selectedProject.end_date ? format(new Date(selectedProject.end_date), 'MMM dd, yyyy') : 'TBD'}
-                      </p>
-                    </div>
-                    {daysRemaining !== null && (
-                      <div>
-                        <p className="text-sm text-blue-700">Days Remaining</p>
-                        <p className={`font-medium ${
-                          daysRemaining < 0 ? 'text-red-600' : daysRemaining < 30 ? 'text-orange-600' : 'text-blue-900'
-                        }`}>
-                          {daysRemaining >= 0 ? `${daysRemaining} days` : `${Math.abs(daysRemaining)} days overdue`}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-blue-700">Current Phase</p>
-                      <p className={`font-medium ${phaseInfo.color}`}>{phaseInfo.phase}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Budget Information */}
-                <div className={`p-4 rounded-lg ${budgetStatus.bg}`}>
-                  <h4 className={`font-semibold mb-3 flex items-center ${budgetStatus.color}`}>
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Budget Overview
-                  </h4>
-                  <div className="space-y-2">
-                    <div>
-                      <p className={`text-sm ${budgetStatus.color}`}>Total Budget</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.budget.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className={`text-sm ${budgetStatus.color}`}>Amount Spent</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.total_spent.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className={`text-sm ${budgetStatus.color}`}>Remaining</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>
-                        €{(selectedProject.budget - selectedProject.total_spent).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className={`text-sm ${budgetStatus.color}`}>Subcontractor Costs</p>
-                      <p className={`font-medium ${budgetStatus.color}`}>€{selectedProject.subcontractor_costs.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Information */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-900 mb-3 flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Progress Status
-                  </h4>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm text-green-700">Overall Completion</p>
-                      <p className="font-medium text-green-900">{selectedProject.completion_percentage}%</p>
-                      <div className="w-full bg-green-200 rounded-full h-2 mt-1">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${selectedProject.completion_percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-green-700">Subcontractors</p>
-                      <p className="font-medium text-green-900">{selectedProject.subcontractors.length}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Phase Budget Breakdown */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4">Budget Allocation by Construction Phase</h4>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {[
-                    { phase: 'Foundation', budget: selectedProject.budget * 0.25, color: 'bg-yellow-100 text-yellow-800' },
-                    { phase: 'Structural', budget: selectedProject.budget * 0.35, color: 'bg-orange-100 text-orange-800' },
-                    { phase: 'Installations', budget: selectedProject.budget * 0.25, color: 'bg-blue-100 text-blue-800' },
-                    { phase: 'Finishing', budget: selectedProject.budget * 0.15, color: 'bg-purple-100 text-purple-800' }
-                  ].map((phaseData) => (
-                    <div key={phaseData.phase} className="bg-white border border-gray-200 p-4 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900">{phaseData.phase}</span>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${phaseData.color}`}>
-                          {((phaseData.budget / selectedProject.budget) * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900">€{phaseData.budget.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600 mt-1">Allocated budget</p>
-                    </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Subcontractors Detail */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4">Subcontractor Work Packages</h4>
-                <div className="space-y-3">
-                  {selectedProject.subcontractors.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">No subcontractors assigned yet</p>
-                      <button className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-                        Add Subcontractor
-                      </button>
-                    </div>
-                  ) : (
-                    selectedProject.subcontractors.map((sub) => {
-                      const isSubOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
-                      const daysUntilDeadline = differenceInDays(new Date(sub.deadline), new Date())
-                      
-                      return (
-                        <div key={sub.id} className={`p-4 rounded-lg border ${
-                          isSubOverdue ? 'border-red-200 bg-red-50' :
-                          sub.progress === 100 ? 'border-green-200 bg-green-50' :
-                          'border-gray-200 bg-gray-50'
-                        }`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h5 className="font-medium text-gray-900">{sub.name}</h5>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  sub.progress === 100 ? 'bg-green-100 text-green-800' :
-                                  isSubOverdue ? 'bg-red-100 text-red-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {sub.progress === 100 ? 'Completed' : isSubOverdue ? 'Overdue' : 'In Progress'}
-                                </span>
-                              </div>
-                              
-                              <p className="text-sm text-gray-600 mb-2">{sub.job_description}</p>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                                <div>
-                                  <p className="text-xs text-gray-500">Deadline</p>
-                                  <p className={`text-sm font-medium ${isSubOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                                    {format(new Date(sub.deadline), 'MMM dd, yyyy')}
-                                    {daysUntilDeadline >= 0 ? ` (${daysUntilDeadline}d)` : ` (${Math.abs(daysUntilDeadline)}d overdue)`}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">Contract Value</p>
-                                  <p className="text-sm font-medium text-gray-900">€{sub.cost.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">Contact</p>
-                                  <p className="text-sm font-medium text-gray-900">{sub.contact}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs text-gray-600">Progress</span>
-                                    <span className="text-xs font-medium">{sub.progress}%</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className={`h-2 rounded-full ${
-                                        sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
-                                      }`}
-                                      style={{ width: `${sub.progress}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={sub.progress}
-                                  onChange={(e) => updateProgress(sub.id, parseInt(e.target.value))}
-                                  className="w-24"
-                                  title="Update progress"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Hiring Recommendations */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4">Phase-Based Hiring Guide</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    {
-                      phase: 'Foundation Phase',
-                      budget: selectedProject.budget * 0.25,
-                      contractors: ['Excavation Company', 'Concrete Specialists', 'Foundation Engineers'],
-                      timeframe: '2-3 months',
-                      color: 'border-yellow-200 bg-yellow-50'
-                    },
-                    {
-                      phase: 'Structural Phase', 
-                      budget: selectedProject.budget * 0.35,
-                      contractors: ['Steel Workers', 'Concrete Contractors', 'Structural Engineers'],
-                      timeframe: '4-6 months',
-                      color: 'border-orange-200 bg-orange-50'
-                    },
-                    {
-                      phase: 'Installations Phase',
-                      budget: selectedProject.budget * 0.25, 
-                      contractors: ['Electrical Contractors', 'Plumbing Specialists', 'HVAC Systems'],
-                      timeframe: '3-4 months',
-                      color: 'border-blue-200 bg-blue-50'
-                    },
-                    {
-                      phase: 'Finishing Phase',
-                      budget: selectedProject.budget * 0.15,
-                      contractors: ['Interior Contractors', 'Painters', 'Flooring Specialists'],
-                      timeframe: '2-3 months', 
-                      color: 'border-purple-200 bg-purple-50'
-                    }
-                  ].map((phase) => (
-                    <div key={phase.phase} className={`p-4 rounded-lg border ${phase.color}`}>
-                      <h5 className="font-medium text-gray-900 mb-2">{phase.phase}</h5>
-                      <p className="text-sm text-gray-600 mb-2">Budget: €{phase.budget.toLocaleString()}</p>
-                      <p className="text-sm text-gray-600 mb-2">Duration: {phase.timeframe}</p>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Recommended Contractors:</p>
-                        <ul className="text-xs text-gray-700 space-y-1">
-                          {phase.contractors.map((contractor, idx) => (
-                            <li key={idx}>• {contractor}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Critical Issues */}
-              {(selectedProject.overdue_subcontractors > 0 || selectedProject.pending_invoices > 0) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-red-900 mb-3 flex items-center">
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Critical Issues Requiring Attention
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedProject.overdue_subcontractors > 0 && (
-                      <div className="flex items-center text-red-800">
-                        <XCircle className="w-4 h-4 mr-2" />
-                        {selectedProject.overdue_subcontractors} subcontractor(s) are behind schedule
-                      </div>
-                    )}
-                    {selectedProject.pending_invoices > 0 && (
-                      <div className="flex items-center text-red-800">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {selectedProject.pending_invoices} invoice(s) pending payment
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Action Buttons */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => navigate(`/projects/${selectedProject.id}`)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  Full Project View
-                </button>
-                <button
-                  onClick={() => navigate('/subcontractors')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  Manage Subcontractors
-                </button>
-              </div>
+      {selectedView === 'status' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                Subcontractor Performance Overview
+              </h2>
+            </div>
+            <div className="p-6">
+              {subcontractorStatus.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No subcontractors found</p>
+              ) : (
+                <div className="space-y-3">
+                  {subcontractorStatus.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className={`border rounded-lg p-4 ${
+                        sub.is_overdue
+                          ? 'border-red-300 bg-red-50'
+                          : sub.days_until_deadline <= 7 && sub.progress < 100
+                          ? 'border-orange-300 bg-orange-50'
+                          : sub.progress === 100
+                          ? 'border-green-300 bg-green-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h3 className="font-semibold text-gray-900">{sub.name}</h3>
+                            {sub.progress === 100 && (
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            )}
+                            {sub.is_overdue && (
+                              <XCircle className="w-5 h-5 text-red-600" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">{sub.project_name}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-2xl font-bold ${
+                            sub.progress === 100 ? 'text-green-600' :
+                            sub.is_overdue ? 'text-red-600' :
+                            'text-blue-600'
+                          }`}>
+                            {sub.progress}%
+                          </div>
+                          <p className="text-xs text-gray-500">Complete</p>
+                        </div>
+                      </div>
+
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                        <div
+                          className={`h-2 rounded-full ${
+                            sub.progress === 100 ? 'bg-green-600' :
+                            sub.is_overdue ? 'bg-red-600' :
+                            'bg-blue-600'
+                          }`}
+                          style={{ width: `${sub.progress}%` }}
+                        ></div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-3">
+                        <div>
+                          <p className="text-xs text-gray-600">Deadline</p>
+                          <p className={`text-sm font-medium ${
+                            sub.is_overdue ? 'text-red-600' :
+                            sub.days_until_deadline <= 7 ? 'text-orange-600' :
+                            'text-gray-900'
+                          }`}>
+                            {format(parseISO(sub.deadline), 'MMM dd')}
+                            {sub.is_overdue && (
+                              <span className="ml-1">({Math.abs(sub.days_until_deadline)}d over)</span>
+                            )}
+                            {!sub.is_overdue && sub.days_until_deadline <= 7 && (
+                              <span className="ml-1">({sub.days_until_deadline}d left)</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Budget Used</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {((sub.budget_realized / sub.cost) * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Last Activity</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : 'No logs'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Weekly Logs</p>
+                          <p className="text-sm font-medium text-gray-900">{sub.recent_work_logs}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
-          )
-        })()
       )}
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => navigate('/subcontractors')}
-            className="flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors duration-200"
-          >
-            <Users className="w-6 h-6 text-blue-600 mr-3" />
-            <span className="font-medium text-blue-900">Manage Subcontractors</span>
-          </button>
-          
-          <button
-            className="flex items-center justify-center p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors duration-200"
-          >
-            <Plus className="w-6 h-6 text-orange-600 mr-3" />
-            <span className="font-medium text-orange-900">Add Work Log</span>
-          </button>
+      {selectedView === 'issues' && (
+        <div className="space-y-6">
+          {overdueTasks.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-red-200">
+              <div className="p-6 border-b border-red-200 bg-red-50">
+                <h2 className="text-xl font-semibold text-red-900 flex items-center">
+                  <XCircle className="w-5 h-5 mr-2" />
+                  Overdue Tasks ({overdueTasks.length})
+                </h2>
+              </div>
+              <div className="p-6 space-y-3">
+                {overdueTasks.map((sub) => (
+                  <div key={sub.id} className="border border-red-200 bg-red-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{sub.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
+                        <p className="text-sm text-red-600 font-medium mt-2">
+                          {Math.abs(sub.days_until_deadline)} days overdue • {sub.progress}% complete
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Deadline was</p>
+                        <p className="text-sm font-medium text-red-700">
+                          {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {criticalDeadlines.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-orange-200">
+              <div className="p-6 border-b border-orange-200 bg-orange-50">
+                <h2 className="text-xl font-semibold text-orange-900 flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Critical Deadlines - Next 7 Days ({criticalDeadlines.length})
+                </h2>
+              </div>
+              <div className="p-6 space-y-3">
+                {criticalDeadlines.map((sub) => (
+                  <div key={sub.id} className="border border-orange-200 bg-orange-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{sub.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
+                        <p className="text-sm text-orange-600 font-medium mt-2">
+                          {sub.days_until_deadline} days remaining • {sub.progress}% complete
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Due</p>
+                        <p className="text-sm font-medium text-orange-700">
+                          {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {needsAttention.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-yellow-200">
+              <div className="p-6 border-b border-yellow-200 bg-yellow-50">
+                <h2 className="text-xl font-semibold text-yellow-900 flex items-center">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  No Recent Activity ({needsAttention.length})
+                </h2>
+              </div>
+              <div className="p-6 space-y-3">
+                {needsAttention.map((sub) => (
+                  <div key={sub.id} className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{sub.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
+                        <p className="text-sm text-yellow-600 font-medium mt-2">
+                          No work logs this week • {sub.progress}% complete
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Last activity</p>
+                        <p className="text-sm font-medium text-yellow-700">
+                          {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : 'None'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {overdueTasks.length === 0 && criticalDeadlines.length === 0 && needsAttention.length === 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
+              <p className="text-gray-600">No critical issues or alerts at this time</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
