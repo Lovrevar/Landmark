@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Home, Search, Filter } from 'lucide-react'
+import { Home, Search, Filter, DollarSign, Edit2, FileText, Trash2 } from 'lucide-react'
 
 interface ApartmentListItem {
   id: string
@@ -212,63 +212,127 @@ const ApartmentManagement: React.FC = () => {
           <p className="text-gray-600">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredApartments.map((apartment) => (
-                  <tr key={apartment.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Home className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="text-sm font-medium text-gray-900">{apartment.number}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {apartment.project_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {apartment.building_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {apartment.floor}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {apartment.size_m2} m²
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                      €{apartment.price.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        apartment.status === 'Available' ? 'bg-blue-100 text-blue-800' :
-                        apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                        apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {apartment.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {apartment.buyer_name || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredApartments.map((apartment) => {
+            const downPayment = 0
+            const totalPaid = downPayment
+            const salePrice = apartment.price
+            const paymentProgress = `€${totalPaid.toLocaleString()} / €${salePrice.toLocaleString()}`
+
+            return (
+              <div
+                key={apartment.id}
+                className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                  apartment.status === 'Sold' ? 'border-green-200 bg-green-50' :
+                  apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50' :
+                  'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">Unit {apartment.number}</h4>
+                    <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                      apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
+                      apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {apartment.status}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs mb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Project:</span>
+                    <span className="font-medium text-gray-900">{apartment.project_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Building:</span>
+                    <span className="font-medium text-gray-900">{apartment.building_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Size:</span>
+                    <span className="font-medium text-gray-900">{apartment.size_m2} m²</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Price:</span>
+                    <span className="font-medium text-gray-900">€{apartment.price.toLocaleString()}</span>
+                  </div>
+                  {apartment.status === 'Sold' && apartment.buyer_name && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Buyer:</span>
+                      <span className="font-medium text-gray-900">{apartment.buyer_name}</span>
+                    </div>
+                  )}
+                  {apartment.status === 'Sold' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Sale Price:</span>
+                      <span className="font-medium text-gray-900">€{apartment.price.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {apartment.status === 'Sold' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Down Payment:</span>
+                      <span className="font-medium text-gray-900">€{downPayment.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {apartment.status === 'Sold' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Payment Progress:</span>
+                      <span className="font-medium text-gray-900">{paymentProgress}</span>
+                    </div>
+                  )}
+                  {apartment.status === 'Sold' && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                      <span className="font-bold text-green-600">+€{salePrice.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => console.log('Wire payment', apartment.id)}
+                      className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Wire
+                    </button>
+                    <button
+                      onClick={() => console.log('View payments', apartment.id)}
+                      className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      Payments
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => console.log('Edit apartment', apartment.id)}
+                      className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => console.log('View details', apartment.id)}
+                      className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
+                    >
+                      Details
+                    </button>
+                    <button
+                      onClick={() => console.log('Delete apartment', apartment.id)}
+                      className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
