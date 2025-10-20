@@ -19,6 +19,13 @@ const InvestorsManagement: React.FC = () => {
   const [showInvestmentForm, setShowInvestmentForm] = useState(false)
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
   const [editingInvestment, setEditingInvestment] = useState<ProjectInvestment | null>(null)
+  const [showWirePaymentModal, setShowWirePaymentModal] = useState(false)
+  const [selectedInvestmentForPayment, setSelectedInvestmentForPayment] = useState<ProjectInvestment | null>(null)
+  const [wirePayment, setWirePayment] = useState({
+    amount: 0,
+    payment_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  })
   const [newInvestor, setNewInvestor] = useState({
     name: '',
     type: 'individual' as const,
@@ -299,6 +306,46 @@ const InvestorsManagement: React.FC = () => {
       grace_period: investment.grace_period || 0
     })
     setShowInvestmentForm(true)
+  }
+
+  const handleWirePayment = (investment: ProjectInvestment) => {
+    setSelectedInvestmentForPayment(investment)
+    setWirePayment({
+      amount: 0,
+      payment_date: new Date().toISOString().split('T')[0],
+      notes: ''
+    })
+    setShowWirePaymentModal(true)
+  }
+
+  const submitWirePayment = async () => {
+    if (!selectedInvestmentForPayment || !wirePayment.amount) {
+      alert('Please enter payment amount')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('funding_payments')
+        .insert({
+          investor_id: selectedInvestmentForPayment.investor_id,
+          project_investment_id: selectedInvestmentForPayment.id,
+          amount: wirePayment.amount,
+          payment_date: wirePayment.payment_date,
+          payment_type: 'investor_payment',
+          notes: wirePayment.notes
+        })
+
+      if (error) throw error
+
+      alert('Payment recorded successfully')
+      setShowWirePaymentModal(false)
+      setSelectedInvestmentForPayment(null)
+      await fetchData()
+    } catch (error) {
+      console.error('Error recording payment:', error)
+      alert('Error recording payment')
+    }
   }
 
   const handleEditInvestor = (investor: Investor) => {
@@ -1048,6 +1095,13 @@ const InvestorsManagement: React.FC = () => {
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
+                                <button
+                                  onClick={() => handleWirePayment(investment)}
+                                  className="p-1 text-gray-400 hover:text-green-600"
+                                  title="Wire payment"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </button>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                   investment.investment_type === 'equity' ? 'bg-green-100 text-green-800' :
                                   investment.investment_type === 'loan' ? 'bg-blue-100 text-blue-800' :
@@ -1148,6 +1202,90 @@ const InvestorsManagement: React.FC = () => {
                   <p className="text-gray-700">{selectedInvestor.notes}</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wire Payment Modal */}
+      {showWirePaymentModal && selectedInvestmentForPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Record Payment</h3>
+                <button
+                  onClick={() => setShowWirePaymentModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">Investor</p>
+                <p className="font-medium text-gray-900">{selectedInvestor?.name}</p>
+                <p className="text-sm text-gray-600 mt-2">Investment Amount</p>
+                <p className="font-medium text-gray-900">€{selectedInvestmentForPayment.amount.toLocaleString()}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Amount (€) *
+                  </label>
+                  <input
+                    type="number"
+                    value={wirePayment.amount}
+                    onChange={(e) => setWirePayment({ ...wirePayment, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={wirePayment.payment_date}
+                    onChange={(e) => setWirePayment({ ...wirePayment, payment_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={wirePayment.notes}
+                    onChange={(e) => setWirePayment({ ...wirePayment, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Payment notes..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowWirePaymentModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitWirePayment}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Record Payment
+                </button>
+              </div>
             </div>
           </div>
         </div>
