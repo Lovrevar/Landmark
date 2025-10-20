@@ -373,3 +373,27 @@ export type ProjectMilestone = {
   order_index: number
   created_at: string
 }
+
+export type BankCreditPayment = {
+  id: string
+  bank_credit_id: string
+  bank_id: string
+  amount: number
+  payment_date: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type InvestorPayment = {
+  id: string
+  project_investment_id: string
+  investor_id: string
+  amount: number
+  payment_date: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}

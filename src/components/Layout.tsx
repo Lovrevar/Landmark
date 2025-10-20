@@ -51,7 +51,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Projects', icon: Building2, path: '/investment-projects' },
-        { name: 'Investors', icon: Users, path: '/investors' }
+        { name: 'Investors', icon: Users, path: '/investors' },
+        { name: 'Payments', icon: DollarSign, path: '/funding-payments' }
       ]
     }
 
