@@ -154,13 +154,23 @@ const DirectorDashboard: React.FC = () => {
       // Calculate stats for each project
       const projectsWithStats = await Promise.all(
         (projectsData || []).map(async (project) => {
-          // Get total expenses from invoices
-          const { data: invoices } = await supabase
-            .from('invoices')
-            .select('amount')
+          // Get total expenses from wire_payments through contracts
+          const { data: contracts } = await supabase
+            .from('contracts')
+            .select('id')
             .eq('project_id', project.id)
 
-          const totalExpenses = invoices?.reduce((sum, inv) => sum + inv.amount, 0) || 0
+          const contractIds = contracts?.map(c => c.id) || []
+
+          let totalExpenses = 0
+          if (contractIds.length > 0) {
+            const { data: payments } = await supabase
+              .from('wire_payments')
+              .select('amount')
+              .in('contract_id', contractIds)
+
+            totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
+          }
 
           // Get apartment sales revenue
           const { data: apartments } = await supabase
@@ -171,10 +181,29 @@ const DirectorDashboard: React.FC = () => {
 
           const apartmentSales = apartments?.reduce((sum, apt) => sum + apt.price, 0) || 0
 
+          // Get investors for this project
+          const { data: projectInvestments } = await supabase
+            .from('project_investments')
+            .select('investor_id')
+            .eq('project_id', project.id)
+
+          const investorIds = projectInvestments?.map(pi => pi.investor_id) || []
+          let investorNames = 'N/A'
+
+          if (investorIds.length > 0) {
+            const { data: investors } = await supabase
+              .from('investors')
+              .select('name')
+              .in('id', investorIds)
+
+            investorNames = investors?.map(i => i.name).join(', ') || 'N/A'
+          }
+
           return {
             ...project,
             total_expenses: totalExpenses,
-            apartment_sales: apartmentSales
+            apartment_sales: apartmentSales,
+            investor: investorNames
           }
         })
       )
@@ -416,7 +445,7 @@ const DirectorDashboard: React.FC = () => {
                     €{project.apartment_sales.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {project.investor || 'N/A'}
+                    {project.investor}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
