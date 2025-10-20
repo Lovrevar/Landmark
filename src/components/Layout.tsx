@@ -1,5 +1,5 @@
 import React, { ReactNode, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, Profile } from '../contexts/AuthContext'
 import {
   Building2,
@@ -118,13 +118,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.name}>
-                  <a
-                    href={item.path}
+                  <Link
+                    to={item.path}
                     className="flex items-center px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200"
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
