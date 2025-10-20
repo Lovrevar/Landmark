@@ -10,10 +10,14 @@ export interface User {
   role: 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
 }
 
+export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
+
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   loading: boolean
+  currentProfile: Profile
+  setCurrentProfile: (profile: Profile) => void
   login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
 }
@@ -36,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [currentProfile, setCurrentProfile] = useState<Profile>('General')
 
   const fetchUserData = async (authUser: SupabaseUser): Promise<User | null> => {
     try {
@@ -176,6 +181,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated,
     loading,
+    currentProfile,
+    setCurrentProfile,
     login,
     logout
   }
