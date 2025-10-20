@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   loading: boolean
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
 }
 
@@ -131,6 +132,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) {
+        console.error('Login error:', error)
+        return false
+      }
+
+      if (data.user) {
+        const userData = await fetchUserData(data.user)
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+          return true
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.error('Login exception:', error)
+      return false
+    }
+  }
+
   const logout = async () => {
     try {
       await supabase.auth.signOut()
@@ -147,6 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated,
     loading,
+    login,
     logout
   }
 
