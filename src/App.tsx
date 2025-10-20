@@ -166,7 +166,7 @@ function AppContent() {
           }
         />
         <Route
-          path="/sales-payments"
+          path="/apartment_payments"
           element={
             <ProtectedRoute>
               <SalesPaymentsManagement />
