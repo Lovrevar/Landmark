@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { ProjectWithBuildings } from '../types/salesTypes'
+import { ProjectWithBuildings, BuildingWithUnits } from '../types/salesTypes'
 
 export const useSalesData = () => {
   const [projects, setProjects] = useState<ProjectWithBuildings[]>([])
@@ -21,6 +21,10 @@ export const useSalesData = () => {
         .from('buildings')
         .select('*')
 
+      const { data: apartmentsData } = await supabase
+        .from('apartments')
+        .select('*')
+
       const { data: garagesData } = await supabase
         .from('garages')
         .select('*')
@@ -33,10 +37,19 @@ export const useSalesData = () => {
         .from('customers')
         .select('*')
 
+      // Enrich buildings with their units
+      const enrichedBuildings = (buildingsData || []).map(building => ({
+        ...building,
+        apartments: (apartmentsData || []).filter((a: any) => a.building_id === building.id),
+        garages: (garagesData || []).filter((g: any) => g.building_id === building.id),
+        repositories: (repositoriesData || []).filter((r: any) => r.building_id === building.id)
+      })) as BuildingWithUnits[]
+
+      // Enrich projects with their buildings
       const enrichedProjects = (projectsData || []).map(project => ({
         ...project,
-        buildings: (buildingsData || []).filter((b: any) => b.project_id === project.id),
-        building_count: (buildingsData || []).filter((b: any) => b.project_id === project.id).length
+        buildings: enrichedBuildings.filter((b: any) => b.project_id === project.id),
+        building_count: enrichedBuildings.filter((b: any) => b.project_id === project.id).length
       }))
 
       setProjects(enrichedProjects)
