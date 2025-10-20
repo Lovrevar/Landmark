@@ -1,30 +1,42 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Home, Search, Filter, DollarSign } from 'lucide-react'
-
-interface ApartmentListItem {
-  id: string
-  number: string
-  floor: number
-  size_m2: number
-  price: number
-  status: string
-  buyer_name: string | null
-  project_name: string
-  building_name: string
-  project_id: string
-  building_id: string
-}
+import { useAuth } from '../contexts/AuthContext'
+import { Home, Search, Filter, DollarSign, Plus, Building2 } from 'lucide-react'
+import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithUser } from './Apartments/types/apartmentTypes'
+import * as apartmentService from './Apartments/services/apartmentService'
+import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
+import { SingleApartmentModal } from './Apartments/forms/SingleApartmentModal'
+import { EditApartmentModal } from './Apartments/forms/EditApartmentModal'
+import { ApartmentDetailsModal } from './Apartments/forms/ApartmentDetailsModal'
+import { WirePaymentModal } from './Apartments/forms/WirePaymentModal'
+import { PaymentHistoryModal } from './Apartments/forms/PaymentHistoryModal'
+import { EditPaymentModal } from './Apartments/forms/EditPaymentModal'
 
 const ApartmentManagement: React.FC = () => {
-  const [apartments, setApartments] = useState<ApartmentListItem[]>([])
+  const { user } = useAuth()
+  const [apartments, setApartments] = useState<ApartmentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterProject, setFilterProject] = useState<string>('all')
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
-  const [buildings, setBuildings] = useState<Array<{ id: string; name: string }>>([])
+  const [buildings, setBuildings] = useState<Array<{ id: string; name: string; project_id: string }>>([])
+
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [showSingleModal, setShowSingleModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showWireModal, setShowWireModal] = useState(false)
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false)
+  const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
+
+  const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+  const [payments, setPayments] = useState<PaymentWithUser[]>([])
+  const [editingPayment, setEditingPayment] = useState<PaymentWithUser | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -40,6 +52,19 @@ const ApartmentManagement: React.FC = () => {
 
       if (apartmentsError) throw apartmentsError
 
+      const { data: allProjects } = await supabase
+        .from('projects')
+        .select('id, name')
+        .order('name')
+
+      const { data: allBuildings } = await supabase
+        .from('buildings')
+        .select('id, name, project_id')
+        .order('name')
+
+      setProjects(allProjects || [])
+      setBuildings(allBuildings || [])
+
       const projectIds = [...new Set(apartmentsData?.map((a: any) => a.project_id) || [])]
       const buildingIds = [...new Set(apartmentsData?.map((a: any) => a.building_id).filter(Boolean) || [])]
 
@@ -53,10 +78,7 @@ const ApartmentManagement: React.FC = () => {
         .select('id, name')
         .in('id', buildingIds)
 
-      setProjects(projectsData || [])
-      setBuildings(buildingsData || [])
-
-      const apartmentsWithDetails: ApartmentListItem[] = (apartmentsData || []).map((apt: any) => {
+      const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: any) => {
         const project = projectsData?.find(p => p.id === apt.project_id)
         const building = buildingsData?.find(b => b.id === apt.building_id)
 
@@ -83,6 +105,138 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
+  const handleCreateBulk = async (data: BulkApartmentData) => {
+    try {
+      await apartmentService.createBulkApartments(data)
+      setShowBulkModal(false)
+      fetchData()
+      alert('Apartments created successfully!')
+    } catch (error) {
+      console.error('Error creating apartments:', error)
+      alert('Error creating apartments')
+    }
+  }
+
+  const handleCreateSingle = async (data: ApartmentFormData) => {
+    try {
+      await apartmentService.createSingleApartment(data)
+      setShowSingleModal(false)
+      fetchData()
+      alert('Apartment created successfully!')
+    } catch (error) {
+      console.error('Error creating apartment:', error)
+      alert('Error creating apartment')
+    }
+  }
+
+  const handleUpdateApartment = async (id: string, updates: Partial<ApartmentWithDetails>) => {
+    try {
+      await apartmentService.updateApartment(id, updates)
+      setShowEditModal(false)
+      setSelectedApartment(null)
+      fetchData()
+      alert('Apartment updated successfully!')
+    } catch (error) {
+      console.error('Error updating apartment:', error)
+      alert('Error updating apartment')
+    }
+  }
+
+  const handleDeleteApartment = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this apartment?')) return
+
+    try {
+      await apartmentService.deleteApartment(id)
+      fetchData()
+      alert('Apartment deleted successfully!')
+    } catch (error) {
+      console.error('Error deleting apartment:', error)
+      alert('Error deleting apartment')
+    }
+  }
+
+  const handleAddPayment = async () => {
+    if (!selectedApartment || !user?.id) {
+      alert('Missing apartment or user information')
+      return
+    }
+
+    if (paymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      await apartmentService.addPaymentToApartment(
+        selectedApartment.id,
+        paymentAmount,
+        paymentDate,
+        paymentNotes,
+        user.id
+      )
+      setShowWireModal(false)
+      setPaymentAmount(0)
+      setPaymentDate('')
+      setPaymentNotes('')
+      setSelectedApartment(null)
+      fetchData()
+      alert('Payment recorded successfully!')
+    } catch (error) {
+      console.error('Error adding payment:', error)
+      alert('Error recording payment')
+    }
+  }
+
+  const openPaymentHistory = async (apartment: ApartmentWithDetails) => {
+    try {
+      const paymentsData = await apartmentService.fetchApartmentPayments(apartment.id)
+      setPayments(paymentsData)
+      setSelectedApartment(apartment)
+      setShowPaymentHistory(true)
+    } catch (error) {
+      console.error('Error fetching payments:', error)
+      alert('Error loading payment history')
+    }
+  }
+
+  const handleUpdatePayment = async (
+    paymentId: string,
+    amount: number,
+    date: string,
+    notes: string,
+    oldAmount: number
+  ) => {
+    if (!selectedApartment) return
+
+    try {
+      await apartmentService.updatePayment(paymentId, amount, date, notes, selectedApartment.id, oldAmount)
+      setShowEditPaymentModal(false)
+      setEditingPayment(null)
+      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
+      setPayments(paymentsData)
+      fetchData()
+      alert('Payment updated successfully!')
+    } catch (error) {
+      console.error('Error updating payment:', error)
+      alert('Error updating payment')
+    }
+  }
+
+  const handleDeletePayment = async (paymentId: string, amount: number) => {
+    if (!selectedApartment) return
+
+    try {
+      await apartmentService.deletePayment(paymentId, selectedApartment.id, amount)
+      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
+      setPayments(paymentsData)
+      fetchData()
+      alert('Payment deleted successfully!')
+    } catch (error) {
+      console.error('Error deleting payment:', error)
+      alert('Error deleting payment')
+    }
+  }
+
   const filteredApartments = apartments.filter(apt => {
     const matchesSearch =
       apt.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,11 +260,27 @@ const ApartmentManagement: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Apartments</h1>
-          <p className="text-gray-600 mt-2">Browse all apartments across projects</p>
+          <p className="text-gray-600 mt-2">Manage all apartments across projects</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">Total Apartments</p>
-          <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
+        <div className="flex items-center space-x-3">
+          <div className="text-right mr-4">
+            <p className="text-sm text-gray-600">Total Apartments</p>
+            <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
+          </div>
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Bulk Create Apartments
+          </button>
+          <button
+            onClick={() => setShowSingleModal(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <Building2 className="w-4 h-4 mr-2" />
+            Add Single Apartment
+          </button>
         </div>
       </div>
 
@@ -153,7 +323,7 @@ const ApartmentManagement: React.FC = () => {
             >
               <option value="all">All Buildings</option>
               {buildings
-                .filter(b => filterProject === 'all' || apartments.some(a => a.building_id === b.id && a.project_id === filterProject))
+                .filter(b => filterProject === 'all' || b.project_id === filterProject)
                 .map(building => (
                   <option key={building.id} value={building.id}>{building.name}</option>
                 ))}
@@ -288,14 +458,20 @@ const ApartmentManagement: React.FC = () => {
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => console.log('Wire payment', apartment.id)}
+                      onClick={() => {
+                        setSelectedApartment(apartment)
+                        setPaymentAmount(0)
+                        setPaymentDate(new Date().toISOString().split('T')[0])
+                        setPaymentNotes('')
+                        setShowWireModal(true)
+                      }}
                       className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
                     >
                       <DollarSign className="w-3 h-3 mr-1" />
                       Wire
                     </button>
                     <button
-                      onClick={() => console.log('View payments', apartment.id)}
+                      onClick={() => openPaymentHistory(apartment)}
                       className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
                     >
                       Payments
@@ -303,19 +479,25 @@ const ApartmentManagement: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <button
-                      onClick={() => console.log('Edit apartment', apartment.id)}
+                      onClick={() => {
+                        setSelectedApartment(apartment)
+                        setShowEditModal(true)
+                      }}
                       className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => console.log('View details', apartment.id)}
+                      onClick={() => {
+                        setSelectedApartment(apartment)
+                        setShowDetailsModal(true)
+                      }}
                       className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
                     >
                       Details
                     </button>
                     <button
-                      onClick={() => console.log('Delete apartment', apartment.id)}
+                      onClick={() => handleDeleteApartment(apartment.id)}
                       className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
                     >
                       Delete
@@ -342,6 +524,86 @@ const ApartmentManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      <BulkApartmentModal
+        visible={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        projects={projects}
+        buildings={buildings}
+        onSubmit={handleCreateBulk}
+      />
+
+      <SingleApartmentModal
+        visible={showSingleModal}
+        onClose={() => setShowSingleModal(false)}
+        projects={projects}
+        buildings={buildings}
+        onSubmit={handleCreateSingle}
+      />
+
+      <EditApartmentModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedApartment(null)
+        }}
+        apartment={selectedApartment}
+        onSubmit={handleUpdateApartment}
+      />
+
+      <ApartmentDetailsModal
+        visible={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false)
+          setSelectedApartment(null)
+        }}
+        apartment={selectedApartment}
+      />
+
+      <WirePaymentModal
+        visible={showWireModal}
+        onClose={() => {
+          setShowWireModal(false)
+          setSelectedApartment(null)
+          setPaymentAmount(0)
+          setPaymentDate('')
+          setPaymentNotes('')
+        }}
+        apartment={selectedApartment}
+        amount={paymentAmount}
+        paymentDate={paymentDate}
+        notes={paymentNotes}
+        onAmountChange={setPaymentAmount}
+        onDateChange={setPaymentDate}
+        onNotesChange={setPaymentNotes}
+        onSubmit={handleAddPayment}
+      />
+
+      <PaymentHistoryModal
+        visible={showPaymentHistory}
+        onClose={() => {
+          setShowPaymentHistory(false)
+          setSelectedApartment(null)
+          setPayments([])
+        }}
+        apartment={selectedApartment}
+        payments={payments}
+        onEditPayment={(payment) => {
+          setEditingPayment(payment)
+          setShowEditPaymentModal(true)
+        }}
+        onDeletePayment={handleDeletePayment}
+      />
+
+      <EditPaymentModal
+        visible={showEditPaymentModal}
+        onClose={() => {
+          setShowEditPaymentModal(false)
+          setEditingPayment(null)
+        }}
+        payment={editingPayment}
+        onSubmit={handleUpdatePayment}
+      />
     </div>
   )
 }
