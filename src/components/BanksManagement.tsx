@@ -17,14 +17,6 @@ const BanksManagement: React.FC = () => {
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingBank, setEditingBank] = useState<Bank | null>(null)
-  const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
-  const [showWirePaymentModal, setShowWirePaymentModal] = useState(false)
-  const [selectedCreditForPayment, setSelectedCreditForPayment] = useState<BankCredit | null>(null)
-  const [wirePayment, setWirePayment] = useState({
-    amount: 0,
-    payment_date: new Date().toISOString().split('T')[0],
-    notes: ''
-  })
   const [newBank, setNewBank] = useState({
     name: '',
     contact_person: '',
@@ -222,58 +214,24 @@ const BanksManagement: React.FC = () => {
       // Extract credit type and seniority from the combined value
       const [creditType, seniority] = newCredit.credit_type.split('_')
       const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
+      
+      const { error } = await supabase
+        .from('bank_credits')
+        .insert({
+          ...newCredit,
+          credit_type: actualCreditType,
+          credit_seniority: seniority,
+          outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
+          monthly_payment: calculateRateAmount()
+        })
 
-      const creditData = {
-        ...newCredit,
-        credit_type: actualCreditType,
-        credit_seniority: seniority,
-        outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
-        monthly_payment: calculateRateAmount()
-      }
-
-      if (editingCredit) {
-        // Update existing credit
-        const { error } = await supabase
-          .from('bank_credits')
-          .update(creditData)
-          .eq('id', editingCredit.id)
-
-        if (error) throw error
-      } else {
-        // Insert new credit
-        const { error } = await supabase
-          .from('bank_credits')
-          .insert(creditData)
-
-        if (error) throw error
-      }
+      if (error) throw error
 
       resetCreditForm()
       await fetchData()
     } catch (error) {
-      console.error('Error saving credit:', error)
-      alert('Error saving credit facility.')
-    }
-  }
-
-  const deleteCredit = async (creditId: string) => {
-    if (!confirm('Are you sure you want to delete this credit facility?')) return
-
-    try {
-      const { error } = await supabase
-        .from('bank_credits')
-        .delete()
-        .eq('id', creditId)
-
-      if (error) throw error
-      await fetchData()
-      if (selectedBank) {
-        const updatedBank = banks.find(b => b.id === selectedBank.id)
-        if (updatedBank) setSelectedBank(updatedBank)
-      }
-    } catch (error) {
-      console.error('Error deleting credit:', error)
-      alert('Error deleting credit facility.')
+      console.error('Error adding credit:', error)
+      alert('Error adding credit facility.')
     }
   }
 
@@ -311,70 +269,7 @@ const BanksManagement: React.FC = () => {
       repayment_type: 'monthly',
       credit_seniority: 'senior'
     })
-    setEditingCredit(null)
     setShowCreditForm(false)
-  }
-
-  const handleEditCredit = (credit: BankCredit) => {
-    setEditingCredit(credit)
-    const creditType = `${credit.credit_type}_${credit.credit_seniority || 'senior'}`
-    setNewCredit({
-      bank_id: credit.bank_id,
-      project_id: credit.project_id,
-      credit_type: creditType as any,
-      amount: credit.amount,
-      interest_rate: credit.interest_rate,
-      start_date: credit.start_date,
-      maturity_date: credit.maturity_date || '',
-      outstanding_balance: credit.outstanding_balance,
-      monthly_payment: credit.monthly_payment || 0,
-      purpose: credit.purpose || '',
-      usage_expiration_date: credit.usage_expiration_date || '',
-      grace_period: credit.grace_period || 0,
-      repayment_type: credit.repayment_type || 'monthly',
-      credit_seniority: credit.credit_seniority || 'senior'
-    })
-    setShowCreditForm(true)
-  }
-
-  const handleWirePayment = (credit: BankCredit) => {
-    setSelectedCreditForPayment(credit)
-    setWirePayment({
-      amount: 0,
-      payment_date: new Date().toISOString().split('T')[0],
-      notes: ''
-    })
-    setShowWirePaymentModal(true)
-  }
-
-  const submitWirePayment = async () => {
-    if (!selectedCreditForPayment || !wirePayment.amount) {
-      alert('Please enter payment amount')
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('funding_payments')
-        .insert({
-          bank_id: selectedCreditForPayment.bank_id,
-          bank_credit_id: selectedCreditForPayment.id,
-          amount: wirePayment.amount,
-          payment_date: wirePayment.payment_date,
-          payment_type: 'bank_payment',
-          notes: wirePayment.notes
-        })
-
-      if (error) throw error
-
-      alert('Payment recorded successfully')
-      setShowWirePaymentModal(false)
-      setSelectedCreditForPayment(null)
-      await fetchData()
-    } catch (error) {
-      console.error('Error recording payment:', error)
-      alert('Error recording payment')
-    }
   }
 
   const handleEditBank = (bank: Bank) => {
@@ -671,9 +566,7 @@ const BanksManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'}
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900">Add New Credit Facility</h3>
                 <button
                   onClick={resetCreditForm}
                   className="text-gray-400 hover:text-gray-600"
@@ -873,7 +766,7 @@ const BanksManagement: React.FC = () => {
                   onClick={addCredit}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  {editingCredit ? 'Update' : 'Add'} Credit
+                  Add Credit
                 </button>
               </div>
             </div>
@@ -1017,27 +910,6 @@ const BanksManagement: React.FC = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
-                                <button
-                                  onClick={() => handleEditCredit(credit)}
-                                  className="p-1 text-gray-400 hover:text-blue-600"
-                                  title="Edit credit"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteCredit(credit.id)}
-                                  className="p-1 text-gray-400 hover:text-red-600"
-                                  title="Delete credit"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleWirePayment(credit)}
-                                  className="p-1 text-gray-400 hover:text-green-600"
-                                  title="Wire payment"
-                                >
-                                  <DollarSign className="w-4 h-4" />
-                                </button>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCreditTypeColor(credit.credit_type)}`}>
                                   {credit.credit_type.replace('_', ' ').toUpperCase()}
                                 </span>
@@ -1110,92 +982,6 @@ const BanksManagement: React.FC = () => {
                   <p className="text-gray-700">{selectedBank.notes}</p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Wire Payment Modal */}
-      {showWirePaymentModal && selectedCreditForPayment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Record Payment</h3>
-                <button
-                  onClick={() => setShowWirePaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600">Bank</p>
-                <p className="font-medium text-gray-900">{selectedBank?.name}</p>
-                <p className="text-sm text-gray-600 mt-2">Credit Amount</p>
-                <p className="font-medium text-gray-900">€{selectedCreditForPayment.amount.toLocaleString()}</p>
-                <p className="text-sm text-gray-600 mt-2">Outstanding Balance</p>
-                <p className="font-medium text-red-600">€{selectedCreditForPayment.outstanding_balance.toLocaleString()}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Amount (€) *
-                  </label>
-                  <input
-                    type="number"
-                    value={wirePayment.amount}
-                    onChange={(e) => setWirePayment({ ...wirePayment, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={wirePayment.payment_date}
-                    onChange={(e) => setWirePayment({ ...wirePayment, payment_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    value={wirePayment.notes}
-                    onChange={(e) => setWirePayment({ ...wirePayment, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Payment notes..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowWirePaymentModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={submitWirePayment}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  Record Payment
-                </button>
-              </div>
             </div>
           </div>
         </div>

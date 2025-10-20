@@ -1,44 +1,114 @@
 import { supabase } from '../../../lib/supabase'
 import { UnitType, BulkCreateData } from '../types/salesTypes'
 
+export const fetchProjects = async () => {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .order('name')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchBuildings = async () => {
+  const { data, error } = await supabase
+    .from('buildings')
+    .select('*')
+    .order('name')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchApartments = async () => {
+  const { data, error } = await supabase
+    .from('apartments')
+    .select('*')
+    .order('number')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchGarages = async () => {
+  const { data, error } = await supabase
+    .from('garages')
+    .select('*')
+    .order('number')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchRepositories = async () => {
+  const { data, error } = await supabase
+    .from('repositories')
+    .select('*')
+    .order('number')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchCustomers = async () => {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('name')
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchSales = async () => {
+  const { data, error } = await supabase
+    .from('sales')
+    .select(`
+      *,
+      customers(name, surname, email, phone)
+    `)
+
+  if (error) throw error
+  return data || []
+}
+
+export const createBulkBuildings = async (projectId: string, quantity: number) => {
+  const buildingsToCreate = []
+  for (let i = 1; i <= quantity; i++) {
+    buildingsToCreate.push({
+      project_id: projectId,
+      name: `Building ${i}`,
+      description: `Building ${i}`,
+      total_floors: 10
+    })
+  }
+
+  const { error } = await supabase
+    .from('buildings')
+    .insert(buildingsToCreate)
+
+  if (error) throw error
+}
+
+export const createBuilding = async (projectId: string, name: string, description: string, totalFloors: number) => {
+  const { error } = await supabase
+    .from('buildings')
+    .insert({
+      project_id: projectId,
+      name,
+      description,
+      total_floors: totalFloors
+    })
+
+  if (error) throw error
+}
+
 export const deleteBuilding = async (buildingId: string) => {
   const { error } = await supabase
     .from('buildings')
     .delete()
     .eq('id', buildingId)
-
-  if (error) throw error
-}
-
-export const createBulkBuildings = async (projectId: string, quantity: number) => {
-  const buildings = Array.from({ length: quantity }, (_, i) => ({
-    name: `Building ${i + 1}`,
-    project_id: projectId,
-    description: '',
-    total_floors: 0
-  }))
-
-  const { error } = await supabase
-    .from('buildings')
-    .insert(buildings)
-
-  if (error) throw error
-}
-
-export const createBuilding = async (
-  projectId: string,
-  name: string,
-  description: string,
-  totalFloors: number
-) => {
-  const { error } = await supabase
-    .from('buildings')
-    .insert({
-      name,
-      project_id: projectId,
-      description,
-      total_floors: totalFloors
-    })
 
   if (error) throw error
 }
@@ -52,20 +122,27 @@ export const createUnit = async (
   sizeM2: number,
   price: number
 ) => {
-  const tableName = unitType === 'apartment' ? 'apartments' :
-                    unitType === 'garage' ? 'garages' : 'repositories'
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
+
+  const unitData: any = {
+    building_id: buildingId,
+    number,
+    floor,
+    size_m2: sizeM2,
+    price,
+    status: 'Available'
+  }
+
+  if (unitType === 'apartment') {
+    unitData.project_id = projectId
+  }
 
   const { error } = await supabase
     .from(tableName)
-    .insert({
-      number,
-      building_id: buildingId,
-      project_id: projectId,
-      floor,
-      size: sizeM2,
-      price,
-      status: 'available'
-    })
+    .insert(unitData)
 
   if (error) throw error
 }
@@ -74,39 +151,56 @@ export const bulkCreateUnits = async (
   unitType: UnitType,
   buildingId: string,
   projectId: string,
-  data: BulkCreateData
+  bulkData: BulkCreateData
 ) => {
-  const units = []
-  let unitNumber = data.starting_number
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
 
-  for (let floor = data.start_floor; floor <= data.end_floor; floor++) {
-    for (let i = 0; i < data.units_per_floor; i++) {
-      units.push({
-        number: unitNumber.toString(),
+  const prefix = bulkData.number_prefix || (
+    unitType === 'apartment' ? 'A' :
+    unitType === 'garage' ? 'G' : 'R'
+  )
+
+  const unitsToCreate = []
+
+  for (let floor = bulkData.floor_start; floor <= bulkData.floor_end; floor++) {
+    for (let unit = 1; unit <= bulkData.units_per_floor; unit++) {
+      const sizeVariation = (Math.random() - 0.5) * bulkData.size_variation
+      const size = Math.round(bulkData.base_size + sizeVariation)
+      const floorPremium = (floor - bulkData.floor_start) * bulkData.floor_increment
+      const price = Math.round((size * bulkData.base_price_per_m2) + floorPremium)
+
+      const unitData: any = {
         building_id: buildingId,
-        project_id: projectId,
-        floor,
-        size: data.base_size_m2,
-        price: data.base_price,
-        status: 'available'
-      })
-      unitNumber++
+        number: `${prefix}${floor}${unit.toString().padStart(2, '0')}`,
+        floor: floor,
+        size_m2: size,
+        price: price,
+        status: 'Available'
+      }
+
+      if (unitType === 'apartment') {
+        unitData.project_id = projectId
+      }
+
+      unitsToCreate.push(unitData)
     }
   }
 
-  const tableName = unitType === 'apartment' ? 'apartments' :
-                    unitType === 'garage' ? 'garages' : 'repositories'
-
   const { error } = await supabase
     .from(tableName)
-    .insert(units)
+    .insert(unitsToCreate)
 
   if (error) throw error
 }
 
 export const deleteUnit = async (unitId: string, unitType: UnitType) => {
-  const tableName = unitType === 'apartment' ? 'apartments' :
-                    unitType === 'garage' ? 'garages' : 'repositories'
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
 
   const { error } = await supabase
     .from(tableName)
@@ -117,8 +211,10 @@ export const deleteUnit = async (unitId: string, unitType: UnitType) => {
 }
 
 export const updateUnitStatus = async (unitId: string, unitType: UnitType, newStatus: string) => {
-  const tableName = unitType === 'apartment' ? 'apartments' :
-                    unitType === 'garage' ? 'garages' : 'repositories'
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
 
   const { error } = await supabase
     .from(tableName)
@@ -165,8 +261,8 @@ export const unlinkRepositoryFromApartment = async (apartmentId: string) => {
 }
 
 export const createCustomer = async (
-  name: string,
-  surname: string,
+  firstName: string,
+  lastName: string,
   email: string,
   phone: string,
   address: string
@@ -174,27 +270,18 @@ export const createCustomer = async (
   const { data, error } = await supabase
     .from('customers')
     .insert({
-      name,
-      surname,
+      name: firstName,
+      surname: lastName,
       email,
-      phone,
-      address,
-      category: 'interested'
+      phone: phone || '',
+      address: address || '',
+      status: 'buyer'
     })
     .select()
     .single()
 
   if (error) throw error
   return data
-}
-
-export const updateCustomerStatus = async (customerId: string, status: string) => {
-  const { error } = await supabase
-    .from('customers')
-    .update({ category: status })
-    .eq('id', customerId)
-
-  if (error) throw error
 }
 
 export const createSale = async (
@@ -209,34 +296,57 @@ export const createSale = async (
   contractSigned: boolean,
   notes: string
 ) => {
-  const { error } = await supabase
+  const remaining_amount = salePrice - downPayment
+  const unitIdField = unitType === 'apartment' ? 'apartment_id'
+                    : unitType === 'garage' ? 'garage_id'
+                    : 'repository_id'
+
+  const { data, error } = await supabase
     .from('sales')
     .insert({
-      apartment_id: unitType === 'apartment' ? unitId : null,
-      garage_id: unitType === 'garage' ? unitId : null,
-      repository_id: unitType === 'repository' ? unitId : null,
+      [unitIdField]: unitId,
       customer_id: customerId,
       sale_price: salePrice,
       payment_method: paymentMethod,
       down_payment: downPayment,
+      total_paid: downPayment,
+      remaining_amount: remaining_amount,
       monthly_payment: monthlyPayment,
       sale_date: saleDate,
       contract_signed: contractSigned,
-      notes
+      notes: notes
     })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export const updateCustomerStatus = async (customerId: string, status: string) => {
+  const { error } = await supabase
+    .from('customers')
+    .update({ status })
+    .eq('id', customerId)
 
   if (error) throw error
 }
 
-export const updateUnitAfterSale = async (unitId: string, unitType: UnitType, buyerName: string) => {
-  const tableName = unitType === 'apartment' ? 'apartments' :
-                    unitType === 'garage' ? 'garages' : 'repositories'
+export const updateUnitAfterSale = async (
+  unitId: string,
+  unitType: UnitType,
+  buyerName: string
+) => {
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
 
   const { error } = await supabase
     .from(tableName)
     .update({
-      status: 'sold',
-      owner_name: buyerName
+      status: 'Sold',
+      buyer_name: buyerName
     })
     .eq('id', unitId)
 

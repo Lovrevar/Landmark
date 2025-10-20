@@ -1,15 +1,31 @@
-import { Customer, Apartment } from '../../../lib/supabase'
-
-export type CustomerCategory = 'interested' | 'reserved' | 'contract' | 'sold'
+import { Customer } from '../../../lib/supabase'
 
 export interface CustomerWithApartments extends Customer {
-  apartments?: Apartment[]
-  apartment_count?: number
+  apartments?: Array<{
+    id: string
+    number: string
+    floor: number
+    size_m2: number
+    project_name: string
+    sale_price: number
+    sale_date: string
+  }>
+}
+
+export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out'
+
+export interface CategoryInfo {
+  id: CustomerCategory
+  label: string
+  icon: any
+  color: string
+  count: number
 }
 
 export interface CustomerCounts {
   interested: number
-  reserved: number
-  contract: number
-  sold: number
+  hot_lead: number
+  negotiating: number
+  buyer: number
+  backed_out: number
 }

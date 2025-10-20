@@ -1,63 +1,156 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import { Apartment, Garage, Repository, Customer } from '../../../lib/supabase'
 import { ProjectWithBuildings, BuildingWithUnits } from '../types/salesTypes'
+import * as salesService from '../services/salesService'
 
 export const useSalesData = () => {
   const [projects, setProjects] = useState<ProjectWithBuildings[]>([])
-  const [garages, setGarages] = useState<any[]>([])
-  const [repositories, setRepositories] = useState<any[]>([])
-  const [customers, setCustomers] = useState<any[]>([])
+  const [buildings, setBuildings] = useState<BuildingWithUnits[]>([])
+  const [apartments, setApartments] = useState<Apartment[]>([])
+  const [garages, setGarages] = useState<Garage[]>([])
+  const [repositories, setRepositories] = useState<Repository[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*')
-        .order('name')
+      const projectsData = await salesService.fetchProjects()
+      const buildingsData = await salesService.fetchBuildings()
+      const apartmentsData = await salesService.fetchApartments()
+      const garagesData = await salesService.fetchGarages()
+      const repositoriesData = await salesService.fetchRepositories()
+      const customersData = await salesService.fetchCustomers()
+      const salesData = await salesService.fetchSales()
 
-      const { data: buildingsData } = await supabase
-        .from('buildings')
-        .select('*')
+      const enhancedApartments = apartmentsData.map(apartment => {
+        const sale = salesData.find(s => s.apartment_id === apartment.id)
+        if (sale && apartment.status === 'Sold') {
+          return {
+            ...apartment,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : apartment.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return apartment
+      })
 
-      const { data: apartmentsData } = await supabase
-        .from('apartments')
-        .select('*')
+      const enhancedGarages = garagesData.map(garage => {
+        const sale = salesData.find(s => s.garage_id === garage.id)
+        if (sale && garage.status === 'Sold') {
+          return {
+            ...garage,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : garage.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return garage
+      })
 
-      const { data: garagesData } = await supabase
-        .from('garages')
-        .select('*')
+      const enhancedRepositories = repositoriesData.map(repository => {
+        const sale = salesData.find(s => s.repository_id === repository.id)
+        if (sale && repository.status === 'Sold') {
+          return {
+            ...repository,
+            sale_info: {
+              sale_price: sale.sale_price,
+              payment_method: sale.payment_method,
+              down_payment: sale.down_payment,
+              total_paid: sale.total_paid,
+              remaining_amount: sale.remaining_amount,
+              monthly_payment: sale.monthly_payment,
+              sale_date: sale.sale_date,
+              contract_signed: sale.contract_signed,
+              buyer_name: sale.customers ? `${sale.customers.name} ${sale.customers.surname}` : repository.buyer_name || 'Unknown',
+              buyer_email: sale.customers?.email || '',
+              buyer_phone: sale.customers?.phone || ''
+            }
+          }
+        }
+        return repository
+      })
 
-      const { data: repositoriesData } = await supabase
-        .from('repositories')
-        .select('*')
+      const buildingsWithUnits = buildingsData.map(building => {
+        const buildingApartments = enhancedApartments.filter(apt => apt.building_id === building.id)
+        const buildingGarages = enhancedGarages.filter(gar => gar.building_id === building.id)
+        const buildingRepositories = enhancedRepositories.filter(rep => rep.building_id === building.id)
 
-      const { data: customersData } = await supabase
-        .from('customers')
-        .select('*')
+        const total_apartments = buildingApartments.length
+        const total_garages = buildingGarages.length
+        const total_repositories = buildingRepositories.length
+        const sold_apartments = buildingApartments.filter(apt => apt.status === 'Sold').length
+        const sold_garages = buildingGarages.filter(gar => gar.status === 'Sold').length
+        const sold_repositories = buildingRepositories.filter(rep => rep.status === 'Sold').length
 
-      // Enrich buildings with their units
-      const enrichedBuildings = (buildingsData || []).map(building => ({
-        ...building,
-        apartments: (apartmentsData || []).filter((a: any) => a.building_id === building.id),
-        garages: (garagesData || []).filter((g: any) => g.building_id === building.id),
-        repositories: (repositoriesData || []).filter((r: any) => r.building_id === building.id)
-      })) as BuildingWithUnits[]
+        const total_revenue =
+          buildingApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0) +
+          buildingGarages.filter(gar => gar.status === 'Sold').reduce((sum, gar) => sum + gar.price, 0) +
+          buildingRepositories.filter(rep => rep.status === 'Sold').reduce((sum, rep) => sum + rep.price, 0)
 
-      // Enrich projects with their buildings
-      const enrichedProjects = (projectsData || []).map(project => ({
-        ...project,
-        buildings: enrichedBuildings.filter((b: any) => b.project_id === project.id),
-        building_count: enrichedBuildings.filter((b: any) => b.project_id === project.id).length
-      }))
+        return {
+          ...building,
+          apartments: buildingApartments,
+          garages: buildingGarages,
+          repositories: buildingRepositories,
+          total_apartments,
+          total_garages,
+          total_repositories,
+          sold_apartments,
+          sold_garages,
+          sold_repositories,
+          total_revenue
+        }
+      })
 
-      setProjects(enrichedProjects)
-      setGarages(garagesData || [])
-      setRepositories(repositoriesData || [])
-      setCustomers(customersData || [])
+      const projectsWithBuildings = projectsData.map(project => {
+        const projectBuildings = buildingsWithUnits.filter(b => b.project_id === project.id)
+        const total_buildings = projectBuildings.length
+        const total_units = projectBuildings.reduce((sum, b) =>
+          sum + b.total_apartments + b.total_garages + b.total_repositories, 0)
+        const sold_units = projectBuildings.reduce((sum, b) =>
+          sum + b.sold_apartments + b.sold_garages + b.sold_repositories, 0)
+        const total_revenue = projectBuildings.reduce((sum, b) => sum + b.total_revenue, 0)
+
+        return {
+          ...project,
+          buildings: projectBuildings,
+          total_buildings,
+          total_units,
+          sold_units,
+          total_revenue
+        }
+      })
+
+      setProjects(projectsWithBuildings)
+      setBuildings(buildingsWithUnits)
+      setApartments(enhancedApartments)
+      setGarages(enhancedGarages)
+      setRepositories(enhancedRepositories)
+      setCustomers(customersData)
     } catch (error) {
-      console.error('Error fetching sales data:', error)
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
@@ -69,6 +162,8 @@ export const useSalesData = () => {
 
   return {
     projects,
+    buildings,
+    apartments,
     garages,
     repositories,
     customers,
