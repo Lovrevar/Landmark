@@ -43,11 +43,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loadUserData = async (authUser: SupabaseUser) => {
     try {
       console.log('Loading user data for auth_user_id:', authUser.id)
-      const { data: userData, error } = await supabase
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      )
+
+      const queryPromise = supabase
         .from('users')
         .select('id, username, role, email')
         .eq('auth_user_id', authUser.id)
         .maybeSingle()
+
+      const { data: userData, error } = await Promise.race([queryPromise, timeoutPromise]) as any
 
       console.log('User data result:', { userData, error })
 
