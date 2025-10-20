@@ -188,8 +188,16 @@ const DirectorDashboard: React.FC = () => {
             .select('investor_id, amount')
             .eq('project_id', project.id)
 
-          let fundingDisplay = 'N/A'
+          // Get bank credits for this project
+          const { data: bankCredits } = await supabase
+            .from('bank_credits')
+            .select('bank_id, amount')
+            .eq('project_id', project.id)
 
+          let fundingDisplay = 'N/A'
+          const fundingSources: Array<{ name: string; amount: number }> = []
+
+          // Add investors
           if (projectInvestments && projectInvestments.length > 0) {
             const investorIds = projectInvestments.map(pi => pi.investor_id)
             const { data: investors } = await supabase
@@ -197,17 +205,48 @@ const DirectorDashboard: React.FC = () => {
               .select('id, name')
               .in('id', investorIds)
 
-            if (investors && investors.length > 0) {
-              const totalInvestment = projectInvestments.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
-
-              const fundingBreakdown = projectInvestments.map(pi => {
+            if (investors) {
+              projectInvestments.forEach(pi => {
                 const investor = investors.find(inv => inv.id === pi.investor_id)
-                const percentage = totalInvestment > 0 ? (parseFloat(pi.amount) / totalInvestment * 100).toFixed(0) : 0
-                return `${investor?.name || 'Unknown'} ${percentage}%`
+                if (investor) {
+                  fundingSources.push({
+                    name: investor.name,
+                    amount: parseFloat(pi.amount)
+                  })
+                }
               })
-
-              fundingDisplay = fundingBreakdown.join(', ')
             }
+          }
+
+          // Add bank credits
+          if (bankCredits && bankCredits.length > 0) {
+            const bankIds = bankCredits.map(bc => bc.bank_id)
+            const { data: banks } = await supabase
+              .from('banks')
+              .select('id, name')
+              .in('id', bankIds)
+
+            if (banks) {
+              bankCredits.forEach(bc => {
+                const bank = banks.find(b => b.id === bc.bank_id)
+                if (bank) {
+                  fundingSources.push({
+                    name: bank.name,
+                    amount: parseFloat(bc.amount)
+                  })
+                }
+              })
+            }
+          }
+
+          // Calculate percentages
+          if (fundingSources.length > 0) {
+            const totalFunding = fundingSources.reduce((sum, fs) => sum + fs.amount, 0)
+            const fundingBreakdown = fundingSources.map(fs => {
+              const percentage = totalFunding > 0 ? (fs.amount / totalFunding * 100).toFixed(0) : 0
+              return `${fs.name} ${percentage}%`
+            })
+            fundingDisplay = fundingBreakdown.join(', ')
           }
 
           return {
