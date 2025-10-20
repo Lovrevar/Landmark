@@ -156,7 +156,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               password,
               options: {
                 data: {
-                  username: 'admin'
+                  username: 'admin',
+                  role: 'Director'
                 },
                 emailRedirectTo: undefined
               }
@@ -168,6 +169,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             if (signUpData.user) {
+              await new Promise(resolve => setTimeout(resolve, 1000))
+
               await supabase
                 .from('users')
                 .update({ role: 'Director' })
