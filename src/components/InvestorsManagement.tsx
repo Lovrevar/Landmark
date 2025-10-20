@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Investor, ProjectInvestment, Project } from '../lib/supabase'
-import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building, Send } from 'lucide-react'
+import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building, Send, Edit } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { InvestorWirePaymentModal } from './Funding/forms/InvestorWirePaymentModal'
+import { EditInvestmentModal } from './Funding/forms/EditInvestmentModal'
 
 interface InvestorWithInvestments extends Investor {
   investments: ProjectInvestment[]
@@ -56,6 +57,9 @@ const InvestorsManagement: React.FC = () => {
     paymentDate: '',
     notes: ''
   })
+  const [showEditInvestmentModal, setShowEditInvestmentModal] = useState(false)
+  const [editingInvestment, setEditingInvestment] = useState<ProjectInvestment | null>(null)
+  const [investmentPayments, setInvestmentPayments] = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetchData()
@@ -90,6 +94,23 @@ const InvestorsManagement: React.FC = () => {
         .order('investment_date', { ascending: false })
 
       if (investmentsError) throw investmentsError
+
+      // Fetch all investor payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('investor_payments')
+        .select('project_investment_id, amount')
+
+      if (paymentsError) throw paymentsError
+
+      // Calculate total paid per investment
+      const paymentTotals: Record<string, number> = {}
+      paymentsData?.forEach(payment => {
+        if (!paymentTotals[payment.project_investment_id]) {
+          paymentTotals[payment.project_investment_id] = 0
+        }
+        paymentTotals[payment.project_investment_id] += Number(payment.amount)
+      })
+      setInvestmentPayments(paymentTotals)
 
       // Process investors with investments
       const investorsWithInvestments = (investorsData || []).map(investor => {
@@ -285,6 +306,48 @@ const InvestorsManagement: React.FC = () => {
     } catch (error) {
       console.error('Error recording payment:', error)
       alert('Failed to record payment. Please try again.')
+    }
+  }
+
+  const handleOpenEditInvestment = (investment: ProjectInvestment) => {
+    setEditingInvestment(investment)
+    setShowEditInvestmentModal(true)
+  }
+
+  const handleCloseEditInvestment = () => {
+    setShowEditInvestmentModal(false)
+    setEditingInvestment(null)
+  }
+
+  const handleSaveInvestment = async (updatedInvestment: ProjectInvestment) => {
+    try {
+      const { error } = await supabase
+        .from('project_investments')
+        .update({
+          investment_type: updatedInvestment.investment_type,
+          amount: updatedInvestment.amount,
+          percentage_stake: updatedInvestment.percentage_stake,
+          expected_return: updatedInvestment.expected_return,
+          investment_date: updatedInvestment.investment_date,
+          maturity_date: updatedInvestment.maturity_date,
+          usage_expiration_date: updatedInvestment.usage_expiration_date,
+          grace_period: updatedInvestment.grace_period,
+          mortgages_insurance: updatedInvestment.mortgages_insurance,
+          credit_seniority: updatedInvestment.credit_seniority,
+          status: updatedInvestment.status,
+          terms: updatedInvestment.terms,
+          notes: updatedInvestment.notes
+        })
+        .eq('id', updatedInvestment.id)
+
+      if (error) throw error
+
+      handleCloseEditInvestment()
+      await fetchData()
+      alert('Investment updated successfully')
+    } catch (error) {
+      console.error('Error updating investment:', error)
+      alert('Failed to update investment. Please try again.')
     }
   }
 
@@ -924,6 +987,12 @@ const InvestorsManagement: React.FC = () => {
                       <span className="font-medium text-green-900">€{selectedInvestor.total_committed.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-green-700">Total Paid:</span>
+                      <span className="font-medium text-green-600">
+                        €{selectedInvestor.investments.reduce((sum, inv) => sum + (investmentPayments[inv.id] || 0), 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-green-700">Active Investments:</span>
                       <span className="font-medium text-green-900">{selectedInvestor.active_investments}</span>
                     </div>
@@ -1058,12 +1127,16 @@ const InvestorsManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                               <p className="text-xs text-gray-500">Investment Date</p>
                               <p className="text-sm font-medium text-gray-900">
                                 {format(new Date(investment.investment_date), 'MMM dd, yyyy')}
                               </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Total Paid</p>
+                              <p className="text-sm font-medium text-green-600">€{(investmentPayments[investment.id] || 0).toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Ownership Stake</p>
@@ -1106,11 +1179,18 @@ const InvestorsManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Wire Payment Button */}
-                          <div className="pt-3 mt-3 border-t border-gray-200">
+                          {/* Action Buttons */}
+                          <div className="pt-3 mt-3 border-t border-gray-200 grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => handleOpenEditInvestment(investment)}
+                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </button>
                             <button
                               onClick={() => handleOpenWirePayment(investment)}
-                              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                              className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                             >
                               <Send className="w-4 h-4 mr-2" />
                               Wire Payment
@@ -1148,6 +1228,14 @@ const InvestorsManagement: React.FC = () => {
         onDateChange={(date) => setWirePayment({ ...wirePayment, paymentDate: date })}
         onNotesChange={(notes) => setWirePayment({ ...wirePayment, notes })}
         onSubmit={handleRecordPayment}
+      />
+
+      {/* Edit Investment Modal */}
+      <EditInvestmentModal
+        visible={showEditInvestmentModal}
+        onClose={handleCloseEditInvestment}
+        investment={editingInvestment}
+        onSubmit={handleSaveInvestment}
       />
     </div>
   )

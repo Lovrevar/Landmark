@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../lib/supabase'
-import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock, Send } from 'lucide-react'
+import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock, Send, Edit } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { BankWirePaymentModal } from './Funding/forms/BankWirePaymentModal'
+import { EditCreditModal } from './Funding/forms/EditCreditModal'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]
@@ -54,6 +55,9 @@ const BanksManagement: React.FC = () => {
     paymentDate: '',
     notes: ''
   })
+  const [showEditCreditModal, setShowEditCreditModal] = useState(false)
+  const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
+  const [creditPayments, setCreditPayments] = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetchData()
@@ -88,6 +92,23 @@ const BanksManagement: React.FC = () => {
         .order('start_date', { ascending: false })
 
       if (creditsError) throw creditsError
+
+      // Fetch all bank credit payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('bank_credit_payments')
+        .select('bank_credit_id, amount')
+
+      if (paymentsError) throw paymentsError
+
+      // Calculate total paid per credit
+      const paymentTotals: Record<string, number> = {}
+      paymentsData?.forEach(payment => {
+        if (!paymentTotals[payment.bank_credit_id]) {
+          paymentTotals[payment.bank_credit_id] = 0
+        }
+        paymentTotals[payment.bank_credit_id] += Number(payment.amount)
+      })
+      setCreditPayments(paymentTotals)
 
       // Process banks with credits
       const banksWithCredits = (banksData || []).map(bank => {
@@ -325,6 +346,47 @@ const BanksManagement: React.FC = () => {
     } catch (error) {
       console.error('Error recording payment:', error)
       alert('Failed to record payment. Please try again.')
+    }
+  }
+
+  const handleOpenEditCredit = (credit: BankCredit) => {
+    setEditingCredit(credit)
+    setShowEditCreditModal(true)
+  }
+
+  const handleCloseEditCredit = () => {
+    setShowEditCreditModal(false)
+    setEditingCredit(null)
+  }
+
+  const handleSaveCredit = async (updatedCredit: BankCredit) => {
+    try {
+      const { error } = await supabase
+        .from('bank_credits')
+        .update({
+          credit_type: updatedCredit.credit_type,
+          amount: updatedCredit.amount,
+          interest_rate: updatedCredit.interest_rate,
+          outstanding_balance: updatedCredit.outstanding_balance,
+          repayment_type: updatedCredit.repayment_type,
+          start_date: updatedCredit.start_date,
+          maturity_date: updatedCredit.maturity_date,
+          usage_expiration_date: updatedCredit.usage_expiration_date,
+          grace_period: updatedCredit.grace_period,
+          credit_seniority: updatedCredit.credit_seniority,
+          status: updatedCredit.status,
+          purpose: updatedCredit.purpose
+        })
+        .eq('id', updatedCredit.id)
+
+      if (error) throw error
+
+      handleCloseEditCredit()
+      await fetchData()
+      alert('Credit updated successfully')
+    } catch (error) {
+      console.error('Error updating credit:', error)
+      alert('Failed to update credit. Please try again.')
     }
   }
 
@@ -874,6 +936,12 @@ const BanksManagement: React.FC = () => {
                       <span className="font-medium text-blue-900">€{selectedBank.outstanding_debt.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-blue-700">Total Paid:</span>
+                      <span className="font-medium text-green-900">
+                        €{selectedBank.credits.reduce((sum, c) => sum + (creditPayments[c.id] || 0), 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-blue-700">Available:</span>
                       <span className="font-medium text-blue-900">€{selectedBank.available_funds.toLocaleString()}</span>
                     </div>
@@ -994,10 +1062,14 @@ const BanksManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                             <div>
                               <p className="text-xs text-gray-500">Outstanding Balance</p>
                               <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Total Paid</p>
+                              <p className="text-sm font-medium text-green-600">€{(creditPayments[credit.id] || 0).toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment</p>
@@ -1025,11 +1097,18 @@ const BanksManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Wire Payment Button */}
-                          <div className="pt-3 border-t border-gray-200">
+                          {/* Action Buttons */}
+                          <div className="pt-3 border-t border-gray-200 grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => handleOpenEditCredit(credit)}
+                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </button>
                             <button
                               onClick={() => handleOpenWirePayment(credit)}
-                              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                              className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                             >
                               <Send className="w-4 h-4 mr-2" />
                               Wire Payment
@@ -1067,6 +1146,14 @@ const BanksManagement: React.FC = () => {
         onDateChange={(date) => setWirePayment({ ...wirePayment, paymentDate: date })}
         onNotesChange={(notes) => setWirePayment({ ...wirePayment, notes })}
         onSubmit={handleRecordPayment}
+      />
+
+      {/* Edit Credit Modal */}
+      <EditCreditModal
+        visible={showEditCreditModal}
+        onClose={handleCloseEditCredit}
+        credit={editingCredit}
+        onSubmit={handleSaveCredit}
       />
     </div>
   )
