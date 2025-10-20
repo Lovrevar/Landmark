@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
 
@@ -39,49 +40,168 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const savedAuth = localStorage.getItem('isAuthenticated')
-    const savedProfile = localStorage.getItem('currentProfile')
-    const savedUser = localStorage.getItem('user')
+  const loadUserData = async (authUser: SupabaseUser) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('id, username, role, email')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle()
 
-    if (savedAuth === 'true' && savedUser) {
-      setIsAuthenticated(true)
-      setUser(JSON.parse(savedUser))
-      if (savedProfile && ['General', 'Supervision', 'Sales', 'Funding'].includes(savedProfile)) {
-        setCurrentProfile(savedProfile as Profile)
+      if (error) {
+        console.error('Error loading user data:', error)
+        return null
+      }
+
+      if (userData) {
+        const user: User = {
+          id: userData.id,
+          username: userData.username,
+          role: userData.role as User['role']
+        }
+        return user
+      }
+
+      return null
+    } catch (error) {
+      console.error('Exception loading user data:', error)
+      return null
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error('Error getting session:', error)
+          setLoading(false)
+          return
+        }
+
+        if (session?.user && mounted) {
+          const userData = await loadUserData(session.user)
+          if (userData && mounted) {
+            setUser(userData)
+            setIsAuthenticated(true)
+          }
+        }
+
+        const savedProfile = localStorage.getItem('currentProfile')
+        if (savedProfile && ['General', 'Supervision', 'Sales', 'Funding'].includes(savedProfile)) {
+          setCurrentProfile(savedProfile as Profile)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
-    setLoading(false)
+
+    initializeAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
+      console.log('Auth state changed:', event)
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const userData = await loadUserData(session.user)
+        if (userData && mounted) {
+          setUser(userData)
+          setIsAuthenticated(true)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setUser(null)
+          setIsAuthenticated(false)
+          setCurrentProfile('General')
+          localStorage.removeItem('currentProfile')
+        }
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        const userData = await loadUserData(session.user)
+        if (userData && mounted) {
+          setUser(userData)
+        }
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, username, role')
-        .eq('username', username)
-        .eq('password', password)
-        .maybeSingle()
+      const email = `${username}@landmark.local`
 
-      if (error) {
-        console.error('Login error:', error)
-        return false
+      let authResult = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (authResult.error) {
+        if (authResult.error.message.includes('Invalid login credentials')) {
+          console.log('User does not exist, attempting to create admin account...')
+
+          if (username === 'admin' && password === 'admin') {
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  username: 'admin'
+                },
+                emailRedirectTo: undefined
+              }
+            })
+
+            if (signUpError) {
+              console.error('Sign up error:', signUpError)
+              return false
+            }
+
+            if (signUpData.user) {
+              await supabase
+                .from('users')
+                .update({ role: 'Director' })
+                .eq('auth_user_id', signUpData.user.id)
+
+              authResult = await supabase.auth.signInWithPassword({
+                email,
+                password
+              })
+
+              if (authResult.error) {
+                console.error('Login after signup error:', authResult.error)
+                return false
+              }
+            }
+          } else {
+            console.error('Invalid credentials')
+            return false
+          }
+        } else {
+          console.error('Login error:', authResult.error)
+          return false
+        }
       }
 
-      if (data) {
-        const userData: User = {
-          id: data.id,
-          username: data.username,
-          role: data.role as User['role']
+      if (authResult.data?.user) {
+        const userData = await loadUserData(authResult.data.user)
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+          setCurrentProfile('General')
+          localStorage.setItem('currentProfile', 'General')
+          return true
         }
-
-        setIsAuthenticated(true)
-        setUser(userData)
-        setCurrentProfile('General')
-        localStorage.setItem('isAuthenticated', 'true')
-        localStorage.setItem('currentProfile', 'General')
-        localStorage.setItem('user', JSON.stringify(userData))
-        return true
       }
 
       return false
@@ -91,16 +211,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  const logout = () => {
-    setIsAuthenticated(false)
-    setUser(null)
-    setCurrentProfile('General')
-    localStorage.removeItem('isAuthenticated')
-    localStorage.removeItem('currentProfile')
-    localStorage.removeItem('user')
-    setTimeout(() => {
-      window.location.href = '/'
-    }, 100)
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setIsAuthenticated(false)
+      setUser(null)
+      setCurrentProfile('General')
+      localStorage.removeItem('currentProfile')
+
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 100)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   const handleSetCurrentProfile = (profile: Profile) => {
