@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Home, Search, Filter, DollarSign, Edit2, FileText, Trash2 } from 'lucide-react'
+import { Home, Search, Filter, Edit2, Trash2 } from 'lucide-react'
 
 interface ApartmentListItem {
   id: string
@@ -222,113 +222,99 @@ const ApartmentManagement: React.FC = () => {
             return (
               <div
                 key={apartment.id}
-                className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                  apartment.status === 'Sold' ? 'border-green-200 bg-green-50' :
-                  apartment.status === 'Reserved' ? 'border-yellow-200 bg-yellow-50' :
-                  'border-gray-200 bg-gray-50'
+                className={`rounded-xl shadow-sm border p-4 transition-all duration-200 ${
+                  apartment.status === 'Sold'
+                    ? 'border-green-200 bg-green-50'
+                    : apartment.status === 'Reserved'
+                      ? 'border-yellow-200 bg-yellow-50'
+                      : 'border-gray-200 bg-white hover:shadow-md'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1">Unit {apartment.number}</h4>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
                     <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
                   </div>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={() => console.log('Edit apartment', apartment.id)}
+                      className="p-1 text-gray-400 hover:text-blue-600"
+                      title="Edit apartment"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => console.log('Delete apartment', apartment.id)}
+                      className="p-1 text-gray-400 hover:text-red-600"
+                      title="Delete apartment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Project:</span>
+                    <span className="text-sm font-medium">{apartment.project_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Building:</span>
+                    <span className="text-sm font-medium">{apartment.building_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Size:</span>
+                    <span className="text-sm font-medium">{apartment.size_m2} m²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Price:</span>
+                    <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
+                  </div>
+
+                  {apartment.status === 'Sold' && apartment.buyer_name && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Buyer:</span>
+                        <span className="text-sm font-medium">{apartment.buyer_name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Sale Price:</span>
+                        <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Down Payment:</span>
+                        <span className="text-sm font-medium">€{downPayment.toLocaleString()}</span>
+                      </div>
+                      <div className="mt-2">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-500">Payment Progress</span>
+                          <span className="text-xs font-medium">{paymentProgress}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-green-600 h-1.5 rounded-full"
+                            style={{
+                              width: `${salePrice > 0 ? (totalPaid / salePrice) * 100 : 0}%`
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-center">
                   <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                      apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                      apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
+                      apartment.status === 'Sold'
+                        ? 'bg-green-100 text-green-800'
+                        : apartment.status === 'Reserved'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-blue-100 text-blue-800'
                     }`}
                   >
                     {apartment.status}
                   </span>
-                </div>
-
-                <div className="space-y-2 text-xs mb-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Project:</span>
-                    <span className="font-medium text-gray-900">{apartment.project_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Building:</span>
-                    <span className="font-medium text-gray-900">{apartment.building_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Size:</span>
-                    <span className="font-medium text-gray-900">{apartment.size_m2} m²</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Price:</span>
-                    <span className="font-medium text-gray-900">€{apartment.price.toLocaleString()}</span>
-                  </div>
-                  {apartment.status === 'Sold' && apartment.buyer_name && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Buyer:</span>
-                      <span className="font-medium text-gray-900">{apartment.buyer_name}</span>
-                    </div>
-                  )}
-                  {apartment.status === 'Sold' && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Sale Price:</span>
-                      <span className="font-medium text-gray-900">€{apartment.price.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {apartment.status === 'Sold' && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Down Payment:</span>
-                      <span className="font-medium text-gray-900">€{downPayment.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {apartment.status === 'Sold' && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Payment Progress:</span>
-                      <span className="font-medium text-gray-900">{paymentProgress}</span>
-                    </div>
-                  )}
-                  {apartment.status === 'Sold' && (
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-gray-600 font-medium">Gain/Loss:</span>
-                      <span className="font-bold text-green-600">+€{salePrice.toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => console.log('Wire payment', apartment.id)}
-                      className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-                    >
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Wire
-                    </button>
-                    <button
-                      onClick={() => console.log('View payments', apartment.id)}
-                      className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
-                    >
-                      Payments
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => console.log('Edit apartment', apartment.id)}
-                      className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => console.log('View details', apartment.id)}
-                      className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
-                    >
-                      Details
-                    </button>
-                    <button
-                      onClick={() => console.log('Delete apartment', apartment.id)}
-                      className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
-                    >
-                      Delete
-                    </button>
-                  </div>
                 </div>
               </div>
             )
