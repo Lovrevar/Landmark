@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Home, Search, Filter, Edit2, Trash2 } from 'lucide-react'
+import { Home, Search, Filter, DollarSign } from 'lucide-react'
 
 interface ApartmentListItem {
   id: string
@@ -230,27 +230,9 @@ const ApartmentManagement: React.FC = () => {
                       : 'border-gray-200 bg-white hover:shadow-md'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                    <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
-                  </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => console.log('Edit apartment', apartment.id)}
-                      className="p-1 text-gray-400 hover:text-blue-600"
-                      title="Edit apartment"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => console.log('Delete apartment', apartment.id)}
-                      className="p-1 text-gray-400 hover:text-red-600"
-                      title="Delete apartment"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                <div className="mb-3">
+                  <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
+                  <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
                 </div>
 
                 <div className="space-y-2 mb-3">
@@ -303,18 +285,42 @@ const ApartmentManagement: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-center">
-                  <span
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
-                      apartment.status === 'Sold'
-                        ? 'bg-green-100 text-green-800'
-                        : apartment.status === 'Reserved'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {apartment.status}
-                  </span>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => console.log('Wire payment', apartment.id)}
+                      className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Wire
+                    </button>
+                    <button
+                      onClick={() => console.log('View payments', apartment.id)}
+                      className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      Payments
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => console.log('Edit apartment', apartment.id)}
+                      className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => console.log('View details', apartment.id)}
+                      className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
+                    >
+                      Details
+                    </button>
+                    <button
+                      onClick={() => console.log('Delete apartment', apartment.id)}
+                      className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             )
