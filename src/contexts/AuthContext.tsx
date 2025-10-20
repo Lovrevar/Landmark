@@ -42,21 +42,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadUserData = async (authUser: SupabaseUser) => {
     try {
-      console.log('Loading user data for auth_user_id:', authUser.id)
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 5000)
-      )
-
-      const queryPromise = supabase
+      const { data: userData, error } = await supabase
         .from('users')
         .select('id, username, role, email')
         .eq('auth_user_id', authUser.id)
         .maybeSingle()
-
-      const { data: userData, error } = await Promise.race([queryPromise, timeoutPromise]) as any
-
-      console.log('User data result:', { userData, error })
 
       if (error) {
         console.error('Error loading user data:', error)
@@ -69,11 +59,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           username: userData.username,
           role: userData.role as User['role']
         }
-        console.log('Loaded user:', user)
         return user
       }
 
-      console.log('No user data found')
       return null
     } catch (error) {
       console.error('Exception loading user data:', error)
@@ -99,11 +87,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (userData && mounted) {
             setUser(userData)
             setIsAuthenticated(true)
-          } else if (mounted) {
-            console.log('No user data found, signing out...')
-            await supabase.auth.signOut()
-            setUser(null)
-            setIsAuthenticated(false)
           }
         }
 
@@ -132,11 +115,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (userData && mounted) {
           setUser(userData)
           setIsAuthenticated(true)
-        } else if (mounted) {
-          console.log('SIGNED_IN but no user data, signing out...')
-          await supabase.auth.signOut()
-          setUser(null)
-          setIsAuthenticated(false)
         }
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
@@ -172,14 +150,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (authResult.error.message.includes('Invalid login credentials')) {
           console.log('User does not exist, attempting to create admin account...')
 
-          if (username === 'admin' && password === 'admin123') {
+          if (username === 'admin' && password === 'admin') {
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
               email,
               password,
               options: {
                 data: {
-                  username: 'admin',
-                  role: 'Director'
+                  username: 'admin'
                 },
                 emailRedirectTo: undefined
               }
@@ -191,8 +168,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             if (signUpData.user) {
-              await new Promise(resolve => setTimeout(resolve, 1000))
-
               await supabase
                 .from('users')
                 .update({ role: 'Director' })
