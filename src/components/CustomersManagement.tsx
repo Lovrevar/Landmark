@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Mail } from 'lucide-react'
 import { CustomerCategory } from './Customers/types/customerTypes'
 import { useCustomerData } from './Customers/hooks/useCustomerData'
 import { CategoryTabs } from './Customers/views/CategoryTabs'
@@ -65,6 +65,20 @@ const CustomersManagement: React.FC = () => {
     setSelectedCustomer(null)
   }
 
+  const handleExportEmails = () => {
+    const emails = filteredCustomers
+      .map(c => c.email)
+      .filter(email => email && email.trim() !== '')
+
+    if (emails.length === 0) {
+      alert('No email addresses found for customers in this category.')
+      return
+    }
+
+    const emailList = emails.join(';')
+    window.location.href = `mailto:?bcc=${encodeURIComponent(emailList)}`
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -72,13 +86,22 @@ const CustomersManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
           <p className="text-gray-600 mt-1">Manage your sales pipeline and customer relationships</p>
         </div>
-        <button
-          onClick={handleAddCustomer}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add Customer
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleExportEmails}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Mail className="w-5 h-5 mr-2" />
+            Email All ({filteredCustomers.filter(c => c.email).length})
+          </button>
+          <button
+            onClick={handleAddCustomer}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       <CategoryTabs
