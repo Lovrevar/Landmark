@@ -2,22 +2,19 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '../lib/supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
-
 export interface User {
   id: string
+  auth_user_id: string
   username: string
+  email: string
   role: 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
 }
 
 interface AuthContextType {
-  isAuthenticated: boolean
-  currentProfile: Profile
   user: User | null
-  setCurrentProfile: (profile: Profile) => void
-  login: (username: string, password: string) => Promise<boolean>
-  logout: () => void
+  isAuthenticated: boolean
   loading: boolean
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -35,38 +32,57 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentProfile, setCurrentProfile] = useState<Profile>('General')
   const [user, setUser] = useState<User | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const loadUserData = async (authUser: SupabaseUser) => {
+  const fetchUserData = async (authUser: SupabaseUser): Promise<User | null> => {
     try {
-      const { data: userData, error } = await supabase
+      const { data, error } = await supabase
         .from('users')
-        .select('id, username, role, email')
+        .select('id, auth_user_id, username, email, role')
         .eq('auth_user_id', authUser.id)
         .maybeSingle()
 
       if (error) {
-        console.error('Error loading user data:', error)
+        console.error('Error fetching user data:', error)
         return null
       }
 
-      if (userData) {
-        const user: User = {
-          id: userData.id,
-          username: userData.username,
-          role: userData.role as User['role']
-        }
-        return user
+      if (!data) {
+        console.error('No user record found for auth_user_id:', authUser.id)
+        return null
       }
 
-      return null
+      return {
+        id: data.id,
+        auth_user_id: data.auth_user_id,
+        username: data.username,
+        email: data.email,
+        role: data.role as User['role']
+      }
     } catch (error) {
-      console.error('Exception loading user data:', error)
+      console.error('Exception fetching user data:', error)
       return null
     }
+  }
+
+  const handleAuthChange = (authUser: SupabaseUser | null) => {
+    (async () => {
+      if (authUser) {
+        const userData = await fetchUserData(authUser)
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+        } else {
+          setUser(null)
+          setIsAuthenticated(false)
+        }
+      } else {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+    })()
   }
 
   useEffect(() => {
@@ -78,21 +94,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           console.error('Error getting session:', error)
-          setLoading(false)
-          return
-        }
-
-        if (session?.user && mounted) {
-          const userData = await loadUserData(session.user)
+        } else if (session?.user && mounted) {
+          const userData = await fetchUserData(session.user)
           if (userData && mounted) {
             setUser(userData)
             setIsAuthenticated(true)
           }
-        }
-
-        const savedProfile = localStorage.getItem('currentProfile')
-        if (savedProfile && ['General', 'Supervision', 'Sales', 'Funding'].includes(savedProfile)) {
-          setCurrentProfile(savedProfile as Profile)
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
@@ -105,28 +112,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
-      console.log('Auth state changed:', event)
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        const userData = await loadUserData(session.user)
-        if (userData && mounted) {
-          setUser(userData)
-          setIsAuthenticated(true)
-        }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        handleAuthChange(session?.user || null)
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
           setUser(null)
           setIsAuthenticated(false)
-          setCurrentProfile('General')
-          localStorage.removeItem('currentProfile')
-        }
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        const userData = await loadUserData(session.user)
-        if (userData && mounted) {
-          setUser(userData)
         }
       }
     })
@@ -137,109 +131,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      const email = `${username}@landmark.local`
-
-      let authResult = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (authResult.error) {
-        if (authResult.error.message.includes('Invalid login credentials')) {
-          console.log('User does not exist, attempting to create admin account...')
-
-          if (username === 'admin' && password === 'admin123') {
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-              email,
-              password,
-              options: {
-                data: {
-                  username: 'admin'
-                },
-                emailRedirectTo: undefined
-              }
-            })
-
-            if (signUpError) {
-              console.error('Sign up error:', signUpError)
-              return false
-            }
-
-            if (signUpData.user) {
-              await supabase
-                .from('users')
-                .update({ role: 'Director' })
-                .eq('auth_user_id', signUpData.user.id)
-
-              authResult = await supabase.auth.signInWithPassword({
-                email,
-                password
-              })
-
-              if (authResult.error) {
-                console.error('Login after signup error:', authResult.error)
-                return false
-              }
-            }
-          } else {
-            console.error('Invalid credentials')
-            return false
-          }
-        } else {
-          console.error('Login error:', authResult.error)
-          return false
-        }
-      }
-
-      if (authResult.data?.user) {
-        const userData = await loadUserData(authResult.data.user)
-        if (userData) {
-          setUser(userData)
-          setIsAuthenticated(true)
-          setCurrentProfile('General')
-          localStorage.setItem('currentProfile', 'General')
-          return true
-        }
-      }
-
-      return false
-    } catch (error) {
-      console.error('Login exception:', error)
-      return false
-    }
-  }
-
   const logout = async () => {
     try {
       await supabase.auth.signOut()
-      setIsAuthenticated(false)
       setUser(null)
-      setCurrentProfile('General')
-      localStorage.removeItem('currentProfile')
+      setIsAuthenticated(false)
 
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 100)
+      window.location.href = '/'
     } catch (error) {
       console.error('Logout error:', error)
     }
   }
 
-  const handleSetCurrentProfile = (profile: Profile) => {
-    setCurrentProfile(profile)
-    localStorage.setItem('currentProfile', profile)
-  }
-
-  const value = {
-    isAuthenticated,
-    currentProfile,
+  const value: AuthContextType = {
     user,
-    setCurrentProfile: handleSetCurrentProfile,
-    login,
-    logout,
-    loading
+    isAuthenticated,
+    loading,
+    logout
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
