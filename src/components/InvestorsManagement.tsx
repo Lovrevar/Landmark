@@ -18,6 +18,7 @@ const InvestorsManagement: React.FC = () => {
   const [showInvestorForm, setShowInvestorForm] = useState(false)
   const [showInvestmentForm, setShowInvestmentForm] = useState(false)
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
+  const [editingInvestment, setEditingInvestment] = useState<ProjectInvestment | null>(null)
   const [newInvestor, setNewInvestor] = useState({
     name: '',
     type: 'individual' as const,
@@ -184,22 +185,58 @@ const InvestorsManagement: React.FC = () => {
     try {
       // Extract investment type and seniority from the combined value
       const [investmentType, seniority] = newInvestment.investment_type.split('_')
-      
-      const { error } = await supabase
-        .from('project_investments')
-        .insert({
-          ...newInvestment,
-          investment_type: investmentType,
-          credit_seniority: seniority
-        })
 
-      if (error) throw error
+      if (editingInvestment) {
+        // Update existing investment
+        const { error } = await supabase
+          .from('project_investments')
+          .update({
+            ...newInvestment,
+            investment_type: investmentType,
+            credit_seniority: seniority
+          })
+          .eq('id', editingInvestment.id)
+
+        if (error) throw error
+      } else {
+        // Insert new investment
+        const { error } = await supabase
+          .from('project_investments')
+          .insert({
+            ...newInvestment,
+            investment_type: investmentType,
+            credit_seniority: seniority
+          })
+
+        if (error) throw error
+      }
 
       resetInvestmentForm()
       await fetchData()
     } catch (error) {
-      console.error('Error adding investment:', error)
-      alert('Error adding investment.')
+      console.error('Error saving investment:', error)
+      alert('Error saving investment.')
+    }
+  }
+
+  const deleteInvestment = async (investmentId: string) => {
+    if (!confirm('Are you sure you want to delete this investment?')) return
+
+    try {
+      const { error } = await supabase
+        .from('project_investments')
+        .delete()
+        .eq('id', investmentId)
+
+      if (error) throw error
+      await fetchData()
+      if (selectedInvestor) {
+        const updatedInvestor = investors.find(inv => inv.id === selectedInvestor.id)
+        if (updatedInvestor) setSelectedInvestor(updatedInvestor)
+      }
+    } catch (error) {
+      console.error('Error deleting investment:', error)
+      alert('Error deleting investment.')
     }
   }
 
@@ -231,13 +268,37 @@ const InvestorsManagement: React.FC = () => {
       expected_return: 0,
       investment_date: '',
       maturity_date: '',
+      payment_schedule: 'yearly',
       terms: '',
       mortgages_insurance: 0,
       notes: '',
       usage_expiration_date: '',
       grace_period: 0
     })
+    setEditingInvestment(null)
     setShowInvestmentForm(false)
+  }
+
+  const handleEditInvestment = (investment: ProjectInvestment) => {
+    setEditingInvestment(investment)
+    const investmentType = `${investment.investment_type}_${investment.credit_seniority || 'senior'}`
+    setNewInvestment({
+      investor_id: investment.investor_id,
+      project_id: investment.project_id,
+      investment_type: investmentType as any,
+      amount: investment.amount,
+      percentage_stake: investment.percentage_stake || 0,
+      expected_return: investment.expected_return,
+      investment_date: investment.investment_date,
+      maturity_date: investment.maturity_date || '',
+      payment_schedule: investment.payment_schedule || 'yearly',
+      terms: investment.terms || '',
+      mortgages_insurance: investment.mortgages_insurance || 0,
+      notes: investment.notes || '',
+      usage_expiration_date: investment.usage_expiration_date || '',
+      grace_period: investment.grace_period || 0
+    })
+    setShowInvestmentForm(true)
   }
 
   const handleEditInvestor = (investor: Investor) => {
@@ -560,7 +621,9 @@ const InvestorsManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Investment</h3>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingInvestment ? 'Edit Investment' : 'Add New Investment'}
+                </h3>
                 <button
                   onClick={resetInvestmentForm}
                   className="text-gray-400 hover:text-gray-600"
@@ -819,7 +882,7 @@ const InvestorsManagement: React.FC = () => {
                   onClick={addInvestment}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  Add Investment
+                  {editingInvestment ? 'Update' : 'Add'} Investment
                 </button>
               </div>
             </div>
@@ -971,6 +1034,20 @@ const InvestorsManagement: React.FC = () => {
                                 <p className="font-medium text-gray-900">
                                   {investment.projects?.name || 'Unknown Project'}
                                 </p>
+                                <button
+                                  onClick={() => handleEditInvestment(investment)}
+                                  className="p-1 text-gray-400 hover:text-blue-600"
+                                  title="Edit investment"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteInvestment(investment.id)}
+                                  className="p-1 text-gray-400 hover:text-red-600"
+                                  title="Delete investment"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                   investment.investment_type === 'equity' ? 'bg-green-100 text-green-800' :
                                   investment.investment_type === 'loan' ? 'bg-blue-100 text-blue-800' :

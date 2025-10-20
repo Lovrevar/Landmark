@@ -17,6 +17,7 @@ const BanksManagement: React.FC = () => {
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingBank, setEditingBank] = useState<Bank | null>(null)
+  const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newBank, setNewBank] = useState({
     name: '',
     contact_person: '',
@@ -214,24 +215,58 @@ const BanksManagement: React.FC = () => {
       // Extract credit type and seniority from the combined value
       const [creditType, seniority] = newCredit.credit_type.split('_')
       const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
-      
-      const { error } = await supabase
-        .from('bank_credits')
-        .insert({
-          ...newCredit,
-          credit_type: actualCreditType,
-          credit_seniority: seniority,
-          outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
-          monthly_payment: calculateRateAmount()
-        })
 
-      if (error) throw error
+      const creditData = {
+        ...newCredit,
+        credit_type: actualCreditType,
+        credit_seniority: seniority,
+        outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
+        monthly_payment: calculateRateAmount()
+      }
+
+      if (editingCredit) {
+        // Update existing credit
+        const { error } = await supabase
+          .from('bank_credits')
+          .update(creditData)
+          .eq('id', editingCredit.id)
+
+        if (error) throw error
+      } else {
+        // Insert new credit
+        const { error } = await supabase
+          .from('bank_credits')
+          .insert(creditData)
+
+        if (error) throw error
+      }
 
       resetCreditForm()
       await fetchData()
     } catch (error) {
-      console.error('Error adding credit:', error)
-      alert('Error adding credit facility.')
+      console.error('Error saving credit:', error)
+      alert('Error saving credit facility.')
+    }
+  }
+
+  const deleteCredit = async (creditId: string) => {
+    if (!confirm('Are you sure you want to delete this credit facility?')) return
+
+    try {
+      const { error } = await supabase
+        .from('bank_credits')
+        .delete()
+        .eq('id', creditId)
+
+      if (error) throw error
+      await fetchData()
+      if (selectedBank) {
+        const updatedBank = banks.find(b => b.id === selectedBank.id)
+        if (updatedBank) setSelectedBank(updatedBank)
+      }
+    } catch (error) {
+      console.error('Error deleting credit:', error)
+      alert('Error deleting credit facility.')
     }
   }
 
@@ -269,7 +304,30 @@ const BanksManagement: React.FC = () => {
       repayment_type: 'monthly',
       credit_seniority: 'senior'
     })
+    setEditingCredit(null)
     setShowCreditForm(false)
+  }
+
+  const handleEditCredit = (credit: BankCredit) => {
+    setEditingCredit(credit)
+    const creditType = `${credit.credit_type}_${credit.credit_seniority || 'senior'}`
+    setNewCredit({
+      bank_id: credit.bank_id,
+      project_id: credit.project_id,
+      credit_type: creditType as any,
+      amount: credit.amount,
+      interest_rate: credit.interest_rate,
+      start_date: credit.start_date,
+      maturity_date: credit.maturity_date || '',
+      outstanding_balance: credit.outstanding_balance,
+      monthly_payment: credit.monthly_payment || 0,
+      purpose: credit.purpose || '',
+      usage_expiration_date: credit.usage_expiration_date || '',
+      grace_period: credit.grace_period || 0,
+      repayment_type: credit.repayment_type || 'monthly',
+      credit_seniority: credit.credit_seniority || 'senior'
+    })
+    setShowCreditForm(true)
   }
 
   const handleEditBank = (bank: Bank) => {
@@ -566,7 +624,9 @@ const BanksManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Credit Facility</h3>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'}
+                </h3>
                 <button
                   onClick={resetCreditForm}
                   className="text-gray-400 hover:text-gray-600"
@@ -766,7 +826,7 @@ const BanksManagement: React.FC = () => {
                   onClick={addCredit}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  Add Credit
+                  {editingCredit ? 'Update' : 'Add'} Credit
                 </button>
               </div>
             </div>
@@ -910,6 +970,20 @@ const BanksManagement: React.FC = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
+                                <button
+                                  onClick={() => handleEditCredit(credit)}
+                                  className="p-1 text-gray-400 hover:text-blue-600"
+                                  title="Edit credit"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteCredit(credit.id)}
+                                  className="p-1 text-gray-400 hover:text-red-600"
+                                  title="Delete credit"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCreditTypeColor(credit.credit_type)}`}>
                                   {credit.credit_type.replace('_', ' ').toUpperCase()}
                                 </span>
