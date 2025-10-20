@@ -87,6 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (userData && mounted) {
             setUser(userData)
             setIsAuthenticated(true)
+          } else if (mounted) {
+            // If we have a session but no user data, sign out
+            await supabase.auth.signOut()
           }
         }
 
@@ -115,6 +118,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (userData && mounted) {
           setUser(userData)
           setIsAuthenticated(true)
+        } else if (mounted) {
+          // If we can't load user data, sign out
+          await supabase.auth.signOut()
         }
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
