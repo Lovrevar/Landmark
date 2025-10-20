@@ -7,6 +7,7 @@ import { generateDirectorReport } from '../../utils/reportGenerator'
 interface ProjectWithStats extends Project {
   total_expenses: number
   apartment_sales: number
+  funding: string
 }
 
 const DirectorDashboard: React.FC = () => {
@@ -181,29 +182,39 @@ const DirectorDashboard: React.FC = () => {
 
           const apartmentSales = apartments?.reduce((sum, apt) => sum + apt.price, 0) || 0
 
-          // Get investors for this project
+          // Get investors for this project with amounts
           const { data: projectInvestments } = await supabase
             .from('project_investments')
-            .select('investor_id')
+            .select('investor_id, amount')
             .eq('project_id', project.id)
 
-          const investorIds = projectInvestments?.map(pi => pi.investor_id) || []
-          let investorNames = 'N/A'
+          let fundingDisplay = 'N/A'
 
-          if (investorIds.length > 0) {
+          if (projectInvestments && projectInvestments.length > 0) {
+            const investorIds = projectInvestments.map(pi => pi.investor_id)
             const { data: investors } = await supabase
               .from('investors')
-              .select('name')
+              .select('id, name')
               .in('id', investorIds)
 
-            investorNames = investors?.map(i => i.name).join(', ') || 'N/A'
+            if (investors && investors.length > 0) {
+              const totalInvestment = projectInvestments.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
+
+              const fundingBreakdown = projectInvestments.map(pi => {
+                const investor = investors.find(inv => inv.id === pi.investor_id)
+                const percentage = totalInvestment > 0 ? (parseFloat(pi.amount) / totalInvestment * 100).toFixed(0) : 0
+                return `${investor?.name || 'Unknown'} ${percentage}%`
+              })
+
+              fundingDisplay = fundingBreakdown.join(', ')
+            }
           }
 
           return {
             ...project,
             total_expenses: totalExpenses,
             apartment_sales: apartmentSales,
-            investor: investorNames
+            funding: fundingDisplay
           }
         })
       )
@@ -407,7 +418,7 @@ const DirectorDashboard: React.FC = () => {
                   Revenue
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Investor
+                  Funding
                 </th>
               </tr>
             </thead>
@@ -445,7 +456,7 @@ const DirectorDashboard: React.FC = () => {
                     €{project.apartment_sales.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {project.investor}
+                    {project.funding}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
