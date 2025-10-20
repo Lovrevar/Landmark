@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (authResult.error.message.includes('Invalid login credentials')) {
           console.log('User does not exist, attempting to create admin account...')
 
-          if (username === 'admin' && password === 'admin') {
+          if (username === 'admin' && password === 'admin123') {
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
               email,
               password,
