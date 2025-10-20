@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../lib/supabase'
-import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock } from 'lucide-react'
+import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock, Send } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { BankWirePaymentModal } from './Funding/forms/BankWirePaymentModal'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]
@@ -46,6 +47,13 @@ const BanksManagement: React.FC = () => {
     credit_seniority: 'senior' as const
   })
   const [loading, setLoading] = useState(true)
+  const [showWirePaymentModal, setShowWirePaymentModal] = useState(false)
+  const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
+  const [wirePayment, setWirePayment] = useState({
+    amount: 0,
+    paymentDate: '',
+    notes: ''
+  })
 
   useEffect(() => {
     fetchData()
@@ -270,6 +278,54 @@ const BanksManagement: React.FC = () => {
       credit_seniority: 'senior'
     })
     setShowCreditForm(false)
+  }
+
+  const handleOpenWirePayment = (credit: BankCredit) => {
+    setSelectedCredit(credit)
+    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
+    setShowWirePaymentModal(true)
+  }
+
+  const handleCloseWirePayment = () => {
+    setShowWirePaymentModal(false)
+    setSelectedCredit(null)
+    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
+  }
+
+  const handleRecordPayment = async () => {
+    if (!selectedCredit || !selectedBank || wirePayment.amount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      const { error: paymentError } = await supabase
+        .from('bank_credit_payments')
+        .insert({
+          bank_credit_id: selectedCredit.id,
+          bank_id: selectedBank.id,
+          amount: wirePayment.amount,
+          payment_date: wirePayment.paymentDate || null,
+          notes: wirePayment.notes || null
+        })
+
+      if (paymentError) throw paymentError
+
+      const newOutstandingBalance = Math.max(0, selectedCredit.outstanding_balance - wirePayment.amount)
+      const { error: updateError } = await supabase
+        .from('bank_credits')
+        .update({ outstanding_balance: newOutstandingBalance })
+        .eq('id', selectedCredit.id)
+
+      if (updateError) throw updateError
+
+      handleCloseWirePayment()
+      await fetchData()
+      alert('Payment recorded successfully')
+    } catch (error) {
+      console.error('Error recording payment:', error)
+      alert('Failed to record payment. Please try again.')
+    }
   }
 
   const handleEditBank = (bank: Bank) => {
@@ -956,17 +1012,28 @@ const BanksManagement: React.FC = () => {
                           </div>
 
                           {/* Payment Progress */}
-                          <div>
+                          <div className="mb-3">
                             <div className="flex justify-between mb-1">
                               <span className="text-xs text-gray-600">Repayment Progress</span>
                               <span className="text-xs font-medium">{paymentRatio.toFixed(1)}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
+                              <div
                                 className="bg-green-600 h-2 rounded-full"
                                 style={{ width: `${paymentRatio}%` }}
                               ></div>
                             </div>
+                          </div>
+
+                          {/* Wire Payment Button */}
+                          <div className="pt-3 border-t border-gray-200">
+                            <button
+                              onClick={() => handleOpenWirePayment(credit)}
+                              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              Wire Payment
+                            </button>
                           </div>
                         </div>
                       )
@@ -986,6 +1053,21 @@ const BanksManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Wire Payment Modal */}
+      <BankWirePaymentModal
+        visible={showWirePaymentModal}
+        onClose={handleCloseWirePayment}
+        credit={selectedCredit}
+        bankName={selectedBank?.name || ''}
+        amount={wirePayment.amount}
+        paymentDate={wirePayment.paymentDate}
+        notes={wirePayment.notes}
+        onAmountChange={(amount) => setWirePayment({ ...wirePayment, amount })}
+        onDateChange={(date) => setWirePayment({ ...wirePayment, paymentDate: date })}
+        onNotesChange={(notes) => setWirePayment({ ...wirePayment, notes })}
+        onSubmit={handleRecordPayment}
+      />
     </div>
   )
 }
