@@ -42,11 +42,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadUserData = async (authUser: SupabaseUser) => {
     try {
+      console.log('Loading user data for auth_user_id:', authUser.id)
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, username, role, email')
         .eq('auth_user_id', authUser.id)
         .maybeSingle()
+
+      console.log('User data result:', { userData, error })
 
       if (error) {
         console.error('Error loading user data:', error)
@@ -59,9 +62,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           username: userData.username,
           role: userData.role as User['role']
         }
+        console.log('Loaded user:', user)
         return user
       }
 
+      console.log('No user data found')
       return null
     } catch (error) {
       console.error('Exception loading user data:', error)
