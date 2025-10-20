@@ -73,7 +73,7 @@ export const addPaymentToApartment = async (
   userId: string
 ) => {
   const { data: payment, error: paymentError } = await supabase
-    .from('sales_payments')
+    .from('apartment_payments')
     .insert({
       apartment_id: apartmentId,
       amount,
@@ -94,7 +94,7 @@ export const addPaymentToApartment = async (
 
   if (apartment) {
     const { data: allPayments } = await supabase
-      .from('sales_payments')
+      .from('apartment_payments')
       .select('amount')
       .eq('apartment_id', apartmentId)
 
@@ -111,7 +111,7 @@ export const addPaymentToApartment = async (
 
 export const fetchApartmentPayments = async (apartmentId: string) => {
   const { data, error } = await supabase
-    .from('sales_payments')
+    .from('apartment_payments')
     .select(`
       *,
       users:created_by (email)
@@ -136,7 +136,7 @@ export const updatePayment = async (
   oldAmount: number
 ) => {
   const { error: updateError } = await supabase
-    .from('sales_payments')
+    .from('apartment_payments')
     .update({
       amount,
       payment_date: paymentDate,
@@ -147,7 +147,7 @@ export const updatePayment = async (
   if (updateError) throw updateError
 
   const { data: allPayments } = await supabase
-    .from('sales_payments')
+    .from('apartment_payments')
     .select('amount')
     .eq('apartment_id', apartmentId)
 
@@ -161,7 +161,7 @@ export const updatePayment = async (
 
 export const deletePayment = async (paymentId: string, apartmentId: string, amount: number) => {
   const { error: deleteError } = await supabase
-    .from('sales_payments')
+    .from('apartment_payments')
     .delete()
     .eq('id', paymentId)
 
