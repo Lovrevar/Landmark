@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Search, Filter, DollarSign, Plus, Building2 } from 'lucide-react'
+import { Home, Search, Filter, DollarSign, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './Apartments/types/apartmentTypes'
 import * as apartmentService from './Apartments/services/apartmentService'
 import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
@@ -11,6 +11,7 @@ import { ApartmentDetailsModal } from './Apartments/forms/ApartmentDetailsModal'
 import { WirePaymentModal } from './Apartments/forms/WirePaymentModal'
 import { PaymentHistoryModal } from './Apartments/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Apartments/forms/EditPaymentModal'
+import { LinkUnitsModal } from './Apartments/forms/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
   const { user } = useAuth()
@@ -30,6 +31,7 @@ const ApartmentManagement: React.FC = () => {
   const [showWireModal, setShowWireModal] = useState(false)
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
+  const [showLinkUnitsModal, setShowLinkUnitsModal] = useState(false)
 
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [paymentAmount, setPaymentAmount] = useState(0)
@@ -39,6 +41,11 @@ const ApartmentManagement: React.FC = () => {
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
   const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
   const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
+  const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
+  const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
+  const [linkedGarages, setLinkedGarages] = useState<Record<string, any>>({})
+  const [linkedStorages, setLinkedStorages] = useState<Record<string, any>>({})
+  const [paymentUnitType, setPaymentUnitType] = useState<'apartment' | 'garage' | 'storage'>('apartment')
 
   useEffect(() => {
     fetchData()
@@ -82,18 +89,80 @@ const ApartmentManagement: React.FC = () => {
 
       const { data: paymentsData } = await supabase
         .from('apartment_payments')
-        .select('apartment_id, amount')
+        .select('apartment_id, garage_id, storage_id, amount')
 
-      const paymentTotals: Record<string, number> = {}
+      const aptPaymentTotals: Record<string, number> = {}
+      const garPaymentTotals: Record<string, number> = {}
+      const storPaymentTotals: Record<string, number> = {}
+
       if (paymentsData) {
         paymentsData.forEach((payment: any) => {
-          if (!paymentTotals[payment.apartment_id]) {
-            paymentTotals[payment.apartment_id] = 0
+          if (payment.garage_id) {
+            if (!garPaymentTotals[payment.garage_id]) {
+              garPaymentTotals[payment.garage_id] = 0
+            }
+            garPaymentTotals[payment.garage_id] += Number(payment.amount)
+          } else if (payment.storage_id) {
+            if (!storPaymentTotals[payment.storage_id]) {
+              storPaymentTotals[payment.storage_id] = 0
+            }
+            storPaymentTotals[payment.storage_id] += Number(payment.amount)
+          } else {
+            if (!aptPaymentTotals[payment.apartment_id]) {
+              aptPaymentTotals[payment.apartment_id] = 0
+            }
+            aptPaymentTotals[payment.apartment_id] += Number(payment.amount)
           }
-          paymentTotals[payment.apartment_id] += Number(payment.amount)
         })
       }
-      setApartmentPaymentTotals(paymentTotals)
+      setApartmentPaymentTotals(aptPaymentTotals)
+      setGaragePaymentTotals(garPaymentTotals)
+      setStoragePaymentTotals(storPaymentTotals)
+
+      const garageIds = [...new Set(apartmentsData?.map((a: any) => a.garage_id).filter(Boolean) || [])]
+      const storageIds = [...new Set(apartmentsData?.map((a: any) => a.repository_id).filter(Boolean) || [])]
+
+      const garagesMap: Record<string, any> = {}
+      const storagesMap: Record<string, any> = {}
+
+      if (garageIds.length > 0) {
+        const { data: garagesData } = await supabase
+          .from('garages')
+          .select('id, number, size_m2, price')
+          .in('id', garageIds)
+
+        const garageById: Record<string, any> = {}
+        garagesData?.forEach((g: any) => {
+          garageById[g.id] = g
+        })
+
+        apartmentsData?.forEach((apt: any) => {
+          if (apt.garage_id && garageById[apt.garage_id]) {
+            garagesMap[apt.id] = garageById[apt.garage_id]
+          }
+        })
+      }
+
+      if (storageIds.length > 0) {
+        const { data: storagesData } = await supabase
+          .from('repositories')
+          .select('id, number, size_m2, price')
+          .in('id', storageIds)
+
+        const storageById: Record<string, any> = {}
+        storagesData?.forEach((s: any) => {
+          storageById[s.id] = s
+        })
+
+        apartmentsData?.forEach((apt: any) => {
+          if (apt.repository_id && storageById[apt.repository_id]) {
+            storagesMap[apt.id] = storageById[apt.repository_id]
+          }
+        })
+      }
+
+      setLinkedGarages(garagesMap)
+      setLinkedStorages(storagesMap)
 
       const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: any) => {
         const project = projectsData?.find(p => p.id === apt.project_id)
@@ -195,6 +264,13 @@ const ApartmentManagement: React.FC = () => {
         return
       }
 
+      const garageId = paymentUnitType === 'garage' && linkedGarages[selectedApartment.id]
+        ? linkedGarages[selectedApartment.id].id
+        : null
+      const storageId = paymentUnitType === 'storage' && linkedStorages[selectedApartment.id]
+        ? linkedStorages[selectedApartment.id].id
+        : null
+
       await apartmentService.addPaymentToApartment(
         selectedApartment.id,
         sale.customer_id,
@@ -203,13 +279,16 @@ const ApartmentManagement: React.FC = () => {
         paymentAmount,
         paymentDate,
         paymentType,
-        paymentNotes
+        paymentNotes,
+        garageId,
+        storageId
       )
       setShowWireModal(false)
       setPaymentAmount(0)
       setPaymentDate('')
       setPaymentNotes('')
       setPaymentType('installment')
+      setPaymentUnitType('apartment')
       setSelectedApartment(null)
       fetchData()
       alert('Payment recorded successfully!')
@@ -422,10 +501,20 @@ const ApartmentManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredApartments.map((apartment) => {
-            const totalPaid = apartmentPaymentTotals[apartment.id] || 0
-            const salePrice = apartment.price
-            const paymentProgress = `€${totalPaid.toLocaleString()} / €${salePrice.toLocaleString()}`
-            const paymentPercentage = salePrice > 0 ? (totalPaid / salePrice) * 100 : 0
+            const linkedGarage = linkedGarages[apartment.id]
+            const linkedStorage = linkedStorages[apartment.id]
+
+            const aptPaid = apartmentPaymentTotals[apartment.id] || 0
+            const garagePaid = linkedGarage ? (garagePaymentTotals[linkedGarage.id] || 0) : 0
+            const storagePaid = linkedStorage ? (storagePaymentTotals[linkedStorage.id] || 0) : 0
+
+            const totalPrice = apartment.price + (linkedGarage?.price || 0) + (linkedStorage?.price || 0)
+            const totalPaid = aptPaid + garagePaid + storagePaid
+
+            const aptPercentage = apartment.price > 0 ? (aptPaid / apartment.price) * 100 : 0
+            const garagePercentage = linkedGarage && linkedGarage.price > 0 ? (garagePaid / linkedGarage.price) * 100 : 0
+            const storagePercentage = linkedStorage && linkedStorage.price > 0 ? (storagePaid / linkedStorage.price) * 100 : 0
+            const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
               <div
@@ -461,39 +550,131 @@ const ApartmentManagement: React.FC = () => {
                     <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
                   </div>
 
+                  {(linkedGarage || linkedStorage) && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">Linked Units:</p>
+                      {linkedGarage && (
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                          <span className="flex items-center">
+                            <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
+                            Garage {linkedGarage.number}
+                          </span>
+                          <span className="font-medium text-orange-600">€{linkedGarage.price.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {linkedStorage && (
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span className="flex items-center">
+                            <Package className="w-3 h-3 mr-1 text-gray-600" />
+                            Storage {linkedStorage.number}
+                          </span>
+                          <span className="font-medium text-gray-600">€{linkedStorage.price.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
+                        <span className="text-xs font-semibold text-gray-700">Total Value:</span>
+                        <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {apartment.status === 'Sold' && apartment.buyer_name && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Buyer:</span>
                         <span className="text-sm font-medium">{apartment.buyer_name}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Sale Price:</span>
-                        <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Paid:</span>
-                        <span className="text-sm font-bold text-blue-600">€{totalPaid.toLocaleString()}</span>
-                      </div>
-                      <div className="mt-2">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-500">Payment Progress</span>
-                          <span className="text-xs font-medium">{paymentPercentage.toFixed(1)}%</span>
+
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="mb-2">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-700">Overall Progress</span>
+                            <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-300 ${
+                                overallPercentage >= 100 ? 'bg-green-600' :
+                                overallPercentage >= 50 ? 'bg-blue-600' :
+                                'bg-orange-600'
+                              }`}
+                              style={{
+                                width: `${Math.min(100, overallPercentage)}%`
+                              }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1 font-medium">
+                            €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString()}
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              paymentPercentage >= 100 ? 'bg-green-600' :
-                              paymentPercentage >= 50 ? 'bg-blue-600' :
-                              'bg-orange-600'
-                            }`}
-                            style={{
-                              width: `${Math.min(100, paymentPercentage)}%`
-                            }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          {paymentProgress}
+
+                        <div className="space-y-1.5 mt-3">
+                          <div>
+                            <div className="flex justify-between items-center mb-0.5">
+                              <span className="text-xs text-gray-600 flex items-center">
+                                <Home className="w-3 h-3 mr-1 text-blue-600" />
+                                Apartment
+                              </span>
+                              <span className="text-xs font-medium">{aptPercentage.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className="h-1.5 rounded-full transition-all duration-300 bg-blue-600"
+                                style={{
+                                  width: `${Math.min(100, aptPercentage)}%`
+                                }}
+                              ></div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              €{aptPaid.toLocaleString()} / €{apartment.price.toLocaleString()}
+                            </div>
+                          </div>
+
+                          {linkedGarage && (
+                            <div>
+                              <div className="flex justify-between items-center mb-0.5">
+                                <span className="text-xs text-gray-600 flex items-center">
+                                  <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
+                                  Garage {linkedGarage.number}
+                                </span>
+                                <span className="text-xs font-medium">{garagePercentage.toFixed(1)}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div
+                                  className="h-1.5 rounded-full transition-all duration-300 bg-orange-600"
+                                  style={{
+                                    width: `${Math.min(100, garagePercentage)}%`
+                                  }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                €{garagePaid.toLocaleString()} / €{linkedGarage.price.toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+
+                          {linkedStorage && (
+                            <div>
+                              <div className="flex justify-between items-center mb-0.5">
+                                <span className="text-xs text-gray-600 flex items-center">
+                                  <Package className="w-3 h-3 mr-1 text-gray-600" />
+                                  Storage {linkedStorage.number}
+                                </span>
+                                <span className="text-xs font-medium">{storagePercentage.toFixed(1)}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div
+                                  className="h-1.5 rounded-full transition-all duration-300 bg-gray-600"
+                                  style={{
+                                    width: `${Math.min(100, storagePercentage)}%`
+                                  }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                €{storagePaid.toLocaleString()} / €{linkedStorage.price.toLocaleString()}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </>
@@ -508,6 +689,7 @@ const ApartmentManagement: React.FC = () => {
                         setPaymentAmount(0)
                         setPaymentDate(new Date().toISOString().split('T')[0])
                         setPaymentNotes('')
+                        setPaymentUnitType('apartment')
                         setShowWireModal(true)
                       }}
                       className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
@@ -522,6 +704,18 @@ const ApartmentManagement: React.FC = () => {
                       Payments
                     </button>
                   </div>
+                  {(!linkedGarage || !linkedStorage) && (
+                    <button
+                      onClick={() => {
+                        setSelectedApartment(apartment)
+                        setShowLinkUnitsModal(true)
+                      }}
+                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-md text-xs font-medium hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <LinkIcon className="w-3 h-3 mr-1" />
+                      Link Units
+                    </button>
+                  )}
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => {
@@ -614,16 +808,21 @@ const ApartmentManagement: React.FC = () => {
           setPaymentDate('')
           setPaymentNotes('')
           setPaymentType('installment')
+          setPaymentUnitType('apartment')
         }}
         apartment={selectedApartment}
         amount={paymentAmount}
         paymentDate={paymentDate}
         paymentType={paymentType}
         notes={paymentNotes}
+        linkedGarage={selectedApartment ? linkedGarages[selectedApartment.id] : null}
+        linkedStorage={selectedApartment ? linkedStorages[selectedApartment.id] : null}
+        paymentUnitType={paymentUnitType}
         onAmountChange={setPaymentAmount}
         onDateChange={setPaymentDate}
         onPaymentTypeChange={setPaymentType}
         onNotesChange={setPaymentNotes}
+        onPaymentUnitTypeChange={setPaymentUnitType}
         onSubmit={handleAddPayment}
       />
 
@@ -636,6 +835,8 @@ const ApartmentManagement: React.FC = () => {
         }}
         apartment={selectedApartment}
         payments={payments}
+        linkedGarage={selectedApartment ? linkedGarages[selectedApartment.id] : null}
+        linkedStorage={selectedApartment ? linkedStorages[selectedApartment.id] : null}
         onEditPayment={(payment) => {
           setEditingPayment(payment)
           setShowEditPaymentModal(true)
@@ -651,6 +852,16 @@ const ApartmentManagement: React.FC = () => {
         }}
         payment={editingPayment}
         onSubmit={handleUpdatePayment}
+      />
+
+      <LinkUnitsModal
+        visible={showLinkUnitsModal}
+        onClose={() => {
+          setShowLinkUnitsModal(false)
+          setSelectedApartment(null)
+        }}
+        apartment={selectedApartment}
+        onLink={fetchData}
       />
     </div>
   )
