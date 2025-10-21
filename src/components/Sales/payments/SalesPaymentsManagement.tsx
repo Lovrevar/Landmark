@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, ApartmentPayment, Apartment, Building, Project, Sale, Customer } from '../lib/supabase'
+import { supabase, ApartmentPayment, Apartment, Building, Project, Sale, Customer } from '../../../lib/supabase'
 import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 

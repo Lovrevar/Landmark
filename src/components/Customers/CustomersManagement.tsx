@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { Plus, Search, Mail } from 'lucide-react'
-import { CustomerCategory } from './Customers/types/customerTypes'
-import { useCustomerData } from './Customers/hooks/useCustomerData'
-import { CategoryTabs } from './Customers/views/CategoryTabs'
-import { CustomerGrid } from './Customers/views/CustomerGrid'
-import { CustomerFormModal } from './Customers/forms/CustomerFormModal'
-import { CustomerDetailModal } from './Customers/forms/CustomerDetailModal'
-import { CustomerWithApartments } from './Customers/types/customerTypes'
+import { CustomerCategory } from './types/customerTypes'
+import { useCustomerData } from './hooks/useCustomerData'
+import { CategoryTabs } from './views/CategoryTabs'
+import { CustomerGrid } from './views/CustomerGrid'
+import { CustomerFormModal } from './forms/CustomerFormModal'
+import { CustomerDetailModal } from './forms/CustomerDetailModal'
+import { CustomerWithApartments } from './types/customerTypes'
 
 const CustomersManagement: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<CustomerCategory>('interested')
