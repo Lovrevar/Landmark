@@ -65,12 +65,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
 
       if (error) throw error
 
-      alert('Garage linked successfully!')
       onLink()
       onClose()
     } catch (error) {
       console.error('Error linking garage:', error)
-      alert('Error linking garage')
     }
   }
 
@@ -85,12 +83,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
 
       if (error) throw error
 
-      alert('Storage linked successfully!')
       onLink()
       onClose()
     } catch (error) {
       console.error('Error linking storage:', error)
-      alert('Error linking storage')
     }
   }
 
