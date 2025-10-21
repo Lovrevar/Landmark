@@ -196,10 +196,9 @@ const ApartmentManagement: React.FC = () => {
       await apartmentService.createBulkApartments(data)
       setShowBulkModal(false)
       fetchData()
-      alert('Apartments created successfully!')
     } catch (error) {
       console.error('Error creating apartments:', error)
-      alert('Error creating apartments')
+ 
     }
   }
 
@@ -208,10 +207,10 @@ const ApartmentManagement: React.FC = () => {
       await apartmentService.createSingleApartment(data)
       setShowSingleModal(false)
       fetchData()
-      alert('Apartment created successfully!')
+
     } catch (error) {
       console.error('Error creating apartment:', error)
-      alert('Error creating apartment')
+
     }
   }
 
@@ -221,10 +220,8 @@ const ApartmentManagement: React.FC = () => {
       setShowEditModal(false)
       setSelectedApartment(null)
       fetchData()
-      alert('Apartment updated successfully!')
     } catch (error) {
       console.error('Error updating apartment:', error)
-      alert('Error updating apartment')
     }
   }
 
@@ -234,10 +231,8 @@ const ApartmentManagement: React.FC = () => {
     try {
       await apartmentService.deleteApartment(id)
       fetchData()
-      alert('Apartment deleted successfully!')
     } catch (error) {
       console.error('Error deleting apartment:', error)
-      alert('Error deleting apartment')
     }
   }
 
@@ -291,10 +286,8 @@ const ApartmentManagement: React.FC = () => {
       setPaymentUnitType('apartment')
       setSelectedApartment(null)
       fetchData()
-      alert('Payment recorded successfully!')
     } catch (error) {
       console.error('Error adding payment:', error)
-      alert('Error recording payment')
     }
   }
 
@@ -306,7 +299,6 @@ const ApartmentManagement: React.FC = () => {
       setShowPaymentHistory(true)
     } catch (error) {
       console.error('Error fetching payments:', error)
-      alert('Error loading payment history')
     }
   }
 
@@ -332,10 +324,8 @@ const ApartmentManagement: React.FC = () => {
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
       setPayments(paymentsData)
       fetchData()
-      alert('Payment updated successfully!')
     } catch (error) {
       console.error('Error updating payment:', error)
-      alert('Error updating payment')
     }
   }
 
@@ -347,10 +337,8 @@ const ApartmentManagement: React.FC = () => {
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
       setPayments(paymentsData)
       fetchData()
-      alert('Payment deleted successfully!')
     } catch (error) {
       console.error('Error deleting payment:', error)
-      alert('Error deleting payment')
     }
   }
 
