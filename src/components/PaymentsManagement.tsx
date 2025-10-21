@@ -45,29 +45,27 @@ const PaymentsManagement: React.FC = () => {
         .select(`
           *,
           customers (name),
-          projects (name),
-          apartments (
-            apartment_number,
-            buildings (building_name)
+          units (
+            unit_number,
+            buildings (
+              building_name,
+              projects (name)
+            )
           )
         `)
         .order('payment_date', { ascending: false })
 
       if (apartmentPayments) {
         apartmentPayments.forEach(p => {
-          const buildingName = p.apartments?.buildings?.building_name || ''
-          const apartmentNumber = p.apartments?.apartment_number || ''
-          const apartmentInfo = buildingName && apartmentNumber ? `${buildingName} - ${apartmentNumber}` : buildingName || apartmentNumber || ''
-
           allPayments.push({
             id: p.id,
             date: p.payment_date,
             type: 'income',
             category: 'Sales',
             entity: p.customers?.name || 'Unknown Customer',
-            project: p.projects?.name || 'N/A',
-            amount: parseFloat(p.amount),
-            notes: apartmentInfo || p.notes || '',
+            project: p.units?.buildings?.projects?.name || 'N/A',
+            amount: p.amount,
+            notes: `${p.units?.buildings?.building_name || ''} - ${p.units?.unit_number || ''}`,
             created_at: p.created_at
           })
         })
