@@ -184,6 +184,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
+          const apartmentPrice = unit.price || 0
+          const garagePrice = linkedGarage?.price || 0
+          const repositoryPrice = linkedRepository?.price || 0
+          const totalPackagePrice = apartmentPrice + garagePrice + repositoryPrice
+          const hasLinkedUnits = linkedGarage || linkedRepository
+
           return (
             <div
               key={unit.id}
@@ -243,9 +249,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   <span className="text-sm font-medium text-blue-600">€{unit.price_per_m2?.toLocaleString() || '0'}/m²</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total Price:</span>
+                  <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? 'Apartment Price:' : 'Total Price:'}</span>
                   <span className="text-sm font-bold text-green-600">€{unit.price.toLocaleString()}</span>
                 </div>
+
+                {activeUnitType === 'apartment' && hasLinkedUnits && (
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                    <span className="text-sm font-semibold text-gray-900">Total Package:</span>
+                    <span className="text-base font-bold text-blue-700">€{totalPackagePrice.toLocaleString()}</span>
+                  </div>
+                )}
 
                 {unit.status === 'Sold' && unit.sale_info && (
                   <>
@@ -287,26 +300,38 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 )}
 
                 {linkedGarage && (
-                  <div className="flex justify-between items-center text-sm bg-orange-100 px-2 py-1 rounded">
-                    <span className="text-orange-700">Garage: {linkedGarage.number}</span>
-                    <button
-                      onClick={() => onUnlinkGarage(unit.id)}
-                      className="text-orange-600 hover:text-orange-800"
-                    >
-                      <Unlink className="w-3 h-3" />
-                    </button>
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-orange-700">Garage: {linkedGarage.number}</span>
+                      <button
+                        onClick={() => onUnlinkGarage(unit.id)}
+                        className="text-orange-600 hover:text-orange-800"
+                      >
+                        <Unlink className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-orange-600">Price:</span>
+                      <span className="text-xs font-bold text-orange-700">€{garagePrice.toLocaleString()}</span>
+                    </div>
                   </div>
                 )}
 
                 {linkedRepository && (
-                  <div className="flex justify-between items-center text-sm bg-gray-100 px-2 py-1 rounded">
-                    <span className="text-gray-700">Repository: {linkedRepository.number}</span>
-                    <button
-                      onClick={() => onUnlinkRepository(unit.id)}
-                      className="text-gray-600 hover:text-gray-800"
-                    >
-                      <Unlink className="w-3 h-3" />
-                    </button>
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-gray-700">Repository: {linkedRepository.number}</span>
+                      <button
+                        onClick={() => onUnlinkRepository(unit.id)}
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        <Unlink className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">Price:</span>
+                      <span className="text-xs font-bold text-gray-700">€{repositoryPrice.toLocaleString()}</span>
+                    </div>
                   </div>
                 )}
               </div>
