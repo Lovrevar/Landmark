@@ -92,14 +92,86 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       </div>
 
       {activeCategory === 'buyer' && customer.apartments && customer.apartments.length > 0 && (
-        <div className="mb-4 p-3 bg-green-50 rounded-lg">
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs font-semibold text-green-800 mb-2">Purchased Units</p>
-          {customer.apartments.map((apt) => (
-            <div key={apt.id} className="text-xs text-green-700 flex justify-between">
-              <span>{apt.project_name} - Unit {apt.number}</span>
-              <span>€{(apt.sale_price / 1000).toFixed(0)}K</span>
-            </div>
-          ))}
+          <div className="space-y-2">
+            {customer.apartments.map((unit: any) => {
+              const apartmentPrice = unit.type === 'apartment' ? unit.price : 0
+              const garagePrice = unit.garage?.price || 0
+              const repositoryPrice = unit.repository?.price || 0
+              const totalPackage = apartmentPrice + garagePrice + repositoryPrice
+
+              return (
+                <div key={unit.id} className="bg-white rounded p-2 space-y-1">
+                  <div className="flex justify-between items-start">
+                    {unit.type === 'apartment' && (
+                      <span className="text-xs font-medium text-green-800">
+                        {unit.project_name} - Unit {unit.number}
+                      </span>
+                    )}
+                    {unit.type === 'garage' && (
+                      <span className="text-xs font-medium text-orange-700">
+                        Garage {unit.number}
+                      </span>
+                    )}
+                    {unit.type === 'repository' && (
+                      <span className="text-xs font-medium text-gray-700">
+                        Repository {unit.number}
+                      </span>
+                    )}
+                    <span className="text-xs font-bold text-green-700">
+                      €{(totalPackage / 1000).toFixed(0)}K
+                    </span>
+                  </div>
+
+                  {unit.type === 'apartment' && (unit.garage || unit.repository) && (
+                    <div className="text-xs text-gray-600 pl-2 space-y-0.5">
+                      {unit.garage && (
+                        <div className="flex justify-between">
+                          <span className="text-orange-600">+ Garage {unit.garage.number}</span>
+                          <span>€{(unit.garage.price / 1000).toFixed(0)}K</span>
+                        </div>
+                      )}
+                      {unit.repository && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">+ Repository {unit.repository.number}</span>
+                          <span>€{(unit.repository.price / 1000).toFixed(0)}K</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {(() => {
+            const totalPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
+            const totalPrice = customer.apartments.reduce((sum: number, unit: any) => {
+              const aptPrice = unit.type === 'apartment' ? unit.price : 0
+              const garPrice = unit.garage?.price || 0
+              const repPrice = unit.repository?.price || 0
+              return sum + aptPrice + garPrice + repPrice
+            }, 0)
+            const remaining = totalPrice - totalPaid
+
+            return (
+              <div className="mt-3 pt-3 border-t border-green-300 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-green-800">Total Paid:</span>
+                  <span className="font-bold text-green-700">€{totalPaid.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-green-800">Remaining:</span>
+                  <span className="font-bold text-red-600">€{remaining.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-green-200">
+                  <span className="font-semibold text-green-900">Total Value:</span>
+                  <span className="font-bold text-green-900">€{totalPrice.toLocaleString()}</span>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
