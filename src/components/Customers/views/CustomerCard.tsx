@@ -96,10 +96,11 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <p className="text-xs font-semibold text-green-800 mb-2">Purchased Units</p>
           <div className="space-y-2">
             {customer.apartments.map((unit: any) => {
-              const apartmentPrice = unit.type === 'apartment' ? unit.price : 0
-              const garagePrice = unit.garage?.price || 0
-              const repositoryPrice = unit.repository?.price || 0
-              const totalPackage = apartmentPrice + garagePrice + repositoryPrice
+              const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
+              const garagePrice = (unit.garage?.price || 0)
+              const repositoryPrice = (unit.repository?.price || 0)
+              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
+              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
 
               return (
                 <div key={unit.id} className="bg-white rounded p-2 space-y-1">
@@ -120,7 +121,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                       </span>
                     )}
                     <span className="text-xs font-bold text-green-700">
-                      €{(totalPackage / 1000).toFixed(0)}K
+                      €{totalPackage > 0 ? (totalPackage / 1000).toFixed(0) : '0'}K
                     </span>
                   </div>
 
@@ -148,10 +149,11 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           {(() => {
             const totalPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
             const totalPrice = customer.apartments.reduce((sum: number, unit: any) => {
-              const aptPrice = unit.type === 'apartment' ? unit.price : 0
+              const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
               const garPrice = unit.garage?.price || 0
               const repPrice = unit.repository?.price || 0
-              return sum + aptPrice + garPrice + repPrice
+              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
+              return sum + aptPrice + garPrice + repPrice + standalonePrice
             }, 0)
             const remaining = totalPrice - totalPaid
 
@@ -190,6 +192,11 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
             )}
             {customer.preferences.preferred_location && (
               <div>Location: {customer.preferences.preferred_location}</div>
+            )}
+            {customer.preferences.notes && (
+              <div className="pt-1 border-t border-blue-200 mt-2">
+                <span className="font-medium">Notes: </span>{customer.preferences.notes}
+              </div>
             )}
           </div>
         </div>

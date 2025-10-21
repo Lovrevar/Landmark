@@ -88,10 +88,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                   <div className="space-y-6">
                     {Object.entries(projectGroups).map(([projectName, units]: [string, any]) => {
                       const projectTotal = units.reduce((sum: number, u: any) => {
-                        const aptPrice = u.type === 'apartment' ? u.price : 0
+                        const aptPrice = u.type === 'apartment' ? (u.price || 0) : 0
                         const garPrice = u.garage?.price || 0
                         const repPrice = u.repository?.price || 0
-                        return sum + aptPrice + garPrice + repPrice
+                        const standalonePrice = (u.type === 'garage' || u.type === 'repository') ? (u.price || 0) : 0
+                        return sum + aptPrice + garPrice + repPrice + standalonePrice
                       }, 0)
 
                       const projectPaid = units.reduce((sum: number, u: any) => sum + (u.total_paid || 0), 0)
@@ -106,10 +107,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                           <div className="space-y-3">
                             {units.map((unit: any) => {
-                              const apartmentPrice = unit.type === 'apartment' ? unit.price : 0
+                              const apartmentPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
                               const garagePrice = unit.garage?.price || 0
                               const repositoryPrice = unit.repository?.price || 0
-                              const totalPackage = apartmentPrice + garagePrice + repositoryPrice
+                              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
+                              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
 
                               return (
                                 <div key={unit.id} className="bg-white border border-gray-200 rounded-lg p-3">
@@ -189,10 +191,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                     {Object.keys(projectGroups).length > 1 && (() => {
                       const grandTotal = customer.apartments.reduce((sum: number, unit: any) => {
-                        const aptPrice = unit.type === 'apartment' ? unit.price : 0
+                        const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
                         const garPrice = unit.garage?.price || 0
                         const repPrice = unit.repository?.price || 0
-                        return sum + aptPrice + garPrice + repPrice
+                        const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
+                        return sum + aptPrice + garPrice + repPrice + standalonePrice
                       }, 0)
                       const grandPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
                       const grandRemaining = grandTotal - grandPaid
