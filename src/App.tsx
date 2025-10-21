@@ -19,6 +19,7 @@ import SalesPaymentsManagement from './components/SalesPaymentsManagement'
 import SupervisionReports from './components/SupervisionReports'
 import WorkLogs from './components/WorkLogs'
 import FundingPaymentsManagement from './components/FundingPaymentsManagement'
+import GeneralPaymentsManagement from './components/GeneralPaymentsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -194,6 +195,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <FundingPaymentsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/general-payments"
+          element={
+            <ProtectedRoute>
+              <GeneralPaymentsManagement />
             </ProtectedRoute>
           }
         />

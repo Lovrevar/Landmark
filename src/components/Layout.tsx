@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Projects', icon: Building2, path: '/projects' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' }
+        { name: 'General Payments', icon: DollarSign, path: '/general-payments' }
       ],
       Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
