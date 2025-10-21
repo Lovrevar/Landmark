@@ -1,9 +1,9 @@
 import React from 'react'
-import { useAuth } from '../../contexts/AuthContext'
-import DirectorDashboard from '../dashboards/DirectorDashboard'
-import SalesDashboard from '../dashboards/SalesDashboard'
-import SupervisionDashboard from '../dashboards/SupervisionDashboard'
-import InvestmentDashboard from '../dashboards/InvestmentDashboard'
+import { useAuth } from '../contexts/AuthContext'
+import DirectorDashboard from './dashboards/DirectorDashboard'
+import SalesDashboard from './dashboards/SalesDashboard'
+import SupervisionDashboard from './dashboards/SupervisionDashboard'
+import InvestmentDashboard from './dashboards/InvestmentDashboard'
 
 const Dashboard: React.FC = () => {
   const { currentProfile } = useAuth()

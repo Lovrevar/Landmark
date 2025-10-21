@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, Project, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../../lib/supabase'
-import { useAuth } from '../../contexts/AuthContext'
+import { supabase, Project, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   Building2, 
   Calendar, 

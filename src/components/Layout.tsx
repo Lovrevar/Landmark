@@ -1,6 +1,6 @@
 import React, { ReactNode, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth, Profile } from '../../contexts/AuthContext'
+import { useAuth, Profile } from '../contexts/AuthContext'
 import {
   Building2,
   LogOut,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, ProjectInvestment, Investor, Bank, BankCredit } from '../../lib/supabase'
+import { supabase, Project, ProjectInvestment, Investor, Bank, BankCredit } from '../lib/supabase'
 import { 
   Building2, 
   DollarSign, 

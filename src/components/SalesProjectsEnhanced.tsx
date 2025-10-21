@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Plus, Building2 } from 'lucide-react'
-import { Apartment } from '../../lib/supabase'
-import { useSalesData } from './hooks/useSalesData'
-import * as salesService from './services/salesService'
+import { Apartment } from '../lib/supabase'
+import { useSalesData } from './Sales/hooks/useSalesData'
+import * as salesService from './Sales/services/salesService'
 import {
   ViewMode,
   UnitType,
@@ -15,17 +15,17 @@ import {
   BuildingFormData,
   UnitFormData,
   BulkCreateData
-} from './types/salesTypes'
-import { ProjectsGrid } from './views/ProjectsGrid'
-import { BuildingsGrid } from './views/BuildingsGrid'
-import { UnitsGrid } from './views/UnitsGrid'
-import { BuildingQuantityModal } from './forms/BuildingQuantityModal'
-import { SingleBuildingModal } from './forms/SingleBuildingModal'
-import { SingleUnitModal } from './forms/SingleUnitModal'
-import { BulkUnitsModal } from './forms/BulkUnitsModal'
-import { LinkingModal } from './forms/LinkingModal'
-import { SaleFormModal } from './forms/SaleFormModal'
-import { BulkPriceUpdateModal } from './forms/BulkPriceUpdateModal'
+} from './Sales/types/salesTypes'
+import { ProjectsGrid } from './Sales/views/ProjectsGrid'
+import { BuildingsGrid } from './Sales/views/BuildingsGrid'
+import { UnitsGrid } from './Sales/views/UnitsGrid'
+import { BuildingQuantityModal } from './Sales/forms/BuildingQuantityModal'
+import { SingleBuildingModal } from './Sales/forms/SingleBuildingModal'
+import { SingleUnitModal } from './Sales/forms/SingleUnitModal'
+import { BulkUnitsModal } from './Sales/forms/BulkUnitsModal'
+import { LinkingModal } from './Sales/forms/LinkingModal'
+import { SaleFormModal } from './Sales/forms/SaleFormModal'
+import { BulkPriceUpdateModal } from './Sales/forms/BulkPriceUpdateModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()

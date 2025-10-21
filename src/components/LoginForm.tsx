@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 import { Building2, Lock, User } from 'lucide-react'
 
 const LoginForm: React.FC = () => {

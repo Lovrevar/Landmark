@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Bank, BankCredit, Project } from '../../lib/supabase'
+import { supabase, Bank, BankCredit, Project } from '../lib/supabase'
 import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock, Send } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { BankWirePaymentModal } from './forms/BankWirePaymentModal'
+import { BankWirePaymentModal } from './Funding/forms/BankWirePaymentModal'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]

@@ -1,23 +1,25 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import LoginForm from './components/Auth/LoginForm'
-import Layout from './components/shared/Layout'
-import Dashboard from './components/shared/Dashboard'
-import SubcontractorManagement from './components/Site/SubcontractorManagement'
-import ProjectDetails from './components/Projects/ProjectDetails'
-import SiteManagement from './components/Site/SiteManagement'
-import SalesProjects from './components/Sales/SalesProjectsEnhanced'
-import CustomersManagement from './components/Customers/CustomersManagement'
-import SalesReports from './components/Sales/reports/SalesReports'
-import BanksManagement from './components/Funding/BanksManagement'
-import InvestmentProjects from './components/Funding/InvestmentProjects'
-import InvestorsManagement from './components/Funding/InvestorsManagement'
-import ApartmentManagement from './components/Apartments/ApartmentManagement'
-import SalesPaymentsManagement from './components/Sales/payments/SalesPaymentsManagement'
-import SupervisionReports from './components/Site/reports/SupervisionReports'
-import WorkLogs from './components/Site/WorkLogs'
-import FundingPaymentsManagement from './components/Funding/FundingPaymentsManagement'
+import LoginForm from './components/LoginForm'
+import Layout from './components/Layout'
+import Dashboard from './components/Dashboard'
+import SubcontractorManagement from './components/SubcontractorManagement'
+import ProjectDetails from './components/ProjectDetails'
+import SiteManagement from './components/SiteManagement'
+import SalesProjects from './components/SalesProjectsEnhanced'
+import CustomersManagement from './components/CustomersManagement'
+import SalesReports from './components/SalesReports'
+import BanksManagement from './components/BanksManagement'
+import InvestmentProjects from './components/InvestmentProjects'
+import InvestorsManagement from './components/InvestorsManagement'
+import PaymentsManagement from './components/PaymentsManagement'
+import ApartmentManagement from './components/ApartmentManagement'
+import SalesPaymentsManagement from './components/SalesPaymentsManagement'
+import SupervisionReports from './components/SupervisionReports'
+import WorkLogs from './components/WorkLogs'
+import FundingPaymentsManagement from './components/FundingPaymentsManagement'
+import GeneralPaymentsManagement from './components/GeneralPaymentsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -101,6 +103,30 @@ function AppContent() {
           }
         />
         <Route
+          path="/sales-projects"
+          element={
+            <ProtectedRoute>
+              <SalesProjects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <CustomersManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales-reports"
+          element={
+            <ProtectedRoute>
+              <SalesReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/banks"
           element={
             <ProtectedRoute>
@@ -121,6 +147,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <InvestorsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute>
+              <PaymentsManagement />
             </ProtectedRoute>
           }
         />
@@ -161,6 +195,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <FundingPaymentsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/general-payments"
+          element={
+            <ProtectedRoute>
+              <GeneralPaymentsManagement />
             </ProtectedRoute>
           }
         />
