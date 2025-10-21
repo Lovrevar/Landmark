@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2 } from 'lucide-react'
+import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2, DollarSign, CheckSquare, Square } from 'lucide-react'
 import {
   BuildingWithUnits,
   UnitType,
@@ -26,6 +26,11 @@ interface UnitsGridProps {
   onUnlinkGarage: (apartmentId: string) => void
   onUnlinkRepository: (apartmentId: string) => void
   onBack: () => void
+  selectedUnitIds: string[]
+  onToggleUnitSelection: (unitId: string) => void
+  onSelectAllUnits: () => void
+  onDeselectAllUnits: () => void
+  onConfigurePrice: () => void
 }
 
 export const UnitsGrid: React.FC<UnitsGridProps> = ({
@@ -42,7 +47,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   onLinkApartment,
   onUnlinkGarage,
   onUnlinkRepository,
-  onBack
+  onBack,
+  selectedUnitIds,
+  onToggleUnitSelection,
+  onSelectAllUnits,
+  onDeselectAllUnits,
+  onConfigurePrice
 }) => {
   const getUnitIcon = (unitType: UnitType) => {
     if (unitType === 'apartment') return Home
@@ -72,6 +82,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   }
 
   const filteredUnits = getFilteredUnits()
+  const allFilteredSelected = filteredUnits.length > 0 && filteredUnits.every(u => selectedUnitIds.includes(u.id))
 
   return (
     <div>
@@ -81,6 +92,29 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
       >
         ← Back to Buildings
       </button>
+
+      {selectedUnitIds.length > 0 && (
+        <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedUnitIds.length} {selectedUnitIds.length === 1 ? 'unit' : 'units'} selected
+            </span>
+            <button
+              onClick={onDeselectAllUnits}
+              className="text-sm text-blue-700 hover:text-blue-900 underline"
+            >
+              Deselect All
+            </button>
+          </div>
+          <button
+            onClick={onConfigurePrice}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <DollarSign className="w-4 h-4 mr-2" />
+            Configure Price
+          </button>
+        </div>
+      )}
 
       <div className="flex space-x-2 mb-6">
         {(['apartment', 'garage', 'repository'] as UnitType[]).map((type) => {
@@ -106,9 +140,10 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
         })}
       </div>
 
-      <div className="flex items-center space-x-4 mb-6">
-        <span className="text-sm font-medium text-gray-700">Filter by status:</span>
-        <div className="flex space-x-2">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">Filter by status:</span>
+          <div className="flex space-x-2">
           {[
             { value: 'all', label: 'All' },
             { value: 'available', label: 'Available' },
@@ -127,6 +162,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
               {filter.label}
             </button>
           ))}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={allFilteredSelected ? onDeselectAllUnits : onSelectAllUnits}
+            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors duration-200"
+          >
+            {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
+            {allFilteredSelected ? 'Deselect All' : 'Select All'}
+          </button>
         </div>
       </div>
 
@@ -137,11 +182,15 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
           const linkedRepository = activeUnitType === 'apartment' && unit.repository_id ?
             repositories.find(r => r.id === unit.repository_id) : null
 
+          const isSelected = selectedUnitIds.includes(unit.id)
+
           return (
             <div
               key={unit.id}
               className={`rounded-xl shadow-sm border p-4 transition-all duration-200 ${
-                unit.status === 'Sold'
+                isSelected
+                  ? 'border-blue-500 bg-blue-50 shadow-md'
+                  : unit.status === 'Sold'
                   ? 'border-green-200 bg-green-50'
                   : unit.status === 'Reserved'
                     ? 'border-yellow-200 bg-yellow-50'
@@ -149,9 +198,21 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
               }`}
             >
               <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Unit {unit.number}</h4>
-                  <p className="text-sm text-gray-600">Floor {unit.floor}</p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => onToggleUnitSelection(unit.id)}
+                    className="p-1 hover:bg-white rounded transition-colors duration-200"
+                  >
+                    {isSelected ? (
+                      <CheckSquare className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <Square className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Unit {unit.number}</h4>
+                    <p className="text-sm text-gray-600">Floor {unit.floor}</p>
+                  </div>
                 </div>
                 <div className="flex space-x-1">
                   {activeUnitType === 'apartment' && (

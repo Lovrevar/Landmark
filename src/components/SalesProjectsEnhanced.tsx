@@ -25,6 +25,7 @@ import { SingleUnitModal } from './Sales/forms/SingleUnitModal'
 import { BulkUnitsModal } from './Sales/forms/BulkUnitsModal'
 import { LinkingModal } from './Sales/forms/LinkingModal'
 import { SaleFormModal } from './Sales/forms/SaleFormModal'
+import { BulkPriceUpdateModal } from './Sales/forms/BulkPriceUpdateModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
@@ -43,6 +44,8 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showSaleForm, setShowSaleForm] = useState(false)
   const [selectedApartmentForLinking, setSelectedApartmentForLinking] = useState<Apartment | null>(null)
   const [unitForSale, setUnitForSale] = useState<UnitForSale | null>(null)
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([])
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false)
 
   const handleSelectProject = (project: ProjectWithBuildings) => {
     setSelectedProject(project)
@@ -191,6 +194,56 @@ const SalesProjectsEnhanced: React.FC = () => {
   const handleSellUnit = (unit: any, unitType: UnitType) => {
     setUnitForSale({ unit, type: unitType })
     setShowSaleForm(true)
+  }
+
+  const handleToggleUnitSelection = (unitId: string) => {
+    setSelectedUnitIds(prev => {
+      if (prev.includes(unitId)) {
+        return prev.filter(id => id !== unitId)
+      } else {
+        return [...prev, unitId]
+      }
+    })
+  }
+
+  const handleSelectAllUnits = () => {
+    if (!selectedBuilding) return
+    let units: any[] = []
+    if (activeUnitType === 'apartment') units = selectedBuilding.apartments
+    else if (activeUnitType === 'garage') units = selectedBuilding.garages
+    else if (activeUnitType === 'repository') units = selectedBuilding.repositories
+
+    const allIds = units.map(u => u.id)
+    setSelectedUnitIds(allIds)
+  }
+
+  const handleDeselectAllUnits = () => {
+    setSelectedUnitIds([])
+  }
+
+  const handleConfigurePrice = () => {
+    setShowBulkPriceModal(true)
+  }
+
+  const handleBulkPriceUpdate = async (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => {
+    if (selectedUnitIds.length === 0) return
+
+    const confirmMessage = adjustmentType === 'increase'
+      ? `Are you sure you want to increase the price by €${adjustmentValue}/m² for ${selectedUnitIds.length} selected units?`
+      : `Are you sure you want to decrease the price by €${adjustmentValue}/m² for ${selectedUnitIds.length} selected units?`
+
+    if (!confirm(confirmMessage)) return
+
+    try {
+      await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
+      setShowBulkPriceModal(false)
+      setSelectedUnitIds([])
+      refetch()
+      alert(`Successfully updated ${selectedUnitIds.length} units!`)
+    } catch (error) {
+      console.error('Error updating prices:', error)
+      alert('Error updating prices. Please try again.')
+    }
   }
 
   const handleCompleteSale = async (saleData: SaleFormData, customerMode: CustomerMode) => {
@@ -345,7 +398,13 @@ const SalesProjectsEnhanced: React.FC = () => {
           onBack={() => {
             setViewMode('buildings')
             setSelectedBuilding(null)
+            setSelectedUnitIds([])
           }}
+          selectedUnitIds={selectedUnitIds}
+          onToggleUnitSelection={handleToggleUnitSelection}
+          onSelectAllUnits={handleSelectAllUnits}
+          onDeselectAllUnits={handleDeselectAllUnits}
+          onConfigurePrice={handleConfigurePrice}
         />
       )}
 
@@ -397,6 +456,23 @@ const SalesProjectsEnhanced: React.FC = () => {
           setUnitForSale(null)
         }}
         onSubmit={handleCompleteSale}
+      />
+
+      <BulkPriceUpdateModal
+        visible={showBulkPriceModal}
+        selectedUnits={
+          selectedBuilding
+            ? (activeUnitType === 'apartment'
+                ? selectedBuilding.apartments
+                : activeUnitType === 'garage'
+                ? selectedBuilding.garages
+                : selectedBuilding.repositories
+              ).filter(u => selectedUnitIds.includes(u.id))
+            : []
+        }
+        unitType={activeUnitType}
+        onClose={() => setShowBulkPriceModal(false)}
+        onSubmit={handleBulkPriceUpdate}
       />
     </div>
   )

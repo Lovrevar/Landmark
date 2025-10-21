@@ -357,3 +357,47 @@ export const updateUnitAfterSale = async (
 
   if (error) throw error
 }
+
+export const bulkUpdateUnitPrice = async (
+  unitIds: string[],
+  unitType: UnitType,
+  adjustmentType: 'increase' | 'decrease',
+  adjustmentValue: number
+) => {
+  let tableName = ''
+  if (unitType === 'apartment') tableName = 'apartments'
+  else if (unitType === 'garage') tableName = 'garages'
+  else if (unitType === 'repository') tableName = 'repositories'
+
+  const { data: units, error: fetchError } = await supabase
+    .from(tableName)
+    .select('id, size_m2, price_per_m2')
+    .in('id', unitIds)
+
+  if (fetchError) throw fetchError
+  if (!units || units.length === 0) return
+
+  const updates = units.map((unit: any) => {
+    const currentPricePerM2 = unit.price_per_m2 || 0
+    const newPricePerM2 = adjustmentType === 'increase'
+      ? currentPricePerM2 + adjustmentValue
+      : Math.max(0, currentPricePerM2 - adjustmentValue)
+
+    const newTotalPrice = Math.round(unit.size_m2 * newPricePerM2 * 100) / 100
+
+    return supabase
+      .from(tableName)
+      .update({
+        price_per_m2: Math.round(newPricePerM2 * 100) / 100,
+        price: newTotalPrice
+      })
+      .eq('id', unit.id)
+  })
+
+  const results = await Promise.all(updates)
+
+  const errors = results.filter(result => result.error)
+  if (errors.length > 0) {
+    throw new Error(`Failed to update ${errors.length} units`)
+  }
+}
