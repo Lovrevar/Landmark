@@ -34,13 +34,21 @@ export interface ApartmentWithDetails {
 export interface ApartmentPayment {
   id: string
   apartment_id: string
+  customer_id: string
+  project_id: string
+  sale_id: string | null
   amount: number
   payment_date: string
+  payment_type: 'down_payment' | 'installment' | 'final_payment' | 'other'
   notes: string
-  created_by: string
+  garage_id: string | null
+  storage_id: string | null
   created_at: string
+  updated_at: string
 }
 
-export interface PaymentWithUser extends ApartmentPayment {
-  user_email: string
+export interface PaymentWithCustomer extends ApartmentPayment {
+  customer_name: string
+  customer_surname: string
+  customer_email: string
 }

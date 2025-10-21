@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Home, Search, Filter, DollarSign, Plus, Building2 } from 'lucide-react'
-import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithUser } from './Apartments/types/apartmentTypes'
+import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './Apartments/types/apartmentTypes'
 import * as apartmentService from './Apartments/services/apartmentService'
 import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
 import { SingleApartmentModal } from './Apartments/forms/SingleApartmentModal'
@@ -35,8 +35,9 @@ const ApartmentManagement: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
-  const [payments, setPayments] = useState<PaymentWithUser[]>([])
-  const [editingPayment, setEditingPayment] = useState<PaymentWithUser | null>(null)
+  const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
+  const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
+  const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
 
   useEffect(() => {
     fetchData()
@@ -156,8 +157,8 @@ const ApartmentManagement: React.FC = () => {
   }
 
   const handleAddPayment = async () => {
-    if (!selectedApartment || !user?.id) {
-      alert('Missing apartment or user information')
+    if (!selectedApartment) {
+      alert('Missing apartment information')
       return
     }
 
@@ -167,17 +168,32 @@ const ApartmentManagement: React.FC = () => {
     }
 
     try {
+      const { data: sale } = await supabase
+        .from('sales')
+        .select('id, customer_id')
+        .eq('apartment_id', selectedApartment.id)
+        .maybeSingle()
+
+      if (!sale) {
+        alert('No sale found for this apartment. Please create a sale first.')
+        return
+      }
+
       await apartmentService.addPaymentToApartment(
         selectedApartment.id,
+        sale.customer_id,
+        selectedApartment.project_id,
+        sale.id,
         paymentAmount,
         paymentDate,
-        paymentNotes,
-        user.id
+        paymentType,
+        paymentNotes
       )
       setShowWireModal(false)
       setPaymentAmount(0)
       setPaymentDate('')
       setPaymentNotes('')
+      setPaymentType('installment')
       setSelectedApartment(null)
       fetchData()
       alert('Payment recorded successfully!')
@@ -203,13 +219,19 @@ const ApartmentManagement: React.FC = () => {
     paymentId: string,
     amount: number,
     date: string,
-    notes: string,
-    oldAmount: number
+    paymentType: 'down_payment' | 'installment' | 'final_payment' | 'other',
+    notes: string
   ) => {
     if (!selectedApartment) return
 
     try {
-      await apartmentService.updatePayment(paymentId, amount, date, notes, selectedApartment.id, oldAmount)
+      const { data: sale } = await supabase
+        .from('sales')
+        .select('id')
+        .eq('apartment_id', selectedApartment.id)
+        .maybeSingle()
+
+      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, sale?.id || null)
       setShowEditPaymentModal(false)
       setEditingPayment(null)
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
@@ -222,11 +244,11 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
-  const handleDeletePayment = async (paymentId: string, amount: number) => {
+  const handleDeletePayment = async (paymentId: string, saleId: string | null, amount: number) => {
     if (!selectedApartment) return
 
     try {
-      await apartmentService.deletePayment(paymentId, selectedApartment.id, amount)
+      await apartmentService.deletePayment(paymentId, saleId, amount)
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
       setPayments(paymentsData)
       fetchData()
@@ -568,13 +590,16 @@ const ApartmentManagement: React.FC = () => {
           setPaymentAmount(0)
           setPaymentDate('')
           setPaymentNotes('')
+          setPaymentType('installment')
         }}
         apartment={selectedApartment}
         amount={paymentAmount}
         paymentDate={paymentDate}
+        paymentType={paymentType}
         notes={paymentNotes}
         onAmountChange={setPaymentAmount}
         onDateChange={setPaymentDate}
+        onPaymentTypeChange={setPaymentType}
         onNotesChange={setPaymentNotes}
         onSubmit={handleAddPayment}
       />

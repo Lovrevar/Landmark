@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { PaymentWithUser } from '../types/apartmentTypes'
+import { PaymentWithCustomer } from '../types/apartmentTypes'
 
 interface EditPaymentModalProps {
   visible: boolean
   onClose: () => void
-  payment: PaymentWithUser | null
-  onSubmit: (paymentId: string, amount: number, date: string, notes: string, oldAmount: number) => void
+  payment: PaymentWithCustomer | null
+  onSubmit: (paymentId: string, amount: number, date: string, paymentType: 'down_payment' | 'installment' | 'final_payment' | 'other', notes: string) => void
 }
 
 export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
@@ -17,12 +17,14 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
 }) => {
   const [amount, setAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState('')
+  const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
     if (payment) {
       setAmount(payment.amount)
       setPaymentDate(payment.payment_date.split('T')[0])
+      setPaymentType(payment.payment_type)
       setNotes(payment.notes || '')
     }
   }, [payment])
@@ -30,7 +32,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!payment) return
-    onSubmit(payment.id, amount, paymentDate, notes, payment.amount)
+    onSubmit(payment.id, amount, paymentDate, paymentType, notes)
   }
 
   if (!visible || !payment) return null
@@ -68,6 +70,21 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+            <select
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value as 'down_payment' | 'installment' | 'final_payment' | 'other')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="down_payment">Down Payment</option>
+              <option value="installment">Installment</option>
+              <option value="final_payment">Final Payment</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           <div>

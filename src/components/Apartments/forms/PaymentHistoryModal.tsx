@@ -1,15 +1,15 @@
 import React from 'react'
 import { X, Edit2, Trash2, Calendar, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { ApartmentWithDetails, PaymentWithUser } from '../types/apartmentTypes'
+import { ApartmentWithDetails, PaymentWithCustomer } from '../types/apartmentTypes'
 
 interface PaymentHistoryModalProps {
   visible: boolean
   onClose: () => void
   apartment: ApartmentWithDetails | null
-  payments: PaymentWithUser[]
-  onEditPayment: (payment: PaymentWithUser) => void
-  onDeletePayment: (paymentId: string, amount: number) => void
+  payments: PaymentWithCustomer[]
+  onEditPayment: (payment: PaymentWithCustomer) => void
+  onDeletePayment: (paymentId: string, saleId: string | null, amount: number) => void
 }
 
 export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
@@ -98,7 +98,8 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         <Calendar className="w-3 h-3 mr-1" />
                         {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
                       </div>
-                      <p className="text-xs text-gray-500">Recorded by: {payment.user_email}</p>
+                      <p className="text-xs text-gray-500">Customer: {payment.customer_name} {payment.customer_surname}</p>
+                      <p className="text-xs text-gray-500">Type: {payment.payment_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                       {payment.notes && (
                         <p className="text-sm text-gray-700 mt-2 italic">"{payment.notes}"</p>
                       )}
@@ -114,7 +115,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                       <button
                         onClick={() => {
                           if (confirm('Are you sure you want to delete this payment?')) {
-                            onDeletePayment(payment.id, payment.amount)
+                            onDeletePayment(payment.id, payment.sale_id, payment.amount)
                           }
                         }}
                         className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
