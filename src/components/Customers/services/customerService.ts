@@ -17,7 +17,7 @@ export const customerService = {
         if (customer.status === 'buyer') {
           const { data: salesData } = await supabase
             .from('sales')
-            .select('apartment_id, garage_id, repository_id, sale_price, sale_date, down_payment, total_paid')
+            .select('apartment_id, sale_price, sale_date, down_payment, total_paid')
             .eq('customer_id', customer.id)
 
           if (salesData && salesData.length > 0) {
@@ -74,48 +74,6 @@ export const customerService = {
                     total_paid: sale.total_paid,
                     garage: garageData,
                     repository: repositoryData
-                  })
-                }
-              }
-
-              if (sale.garage_id && !sale.apartment_id) {
-                const { data: garData } = await supabase
-                  .from('garages')
-                  .select('id, number, price')
-                  .eq('id', sale.garage_id)
-                  .maybeSingle()
-
-                if (garData) {
-                  purchasedUnits.push({
-                    type: 'garage',
-                    id: garData.id,
-                    number: garData.number,
-                    price: garData.price,
-                    sale_price: sale.sale_price,
-                    sale_date: sale.sale_date,
-                    down_payment: sale.down_payment,
-                    total_paid: sale.total_paid
-                  })
-                }
-              }
-
-              if (sale.repository_id && !sale.apartment_id) {
-                const { data: repData } = await supabase
-                  .from('repositories')
-                  .select('id, number, price')
-                  .eq('id', sale.repository_id)
-                  .maybeSingle()
-
-                if (repData) {
-                  purchasedUnits.push({
-                    type: 'repository',
-                    id: repData.id,
-                    number: repData.number,
-                    price: repData.price,
-                    sale_price: sale.sale_price,
-                    sale_date: sale.sale_date,
-                    down_payment: sale.down_payment,
-                    total_paid: sale.total_paid
                   })
                 }
               }
