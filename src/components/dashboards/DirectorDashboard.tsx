@@ -173,14 +173,23 @@ const DirectorDashboard: React.FC = () => {
             totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
           }
 
-          // Get apartment sales revenue
-          const { data: apartments } = await supabase
+          // Get apartment sales revenue from actual sales
+          const { data: projectApartments } = await supabase
             .from('apartments')
-            .select('price')
+            .select('id')
             .eq('project_id', project.id)
-            .eq('status', 'Sold')
 
-          const apartmentSales = apartments?.reduce((sum, apt) => sum + apt.price, 0) || 0
+          const apartmentIds = projectApartments?.map(apt => apt.id) || []
+
+          let apartmentSales = 0
+          if (apartmentIds.length > 0) {
+            const { data: sales } = await supabase
+              .from('sales')
+              .select('sale_price')
+              .in('apartment_id', apartmentIds)
+
+            apartmentSales = sales?.reduce((sum, sale) => sum + sale.sale_price, 0) || 0
+          }
 
           // Get investors for this project with amounts
           const { data: projectInvestments } = await supabase

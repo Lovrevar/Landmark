@@ -175,7 +175,9 @@ const SalesDashboard: React.FC = () => {
       const recentSalesWithDetails = await Promise.all(
         sales.slice(-10).reverse().map(async (sale) => {
           const [aptData, custData] = await Promise.all([
-            supabase.from('apartments').select('number, project_id').eq('id', sale.apartment_id).maybeSingle(),
+            sale.apartment_id
+              ? supabase.from('apartments').select('number, project_id').eq('id', sale.apartment_id).maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
             supabase.from('customers').select('name, surname').eq('id', sale.customer_id).maybeSingle()
           ])
 
@@ -183,7 +185,7 @@ const SalesDashboard: React.FC = () => {
           const cust = custData.data
 
           let projectName = 'Unknown'
-          if (apt) {
+          if (apt?.project_id) {
             const projData = await supabase.from('projects').select('name').eq('id', apt.project_id).maybeSingle()
             if (projData.data) projectName = projData.data.name
           }

@@ -107,21 +107,22 @@ const SalesReports: React.FC = () => {
 
       if (apartmentsError) throw apartmentsError
 
-      // Fetch sales data
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          apartments!inner(project_id)
-        `)
-        .eq('apartments.project_id', selectedProject)
-        .gte('sale_date', dateRange.start)
-        .lte('sale_date', dateRange.end)
-
-      if (salesError) throw salesError
-
+      // Fetch sales data for this project
       const apartments = apartmentsData || []
-      const sales = salesData || []
+      const apartmentIds = apartments.map(apt => apt.id)
+
+      let sales: Sale[] = []
+      if (apartmentIds.length > 0) {
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('*')
+          .in('apartment_id', apartmentIds)
+          .gte('sale_date', dateRange.start)
+          .lte('sale_date', dateRange.end)
+
+        if (salesError) throw salesError
+        sales = salesData || []
+      }
       
       // Calculate project statistics
       const total_units = apartments.length
