@@ -38,6 +38,7 @@ const ApartmentManagement: React.FC = () => {
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
   const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
+  const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetchData()
@@ -78,6 +79,21 @@ const ApartmentManagement: React.FC = () => {
         .from('buildings')
         .select('id, name')
         .in('id', buildingIds)
+
+      const { data: paymentsData } = await supabase
+        .from('apartment_payments')
+        .select('apartment_id, amount')
+
+      const paymentTotals: Record<string, number> = {}
+      if (paymentsData) {
+        paymentsData.forEach((payment: any) => {
+          if (!paymentTotals[payment.apartment_id]) {
+            paymentTotals[payment.apartment_id] = 0
+          }
+          paymentTotals[payment.apartment_id] += Number(payment.amount)
+        })
+      }
+      setApartmentPaymentTotals(paymentTotals)
 
       const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: any) => {
         const project = projectsData?.find(p => p.id === apt.project_id)
@@ -406,10 +422,10 @@ const ApartmentManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredApartments.map((apartment) => {
-            const downPayment = 0
-            const totalPaid = downPayment
+            const totalPaid = apartmentPaymentTotals[apartment.id] || 0
             const salePrice = apartment.price
             const paymentProgress = `€${totalPaid.toLocaleString()} / €${salePrice.toLocaleString()}`
+            const paymentPercentage = salePrice > 0 ? (totalPaid / salePrice) * 100 : 0
 
             return (
               <div
@@ -456,21 +472,28 @@ const ApartmentManagement: React.FC = () => {
                         <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Down Payment:</span>
-                        <span className="text-sm font-medium">€{downPayment.toLocaleString()}</span>
+                        <span className="text-sm text-gray-600">Total Paid:</span>
+                        <span className="text-sm font-bold text-blue-600">€{totalPaid.toLocaleString()}</span>
                       </div>
                       <div className="mt-2">
                         <div className="flex justify-between mb-1">
                           <span className="text-xs text-gray-500">Payment Progress</span>
-                          <span className="text-xs font-medium">{paymentProgress}</span>
+                          <span className="text-xs font-medium">{paymentPercentage.toFixed(1)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-green-600 h-1.5 rounded-full"
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              paymentPercentage >= 100 ? 'bg-green-600' :
+                              paymentPercentage >= 50 ? 'bg-blue-600' :
+                              'bg-orange-600'
+                            }`}
                             style={{
-                              width: `${salePrice > 0 ? (totalPaid / salePrice) * 100 : 0}%`
+                              width: `${Math.min(100, paymentPercentage)}%`
                             }}
                           ></div>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {paymentProgress}
                         </div>
                       </div>
                     </>
