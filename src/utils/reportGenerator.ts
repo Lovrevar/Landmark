@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-import { format } from 'date-fns'
+import { format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 
 // Global helper functions for PDF generation
 let pdf: jsPDF
@@ -526,4 +527,625 @@ export const generateProjectDetailReport = async (project: any) => {
   // Save the PDF
   const fileName = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
   pdf.save(fileName)
+}
+
+export const generateComprehensiveExecutiveReport = async () => {
+  pdf = new jsPDF('p', 'mm', 'a4')
+  pageWidth = pdf.internal.pageSize.getWidth()
+  pageHeight = pdf.internal.pageSize.getHeight()
+  margin = 20
+  contentWidth = pageWidth - (margin * 2)
+  yPosition = margin
+
+  try {
+    const [
+      projectsData,
+      apartmentsData,
+      salesData,
+      customersData,
+      contractsData,
+      wirePaymentsData,
+      investorsData,
+      banksData,
+      bankCreditsData,
+      projectInvestmentsData,
+      subcontractorsData,
+      phasesData,
+      workLogsData
+    ] = await Promise.all([
+      supabase.from('projects').select('*'),
+      supabase.from('apartments').select('*'),
+      supabase.from('sales').select('*'),
+      supabase.from('customers').select('*'),
+      supabase.from('contracts').select('*'),
+      supabase.from('wire_payments').select('*'),
+      supabase.from('investors').select('*'),
+      supabase.from('banks').select('*'),
+      supabase.from('bank_credits').select('*'),
+      supabase.from('project_investments').select('*'),
+      supabase.from('subcontractors').select('*'),
+      supabase.from('project_phases').select('*'),
+      supabase.from('work_logs').select('*')
+    ])
+
+    const projects = projectsData.data || []
+    const apartments = apartmentsData.data || []
+    const sales = salesData.data || []
+    const customers = customersData.data || []
+    const contracts = contractsData.data || []
+    const wirePayments = wirePaymentsData.data || []
+    const investors = investorsData.data || []
+    const banks = banksData.data || []
+    const bankCredits = bankCreditsData.data || []
+    const projectInvestments = projectInvestmentsData.data || []
+    const subcontractors = subcontractorsData.data || []
+    const phases = phasesData.data || []
+    const workLogs = workLogsData.data || []
+
+    pdf.setFillColor(37, 99, 235)
+    pdf.rect(0, 0, pageWidth, 45, 'F')
+
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(26)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('LANDMARK GROUP', margin, 22)
+
+    pdf.setFontSize(16)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text('Comprehensive Executive Report', margin, 32)
+
+    pdf.setFontSize(10)
+    pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, margin, 40)
+
+    pdf.setTextColor(0, 0, 0)
+    yPosition = 55
+
+    const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0)
+    const totalRevenue = sales.reduce((sum, s) => sum + s.sale_price, 0)
+    const totalExpenses = wirePayments.reduce((sum, p) => sum + p.amount, 0)
+    const netProfit = totalRevenue - totalExpenses
+    const totalEquity = projectInvestments.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
+    const totalDebt = banks.reduce((sum, b) => sum + b.outstanding_debt, 0)
+    const debtToEquity = totalEquity > 0 ? totalDebt / totalEquity : 0
+
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(37, 99, 235)
+    pdf.text('EXECUTIVE SUMMARY', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const summaryPoints = [
+      `Portfolio: ${projects.length} projects (${projects.filter(p => p.status === 'In Progress').length} active, ${projects.filter(p => p.status === 'Completed').length} completed)`,
+      `Financial: €${(totalRevenue / 1000000).toFixed(1)}M revenue, €${(totalExpenses / 1000000).toFixed(1)}M expenses, €${(netProfit / 1000000).toFixed(1)}M profit (${totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0'}% margin)`,
+      `Capital Structure: €${(totalEquity / 1000000).toFixed(1)}M equity, €${(totalDebt / 1000000).toFixed(1)}M debt, ${debtToEquity.toFixed(2)} D/E ratio`,
+      `Sales: ${apartments.filter(a => a.status === 'Sold').length}/${apartments.length} units sold (${apartments.length > 0 ? ((apartments.filter(a => a.status === 'Sold').length / apartments.length) * 100).toFixed(1) : '0'}%), ${sales.length} transactions`,
+      `Construction: ${contracts.length} contracts, ${subcontractors.length} subcontractors, ${workLogs.length} work logs recorded`
+    ]
+
+    summaryPoints.forEach(point => {
+      yPosition = addText(`• ${point}`, margin + 5, yPosition + 5, { maxWidth: contentWidth - 10 })
+    })
+    yPosition += 10
+
+    checkPageBreak(70)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(37, 99, 235)
+    pdf.text('KEY PERFORMANCE INDICATORS', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const kpis = [
+      { label: 'Portfolio Value', value: `€${(totalBudget / 1000000).toFixed(1)}M` },
+      { label: 'Total Revenue', value: `€${(totalRevenue / 1000000).toFixed(1)}M` },
+      { label: 'Net Profit', value: `€${(netProfit / 1000000).toFixed(1)}M` },
+      { label: 'ROI', value: `${totalBudget > 0 ? ((netProfit / totalBudget) * 100).toFixed(1) : '0'}%` }
+    ]
+
+    const kpiY = yPosition
+    const kpiColWidth = contentWidth / 4
+    kpis.forEach((kpi, index) => {
+      const x = margin + (index * kpiColWidth) + 5
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(16)
+      pdf.text(kpi.value, x, kpiY + 10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(8)
+      pdf.text(kpi.label, x, kpiY + 16)
+    })
+    yPosition += 25
+
+    const kpis2 = [
+      { label: 'Sales Rate', value: `${apartments.length > 0 ? ((apartments.filter(a => a.status === 'Sold').length / apartments.length) * 100).toFixed(1) : '0'}%` },
+      { label: 'D/E Ratio', value: debtToEquity.toFixed(2) },
+      { label: 'Active Projects', value: projects.filter(p => p.status === 'In Progress').length.toString() },
+      { label: 'Total Customers', value: customers.length.toString() }
+    ]
+
+    const kpi2Y = yPosition
+    kpis2.forEach((kpi, index) => {
+      const x = margin + (index * kpiColWidth) + 5
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(16)
+      pdf.text(kpi.value, x, kpi2Y + 10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(8)
+      pdf.text(kpi.label, x, kpi2Y + 16)
+    })
+    yPosition += 30
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(34, 197, 94)
+    pdf.text('SALES PERFORMANCE', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+
+    const totalUnits = apartments.length
+    const soldUnits = apartments.filter(a => a.status === 'Sold').length
+    const availableUnits = apartments.filter(a => a.status === 'Available').length
+    const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
+    const avgSalePrice = sales.length > 0 ? totalRevenue / sales.length : 0
+    const buyers = customers.filter(c => c.status === 'buyer').length
+    const leads = customers.filter(c => c.status === 'lead').length
+
+    const salesMetrics = [
+      ['Total Units', totalUnits.toString()],
+      ['Units Sold', `${soldUnits} (${totalUnits > 0 ? ((soldUnits / totalUnits) * 100).toFixed(1) : '0'}%)`],
+      ['Available', availableUnits.toString()],
+      ['Reserved', reservedUnits.toString()],
+      ['Total Revenue', `€${totalRevenue.toLocaleString()}`],
+      ['Avg Sale Price', `€${avgSalePrice.toLocaleString()}`],
+      ['Total Sales', sales.length.toString()],
+      ['Buyers', buyers.toString()],
+      ['Active Leads', leads.toString()],
+      ['Conversion Rate', `${customers.length > 0 ? ((buyers / customers.length) * 100).toFixed(1) : '0'}%`]
+    ]
+
+    const leftSales = salesMetrics.slice(0, 5)
+    const rightSales = salesMetrics.slice(5)
+
+    leftSales.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + 45, yPosition + (index * 5))
+    })
+
+    rightSales.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + (contentWidth / 2) + 45, yPosition + (index * 5))
+    })
+    yPosition += 30
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(168, 85, 247)
+    pdf.text('FUNDING & FINANCIAL STRUCTURE', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+
+    const totalCreditLimit = banks.reduce((sum, b) => sum + b.total_credit_limit, 0)
+    const availableCredit = banks.reduce((sum, b) => sum + b.available_funds, 0)
+    const avgInterestRate = bankCredits.length > 0 ? bankCredits.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCredits.length : 0
+    const totalMonthlyPayments = bankCredits.reduce((sum, bc) => sum + bc.monthly_payment, 0)
+
+    const fundingMetrics = [
+      ['Total Equity Invested', `€${totalEquity.toLocaleString()}`],
+      ['Total Debt', `€${totalDebt.toLocaleString()}`],
+      ['Debt-to-Equity Ratio', debtToEquity.toFixed(2)],
+      ['Total Credit Lines', `€${totalCreditLimit.toLocaleString()}`],
+      ['Available Credit', `€${availableCredit.toLocaleString()}`],
+      ['Active Investors', investors.length.toString()],
+      ['Active Banks', banks.length.toString()],
+      ['Bank Credits', bankCredits.length.toString()],
+      ['Avg Interest Rate', `${avgInterestRate.toFixed(2)}%`],
+      ['Monthly Debt Service', `€${totalMonthlyPayments.toLocaleString()}`]
+    ]
+
+    const leftFunding = fundingMetrics.slice(0, 5)
+    const rightFunding = fundingMetrics.slice(5)
+
+    leftFunding.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + 50, yPosition + (index * 5))
+    })
+
+    rightFunding.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + (contentWidth / 2) + 50, yPosition + (index * 5))
+    })
+    yPosition += 30
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(245, 158, 11)
+    pdf.text('CONSTRUCTION & SUPERVISION STATUS', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+
+    const activeContracts = contracts.filter(c => c.status === 'active').length
+    const completedContracts = contracts.filter(c => c.status === 'completed').length
+    const totalContractValue = contracts.reduce((sum, c) => sum + c.contract_amount, 0)
+    const budgetRealized = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
+    const completedPhases = phases.filter(p => p.status === 'completed').length
+    const recentWorkLogs = workLogs.filter(wl => {
+      const logDate = new Date(wl.date)
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      return logDate >= weekAgo
+    }).length
+
+    const constructionMetrics = [
+      ['Total Contracts', contracts.length.toString()],
+      ['Active Contracts', activeContracts.toString()],
+      ['Completed Contracts', completedContracts.toString()],
+      ['Contract Value', `€${totalContractValue.toLocaleString()}`],
+      ['Budget Realized', `€${budgetRealized.toLocaleString()}`],
+      ['Budget Utilization', `${totalContractValue > 0 ? ((budgetRealized / totalContractValue) * 100).toFixed(1) : '0'}%`],
+      ['Total Subcontractors', subcontractors.length.toString()],
+      ['Total Phases', phases.length.toString()],
+      ['Completed Phases', completedPhases.toString()],
+      ['Work Logs (7 days)', recentWorkLogs.toString()]
+    ]
+
+    const leftConstruction = constructionMetrics.slice(0, 5)
+    const rightConstruction = constructionMetrics.slice(5)
+
+    leftConstruction.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + 50, yPosition + (index * 5))
+    })
+
+    rightConstruction.forEach(([label, value], index) => {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(value, margin + (contentWidth / 2) + 50, yPosition + (index * 5))
+    })
+    yPosition += 30
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(59, 130, 246)
+    pdf.text('CASH FLOW ANALYSIS', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+
+    const last6Months = []
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = subMonths(new Date(), i)
+      const monthStart = startOfMonth(monthDate)
+      const monthEnd = endOfMonth(monthDate)
+
+      const monthSales = sales.filter(s => {
+        const saleDate = new Date(s.sale_date)
+        return saleDate >= monthStart && saleDate <= monthEnd
+      })
+
+      const monthPayments = wirePayments.filter(p => {
+        const paymentDate = new Date(p.created_at)
+        return paymentDate >= monthStart && paymentDate <= monthEnd
+      })
+
+      const inflow = monthSales.reduce((sum, s) => sum + s.sale_price, 0)
+      const outflow = monthPayments.reduce((sum, p) => sum + p.amount, 0)
+
+      last6Months.push({
+        month: format(monthDate, 'MMM yyyy'),
+        inflow,
+        outflow,
+        net: inflow - outflow
+      })
+    }
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Month', margin + 5, yPosition)
+    pdf.text('Inflow', margin + 35, yPosition)
+    pdf.text('Outflow', margin + 70, yPosition)
+    pdf.text('Net Cash Flow', margin + 110, yPosition)
+    yPosition += 6
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+
+    last6Months.forEach(month => {
+      checkPageBreak(6)
+      pdf.text(month.month, margin + 5, yPosition)
+      pdf.text(`€${(month.inflow / 1000).toFixed(0)}K`, margin + 35, yPosition)
+      pdf.text(`€${(month.outflow / 1000).toFixed(0)}K`, margin + 70, yPosition)
+
+      const netColor = month.net >= 0 ? [34, 197, 94] : [239, 68, 68]
+      pdf.setTextColor(netColor[0], netColor[1], netColor[2])
+      pdf.text(`€${(month.net / 1000).toFixed(0)}K`, margin + 110, yPosition)
+      pdf.setTextColor(0, 0, 0)
+
+      yPosition += 5
+    })
+    yPosition += 10
+
+    pdf.setFontSize(10)
+    const totalInflow = last6Months.reduce((sum, m) => sum + m.inflow, 0)
+    const totalOutflow = last6Months.reduce((sum, m) => sum + m.outflow, 0)
+    const totalNet = totalInflow - totalOutflow
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('6-Month Totals:', margin + 5, yPosition)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Inflow: €${(totalInflow / 1000000).toFixed(2)}M | Outflow: €${(totalOutflow / 1000000).toFixed(2)}M | Net: €${(totalNet / 1000000).toFixed(2)}M`, margin + 5, yPosition + 5)
+    yPosition += 15
+
+    checkPageBreak(80)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(37, 99, 235)
+    pdf.text('PROJECT-BY-PROJECT BREAKDOWN', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+
+    projects.forEach(project => {
+      checkPageBreak(50)
+
+      pdf.setFillColor(230, 230, 230)
+      pdf.rect(margin, yPosition, contentWidth, 7, 'F')
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(11)
+      pdf.text(project.name, margin + 3, yPosition + 5)
+      pdf.setFontSize(8)
+      pdf.text(project.location, pageWidth - margin - 50, yPosition + 5)
+      yPosition += 10
+
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+
+      const projectApartments = apartments.filter(a => a.project_id === project.id)
+      const projectSales = sales.filter(s => {
+        const apt = apartments.find(a => a.id === s.apartment_id)
+        return apt && apt.project_id === project.id
+      })
+      const projectContracts = contracts.filter(c => c.project_id === project.id)
+      const projectPayments = wirePayments.filter(p => {
+        const contract = contracts.find(c => c.id === p.contract_id)
+        return contract && contract.project_id === project.id
+      })
+      const projectPhases = phases.filter(ph => ph.project_id === project.id)
+      const projectInvs = projectInvestments.filter(pi => pi.project_id === project.id)
+      const projectCredits = bankCredits.filter(bc => bc.project_id === project.id)
+
+      const projectRevenue = projectSales.reduce((sum, s) => sum + s.sale_price, 0)
+      const projectExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
+      const projectEquity = projectInvs.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
+      const projectDebt = projectCredits.reduce((sum, bc) => sum + bc.outstanding_balance, 0)
+      const soldUnitsProj = projectApartments.filter(a => a.status === 'Sold').length
+      const salesRate = projectApartments.length > 0 ? (soldUnitsProj / projectApartments.length) * 100 : 0
+
+      const projectInfo = [
+        `Status: ${project.status}`,
+        `Budget: €${project.budget.toLocaleString()}`,
+        `Revenue: €${projectRevenue.toLocaleString()}`,
+        `Expenses: €${projectExpenses.toLocaleString()}`,
+        `Units: ${soldUnitsProj}/${projectApartments.length} sold (${salesRate.toFixed(1)}%)`,
+        `Contracts: ${projectContracts.length}`,
+        `Phases: ${projectPhases.filter(p => p.status === 'completed').length}/${projectPhases.length} done`,
+        `Funding: €${projectEquity.toLocaleString()} equity, €${projectDebt.toLocaleString()} debt`
+      ]
+
+      projectInfo.forEach((info, index) => {
+        const col = index < 4 ? 0 : 1
+        const row = index % 4
+        pdf.text(info, margin + 5 + (col * (contentWidth / 2)), yPosition + (row * 4))
+      })
+      yPosition += 18
+
+      const budgetUsage = project.budget > 0 ? (projectExpenses / project.budget) * 100 : 0
+      let riskLevel = 'Low'
+      let riskColor = [34, 197, 94]
+
+      if (budgetUsage > 90 || salesRate < 30) {
+        riskLevel = 'High'
+        riskColor = [239, 68, 68]
+      } else if (budgetUsage > 75 || salesRate < 50) {
+        riskLevel = 'Medium'
+        riskColor = [245, 158, 11]
+      }
+
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Risk:', margin + 5, yPosition)
+      pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2])
+      pdf.text(riskLevel, margin + 20, yPosition)
+      pdf.setTextColor(0, 0, 0)
+
+      yPosition += 8
+      pdf.setDrawColor(200, 200, 200)
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+      yPosition += 8
+    })
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(239, 68, 68)
+    pdf.text('RISK ASSESSMENT', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const risks = []
+
+    if (debtToEquity > 2) {
+      risks.push(`• HIGH LEVERAGE: Debt-to-Equity ratio of ${debtToEquity.toFixed(2)} exceeds recommended threshold`)
+    }
+
+    const lowSalesProjects = projects.filter(p => {
+      const projectApts = apartments.filter(a => a.project_id === p.id)
+      const sold = projectApts.filter(a => a.status === 'Sold').length
+      return projectApts.length > 0 && (sold / projectApts.length) < 0.4
+    })
+    if (lowSalesProjects.length > 0) {
+      risks.push(`• SLOW SALES: ${lowSalesProjects.length} project(s) with sales rate below 40%`)
+    }
+
+    const highBudgetProjects = projects.filter(p => {
+      const projContracts = contracts.filter(c => c.project_id === p.id)
+      const spent = projContracts.reduce((sum, c) => sum + c.budget_realized, 0)
+      return p.budget > 0 && (spent / p.budget) > 0.9
+    })
+    if (highBudgetProjects.length > 0) {
+      risks.push(`• BUDGET OVERRUN: ${highBudgetProjects.length} project(s) with over 90% budget utilization`)
+    }
+
+    const overdueContracts = contracts.filter(c => {
+      const deadline = new Date(c.deadline)
+      return deadline < new Date() && c.status !== 'completed'
+    })
+    if (overdueContracts.length > 0) {
+      risks.push(`• TIMELINE DELAYS: ${overdueContracts.length} overdue contract(s) requiring immediate attention`)
+    }
+
+    if (availableCredit < totalMonthlyPayments * 3) {
+      risks.push(`• LIQUIDITY CONCERN: Available credit may not cover 3 months of debt service`)
+    }
+
+    if (risks.length === 0) {
+      pdf.setTextColor(34, 197, 94)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('NO CRITICAL RISKS IDENTIFIED', margin + 5, yPosition)
+      pdf.setTextColor(0, 0, 0)
+      pdf.setFont('helvetica', 'normal')
+      yPosition += 6
+      pdf.text('Portfolio is operating within acceptable risk parameters.', margin + 5, yPosition)
+    } else {
+      risks.forEach(risk => {
+        yPosition = addText(risk, margin + 5, yPosition + 5, { maxWidth: contentWidth - 10 })
+      })
+    }
+    yPosition += 15
+
+    checkPageBreak(60)
+    pdf.setFillColor(248, 250, 252)
+    pdf.rect(margin, yPosition, contentWidth, 8, 'F')
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(34, 197, 94)
+    pdf.text('EXECUTIVE INSIGHTS & RECOMMENDATIONS', margin + 5, yPosition + 6)
+    yPosition += 13
+
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    const recommendations = []
+
+    const topPerformers = projects.map(p => {
+      const projApts = apartments.filter(a => a.project_id === p.id)
+      const projSales = sales.filter(s => {
+        const apt = apartments.find(a => a.id === s.apartment_id)
+        return apt && apt.project_id === p.id
+      })
+      const revenue = projSales.reduce((sum, s) => sum + s.sale_price, 0)
+      const sold = projApts.filter(a => a.status === 'Sold').length
+      const rate = projApts.length > 0 ? (sold / projApts.length) * 100 : 0
+      return { name: p.name, revenue, rate }
+    }).sort((a, b) => b.revenue - a.revenue).slice(0, 3)
+
+    if (topPerformers.length > 0) {
+      recommendations.push('TOP PERFORMING PROJECTS:')
+      topPerformers.forEach(tp => {
+        recommendations.push(`  - ${tp.name}: €${(tp.revenue / 1000000).toFixed(1)}M revenue, ${tp.rate.toFixed(1)}% sales rate`)
+      })
+      recommendations.push('')
+    }
+
+    recommendations.push('STRATEGIC RECOMMENDATIONS:')
+
+    if (salesRate < 60) {
+      recommendations.push('• Intensify marketing efforts to accelerate sales velocity')
+    }
+
+    if (debtToEquity > 1.5) {
+      recommendations.push('• Consider equity fundraising to optimize capital structure')
+    }
+
+    if (leads > buyers * 3) {
+      recommendations.push('• Focus on lead conversion - strong pipeline but lower conversion')
+    }
+
+    if (totalNet < 0) {
+      recommendations.push('• Cash flow negative - prioritize collections and manage outflows')
+    }
+
+    if (availableUnits > soldUnits) {
+      recommendations.push('• Significant inventory available - consider pricing strategies')
+    }
+
+    recommendations.push('• Continue monitoring project budgets and timeline adherence')
+    recommendations.push('• Maintain strong relationships with financing partners')
+
+    recommendations.forEach(rec => {
+      yPosition = addText(rec, margin + 5, yPosition + 5, { maxWidth: contentWidth - 10 })
+    })
+
+    for (let i = 1; i <= pdf.getNumberOfPages(); i++) {
+      pdf.setPage(i)
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(107, 114, 128)
+      pdf.text('LANDMARK GROUP - Confidential Executive Report', margin, pageHeight - 10)
+      pdf.text(`Page ${i} of ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, pageHeight - 10)
+    }
+
+    const fileName = `LANDMARK_Comprehensive_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
+    pdf.save(fileName)
+
+  } catch (error) {
+    console.error('Error generating comprehensive report:', error)
+    throw error
+  }
 }

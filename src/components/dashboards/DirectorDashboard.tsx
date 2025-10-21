@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, Project } from '../../lib/supabase'
 import { TrendingUp, DollarSign, Building2, Users, FileText, Download, Plus, Edit2, Trash2, X } from 'lucide-react'
-import { generateDirectorReport } from '../../utils/reportGenerator'
+import { generateComprehensiveExecutiveReport } from '../../utils/reportGenerator'
 
 interface ProjectWithStats extends Project {
   total_expenses: number
@@ -279,7 +279,7 @@ const DirectorDashboard: React.FC = () => {
   const handleGenerateReport = async () => {
     setGeneratingReport(true)
     try {
-      await generateDirectorReport(projects)
+      await generateComprehensiveExecutiveReport()
     } catch (error) {
       console.error('Error generating report:', error)
       alert('Failed to generate report. Please try again.')
@@ -644,8 +644,8 @@ const DirectorDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Executive Reports</h2>
-            <p className="text-gray-600 mt-1">Generate comprehensive reports for stakeholders and investors</p>
+            <h2 className="text-xl font-semibold text-gray-900">Comprehensive Executive Report</h2>
+            <p className="text-gray-600 mt-1">All-in-one report with sales, funding, construction, cash flow, and risk analysis</p>
           </div>
           <button
             onClick={handleGenerateReport}
@@ -665,30 +665,30 @@ const DirectorDashboard: React.FC = () => {
             )}
           </button>
         </div>
-        
+
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <FileText className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="font-medium text-blue-900">Executive Summary</span>
+              <span className="font-medium text-blue-900">Sales & Financial Performance</span>
             </div>
-            <p className="text-sm text-blue-700">Portfolio overview, financial performance, and key metrics</p>
+            <p className="text-sm text-blue-700">Complete sales metrics, revenue, profit margins, and customer analytics</p>
           </div>
-          
+
           <div className="bg-green-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
-              <span className="font-medium text-green-900">Project Analysis</span>
+              <span className="font-medium text-green-900">Funding & Construction Status</span>
             </div>
-            <p className="text-sm text-green-700">Detailed breakdown of each project's performance and status</p>
+            <p className="text-sm text-green-700">Capital structure, debt analysis, contracts, and work progress tracking</p>
           </div>
-          
+
           <div className="bg-orange-50 p-4 rounded-lg">
             <div className="flex items-center mb-2">
               <Download className="w-5 h-5 text-orange-600 mr-2" />
-              <span className="font-medium text-orange-900">Risk Assessment</span>
+              <span className="font-medium text-orange-900">Cash Flow & Risk Assessment</span>
             </div>
-            <p className="text-sm text-orange-700">Risk analysis and recommendations for each project</p>
+            <p className="text-sm text-orange-700">6-month cash flow analysis with risk evaluation and recommendations</p>
           </div>
         </div>
       </div>
