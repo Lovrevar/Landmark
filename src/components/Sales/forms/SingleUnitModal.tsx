@@ -22,7 +22,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
     number: '',
     floor: 1,
     size_m2: 0,
-    price: 0
+    price_per_m2: 0
   })
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
         number: '',
         floor: 1,
         size_m2: 0,
-        price: 0
+        price_per_m2: 0
       })
     }
   }, [visible, buildingId])
@@ -104,14 +104,24 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price (€) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price per m² (€/m²) *</label>
               <input
                 type="number"
                 min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                step="0.01"
+                value={formData.price_per_m2}
+                onChange={(e) => setFormData({ ...formData, price_per_m2: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <label className="block text-sm font-medium text-blue-900 mb-1">Total Price</label>
+              <div className="text-2xl font-bold text-blue-700">
+                €{(formData.size_m2 * formData.price_per_m2).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                {formData.size_m2} m² × €{formData.price_per_m2.toLocaleString('en-US', { minimumFractionDigits: 2 })} per m²
+              </p>
             </div>
           </div>
 

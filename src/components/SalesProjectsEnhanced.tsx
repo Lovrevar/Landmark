@@ -103,7 +103,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         data.number,
         data.floor,
         data.size_m2,
-        data.price
+        data.price_per_m2
       )
       setShowUnitForm(false)
       refetch()

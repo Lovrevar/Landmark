@@ -120,19 +120,22 @@ export const createUnit = async (
   number: string,
   floor: number,
   sizeM2: number,
-  price: number
+  pricePerM2: number
 ) => {
   let tableName = ''
   if (unitType === 'apartment') tableName = 'apartments'
   else if (unitType === 'garage') tableName = 'garages'
   else if (unitType === 'repository') tableName = 'repositories'
 
+  const totalPrice = sizeM2 * pricePerM2
+
   const unitData: any = {
     building_id: buildingId,
     number,
     floor,
     size_m2: sizeM2,
-    price,
+    price: totalPrice,
+    price_per_m2: pricePerM2,
     status: 'Available'
   }
 
@@ -170,7 +173,8 @@ export const bulkCreateUnits = async (
       const sizeVariation = (Math.random() - 0.5) * bulkData.size_variation
       const size = Math.round(bulkData.base_size + sizeVariation)
       const floorPremium = (floor - bulkData.floor_start) * bulkData.floor_increment
-      const price = Math.round((size * bulkData.base_price_per_m2) + floorPremium)
+      const pricePerM2 = bulkData.base_price_per_m2 + (floorPremium / size)
+      const price = Math.round(size * pricePerM2)
 
       const unitData: any = {
         building_id: buildingId,
@@ -178,6 +182,7 @@ export const bulkCreateUnits = async (
         floor: floor,
         size_m2: size,
         price: price,
+        price_per_m2: Math.round(pricePerM2 * 100) / 100,
         status: 'Available'
       }
 

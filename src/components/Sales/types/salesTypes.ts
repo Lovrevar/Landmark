@@ -37,7 +37,7 @@ export interface UnitFormData {
   number: string
   floor: number
   size_m2: number
-  price: number
+  price_per_m2: number
 }
 
 export interface BulkCreateData {

@@ -133,6 +133,7 @@ export type Garage = {
   floor: number
   size_m2: number
   price: number
+  price_per_m2: number
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
@@ -145,6 +146,7 @@ export type Repository = {
   floor: number
   size_m2: number
   price: number
+  price_per_m2: number
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
@@ -160,6 +162,7 @@ export type Apartment = {
   floor: number
   size_m2: number
   price: number
+  price_per_m2: number
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
