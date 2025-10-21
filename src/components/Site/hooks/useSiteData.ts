@@ -409,7 +409,6 @@ export const useSiteData = () => {
 
       console.log('Fetching updated projects')
       await fetchProjects()
-      console.log('Payment successfully recorded')
       return true
     } catch (error: any) {
       console.error('Error adding payment:', error)
