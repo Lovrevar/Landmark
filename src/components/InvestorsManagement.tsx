@@ -19,6 +19,7 @@ const InvestorsManagement: React.FC = () => {
   const [showInvestorForm, setShowInvestorForm] = useState(false)
   const [showInvestmentForm, setShowInvestmentForm] = useState(false)
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
+  const [editingInvestment, setEditingInvestment] = useState<ProjectInvestment | null>(null)
   const [newInvestor, setNewInvestor] = useState({
     name: '',
     type: 'individual' as const,
@@ -184,21 +185,25 @@ const InvestorsManagement: React.FC = () => {
   }
 
   const addInvestment = async () => {
+    if (editingInvestment) {
+      await handleUpdateInvestment()
+      return
+    }
+
     if (!newInvestment.investor_id || !newInvestment.project_id || !newInvestment.amount) {
       alert('Please fill in required fields')
       return
     }
 
     try {
-      // Extract investment type and seniority from the combined value
       const [investmentType, seniority] = newInvestment.investment_type.split('_')
-      
+
       const { error } = await supabase
         .from('project_investments')
         .insert({
           ...newInvestment,
           investment_type: investmentType,
-          credit_seniority: seniority
+          investment_seniority: seniority
         })
 
       if (error) throw error
@@ -245,7 +250,89 @@ const InvestorsManagement: React.FC = () => {
       usage_expiration_date: '',
       grace_period: 0
     })
+    setEditingInvestment(null)
     setShowInvestmentForm(false)
+  }
+
+  const handleEditInvestment = (investment: ProjectInvestment) => {
+    setEditingInvestment(investment)
+    setNewInvestment({
+      investor_id: investment.investor_id,
+      project_id: investment.project_id,
+      investment_type: `${investment.investment_type}_${investment.investment_seniority}`,
+      amount: investment.amount,
+      percentage_stake: investment.percentage_stake || 0,
+      expected_return: investment.expected_return,
+      investment_date: investment.investment_date,
+      maturity_date: investment.maturity_date || '',
+      payment_schedule: investment.payment_schedule || 'yearly',
+      terms: investment.terms || '',
+      mortgages_insurance: investment.mortgages_insurance || 0,
+      notes: investment.notes || '',
+      usage_expiration_date: investment.usage_expiration_date || '',
+      grace_period: investment.grace_period || 0
+    })
+    setShowInvestmentForm(true)
+  }
+
+  const handleDeleteInvestment = async (investmentId: string) => {
+    if (!confirm('Are you sure you want to delete this investment?')) return
+
+    try {
+      const { error } = await supabase
+        .from('project_investments')
+        .delete()
+        .eq('id', investmentId)
+
+      if (error) throw error
+
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting investment:', error)
+      alert('Error deleting investment.')
+    }
+  }
+
+  const handleUpdateInvestment = async () => {
+    if (!editingInvestment) return
+
+    if (!newInvestment.investor_id || !newInvestment.project_id || !newInvestment.amount) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const [investmentType, seniority] = newInvestment.investment_type.split('_')
+
+      const { error } = await supabase
+        .from('project_investments')
+        .update({
+          investor_id: newInvestment.investor_id,
+          project_id: newInvestment.project_id,
+          investment_type: investmentType,
+          investment_seniority: seniority,
+          amount: newInvestment.amount,
+          percentage_stake: newInvestment.percentage_stake,
+          expected_return: newInvestment.expected_return,
+          investment_date: newInvestment.investment_date,
+          maturity_date: newInvestment.maturity_date || null,
+          payment_schedule: newInvestment.payment_schedule,
+          terms: newInvestment.terms,
+          mortgages_insurance: newInvestment.mortgages_insurance,
+          notes: newInvestment.notes,
+          usage_expiration_date: newInvestment.usage_expiration_date || null,
+          grace_period: newInvestment.grace_period
+        })
+        .eq('id', editingInvestment.id)
+
+      if (error) throw error
+
+      resetInvestmentForm()
+      await fetchData()
+    } catch (error) {
+      console.error('Error updating investment:', error)
+      alert('Error updating investment.')
+    }
   }
 
   const handleOpenWirePayment = (investment: ProjectInvestment) => {
@@ -607,7 +694,7 @@ const InvestorsManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Investment</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{editingInvestment ? 'Edit Investment' : 'Add New Investment'}</h3>
                 <button
                   onClick={resetInvestmentForm}
                   className="text-gray-400 hover:text-gray-600"
@@ -1105,14 +1192,26 @@ const InvestorsManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Wire Payment Button */}
-                          <div className="pt-3 mt-3 border-t border-gray-200">
+                          {/* Action Buttons */}
+                          <div className="pt-3 mt-3 border-t border-gray-200 flex gap-2">
                             <button
                               onClick={() => handleOpenWirePayment(investment)}
-                              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                              className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                             >
                               <Send className="w-4 h-4 mr-2" />
                               Wire Payment
+                            </button>
+                            <button
+                              onClick={() => handleEditInvestment(investment)}
+                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvestment(investment.id)}
+                              className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>

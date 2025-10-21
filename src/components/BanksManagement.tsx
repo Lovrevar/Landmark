@@ -18,6 +18,7 @@ const BanksManagement: React.FC = () => {
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingBank, setEditingBank] = useState<Bank | null>(null)
+  const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newBank, setNewBank] = useState({
     name: '',
     contact_person: '',
@@ -174,6 +175,11 @@ const BanksManagement: React.FC = () => {
   }
 
   const addCredit = async () => {
+    if (editingCredit) {
+      await handleUpdateCredit()
+      return
+    }
+
     if (!newCredit.bank_id || !newCredit.amount || !newCredit.start_date) {
       alert('Please fill in required fields')
       return
@@ -277,7 +283,121 @@ const BanksManagement: React.FC = () => {
       repayment_type: 'monthly',
       credit_seniority: 'senior'
     })
+    setEditingCredit(null)
     setShowCreditForm(false)
+  }
+
+  const handleEditCredit = (credit: BankCredit) => {
+    setEditingCredit(credit)
+    setNewCredit({
+      bank_id: credit.bank_id,
+      project_id: credit.project_id || '',
+      credit_type: `${credit.credit_type}_${credit.credit_seniority}`,
+      amount: credit.amount,
+      interest_rate: credit.interest_rate,
+      start_date: credit.start_date,
+      maturity_date: credit.maturity_date,
+      outstanding_balance: credit.outstanding_balance,
+      monthly_payment: credit.monthly_payment,
+      purpose: credit.purpose || '',
+      usage_expiration_date: credit.usage_expiration_date || '',
+      grace_period: credit.grace_period || 0,
+      repayment_type: credit.repayment_type,
+      credit_seniority: credit.credit_seniority
+    })
+    setShowCreditForm(true)
+  }
+
+  const handleDeleteCredit = async (creditId: string) => {
+    if (!confirm('Are you sure you want to delete this credit facility?')) return
+
+    try {
+      const { error } = await supabase
+        .from('bank_credits')
+        .delete()
+        .eq('id', creditId)
+
+      if (error) throw error
+
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting credit:', error)
+      alert('Error deleting credit facility.')
+    }
+  }
+
+  const handleUpdateCredit = async () => {
+    if (!editingCredit) return
+
+    if (!newCredit.bank_id || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    const calculateRateAmount = () => {
+      const principal = newCredit.amount
+      const annualRate = newCredit.interest_rate / 100
+      const gracePeriodYears = newCredit.grace_period / 365
+
+      let maturityYears = 10
+      if (newCredit.maturity_date && newCredit.start_date) {
+        const startDate = new Date(newCredit.start_date)
+        const maturityDate = new Date(newCredit.maturity_date)
+        maturityYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+      }
+
+      const repaymentYears = Math.max(0.1, maturityYears - gracePeriodYears)
+
+      if (annualRate === 0) {
+        return newCredit.repayment_type === 'yearly'
+          ? principal / repaymentYears
+          : principal / (repaymentYears * 12)
+      }
+
+      if (newCredit.repayment_type === 'yearly') {
+        const yearlyRate = annualRate
+        return (principal * yearlyRate * Math.pow(1 + yearlyRate, repaymentYears)) /
+               (Math.pow(1 + yearlyRate, repaymentYears) - 1)
+      } else {
+        const monthlyRate = annualRate / 12
+        const totalMonths = repaymentYears * 12
+        return (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
+               (Math.pow(1 + monthlyRate, totalMonths) - 1)
+      }
+    }
+
+    try {
+      const [creditType, seniority] = newCredit.credit_type.split('_')
+      const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
+
+      const { error } = await supabase
+        .from('bank_credits')
+        .update({
+          bank_id: newCredit.bank_id,
+          project_id: newCredit.project_id || null,
+          credit_type: actualCreditType,
+          credit_seniority: seniority,
+          amount: newCredit.amount,
+          interest_rate: newCredit.interest_rate,
+          start_date: newCredit.start_date,
+          maturity_date: newCredit.maturity_date,
+          outstanding_balance: newCredit.outstanding_balance,
+          monthly_payment: calculateRateAmount(),
+          purpose: newCredit.purpose,
+          usage_expiration_date: newCredit.usage_expiration_date || null,
+          grace_period: newCredit.grace_period,
+          repayment_type: newCredit.repayment_type
+        })
+        .eq('id', editingCredit.id)
+
+      if (error) throw error
+
+      resetCreditForm()
+      await fetchData()
+    } catch (error) {
+      console.error('Error updating credit:', error)
+      alert('Error updating credit facility.')
+    }
   }
 
   const handleOpenWirePayment = (credit: BankCredit) => {
@@ -621,7 +741,7 @@ const BanksManagement: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add New Credit Facility</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'}</h3>
                 <button
                   onClick={resetCreditForm}
                   className="text-gray-400 hover:text-gray-600"
@@ -1024,14 +1144,26 @@ const BanksManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Wire Payment Button */}
-                          <div className="pt-3 border-t border-gray-200">
+                          {/* Action Buttons */}
+                          <div className="pt-3 border-t border-gray-200 flex gap-2">
                             <button
                               onClick={() => handleOpenWirePayment(credit)}
-                              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                              className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                             >
                               <Send className="w-4 h-4 mr-2" />
                               Wire Payment
+                            </button>
+                            <button
+                              onClick={() => handleEditCredit(credit)}
+                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCredit(credit.id)}
+                              className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
