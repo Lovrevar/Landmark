@@ -40,7 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [currentProfile, setCurrentProfile] = useState<Profile>('General')
+  const [currentProfile, setCurrentProfile] = useState<Profile>(() => {
+    const saved = localStorage.getItem('currentProfile')
+    return (saved as Profile) || 'General'
+  })
 
   const fetchUserData = async (authUser: SupabaseUser): Promise<User | null> => {
     try {
@@ -170,6 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await supabase.auth.signOut()
       setUser(null)
       setIsAuthenticated(false)
+      localStorage.removeItem('currentProfile')
 
       window.location.href = '/'
     } catch (error) {
@@ -177,12 +181,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const handleSetCurrentProfile = (profile: Profile) => {
+    setCurrentProfile(profile)
+    localStorage.setItem('currentProfile', profile)
+  }
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
     loading,
     currentProfile,
-    setCurrentProfile,
+    setCurrentProfile: handleSetCurrentProfile,
     login,
     logout
   }
