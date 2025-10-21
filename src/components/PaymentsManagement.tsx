@@ -1,165 +1,97 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { DollarSign, Calendar, Search, Download, Filter, TrendingUp, TrendingDown, AlertCircle, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { supabase, WirePayment, Contract } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface UnifiedPayment {
-  id: string
-  date: string
-  type: 'income' | 'expense'
-  category: 'Sales' | 'Bank Payment' | 'Investor Payment' | 'Subcontractor Payment'
-  entity: string
-  project?: string
-  amount: number
-  notes?: string
-  created_at: string
+interface PaymentWithDetails extends WirePayment {
+  contract?: Contract
+  subcontractor_name?: string
+  project_name?: string
+  phase_name?: string
 }
 
 const PaymentsManagement: React.FC = () => {
-  const [payments, setPayments] = useState<UnifiedPayment[]>([])
+  const { user } = useAuth()
+  const [payments, setPayments] = useState<PaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
-  const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const [stats, setStats] = useState({
-    totalIncome: 0,
-    totalExpense: 0,
-    netBalance: 0,
-    incomeCount: 0,
-    expenseCount: 0
+    totalPayments: 0,
+    totalAmount: 0,
+    paymentsThisMonth: 0,
+    amountThisMonth: 0
   })
 
   useEffect(() => {
-    fetchAllPayments()
+    fetchPayments()
   }, [])
 
-  const fetchAllPayments = async () => {
+  const fetchPayments = async () => {
     setLoading(true)
     try {
-      const allPayments: UnifiedPayment[] = []
-
-      // 1. Fetch Sales Payments (Income - Green)
-      const { data: apartmentPayments } = await supabase
-        .from('apartment_payments')
-        .select(`
-          *,
-          customers (name),
-          units (
-            unit_number,
-            buildings (
-              building_name,
-              projects (name)
-            )
-          )
-        `)
-        .order('payment_date', { ascending: false })
-
-      if (apartmentPayments) {
-        apartmentPayments.forEach(p => {
-          allPayments.push({
-            id: p.id,
-            date: p.payment_date,
-            type: 'income',
-            category: 'Sales',
-            entity: p.customers?.name || 'Unknown Customer',
-            project: p.units?.buildings?.projects?.name || 'N/A',
-            amount: p.amount,
-            notes: `${p.units?.buildings?.building_name || ''} - ${p.units?.unit_number || ''}`,
-            created_at: p.created_at
-          })
-        })
-      }
-
-      // 2. Fetch Bank Credit Payments (Expense - Red)
-      const { data: bankPayments } = await supabase
-        .from('bank_credit_payments')
-        .select(`
-          *,
-          bank_credits (
-            banks (name),
-            projects (name)
-          )
-        `)
-        .order('payment_date', { ascending: false })
-
-      if (bankPayments) {
-        bankPayments.forEach(p => {
-          allPayments.push({
-            id: p.id,
-            date: p.payment_date,
-            type: 'expense',
-            category: 'Bank Payment',
-            entity: p.bank_credits?.banks?.name || 'Unknown Bank',
-            project: p.bank_credits?.projects?.name || 'N/A',
-            amount: p.amount,
-            notes: p.notes || '',
-            created_at: p.created_at
-          })
-        })
-      }
-
-      // 3. Fetch Investor Payments (Expense - Red)
-      const { data: investorPayments } = await supabase
-        .from('investor_payments')
-        .select(`
-          *,
-          project_investments (
-            investors (name),
-            projects (name)
-          )
-        `)
-        .order('payment_date', { ascending: false })
-
-      if (investorPayments) {
-        investorPayments.forEach(p => {
-          allPayments.push({
-            id: p.id,
-            date: p.payment_date,
-            type: 'expense',
-            category: 'Investor Payment',
-            entity: p.project_investments?.investors?.name || 'Unknown Investor',
-            project: p.project_investments?.projects?.name || 'N/A',
-            amount: p.amount,
-            notes: p.notes || '',
-            created_at: p.created_at
-          })
-        })
-      }
-
-      // 4. Fetch Subcontractor Payments (Expense - Red)
-      const { data: wirePayments } = await supabase
+      // Fetch all wire payments with related data
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('wire_payments')
         .select(`
           *,
-          subcontractors (name),
           contracts (
-            projects (name)
+            id,
+            contract_number,
+            project_id,
+            phase_id,
+            subcontractor_id,
+            job_description,
+            contract_amount,
+            budget_realized,
+            status
           )
         `)
         .order('created_at', { ascending: false })
 
-      if (wirePayments) {
-        wirePayments.forEach(p => {
-          allPayments.push({
-            id: p.id,
-            date: p.payment_date || p.created_at,
-            type: 'expense',
-            category: 'Subcontractor Payment',
-            entity: p.subcontractors?.name || 'Unknown Subcontractor',
-            project: p.contracts?.projects?.name || 'N/A',
-            amount: p.amount,
-            notes: p.notes || '',
-            created_at: p.created_at
-          })
-        })
-      }
+      if (paymentsError) throw paymentsError
 
-      // Sort all payments by date (newest first)
-      allPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      // Fetch subcontractors for names
+      const { data: subcontractorsData, error: subError } = await supabase
+        .from('subcontractors')
+        .select('id, name')
 
-      setPayments(allPayments)
-      calculateStats(allPayments)
+      if (subError) throw subError
+
+      // Fetch projects for names
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, name')
+
+      if (projectsError) throw projectsError
+
+      // Fetch phases for names
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select('id, phase_name')
+
+      if (phasesError) throw phasesError
+
+      // Enrich payments with names
+      const enrichedPayments = (paymentsData || []).map(payment => {
+        const subcontractor = subcontractorsData?.find(s => s.id === payment.subcontractor_id)
+        const contract = payment.contracts as Contract | undefined
+        const project = contract ? projectsData?.find(p => p.id === contract.project_id) : undefined
+        const phase = contract?.phase_id ? phasesData?.find(p => p.id === contract.phase_id) : undefined
+
+        return {
+          ...payment,
+          contract,
+          subcontractor_name: subcontractor?.name || 'Unknown',
+          project_name: project?.name || 'No Project',
+          phase_name: phase?.phase_name || null
+        }
+      })
+
+      setPayments(enrichedPayments)
+      calculateStats(enrichedPayments)
     } catch (error) {
       console.error('Error fetching payments:', error)
       alert('Failed to load payments')
@@ -168,52 +100,49 @@ const PaymentsManagement: React.FC = () => {
     }
   }
 
-  const calculateStats = (paymentsData: UnifiedPayment[]) => {
-    const income = paymentsData.filter(p => p.type === 'income')
-    const expense = paymentsData.filter(p => p.type === 'expense')
+  const calculateStats = (paymentsData: PaymentWithDetails[]) => {
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const totalIncome = income.reduce((sum, p) => sum + p.amount, 0)
-    const totalExpense = expense.reduce((sum, p) => sum + p.amount, 0)
+    const totalAmount = paymentsData.reduce((sum, p) => sum + p.amount, 0)
+    const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
+    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0)
 
     setStats({
-      totalIncome,
-      totalExpense,
-      netBalance: totalIncome - totalExpense,
-      incomeCount: income.length,
-      expenseCount: expense.length
+      totalPayments: paymentsData.length,
+      totalAmount,
+      paymentsThisMonth: paymentsThisMonth.length,
+      amountThisMonth
     })
   }
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      payment.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.subcontractor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.contract?.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesType =
-      filterType === 'all' ||
-      payment.type === filterType
-
-    const matchesCategory =
-      filterCategory === 'all' ||
-      payment.category === filterCategory
-
     const matchesDateRange =
-      (!dateRange.start || new Date(payment.date) >= new Date(dateRange.start)) &&
-      (!dateRange.end || new Date(payment.date) <= new Date(dateRange.end))
+      (!dateRange.start || new Date(payment.payment_date || payment.created_at) >= new Date(dateRange.start)) &&
+      (!dateRange.end || new Date(payment.payment_date || payment.created_at) <= new Date(dateRange.end))
 
-    return matchesSearch && matchesType && matchesCategory && matchesDateRange
+    const matchesFilter =
+      filterStatus === 'all' ||
+      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'large' && payment.amount > 10000)
+
+    return matchesSearch && matchesDateRange && matchesFilter
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Type', 'Category', 'Entity', 'Project', 'Amount', 'Notes']
+    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Contract', 'Amount', 'Notes']
     const rows = filteredPayments.map(p => [
-      format(new Date(p.date), 'yyyy-MM-dd'),
-      p.type,
-      p.category,
-      p.entity,
-      p.project || '',
+      format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
+      p.subcontractor_name,
+      p.project_name,
+      p.phase_name || '',
+      p.contract?.contract_number || '',
       p.amount.toString(),
       p.notes || ''
     ])
@@ -223,14 +152,14 @@ const PaymentsManagement: React.FC = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `all-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading all payments...</div>
+        <div className="text-gray-600">Loading payments...</div>
       </div>
     )
   }
@@ -238,56 +167,49 @@ const PaymentsManagement: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Payments</h1>
-        <p className="text-gray-600">Complete overview of all income and expenses across the company</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments Management</h1>
+        <p className="text-gray-600">Track and manage all payments across all projects</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm p-6 border border-green-200">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-green-800">Total Income</h3>
-            <ArrowUpCircle className="w-5 h-5 text-green-600" />
+            <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
+            <FileText className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-2xl font-bold text-green-900">€{stats.totalIncome.toLocaleString()}</p>
-          <p className="text-xs text-green-700 mt-1">{stats.incomeCount} payments</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-sm p-6 border border-red-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-red-800">Total Expenses</h3>
-            <ArrowDownCircle className="w-5 h-5 text-red-600" />
-          </div>
-          <p className="text-2xl font-bold text-red-900">€{stats.totalExpense.toLocaleString()}</p>
-          <p className="text-xs text-red-700 mt-1">{stats.expenseCount} payments</p>
-        </div>
-
-        <div className={`bg-gradient-to-br ${stats.netBalance >= 0 ? 'from-blue-50 to-blue-100 border-blue-200' : 'from-orange-50 to-orange-100 border-orange-200'} rounded-xl shadow-sm p-6 border`}>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className={`text-sm font-medium ${stats.netBalance >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>Net Balance</h3>
-            <DollarSign className={`w-5 h-5 ${stats.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
-          </div>
-          <p className={`text-2xl font-bold ${stats.netBalance >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>
-            €{Math.abs(stats.netBalance).toLocaleString()}
-          </p>
-          <p className={`text-xs ${stats.netBalance >= 0 ? 'text-blue-700' : 'text-orange-700'} mt-1`}>
-            {stats.netBalance >= 0 ? 'Positive' : 'Negative'}
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalPayments}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
-            <Calendar className="w-5 h-5 text-gray-600" />
+            <h3 className="text-sm font-medium text-gray-600">Total Amount</h3>
+            <DollarSign className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{payments.length}</p>
-          <p className="text-xs text-gray-500 mt-1">all transactions</p>
+          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString()}</p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">This Month</h3>
+            <Calendar className="w-5 h-5 text-purple-600" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{stats.paymentsThisMonth}</p>
+          <p className="text-xs text-gray-500 mt-1">payments</p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
+            <TrendingUp className="w-5 h-5 text-teal-600" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -303,27 +225,13 @@ const PaymentsManagement: React.FC = () => {
 
           <div>
             <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Types</option>
-              <option value="income">Income Only</option>
-              <option value="expense">Expenses Only</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Categories</option>
-              <option value="Sales">Sales</option>
-              <option value="Bank Payment">Bank Payments</option>
-              <option value="Investor Payment">Investor Payments</option>
-              <option value="Subcontractor Payment">Subcontractor Payments</option>
+              <option value="all">All Payments</option>
+              <option value="recent">Recent (7 days)</option>
+              <option value="large">Large (&gt; €10k)</option>
             </select>
           </div>
 
@@ -367,10 +275,10 @@ const PaymentsManagement: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               </tr>
@@ -388,33 +296,23 @@ const PaymentsManagement: React.FC = () => {
                 filteredPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(payment.date), 'MMM dd, yyyy')}
+                      {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {payment.type === 'income' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          Income
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                          Expense
-                        </span>
-                      )}
+                      <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {payment.category}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {payment.project_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.entity}</div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.phase_name || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {payment.project}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.contract?.contract_number || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className={`text-sm font-semibold ${payment.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {payment.type === 'income' ? '+' : '-'}€{payment.amount.toLocaleString()}
+                      <span className="text-sm font-semibold text-green-600">
+                        €{payment.amount.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -437,13 +335,9 @@ const PaymentsManagement: React.FC = () => {
               <span className="text-sm font-medium text-blue-900">Filtered Results</span>
             </div>
             <div className="text-sm text-blue-900">
-              <span className="font-semibold">{filteredPayments.length}</span> payments •{' '}
-              <span className="font-semibold text-green-700">
-                +€{filteredPayments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
-              </span>
-              {' • '}
-              <span className="font-semibold text-red-700">
-                -€{filteredPayments.filter(p => p.type === 'expense').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
+              <span className="font-semibold">
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
               </span>
             </div>
           </div>
