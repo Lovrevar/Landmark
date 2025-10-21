@@ -321,7 +321,6 @@ const BanksManagement: React.FC = () => {
 
       handleCloseWirePayment()
       await fetchData()
-      alert('Payment recorded successfully')
     } catch (error) {
       console.error('Error recording payment:', error)
       alert('Failed to record payment. Please try again.')
