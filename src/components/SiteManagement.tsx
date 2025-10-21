@@ -156,7 +156,6 @@ const SiteManagement: React.FC = () => {
     )
 
     if (success) {
-      alert('Payment recorded successfully!')
       setShowPaymentModal(false)
       setPaymentAmount(0)
       setPaymentDate('')
