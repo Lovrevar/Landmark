@@ -1105,7 +1105,9 @@ export const generateComprehensiveExecutiveReport = async () => {
 
     recommendations.push('STRATEGIC RECOMMENDATIONS:')
 
-    if (salesRate < 60) {
+    const overallSalesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+
+    if (overallSalesRate < 60) {
       recommendations.push('• Intensify marketing efforts to accelerate sales velocity')
     }
 
