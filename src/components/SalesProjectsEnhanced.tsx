@@ -239,7 +239,6 @@ const SalesProjectsEnhanced: React.FC = () => {
       setShowBulkPriceModal(false)
       setSelectedUnitIds([])
       refetch()
-      alert(`Successfully updated ${selectedUnitIds.length} units!`)
     } catch (error) {
       console.error('Error updating prices:', error)
       alert('Error updating prices. Please try again.')
@@ -290,7 +289,6 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       await salesService.updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, saleData.buyer_name)
 
-      alert('Sale completed successfully!')
       setShowSaleForm(false)
       setUnitForSale(null)
       refetch()
