@@ -196,7 +196,6 @@ const SiteManagement: React.FC = () => {
     if (success) {
       const payments = await fetchWirePayments(selectedSubcontractorForPayment.id)
       setWirePayments(payments)
-      alert('Payment deleted successfully!')
     }
   }
 
