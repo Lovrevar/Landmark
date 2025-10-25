@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, WirePayment, Contract } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
+import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface PaymentWithDetails extends WirePayment {
@@ -9,6 +9,8 @@ interface PaymentWithDetails extends WirePayment {
   subcontractor_name?: string
   project_name?: string
   phase_name?: string
+  investor?: { id: string; name: string; type?: string } | null
+  bank?: { id: string; name: string } | null
 }
 
 const PaymentsManagement: React.FC = () => {
@@ -47,7 +49,9 @@ const PaymentsManagement: React.FC = () => {
             contract_amount,
             budget_realized,
             status
-          )
+          ),
+          investor:paid_by_investor_id(id, name, type),
+          bank:paid_by_bank_id(id, name)
         `)
         .order('created_at', { ascending: false })
 
@@ -86,7 +90,9 @@ const PaymentsManagement: React.FC = () => {
           contract,
           subcontractor_name: subcontractor?.name || 'Unknown',
           project_name: project?.name || 'No Project',
-          phase_name: phase?.phase_name || null
+          phase_name: phase?.phase_name || null,
+          investor: (payment as any).investor || null,
+          bank: (payment as any).bank || null
         }
       })
 
@@ -136,16 +142,24 @@ const PaymentsManagement: React.FC = () => {
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Contract', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => [
-      format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
-      p.subcontractor_name,
-      p.project_name,
-      p.phase_name || '',
-      p.contract?.contract_number || '',
-      p.amount.toString(),
-      p.notes || ''
-    ])
+    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
+    const rows = filteredPayments.map(p => {
+      let paidBy = '-'
+      if (p.paid_by_type === 'investor' && p.investor) {
+        paidBy = `${p.investor.name} (Investor)`
+      } else if (p.paid_by_type === 'bank' && p.bank) {
+        paidBy = `${p.bank.name} (Bank)`
+      }
+      return [
+        format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
+        p.subcontractor_name,
+        p.project_name,
+        p.phase_name || '',
+        paidBy,
+        p.amount.toString(),
+        p.notes || ''
+      ]
+    })
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -278,7 +292,7 @@ const PaymentsManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               </tr>
@@ -307,8 +321,26 @@ const PaymentsManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {payment.phase_name || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.contract?.contract_number || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id) ? (
+                        payment.paid_by_type === 'investor' ? (
+                          <div className="flex items-center space-x-2">
+                            <User className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm text-blue-600 font-medium">
+                              {payment.investor?.name || 'Investor'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Building2 className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600 font-medium">
+                              {payment.bank?.name || 'Bank'}
+                            </span>
+                          </div>
+                        )
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">

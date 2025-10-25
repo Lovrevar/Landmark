@@ -1,5 +1,5 @@
 import React from 'react'
-import { X } from 'lucide-react'
+import { X, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../lib/supabase'
 
@@ -83,6 +83,30 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <span className="text-sm text-gray-400 italic">Date not set</span>
                         )}
                       </div>
+                      {(payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id)) && (
+                        <div className="flex items-center space-x-2 mb-2">
+                          {payment.paid_by_type === 'investor' ? (
+                            <>
+                              <User className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm text-gray-700">
+                                Paid by: <span className="font-medium text-blue-600">
+                                  {(payment as any).investor?.name || 'Investor'}
+                                  {(payment as any).investor?.type && ` (${(payment as any).investor.type})`}
+                                </span>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Building2 className="w-4 h-4 text-green-600" />
+                              <span className="text-sm text-gray-700">
+                                Paid by: <span className="font-medium text-green-600">
+                                  {(payment as any).bank?.name || 'Bank'}
+                                </span>
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
                       {payment.notes && (
                         <p className="text-sm text-gray-600 mb-2">{payment.notes}</p>
                       )}

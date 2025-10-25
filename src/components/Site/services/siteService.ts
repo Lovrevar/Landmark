@@ -358,7 +358,11 @@ export const updateContractBudgetRealized = async (
 export const fetchWirePayments = async (subcontractorId: string) => {
   const { data, error } = await supabase
     .from('wire_payments')
-    .select('*')
+    .select(`
+      *,
+      investor:paid_by_investor_id(id, name, type),
+      bank:paid_by_bank_id(id, name)
+    `)
     .eq('subcontractor_id', subcontractorId)
     .order('created_at', { ascending: false })
 
