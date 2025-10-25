@@ -196,6 +196,14 @@ const SiteManagement: React.FC = () => {
       setEditingPayment(null)
       const payments = await fetchWirePayments(selectedSubcontractorForPayment.id)
       setWirePayments(payments)
+
+      const updatedProject = projects.find(p => p.id === selectedProject?.id)
+      if (updatedProject) {
+        const updatedSub = updatedProject.subcontractors.find(s => s.id === selectedSubcontractorForPayment.id)
+        if (updatedSub) {
+          setSelectedSubcontractorForPayment(updatedSub)
+        }
+      }
     }
   }
 
@@ -205,6 +213,14 @@ const SiteManagement: React.FC = () => {
     if (success) {
       const payments = await fetchWirePayments(selectedSubcontractorForPayment.id)
       setWirePayments(payments)
+
+      const updatedProject = projects.find(p => p.id === selectedProject?.id)
+      if (updatedProject) {
+        const updatedSub = updatedProject.subcontractors.find(s => s.id === selectedSubcontractorForPayment.id)
+        if (updatedSub) {
+          setSelectedSubcontractorForPayment(updatedSub)
+        }
+      }
     }
   }
 
