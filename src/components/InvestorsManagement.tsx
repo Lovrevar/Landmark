@@ -202,8 +202,7 @@ const InvestorsManagement: React.FC = () => {
         .from('project_investments')
         .insert({
           ...newInvestment,
-          investment_type: investmentType,
-          investment_seniority: seniority
+          investment_type: investmentType
         })
 
       if (error) throw error
