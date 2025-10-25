@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
+import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
 import { MilestoneFormModal } from '../forms/MilestoneFormModal'
@@ -151,13 +151,22 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               Contract: €{contractCost.toLocaleString()}
             </p>
           </div>
-          <button
-            onClick={openAddModal}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Milestone
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={openAddModal}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Milestone
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              title="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {stats && (
