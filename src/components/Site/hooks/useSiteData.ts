@@ -340,14 +340,16 @@ export const useSiteData = () => {
     amount: number,
     paymentDate: string,
     notes: string,
-    userId: string
+    userId: string,
+    milestoneId?: string
   ) => {
     console.log('addPaymentToSubcontractor called', {
       subcontractor,
       amount,
       paymentDate,
       notes,
-      userId
+      userId,
+      milestoneId
     })
 
     if (amount <= 0) {
@@ -393,8 +395,16 @@ export const useSiteData = () => {
         amount: amount,
         payment_date: paymentDate || null,
         notes: notes || null,
-        created_by: userId
+        created_by: userId,
+        milestone_id: milestoneId || null
       })
+
+      if (milestoneId) {
+        console.log('Marking milestone as paid:', milestoneId)
+        await siteService.updateMilestoneStatus(milestoneId, 'paid', {
+          paid_date: paymentDate || new Date().toISOString().split('T')[0]
+        })
+      }
 
       const newRealizedAmount = currentBudgetRealized + amount
       console.log('New realized amount:', newRealizedAmount)

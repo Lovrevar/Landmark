@@ -130,13 +130,14 @@ const SiteManagement: React.FC = () => {
     await deleteSubcontractor(subcontractorId)
   }
 
-  const handleAddPayment = async () => {
+  const handleAddPayment = async (milestoneId?: string) => {
     console.log('handleAddPayment called', {
       hasSubcontractor: !!selectedSubcontractorForPayment,
       hasUser: !!user?.id,
       paymentAmount,
       paymentDate,
-      paymentNotes
+      paymentNotes,
+      milestoneId
     })
 
     if (!selectedSubcontractorForPayment) {
@@ -159,7 +160,8 @@ const SiteManagement: React.FC = () => {
       paymentAmount,
       paymentDate,
       paymentNotes,
-      user.id
+      user.id,
+      milestoneId
     )
 
     if (success) {

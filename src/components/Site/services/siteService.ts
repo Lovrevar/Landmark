@@ -310,6 +310,7 @@ export const createWirePayment = async (data: {
   payment_date: string | null
   notes: string | null
   created_by: string
+  milestone_id?: string | null
 }) => {
   const { data: paymentData, error } = await supabase
     .from('wire_payments')

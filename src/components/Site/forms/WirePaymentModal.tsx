@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { Subcontractor } from '../../../lib/supabase'
+import { Subcontractor, SubcontractorMilestone } from '../../../lib/supabase'
+import { fetchMilestonesBySubcontractor } from '../services/siteService'
 
 interface WirePaymentModalProps {
   visible: boolean
@@ -12,7 +13,7 @@ interface WirePaymentModalProps {
   onAmountChange: (amount: number) => void
   onDateChange: (date: string) => void
   onNotesChange: (notes: string) => void
-  onSubmit: () => void
+  onSubmit: (milestoneId?: string) => void
 }
 
 export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
@@ -27,6 +28,48 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onNotesChange,
   onSubmit
 }) => {
+  const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      loadMilestones()
+    } else {
+      setMilestones([])
+      setSelectedMilestoneId('')
+    }
+  }, [visible, subcontractor])
+
+  const loadMilestones = async () => {
+    if (!subcontractor) return
+
+    try {
+      setLoading(true)
+      const data = await fetchMilestonesBySubcontractor(subcontractor.id)
+      const pendingMilestones = data.filter(m => m.status === 'pending')
+      setMilestones(pendingMilestones)
+    } catch (error) {
+      console.error('Error loading milestones:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMilestoneSelect = (milestoneId: string) => {
+    setSelectedMilestoneId(milestoneId)
+
+    if (milestoneId) {
+      const milestone = milestones.find(m => m.id === milestoneId)
+      if (milestone && subcontractor) {
+        const milestoneAmount = (subcontractor.cost * milestone.percentage) / 100
+        onAmountChange(milestoneAmount)
+      }
+    } else {
+      onAmountChange(0)
+    }
+  }
+
   if (!visible || !subcontractor) return null
 
   const handleSubmit = () => {
@@ -34,9 +77,10 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
       amount,
       paymentDate,
       notes,
-      subcontractor: subcontractor.name
+      subcontractor: subcontractor.name,
+      milestoneId: selectedMilestoneId || undefined
     })
-    onSubmit()
+    onSubmit(selectedMilestoneId || undefined)
   }
 
   const newTotalPaid = subcontractor.budget_realized + amount
@@ -77,6 +121,32 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               </span>
             </div>
           </div>
+
+          {milestones.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Milestone (Optional)
+              </label>
+              <select
+                value={selectedMilestoneId}
+                onChange={(e) => handleMilestoneSelect(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">Manual Payment (No Milestone)</option>
+                {milestones.map((milestone) => {
+                  const milestoneAmount = (subcontractor.cost * milestone.percentage) / 100
+                  return (
+                    <option key={milestone.id} value={milestone.id}>
+                      {milestone.milestone_number}. {milestone.milestone_name} - {milestone.percentage}% (€{milestoneAmount.toLocaleString()})
+                    </option>
+                  )
+                })}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Selecting a milestone will auto-fill the payment amount
+              </p>
+            </div>
+          )}
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
