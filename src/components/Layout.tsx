@@ -12,7 +12,8 @@ import {
   DollarSign,
   ChevronDown,
   User,
-  ClipboardCheck
+  ClipboardCheck,
+  TrendingUp
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -49,6 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Funding Overview', icon: TrendingUp, path: '/funding-overview' },
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Investors', icon: Users, path: '/investors' },
