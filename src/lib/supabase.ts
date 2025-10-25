@@ -67,6 +67,9 @@ export type Subcontractor = {
   phase_id?: string | null
   contract_id?: string | null
   progress?: number
+  financed_by_type?: 'investor' | 'bank' | null
+  financed_by_investor_id?: string | null
+  financed_by_bank_id?: string | null
 }
 
 export type Contract = {
@@ -99,6 +102,10 @@ export type WirePayment = {
   created_by: string | null
   created_at: string
   updated_at: string
+  milestone_id?: string | null
+  paid_by_type?: 'investor' | 'bank' | null
+  paid_by_investor_id?: string | null
+  paid_by_bank_id?: string | null
 }
 
 export type ApartmentPayment = {

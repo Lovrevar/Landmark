@@ -176,6 +176,9 @@ export const createSubcontractor = async (data: {
   cost: number
   budget_realized: number
   phase_id: string
+  financed_by_type?: 'investor' | 'bank' | null
+  financed_by_investor_id?: string | null
+  financed_by_bank_id?: string | null
 }) => {
   const { error } = await supabase
     .from('subcontractors')
@@ -192,6 +195,9 @@ export const createSubcontractorWithReturn = async (data: {
   cost: number
   budget_realized: number
   phase_id: string
+  financed_by_type?: 'investor' | 'bank' | null
+  financed_by_investor_id?: string | null
+  financed_by_bank_id?: string | null
 }) => {
   const { data: newSubcontractor, error } = await supabase
     .from('subcontractors')
@@ -311,6 +317,9 @@ export const createWirePayment = async (data: {
   notes: string | null
   created_by: string
   milestone_id?: string | null
+  paid_by_type?: 'investor' | 'bank' | null
+  paid_by_investor_id?: string | null
+  paid_by_bank_id?: string | null
 }) => {
   const { data: paymentData, error } = await supabase
     .from('wire_payments')
@@ -591,5 +600,44 @@ export const getMilestoneStatsForPhase = async (
     pending_count: pendingCount,
     completed_count: completedCount,
     paid_count: paidCount
+  }
+}
+
+export const fetchProjectFunders = async (projectId: string) => {
+  const { data: investorsData, error: investorsError } = await supabase
+    .from('project_investments')
+    .select('investor_id, investors(id, name, type)')
+    .eq('project_id', projectId)
+    .not('investor_id', 'is', null)
+
+  if (investorsError) throw investorsError
+
+  const { data: banksData, error: banksError } = await supabase
+    .from('bank_credits')
+    .select('bank_id, banks(id, name)')
+    .eq('project_id', projectId)
+    .not('bank_id', 'is', null)
+
+  if (banksError) throw banksError
+
+  const uniqueInvestors = Array.from(
+    new Map(
+      (investorsData || [])
+        .filter(inv => inv.investors)
+        .map(inv => [inv.investors.id, inv.investors])
+    ).values()
+  )
+
+  const uniqueBanks = Array.from(
+    new Map(
+      (banksData || [])
+        .filter(bank => bank.banks)
+        .map(bank => [bank.banks.id, bank.banks])
+    ).values()
+  )
+
+  return {
+    investors: uniqueInvestors,
+    banks: uniqueBanks
   }
 }

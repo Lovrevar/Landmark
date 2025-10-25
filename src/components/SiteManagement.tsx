@@ -130,14 +130,22 @@ const SiteManagement: React.FC = () => {
     await deleteSubcontractor(subcontractorId)
   }
 
-  const handleAddPayment = async (milestoneId?: string) => {
+  const handleAddPayment = async (
+    milestoneId?: string,
+    paidByType?: 'investor' | 'bank' | null,
+    paidByInvestorId?: string | null,
+    paidByBankId?: string | null
+  ) => {
     console.log('handleAddPayment called', {
       hasSubcontractor: !!selectedSubcontractorForPayment,
       hasUser: !!user?.id,
       paymentAmount,
       paymentDate,
       paymentNotes,
-      milestoneId
+      milestoneId,
+      paidByType,
+      paidByInvestorId,
+      paidByBankId
     })
 
     if (!selectedSubcontractorForPayment) {
@@ -161,7 +169,10 @@ const SiteManagement: React.FC = () => {
       paymentDate,
       paymentNotes,
       user.id,
-      milestoneId
+      milestoneId,
+      paidByType,
+      paidByInvestorId,
+      paidByBankId
     )
 
     if (success) {
@@ -317,6 +328,7 @@ const SiteManagement: React.FC = () => {
           phase={selectedPhase}
           existingSubcontractors={existingSubcontractors}
           onSubmit={handleAddSubcontractor}
+          projectId={selectedProject?.id || ''}
         />
 
         <EditSubcontractorModal
@@ -347,6 +359,7 @@ const SiteManagement: React.FC = () => {
           onDateChange={setPaymentDate}
           onNotesChange={setPaymentNotes}
           onSubmit={handleAddPayment}
+          projectId={selectedProject?.id || ''}
         />
 
         <PaymentHistoryModal

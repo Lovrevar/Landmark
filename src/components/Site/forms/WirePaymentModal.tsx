@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, Building2, User } from 'lucide-react'
 import { Subcontractor, SubcontractorMilestone } from '../../../lib/supabase'
-import { fetchMilestonesBySubcontractor } from '../services/siteService'
+import { fetchMilestonesBySubcontractor, fetchProjectFunders } from '../services/siteService'
+
+interface Funder {
+  id: string
+  name: string
+  type?: string
+}
 
 interface WirePaymentModalProps {
   visible: boolean
@@ -13,7 +19,8 @@ interface WirePaymentModalProps {
   onAmountChange: (amount: number) => void
   onDateChange: (date: string) => void
   onNotesChange: (notes: string) => void
-  onSubmit: (milestoneId?: string) => void
+  onSubmit: (milestoneId?: string, paidByType?: 'investor' | 'bank' | null, paidByInvestorId?: string | null, paidByBankId?: string | null) => void
+  projectId: string
 }
 
 export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
@@ -26,18 +33,40 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onAmountChange,
   onDateChange,
   onNotesChange,
-  onSubmit
+  onSubmit,
+  projectId
 }) => {
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const [investors, setInvestors] = useState<Funder[]>([])
+  const [banks, setBanks] = useState<Funder[]>([])
+  const [loadingFunders, setLoadingFunders] = useState(false)
+  const [paidByType, setPaidByType] = useState<'investor' | 'bank' | null>(null)
+  const [paidByInvestorId, setPaidByInvestorId] = useState<string | null>(null)
+  const [paidByBankId, setPaidByBankId] = useState<string | null>(null)
 
   useEffect(() => {
     if (visible && subcontractor) {
       loadMilestones()
+      loadFunders()
+
+      if (subcontractor.financed_by_type && (subcontractor.financed_by_investor_id || subcontractor.financed_by_bank_id)) {
+        setPaidByType(subcontractor.financed_by_type)
+        if (subcontractor.financed_by_type === 'investor') {
+          setPaidByInvestorId(subcontractor.financed_by_investor_id || null)
+          setPaidByBankId(null)
+        } else {
+          setPaidByBankId(subcontractor.financed_by_bank_id || null)
+          setPaidByInvestorId(null)
+        }
+      }
     } else {
       setMilestones([])
       setSelectedMilestoneId('')
+      setPaidByType(null)
+      setPaidByInvestorId(null)
+      setPaidByBankId(null)
     }
   }, [visible, subcontractor])
 
@@ -54,6 +83,51 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadFunders = async () => {
+    if (!projectId) return
+
+    try {
+      setLoadingFunders(true)
+      const funders = await fetchProjectFunders(projectId)
+      setInvestors(funders.investors)
+      setBanks(funders.banks)
+    } catch (error) {
+      console.error('Error loading funders:', error)
+    } finally {
+      setLoadingFunders(false)
+    }
+  }
+
+  const handlePaidByChange = (value: string) => {
+    if (!value) {
+      setPaidByType(null)
+      setPaidByInvestorId(null)
+      setPaidByBankId(null)
+      return
+    }
+
+    const [type, id] = value.split(':')
+    if (type === 'investor') {
+      setPaidByType('investor')
+      setPaidByInvestorId(id)
+      setPaidByBankId(null)
+    } else if (type === 'bank') {
+      setPaidByType('bank')
+      setPaidByBankId(id)
+      setPaidByInvestorId(null)
+    }
+  }
+
+  const getPaidByValue = () => {
+    if (paidByType === 'investor' && paidByInvestorId) {
+      return `investor:${paidByInvestorId}`
+    }
+    if (paidByType === 'bank' && paidByBankId) {
+      return `bank:${paidByBankId}`
+    }
+    return ''
   }
 
   const handleMilestoneSelect = (milestoneId: string) => {
@@ -78,9 +152,12 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
       paymentDate,
       notes,
       subcontractor: subcontractor.name,
-      milestoneId: selectedMilestoneId || undefined
+      milestoneId: selectedMilestoneId || undefined,
+      paidByType,
+      paidByInvestorId,
+      paidByBankId
     })
-    onSubmit(selectedMilestoneId || undefined)
+    onSubmit(selectedMilestoneId || undefined, paidByType, paidByInvestorId, paidByBankId)
   }
 
   const newTotalPaid = subcontractor.budget_realized + amount
@@ -181,6 +258,52 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               Leave empty if date is not yet known
             </p>
           </div>
+
+          {(investors.length > 0 || banks.length > 0) && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Paid By (Optional)
+              </label>
+              <select
+                value={getPaidByValue()}
+                onChange={(e) => handlePaidByChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={loadingFunders}
+              >
+                <option value="">No payer selected</option>
+                {investors.length > 0 && (
+                  <optgroup label="Investors">
+                    {investors.map(investor => (
+                      <option key={investor.id} value={`investor:${investor.id}`}>
+                        {investor.name} {investor.type && `(${investor.type})`}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {banks.length > 0 && (
+                  <optgroup label="Banks">
+                    {banks.map(bank => (
+                      <option key={bank.id} value={`bank:${bank.id}`}>
+                        {bank.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {subcontractor.financed_by_type && (subcontractor.financed_by_investor_id || subcontractor.financed_by_bank_id) ? (
+                  <span className="text-blue-600">
+                    Default: {subcontractor.financed_by_type === 'investor'
+                      ? investors.find(i => i.id === subcontractor.financed_by_investor_id)?.name || 'Investor'
+                      : banks.find(b => b.id === subcontractor.financed_by_bank_id)?.name || 'Bank'
+                    } (can be changed)
+                  </span>
+                ) : (
+                  'Select which investor or bank is making this payment'
+                )}
+              </p>
+            </div>
+          )}
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">

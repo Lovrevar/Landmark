@@ -1,8 +1,9 @@
-import React from 'react'
-import { X, MessageSquare, Send, Calendar } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { X, MessageSquare, Send, Calendar, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../lib/supabase'
 import { CommentWithUser } from '../types/siteTypes'
+import { supabase } from '../../../lib/supabase'
 
 interface SubcontractorDetailsModalProps {
   visible: boolean
@@ -29,6 +30,55 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onAddComment,
   onManageMilestones
 }) => {
+  const [funderName, setFunderName] = useState<string | null>(null)
+  const [loadingFunder, setLoadingFunder] = useState(false)
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      loadFunderInfo()
+    } else {
+      setFunderName(null)
+    }
+  }, [visible, subcontractor])
+
+  const loadFunderInfo = async () => {
+    if (!subcontractor) return
+
+    if (!subcontractor.financed_by_type || (!subcontractor.financed_by_investor_id && !subcontractor.financed_by_bank_id)) {
+      setFunderName(null)
+      return
+    }
+
+    try {
+      setLoadingFunder(true)
+      if (subcontractor.financed_by_type === 'investor' && subcontractor.financed_by_investor_id) {
+        const { data, error } = await supabase
+          .from('investors')
+          .select('name')
+          .eq('id', subcontractor.financed_by_investor_id)
+          .maybeSingle()
+
+        if (!error && data) {
+          setFunderName(data.name)
+        }
+      } else if (subcontractor.financed_by_type === 'bank' && subcontractor.financed_by_bank_id) {
+        const { data, error } = await supabase
+          .from('banks')
+          .select('name')
+          .eq('id', subcontractor.financed_by_bank_id)
+          .maybeSingle()
+
+        if (!error && data) {
+          setFunderName(data.name)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading funder:', error)
+    } finally {
+      setLoadingFunder(false)
+    }
+  }
+
   if (!visible || !subcontractor) return null
 
   return (
@@ -91,6 +141,21 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 </p>
               </div>
             </div>
+            {funderName && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center">
+                  {subcontractor.financed_by_type === 'investor' ? (
+                    <User className="w-4 h-4 text-blue-600 mr-2" />
+                  ) : (
+                    <Building2 className="w-4 h-4 text-blue-600 mr-2" />
+                  )}
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">Financed By</p>
+                    <p className="text-sm font-semibold text-blue-900">{funderName}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {onManageMilestones && (
               <div className="mt-4">
                 <button

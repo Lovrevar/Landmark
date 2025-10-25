@@ -341,7 +341,10 @@ export const useSiteData = () => {
     paymentDate: string,
     notes: string,
     userId: string,
-    milestoneId?: string
+    milestoneId?: string,
+    paidByType?: 'investor' | 'bank' | null,
+    paidByInvestorId?: string | null,
+    paidByBankId?: string | null
   ) => {
     console.log('addPaymentToSubcontractor called', {
       subcontractor,
@@ -349,7 +352,10 @@ export const useSiteData = () => {
       paymentDate,
       notes,
       userId,
-      milestoneId
+      milestoneId,
+      paidByType,
+      paidByInvestorId,
+      paidByBankId
     })
 
     if (amount <= 0) {
@@ -396,7 +402,10 @@ export const useSiteData = () => {
         payment_date: paymentDate || null,
         notes: notes || null,
         created_by: userId,
-        milestone_id: milestoneId || null
+        milestone_id: milestoneId || null,
+        paid_by_type: paidByType || null,
+        paid_by_investor_id: paidByInvestorId || null,
+        paid_by_bank_id: paidByBankId || null
       })
 
       if (milestoneId) {

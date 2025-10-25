@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, Building2, User } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { SubcontractorFormData } from '../types/siteTypes'
+import { fetchProjectFunders } from '../services/siteService'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -9,6 +10,13 @@ interface SubcontractorFormModalProps {
   phase: ProjectPhase | null
   existingSubcontractors: Subcontractor[]
   onSubmit: (data: SubcontractorFormData, useExisting: boolean) => void
+  projectId: string
+}
+
+interface Funder {
+  id: string
+  name: string
+  type?: string
 }
 
 export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
@@ -16,7 +24,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   onClose,
   phase,
   existingSubcontractors,
-  onSubmit
+  onSubmit,
+  projectId
 }) => {
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [formData, setFormData] = useState<SubcontractorFormData>({
@@ -27,14 +36,78 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     deadline: '',
     cost: 0,
     budget_realized: 0,
-    phase_id: ''
+    phase_id: '',
+    financed_by_type: null,
+    financed_by_investor_id: null,
+    financed_by_bank_id: null
   })
+  const [investors, setInvestors] = useState<Funder[]>([])
+  const [banks, setBanks] = useState<Funder[]>([])
+  const [loadingFunders, setLoadingFunders] = useState(false)
 
   useEffect(() => {
     if (phase) {
       setFormData(prev => ({ ...prev, phase_id: phase.id }))
     }
   }, [phase])
+
+  useEffect(() => {
+    if (visible && projectId) {
+      loadFunders()
+    }
+  }, [visible, projectId])
+
+  const loadFunders = async () => {
+    try {
+      setLoadingFunders(true)
+      const funders = await fetchProjectFunders(projectId)
+      setInvestors(funders.investors)
+      setBanks(funders.banks)
+    } catch (error) {
+      console.error('Error loading funders:', error)
+    } finally {
+      setLoadingFunders(false)
+    }
+  }
+
+  const handleFunderChange = (value: string) => {
+    if (!value) {
+      setFormData({
+        ...formData,
+        financed_by_type: null,
+        financed_by_investor_id: null,
+        financed_by_bank_id: null
+      })
+      return
+    }
+
+    const [type, id] = value.split(':')
+    if (type === 'investor') {
+      setFormData({
+        ...formData,
+        financed_by_type: 'investor',
+        financed_by_investor_id: id,
+        financed_by_bank_id: null
+      })
+    } else if (type === 'bank') {
+      setFormData({
+        ...formData,
+        financed_by_type: 'bank',
+        financed_by_bank_id: id,
+        financed_by_investor_id: null
+      })
+    }
+  }
+
+  const getFunderValue = () => {
+    if (formData.financed_by_type === 'investor' && formData.financed_by_investor_id) {
+      return `investor:${formData.financed_by_investor_id}`
+    }
+    if (formData.financed_by_type === 'bank' && formData.financed_by_bank_id) {
+      return `bank:${formData.financed_by_bank_id}`
+    }
+    return ''
+  }
 
   const handleSubmit = () => {
     onSubmit(formData, useExistingSubcontractor)
@@ -160,6 +233,43 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   placeholder="Describe the work for this specific phase..."
                 />
               </div>
+
+              {(investors.length > 0 || banks.length > 0) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Financed By (Optional)
+                  </label>
+                  <select
+                    value={getFunderValue()}
+                    onChange={(e) => handleFunderChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loadingFunders}
+                  >
+                    <option value="">No financing source selected</option>
+                    {investors.length > 0 && (
+                      <optgroup label="Investors">
+                        {investors.map(investor => (
+                          <option key={investor.id} value={`investor:${investor.id}`}>
+                            {investor.name} {investor.type && `(${investor.type})`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {banks.length > 0 && (
+                      <optgroup label="Banks">
+                        {banks.map(bank => (
+                          <option key={bank.id} value={`bank:${bank.id}`}>
+                            {bank.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select which investor or bank is financing this contract
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,6 +343,42 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   placeholder="Describe the work package and responsibilities..."
                 />
               </div>
+              {(investors.length > 0 || banks.length > 0) && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Financed By (Optional)
+                  </label>
+                  <select
+                    value={getFunderValue()}
+                    onChange={(e) => handleFunderChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loadingFunders}
+                  >
+                    <option value="">No financing source selected</option>
+                    {investors.length > 0 && (
+                      <optgroup label="Investors">
+                        {investors.map(investor => (
+                          <option key={investor.id} value={`investor:${investor.id}`}>
+                            {investor.name} {investor.type && `(${investor.type})`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {banks.length > 0 && (
+                      <optgroup label="Banks">
+                        {banks.map(bank => (
+                          <option key={bank.id} value={`bank:${bank.id}`}>
+                            {bank.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select which investor or bank is financing this contract
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
