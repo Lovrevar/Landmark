@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, MessageSquare, Send } from 'lucide-react'
+import { X, MessageSquare, Send, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../lib/supabase'
 import { CommentWithUser } from '../types/siteTypes'
@@ -14,6 +14,7 @@ interface SubcontractorDetailsModalProps {
   onCommentChange: (comment: string) => void
   onCommentTypeChange: (type: 'completed' | 'issue' | 'general') => void
   onAddComment: () => void
+  onManageMilestones?: () => void
 }
 
 export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps> = ({
@@ -25,7 +26,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   commentType,
   onCommentChange,
   onCommentTypeChange,
-  onAddComment
+  onAddComment,
+  onManageMilestones
 }) => {
   if (!visible || !subcontractor) return null
 
@@ -89,6 +91,17 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 </p>
               </div>
             </div>
+            {onManageMilestones && (
+              <div className="mt-4">
+                <button
+                  onClick={onManageMilestones}
+                  className="w-full flex items-center justify-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Manage Payment Milestones
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

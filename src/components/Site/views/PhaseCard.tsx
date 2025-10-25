@@ -1,5 +1,5 @@
 import React from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Users } from 'lucide-react'
+import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from '../types/siteTypes'
@@ -16,6 +16,7 @@ interface PhaseCardProps {
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
+  onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
 }
 
 export const PhaseCard: React.FC<PhaseCardProps> = ({
@@ -29,7 +30,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onOpenPaymentHistory,
   onEditSubcontractor,
   onOpenSubDetails,
-  onDeleteSubcontractor
+  onDeleteSubcontractor,
+  onManageMilestones
 }) => {
   const totalBudgetRealized = phaseSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
   const totalContractCost = phaseSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
@@ -225,7 +227,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         Payments
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       <button
                         onClick={() => onEditSubcontractor(subcontractor)}
                         className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
@@ -238,6 +240,15 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       >
                         Details
                       </button>
+                      {onManageMilestones && (
+                        <button
+                          onClick={() => onManageMilestones(subcontractor, phase, project)}
+                          className="px-2 py-1 bg-amber-600 text-white rounded-md text-xs font-medium hover:bg-amber-700 transition-colors duration-200 flex items-center justify-center"
+                          title="Manage payment milestones"
+                        >
+                          <Calendar className="w-3 h-3" />
+                        </button>
+                      )}
                       <button
                         onClick={() => onDeleteSubcontractor(subcontractor.id)}
                         className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"

@@ -13,6 +13,7 @@ import { WirePaymentModal } from './Site/forms/WirePaymentModal'
 import { PaymentHistoryModal } from './Site/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Site/forms/EditPaymentModal'
 import { SubcontractorDetailsModal } from './Site/forms/SubcontractorDetailsModal'
+import { MilestoneList } from './Site/views/MilestoneList'
 
 const SiteManagement: React.FC = () => {
   const { user } = useAuth()
@@ -64,6 +65,12 @@ const SiteManagement: React.FC = () => {
   const [subcontractorComments, setSubcontractorComments] = useState<CommentWithUser[]>([])
   const [newComment, setNewComment] = useState('')
   const [commentType, setCommentType] = useState<'completed' | 'issue' | 'general'>('general')
+  const [showMilestoneManagement, setShowMilestoneManagement] = useState(false)
+  const [milestoneContext, setMilestoneContext] = useState<{
+    subcontractor: Subcontractor
+    phase: ProjectPhase
+    project: ProjectWithPhases
+  } | null>(null)
 
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
@@ -220,6 +227,16 @@ const SiteManagement: React.FC = () => {
     }
   }
 
+  const handleManageMilestones = (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => {
+    setMilestoneContext({ subcontractor, phase, project })
+    setShowMilestoneManagement(true)
+  }
+
+  const closeMilestoneManagement = () => {
+    setShowMilestoneManagement(false)
+    setMilestoneContext(null)
+  }
+
   if (loading) {
     return <div className="text-center py-12">Loading site management...</div>
   }
@@ -252,6 +269,7 @@ const SiteManagement: React.FC = () => {
           }}
           onOpenSubDetails={openSubcontractorDetails}
           onDeleteSubcontractor={handleDeleteSubcontractor}
+          onManageMilestones={handleManageMilestones}
         />
 
         <PhaseSetupModal
@@ -354,7 +372,38 @@ const SiteManagement: React.FC = () => {
           onCommentChange={setNewComment}
           onCommentTypeChange={setCommentType}
           onAddComment={handleAddComment}
+          onManageMilestones={
+            selectedSubcontractor && selectedSubcontractor.phase_id
+              ? () => {
+                  const phase = selectedProject.phases.find(p => p.id === selectedSubcontractor.phase_id)
+                  if (phase) {
+                    handleManageMilestones(selectedSubcontractor, phase, selectedProject)
+                    setSelectedSubcontractor(null)
+                    setSubcontractorComments([])
+                  }
+                }
+              : undefined
+          }
         />
+
+        {showMilestoneManagement && milestoneContext && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="max-w-6xl w-full my-8">
+              <div className="bg-white rounded-xl shadow-2xl">
+                <MilestoneList
+                  subcontractorId={milestoneContext.subcontractor.id}
+                  projectId={milestoneContext.project.id}
+                  phaseId={milestoneContext.phase.id}
+                  subcontractorName={milestoneContext.subcontractor.name}
+                  projectName={milestoneContext.project.name}
+                  phaseName={milestoneContext.phase.phase_name}
+                  contractCost={milestoneContext.subcontractor.cost}
+                  onClose={closeMilestoneManagement}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

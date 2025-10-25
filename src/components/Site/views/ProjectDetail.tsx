@@ -16,6 +16,7 @@ interface ProjectDetailProps {
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
+  onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -29,7 +30,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onOpenPaymentHistory,
   onEditSubcontractor,
   onOpenSubDetails,
-  onDeleteSubcontractor
+  onDeleteSubcontractor,
+  onManageMilestones
 }) => {
   return (
     <div>
@@ -96,6 +98,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onEditSubcontractor={onEditSubcontractor}
                 onOpenSubDetails={onOpenSubDetails}
                 onDeleteSubcontractor={onDeleteSubcontractor}
+                onManageMilestones={onManageMilestones}
               />
             )
           })}

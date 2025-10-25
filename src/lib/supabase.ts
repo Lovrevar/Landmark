@@ -405,3 +405,20 @@ export type InvestorPayment = {
   created_at: string
   updated_at: string
 }
+
+export type SubcontractorMilestone = {
+  id: string
+  subcontractor_id: string
+  project_id: string
+  phase_id: string
+  milestone_number: number
+  milestone_name: string
+  description: string
+  percentage: number
+  due_date: string | null
+  status: 'pending' | 'completed' | 'paid'
+  completed_date: string | null
+  paid_date: string | null
+  created_at: string
+  updated_at: string
+}

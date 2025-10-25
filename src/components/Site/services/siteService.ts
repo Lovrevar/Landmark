@@ -424,3 +424,171 @@ export const createSubcontractorComment = async (data: {
 
   if (error) throw error
 }
+
+export const fetchMilestonesBySubcontractorAndPhase = async (
+  subcontractorId: string,
+  phaseId: string
+) => {
+  const { data, error } = await supabase
+    .from('subcontractor_milestones')
+    .select('*')
+    .eq('subcontractor_id', subcontractorId)
+    .eq('phase_id', phaseId)
+    .order('milestone_number', { ascending: true })
+
+  if (error) throw error
+
+  return data || []
+}
+
+export const fetchMilestonesBySubcontractor = async (subcontractorId: string) => {
+  const { data, error } = await supabase
+    .from('subcontractor_milestones')
+    .select('*')
+    .eq('subcontractor_id', subcontractorId)
+    .order('phase_id', { ascending: true })
+    .order('milestone_number', { ascending: true })
+
+  if (error) throw error
+
+  return data || []
+}
+
+export const getNextMilestoneNumber = async (
+  subcontractorId: string,
+  phaseId: string
+) => {
+  const { data, error } = await supabase
+    .from('subcontractor_milestones')
+    .select('milestone_number')
+    .eq('subcontractor_id', subcontractorId)
+    .eq('phase_id', phaseId)
+    .order('milestone_number', { ascending: false })
+    .limit(1)
+
+  if (error) throw error
+
+  return data && data.length > 0 ? data[0].milestone_number + 1 : 1
+}
+
+export const createMilestone = async (data: {
+  subcontractor_id: string
+  project_id: string
+  phase_id: string
+  milestone_number: number
+  milestone_name: string
+  description: string
+  percentage: number
+  due_date: string | null
+}) => {
+  const { data: newMilestone, error } = await supabase
+    .from('subcontractor_milestones')
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return newMilestone
+}
+
+export const updateMilestone = async (
+  milestoneId: string,
+  updates: {
+    milestone_name: string
+    description: string
+    percentage: number
+    due_date: string | null
+  }
+) => {
+  const { error } = await supabase
+    .from('subcontractor_milestones')
+    .update(updates)
+    .eq('id', milestoneId)
+
+  if (error) throw error
+}
+
+export const updateMilestoneStatus = async (
+  milestoneId: string,
+  status: 'pending' | 'completed' | 'paid',
+  dateField?: { completed_date?: string | null; paid_date?: string | null }
+) => {
+  const updates: any = { status }
+  if (dateField) {
+    Object.assign(updates, dateField)
+  }
+
+  const { error } = await supabase
+    .from('subcontractor_milestones')
+    .update(updates)
+    .eq('id', milestoneId)
+
+  if (error) throw error
+}
+
+export const deleteMilestone = async (milestoneId: string) => {
+  const { error } = await supabase
+    .from('subcontractor_milestones')
+    .delete()
+    .eq('id', milestoneId)
+
+  if (error) throw error
+}
+
+export const validateMilestonePercentagesForPhase = async (
+  subcontractorId: string,
+  phaseId: string,
+  excludeMilestoneId?: string
+) => {
+  let query = supabase
+    .from('subcontractor_milestones')
+    .select('percentage')
+    .eq('subcontractor_id', subcontractorId)
+    .eq('phase_id', phaseId)
+
+  if (excludeMilestoneId) {
+    query = query.neq('id', excludeMilestoneId)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+
+  const totalPercentage = (data || []).reduce((sum, m) => sum + m.percentage, 0)
+  return {
+    totalPercentage,
+    remainingPercentage: 100 - totalPercentage,
+    isValid: totalPercentage <= 100
+  }
+}
+
+export const getMilestoneStatsForPhase = async (
+  subcontractorId: string,
+  phaseId: string,
+  contractCost: number
+) => {
+  const milestones = await fetchMilestonesBySubcontractorAndPhase(subcontractorId, phaseId)
+
+  const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0)
+  const remainingPercentage = 100 - totalPercentage
+
+  const pendingCount = milestones.filter(m => m.status === 'pending').length
+  const completedCount = milestones.filter(m => m.status === 'completed').length
+  const paidCount = milestones.filter(m => m.status === 'paid').length
+
+  const totalAmount = (contractCost * totalPercentage) / 100
+  const totalPaid = milestones
+    .filter(m => m.status === 'paid')
+    .reduce((sum, m) => sum + (contractCost * m.percentage) / 100, 0)
+
+  return {
+    total_percentage: totalPercentage,
+    remaining_percentage: remainingPercentage,
+    total_amount: totalAmount,
+    total_paid: totalPaid,
+    pending_count: pendingCount,
+    completed_count: completedCount,
+    paid_count: paidCount
+  }
+}
