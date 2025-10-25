@@ -259,7 +259,7 @@ const InvestorsManagement: React.FC = () => {
     setNewInvestment({
       investor_id: investment.investor_id,
       project_id: investment.project_id,
-      investment_type: `${investment.investment_type}_${investment.investment_seniority}`,
+      investment_type: `${investment.investment_type}`,
       amount: investment.amount,
       percentage_stake: investment.percentage_stake || 0,
       expected_return: investment.expected_return,
