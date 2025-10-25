@@ -310,7 +310,6 @@ const InvestorsManagement: React.FC = () => {
           investor_id: newInvestment.investor_id,
           project_id: newInvestment.project_id,
           investment_type: investmentType,
-          investment_seniority: seniority,
           amount: newInvestment.amount,
           percentage_stake: newInvestment.percentage_stake,
           expected_return: newInvestment.expected_return,
