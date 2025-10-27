@@ -271,6 +271,7 @@ const InvestorsManagement: React.FC = () => {
       usage_expiration_date: investment.usage_expiration_date || '',
       grace_period: investment.grace_period || 0
     })
+    setSelectedInvestor(null)
     setShowInvestmentForm(true)
   }
 
