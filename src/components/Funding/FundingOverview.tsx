@@ -15,10 +15,12 @@ import {
   CheckCircle,
   ArrowUpRight,
   ArrowDownRight,
-  Bell
+  Bell,
+  FileText
 } from 'lucide-react'
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
 import PaymentNotifications from './PaymentNotifications'
+import { PaymentNotification } from './services/paymentNotificationService'
 
 interface FundingSource {
   id: string
@@ -67,6 +69,11 @@ const FundingOverview: React.FC = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'notifications'>('overview')
+  const [selectedNotification, setSelectedNotification] = useState<PaymentNotification | null>(null)
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [paymentNotes, setPaymentNotes] = useState('')
 
   useEffect(() => {
     fetchFundingData()
@@ -291,6 +298,83 @@ const FundingOverview: React.FC = () => {
       case 'expired': return <AlertTriangle className="w-4 h-4" />
       case 'depleted': return <AlertTriangle className="w-4 h-4" />
       default: return null
+    }
+  }
+
+  const handleNotificationPayment = (notification: PaymentNotification) => {
+    setSelectedNotification(notification)
+    setPaymentAmount(Number(notification.amount))
+    setPaymentDate(format(new Date(), 'yyyy-MM-dd'))
+    setPaymentNotes(`Payment #${notification.payment_number} for ${notification.bank_name}`)
+    setPaymentModalVisible(true)
+  }
+
+  const handleRecordPayment = async () => {
+    if (!selectedNotification || paymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) {
+        alert('You must be logged in to record payments')
+        return
+      }
+
+      const { error: paymentError } = await supabase
+        .from('wire_payments')
+        .insert({
+          subcontractor_id: null,
+          contract_id: null,
+          milestone_id: null,
+          amount: paymentAmount,
+          payment_date: paymentDate,
+          notes: paymentNotes,
+          paid_by_type: 'bank',
+          paid_by_bank_id: selectedNotification.bank_id,
+          paid_by_investor_id: null,
+          created_by: userId
+        })
+
+      if (paymentError) throw paymentError
+
+      const { error: notificationError } = await supabase
+        .from('payment_notifications')
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', selectedNotification.id)
+
+      if (notificationError) throw notificationError
+
+      const { data: creditData, error: creditFetchError } = await supabase
+        .from('bank_credits')
+        .select('outstanding_balance')
+        .eq('id', selectedNotification.bank_credit_id)
+        .single()
+
+      if (creditFetchError) throw creditFetchError
+
+      const newOutstandingBalance = Number(creditData.outstanding_balance) - paymentAmount
+
+      const { error: creditError } = await supabase
+        .from('bank_credits')
+        .update({
+          outstanding_balance: newOutstandingBalance
+        })
+        .eq('id', selectedNotification.bank_credit_id)
+
+      if (creditError) throw creditError
+
+      alert('Payment recorded successfully!')
+      setPaymentModalVisible(false)
+      setSelectedNotification(null)
+      setPaymentAmount(0)
+      setPaymentNotes('')
+      await fetchFundingData()
+    } catch (error) {
+      console.error('Error recording payment:', error)
+      alert('Failed to record payment. Please try again.')
     }
   }
 
@@ -580,7 +664,7 @@ const FundingOverview: React.FC = () => {
       </div>
         </>
       ) : (
-        <PaymentNotifications />
+        <PaymentNotifications onPaymentClick={handleNotificationPayment} />
       )}
 
       {/* Source Transactions Modal */}
@@ -679,6 +763,130 @@ const FundingOverview: React.FC = () => {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Recording Modal */}
+      {paymentModalVisible && selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Record Bank Credit Payment</h3>
+                <button
+                  onClick={() => {
+                    setPaymentModalVisible(false)
+                    setSelectedNotification(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h4 className="font-semibold text-blue-900 mb-2">Payment Details</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-blue-700">Bank</p>
+                    <p className="font-medium text-blue-900">{selectedNotification.bank_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Credit Type</p>
+                    <p className="font-medium text-blue-900">
+                      {selectedNotification.credit_type?.replace('_', ' ')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Payment Number</p>
+                    <p className="font-medium text-blue-900">#{selectedNotification.payment_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Due Date</p>
+                    <p className="font-medium text-blue-900">
+                      {format(new Date(selectedNotification.due_date), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Scheduled Amount</p>
+                    <p className="font-medium text-blue-900">€{Number(selectedNotification.amount).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700">Project</p>
+                    <p className="font-medium text-blue-900">{selectedNotification.project_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="w-4 h-4 inline mr-1" />
+                    Payment Amount (€) *
+                  </label>
+                  <input
+                    type="number"
+                    value={paymentAmount || ''}
+                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter payment amount"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Payment Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <FileText className="w-4 h-4 inline mr-1" />
+                    Notes
+                  </label>
+                  <textarea
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Add any notes about this payment..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setPaymentModalVisible(false)
+                    setSelectedNotification(null)
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRecordPayment}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Record Payment
+                </button>
+              </div>
             </div>
           </div>
         </div>
