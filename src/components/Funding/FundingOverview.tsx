@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
 import PaymentNotifications from './PaymentNotifications'
+import { NotificationPaymentModal } from './forms/NotificationPaymentModal'
+import { PaymentNotification } from './services/paymentNotificationService'
 
 interface FundingSource {
   id: string
@@ -67,6 +69,12 @@ const FundingOverview: React.FC = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'notifications'>('overview')
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedNotification, setSelectedNotification] = useState<PaymentNotification | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
+  const [paymentNotes, setPaymentNotes] = useState('')
 
   useEffect(() => {
     fetchFundingData()
@@ -291,6 +299,73 @@ const FundingOverview: React.FC = () => {
       case 'expired': return <AlertTriangle className="w-4 h-4" />
       case 'depleted': return <AlertTriangle className="w-4 h-4" />
       default: return null
+    }
+  }
+
+  const handlePaymentClick = (notification: PaymentNotification) => {
+    setSelectedNotification(notification)
+    setPaymentAmount(Number(notification.amount))
+    setPaymentDate(new Date().toISOString().split('T')[0])
+    setPaymentNotes(`Payment for ${notification.bank_name} - Payment #${notification.payment_number}`)
+    setShowPaymentModal(true)
+  }
+
+  const handleRecordPayment = async () => {
+    if (!selectedNotification || !paymentAmount || paymentAmount <= 0) {
+      alert('Please enter a valid payment amount')
+      return
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) {
+        alert('User not authenticated')
+        return
+      }
+
+      const { data: creditData, error: creditError } = await supabase
+        .from('bank_credits')
+        .select('outstanding_balance')
+        .eq('id', selectedNotification.bank_credit_id)
+        .single()
+
+      if (creditError) throw creditError
+
+      const newOutstandingBalance = creditData.outstanding_balance - paymentAmount
+
+      const { error: updateError } = await supabase
+        .from('bank_credits')
+        .update({
+          outstanding_balance: newOutstandingBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedNotification.bank_credit_id)
+
+      if (updateError) throw updateError
+
+      const { error: notificationError } = await supabase
+        .from('payment_notifications')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedNotification.id)
+
+      if (notificationError) throw notificationError
+
+      alert('Payment recorded successfully!')
+
+      setShowPaymentModal(false)
+      setSelectedNotification(null)
+      setPaymentAmount(0)
+      setPaymentDate(new Date().toISOString().split('T')[0])
+      setPaymentNotes('')
+
+      fetchFundingData()
+    } catch (error) {
+      console.error('Error recording payment:', error)
+      alert('Failed to record payment')
     }
   }
 
@@ -580,7 +655,7 @@ const FundingOverview: React.FC = () => {
       </div>
         </>
       ) : (
-        <PaymentNotifications />
+        <PaymentNotifications onPaymentClick={handlePaymentClick} />
       )}
 
       {/* Source Transactions Modal */}
@@ -683,6 +758,25 @@ const FundingOverview: React.FC = () => {
           </div>
         </div>
       )}
+
+      <NotificationPaymentModal
+        visible={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false)
+          setSelectedNotification(null)
+          setPaymentAmount(0)
+          setPaymentDate(new Date().toISOString().split('T')[0])
+          setPaymentNotes('')
+        }}
+        notification={selectedNotification}
+        amount={paymentAmount}
+        paymentDate={paymentDate}
+        notes={paymentNotes}
+        onAmountChange={setPaymentAmount}
+        onDateChange={setPaymentDate}
+        onNotesChange={setPaymentNotes}
+        onSubmit={handleRecordPayment}
+      />
     </div>
   )
 }
