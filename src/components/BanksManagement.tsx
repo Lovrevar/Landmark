@@ -9,6 +9,7 @@ interface BankWithCredits extends Bank {
   total_credits: number
   active_credits: number
   credit_utilization: number
+  credit_utilized: number
 }
 
 const BanksManagement: React.FC = () => {
@@ -96,19 +97,23 @@ const BanksManagement: React.FC = () => {
         const total_credits = bankCredits.length
         const active_credits = bankCredits.filter(credit => credit.status === 'active').length
 
+        // Calculate total utilized credit (sum of all credit amounts)
+        const credit_utilized = bankCredits.reduce((sum, credit) => sum + Number(credit.amount || 0), 0)
+
         // Calculate actual outstanding debt from all credits
         const outstanding_debt = bankCredits.reduce((sum, credit) => sum + Number(credit.outstanding_balance || 0), 0)
 
-        // Calculate available funds (limit - outstanding)
-        const available_funds = bank.total_credit_limit - outstanding_debt
+        // Calculate available funds (limit - utilized)
+        const available_funds = bank.total_credit_limit - credit_utilized
 
-        // Calculate utilization based on actual outstanding
+        // Calculate utilization based on utilized credit
         const credit_utilization = bank.total_credit_limit > 0
-          ? (outstanding_debt / bank.total_credit_limit) * 100
+          ? (credit_utilized / bank.total_credit_limit) * 100
           : 0
 
         return {
           ...bank,
+          credit_utilized,
           outstanding_debt,
           available_funds,
           credits: bankCredits,
@@ -568,13 +573,17 @@ const BanksManagement: React.FC = () => {
             </div>
 
             {/* Credit Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">€{(bank.total_credit_limit / 1000000).toFixed(1)}M</p>
+                <p className="text-xl font-bold text-blue-600">€{(bank.total_credit_limit / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Credit Limit</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">€{(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
+                <p className="text-xl font-bold text-green-600">€{(bank.credit_utilized / 1000000).toFixed(1)}M</p>
+                <p className="text-xs text-gray-600">Credit Utilized</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold text-red-600">€{(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Outstanding</p>
               </div>
             </div>
@@ -999,8 +1008,12 @@ const BanksManagement: React.FC = () => {
                       <span className="font-medium text-blue-900">€{selectedBank.total_credit_limit.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-blue-700">Credit Utilized:</span>
+                      <span className="font-medium text-green-700">€{selectedBank.credit_utilized.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-blue-700">Outstanding:</span>
-                      <span className="font-medium text-blue-900">€{selectedBank.outstanding_debt.toLocaleString()}</span>
+                      <span className="font-medium text-red-700">€{selectedBank.outstanding_debt.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Available:</span>
