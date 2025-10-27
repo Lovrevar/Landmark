@@ -95,12 +95,22 @@ const BanksManagement: React.FC = () => {
         const bankCredits = (creditsData || []).filter(credit => credit.bank_id === bank.id)
         const total_credits = bankCredits.length
         const active_credits = bankCredits.filter(credit => credit.status === 'active').length
-        const credit_utilization = bank.total_credit_limit > 0 
-          ? (bank.outstanding_debt / bank.total_credit_limit) * 100 
+
+        // Calculate actual outstanding debt from all credits
+        const outstanding_debt = bankCredits.reduce((sum, credit) => sum + Number(credit.outstanding_balance || 0), 0)
+
+        // Calculate available funds (limit - outstanding)
+        const available_funds = bank.total_credit_limit - outstanding_debt
+
+        // Calculate utilization based on actual outstanding
+        const credit_utilization = bank.total_credit_limit > 0
+          ? (outstanding_debt / bank.total_credit_limit) * 100
           : 0
 
         return {
           ...bank,
+          outstanding_debt,
+          available_funds,
           credits: bankCredits,
           total_credits,
           active_credits,
