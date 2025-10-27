@@ -334,6 +334,19 @@ const FundingOverview: React.FC = () => {
 
       const newOutstandingBalance = creditData.outstanding_balance - paymentAmount
 
+      const { error: paymentError } = await supabase
+        .from('bank_credit_payments')
+        .insert({
+          bank_credit_id: selectedNotification.bank_credit_id,
+          bank_id: selectedNotification.bank_id,
+          amount: paymentAmount,
+          payment_date: paymentDate,
+          notes: paymentNotes,
+          created_by: userId
+        })
+
+      if (paymentError) throw paymentError
+
       const { error: updateError } = await supabase
         .from('bank_credits')
         .update({
