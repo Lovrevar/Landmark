@@ -429,3 +429,18 @@ export type SubcontractorMilestone = {
   created_at: string
   updated_at: string
 }
+
+export type PaymentNotification = {
+  id: string
+  bank_credit_id: string
+  bank_id: string
+  due_date: string
+  amount: number
+  status: 'pending' | 'completed' | 'dismissed' | 'overdue'
+  notification_type: 'first_payment' | 'recurring' | 'final_payment'
+  payment_number: number
+  dismissed_at: string | null
+  dismissed_by: string | null
+  created_at: string
+  updated_at: string
+}

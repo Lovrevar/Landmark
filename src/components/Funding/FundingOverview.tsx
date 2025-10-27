@@ -14,9 +14,11 @@ import {
   Clock,
   CheckCircle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Bell
 } from 'lucide-react'
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
+import PaymentNotifications from './PaymentNotifications'
 
 interface FundingSource {
   id: string
@@ -64,6 +66,7 @@ const FundingOverview: React.FC = () => {
   const [transactions, setTransactions] = useState<FundingTransaction[]>([])
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'overview' | 'notifications'>('overview')
 
   useEffect(() => {
     fetchFundingData()
@@ -309,8 +312,37 @@ const FundingOverview: React.FC = () => {
         <p className="text-gray-600 mt-2">Track funding sources, spending, and availability across all projects</p>
       </div>
 
-      {/* Overall Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Tab Navigation */}
+      <div className="mb-6 border-b border-gray-200">
+        <div className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`pb-4 px-2 border-b-2 font-medium text-sm transition-colors duration-200 ${
+              activeTab === 'overview'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Funding Sources
+          </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`pb-4 px-2 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center ${
+              activeTab === 'notifications'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Bell className="w-4 h-4 mr-2" />
+            Payment Notifications
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'overview' ? (
+        <>
+          {/* Overall Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Committed</h3>
@@ -546,6 +578,10 @@ const FundingOverview: React.FC = () => {
           )
         })}
       </div>
+        </>
+      ) : (
+        <PaymentNotifications />
+      )}
 
       {/* Source Transactions Modal */}
       {selectedSource && (
