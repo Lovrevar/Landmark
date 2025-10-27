@@ -337,8 +337,7 @@ const FundingOverview: React.FC = () => {
       const { error: updateError } = await supabase
         .from('bank_credits')
         .update({
-          outstanding_balance: newOutstandingBalance,
-          updated_at: new Date().toISOString()
+          outstanding_balance: newOutstandingBalance
         })
         .eq('id', selectedNotification.bank_credit_id)
 
@@ -347,8 +346,7 @@ const FundingOverview: React.FC = () => {
       const { error: notificationError } = await supabase
         .from('payment_notifications')
         .update({
-          status: 'completed',
-          updated_at: new Date().toISOString()
+          status: 'completed'
         })
         .eq('id', selectedNotification.id)
 
