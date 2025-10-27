@@ -240,10 +240,12 @@ const BanksManagement: React.FC = () => {
     }
 
     try {
-      // Extract credit type and seniority from the combined value
-      const [creditType, seniority] = newCredit.credit_type.split('_')
-      const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
-      
+      // Parse credit_type which is in format: "construction_loan_senior" or "term_loan_junior"
+      // Last part after last underscore is seniority, rest is credit_type
+      const parts = newCredit.credit_type.split('_')
+      const seniority = parts[parts.length - 1] // Last part is seniority (senior/junior)
+      const actualCreditType = parts.slice(0, -1).join('_') // Everything before last underscore
+
       const { error } = await supabase
         .from('bank_credits')
         .insert({
@@ -382,8 +384,11 @@ const BanksManagement: React.FC = () => {
     }
 
     try {
-      const [creditType, seniority] = newCredit.credit_type.split('_')
-      const actualCreditType = creditType + (creditType.includes('_') ? '' : '_' + creditType.split('_')[1])
+      // Parse credit_type which is in format: "construction_loan_senior" or "term_loan_junior"
+      // Last part after last underscore is seniority, rest is credit_type
+      const parts = newCredit.credit_type.split('_')
+      const seniority = parts[parts.length - 1] // Last part is seniority (senior/junior)
+      const actualCreditType = parts.slice(0, -1).join('_') // Everything before last underscore
 
       const { error } = await supabase
         .from('bank_credits')
