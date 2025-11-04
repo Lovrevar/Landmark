@@ -24,8 +24,11 @@ const Dashboard: React.FC = () => {
   }
 
   return (
+    <div>
+      
       {renderDashboard()}
+    </div>
   )
-}}
+}
 
 export default Dashboard
