@@ -115,9 +115,9 @@ const InvestmentDashboard: React.FC = () => {
       const projectsWithInvestments = (projectsData || []).map(project => {
         const projectInvestments = (projectInvestmentsData || []).filter(inv => inv.project_id === project.id)
         const projectCredits = (bankCreditsData || []).filter(credit => credit.project_id === project.id)
-        
+
         const total_investment = projectInvestments.reduce((sum, inv) => sum + inv.amount, 0)
-        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.outstanding_balance, 0)
+        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.amount, 0)
         const equity_percentage = project.budget > 0 ? (total_investment / project.budget) * 100 : 0
         const expected_roi = projectInvestments.length > 0 
           ? projectInvestments.reduce((sum, inv) => sum + inv.expected_return, 0) / projectInvestments.length 
