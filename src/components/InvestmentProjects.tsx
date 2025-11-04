@@ -79,9 +79,9 @@ const InvestmentProjects: React.FC = () => {
       const projectsWithFinancials = (projectsData || []).map(project => {
         const projectInvestments = (investmentsData || []).filter(inv => inv.project_id === project.id)
         const projectCredits = (creditsData || []).filter(credit => credit.project_id === project.id)
-        
+
         const total_investment = projectInvestments.reduce((sum, inv) => sum + inv.amount, 0)
-        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.outstanding_balance, 0)
+        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.amount, 0)
         const funding_ratio = project.budget > 0 ? ((total_investment + total_debt) / project.budget) * 100 : 0
         const debt_to_equity = total_investment > 0 ? total_debt / total_investment : 0
         const expected_roi = projectInvestments.length > 0 
@@ -552,12 +552,20 @@ const InvestmentProjects: React.FC = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
-                                <p className="text-xs text-red-600">€{credit.monthly_payment.toLocaleString()}/mo</p>
+                                <p className="font-bold text-red-600">€{credit.amount.toLocaleString()}</p>
+                                <p className="text-xs text-gray-500">Credit Amount</p>
                               </div>
                             </div>
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-xs text-gray-600">Outstanding Balance:</p>
+                              <p className="text-xs font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
+                            </div>
+                            <div className="flex justify-between items-center mb-2">
+                              <p className="text-xs text-gray-600">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment:</p>
+                              <p className="text-xs font-medium text-gray-900">€{credit.monthly_payment.toLocaleString()}</p>
+                            </div>
                             <p className="text-xs text-gray-600">
-                              {credit.maturity_date 
+                              {credit.maturity_date
                                 ? `Matures: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`
                                 : 'No maturity date'
                               }
