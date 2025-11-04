@@ -672,7 +672,7 @@ const DirectorDashboard: React.FC = () => {
               <div>
                 <p className="text-xs text-gray-600">Payables</p>
                 <p className="text-xl font-bold text-orange-600">
-                  €{(financialMetrics.outstanding_payables / 1000).toFixed(0)}K
+                  €{(financialMetrics.outstanding_payables / 1000000).toFixed(0)}K
                 </p>
               </div>
               <ArrowDownRight className="w-8 h-8 text-orange-400" />
