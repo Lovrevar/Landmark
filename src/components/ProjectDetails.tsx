@@ -30,6 +30,7 @@ interface ProjectWithDetails extends Project {
   total_spent: number
   total_revenue: number
   pending_invoices: number
+  investors: string
 }
 
 const ProjectDetails: React.FC = () => {
@@ -107,6 +108,22 @@ const ProjectDetails: React.FC = () => {
 
       if (milestonesError) throw milestonesError
 
+      // Fetch bank credits
+      const { data: bankCreditsData, error: bankCreditsError } = await supabase
+        .from('bank_credits')
+        .select('*, banks(name)')
+        .eq('project_id', id)
+
+      if (bankCreditsError) throw bankCreditsError
+
+      // Fetch project investments
+      const { data: investmentsData, error: investmentsError } = await supabase
+        .from('project_investments')
+        .select('*, investors(name)')
+        .eq('project_id', id)
+
+      if (investmentsError) throw investmentsError
+
       // Calculate project statistics
       const subcontractors = subcontractorsData || []
       const invoices = invoicesData || []
@@ -117,6 +134,24 @@ const ProjectDetails: React.FC = () => {
       const total_revenue = apartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
       const pending_invoices = invoices.filter(inv => !inv.paid).length
 
+      // Build investors list
+      const investorNames: string[] = []
+      if (bankCreditsData && bankCreditsData.length > 0) {
+        bankCreditsData.forEach(bc => {
+          if (bc.banks?.name && !investorNames.includes(bc.banks.name)) {
+            investorNames.push(bc.banks.name)
+          }
+        })
+      }
+      if (investmentsData && investmentsData.length > 0) {
+        investmentsData.forEach(inv => {
+          if (inv.investors?.name && !investorNames.includes(inv.investors.name)) {
+            investorNames.push(inv.investors.name)
+          }
+        })
+      }
+      const investorsString = investorNames.length > 0 ? investorNames.join(', ') : 'N/A'
+
       setProject({
         ...projectData,
         subcontractors,
@@ -125,7 +160,8 @@ const ProjectDetails: React.FC = () => {
         milestones,
         total_spent,
         total_revenue,
-        pending_invoices
+        pending_invoices,
+        investors: investorsString
       })
     } catch (error) {
       console.error('Error fetching project details:', error)
@@ -291,7 +327,7 @@ const ProjectDetails: React.FC = () => {
                 Budget: €{project.budget.toLocaleString()}
               </span>
               <span className="text-sm text-gray-500">
-                Investor: {project.investor || 'N/A'}
+                Investor: {project.investors}
               </span>
             </div>
           </div>
