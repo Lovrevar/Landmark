@@ -492,18 +492,7 @@ export const useSiteData = () => {
     }
 
     try {
-      const currentBudgetRealized = subcontractor.budget_realized || 0
-
       await siteService.deleteWirePayment(paymentId)
-
-      const newRealizedAmount = Math.max(0, currentBudgetRealized - amount)
-
-      await siteService.updateSubcontractorBudgetRealized(subcontractor.id, newRealizedAmount)
-
-      if (subcontractor.contract_id) {
-        await siteService.updateContractBudgetRealized(subcontractor.contract_id, newRealizedAmount)
-      }
-
       await fetchProjects()
       return true
     } catch (error: any) {
