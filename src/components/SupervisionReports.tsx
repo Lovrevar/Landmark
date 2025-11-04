@@ -343,7 +343,7 @@ const SupervisionReports: React.FC = () => {
         ['Status', projectReport.project.status],
         ['Start Date', format(new Date(projectReport.project.start_date), 'MMMM dd, yyyy')],
         ['Total Budget', `€${projectReport.total_budget.toLocaleString()}`],
-        ['Budget Used', `€${projectReport.budget_used.toLocaleString()}`],
+        ['Budget Used', `€${projectReport.total_payments.toLocaleString()}`],
         ['Remaining Budget', `€${projectReport.remaining_budget.toLocaleString()}`],
         ['Budget Utilization', `${projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%`],
         ['Total Contracts', projectReport.total_contracts.toString()],
