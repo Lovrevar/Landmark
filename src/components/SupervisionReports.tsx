@@ -604,10 +604,7 @@ const SupervisionReports: React.FC = () => {
                     <span className="text-gray-600">Utilization:</span>
                     <span className="font-medium">{projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Payments:</span>
-                    <span className="font-medium">€{projectReport.total_payments.toLocaleString()}</span>
-                  </div>
+                  
                 </div>
               </div>
             </div>
