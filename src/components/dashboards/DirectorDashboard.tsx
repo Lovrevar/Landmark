@@ -1,161 +1,184 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, Project } from '../../lib/supabase'
-import { TrendingUp, DollarSign, Building2, Users, FileText, Download, Plus, Edit2, Trash2, X } from 'lucide-react'
-import { generateComprehensiveExecutiveReport } from '../../utils/reportGenerator'
+import { supabase } from '../../lib/supabase'
+import {
+  Building2,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Home,
+  Banknote,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Target,
+  BarChart3,
+  PieChart,
+  Activity,
+  Wallet,
+  CreditCard,
+  FileText,
+  HardHat,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownRight,
+  Package,
+  ShoppingCart,
+  Percent
+} from 'lucide-react'
+import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, parseISO } from 'date-fns'
 
-interface ProjectWithStats extends Project {
+interface ProjectStats {
+  id: string
+  name: string
+  location: string
+  status: string
+  budget: number
   total_expenses: number
   apartment_sales: number
-  funding: string
+  total_investment: number
+  total_debt: number
+  profit_margin: number
+  completion_percentage: number
+}
+
+interface FinancialMetrics {
+  total_revenue: number
+  total_expenses: number
+  total_profit: number
+  profit_margin: number
+  total_debt: number
+  total_equity: number
+  debt_to_equity_ratio: number
+  cash_flow_current_month: number
+  outstanding_receivables: number
+  outstanding_payables: number
+}
+
+interface SalesMetrics {
+  total_units: number
+  sold_units: number
+  reserved_units: number
+  available_units: number
+  sales_rate: number
+  total_sales_revenue: number
+  avg_price_per_unit: number
+  monthly_sales_count: number
+  monthly_sales_revenue: number
+}
+
+interface ConstructionMetrics {
+  total_subcontractors: number
+  active_subcontractors: number
+  completed_contracts: number
+  total_contract_value: number
+  total_paid: number
+  pending_payments: number
+  overdue_tasks: number
+  critical_deadlines: number
+}
+
+interface FundingMetrics {
+  total_investors: number
+  total_banks: number
+  total_bank_credit: number
+  available_credit: number
+  credit_utilization: number
+  avg_interest_rate: number
+  monthly_debt_service: number
+  upcoming_maturities: number
+}
+
+interface Alert {
+  type: 'critical' | 'warning' | 'info'
+  title: string
+  message: string
+  date?: string
 }
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState<ProjectWithStats[]>([])
-  const [showProjectForm, setShowProjectForm] = useState(false)
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [newProject, setNewProject] = useState({
-    name: '',
-    location: '',
-    start_date: '',
-    end_date: '',
-    budget: 0,
-    investor: '',
-    status: 'Planning' as const
+  const [projects, setProjects] = useState<ProjectStats[]>([])
+  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics>({
+    total_revenue: 0,
+    total_expenses: 0,
+    total_profit: 0,
+    profit_margin: 0,
+    total_debt: 0,
+    total_equity: 0,
+    debt_to_equity_ratio: 0,
+    cash_flow_current_month: 0,
+    outstanding_receivables: 0,
+    outstanding_payables: 0
   })
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    activeProjects: 0,
-    totalBudget: 0,
-    totalRevenue: 0
+  const [salesMetrics, setSalesMetrics] = useState<SalesMetrics>({
+    total_units: 0,
+    sold_units: 0,
+    reserved_units: 0,
+    available_units: 0,
+    sales_rate: 0,
+    total_sales_revenue: 0,
+    avg_price_per_unit: 0,
+    monthly_sales_count: 0,
+    monthly_sales_revenue: 0
   })
+  const [constructionMetrics, setConstructionMetrics] = useState<ConstructionMetrics>({
+    total_subcontractors: 0,
+    active_subcontractors: 0,
+    completed_contracts: 0,
+    total_contract_value: 0,
+    total_paid: 0,
+    pending_payments: 0,
+    overdue_tasks: 0,
+    critical_deadlines: 0
+  })
+  const [fundingMetrics, setFundingMetrics] = useState<FundingMetrics>({
+    total_investors: 0,
+    total_banks: 0,
+    total_bank_credit: 0,
+    available_credit: 0,
+    credit_utilization: 0,
+    avg_interest_rate: 0,
+    monthly_debt_service: 0,
+    upcoming_maturities: 0
+  })
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [insertingData, setInsertingData] = useState(false)
-  const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
-    fetchData()
+    fetchAllDashboardData()
   }, [])
 
-  const addProject = async () => {
-    if (!newProject.name.trim() || !newProject.location.trim() || !newProject.start_date) {
-      alert('Please fill in required fields (name, location, start date)')
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .insert(newProject)
-
-      if (error) throw error
-
-      resetProjectForm()
-      await fetchData()
-    } catch (error) {
-      console.error('Error adding project:', error)
-      alert('Error adding project. Please try again.')
-    }
-  }
-
-  const updateProject = async () => {
-    if (!editingProject || !newProject.name.trim() || !newProject.location.trim()) return
-
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .update(newProject)
-        .eq('id', editingProject.id)
-
-      if (error) throw error
-
-      resetProjectForm()
-      await fetchData()
-    } catch (error) {
-      console.error('Error updating project:', error)
-      alert('Error updating project.')
-    }
-  }
-
-  const deleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project? This will also delete all associated tasks, apartments, and invoices.')) return
-
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId)
-
-      if (error) throw error
-      await fetchData()
-    } catch (error) {
-      console.error('Error deleting project:', error)
-      alert('Error deleting project.')
-    }
-  }
-
-  const resetProjectForm = () => {
-    setNewProject({
-      name: '',
-      location: '',
-      start_date: '',
-      end_date: '',
-      budget: 0,
-      investor: '',
-      status: 'Planning'
-    })
-    setEditingProject(null)
-    setShowProjectForm(false)
-  }
-
-  const handleEditProject = (project: Project) => {
-    setEditingProject(project)
-    setNewProject({
-      name: project.name,
-      location: project.location,
-      start_date: project.start_date,
-      end_date: project.end_date || '',
-      budget: project.budget,
-      investor: project.investor || '',
-      status: project.status
-    })
-    setShowProjectForm(true)
-  }
-
-  const fetchData = async () => {
+  const fetchAllDashboardData = async () => {
     setLoading(true)
-    setError(null)
     try {
-      // Test basic connection
-      console.log('Testing Supabase connection...')
-      const { data: testData, error: testError } = await supabase
-        .from('users')
-        .select('count')
-        .limit(1)
-      
-      console.log('Connection test result:', { testData, testError })
-      
-      // Fetch projects with calculated stats
-      console.log('Fetching projects...')
+      await Promise.all([
+        fetchProjectsData(),
+        fetchFinancialData(),
+        fetchSalesData(),
+        fetchConstructionData(),
+        fetchFundingData(),
+        generateAlerts()
+      ])
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchProjectsData = async () => {
+    try {
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (projectsError) {
-        console.error('Projects query error:', projectsError)
-        throw projectsError
-      }
+      if (projectsError) throw projectsError
 
-      console.log('Fetched projects:', projectsData)
-      console.log('Projects count:', projectsData?.length || 0)
-
-      // Calculate stats for each project
       const projectsWithStats = await Promise.all(
         (projectsData || []).map(async (project) => {
-          // Get total expenses from wire_payments through contracts
           const { data: contracts } = await supabase
             .from('contracts')
             .select('id')
@@ -169,527 +192,729 @@ const DirectorDashboard: React.FC = () => {
               .from('wire_payments')
               .select('amount')
               .in('contract_id', contractIds)
-
             totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
           }
 
-          // Get apartment sales revenue
           const { data: apartments } = await supabase
             .from('apartments')
-            .select('price')
+            .select('price, status')
             .eq('project_id', project.id)
-            .eq('status', 'Sold')
 
-          const apartmentSales = apartments?.reduce((sum, apt) => sum + apt.price, 0) || 0
+          const apartmentSales = apartments?.filter(a => a.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0) || 0
 
-          // Get investors for this project with amounts
           const { data: projectInvestments } = await supabase
             .from('project_investments')
-            .select('investor_id, amount')
+            .select('amount')
             .eq('project_id', project.id)
+          const totalInvestment = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
 
-          // Get bank credits for this project
           const { data: bankCredits } = await supabase
             .from('bank_credits')
-            .select('bank_id, amount')
+            .select('outstanding_balance')
             .eq('project_id', project.id)
+          const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
 
-          let fundingDisplay = 'N/A'
-          const fundingSources: Array<{ name: string; amount: number }> = []
+          const totalUnits = apartments?.length || 0
+          const soldUnits = apartments?.filter(a => a.status === 'Sold').length || 0
+          const completionPercentage = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
 
-          // Add investors
-          if (projectInvestments && projectInvestments.length > 0) {
-            const investorIds = projectInvestments.map(pi => pi.investor_id)
-            const { data: investors } = await supabase
-              .from('investors')
-              .select('id, name')
-              .in('id', investorIds)
-
-            if (investors) {
-              projectInvestments.forEach(pi => {
-                const investor = investors.find(inv => inv.id === pi.investor_id)
-                if (investor) {
-                  fundingSources.push({
-                    name: investor.name,
-                    amount: parseFloat(pi.amount)
-                  })
-                }
-              })
-            }
-          }
-
-          // Add bank credits
-          if (bankCredits && bankCredits.length > 0) {
-            const bankIds = bankCredits.map(bc => bc.bank_id)
-            const { data: banks } = await supabase
-              .from('banks')
-              .select('id, name')
-              .in('id', bankIds)
-
-            if (banks) {
-              bankCredits.forEach(bc => {
-                const bank = banks.find(b => b.id === bc.bank_id)
-                if (bank) {
-                  fundingSources.push({
-                    name: bank.name,
-                    amount: parseFloat(bc.amount)
-                  })
-                }
-              })
-            }
-          }
-
-          // Calculate percentages
-          if (fundingSources.length > 0) {
-            const totalFunding = fundingSources.reduce((sum, fs) => sum + fs.amount, 0)
-            const fundingBreakdown = fundingSources.map(fs => {
-              const percentage = totalFunding > 0 ? (fs.amount / totalFunding * 100).toFixed(0) : 0
-              return `${fs.name} ${percentage}%`
-            })
-            fundingDisplay = fundingBreakdown.join(', ')
-          }
+          const profit = apartmentSales - totalExpenses
+          const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
 
           return {
-            ...project,
+            id: project.id,
+            name: project.name,
+            location: project.location,
+            status: project.status,
+            budget: project.budget,
             total_expenses: totalExpenses,
             apartment_sales: apartmentSales,
-            funding: fundingDisplay
+            total_investment: totalInvestment,
+            total_debt: totalDebt,
+            profit_margin: profitMargin,
+            completion_percentage: completionPercentage
           }
         })
       )
 
       setProjects(projectsWithStats)
-
-      // Calculate overall stats
-      const totalProjects = projectsWithStats.length
-      const activeProjects = projectsWithStats.filter(p => p.status === 'In Progress').length
-      const totalBudget = projectsWithStats.reduce((sum, p) => sum + p.budget, 0)
-      const totalRevenue = projectsWithStats.reduce((sum, p) => sum + p.apartment_sales, 0)
-
-      setStats({ totalProjects, activeProjects, totalBudget, totalRevenue })
-      console.log('Calculated stats:', { totalProjects, activeProjects, totalBudget, totalRevenue })
     } catch (error) {
-      console.error('Error fetching data:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch data')
-    } finally {
-      setLoading(false)
+      console.error('Error fetching projects data:', error)
     }
   }
 
-  const handleGenerateReport = async () => {
-    setGeneratingReport(true)
+  const fetchFinancialData = async () => {
     try {
-      await generateComprehensiveExecutiveReport()
+      const { data: sales } = await supabase.from('sales').select('sale_price')
+      const { data: wirePayments } = await supabase.from('wire_payments').select('amount')
+      const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
+      const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
+      const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
+
+      const totalRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
+      const totalExpenses = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+      const totalProfit = totalRevenue - totalExpenses
+      const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+      const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
+      const totalEquity = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
+      const debtToEquityRatio = totalEquity > 0 ? totalDebt / totalEquity : 0
+
+      const currentMonth = startOfMonth(new Date())
+      const currentMonthPayments = apartmentPayments?.filter(p =>
+        p.payment_date && new Date(p.payment_date) >= currentMonth
+      ) || []
+      const cashFlowCurrentMonth = currentMonthPayments.reduce((sum, p) => sum + p.amount, 0)
+
+      const { data: apartmentsData } = await supabase
+        .from('apartments')
+        .select('price, status')
+        .in('status', ['Sold', 'Reserved'])
+
+      const outstandingReceivables = apartmentsData?.reduce((sum, apt) => {
+        if (apt.status === 'Reserved') return sum + apt.price
+        return sum
+      }, 0) || 0
+
+      const outstandingPayables = totalDebt
+
+      setFinancialMetrics({
+        total_revenue: totalRevenue,
+        total_expenses: totalExpenses,
+        total_profit: totalProfit,
+        profit_margin: profitMargin,
+        total_debt: totalDebt,
+        total_equity: totalEquity,
+        debt_to_equity_ratio: debtToEquityRatio,
+        cash_flow_current_month: cashFlowCurrentMonth,
+        outstanding_receivables: outstandingReceivables,
+        outstanding_payables: outstandingPayables
+      })
     } catch (error) {
-      console.error('Error generating report:', error)
-      alert('Failed to generate report. Please try again.')
-    } finally {
-      setGeneratingReport(false)
+      console.error('Error fetching financial data:', error)
+    }
+  }
+
+  const fetchSalesData = async () => {
+    try {
+      const { data: apartments } = await supabase.from('apartments').select('*')
+      const { data: sales } = await supabase.from('sales').select('sale_price, sale_date')
+
+      const totalUnits = apartments?.length || 0
+      const soldUnits = apartments?.filter(a => a.status === 'Sold').length || 0
+      const reservedUnits = apartments?.filter(a => a.status === 'Reserved').length || 0
+      const availableUnits = apartments?.filter(a => a.status === 'Available').length || 0
+      const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+      const totalSalesRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
+      const avgPricePerUnit = soldUnits > 0 ? totalSalesRevenue / soldUnits : 0
+
+      const currentMonth = startOfMonth(new Date())
+      const monthlySales = sales?.filter(s => new Date(s.sale_date) >= currentMonth) || []
+      const monthlySalesCount = monthlySales.length
+      const monthlySalesRevenue = monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
+
+      setSalesMetrics({
+        total_units: totalUnits,
+        sold_units: soldUnits,
+        reserved_units: reservedUnits,
+        available_units: availableUnits,
+        sales_rate: salesRate,
+        total_sales_revenue: totalSalesRevenue,
+        avg_price_per_unit: avgPricePerUnit,
+        monthly_sales_count: monthlySalesCount,
+        monthly_sales_revenue: monthlySalesRevenue
+      })
+    } catch (error) {
+      console.error('Error fetching sales data:', error)
+    }
+  }
+
+  const fetchConstructionData = async () => {
+    try {
+      const { data: subcontractors } = await supabase
+        .from('subcontractors')
+        .select('id, deadline, progress')
+
+      const { data: contracts } = await supabase
+        .from('contracts')
+        .select('id, contract_amount, status')
+
+      const { data: wirePayments } = await supabase
+        .from('wire_payments')
+        .select('amount, contract_id')
+
+      const totalSubcontractors = subcontractors?.length || 0
+      const activeSubcontractors = subcontractors?.filter(s => s.progress < 100).length || 0
+      const completedContracts = contracts?.filter(c => c.status === 'completed').length || 0
+      const totalContractValue = contracts?.reduce((sum, c) => sum + c.contract_amount, 0) || 0
+      const totalPaid = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+      const pendingPayments = totalContractValue - totalPaid
+
+      const today = new Date()
+      const overdueTasks = subcontractors?.filter(s =>
+        s.deadline && new Date(s.deadline) < today && s.progress < 100
+      ).length || 0
+
+      const criticalDeadlines = subcontractors?.filter(s => {
+        if (!s.deadline || s.progress >= 100) return false
+        const daysUntil = differenceInDays(new Date(s.deadline), today)
+        return daysUntil >= 0 && daysUntil <= 7
+      }).length || 0
+
+      setConstructionMetrics({
+        total_subcontractors: totalSubcontractors,
+        active_subcontractors: activeSubcontractors,
+        completed_contracts: completedContracts,
+        total_contract_value: totalContractValue,
+        total_paid: totalPaid,
+        pending_payments: pendingPayments,
+        overdue_tasks: overdueTasks,
+        critical_deadlines: criticalDeadlines
+      })
+    } catch (error) {
+      console.error('Error fetching construction data:', error)
+    }
+  }
+
+  const fetchFundingData = async () => {
+    try {
+      const { data: investors } = await supabase.from('investors').select('*')
+      const { data: banks } = await supabase.from('banks').select('*')
+      const { data: bankCredits } = await supabase
+        .from('bank_credits')
+        .select('outstanding_balance, interest_rate, monthly_payment, maturity_date')
+
+      const totalInvestors = investors?.length || 0
+      const totalBanks = banks?.length || 0
+      const totalBankCredit = banks?.reduce((sum, b) => sum + b.total_credit_limit, 0) || 0
+      const availableCredit = banks?.reduce((sum, b) => sum + b.available_funds, 0) || 0
+      const creditUtilization = totalBankCredit > 0 ? ((totalBankCredit - availableCredit) / totalBankCredit) * 100 : 0
+
+      const avgInterestRate = bankCredits?.length
+        ? bankCredits.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCredits.length
+        : 0
+
+      const monthlyDebtService = bankCredits?.reduce((sum, bc) => sum + bc.monthly_payment, 0) || 0
+
+      const upcomingMaturities = bankCredits?.filter(bc => {
+        if (!bc.maturity_date) return false
+        const daysUntil = differenceInDays(new Date(bc.maturity_date), new Date())
+        return daysUntil >= 0 && daysUntil <= 90
+      }).length || 0
+
+      setFundingMetrics({
+        total_investors: totalInvestors,
+        total_banks: totalBanks,
+        total_bank_credit: totalBankCredit,
+        available_credit: availableCredit,
+        credit_utilization: creditUtilization,
+        avg_interest_rate: avgInterestRate,
+        monthly_debt_service: monthlyDebtService,
+        upcoming_maturities: upcomingMaturities
+      })
+    } catch (error) {
+      console.error('Error fetching funding data:', error)
+    }
+  }
+
+  const generateAlerts = async () => {
+    const newAlerts: Alert[] = []
+
+    try {
+      const { data: subcontractors } = await supabase
+        .from('subcontractors')
+        .select('name, deadline, progress')
+
+      const today = new Date()
+
+      subcontractors?.forEach(sub => {
+        if (sub.deadline && sub.progress < 100) {
+          const daysUntil = differenceInDays(new Date(sub.deadline), today)
+          if (daysUntil < 0) {
+            newAlerts.push({
+              type: 'critical',
+              title: 'Overdue Task',
+              message: `${sub.name} is ${Math.abs(daysUntil)} days overdue (${sub.progress}% complete)`,
+              date: sub.deadline
+            })
+          } else if (daysUntil <= 3) {
+            newAlerts.push({
+              type: 'warning',
+              title: 'Urgent Deadline',
+              message: `${sub.name} due in ${daysUntil} days (${sub.progress}% complete)`,
+              date: sub.deadline
+            })
+          }
+        }
+      })
+
+      const { data: bankCredits } = await supabase
+        .from('bank_credits')
+        .select('maturity_date, amount, banks(name)')
+
+      bankCredits?.forEach(credit => {
+        if (credit.maturity_date) {
+          const daysUntil = differenceInDays(new Date(credit.maturity_date), today)
+          if (daysUntil >= 0 && daysUntil <= 30) {
+            newAlerts.push({
+              type: 'warning',
+              title: 'Credit Maturity',
+              message: `${credit.banks?.name || 'Bank'} credit of €${credit.amount.toLocaleString()} matures in ${daysUntil} days`,
+              date: credit.maturity_date
+            })
+          }
+        }
+      })
+
+      if (financialMetrics.debt_to_equity_ratio > 2) {
+        newAlerts.push({
+          type: 'warning',
+          title: 'High Leverage',
+          message: `Debt-to-Equity ratio is ${financialMetrics.debt_to_equity_ratio.toFixed(2)}x (recommended < 2x)`
+        })
+      }
+
+      if (salesMetrics.sales_rate < 30 && salesMetrics.total_units > 0) {
+        newAlerts.push({
+          type: 'info',
+          title: 'Low Sales Rate',
+          message: `Only ${salesMetrics.sales_rate.toFixed(1)}% of units sold. Consider sales strategy review.`
+        })
+      }
+
+      setAlerts(newAlerts.slice(0, 10))
+    } catch (error) {
+      console.error('Error generating alerts:', error)
     }
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading dashboard...</div>
-  }
-
-  if (error) {
     return (
-      <div className="text-center py-12">
-        <div className="text-red-600 mb-4">Error loading dashboard: {error}</div>
-        <button 
-          onClick={fetchData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
-
-  if (projects.length === 0) {
-    return (
-      <div className="space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Total Projects</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Active Projects</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeProjects}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Total Budget</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  €{stats.totalBudget.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  €{stats.totalRevenue.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading comprehensive dashboard...</p>
         </div>
       </div>
     )
   }
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-blue-600" />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">General Dashboard</h1>
+          <p className="text-gray-600 mt-1">Comprehensive overview of all business operations</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Last updated</p>
+          <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
+        </div>
+      </div>
+
+      {/* Critical Alerts Section */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900">Critical Alerts ({alerts.length})</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {alerts.slice(0, 6).map((alert, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-lg border ${
+                  alert.type === 'critical'
+                    ? 'bg-red-50 border-red-200'
+                    : alert.type === 'warning'
+                    ? 'bg-orange-50 border-orange-200'
+                    : 'bg-blue-50 border-blue-200'
+                }`}
+              >
+                <div className="flex items-start">
+                  {alert.type === 'critical' ? (
+                    <AlertTriangle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
+                  ) : alert.type === 'warning' ? (
+                    <Clock className="w-5 h-5 text-orange-600 mr-2 mt-0.5" />
+                  ) : (
+                    <Activity className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`font-semibold text-sm ${
+                      alert.type === 'critical' ? 'text-red-900' :
+                      alert.type === 'warning' ? 'text-orange-900' : 'text-blue-900'
+                    }`}>
+                      {alert.title}
+                    </p>
+                    <p className={`text-xs mt-1 ${
+                      alert.type === 'critical' ? 'text-red-700' :
+                      alert.type === 'warning' ? 'text-orange-700' : 'text-blue-700'
+                    }`}>
+                      {alert.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Financial Overview - Top Priority */}
+      <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl shadow-lg border border-blue-200 p-6">
+        <div className="flex items-center mb-6">
+          <DollarSign className="w-6 h-6 text-blue-600 mr-2" />
+          <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Total Revenue</p>
+              <TrendingUp className="w-5 h-5 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+            <p className="text-3xl font-bold text-green-600">
+              €{(financialMetrics.total_revenue / 1000000).toFixed(2)}M
+            </p>
+            <p className="text-xs text-gray-500 mt-1">From all sales</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Total Expenses</p>
+              <TrendingDown className="w-5 h-5 text-red-600" />
             </div>
+            <p className="text-3xl font-bold text-red-600">
+              €{(financialMetrics.total_expenses / 1000000).toFixed(2)}M
+            </p>
+            <p className="text-xs text-gray-500 mt-1">All payments made</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Net Profit</p>
+              <Wallet className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className={`text-3xl font-bold ${financialMetrics.total_profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              €{(financialMetrics.total_profit / 1000000).toFixed(2)}M
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {financialMetrics.profit_margin.toFixed(1)}% margin
+            </p>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Total Debt</p>
+              <CreditCard className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-3xl font-bold text-orange-600">
+              €{(financialMetrics.total_debt / 1000000).toFixed(2)}M
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Outstanding balance</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-600">Cash Flow (Month)</p>
+              <Activity className="w-5 h-5 text-teal-600" />
+            </div>
+            <p className="text-3xl font-bold text-teal-600">
+              €{(financialMetrics.cash_flow_current_month / 1000).toFixed(0)}K
+            </p>
+            <p className="text-xs text-gray-500 mt-1">{format(new Date(), 'MMMM')}</p>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeProjects}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Budget</p>
-              <p className="text-2xl font-bold text-gray-900">
-                €{stats.totalBudget.toLocaleString()}
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-gray-600">Debt/Equity Ratio</p>
+                <p className={`text-xl font-bold ${
+                  financialMetrics.debt_to_equity_ratio > 2 ? 'text-red-600' :
+                  financialMetrics.debt_to_equity_ratio > 1 ? 'text-orange-600' : 'text-green-600'
+                }`}>
+                  {financialMetrics.debt_to_equity_ratio.toFixed(2)}x
+                </p>
+              </div>
+              <PieChart className="w-8 h-8 text-gray-400" />
             </div>
           </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-600" />
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-gray-600">Receivables</p>
+                <p className="text-xl font-bold text-blue-600">
+                  €{(financialMetrics.outstanding_receivables / 1000).toFixed(0)}K
+                </p>
+              </div>
+              <ArrowUpRight className="w-8 h-8 text-blue-400" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">
-                €{stats.totalRevenue.toLocaleString()}
-              </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-gray-600">Payables</p>
+                <p className="text-xl font-bold text-orange-600">
+                  €{(financialMetrics.outstanding_payables / 1000).toFixed(0)}K
+                </p>
+              </div>
+              <ArrowDownRight className="w-8 h-8 text-orange-400" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Projects Table */}
+      {/* Sales Performance */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Home className="w-6 h-6 text-green-600 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-900">Sales Performance</h2>
+          </div>
+          <button
+            onClick={() => navigate('/sales-projects')}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            View Details
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+            <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-green-600">{salesMetrics.sold_units}</p>
+            <p className="text-sm text-gray-600">Sold Units</p>
+          </div>
+          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <Clock className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-yellow-600">{salesMetrics.reserved_units}</p>
+            <p className="text-sm text-gray-600">Reserved</p>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-blue-600">{salesMetrics.available_units}</p>
+            <p className="text-sm text-gray-600">Available</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <Percent className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-purple-600">{salesMetrics.sales_rate.toFixed(1)}%</p>
+            <p className="text-sm text-gray-600">Sales Rate</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Total Sales Revenue</p>
+            <p className="text-2xl font-bold text-gray-900">€{(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Avg Price per Unit</p>
+            <p className="text-2xl font-bold text-gray-900">€{(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Monthly Sales ({format(new Date(), 'MMM')})</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {salesMetrics.monthly_sales_count} units / €{(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Construction & Site Management */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <HardHat className="w-6 h-6 text-orange-600 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-900">Construction & Site Management</h2>
+          </div>
+          <button
+            onClick={() => navigate('/site-management')}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            View Details
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <p className="text-sm text-gray-600 mb-1">Total Subcontractors</p>
+            <p className="text-3xl font-bold text-blue-600">{constructionMetrics.total_subcontractors}</p>
+            <p className="text-xs text-gray-500 mt-1">{constructionMetrics.active_subcontractors} active</p>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <p className="text-sm text-gray-600 mb-1">Completed Contracts</p>
+            <p className="text-3xl font-bold text-green-600">{constructionMetrics.completed_contracts}</p>
+            <p className="text-xs text-gray-500 mt-1">Finished work</p>
+          </div>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <p className="text-sm text-gray-600 mb-1">Overdue Tasks</p>
+            <p className="text-3xl font-bold text-red-600">{constructionMetrics.overdue_tasks}</p>
+            <p className="text-xs text-gray-500 mt-1">Need attention</p>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <p className="text-sm text-gray-600 mb-1">Critical Deadlines</p>
+            <p className="text-3xl font-bold text-orange-600">{constructionMetrics.critical_deadlines}</p>
+            <p className="text-xs text-gray-500 mt-1">Within 7 days</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Total Contract Value</p>
+            <p className="text-2xl font-bold text-gray-900">€{(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Total Paid</p>
+            <p className="text-2xl font-bold text-green-600">€{(constructionMetrics.total_paid / 1000000).toFixed(2)}M</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Pending Payments</p>
+            <p className="text-2xl font-bold text-orange-600">€{(constructionMetrics.pending_payments / 1000).toFixed(0)}K</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Funding & Investment */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Banknote className="w-6 h-6 text-purple-600 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-900">Funding & Investment</h2>
+          </div>
+          <button
+            onClick={() => navigate('/funding-overview')}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            View Details
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <Users className="w-6 h-6 text-green-600 mb-2" />
+            <p className="text-3xl font-bold text-green-600">{fundingMetrics.total_investors}</p>
+            <p className="text-sm text-gray-600">Active Investors</p>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <Building2 className="w-6 h-6 text-blue-600 mb-2" />
+            <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
+            <p className="text-sm text-gray-600">Banking Partners</p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <Target className="w-6 h-6 text-purple-600 mb-2" />
+            <p className="text-3xl font-bold text-purple-600">{fundingMetrics.credit_utilization.toFixed(0)}%</p>
+            <p className="text-sm text-gray-600">Credit Utilized</p>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <Calendar className="w-6 h-6 text-orange-600 mb-2" />
+            <p className="text-3xl font-bold text-orange-600">{fundingMetrics.upcoming_maturities}</p>
+            <p className="text-sm text-gray-600">Upcoming Maturities</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Total Credit Limit</p>
+            <p className="text-xl font-bold text-gray-900">€{(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Available Credit</p>
+            <p className="text-xl font-bold text-green-600">€{(fundingMetrics.available_credit / 1000000).toFixed(1)}M</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Avg Interest Rate</p>
+            <p className="text-xl font-bold text-blue-600">{fundingMetrics.avg_interest_rate.toFixed(2)}%</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Monthly Debt Service</p>
+            <p className="text-xl font-bold text-orange-600">€{(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Overview Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Project Overview</h2>
-            <button
-              onClick={() => setShowProjectForm(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Project
-            </button>
+            <h2 className="text-2xl font-bold text-gray-900">Projects Portfolio</h2>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-blue-600">{projects.length}</p>
+              <p className="text-sm text-gray-600">Total Projects</p>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Budget
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Expenses
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Funding
-                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Profit Margin</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Completion</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {projects.map((project) => (
-                <tr key={project.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <button
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                      >
-                        {project.name}
-                      </button>
-                      <div className="text-sm text-gray-500">{project.location}</div>
-                    </div>
+            <tbody className="divide-y divide-gray-200">
+              {projects.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">No projects available</p>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    €{project.budget.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    €{project.total_expenses.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    €{project.apartment_sales.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {project.funding}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditProject(project)}
-                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                        title="Edit project"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteProject(project.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                        title="Delete project"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
-              ))}
+              ) : (
+                projects.map((project) => (
+                  <tr key={project.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/projects/${project.id}`)}>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold text-gray-900">{project.name}</p>
+                        <p className="text-sm text-gray-500">{project.location}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                        project.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                        project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {project.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      €{(project.budget / 1000000).toFixed(2)}M
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-red-600">
+                      €{(project.total_expenses / 1000000).toFixed(2)}M
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-green-600">
+                      €{(project.apartment_sales / 1000000).toFixed(2)}M
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center text-sm font-semibold ${
+                        project.profit_margin >= 20 ? 'text-green-600' :
+                        project.profit_margin >= 10 ? 'text-blue-600' :
+                        project.profit_margin >= 0 ? 'text-orange-600' : 'text-red-600'
+                      }`}>
+                        {project.profit_margin >= 0 ? '+' : ''}{project.profit_margin.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${project.completion_percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {project.completion_percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Project Form Modal */}
-      {showProjectForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingProject ? 'Edit Project' : 'Create New Project'}
-                </h3>
-                <button
-                  onClick={resetProjectForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</label>
-                  <input
-                    type="text"
-                    value={newProject.name}
-                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter project name"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
-                  <input
-                    type="text"
-                    value={newProject.location}
-                    onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter project location"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
-                  <input
-                    type="date"
-                    value={newProject.start_date}
-                    onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                  <input
-                    type="date"
-                    value={newProject.end_date}
-                    onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget (€)</label>
-                  <input
-                    type="number"
-                    value={newProject.budget}
-                    onChange={(e) => setNewProject({ ...newProject, budget: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select
-                    value={newProject.status}
-                    onChange={(e) => setNewProject({ ...newProject, status: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="Planning">Planning</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                    <option value="On Hold">On Hold</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investor</label>
-                  <input
-                    type="text"
-                    value={newProject.investor}
-                    onChange={(e) => setNewProject({ ...newProject, investor: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter investor name (optional)"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={resetProjectForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingProject ? updateProject : addProject}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {editingProject ? 'Update' : 'Create'} Project
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Report Generation */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Comprehensive Executive Report</h2>
-            <p className="text-gray-600 mt-1">All-in-one report with sales, funding, construction, cash flow, and risk analysis</p>
-          </div>
-          <button
-            onClick={handleGenerateReport}
-            disabled={generatingReport || projects.length === 0}
-            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            {generatingReport ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Generating...
-              </>
-            ) : (
-              <>
-                <FileText className="w-4 h-4 mr-2" />
-                Generate Executive Report
-              </>
-            )}
-          </button>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <FileText className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="font-medium text-blue-900">Sales & Financial Performance</span>
-            </div>
-            <p className="text-sm text-blue-700">Complete sales metrics, revenue, profit margins, and customer analytics</p>
-          </div>
-
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
-              <span className="font-medium text-green-900">Funding & Construction Status</span>
-            </div>
-            <p className="text-sm text-green-700">Capital structure, debt analysis, contracts, and work progress tracking</p>
-          </div>
-
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Download className="w-5 h-5 text-orange-600 mr-2" />
-              <span className="font-medium text-orange-900">Cash Flow & Risk Assessment</span>
-            </div>
-            <p className="text-sm text-orange-700">6-month cash flow analysis with risk evaluation and recommendations</p>
-          </div>
         </div>
       </div>
     </div>
