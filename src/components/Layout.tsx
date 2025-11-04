@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const menuConfig = {
       General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projects', icon: Building2, path: '/projects' },
+        { name: 'Reports', icon: BarChart3, path: '/general-reports' },
         { name: 'General Payments', icon: DollarSign, path: '/general-payments' }
       ],
       Supervision: [
