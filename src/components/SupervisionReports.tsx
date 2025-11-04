@@ -594,7 +594,7 @@ const SupervisionReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Budget Used:</span>
-                    <span className="font-bold text-orange-600">`€{projectReport.total_payments.toLocaleString()}`</span>
+                    <span className="font-bold text-orange-600">€{projectReport.total_payments.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Remaining:</span>
