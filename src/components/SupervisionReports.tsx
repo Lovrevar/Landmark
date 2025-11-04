@@ -59,6 +59,7 @@ interface ProjectSupervisionReport {
   subcontractors: Subcontractor[]
   payments: WirePayment[]
   work_logs: WorkLog[]
+  investors: string
 }
 
 const SupervisionReports: React.FC = () => {
@@ -132,8 +133,6 @@ const SupervisionReports: React.FC = () => {
           contracts!inner(project_id)
         `)
         .eq('contracts.project_id', selectedProject)
-        .gte('created_at', dateRange.start)
-        .lte('created_at', dateRange.end)
 
       if (paymentsError) throw paymentsError
 
@@ -156,6 +155,22 @@ const SupervisionReports: React.FC = () => {
         .order('date', { ascending: false })
 
       if (workLogsError) throw workLogsError
+
+      // Fetch bank credits
+      const { data: bankCreditsData, error: bankCreditsError } = await supabase
+        .from('bank_credits')
+        .select('*, banks(name)')
+        .eq('project_id', selectedProject)
+
+      if (bankCreditsError) throw bankCreditsError
+
+      // Fetch project investments
+      const { data: investmentsData, error: investmentsError } = await supabase
+        .from('project_investments')
+        .select('*, investors(name)')
+        .eq('project_id', selectedProject)
+
+      if (investmentsError) throw investmentsError
 
       const contracts = contractsData || []
       const phases = phasesData || []
@@ -180,6 +195,24 @@ const SupervisionReports: React.FC = () => {
       const total_payments = payments.reduce((sum, p) => sum + p.amount, 0)
       const total_work_logs = work_logs.length
 
+      // Build investors list
+      const investorNames: string[] = []
+      if (bankCreditsData && bankCreditsData.length > 0) {
+        bankCreditsData.forEach(bc => {
+          if (bc.banks?.name && !investorNames.includes(bc.banks.name)) {
+            investorNames.push(bc.banks.name)
+          }
+        })
+      }
+      if (investmentsData && investmentsData.length > 0) {
+        investmentsData.forEach(inv => {
+          if (inv.investors?.name && !investorNames.includes(inv.investors.name)) {
+            investorNames.push(inv.investors.name)
+          }
+        })
+      }
+      const investorsString = investorNames.length > 0 ? investorNames.join(', ') : 'N/A'
+
       const startDate = new Date(dateRange.start)
       const endDate = new Date(dateRange.end)
       const months = eachMonthOfInterval({ start: startDate, end: endDate })
@@ -190,7 +223,8 @@ const SupervisionReports: React.FC = () => {
 
         const monthPayments = payments.filter(payment => {
           const paymentDate = new Date(payment.created_at)
-          return paymentDate >= monthStart && paymentDate <= monthEnd
+          return paymentDate >= monthStart && paymentDate <= monthEnd &&
+                 new Date(payment.created_at) >= startDate && new Date(payment.created_at) <= endDate
         })
 
         const monthContracts = contracts.filter(contract => {
@@ -224,7 +258,8 @@ const SupervisionReports: React.FC = () => {
         phases,
         subcontractors: projectSubcontractors,
         payments,
-        work_logs
+        work_logs,
+        investors: investorsString
       })
     } catch (error) {
       console.error('Error generating project report:', error)
@@ -548,7 +583,7 @@ const SupervisionReports: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Investor:</span>
-                    <span className="font-medium">{projectReport.project.investor || 'N/A'}</span>
+                    <span className="font-medium">{projectReport.investors}</span>
                   </div>
                 </div>
               </div>
