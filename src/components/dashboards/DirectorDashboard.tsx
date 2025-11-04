@@ -386,15 +386,11 @@ const DirectorDashboard: React.FC = () => {
         .from('bank_credit_payments')
         .select('amount')
 
-      const { data: wirePayments } = await supabase
-        .from('wire_payments')
-        .select('amount')
-
       const totalInvestors = investors?.length || 0
       const totalBanks = banks?.length || 0
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
-      const totalPaidToSubcontractors = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
-      const availableCredit = (totalBankCredit - sum of outstanding_balance) / totalBankCredit × 100
+      const totalOutstandingBalance = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
+      const availableCredit = totalBankCredit - totalOutstandingBalance
       const totalPaidOut = bankCreditPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
       const creditPaidOut = totalBankCredit > 0 ? (totalPaidOut / totalBankCredit) * 100 : 0
 
