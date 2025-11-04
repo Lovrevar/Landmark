@@ -431,7 +431,7 @@ const FundingOverview: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Committed</h3>
+            <h3 className="text-sm font-medium text-gray-600">Total Credit Limit</h3>
             <DollarSign className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">€{totalStats.committed.toLocaleString()}</p>
@@ -440,18 +440,18 @@ const FundingOverview: React.FC = () => {
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Spent</h3>
+            <h3 className="text-sm font-medium text-gray-600">Credit Utilized</h3>
             <ArrowDownRight className="w-5 h-5 text-red-600" />
           </div>
           <p className="text-2xl font-bold text-red-600">€{totalStats.spent.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-1">
-            {totalStats.committed > 0 ? ((totalStats.spent / totalStats.committed) * 100).toFixed(1) : '0'}% utilized
+            {totalStats.committed > 0 ? ((totalStats.spent / totalStats.committed) * 100).toFixed(1) : '0'}% of total limit
           </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Available Funds</h3>
+            <h3 className="text-sm font-medium text-gray-600">Available Credit</h3>
             <ArrowUpRight className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-2xl font-bold text-green-600">€{totalStats.available.toLocaleString()}</p>
