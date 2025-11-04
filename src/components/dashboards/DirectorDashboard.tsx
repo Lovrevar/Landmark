@@ -767,7 +767,7 @@ const DirectorDashboard: React.FC = () => {
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Pending Payments</p>
-            <p className="text-2xl font-bold text-orange-600">€{(constructionMetrics.pending_payments / 1000).toFixed(0)}K</p>
+            <p className="text-2xl font-bold text-orange-600">€{(constructionMetrics.pending_payments / 1000000).toFixed(0)}M</p>
           </div>
         </div>
       </div>
