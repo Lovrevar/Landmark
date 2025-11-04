@@ -217,7 +217,7 @@ export const useSiteData = () => {
           job_description: data.job_description,
           deadline: data.deadline,
           cost: data.cost,
-          budget_realized: data.budget_realized || 0,
+          budget_realized: 0,
           phase_id: phase.id
         })
 
@@ -228,7 +228,7 @@ export const useSiteData = () => {
           subcontractor_id: newSubcontractor.id,
           job_description: data.job_description,
           contract_amount: data.cost,
-          budget_realized: data.budget_realized || 0,
+          budget_realized: 0,
           end_date: data.deadline,
           status: 'active'
         })
@@ -256,7 +256,7 @@ export const useSiteData = () => {
           job_description: data.job_description,
           deadline: data.deadline,
           cost: data.cost,
-          budget_realized: data.budget_realized || 0,
+          budget_realized: 0,
           phase_id: phase.id
         })
 
@@ -267,7 +267,7 @@ export const useSiteData = () => {
           subcontractor_id: newSubcontractor.id,
           job_description: data.job_description,
           contract_amount: data.cost,
-          budget_realized: data.budget_realized || 0,
+          budget_realized: 0,
           end_date: data.deadline,
           status: 'active'
         })

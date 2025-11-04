@@ -319,20 +319,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Budget Realized (€)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.budget_realized}
-                  onChange={(e) => setFormData({ ...formData, budget_realized: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Actual amount paid to subcontractor
-                </p>
-              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
                 <textarea
