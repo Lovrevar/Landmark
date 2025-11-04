@@ -382,16 +382,27 @@ const DirectorDashboard: React.FC = () => {
       const { data: bankCredits } = await supabase
         .from('bank_credits')
         .select('amount, outstanding_balance, interest_rate, monthly_payment, maturity_date')
+      const { data: projectInvestments } = await supabase
+        .from('project_investments')
+        .select('amount')
+      const { data: wirePayments } = await supabase
+        .from('wire_payments')
+        .select('amount')
       const { data: bankCreditPayments } = await supabase
         .from('bank_credit_payments')
         .select('amount')
 
       const totalInvestors = investors?.length || 0
       const totalBanks = banks?.length || 0
+
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
+      const totalEquityInvestments = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
+      const totalInvestments = totalBankCredit + totalEquityInvestments
+
+      const investmentsSpent = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+
       const totalPaidOut = bankCreditPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
       const creditPaidOut = totalBankCredit > 0 ? (totalPaidOut / totalBankCredit) * 100 : 0
-      const availableCredit = banks?.reduce((sum, b) => sum + b.available_funds, 0) || 0
 
       const avgInterestRate = bankCredits?.length
         ? bankCredits.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCredits.length
@@ -408,8 +419,8 @@ const DirectorDashboard: React.FC = () => {
       setFundingMetrics({
         total_investors: totalInvestors,
         total_banks: totalBanks,
-        total_bank_credit: totalBankCredit,
-        available_credit: availableCredit,
+        total_bank_credit: totalInvestments,
+        available_credit: investmentsSpent,
         credit_paid_out: creditPaidOut,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService,
@@ -814,11 +825,11 @@ const DirectorDashboard: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Total Credit Limit</p>
+            <p className="text-sm text-gray-600 mb-1">Total Investments</p>
             <p className="text-xl font-bold text-gray-900">€{(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Available Credit</p>
+            <p className="text-sm text-gray-600 mb-1">Investments Spent</p>
             <p className="text-xl font-bold text-green-600">€{(fundingMetrics.available_credit / 1000000).toFixed(1)}M</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
