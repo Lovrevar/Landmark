@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
 
   return (
       {renderDashboard()}
-    </div>
+   
   )
 }
 
