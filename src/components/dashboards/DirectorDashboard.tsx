@@ -84,7 +84,7 @@ interface FundingMetrics {
   total_banks: number
   total_bank_credit: number
   available_credit: number
-  credit_utilization: number
+  credit_paid_out: number
   avg_interest_rate: number
   monthly_debt_service: number
   upcoming_maturities: number
@@ -138,7 +138,7 @@ const DirectorDashboard: React.FC = () => {
     total_banks: 0,
     total_bank_credit: 0,
     available_credit: 0,
-    credit_utilization: 0,
+    credit_paid_out: 0,
     avg_interest_rate: 0,
     monthly_debt_service: 0,
     upcoming_maturities: 0
@@ -381,13 +381,17 @@ const DirectorDashboard: React.FC = () => {
       const { data: banks } = await supabase.from('banks').select('*')
       const { data: bankCredits } = await supabase
         .from('bank_credits')
-        .select('outstanding_balance, interest_rate, monthly_payment, maturity_date')
+        .select('amount, outstanding_balance, interest_rate, monthly_payment, maturity_date')
+      const { data: bankCreditPayments } = await supabase
+        .from('bank_credit_payments')
+        .select('amount')
 
       const totalInvestors = investors?.length || 0
       const totalBanks = banks?.length || 0
-      const totalBankCredit = banks?.reduce((sum, b) => sum + b.total_credit_limit, 0) || 0
+      const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
+      const totalPaidOut = bankCreditPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+      const creditPaidOut = totalBankCredit > 0 ? (totalPaidOut / totalBankCredit) * 100 : 0
       const availableCredit = banks?.reduce((sum, b) => sum + b.available_funds, 0) || 0
-      const creditUtilization = totalBankCredit > 0 ? ((totalBankCredit - availableCredit) / totalBankCredit) * 100 : 0
 
       const avgInterestRate = bankCredits?.length
         ? bankCredits.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCredits.length
@@ -406,7 +410,7 @@ const DirectorDashboard: React.FC = () => {
         total_banks: totalBanks,
         total_bank_credit: totalBankCredit,
         available_credit: availableCredit,
-        credit_utilization: creditUtilization,
+        credit_paid_out: creditPaidOut,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService,
         upcoming_maturities: upcomingMaturities
@@ -799,8 +803,8 @@ const DirectorDashboard: React.FC = () => {
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <Target className="w-6 h-6 text-purple-600 mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{fundingMetrics.credit_utilization.toFixed(0)}%</p>
-            <p className="text-sm text-gray-600">Credit Utilized</p>
+            <p className="text-3xl font-bold text-purple-600">{fundingMetrics.credit_paid_out.toFixed(0)}%</p>
+            <p className="text-sm text-gray-600">Credit Paid Out</p>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
             <Calendar className="w-6 h-6 text-orange-600 mb-2" />
