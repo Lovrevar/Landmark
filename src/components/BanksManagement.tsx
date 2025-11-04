@@ -322,6 +322,7 @@ const BanksManagement: React.FC = () => {
       repayment_type: credit.repayment_type,
       credit_seniority: credit.credit_seniority
     })
+    setSelectedBank(null)
     setShowCreditForm(true)
   }
 
