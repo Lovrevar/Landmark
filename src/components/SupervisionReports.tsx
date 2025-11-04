@@ -18,7 +18,7 @@ interface MonthlyData {
   month: string
   contracts: number
   payments: number
-  budget_used: number
+  subcontractors_paid: string
 }
 
 interface WorkLog {
@@ -228,16 +228,30 @@ const SupervisionReports: React.FC = () => {
                  paymentDate >= startDate && paymentDate <= endDate
         })
 
-        const monthContracts = contracts.filter(contract => {
-          const contractDate = new Date(contract.created_at)
-          return contractDate >= monthStart && contractDate <= monthEnd
+        // Count contracts that are active in this month (deadline is at or after the start of this month)
+        const activeContracts = contracts.filter(contract => {
+          const subcontractor = subcontractors.find(s => s.id === contract.subcontractor_id)
+          if (!subcontractor || !subcontractor.deadline) return false
+          const deadline = new Date(subcontractor.deadline)
+          // Contract is active if deadline is at or after the start of this month
+          return deadline >= monthStart
         })
+
+        // Get unique subcontractor names that were paid in this month
+        const paidSubcontractorIds = new Set(
+          monthPayments.map(p => p.subcontractor_id).filter(Boolean)
+        )
+        const paidSubcontractorNames = projectSubcontractors
+          .filter(s => paidSubcontractorIds.has(s.id))
+          .map(s => s.name)
+          .filter((name, index, self) => self.indexOf(name) === index) // unique names
+          .join(', ')
 
         return {
           month: format(month, 'MMM yyyy'),
-          contracts: monthContracts.length,
+          contracts: activeContracts.length,
           payments: monthPayments.reduce((sum, p) => sum + p.amount, 0),
-          budget_used: monthPayments.reduce((sum, p) => sum + p.amount, 0)
+          subcontractors_paid: paidSubcontractorNames || 'None'
         }
       })
 
@@ -380,11 +394,16 @@ const SupervisionReports: React.FC = () => {
       pdf.setFont('helvetica', 'normal')
 
       projectReport.monthly_data.forEach((month, index) => {
-        checkPageBreak(6)
-        const y = yPosition + (index * 6)
+        checkPageBreak(8)
+        const y = yPosition + (index * 8)
         pdf.text(`${month.month}:`, margin + 5, y)
         pdf.text(`${month.contracts} contracts`, margin + 40, y)
-        pdf.text(`€${month.budget_used.toLocaleString()} spent`, margin + 80, y)
+        pdf.text(`€${month.payments.toLocaleString()} paid`, margin + 80, y)
+        if (month.subcontractors_paid !== 'None') {
+          pdf.setFontSize(8)
+          pdf.text(`Paid: ${month.subcontractors_paid}`, margin + 5, y + 4)
+          pdf.setFontSize(10)
+        }
       })
 
       yPosition += (projectReport.monthly_data.length * 6) + 15
@@ -740,7 +759,7 @@ const SupervisionReports: React.FC = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contracts</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Budget Used</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subcontractors Paid</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payments</th>
                   </tr>
                 </thead>
@@ -749,7 +768,7 @@ const SupervisionReports: React.FC = () => {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{month.contracts}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">€{month.budget_used.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{month.subcontractors_paid}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">€{month.payments.toLocaleString()}</td>
                     </tr>
                   ))}
