@@ -222,9 +222,10 @@ const SupervisionReports: React.FC = () => {
         const monthEnd = endOfMonth(month)
 
         const monthPayments = payments.filter(payment => {
-          const paymentDate = new Date(payment.created_at)
+          if (!payment.payment_date) return false
+          const paymentDate = new Date(payment.payment_date)
           return paymentDate >= monthStart && paymentDate <= monthEnd &&
-                 new Date(payment.created_at) >= startDate && new Date(payment.created_at) <= endDate
+                 paymentDate >= startDate && paymentDate <= endDate
         })
 
         const monthContracts = contracts.filter(contract => {
