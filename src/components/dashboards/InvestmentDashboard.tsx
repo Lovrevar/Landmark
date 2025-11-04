@@ -36,6 +36,8 @@ interface FinancialSummary {
   weighted_avg_interest: number
   total_monthly_payments: number
   upcoming_maturities: number
+  investment_utilization: number
+  available_investment_amount: number
 }
 
 const InvestmentDashboard: React.FC = () => {
@@ -50,7 +52,9 @@ const InvestmentDashboard: React.FC = () => {
     debt_to_equity_ratio: 0,
     weighted_avg_interest: 0,
     total_monthly_payments: 0,
-    upcoming_maturities: 0
+    upcoming_maturities: 0,
+    investment_utilization: 0,
+    available_investment_amount: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -138,32 +142,52 @@ const InvestmentDashboard: React.FC = () => {
         }
       })
 
+      // Fetch wire payments for utilization calculation
+      const { data: wirePaymentsData } = await supabase
+        .from('wire_payments')
+        .select('amount')
+
       // Calculate financial summary
       const total_portfolio_value = projectsWithInvestments.reduce((sum, p) => sum + p.budget, 0)
-      const total_debt = (banksData || []).reduce((sum, bank) => sum + bank.outstanding_debt, 0)
+      const total_outstanding_debt = (bankCreditsData || []).reduce((sum, credit) => sum + credit.outstanding_balance, 0)
       const total_equity = projectsWithInvestments.reduce((sum, p) => sum + p.total_investment, 0)
-      const debt_to_equity_ratio = total_equity > 0 ? total_debt / total_equity : 0
+      const debt_to_equity_ratio = total_equity > 0 ? total_outstanding_debt / total_equity : 0
       const total_monthly_payments = (bankCreditsData || []).reduce((sum, credit) => sum + credit.monthly_payment, 0)
-      
+
       const weighted_avg_interest = (bankCreditsData || []).length > 0
         ? (bankCreditsData || []).reduce((sum, credit) => sum + credit.interest_rate, 0) / (bankCreditsData || []).length
         : 0
 
-      const upcoming_maturities = (bankCreditsData || []).filter(credit => 
+      const upcoming_maturities = (bankCreditsData || []).filter(credit =>
         credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90
       ).length
+
+      // Calculate total investments (equity + debt)
+      const total_bank_credits = (bankCreditsData || []).reduce((sum, credit) => sum + credit.amount, 0)
+      const total_investments = total_equity + total_bank_credits
+
+      // Calculate total spent (wire payments)
+      const total_spent = (wirePaymentsData || []).reduce((sum, payment) => sum + payment.amount, 0)
+
+      // Calculate investment utilization
+      const investment_utilization = total_investments > 0 ? (total_spent / total_investments) * 100 : 0
+
+      // Calculate available investment amount
+      const available_investment_amount = total_investments - total_spent
 
       setProjects(projectsWithInvestments)
       setBanks(banksData || [])
       setInvestors(investorsData || [])
       setFinancialSummary({
         total_portfolio_value,
-        total_debt,
+        total_debt: total_outstanding_debt,
         total_equity,
         debt_to_equity_ratio,
         weighted_avg_interest,
         total_monthly_payments,
-        upcoming_maturities
+        upcoming_maturities,
+        investment_utilization,
+        available_investment_amount
       })
     } catch (error) {
       console.error('Error fetching investment data:', error)
@@ -209,7 +233,7 @@ const InvestmentDashboard: React.FC = () => {
               <ArrowDownRight className="w-6 h-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Debt</p>
+              <p className="text-sm text-gray-600">Total Outstanding Debt</p>
               <p className="text-2xl font-bold text-gray-900">
                 €{(financialSummary.total_debt / 1000000).toFixed(1)}M
               </p>
@@ -322,26 +346,22 @@ const InvestmentDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Leverage Ratio:</span>
               <span className={`font-medium ${
-                financialSummary.debt_to_equity_ratio > 2 ? 'text-red-600' : 
+                financialSummary.debt_to_equity_ratio > 2 ? 'text-red-600' :
                 financialSummary.debt_to_equity_ratio > 1 ? 'text-orange-600' : 'text-green-600'
               }`}>
                 {financialSummary.debt_to_equity_ratio.toFixed(2)}x
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Credit Utilization:</span>
+              <span className="text-gray-600">Investment Utilization:</span>
               <span className="font-medium">
-                {banks.length > 0 
-                  ? ((banks.reduce((sum, bank) => sum + bank.outstanding_debt, 0) / 
-                     banks.reduce((sum, bank) => sum + bank.total_credit_limit, 0)) * 100).toFixed(1)
-                  : '0'
-                }%
+                {financialSummary.investment_utilization.toFixed(1)}%
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Available Credit:</span>
+              <span className="text-gray-600">Available Investment Amount:</span>
               <span className="font-medium text-green-600">
-                €{(banks.reduce((sum, bank) => sum + bank.available_funds, 0) / 1000000).toFixed(1)}M
+                €{(financialSummary.available_investment_amount / 1000000).toFixed(1)}M
               </span>
             </div>
           </div>
