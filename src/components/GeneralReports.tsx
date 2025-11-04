@@ -189,7 +189,7 @@ const GeneralReports: React.FC = () => {
 
     const portfolioValue = projectsArray.reduce((sum, p) => sum + p.budget, 0)
     const totalEquity = projectInvestmentsArray.reduce((sum, inv) => sum + inv.amount, 0)
-    const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.outstanding_balance, 0)
+    const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
     const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
 
     const totalUnits = apartmentsArray.length
@@ -258,7 +258,7 @@ const GeneralReports: React.FC = () => {
           .reduce((sum, inv) => sum + inv.amount, 0)
 
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
-        const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.outstanding_balance, 0)
+        const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
         const contractIds = projectContracts.map(c => c.id)
         const projectPayments = contractIds.length > 0
