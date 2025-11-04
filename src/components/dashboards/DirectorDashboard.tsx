@@ -394,7 +394,7 @@ const DirectorDashboard: React.FC = () => {
       const totalBanks = banks?.length || 0
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
       const totalPaidToSubcontractors = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
-      const availableCredit = totalBankCredit - totalPaidToSubcontractors
+      const availableCredit = (totalBankCredit - sum of outstanding_balance) / totalBankCredit × 100
       const totalPaidOut = bankCreditPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
       const creditPaidOut = totalBankCredit > 0 ? (totalPaidOut / totalBankCredit) * 100 : 0
 
