@@ -99,8 +99,8 @@ const SalesReports: React.FC = () => {
       const project = projects.find(p => p.id === selectedProject)
       if (!project) return
 
-      // Fetch project funding information
-      const { data: fundingData, error: fundingError } = await supabase
+      // Fetch project funding information - all investments for this project
+      const { data: investmentsData, error: investmentsError } = await supabase
         .from('project_investments')
         .select(`
           *,
@@ -108,14 +108,42 @@ const SalesReports: React.FC = () => {
           banks(name)
         `)
         .eq('project_id', selectedProject)
-        .maybeSingle()
 
-      if (fundingError) throw fundingError
+      if (investmentsError) throw investmentsError
+
+      // Fetch bank credits for this project
+      const { data: creditsData, error: creditsError } = await supabase
+        .from('bank_credits')
+        .select(`
+          *,
+          banks(name)
+        `)
+        .eq('project_id', selectedProject)
+
+      if (creditsError) throw creditsError
+
+      // Collect all investors and banks
+      const investors = (investmentsData || [])
+        .filter(inv => inv.investors)
+        .map(inv => inv.investors.name)
+        .filter((name, index, self) => self.indexOf(name) === index) // unique
+
+      const banks = [
+        ...(investmentsData || [])
+          .filter(inv => inv.banks)
+          .map(inv => inv.banks.name),
+        ...(creditsData || [])
+          .filter(credit => credit.banks)
+          .map(credit => credit.banks.name)
+      ].filter((name, index, self) => self.indexOf(name) === index) // unique
+
+      // Combine all funding sources
+      const fundingSources = [...banks, ...investors].join(', ') || 'N/A'
 
       // Add funding info to project
       const projectWithFunding = {
         ...project,
-        investor: fundingData?.investors?.name || fundingData?.banks?.name || 'N/A'
+        investor: fundingSources
       }
 
       // Fetch apartments for the selected project
