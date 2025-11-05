@@ -213,3 +213,72 @@ export const deletePayment = async (paymentId: string, saleId: string | null, am
     }
   }
 }
+
+export const addMultiplePayments = async (
+  payments: Array<{
+    unitId: string
+    unitType: 'apartment' | 'garage' | 'storage'
+    amount: number
+  }>,
+  customerId: string,
+  projectId: string,
+  saleId: string | null,
+  paymentDate: string,
+  paymentType: 'down_payment' | 'installment' | 'final_payment' | 'other',
+  notes: string
+) => {
+  const paymentInserts = payments.map(payment => {
+    const basePayment = {
+      customer_id: customerId,
+      project_id: projectId,
+      sale_id: saleId,
+      amount: payment.amount,
+      payment_date: paymentDate,
+      payment_type: paymentType,
+      notes,
+      apartment_id: null as string | null,
+      garage_id: null as string | null,
+      storage_id: null as string | null
+    }
+
+    if (payment.unitType === 'apartment') {
+      basePayment.apartment_id = payment.unitId
+    } else if (payment.unitType === 'garage') {
+      basePayment.garage_id = payment.unitId
+    } else if (payment.unitType === 'storage') {
+      basePayment.storage_id = payment.unitId
+    }
+
+    return basePayment
+  })
+
+  const { data: createdPayments, error: paymentError } = await supabase
+    .from('apartment_payments')
+    .insert(paymentInserts)
+    .select()
+
+  if (paymentError) throw paymentError
+
+  if (saleId) {
+    const { data: allPayments } = await supabase
+      .from('apartment_payments')
+      .select('amount')
+      .eq('sale_id', saleId)
+
+    const totalPaid = allPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+
+    await supabase
+      .from('sales')
+      .update({
+        total_paid: totalPaid,
+        remaining_amount: (await supabase
+          .from('sales')
+          .select('sale_price')
+          .eq('id', saleId)
+          .single()).data?.sale_price - totalPaid
+      })
+      .eq('id', saleId)
+  }
+
+  return createdPayments
+}

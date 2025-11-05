@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types/apartmentTypes'
 
@@ -19,6 +19,7 @@ interface WirePaymentModalProps {
   onNotesChange: (notes: string) => void
   onPaymentUnitTypeChange: (type: 'apartment' | 'garage' | 'storage') => void
   onSubmit: () => void
+  onMultiUnitSubmit?: (selectedUnits: Array<{ unitId: string; unitType: 'apartment' | 'garage' | 'storage'; amount: number }>) => void
 }
 
 export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
@@ -37,13 +38,76 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onPaymentTypeChange,
   onNotesChange,
   onPaymentUnitTypeChange,
-  onSubmit
+  onSubmit,
+  onMultiUnitSubmit
 }) => {
+  const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set(['apartment']))
+  const [splitAmounts, setSplitAmounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (visible && apartment) {
+      setSelectedUnits(new Set(['apartment']))
+      setSplitAmounts({})
+    }
+  }, [visible, apartment])
+
+  useEffect(() => {
+    if (amount > 0 && selectedUnits.size > 0) {
+      const splitAmount = amount / selectedUnits.size
+      const newSplitAmounts: Record<string, number> = {}
+      selectedUnits.forEach(unit => {
+        newSplitAmounts[unit] = splitAmount
+      })
+      setSplitAmounts(newSplitAmounts)
+    }
+  }, [amount, selectedUnits])
+
   if (!visible || !apartment) return null
+
+  const toggleUnitSelection = (unitType: string) => {
+    const newSelected = new Set(selectedUnits)
+    if (newSelected.has(unitType)) {
+      if (newSelected.size > 1) {
+        newSelected.delete(unitType)
+      }
+    } else {
+      newSelected.add(unitType)
+    }
+    setSelectedUnits(newSelected)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit()
+
+    if (onMultiUnitSubmit && selectedUnits.size > 0) {
+      const payments: Array<{ unitId: string; unitType: 'apartment' | 'garage' | 'storage'; amount: number }> = []
+
+      selectedUnits.forEach(unitType => {
+        if (unitType === 'apartment') {
+          payments.push({
+            unitId: apartment.id,
+            unitType: 'apartment',
+            amount: splitAmounts[unitType] || 0
+          })
+        } else if (unitType === 'garage' && linkedGarage) {
+          payments.push({
+            unitId: linkedGarage.id,
+            unitType: 'garage',
+            amount: splitAmounts[unitType] || 0
+          })
+        } else if (unitType === 'storage' && linkedStorage) {
+          payments.push({
+            unitId: linkedStorage.id,
+            unitType: 'storage',
+            amount: splitAmounts[unitType] || 0
+          })
+        }
+      })
+
+      onMultiUnitSubmit(payments)
+    } else {
+      onSubmit()
+    }
   }
 
   return (
@@ -61,62 +125,71 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Payment for:</p>
+            <p className="text-sm text-gray-600 mb-2">Payment for: {selectedUnits.size > 1 && <span className="text-blue-600 font-medium">(Split payment across {selectedUnits.size} units)</span>}</p>
             <div className="grid grid-cols-1 gap-2">
               <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-blue-400 ${
-                paymentUnitType === 'apartment' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
-              }`}>
+                selectedUnits.has('apartment') ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+              }`} onClick={() => toggleUnitSelection('apartment')}>
                 <input
-                  type="radio"
-                  name="unitType"
-                  value="apartment"
-                  checked={paymentUnitType === 'apartment'}
-                  onChange={(e) => onPaymentUnitTypeChange(e.target.value as 'apartment')}
+                  type="checkbox"
+                  checked={selectedUnits.has('apartment')}
+                  onChange={() => {}}
                   className="mr-3"
                 />
                 <Home className="w-4 h-4 mr-2 text-blue-600" />
                 <div className="flex-1">
                   <div className="font-medium text-gray-900">Apartment {apartment.number}</div>
                   <div className="text-sm text-gray-600">Price: €{apartment.price.toLocaleString()}</div>
+                  {selectedUnits.has('apartment') && splitAmounts['apartment'] > 0 && (
+                    <div className="text-sm font-semibold text-blue-600 mt-1">
+                      Payment: €{splitAmounts['apartment'].toLocaleString()}
+                    </div>
+                  )}
                 </div>
               </label>
 
               {linkedGarage && (
                 <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-orange-400 ${
-                  paymentUnitType === 'garage' ? 'border-orange-600 bg-orange-50' : 'border-gray-200'
-                }`}>
+                  selectedUnits.has('garage') ? 'border-orange-600 bg-orange-50' : 'border-gray-200'
+                }`} onClick={() => toggleUnitSelection('garage')}>
                   <input
-                    type="radio"
-                    name="unitType"
-                    value="garage"
-                    checked={paymentUnitType === 'garage'}
-                    onChange={(e) => onPaymentUnitTypeChange(e.target.value as 'garage')}
+                    type="checkbox"
+                    checked={selectedUnits.has('garage')}
+                    onChange={() => {}}
                     className="mr-3"
                   />
                   <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">Garage {linkedGarage.number}</div>
                     <div className="text-sm text-gray-600">Price: €{linkedGarage.price.toLocaleString()}</div>
+                    {selectedUnits.has('garage') && splitAmounts['garage'] > 0 && (
+                      <div className="text-sm font-semibold text-orange-600 mt-1">
+                        Payment: €{splitAmounts['garage'].toLocaleString()}
+                      </div>
+                    )}
                   </div>
                 </label>
               )}
 
               {linkedStorage && (
                 <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-gray-400 ${
-                  paymentUnitType === 'storage' ? 'border-gray-600 bg-gray-50' : 'border-gray-200'
-                }`}>
+                  selectedUnits.has('storage') ? 'border-gray-600 bg-gray-50' : 'border-gray-200'
+                }`} onClick={() => toggleUnitSelection('storage')}>
                   <input
-                    type="radio"
-                    name="unitType"
-                    value="storage"
-                    checked={paymentUnitType === 'storage'}
-                    onChange={(e) => onPaymentUnitTypeChange(e.target.value as 'storage')}
+                    type="checkbox"
+                    checked={selectedUnits.has('storage')}
+                    onChange={() => {}}
                     className="mr-3"
                   />
                   <Package className="w-4 h-4 mr-2 text-gray-600" />
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">Storage {linkedStorage.number}</div>
                     <div className="text-sm text-gray-600">Price: €{linkedStorage.price.toLocaleString()}</div>
+                    {selectedUnits.has('storage') && splitAmounts['storage'] > 0 && (
+                      <div className="text-sm font-semibold text-gray-600 mt-1">
+                        Payment: €{splitAmounts['storage'].toLocaleString()}
+                      </div>
+                    )}
                   </div>
                 </label>
               )}

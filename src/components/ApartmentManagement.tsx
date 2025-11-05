@@ -291,6 +291,49 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
+  const handleMultiUnitPayment = async (
+    selectedUnits: Array<{ unitId: string; unitType: 'apartment' | 'garage' | 'storage'; amount: number }>
+  ) => {
+    if (!selectedApartment) {
+      alert('Missing apartment information')
+      return
+    }
+
+    try {
+      const { data: sale } = await supabase
+        .from('sales')
+        .select('id, customer_id')
+        .eq('apartment_id', selectedApartment.id)
+        .maybeSingle()
+
+      if (!sale) {
+        alert('No sale found for this apartment. Please create a sale first.')
+        return
+      }
+
+      await apartmentService.addMultiplePayments(
+        selectedUnits,
+        sale.customer_id,
+        selectedApartment.project_id,
+        sale.id,
+        paymentDate,
+        paymentType,
+        paymentNotes
+      )
+
+      setShowWireModal(false)
+      setPaymentAmount(0)
+      setPaymentDate('')
+      setPaymentNotes('')
+      setPaymentType('installment')
+      setPaymentUnitType('apartment')
+      setSelectedApartment(null)
+      fetchData()
+    } catch (error) {
+      console.error('Error adding multi-unit payment:', error)
+    }
+  }
+
   const openPaymentHistory = async (apartment: ApartmentWithDetails) => {
     try {
       const paymentsData = await apartmentService.fetchApartmentPayments(apartment.id)
@@ -812,6 +855,7 @@ const ApartmentManagement: React.FC = () => {
         onNotesChange={setPaymentNotes}
         onPaymentUnitTypeChange={setPaymentUnitType}
         onSubmit={handleAddPayment}
+        onMultiUnitSubmit={handleMultiUnitPayment}
       />
 
       <PaymentHistoryModal
