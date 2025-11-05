@@ -580,7 +580,7 @@ const InvestmentDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Available Credit:</span>
               <span className="font-medium text-green-600">
-                €{(financialSummary.available_credit / 1000000).toFixed(1)}M
+                €{(financialSummary.available_credit / 1000000).toFixed(2)}M
               </span>
             </div>
           </div>
