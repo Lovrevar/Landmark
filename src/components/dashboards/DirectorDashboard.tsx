@@ -830,7 +830,7 @@ const DirectorDashboard: React.FC = () => {
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Investments Spent</p>
-            <p className="text-xl font-bold text-green-600">€{(fundingMetrics.available_credit / 1000000).toFixed(1)}M</p>
+            <p className="text-xl font-bold text-green-600">€{(fundingMetrics.available_credit / 1000000).toFixed(2)}M</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Avg Interest Rate</p>
