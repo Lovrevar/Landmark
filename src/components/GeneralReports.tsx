@@ -198,8 +198,7 @@ const GeneralReports: React.FC = () => {
     const availableUnits = apartmentsArray.filter(a => a.status === 'Available').length
     const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
     const avgSalePrice = soldUnits > 0 ? totalRevenue / soldUnits : 0
-    available_credit: banksArray.reduce((sum, bank) => sum + Number(bank.total_credit_limit), 0) 
-                - bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
+  
 
     const buyers = customersArray.filter(c => c.status === 'buyer').length
     const leads = customersArray.filter(c => c.status === 'lead').length
@@ -363,7 +362,8 @@ const GeneralReports: React.FC = () => {
         total_debt: totalDebt,
         debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
         total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0),
-        available_credit: totalEquity - totalExpenses,
+        available_credit: banksArray.reduce((sum, bank) => sum + Number(bank.total_credit_limit), 0) 
+                - bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
         active_investors: investorsArray.length,
         active_banks: banksArray.length,
         bank_credits: bankCreditsArray.length,
