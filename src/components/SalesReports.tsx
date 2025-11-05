@@ -99,6 +99,25 @@ const SalesReports: React.FC = () => {
       const project = projects.find(p => p.id === selectedProject)
       if (!project) return
 
+      // Fetch project funding information
+      const { data: fundingData, error: fundingError } = await supabase
+        .from('project_investments')
+        .select(`
+          *,
+          investors(name),
+          banks(name)
+        `)
+        .eq('project_id', selectedProject)
+        .maybeSingle()
+
+      if (fundingError) throw fundingError
+
+      // Add funding info to project
+      const projectWithFunding = {
+        ...project,
+        investor: fundingData?.investors?.name || fundingData?.banks?.name || 'N/A'
+      }
+
       // Fetch apartments for the selected project
       const { data: apartmentsData, error: apartmentsError } = await supabase
         .from('apartments')
@@ -157,7 +176,7 @@ const SalesReports: React.FC = () => {
       })
 
       setProjectReport({
-        project,
+        project: projectWithFunding,
         total_units,
         sold_units,
         available_units,
