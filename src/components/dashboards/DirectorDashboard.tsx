@@ -395,7 +395,15 @@ const DirectorDashboard: React.FC = () => {
       const totalInvestors = investors?.length || 0
       const totalBanks = banks?.length || 0
 
+      // Calculate total bank credit limit from banks table
+      const totalBankCreditLimit = banks?.reduce((sum, bank) => sum + Number(bank.total_credit_limit), 0) || 0
+
+      // Calculate contracted bank credits (from bank_credits table)
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
+
+      // Available credit = Total bank limits - Contracted credits
+      const availableCredit = totalBankCreditLimit - totalBankCredit
+
       const totalEquityInvestments = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
       const totalInvestments = totalBankCredit + totalEquityInvestments
 
@@ -419,8 +427,8 @@ const DirectorDashboard: React.FC = () => {
       setFundingMetrics({
         total_investors: totalInvestors,
         total_banks: totalBanks,
-        total_bank_credit: totalInvestments,
-        available_credit: investmentsSpent,
+        total_bank_credit: totalBankCredit,
+        available_credit: availableCredit,
         credit_paid_out: creditPaidOut,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService,
