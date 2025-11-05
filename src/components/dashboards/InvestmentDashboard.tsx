@@ -38,6 +38,17 @@ interface FinancialSummary {
   upcoming_maturities: number
   investment_utilization: number
   available_investment_amount: number
+  total_credit_lines: number
+  available_credit: number
+}
+
+interface RecentActivity {
+  id: string
+  type: 'equity' | 'credit' | 'maturity'
+  title: string
+  description: string
+  date: string
+  amount?: number
 }
 
 const InvestmentDashboard: React.FC = () => {
@@ -45,6 +56,7 @@ const InvestmentDashboard: React.FC = () => {
   const [projects, setProjects] = useState<ProjectWithInvestments[]>([])
   const [banks, setBanks] = useState<Bank[]>([])
   const [investors, setInvestors] = useState<Investor[]>([])
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary>({
     total_portfolio_value: 0,
     total_debt: 0,
@@ -54,7 +66,9 @@ const InvestmentDashboard: React.FC = () => {
     total_monthly_payments: 0,
     upcoming_maturities: 0,
     investment_utilization: 0,
-    available_investment_amount: 0
+    available_investment_amount: 0,
+    total_credit_lines: 0,
+    available_credit: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -111,6 +125,13 @@ const InvestmentDashboard: React.FC = () => {
 
       if (creditsError) throw creditsError
 
+      // Fetch wire payments to calculate utilized amounts
+      const { data: wirePaymentsData, error: paymentsError } = await supabase
+        .from('wire_payments')
+        .select('amount, paid_by_bank_id, paid_by_investor_id')
+
+      if (paymentsError) throw paymentsError
+
       // Process projects with investment details
       const projectsWithInvestments = (projectsData || []).map(project => {
         const projectInvestments = (projectInvestmentsData || []).filter(inv => inv.project_id === project.id)
@@ -142,10 +163,19 @@ const InvestmentDashboard: React.FC = () => {
         }
       })
 
-      // Fetch wire payments for utilization calculation
-      const { data: wirePaymentsData } = await supabase
-        .from('wire_payments')
-        .select('amount')
+      // Calculate bank credit utilization
+      const bankUtilization = new Map<string, number>()
+      ;(wirePaymentsData || []).forEach(payment => {
+        if (payment.paid_by_bank_id) {
+          const current = bankUtilization.get(payment.paid_by_bank_id) || 0
+          bankUtilization.set(payment.paid_by_bank_id, current + Number(payment.amount))
+        }
+      })
+
+      // Calculate total credit lines and available credit
+      const totalCreditLines = (bankCreditsData || []).reduce((sum, credit) => sum + Number(credit.amount), 0)
+      const totalUtilizedCredit = Array.from(bankUtilization.values()).reduce((sum, val) => sum + val, 0)
+      const availableCreditFromBanks = totalCreditLines - totalUtilizedCredit
 
       // Calculate financial summary
       const total_portfolio_value = projectsWithInvestments.reduce((sum, p) => sum + p.budget, 0)
@@ -175,9 +205,64 @@ const InvestmentDashboard: React.FC = () => {
       // Calculate available investment amount
       const available_investment_amount = total_investments - total_spent
 
+      // Build recent activities from real data
+      const activities: RecentActivity[] = []
+
+      // Add recent equity investments
+      ;(projectInvestmentsData || [])
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3)
+        .forEach(investment => {
+          const project = projectsData?.find(p => p.id === investment.project_id)
+          activities.push({
+            id: investment.id,
+            type: 'equity',
+            title: 'New equity investment secured',
+            description: `${investment.investors?.name || 'Investor'} invested €${(investment.amount / 1000000).toFixed(1)}M in ${project?.name || 'project'}`,
+            date: investment.investment_date,
+            amount: investment.amount
+          })
+        })
+
+      // Add recent bank credits
+      ;(bankCreditsData || [])
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 2)
+        .forEach(credit => {
+          const project = projectsData?.find(p => p.id === credit.project_id)
+          activities.push({
+            id: credit.id,
+            type: 'credit',
+            title: 'Credit facility approved',
+            description: `${credit.banks?.name || 'Bank'} approved €${(credit.amount / 1000000).toFixed(1)}M ${credit.credit_type.replace('_', ' ')} for ${project?.name || 'project'}`,
+            date: credit.start_date,
+            amount: credit.amount
+          })
+        })
+
+      // Add upcoming maturities
+      ;(bankCreditsData || [])
+        .filter(credit => credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90 && differenceInDays(new Date(credit.maturity_date), new Date()) > 0)
+        .sort((a, b) => new Date(a.maturity_date!).getTime() - new Date(b.maturity_date!).getTime())
+        .slice(0, 2)
+        .forEach(credit => {
+          const daysUntil = differenceInDays(new Date(credit.maturity_date!), new Date())
+          activities.push({
+            id: credit.id + '_maturity',
+            type: 'maturity',
+            title: 'Upcoming loan maturity',
+            description: `${credit.banks?.name || 'Bank'} loan matures in ${daysUntil} days`,
+            date: credit.maturity_date!
+          })
+        })
+
+      // Sort all activities by date
+      activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
       setProjects(projectsWithInvestments)
       setBanks(banksData || [])
       setInvestors(investorsData || [])
+      setRecentActivities(activities.slice(0, 5))
       setFinancialSummary({
         total_portfolio_value,
         total_debt: total_outstanding_debt,
@@ -187,7 +272,9 @@ const InvestmentDashboard: React.FC = () => {
         total_monthly_payments,
         upcoming_maturities,
         investment_utilization,
-        available_investment_amount
+        available_investment_amount,
+        total_credit_lines: totalCreditLines,
+        available_credit: availableCreditFromBanks
       })
     } catch (error) {
       console.error('Error fetching investment data:', error)
@@ -487,13 +574,13 @@ const InvestmentDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Total Credit Lines:</span>
               <span className="font-medium">
-                €{(banks.reduce((sum, bank) => sum + bank.total_credit_limit, 0) / 1000000).toFixed(1)}M
+                €{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Available Credit:</span>
               <span className="font-medium text-green-600">
-                €{(banks.reduce((sum, bank) => sum + bank.available_funds, 0) / 1000000).toFixed(1)}M
+                €{(financialSummary.available_credit / 1000000).toFixed(1)}M
               </span>
             </div>
           </div>
@@ -585,41 +672,45 @@ const InvestmentDashboard: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900">Recent Investment Activity</h2>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
-            {/* Sample recent activities - in real app this would come from an activity log */}
-            <div className="flex items-center space-x-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <ArrowUpRight className="w-4 h-4 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">New equity investment secured</p>
-                <p className="text-sm text-gray-600">Pacific Real Estate Group invested €2.5M in Sunset Towers</p>
-              </div>
-              <span className="text-sm text-gray-500">{format(new Date(), 'MMM dd')}</span>
+          {recentActivities.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No recent investment activity</p>
             </div>
-            
-            <div className="flex items-center space-x-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Banknote className="w-4 h-4 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Credit facility approved</p>
-                <p className="text-sm text-gray-600">First National Bank approved €1.2M construction loan</p>
-              </div>
-              <span className="text-sm text-gray-500">{format(new Date(), 'MMM dd')}</span>
+          ) : (
+            <div className="space-y-4">
+              {recentActivities.map((activity) => {
+                const isMaturity = activity.type === 'maturity'
+                const isCredit = activity.type === 'credit'
+                const bgColor = activity.type === 'equity' ? 'bg-green-50 border-green-200' :
+                                activity.type === 'credit' ? 'bg-blue-50 border-blue-200' :
+                                'bg-orange-50 border-orange-200'
+                const iconBg = activity.type === 'equity' ? 'bg-green-100' :
+                               activity.type === 'credit' ? 'bg-blue-100' :
+                               'bg-orange-100'
+                const iconColor = activity.type === 'equity' ? 'text-green-600' :
+                                  activity.type === 'credit' ? 'text-blue-600' :
+                                  'text-orange-600'
+                const Icon = activity.type === 'equity' ? ArrowUpRight :
+                            activity.type === 'credit' ? Banknote :
+                            Calendar
+
+                return (
+                  <div key={activity.id} className={`flex items-center space-x-4 p-4 border rounded-lg ${bgColor}`}>
+                    <div className={`p-2 rounded-lg ${iconBg}`}>
+                      <Icon className={`w-4 h-4 ${iconColor}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{activity.title}</p>
+                      <p className="text-sm text-gray-600">{activity.description}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {isMaturity ? 'Due Soon' : format(new Date(activity.date), 'MMM dd')}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
-            
-            <div className="flex items-center space-x-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Calendar className="w-4 h-4 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Upcoming loan maturity</p>
-                <p className="text-sm text-gray-600">Metro Commercial Bank loan matures in 45 days</p>
-              </div>
-              <span className="text-sm text-gray-500">Due Soon</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
