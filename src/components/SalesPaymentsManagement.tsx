@@ -46,7 +46,11 @@ const SalesPaymentsManagement: React.FC = () => {
 
       const { data: garagesData } = await supabase
         .from('garages')
-        .select('id, number, building_id')
+        .select('id, number, building_id, price')
+
+      const { data: repositoriesData } = await supabase
+        .from('repositories')
+        .select('id, number, building_id, price')
 
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
@@ -76,6 +80,7 @@ const SalesPaymentsManagement: React.FC = () => {
         let unitNumber = 'Unknown'
         let building = undefined
         let project = undefined
+        let unitPrice = 0
 
         if (payment.apartment_id) {
           const apartment = apartmentsData?.find(a => a.id === payment.apartment_id)
@@ -84,19 +89,26 @@ const SalesPaymentsManagement: React.FC = () => {
             building = buildingsData?.find(b => b.id === apartment.building_id)
             project = projectsData?.find(p => p.id === apartment.project_id)
           }
+          const sale = salesData?.find(s => s.apartment_id === payment.apartment_id)
+          unitPrice = sale?.sale_price || 0
         } else if (payment.garage_id) {
           const garage = garagesData?.find(g => g.id === payment.garage_id)
           if (garage) {
             unitNumber = garage.number
             building = buildingsData?.find(b => b.id === garage.building_id)
             project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
+            unitPrice = Number(garage.price) || 0
           }
         } else if (payment.storage_id) {
-          unitNumber = 'Storage'
-          project = projectsData?.find(p => p.id === payment.project_id)
+          const storage = repositoriesData?.find(r => r.id === payment.storage_id)
+          if (storage) {
+            unitNumber = storage.number
+            building = buildingsData?.find(b => b.id === storage.building_id)
+            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
+            unitPrice = Number(storage.price) || 0
+          }
         }
 
-        const sale = salesData?.find(s => s.apartment_id === payment.apartment_id)
         const customer = customersData?.find(c => c.id === payment.customer_id)
 
         return {
@@ -105,7 +117,7 @@ const SalesPaymentsManagement: React.FC = () => {
           building_name: building?.name || 'No Building',
           project_name: project?.name || 'No Project',
           buyer_name: customer ? `${customer.name} ${customer.surname}` : 'Unknown Buyer',
-          sale_price: sale?.sale_price || 0
+          sale_price: unitPrice
         }
       })
 
