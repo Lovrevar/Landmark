@@ -120,11 +120,14 @@ const SalesReports: React.FC = () => {
 
       if (salesError) throw salesError
 
-      // Fetch project investors
+      // Fetch project investors and banks
       const { data: investmentsData } = await supabase
         .from('project_investments')
         .select(`
           investors (
+            name
+          ),
+          banks (
             name
           )
         `)
@@ -132,7 +135,14 @@ const SalesReports: React.FC = () => {
 
       const apartments = apartmentsData || []
       const sales = salesData || []
-      const investorNames = investmentsData?.map(inv => inv.investors?.name).filter(Boolean).join(', ') || 'N/A'
+
+      // Combine investors and banks
+      const fundingSources: string[] = []
+      investmentsData?.forEach(inv => {
+        if (inv.investors?.name) fundingSources.push(inv.investors.name)
+        if (inv.banks?.name) fundingSources.push(inv.banks.name)
+      })
+      const investorNames = fundingSources.length > 0 ? fundingSources.join(', ') : 'N/A'
       
       // Calculate project statistics
       const total_units = apartments.length
