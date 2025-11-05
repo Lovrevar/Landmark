@@ -44,6 +44,10 @@ const SalesPaymentsManagement: React.FC = () => {
 
       if (apartmentsError) throw apartmentsError
 
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('id, number, building_id, project_id')
+
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
         .select('id, name')
