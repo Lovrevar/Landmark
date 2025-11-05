@@ -361,7 +361,7 @@ const GeneralReports: React.FC = () => {
         total_debt: totalDebt,
         debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
         total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0),
-        available_credit: banksArray.reduce((sum, bank) => sum + Number(bank.total_credit_limit), 0) - bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0),
+        available_credit: totalEquity - totalExpenses,
         active_investors: investorsArray.length,
         active_banks: banksArray.length,
         bank_credits: bankCreditsArray.length,
@@ -464,9 +464,9 @@ const GeneralReports: React.FC = () => {
       yPosition += 10
 
       const kpiData = [
-        ['€' + (report.kpis.portfolio_value / 1000000).toFixed(2) + 'M', 'Portfolio Value'],
-        ['€' + (report.kpis.total_revenue / 1000000).toFixed(2) + 'M', 'Total Revenue'],
-        ['€' + (report.kpis.net_profit / 1000000).toFixed(2) + 'M', 'Net Profit'],
+        ['€' + (report.kpis.portfolio_value / 1000000).toFixed(1) + 'M', 'Portfolio Value'],
+        ['€' + (report.kpis.total_revenue / 1000000).toFixed(1) + 'M', 'Total Revenue'],
+        ['€' + (report.kpis.net_profit / 1000000).toFixed(1) + 'M', 'Net Profit'],
         [report.kpis.roi.toFixed(1) + '%', 'ROI'],
         [report.kpis.sales_rate.toFixed(1) + '%', 'Sales Rate'],
         [report.kpis.debt_equity_ratio.toFixed(2), 'D/E Ratio'],
