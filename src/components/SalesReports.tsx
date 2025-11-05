@@ -120,8 +120,19 @@ const SalesReports: React.FC = () => {
 
       if (salesError) throw salesError
 
+      // Fetch project investors
+      const { data: investmentsData } = await supabase
+        .from('project_investments')
+        .select(`
+          investors (
+            name
+          )
+        `)
+        .eq('project_id', selectedProject)
+
       const apartments = apartmentsData || []
       const sales = salesData || []
+      const investorNames = investmentsData?.map(inv => inv.investors?.name).filter(Boolean).join(', ') || 'N/A'
       
       // Calculate project statistics
       const total_units = apartments.length
@@ -157,7 +168,7 @@ const SalesReports: React.FC = () => {
       })
 
       setProjectReport({
-        project,
+        project: { ...project, investor: investorNames },
         total_units,
         sold_units,
         available_units,
