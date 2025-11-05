@@ -363,7 +363,7 @@ const GeneralReports: React.FC = () => {
         debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
         total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0),
         available_credit: banksArray.reduce((sum, bank) => sum + Number(bank.total_credit_limit), 0) 
-                - bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
+                - bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0),
         active_investors: investorsArray.length,
         active_banks: banksArray.length,
         bank_credits: bankCreditsArray.length,
