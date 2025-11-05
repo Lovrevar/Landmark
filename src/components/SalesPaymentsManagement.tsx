@@ -69,15 +69,35 @@ const SalesPaymentsManagement: React.FC = () => {
       if (customersError) throw customersError
 
       const enrichedPayments = (paymentsData || []).map(payment => {
-        const apartment = apartmentsData?.find(a => a.id === payment.apartment_id)
-        const building = apartment ? buildingsData?.find(b => b.id === apartment.building_id) : undefined
-        const project = apartment ? projectsData?.find(p => p.id === apartment.project_id) : undefined
+        let unitNumber = 'Unknown'
+        let building = undefined
+        let project = undefined
+
+        if (payment.apartment_id) {
+          const apartment = apartmentsData?.find(a => a.id === payment.apartment_id)
+          if (apartment) {
+            unitNumber = apartment.number
+            building = buildingsData?.find(b => b.id === apartment.building_id)
+            project = projectsData?.find(p => p.id === apartment.project_id)
+          }
+        } else if (payment.garage_id) {
+          const garage = garagesData?.find(g => g.id === payment.garage_id)
+          if (garage) {
+            unitNumber = garage.number
+            building = buildingsData?.find(b => b.id === garage.building_id)
+            project = projectsData?.find(p => p.id === garage.project_id)
+          }
+        } else if (payment.storage_id) {
+          unitNumber = 'Storage'
+          project = projectsData?.find(p => p.id === payment.project_id)
+        }
+
         const sale = salesData?.find(s => s.apartment_id === payment.apartment_id)
-        const customer = sale ? customersData?.find(c => c.id === sale.customer_id) : undefined
+        const customer = customersData?.find(c => c.id === payment.customer_id)
 
         return {
           ...payment,
-          apartment_number: apartment?.number || 'Unknown',
+          apartment_number: unitNumber,
           building_name: building?.name || 'No Building',
           project_name: project?.name || 'No Project',
           buyer_name: customer ? `${customer.name} ${customer.surname}` : 'Unknown Buyer',
