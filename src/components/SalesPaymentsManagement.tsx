@@ -46,11 +46,11 @@ const SalesPaymentsManagement: React.FC = () => {
 
       const { data: garagesData } = await supabase
         .from('garages')
-        .select('id, number, building_id, project_id')
+        .select('id, number, building_id')
 
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('buildings')
-        .select('id, name')
+        .select('id, name, project_id')
 
       if (buildingsError) throw buildingsError
 
@@ -89,7 +89,7 @@ const SalesPaymentsManagement: React.FC = () => {
           if (garage) {
             unitNumber = garage.number
             building = buildingsData?.find(b => b.id === garage.building_id)
-            project = projectsData?.find(p => p.id === garage.project_id)
+            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
           }
         } else if (payment.storage_id) {
           unitNumber = 'Storage'
