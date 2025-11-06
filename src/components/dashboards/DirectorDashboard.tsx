@@ -177,6 +177,25 @@ const DirectorDashboard: React.FC = () => {
 
       if (projectsError) throw projectsError
 
+      // Fetch all apartments to get garage and storage IDs
+      const { data: allApartments } = await supabase.from('apartments').select('garage_id, repository_id')
+      const garageIds = allApartments?.map(a => a.garage_id).filter(Boolean) || []
+      const storageIds = allApartments?.map(a => a.repository_id).filter(Boolean) || []
+
+      // Fetch garages and storages data
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('id, price')
+        .in('id', garageIds.length > 0 ? garageIds : [''])
+
+      const { data: storagesData } = await supabase
+        .from('repositories')
+        .select('id, price')
+        .in('id', storageIds.length > 0 ? storageIds : [''])
+
+      const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
+      const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+
       const projectsWithStats = await Promise.all(
         (projectsData || []).map(async (project) => {
           const { data: contracts } = await supabase
@@ -197,10 +216,16 @@ const DirectorDashboard: React.FC = () => {
 
           const { data: apartments } = await supabase
             .from('apartments')
-            .select('price, status')
+            .select('price, status, garage_id, repository_id')
             .eq('project_id', project.id)
 
-          const apartmentSales = apartments?.filter(a => a.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0) || 0
+          // Calculate apartment sales including linked garages and storages
+          const apartmentSales = apartments?.filter(a => a.status === 'Sold').reduce((sum, apt) => {
+            let total = apt.price
+            if (apt.garage_id) total += garageMap.get(apt.garage_id) || 0
+            if (apt.repository_id) total += storageMap.get(apt.repository_id) || 0
+            return sum + total
+          }, 0) || 0
 
           const { data: projectInvestments } = await supabase
             .from('project_investments')
