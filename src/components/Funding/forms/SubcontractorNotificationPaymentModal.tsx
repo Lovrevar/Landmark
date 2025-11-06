@@ -188,6 +188,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           payment_date: paymentDate || null,
           notes,
           milestone_id: notification.milestone_id,
+          paid_by_type: paidByType,
           paid_by_investor_id: paidByInvestorId,
           paid_by_bank_id: paidByBankId
         })
