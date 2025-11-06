@@ -60,7 +60,7 @@ const PaymentsManagement: React.FC = () => {
       // Fetch subcontractors for names
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
-        .select('id, name, project_id, phase_id')
+        .select('id, name, phase_id')
 
       if (subError) throw subError
 
@@ -74,7 +74,7 @@ const PaymentsManagement: React.FC = () => {
       // Fetch phases for names
       const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
-        .select('id, phase_name')
+        .select('id, phase_name, project_id')
 
       if (phasesError) throw phasesError
 
@@ -105,10 +105,11 @@ const PaymentsManagement: React.FC = () => {
           // If payment is linked to a contract, get project and phase from contract
           projectId = contract.project_id
           phaseId = contract.phase_id || undefined
-        } else if (subcontractor) {
-          // Otherwise, get from subcontractor directly
-          projectId = subcontractor.project_id
-          phaseId = subcontractor.phase_id || undefined
+        } else if (subcontractor?.phase_id) {
+          // Otherwise, get from subcontractor phase
+          phaseId = subcontractor.phase_id
+          const subPhase = phasesData?.find(p => p.id === phaseId)
+          projectId = subPhase?.project_id
         }
 
         const project = projectId ? projectsData?.find(p => p.id === projectId) : undefined
