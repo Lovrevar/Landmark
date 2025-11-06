@@ -23,8 +23,8 @@ interface UnitsGridProps {
   onUpdateUnitStatus: OnUpdateUnitStatusCallback
   onSellUnit: OnSellUnitCallback
   onLinkApartment: OnLinkApartmentCallback
-  onUnlinkGarage: (apartmentId: string) => void
-  onUnlinkRepository: (apartmentId: string) => void
+  onUnlinkGarage: (apartmentId: string, garageId: string) => void
+  onUnlinkRepository: (apartmentId: string, repositoryId: string) => void
   onBack: () => void
   selectedUnitIds: string[]
   onToggleUnitSelection: (unitId: string) => void
@@ -304,7 +304,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-orange-700">Garage: {linkedGarage.number}</span>
                       <button
-                        onClick={() => onUnlinkGarage(unit.id)}
+                        onClick={() => onUnlinkGarage(unit.id, linkedGarage.id)}
                         className="text-orange-600 hover:text-orange-800"
                       >
                         <Unlink className="w-3 h-3" />
@@ -322,7 +322,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-gray-700">Repository: {linkedRepository.number}</span>
                       <button
-                        onClick={() => onUnlinkRepository(unit.id)}
+                        onClick={() => onUnlinkRepository(unit.id, linkedRepository.id)}
                         className="text-gray-600 hover:text-gray-800"
                       >
                         <Unlink className="w-3 h-3" />

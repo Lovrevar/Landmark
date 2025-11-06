@@ -230,39 +230,99 @@ export const updateUnitStatus = async (unitId: string, unitType: UnitType, newSt
 }
 
 export const linkGarageToApartment = async (apartmentId: string, garageId: string) => {
-  const { error } = await supabase
+  const { data: apartment, error: apartmentError } = await supabase
+    .from('apartments')
+    .select('buyer_name, status')
+    .eq('id', apartmentId)
+    .single()
+
+  if (apartmentError) throw apartmentError
+
+  const { error: updateApartmentError } = await supabase
     .from('apartments')
     .update({ garage_id: garageId })
     .eq('id', apartmentId)
 
-  if (error) throw error
+  if (updateApartmentError) throw updateApartmentError
+
+  if (apartment && apartment.status === 'Sold' && apartment.buyer_name) {
+    const { error: updateGarageError } = await supabase
+      .from('garages')
+      .update({
+        status: 'Sold',
+        buyer_name: apartment.buyer_name
+      })
+      .eq('id', garageId)
+
+    if (updateGarageError) throw updateGarageError
+  }
 }
 
 export const linkRepositoryToApartment = async (apartmentId: string, repositoryId: string) => {
-  const { error } = await supabase
+  const { data: apartment, error: apartmentError } = await supabase
+    .from('apartments')
+    .select('buyer_name, status')
+    .eq('id', apartmentId)
+    .single()
+
+  if (apartmentError) throw apartmentError
+
+  const { error: updateApartmentError } = await supabase
     .from('apartments')
     .update({ repository_id: repositoryId })
     .eq('id', apartmentId)
 
-  if (error) throw error
+  if (updateApartmentError) throw updateApartmentError
+
+  if (apartment && apartment.status === 'Sold' && apartment.buyer_name) {
+    const { error: updateRepositoryError } = await supabase
+      .from('repositories')
+      .update({
+        status: 'Sold',
+        buyer_name: apartment.buyer_name
+      })
+      .eq('id', repositoryId)
+
+    if (updateRepositoryError) throw updateRepositoryError
+  }
 }
 
-export const unlinkGarageFromApartment = async (apartmentId: string) => {
-  const { error } = await supabase
+export const unlinkGarageFromApartment = async (apartmentId: string, garageId: string) => {
+  const { error: updateApartmentError } = await supabase
     .from('apartments')
     .update({ garage_id: null })
     .eq('id', apartmentId)
 
-  if (error) throw error
+  if (updateApartmentError) throw updateApartmentError
+
+  const { error: updateGarageError } = await supabase
+    .from('garages')
+    .update({
+      status: 'Available',
+      buyer_name: null
+    })
+    .eq('id', garageId)
+
+  if (updateGarageError) throw updateGarageError
 }
 
-export const unlinkRepositoryFromApartment = async (apartmentId: string) => {
-  const { error } = await supabase
+export const unlinkRepositoryFromApartment = async (apartmentId: string, repositoryId: string) => {
+  const { error: updateApartmentError } = await supabase
     .from('apartments')
     .update({ repository_id: null })
     .eq('id', apartmentId)
 
-  if (error) throw error
+  if (updateApartmentError) throw updateApartmentError
+
+  const { error: updateRepositoryError } = await supabase
+    .from('repositories')
+    .update({
+      status: 'Available',
+      buyer_name: null
+    })
+    .eq('id', repositoryId)
+
+  if (updateRepositoryError) throw updateRepositoryError
 }
 
 export const createCustomer = async (

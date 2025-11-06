@@ -171,9 +171,9 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
-  const handleUnlinkGarage = async (apartmentId: string) => {
+  const handleUnlinkGarage = async (apartmentId: string, garageId: string) => {
     try {
-      await salesService.unlinkGarageFromApartment(apartmentId)
+      await salesService.unlinkGarageFromApartment(apartmentId, garageId)
       refetch()
     } catch (error) {
       console.error('Error unlinking garage:', error)
@@ -181,9 +181,9 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
-  const handleUnlinkRepository = async (apartmentId: string) => {
+  const handleUnlinkRepository = async (apartmentId: string, repositoryId: string) => {
     try {
-      await salesService.unlinkRepositoryFromApartment(apartmentId)
+      await salesService.unlinkRepositoryFromApartment(apartmentId, repositoryId)
       refetch()
     } catch (error) {
       console.error('Error unlinking repository:', error)
