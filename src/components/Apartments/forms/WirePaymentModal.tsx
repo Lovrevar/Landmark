@@ -41,73 +41,13 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onSubmit,
   onMultiUnitSubmit
 }) => {
-  const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set(['apartment']))
-  const [splitAmounts, setSplitAmounts] = useState<Record<string, number>>({})
-
-  useEffect(() => {
-    if (visible && apartment) {
-      setSelectedUnits(new Set(['apartment']))
-      setSplitAmounts({})
-    }
-  }, [visible, apartment])
-
-  useEffect(() => {
-    if (amount > 0 && selectedUnits.size > 0) {
-      const splitAmount = amount / selectedUnits.size
-      const newSplitAmounts: Record<string, number> = {}
-      selectedUnits.forEach(unit => {
-        newSplitAmounts[unit] = splitAmount
-      })
-      setSplitAmounts(newSplitAmounts)
-    }
-  }, [amount, selectedUnits])
-
   if (!visible || !apartment) return null
 
-  const toggleUnitSelection = (unitType: string) => {
-    const newSelected = new Set(selectedUnits)
-    if (newSelected.has(unitType)) {
-      if (newSelected.size > 1) {
-        newSelected.delete(unitType)
-      }
-    } else {
-      newSelected.add(unitType)
-    }
-    setSelectedUnits(newSelected)
-  }
+  const totalPackagePrice = apartment.price + (linkedGarage?.price || 0) + (linkedStorage?.price || 0)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (onMultiUnitSubmit && selectedUnits.size > 0) {
-      const payments: Array<{ unitId: string; unitType: 'apartment' | 'garage' | 'storage'; amount: number }> = []
-
-      selectedUnits.forEach(unitType => {
-        if (unitType === 'apartment') {
-          payments.push({
-            unitId: apartment.id,
-            unitType: 'apartment',
-            amount: splitAmounts[unitType] || 0
-          })
-        } else if (unitType === 'garage' && linkedGarage) {
-          payments.push({
-            unitId: linkedGarage.id,
-            unitType: 'garage',
-            amount: splitAmounts[unitType] || 0
-          })
-        } else if (unitType === 'storage' && linkedStorage) {
-          payments.push({
-            unitId: linkedStorage.id,
-            unitType: 'storage',
-            amount: splitAmounts[unitType] || 0
-          })
-        }
-      })
-
-      onMultiUnitSubmit(payments)
-    } else {
-      onSubmit()
-    }
+    onSubmit()
   }
 
   return (
@@ -125,74 +65,37 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Payment for: {selectedUnits.size > 1 && <span className="text-blue-600 font-medium">(Split payment across {selectedUnits.size} units)</span>}</p>
-            <div className="grid grid-cols-1 gap-2">
-              <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-blue-400 ${
-                selectedUnits.has('apartment') ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
-              }`} onClick={() => toggleUnitSelection('apartment')}>
-                <input
-                  type="checkbox"
-                  checked={selectedUnits.has('apartment')}
-                  onChange={() => {}}
-                  className="mr-3"
-                />
-                <Home className="w-4 h-4 mr-2 text-blue-600" />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">Apartment {apartment.number}</div>
-                  <div className="text-sm text-gray-600">Price: €{apartment.price.toLocaleString()}</div>
-                  {selectedUnits.has('apartment') && splitAmounts['apartment'] > 0 && (
-                    <div className="text-sm font-semibold text-blue-600 mt-1">
-                      Payment: €{splitAmounts['apartment'].toLocaleString()}
-                    </div>
-                  )}
+            <p className="text-sm font-semibold text-gray-700 mb-2">Payment for:</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Home className="w-4 h-4 mr-2 text-blue-600" />
+                  <span className="text-sm text-gray-900">Apartment {apartment.number}</span>
                 </div>
-              </label>
-
+                <span className="text-sm font-medium text-gray-700">€{apartment.price.toLocaleString()}</span>
+              </div>
               {linkedGarage && (
-                <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-orange-400 ${
-                  selectedUnits.has('garage') ? 'border-orange-600 bg-orange-50' : 'border-gray-200'
-                }`} onClick={() => toggleUnitSelection('garage')}>
-                  <input
-                    type="checkbox"
-                    checked={selectedUnits.has('garage')}
-                    onChange={() => {}}
-                    className="mr-3"
-                  />
-                  <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">Garage {linkedGarage.number}</div>
-                    <div className="text-sm text-gray-600">Price: €{linkedGarage.price.toLocaleString()}</div>
-                    {selectedUnits.has('garage') && splitAmounts['garage'] > 0 && (
-                      <div className="text-sm font-semibold text-orange-600 mt-1">
-                        Payment: €{splitAmounts['garage'].toLocaleString()}
-                      </div>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
+                    <span className="text-sm text-gray-900">Garage {linkedGarage.number}</span>
                   </div>
-                </label>
+                  <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString()}</span>
+                </div>
               )}
-
               {linkedStorage && (
-                <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors bg-white hover:border-gray-400 ${
-                  selectedUnits.has('storage') ? 'border-gray-600 bg-gray-50' : 'border-gray-200'
-                }`} onClick={() => toggleUnitSelection('storage')}>
-                  <input
-                    type="checkbox"
-                    checked={selectedUnits.has('storage')}
-                    onChange={() => {}}
-                    className="mr-3"
-                  />
-                  <Package className="w-4 h-4 mr-2 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">Storage {linkedStorage.number}</div>
-                    <div className="text-sm text-gray-600">Price: €{linkedStorage.price.toLocaleString()}</div>
-                    {selectedUnits.has('storage') && splitAmounts['storage'] > 0 && (
-                      <div className="text-sm font-semibold text-gray-600 mt-1">
-                        Payment: €{splitAmounts['storage'].toLocaleString()}
-                      </div>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Package className="w-4 h-4 mr-2 text-gray-600" />
+                    <span className="text-sm text-gray-900">Storage {linkedStorage.number}</span>
                   </div>
-                </label>
+                  <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString()}</span>
+                </div>
               )}
+              <div className="pt-2 mt-2 border-t border-gray-300 flex items-center justify-between">
+                <span className="text-sm font-bold text-gray-900">Total Package:</span>
+                <span className="text-base font-bold text-green-600">€{totalPackagePrice.toLocaleString()}</span>
+              </div>
             </div>
           </div>
 

@@ -541,10 +541,6 @@ const ApartmentManagement: React.FC = () => {
 
             const totalPrice = apartment.price + (linkedGarage?.price || 0) + (linkedStorage?.price || 0)
             const totalPaid = aptPaid + garagePaid + storagePaid
-
-            const aptPercentage = apartment.price > 0 ? (aptPaid / apartment.price) * 100 : 0
-            const garagePercentage = linkedGarage && linkedGarage.price > 0 ? (garagePaid / linkedGarage.price) * 100 : 0
-            const storagePercentage = linkedStorage && linkedStorage.price > 0 ? (storagePaid / linkedStorage.price) * 100 : 0
             const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
@@ -617,95 +613,24 @@ const ApartmentManagement: React.FC = () => {
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="mb-2">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-xs font-semibold text-gray-700">Overall Progress</span>
-                            <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div
-                              className={`h-3 rounded-full transition-all duration-300 ${
-                                overallPercentage >= 100 ? 'bg-green-600' :
-                                overallPercentage >= 50 ? 'bg-blue-600' :
-                                'bg-orange-600'
-                              }`}
-                              style={{
-                                width: `${Math.min(100, overallPercentage)}%`
-                              }}
-                            ></div>
-                          </div>
-                          <div className="text-xs text-gray-600 mt-1 font-medium">
-                            €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString()}
-                          </div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs font-semibold text-gray-700">Overall Progress</span>
+                          <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
                         </div>
-
-                        <div className="space-y-1.5 mt-3">
-                          <div>
-                            <div className="flex justify-between items-center mb-0.5">
-                              <span className="text-xs text-gray-600 flex items-center">
-                                <Home className="w-3 h-3 mr-1 text-blue-600" />
-                                Apartment
-                              </span>
-                              <span className="text-xs font-medium">{aptPercentage.toFixed(1)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div
-                                className="h-1.5 rounded-full transition-all duration-300 bg-blue-600"
-                                style={{
-                                  width: `${Math.min(100, aptPercentage)}%`
-                                }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              €{aptPaid.toLocaleString()} / €{apartment.price.toLocaleString()}
-                            </div>
-                          </div>
-
-                          {linkedGarage && (
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-xs text-gray-600 flex items-center">
-                                  <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
-                                  Garage {linkedGarage.number}
-                                </span>
-                                <span className="text-xs font-medium">{garagePercentage.toFixed(1)}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div
-                                  className="h-1.5 rounded-full transition-all duration-300 bg-orange-600"
-                                  style={{
-                                    width: `${Math.min(100, garagePercentage)}%`
-                                  }}
-                                ></div>
-                              </div>
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                €{garagePaid.toLocaleString()} / €{linkedGarage.price.toLocaleString()}
-                              </div>
-                            </div>
-                          )}
-
-                          {linkedStorage && (
-                            <div>
-                              <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-xs text-gray-600 flex items-center">
-                                  <Package className="w-3 h-3 mr-1 text-gray-600" />
-                                  Storage {linkedStorage.number}
-                                </span>
-                                <span className="text-xs font-medium">{storagePercentage.toFixed(1)}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div
-                                  className="h-1.5 rounded-full transition-all duration-300 bg-gray-600"
-                                  style={{
-                                    width: `${Math.min(100, storagePercentage)}%`
-                                  }}
-                                ></div>
-                              </div>
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                €{storagePaid.toLocaleString()} / €{linkedStorage.price.toLocaleString()}
-                              </div>
-                            </div>
-                          )}
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full transition-all duration-300 ${
+                              overallPercentage >= 100 ? 'bg-green-600' :
+                              overallPercentage >= 50 ? 'bg-blue-600' :
+                              'bg-orange-600'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, overallPercentage)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1 font-medium">
+                          €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString()}
                         </div>
                       </div>
                     </>
