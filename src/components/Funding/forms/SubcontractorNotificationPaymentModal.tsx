@@ -179,14 +179,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
     setLoading(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
-      if (!userId) {
-        alert('User not authenticated')
-        return
-      }
-
-      // Insert wire payment
+      // Insert wire payment (created_by is nullable, so we don't need to include it)
       const { error: paymentError } = await supabase
         .from('wire_payments')
         .insert({
@@ -196,8 +189,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           notes,
           milestone_id: notification.milestone_id,
           paid_by_investor_id: paidByInvestorId,
-          paid_by_bank_id: paidByBankId,
-          created_by: userId
+          paid_by_bank_id: paidByBankId
         })
 
       if (paymentError) throw paymentError
