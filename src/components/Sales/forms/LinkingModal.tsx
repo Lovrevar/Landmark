@@ -8,8 +8,8 @@ interface LinkingModalProps {
   apartment: Apartment | null
   building: BuildingWithUnits | null
   onClose: () => void
-  onLinkGarage: (apartmentId: string, garageId: string) => Promise<void>
-  onLinkRepository: (apartmentId: string, repositoryId: string) => Promise<void>
+  onLinkGarage: (apartmentId: string, garageId: string) => void
+  onLinkRepository: (apartmentId: string, repositoryId: string) => void
 }
 
 export const LinkingModal: React.FC<LinkingModalProps> = ({
@@ -52,8 +52,8 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
               {availableGarages.map((garage) => (
                 <button
                   key={garage.id}
-                  onClick={async () => {
-                    await onLinkGarage(apartment.id, garage.id)
+                  onClick={() => {
+                    onLinkGarage(apartment.id, garage.id)
                     onClose()
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
@@ -82,8 +82,8 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
               {availableRepositories.map((repository) => (
                 <button
                   key={repository.id}
-                  onClick={async () => {
-                    await onLinkRepository(apartment.id, repository.id)
+                  onClick={() => {
+                    onLinkRepository(apartment.id, repository.id)
                     onClose()
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
