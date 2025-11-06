@@ -284,14 +284,14 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-500">Payment Progress</span>
                         <span className="text-xs font-medium">
-                          €{unit.sale_info.total_paid.toLocaleString()} / €{unit.sale_info.sale_price.toLocaleString()}
+                          €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString()}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div
                           className="bg-green-600 h-1.5 rounded-full"
                           style={{
-                            width: `${unit.sale_info.sale_price > 0 ? (unit.sale_info.total_paid / unit.sale_info.sale_price) * 100 : 0}%`
+                            width: `${totalPackagePrice > 0 ? (unit.sale_info.total_paid / totalPackagePrice) * 100 : 0}%`
                           }}
                         ></div>
                       </div>
