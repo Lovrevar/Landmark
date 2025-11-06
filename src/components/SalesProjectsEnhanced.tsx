@@ -244,13 +244,7 @@ const SalesProjectsEnhanced: React.FC = () => {
   }
 
   const handleBulkPriceUpdate = async (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => {
-    if (selectedUnitIds.length === 0) return
-
-    const confirmMessage = adjustmentType === 'increase'
-      ? `Are you sure you want to increase the price by €${adjustmentValue}/m² for ${selectedUnitIds.length} selected units?`
-      : `Are you sure you want to decrease the price by €${adjustmentValue}/m² for ${selectedUnitIds.length} selected units?`
-
-    if (!confirm(confirmMessage)) return
+   
 
     try {
       await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
