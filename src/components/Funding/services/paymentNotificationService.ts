@@ -88,7 +88,7 @@ export const fetchPaymentNotifications = async (filters?: {
         *,
         subcontractors (
           name,
-          contract_value
+          cost
         ),
         projects (name)
       `)
@@ -108,10 +108,12 @@ export const fetchPaymentNotifications = async (filters?: {
 
     // Transform milestones into notifications
     const milestoneNotifications = (milestoneData || []).map(milestone => {
-      const contractValue = milestone.subcontractors?.contract_value || 0
+      const contractValue = milestone.subcontractors?.cost || 0
       const milestoneAmount = (contractValue * milestone.percentage) / 100
       const today = new Date()
+      today.setHours(0, 0, 0, 0)
       const dueDate = new Date(milestone.due_date)
+      dueDate.setHours(0, 0, 0, 0)
       const isOverdue = dueDate < today && milestone.status === 'pending'
 
       return {
