@@ -20,6 +20,7 @@ import {
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
 import PaymentNotifications from './PaymentNotifications'
 import { NotificationPaymentModal } from './forms/NotificationPaymentModal'
+import { SubcontractorNotificationPaymentModal } from './forms/SubcontractorNotificationPaymentModal'
 import { PaymentNotification } from './services/paymentNotificationService'
 
 interface FundingSource {
@@ -71,6 +72,7 @@ const FundingOverview: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'notifications'>('overview')
 
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showSubcontractorPaymentModal, setShowSubcontractorPaymentModal] = useState(false)
   const [selectedNotification, setSelectedNotification] = useState<PaymentNotification | null>(null)
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
@@ -304,10 +306,17 @@ const FundingOverview: React.FC = () => {
 
   const handlePaymentClick = (notification: PaymentNotification) => {
     setSelectedNotification(notification)
-    setPaymentAmount(Number(notification.amount))
-    setPaymentDate(new Date().toISOString().split('T')[0])
-    setPaymentNotes(`Payment for ${notification.bank_name} - Payment #${notification.payment_number}`)
-    setShowPaymentModal(true)
+
+    if (notification.payment_source === 'subcontractor') {
+      // Open subcontractor payment modal
+      setShowSubcontractorPaymentModal(true)
+    } else {
+      // Open bank payment modal
+      setPaymentAmount(Number(notification.amount))
+      setPaymentDate(new Date().toISOString().split('T')[0])
+      setPaymentNotes(`Payment for ${notification.bank_name} - Payment #${notification.payment_number}`)
+      setShowPaymentModal(true)
+    }
   }
 
   const handleRecordPayment = async () => {
@@ -787,6 +796,16 @@ const FundingOverview: React.FC = () => {
         onDateChange={setPaymentDate}
         onNotesChange={setPaymentNotes}
         onSubmit={handleRecordPayment}
+      />
+
+      <SubcontractorNotificationPaymentModal
+        visible={showSubcontractorPaymentModal}
+        onClose={() => {
+          setShowSubcontractorPaymentModal(false)
+          setSelectedNotification(null)
+        }}
+        notification={selectedNotification}
+        onSuccess={fetchFundingData}
       />
     </div>
   )
