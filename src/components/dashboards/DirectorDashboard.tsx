@@ -245,13 +245,41 @@ const DirectorDashboard: React.FC = () => {
 
   const fetchFinancialData = async () => {
     try {
-      const { data: sales } = await supabase.from('sales').select('sale_price')
+      const { data: sales } = await supabase.from('sales').select('sale_price, apartments(garage_id, repository_id)')
       const { data: wirePayments } = await supabase.from('wire_payments').select('amount')
       const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
       const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
 
-      const totalRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
+      // Fetch garages and storages for revenue calculation
+      const { data: apartments } = await supabase.from('apartments').select('garage_id, repository_id')
+      const garageIds = apartments?.map(a => a.garage_id).filter(Boolean) || []
+      const storageIds = apartments?.map(a => a.repository_id).filter(Boolean) || []
+
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('id, price')
+        .in('id', garageIds.length > 0 ? garageIds : [''])
+
+      const { data: storagesData } = await supabase
+        .from('repositories')
+        .select('id, price')
+        .in('id', storageIds.length > 0 ? storageIds : [''])
+
+      const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
+      const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+
+      // Calculate total revenue including linked units
+      const totalRevenue = sales?.reduce((sum, s) => {
+        let saleTotal = s.sale_price
+        if (s.apartments?.garage_id) {
+          saleTotal += garageMap.get(s.apartments.garage_id) || 0
+        }
+        if (s.apartments?.repository_id) {
+          saleTotal += storageMap.get(s.apartments.repository_id) || 0
+        }
+        return sum + saleTotal
+      }, 0) || 0
       const totalExpenses = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
       const totalProfit = totalRevenue - totalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
@@ -297,20 +325,59 @@ const DirectorDashboard: React.FC = () => {
   const fetchSalesData = async () => {
     try {
       const { data: apartments } = await supabase.from('apartments').select('*')
-      const { data: sales } = await supabase.from('sales').select('sale_price, sale_date')
+      const { data: sales } = await supabase.from('sales').select('sale_price, sale_date, apartments(garage_id, repository_id)')
+
+      // Fetch garages and storages for revenue calculation
+      const garageIds = apartments?.map(a => a.garage_id).filter(Boolean) || []
+      const storageIds = apartments?.map(a => a.repository_id).filter(Boolean) || []
+
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('id, price')
+        .in('id', garageIds.length > 0 ? garageIds : [''])
+
+      const { data: storagesData } = await supabase
+        .from('repositories')
+        .select('id, price')
+        .in('id', storageIds.length > 0 ? storageIds : [''])
+
+      const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
+      const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
 
       const totalUnits = apartments?.length || 0
       const soldUnits = apartments?.filter(a => a.status === 'Sold').length || 0
       const reservedUnits = apartments?.filter(a => a.status === 'Reserved').length || 0
       const availableUnits = apartments?.filter(a => a.status === 'Available').length || 0
       const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-      const totalSalesRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
+
+      // Calculate total sales revenue including linked units
+      const totalSalesRevenue = sales?.reduce((sum, s) => {
+        let saleTotal = s.sale_price
+        if (s.apartments?.garage_id) {
+          saleTotal += garageMap.get(s.apartments.garage_id) || 0
+        }
+        if (s.apartments?.repository_id) {
+          saleTotal += storageMap.get(s.apartments.repository_id) || 0
+        }
+        return sum + saleTotal
+      }, 0) || 0
       const avgPricePerUnit = soldUnits > 0 ? totalSalesRevenue / soldUnits : 0
 
       const currentMonth = startOfMonth(new Date())
       const monthlySales = sales?.filter(s => new Date(s.sale_date) >= currentMonth) || []
       const monthlySalesCount = monthlySales.length
-      const monthlySalesRevenue = monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
+
+      // Calculate monthly sales revenue including linked units
+      const monthlySalesRevenue = monthlySales.reduce((sum, s) => {
+        let saleTotal = s.sale_price
+        if (s.apartments?.garage_id) {
+          saleTotal += garageMap.get(s.apartments.garage_id) || 0
+        }
+        if (s.apartments?.repository_id) {
+          saleTotal += storageMap.get(s.apartments.repository_id) || 0
+        }
+        return sum + saleTotal
+      }, 0)
 
       setSalesMetrics({
         total_units: totalUnits,
