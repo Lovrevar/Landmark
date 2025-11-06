@@ -53,36 +53,14 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 
   useEffect(() => {
     if (amount > 0 && selectedUnits.size > 0) {
+      const splitAmount = amount / selectedUnits.size
       const newSplitAmounts: Record<string, number> = {}
-      let remainingAmount = amount
-
-      const units: Array<{ type: string; price: number }> = []
-
-      if (selectedUnits.has('garage') && linkedGarage) {
-        units.push({ type: 'garage', price: linkedGarage.price })
-      }
-      if (selectedUnits.has('storage') && linkedStorage) {
-        units.push({ type: 'storage', price: linkedStorage.price })
-      }
-      if (selectedUnits.has('apartment') && apartment) {
-        units.push({ type: 'apartment', price: apartment.price })
-      }
-
-      units.sort((a, b) => a.price - b.price)
-
-      units.forEach((unit, index) => {
-        if (index < units.length - 1) {
-          const allocatedAmount = Math.min(remainingAmount, unit.price)
-          newSplitAmounts[unit.type] = allocatedAmount
-          remainingAmount -= allocatedAmount
-        } else {
-          newSplitAmounts[unit.type] = remainingAmount
-        }
+      selectedUnits.forEach(unit => {
+        newSplitAmounts[unit] = splitAmount
       })
-
       setSplitAmounts(newSplitAmounts)
     }
-  }, [amount, selectedUnits, linkedGarage, linkedStorage, apartment])
+  }, [amount, selectedUnits])
 
   if (!visible || !apartment) return null
 
