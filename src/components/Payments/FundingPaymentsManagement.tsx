@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, WirePayment, Contract } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
-import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
+import { supabase, BankCreditPayment, InvestorPayment } from '../../lib/supabase'
+import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, Users } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface PaymentWithDetails extends WirePayment {
-  contract?: Contract
-  subcontractor_name?: string
+interface BankPaymentWithDetails extends BankCreditPayment {
+  bank_name?: string
+  credit_type?: string
   project_name?: string
-  phase_name?: string
-  investor?: { id: string; name: string; type?: string } | null
-  bank?: { id: string; name: string } | null
+  payment_type: 'bank'
 }
 
-const PaymentsManagement: React.FC = () => {
-  const { user } = useAuth()
-  const [payments, setPayments] = useState<PaymentWithDetails[]>([])
+interface InvestorPaymentWithDetails extends InvestorPayment {
+  investor_name?: string
+  investment_type?: string
+  project_name?: string
+  payment_type: 'investor'
+}
+
+type CombinedPayment = BankPaymentWithDetails | InvestorPaymentWithDetails
+
+const FundingPaymentsManagement: React.FC = () => {
+  const [payments, setPayments] = useState<CombinedPayment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
+  const [filterType, setFilterType] = useState<'all' | 'bank' | 'investor'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const [stats, setStats] = useState({
     totalPayments: 0,
     totalAmount: 0,
     paymentsThisMonth: 0,
-    amountThisMonth: 0
+    amountThisMonth: 0,
+    bankPayments: 0,
+    investorPayments: 0
   })
 
   useEffect(() => {
@@ -34,100 +42,78 @@ const PaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch all wire payments with related data
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('wire_payments')
+      const { data: bankPaymentsData, error: bankError } = await supabase
+        .from('bank_credit_payments')
         .select(`
           *,
-          contracts (
-            id,
-            contract_number,
-            project_id,
-            phase_id,
-            subcontractor_id,
-            job_description,
-            contract_amount,
-            budget_realized,
-            status
+          bank_credits (
+            credit_type,
+            project_id
           ),
-          investor:paid_by_investor_id(id, name, type),
-          bank:paid_by_bank_id(id, name)
+          banks (
+            name
+          )
         `)
         .order('created_at', { ascending: false })
 
-      if (paymentsError) throw paymentsError
+      if (bankError) throw bankError
 
-      // Fetch subcontractors for names
-      const { data: subcontractorsData, error: subError } = await supabase
-        .from('subcontractors')
-        .select('id, name, phase_id')
+      const { data: investorPaymentsData, error: investorError } = await supabase
+        .from('investor_payments')
+        .select(`
+          *,
+          project_investments (
+            investment_type,
+            project_id
+          ),
+          investors (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false })
 
-      if (subError) throw subError
+      if (investorError) throw investorError
 
-      // Fetch projects for names
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name')
 
       if (projectsError) throw projectsError
 
-      // Fetch phases for names
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('id, phase_name, project_id')
-
-      if (phasesError) throw phasesError
-
-      // Fetch milestones for payments with milestone_id
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('subcontractor_milestones')
-        .select('id, project_id, phase_id')
-
-      if (milestonesError) throw milestonesError
-
-      // Enrich payments with names
-      const enrichedPayments = (paymentsData || []).map(payment => {
-        const subcontractor = subcontractorsData?.find(s => s.id === payment.subcontractor_id)
-        const contract = payment.contracts as Contract | undefined
-
-        // Determine project and phase
-        let projectId: string | undefined
-        let phaseId: string | undefined
-
-        if (payment.milestone_id) {
-          // If payment is linked to a milestone, get project and phase from milestone
-          const milestone = milestonesData?.find(m => m.id === payment.milestone_id)
-          if (milestone) {
-            projectId = milestone.project_id
-            phaseId = milestone.phase_id || undefined
-          }
-        } else if (contract) {
-          // If payment is linked to a contract, get project and phase from contract
-          projectId = contract.project_id
-          phaseId = contract.phase_id || undefined
-        } else if (subcontractor?.phase_id) {
-          // Otherwise, get from subcontractor phase
-          phaseId = subcontractor.phase_id
-          const subPhase = phasesData?.find(p => p.id === phaseId)
-          projectId = subPhase?.project_id
-        }
-
-        const project = projectId ? projectsData?.find(p => p.id === projectId) : undefined
-        const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
+      const enrichedBankPayments: BankPaymentWithDetails[] = (bankPaymentsData || []).map(payment => {
+        const project = payment.bank_credits?.project_id
+          ? projectsData?.find(p => p.id === payment.bank_credits.project_id)
+          : undefined
 
         return {
           ...payment,
-          contract,
-          subcontractor_name: subcontractor?.name || 'Unknown',
+          bank_name: payment.banks?.name || 'Unknown Bank',
+          credit_type: payment.bank_credits?.credit_type || 'N/A',
           project_name: project?.name || 'No Project',
-          phase_name: phase?.phase_name || null,
-          investor: (payment as any).investor || null,
-          bank: (payment as any).bank || null
+          payment_type: 'bank' as const
         }
       })
 
-      setPayments(enrichedPayments)
-      calculateStats(enrichedPayments)
+      const enrichedInvestorPayments: InvestorPaymentWithDetails[] = (investorPaymentsData || []).map(payment => {
+        const project = payment.project_investments?.project_id
+          ? projectsData?.find(p => p.id === payment.project_investments.project_id)
+          : undefined
+
+        return {
+          ...payment,
+          investor_name: payment.investors?.name || 'Unknown Investor',
+          investment_type: payment.project_investments?.investment_type || 'N/A',
+          project_name: project?.name || 'No Project',
+          payment_type: 'investor' as const
+        }
+      })
+
+      const combinedPayments = [...enrichedBankPayments, ...enrichedInvestorPayments].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      setPayments(combinedPayments)
+      calculateStats(combinedPayments)
     } catch (error) {
       console.error('Error fetching payments:', error)
       alert('Failed to load payments')
@@ -136,27 +122,33 @@ const PaymentsManagement: React.FC = () => {
     }
   }
 
-  const calculateStats = (paymentsData: PaymentWithDetails[]) => {
+  const calculateStats = (paymentsData: CombinedPayment[]) => {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const totalAmount = paymentsData.reduce((sum, p) => sum + p.amount, 0)
+    const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
     const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
-    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0)
+    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
+    const bankPayments = paymentsData.filter(p => p.payment_type === 'bank').length
+    const investorPayments = paymentsData.filter(p => p.payment_type === 'investor').length
 
     setStats({
       totalPayments: paymentsData.length,
       totalAmount,
       paymentsThisMonth: paymentsThisMonth.length,
-      amountThisMonth
+      amountThisMonth,
+      bankPayments,
+      investorPayments
     })
   }
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      payment.subcontractor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (payment.payment_type === 'bank'
+        ? (payment as BankPaymentWithDetails).bank_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        : (payment as InvestorPaymentWithDetails).investor_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) ||
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.contract?.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDateRange =
@@ -166,37 +158,33 @@ const PaymentsManagement: React.FC = () => {
     const matchesFilter =
       filterStatus === 'all' ||
       (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-      (filterStatus === 'large' && payment.amount > 10000)
+      (filterStatus === 'large' && Number(payment.amount) > 50000)
 
-    return matchesSearch && matchesDateRange && matchesFilter
+    const matchesType =
+      filterType === 'all' ||
+      payment.payment_type === filterType
+
+    return matchesSearch && matchesDateRange && matchesFilter && matchesType
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => {
-      let paidBy = '-'
-      if (p.paid_by_type === 'investor' && p.investor) {
-        paidBy = `${p.investor.name} (Investor)`
-      } else if (p.paid_by_type === 'bank' && p.bank) {
-        paidBy = `${p.bank.name} (Bank)`
-      }
-      return [
-        format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
-        p.subcontractor_name,
-        p.project_name,
-        p.phase_name || '',
-        paidBy,
-        p.amount.toString(),
-        p.notes || ''
-      ]
-    })
+    const headers = ['Date', 'Type', 'Recipient', 'Project', 'Category', 'Amount', 'Notes']
+    const rows = filteredPayments.map(p => [
+      p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
+      p.payment_type === 'bank' ? 'Bank' : 'Investor',
+      p.payment_type === 'bank' ? (p as BankPaymentWithDetails).bank_name : (p as InvestorPaymentWithDetails).investor_name,
+      p.project_name,
+      p.payment_type === 'bank' ? (p as BankPaymentWithDetails).credit_type : (p as InvestorPaymentWithDetails).investment_type,
+      p.amount.toString(),
+      p.notes || ''
+    ])
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `funding-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
   }
 
@@ -209,20 +197,20 @@ const PaymentsManagement: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments Management</h1>
-        <p className="text-gray-600">Track and manage all payments across all projects</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Funding Payments</h1>
+        <p className="text-gray-600">Track and manage all funding payments across banks and investors</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
             <FileText className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{stats.totalPayments}</p>
+          <p className="text-xs text-gray-500 mt-1">{stats.bankPayments} bank, {stats.investorPayments} investor</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -236,7 +224,7 @@ const PaymentsManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">This Month</h3>
-            <Calendar className="w-5 h-5 text-purple-600" />
+            <Calendar className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{stats.paymentsThisMonth}</p>
           <p className="text-xs text-gray-500 mt-1">payments</p>
@@ -245,15 +233,14 @@ const PaymentsManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
-            <TrendingUp className="w-5 h-5 text-teal-600" />
+            <TrendingUp className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -269,13 +256,25 @@ const PaymentsManagement: React.FC = () => {
 
           <div>
             <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Types</option>
+              <option value="bank">Banks</option>
+              <option value="investor">Investors</option>
+            </select>
+          </div>
+
+          <div>
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Payments</option>
               <option value="recent">Recent (7 days)</option>
-              <option value="large">Large (&gt; €10k)</option>
+              <option value="large">Large (&gt; €50k)</option>
             </select>
           </div>
 
@@ -298,6 +297,7 @@ const PaymentsManagement: React.FC = () => {
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="dd/mm/yyyy"
             />
           </div>
           <div>
@@ -307,22 +307,22 @@ const PaymentsManagement: React.FC = () => {
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="dd/mm/yyyy"
             />
           </div>
         </div>
       </div>
 
-      {/* Payments Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               </tr>
@@ -340,41 +340,47 @@ const PaymentsManagement: React.FC = () => {
                 filteredPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
+                      {payment.payment_date
+                        ? format(new Date(payment.payment_date), 'MMM dd, yyyy')
+                        : format(new Date(payment.created_at), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
+                        payment.payment_type === 'bank'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {payment.payment_type === 'bank' ? (
+                          <>
+                            <Building2 className="w-3 h-3 mr-1" />
+                            Bank
+                          </>
+                        ) : (
+                          <>
+                            <Users className="w-3 h-3 mr-1" />
+                            Investor
+                          </>
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {payment.payment_type === 'bank'
+                          ? (payment as BankPaymentWithDetails).bank_name
+                          : (payment as InvestorPaymentWithDetails).investor_name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.phase_name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id) ? (
-                        payment.paid_by_type === 'investor' ? (
-                          <div className="flex items-center space-x-2">
-                            <User className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm text-blue-600 font-medium">
-                              {payment.investor?.name || 'Investor'}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">
-                              {payment.bank?.name || 'Bank'}
-                            </span>
-                          </div>
-                        )
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
+                      {payment.payment_type === 'bank'
+                        ? (payment as BankPaymentWithDetails).credit_type?.replace('_', ' ').toUpperCase()
+                        : (payment as InvestorPaymentWithDetails).investment_type?.toUpperCase()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
-                        €{payment.amount.toLocaleString()}
+                        €{Number(payment.amount).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -388,7 +394,6 @@ const PaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary */}
       {filteredPayments.length > 0 && (
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
@@ -399,7 +404,7 @@ const PaymentsManagement: React.FC = () => {
             <div className="text-sm text-blue-900">
               <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
               <span className="font-semibold">
-                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -409,4 +414,4 @@ const PaymentsManagement: React.FC = () => {
   )
 }
 
-export default PaymentsManagement
+export default FundingPaymentsManagement

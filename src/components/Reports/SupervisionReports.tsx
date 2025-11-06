@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, Subcontractor, Contract, WirePayment, ProjectPhase } from '../lib/supabase'
+import { supabase, Project, Subcontractor, Contract, WirePayment, ProjectPhase } from '../../lib/supabase'
 import {
   BarChart3,
   TrendingUp,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Investor, ProjectInvestment, Project } from '../lib/supabase'
+import { supabase, Investor, ProjectInvestment, Project } from '../../../lib/supabase'
 import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building, Send } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { InvestorWirePaymentModal } from './Funding/forms/InvestorWirePaymentModal'
+import { InvestorWirePaymentModal } from '../forms/InvestorWirePaymentModal'
 
 interface InvestorWithInvestments extends Investor {
   investments: ProjectInvestment[]

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, ProjectInvestment, Investor, BankCredit, Bank, WirePayment } from '../../lib/supabase'
+import { supabase, Project, ProjectInvestment, Investor, BankCredit, Bank, WirePayment } from '../../../lib/supabase'
 import {
   DollarSign,
   TrendingUp,
@@ -19,9 +19,9 @@ import {
 } from 'lucide-react'
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
 import PaymentNotifications from './PaymentNotifications'
-import { NotificationPaymentModal } from './forms/NotificationPaymentModal'
-import { SubcontractorNotificationPaymentModal } from './forms/SubcontractorNotificationPaymentModal'
-import { PaymentNotification } from './services/paymentNotificationService'
+import { NotificationPaymentModal } from '../forms/NotificationPaymentModal'
+import { SubcontractorNotificationPaymentModal } from '../forms/SubcontractorNotificationPaymentModal'
+import { PaymentNotification } from '../services/paymentNotificationService'
 
 interface FundingSource {
   id: string

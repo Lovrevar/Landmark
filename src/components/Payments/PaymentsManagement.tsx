@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, ApartmentPayment, Apartment, Building, Project, Sale, Customer } from '../lib/supabase'
-import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
+import { supabase, WirePayment, Contract } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface PaymentWithDetails extends ApartmentPayment {
-  apartment_number?: string
-  building_name?: string
+interface PaymentWithDetails extends WirePayment {
+  contract?: Contract
+  subcontractor_name?: string
   project_name?: string
-  buyer_name?: string
-  sale_price?: number
+  phase_name?: string
+  investor?: { id: string; name: string; type?: string } | null
+  bank?: { id: string; name: string } | null
 }
 
-const SalesPaymentsManagement: React.FC = () => {
+const PaymentsManagement: React.FC = () => {
+  const { user } = useAuth()
   const [payments, setPayments] = useState<PaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -31,93 +34,95 @@ const SalesPaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
+      // Fetch all wire payments with related data
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from('apartment_payments')
-        .select('*')
+        .from('wire_payments')
+        .select(`
+          *,
+          contracts (
+            id,
+            contract_number,
+            project_id,
+            phase_id,
+            subcontractor_id,
+            job_description,
+            contract_amount,
+            budget_realized,
+            status
+          ),
+          investor:paid_by_investor_id(id, name, type),
+          bank:paid_by_bank_id(id, name)
+        `)
         .order('created_at', { ascending: false })
 
       if (paymentsError) throw paymentsError
 
-      const { data: apartmentsData, error: apartmentsError } = await supabase
-        .from('apartments')
-        .select('id, number, building_id, project_id')
+      // Fetch subcontractors for names
+      const { data: subcontractorsData, error: subError } = await supabase
+        .from('subcontractors')
+        .select('id, name, phase_id')
 
-      if (apartmentsError) throw apartmentsError
+      if (subError) throw subError
 
-      const { data: garagesData } = await supabase
-        .from('garages')
-        .select('id, number, building_id, price')
-
-      const { data: repositoriesData } = await supabase
-        .from('repositories')
-        .select('id, number, building_id, price')
-
-      const { data: buildingsData, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('id, name, project_id')
-
-      if (buildingsError) throw buildingsError
-
+      // Fetch projects for names
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name')
 
       if (projectsError) throw projectsError
 
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('apartment_id, customer_id, sale_price')
+      // Fetch phases for names
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select('id, phase_name, project_id')
 
-      if (salesError) throw salesError
+      if (phasesError) throw phasesError
 
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('id, name, surname')
+      // Fetch milestones for payments with milestone_id
+      const { data: milestonesData, error: milestonesError } = await supabase
+        .from('subcontractor_milestones')
+        .select('id, project_id, phase_id')
 
-      if (customersError) throw customersError
+      if (milestonesError) throw milestonesError
 
+      // Enrich payments with names
       const enrichedPayments = (paymentsData || []).map(payment => {
-        let unitNumber = 'Unknown'
-        let building = undefined
-        let project = undefined
-        let unitPrice = 0
+        const subcontractor = subcontractorsData?.find(s => s.id === payment.subcontractor_id)
+        const contract = payment.contracts as Contract | undefined
 
-        if (payment.apartment_id) {
-          const apartment = apartmentsData?.find(a => a.id === payment.apartment_id)
-          if (apartment) {
-            unitNumber = apartment.number
-            building = buildingsData?.find(b => b.id === apartment.building_id)
-            project = projectsData?.find(p => p.id === apartment.project_id)
+        // Determine project and phase
+        let projectId: string | undefined
+        let phaseId: string | undefined
+
+        if (payment.milestone_id) {
+          // If payment is linked to a milestone, get project and phase from milestone
+          const milestone = milestonesData?.find(m => m.id === payment.milestone_id)
+          if (milestone) {
+            projectId = milestone.project_id
+            phaseId = milestone.phase_id || undefined
           }
-          const sale = salesData?.find(s => s.apartment_id === payment.apartment_id)
-          unitPrice = sale?.sale_price || 0
-        } else if (payment.garage_id) {
-          const garage = garagesData?.find(g => g.id === payment.garage_id)
-          if (garage) {
-            unitNumber = garage.number
-            building = buildingsData?.find(b => b.id === garage.building_id)
-            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
-            unitPrice = Number(garage.price) || 0
-          }
-        } else if (payment.storage_id) {
-          const storage = repositoriesData?.find(r => r.id === payment.storage_id)
-          if (storage) {
-            unitNumber = storage.number
-            building = buildingsData?.find(b => b.id === storage.building_id)
-            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
-            unitPrice = Number(storage.price) || 0
-          }
+        } else if (contract) {
+          // If payment is linked to a contract, get project and phase from contract
+          projectId = contract.project_id
+          phaseId = contract.phase_id || undefined
+        } else if (subcontractor?.phase_id) {
+          // Otherwise, get from subcontractor phase
+          phaseId = subcontractor.phase_id
+          const subPhase = phasesData?.find(p => p.id === phaseId)
+          projectId = subPhase?.project_id
         }
 
-        const customer = customersData?.find(c => c.id === payment.customer_id)
+        const project = projectId ? projectsData?.find(p => p.id === projectId) : undefined
+        const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
 
         return {
           ...payment,
-          apartment_number: unitNumber,
-          building_name: building?.name || 'No Building',
+          contract,
+          subcontractor_name: subcontractor?.name || 'Unknown',
           project_name: project?.name || 'No Project',
-          buyer_name: customer ? `${customer.name} ${customer.surname}` : 'Unknown Buyer',
-          sale_price: unitPrice
+          phase_name: phase?.phase_name || null,
+          investor: (payment as any).investor || null,
+          bank: (payment as any).bank || null
         }
       })
 
@@ -135,9 +140,9 @@ const SalesPaymentsManagement: React.FC = () => {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
+    const totalAmount = paymentsData.reduce((sum, p) => sum + p.amount, 0)
     const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
-    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
+    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0)
 
     setStats({
       totalPayments: paymentsData.length,
@@ -149,10 +154,9 @@ const SalesPaymentsManagement: React.FC = () => {
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      payment.apartment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.subcontractor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.building_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.contract?.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDateRange =
@@ -162,30 +166,37 @@ const SalesPaymentsManagement: React.FC = () => {
     const matchesFilter =
       filterStatus === 'all' ||
       (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-      (filterStatus === 'large' && Number(payment.amount) > 10000)
+      (filterStatus === 'large' && payment.amount > 10000)
 
     return matchesSearch && matchesDateRange && matchesFilter
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Apartment', 'Project', 'Building', 'Buyer', 'Sale Price', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => [
-      p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
-      p.apartment_number,
-      p.project_name,
-      p.building_name,
-      p.buyer_name,
-      p.sale_price?.toString() || '0',
-      p.amount.toString(),
-      p.notes || ''
-    ])
+    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
+    const rows = filteredPayments.map(p => {
+      let paidBy = '-'
+      if (p.paid_by_type === 'investor' && p.investor) {
+        paidBy = `${p.investor.name} (Investor)`
+      } else if (p.paid_by_type === 'bank' && p.bank) {
+        paidBy = `${p.bank.name} (Bank)`
+      }
+      return [
+        format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
+        p.subcontractor_name,
+        p.project_name,
+        p.phase_name || '',
+        paidBy,
+        p.amount.toString(),
+        p.notes || ''
+      ]
+    })
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `apartment-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
   }
 
@@ -198,13 +209,14 @@ const SalesPaymentsManagement: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments Management</h1>
         <p className="text-gray-600">Track and manage all payments across all projects</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
@@ -224,7 +236,7 @@ const SalesPaymentsManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">This Month</h3>
-            <Calendar className="w-5 h-5 text-blue-600" />
+            <Calendar className="w-5 h-5 text-purple-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{stats.paymentsThisMonth}</p>
           <p className="text-xs text-gray-500 mt-1">payments</p>
@@ -233,12 +245,13 @@ const SalesPaymentsManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
-            <TrendingUp className="w-5 h-5 text-green-600" />
+            <TrendingUp className="w-5 h-5 text-teal-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString()}</p>
         </div>
       </div>
 
+      {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
@@ -285,7 +298,6 @@ const SalesPaymentsManagement: React.FC = () => {
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="dd/mm/yyyy"
             />
           </div>
           <div>
@@ -295,22 +307,22 @@ const SalesPaymentsManagement: React.FC = () => {
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="dd/mm/yyyy"
             />
           </div>
         </div>
       </div>
 
+      {/* Payments Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apartment</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               </tr>
@@ -328,26 +340,41 @@ const SalesPaymentsManagement: React.FC = () => {
                 filteredPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.payment_date
-                        ? format(new Date(payment.payment_date), 'MMM dd, yyyy')
-                        : format(new Date(payment.created_at), 'MMM dd, yyyy')}
+                      {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.apartment_number}</div>
-                      <div className="text-xs text-gray-500">{payment.building_name}</div>
+                      <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.buyer_name}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.phase_name || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                      €{payment.sale_price?.toLocaleString() || '0'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id) ? (
+                        payment.paid_by_type === 'investor' ? (
+                          <div className="flex items-center space-x-2">
+                            <User className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm text-blue-600 font-medium">
+                              {payment.investor?.name || 'Investor'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Building2 className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600 font-medium">
+                              {payment.bank?.name || 'Bank'}
+                            </span>
+                          </div>
+                        )
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
-                        €{Number(payment.amount).toLocaleString()}
+                        €{payment.amount.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -361,6 +388,7 @@ const SalesPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Summary */}
       {filteredPayments.length > 0 && (
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
@@ -371,7 +399,7 @@ const SalesPaymentsManagement: React.FC = () => {
             <div className="text-sm text-blue-900">
               <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
               <span className="font-semibold">
-                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString()}
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -381,4 +409,4 @@ const SalesPaymentsManagement: React.FC = () => {
   )
 }
 
-export default SalesPaymentsManagement
+export default PaymentsManagement

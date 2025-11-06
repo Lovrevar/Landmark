@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 import {
   fetchPaymentNotifications,
   calculateNotificationStats,
@@ -24,7 +24,7 @@ import {
   getNotificationUrgency,
   PaymentNotification,
   NotificationStats
-} from './services/paymentNotificationService'
+} from '../services/paymentNotificationService'
 
 interface PaymentNotificationsProps {
   onPaymentClick?: (notification: PaymentNotification) => void
