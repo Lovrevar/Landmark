@@ -36,6 +36,24 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [activeUnitType, setActiveUnitType] = useState<UnitType>('apartment')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
 
+  React.useEffect(() => {
+    if (selectedProject) {
+      const updatedProject = projects.find(p => p.id === selectedProject.id)
+      if (updatedProject) {
+        setSelectedProject(updatedProject)
+      }
+    }
+  }, [projects])
+
+  React.useEffect(() => {
+    if (selectedBuilding && selectedProject) {
+      const updatedBuilding = selectedProject.buildings.find(b => b.id === selectedBuilding.id)
+      if (updatedBuilding) {
+        setSelectedBuilding(updatedBuilding)
+      }
+    }
+  }, [selectedProject])
+
   const [showBuildingQuantityForm, setShowBuildingQuantityForm] = useState(false)
   const [showBuildingForm, setShowBuildingForm] = useState(false)
   const [showUnitForm, setShowUnitForm] = useState(false)
@@ -62,7 +80,7 @@ const SalesProjectsEnhanced: React.FC = () => {
 
     try {
       await salesService.deleteBuilding(buildingId)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
       alert('Error deleting building.')
@@ -75,7 +93,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     try {
       await salesService.createBulkBuildings(selectedProject.id, quantity)
       setShowBuildingQuantityForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
       alert('Error creating buildings. Please try again.')
@@ -88,7 +106,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     try {
       await salesService.createBuilding(selectedProject.id, data.name, data.description, data.total_floors)
       setShowBuildingForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
       alert('Error creating building. Please try again.')
