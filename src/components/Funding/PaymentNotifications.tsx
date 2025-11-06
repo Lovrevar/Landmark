@@ -106,13 +106,25 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
     setFilteredNotifications(filtered)
   }
 
-  const handleDismiss = async (notificationId: string) => {
+  const handleDismiss = async (notification: PaymentNotification) => {
     try {
       const { data: userData } = await supabase.auth.getUser()
       const userId = userData.user?.id
       if (!userId) return
 
-      await dismissNotification(notificationId, userId)
+      if (notification.payment_source === 'bank') {
+        await dismissNotification(notification.id, userId)
+      } else {
+        // For subcontractor milestones, we just mark them as "completed" status
+        // so they don't show up in pending anymore
+        const { error } = await supabase
+          .from('subcontractor_milestones')
+          .update({ status: 'completed' })
+          .eq('id', notification.milestone_id!)
+
+        if (error) throw error
+      }
+
       await loadNotifications()
     } catch (error) {
       console.error('Error dismissing notification:', error)
@@ -165,6 +177,8 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
         return 'First Payment'
       case 'final_payment':
         return 'Final Payment'
+      case 'milestone':
+        return 'Milestone'
       default:
         return 'Payment'
     }
@@ -184,7 +198,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Payment Notifications</h2>
-            <p className="text-gray-600 mt-1">Scheduled bank credit repayments and due dates</p>
+            <p className="text-gray-600 mt-1">Scheduled bank credit repayments and subcontractor milestone payments</p>
           </div>
           <button
             onClick={() => setShowDismissed(!showDismissed)}
@@ -316,18 +330,26 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className={`text-lg font-semibold ${getUrgencyTextColor(urgency.level)}`}>
-                            {notification.bank_name}
+                            {notification.payment_source === 'bank' ? notification.bank_name : notification.subcontractor_name}
                           </h3>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            notification.credit_type === 'construction_loan' ? 'bg-blue-100 text-blue-800' :
-                            notification.credit_type === 'term_loan' ? 'bg-green-100 text-green-800' :
-                            notification.credit_type === 'line_of_credit' ? 'bg-purple-100 text-purple-800' :
-                            'bg-orange-100 text-orange-800'
-                          }`}>
-                            {notification.credit_type?.replace('_', ' ').toUpperCase()}
-                          </span>
+                          {notification.payment_source === 'bank' ? (
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              notification.credit_type === 'construction_loan' ? 'bg-blue-100 text-blue-800' :
+                              notification.credit_type === 'term_loan' ? 'bg-green-100 text-green-800' :
+                              notification.credit_type === 'line_of_credit' ? 'bg-purple-100 text-purple-800' :
+                              'bg-orange-100 text-orange-800'
+                            }`}>
+                              {notification.credit_type?.replace('_', ' ').toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                              SUBCONTRACTOR
+                            </span>
+                          )}
                           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
-                            {getNotificationTypeLabel(notification.notification_type)} #{notification.payment_number}
+                            {getNotificationTypeLabel(notification.notification_type)}
+                            {notification.payment_source === 'bank' && ` #${notification.payment_number}`}
+                            {notification.payment_source === 'subcontractor' && ` (${notification.milestone_percentage}%)`}
                           </span>
                         </div>
 
@@ -383,12 +405,12 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                             {isExpanded ? 'Hide' : 'View'} Details
                           </button>
 
-                          {notification.status !== 'dismissed' && (
+                          {notification.status !== 'dismissed' && notification.status !== 'completed' && (
                             <button
-                              onClick={() => handleDismiss(notification.id)}
+                              onClick={() => handleDismiss(notification)}
                               className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors duration-200"
                             >
-                              Dismiss
+                              {notification.payment_source === 'subcontractor' ? 'Mark Complete' : 'Dismiss'}
                             </button>
                           )}
                         </div>
@@ -412,20 +434,43 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                       <div className="bg-white bg-opacity-50 rounded-lg p-4">
                         <h4 className="font-semibold text-gray-900 mb-3">Payment Details</h4>
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600">Bank Name</p>
-                            <p className="text-sm font-medium text-gray-900">{notification.bank_name}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Credit Type</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {notification.credit_type?.replace('_', ' ')}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Payment Number</p>
-                            <p className="text-sm font-medium text-gray-900">#{notification.payment_number}</p>
-                          </div>
+                          {notification.payment_source === 'bank' ? (
+                            <>
+                              <div>
+                                <p className="text-sm text-gray-600">Bank Name</p>
+                                <p className="text-sm font-medium text-gray-900">{notification.bank_name}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Credit Type</p>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {notification.credit_type?.replace('_', ' ')}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Payment Number</p>
+                                <p className="text-sm font-medium text-gray-900">#{notification.payment_number}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <p className="text-sm text-gray-600">Subcontractor</p>
+                                <p className="text-sm font-medium text-gray-900">{notification.subcontractor_name}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Milestone</p>
+                                <p className="text-sm font-medium text-gray-900">{notification.milestone_name}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Milestone Percentage</p>
+                                <p className="text-sm font-medium text-gray-900">{notification.milestone_percentage}%</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Contract Value</p>
+                                <p className="text-sm font-medium text-gray-900">€{notification.contract_value?.toLocaleString()}</p>
+                              </div>
+                            </>
+                          )}
                           <div>
                             <p className="text-sm text-gray-600">Notification Type</p>
                             <p className="text-sm font-medium text-gray-900">

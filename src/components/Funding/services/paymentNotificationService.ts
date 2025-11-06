@@ -3,13 +3,15 @@ import { addMonths, addYears, differenceInDays, isBefore, isToday } from 'date-f
 
 export interface PaymentNotification {
   id: string
-  bank_credit_id: string
-  bank_id: string
+  bank_credit_id?: string
+  bank_id?: string
+  subcontractor_id?: string
+  milestone_id?: string
   due_date: string
   amount: number
   status: 'pending' | 'completed' | 'dismissed' | 'overdue'
-  notification_type: 'first_payment' | 'recurring' | 'final_payment'
-  payment_number: number
+  notification_type: 'first_payment' | 'recurring' | 'final_payment' | 'milestone'
+  payment_number?: number
   dismissed_at: string | null
   dismissed_by: string | null
   created_at: string
@@ -17,6 +19,11 @@ export interface PaymentNotification {
   bank_name?: string
   credit_type?: string
   project_name?: string
+  subcontractor_name?: string
+  milestone_name?: string
+  milestone_percentage?: number
+  contract_value?: number
+  payment_source: 'bank' | 'subcontractor'
 }
 
 export interface NotificationStats {
@@ -34,7 +41,8 @@ export const fetchPaymentNotifications = async (filters?: {
   daysAhead?: number
 }): Promise<PaymentNotification[]> => {
   try {
-    let query = supabase
+    // Fetch bank payment notifications
+    let bankQuery = supabase
       .from('payment_notifications')
       .select(`
         *,
@@ -48,29 +56,96 @@ export const fetchPaymentNotifications = async (filters?: {
       .order('due_date', { ascending: true })
 
     if (filters?.status) {
-      query = query.eq('status', filters.status)
+      bankQuery = bankQuery.eq('status', filters.status)
     }
 
     if (filters?.bankId) {
-      query = query.eq('bank_id', filters.bankId)
+      bankQuery = bankQuery.eq('bank_id', filters.bankId)
     }
 
     if (filters?.daysAhead) {
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + filters.daysAhead)
-      query = query.lte('due_date', futureDate.toISOString().split('T')[0])
+      bankQuery = bankQuery.lte('due_date', futureDate.toISOString().split('T')[0])
     }
 
-    const { data, error } = await query
+    const { data: bankData, error: bankError } = await bankQuery
 
-    if (error) throw error
+    if (bankError) throw bankError
 
-    return (data || []).map(notification => ({
+    const bankNotifications = (bankData || []).map(notification => ({
       ...notification,
       bank_name: notification.banks?.name || 'Unknown Bank',
       credit_type: notification.bank_credits?.credit_type || 'N/A',
-      project_name: notification.bank_credits?.projects?.name || 'No Project'
+      project_name: notification.bank_credits?.projects?.name || 'No Project',
+      payment_source: 'bank' as const
     }))
+
+    // Fetch subcontractor milestone notifications
+    let milestoneQuery = supabase
+      .from('subcontractor_milestones')
+      .select(`
+        *,
+        subcontractors (
+          name,
+          contract_value
+        ),
+        projects (name)
+      `)
+      .in('status', ['pending', 'completed'])
+      .not('due_date', 'is', null)
+      .order('due_date', { ascending: true })
+
+    if (filters?.daysAhead) {
+      const futureDate = new Date()
+      futureDate.setDate(futureDate.getDate() + filters.daysAhead)
+      milestoneQuery = milestoneQuery.lte('due_date', futureDate.toISOString().split('T')[0])
+    }
+
+    const { data: milestoneData, error: milestoneError } = await milestoneQuery
+
+    if (milestoneError) throw milestoneError
+
+    // Transform milestones into notifications
+    const milestoneNotifications = (milestoneData || []).map(milestone => {
+      const contractValue = milestone.subcontractors?.contract_value || 0
+      const milestoneAmount = (contractValue * milestone.percentage) / 100
+      const today = new Date()
+      const dueDate = new Date(milestone.due_date)
+      const isOverdue = dueDate < today && milestone.status === 'pending'
+
+      return {
+        id: milestone.id,
+        milestone_id: milestone.id,
+        subcontractor_id: milestone.subcontractor_id,
+        due_date: milestone.due_date,
+        amount: milestoneAmount,
+        status: isOverdue ? 'overdue' : milestone.status === 'paid' ? 'completed' : 'pending',
+        notification_type: 'milestone' as const,
+        dismissed_at: null,
+        dismissed_by: null,
+        created_at: milestone.created_at,
+        updated_at: milestone.updated_at,
+        subcontractor_name: milestone.subcontractors?.name || 'Unknown Subcontractor',
+        milestone_name: milestone.milestone_name,
+        milestone_percentage: milestone.percentage,
+        contract_value: contractValue,
+        project_name: milestone.projects?.name || 'No Project',
+        payment_source: 'subcontractor' as const
+      } as PaymentNotification
+    })
+
+    // Filter milestone notifications by status if needed
+    let filteredMilestones = milestoneNotifications
+    if (filters?.status) {
+      filteredMilestones = milestoneNotifications.filter(n => n.status === filters.status)
+    }
+
+    // Combine and sort by due date
+    const allNotifications = [...bankNotifications, ...filteredMilestones]
+    allNotifications.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+
+    return allNotifications
   } catch (error) {
     console.error('Error fetching payment notifications:', error)
     throw error
