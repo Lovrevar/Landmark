@@ -29,14 +29,19 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
   if (!visible) return null
 
-  const currentAvgPrice = selectedUnits.length > 0
-    ? selectedUnits.reduce((sum, unit) => sum + (unit.price_per_m2 || 0), 0) / selectedUnits.length
-    : 0
+  const priceRange = selectedUnits.length > 0
+    ? {
+        min: Math.min(...selectedUnits.map(u => u.price_per_m2 || 0)),
+        max: Math.max(...selectedUnits.map(u => u.price_per_m2 || 0))
+      }
+    : { min: 0, max: 0 }
 
   const adjustment = parseFloat(adjustmentValue) || 0
-  const newAvgPrice = adjustmentType === 'increase'
-    ? currentAvgPrice + adjustment
-    : currentAvgPrice - adjustment
+
+  const newPriceRange = {
+    min: adjustmentType === 'increase' ? priceRange.min + adjustment : Math.max(0, priceRange.min - adjustment),
+    max: adjustmentType === 'increase' ? priceRange.max + adjustment : Math.max(0, priceRange.max - adjustment)
+  }
 
   const totalCurrentValue = selectedUnits.reduce((sum, unit) => sum + (unit.price || 0), 0)
   const totalNewValue = selectedUnits.reduce((sum, unit) => {
@@ -92,8 +97,13 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 <p className="font-bold text-blue-900">{selectedUnits.length}</p>
               </div>
               <div>
-                <p className="text-blue-700">Current Avg Price/m²:</p>
-                <p className="font-bold text-blue-900">€{currentAvgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-blue-700">Current Price Range/m²:</p>
+                <p className="font-bold text-blue-900">
+                  €{priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {priceRange.min !== priceRange.max && (
+                    <> - €{priceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -156,13 +166,21 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 Price Preview
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">New Avg Price/m²:</span>
-                  <span className={`font-bold text-lg ${
-                    adjustmentType === 'increase' ? 'text-green-700' : 'text-red-700'
-                  }`}>
-                    €{newAvgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-2">
+                    {adjustmentType === 'increase' ? '+' : '-'}€{adjustment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">New Price Range/m²:</span>
+                    <span className={`font-bold text-lg ${
+                      adjustmentType === 'increase' ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      €{newPriceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {newPriceRange.min !== newPriceRange.max && (
+                        <> - €{newPriceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-gray-300">
                   <span className="text-gray-700">Current Total Value:</span>
