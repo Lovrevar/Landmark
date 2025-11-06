@@ -154,12 +154,33 @@ const SalesReports: React.FC = () => {
 
       if (apartmentsError) throw apartmentsError
 
+      const apartments = apartmentsData || []
+
+      // Get all linked garage and storage IDs
+      const garageIds = apartments.map(apt => apt.garage_id).filter(Boolean)
+      const storageIds = apartments.map(apt => apt.repository_id).filter(Boolean)
+
+      // Fetch garages and storages data
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('id, price')
+        .in('id', garageIds.length > 0 ? garageIds : [''])
+
+      const { data: storagesData } = await supabase
+        .from('repositories')
+        .select('id, price')
+        .in('id', storageIds.length > 0 ? storageIds : [''])
+
+      // Create maps for quick lookup
+      const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
+      const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+
       // Fetch sales data
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
         .select(`
           *,
-          apartments!inner(project_id)
+          apartments!inner(project_id, garage_id, repository_id)
         `)
         .eq('apartments.project_id', selectedProject)
         .gte('sale_date', dateRange.start)
@@ -167,18 +188,39 @@ const SalesReports: React.FC = () => {
 
       if (salesError) throw salesError
 
-      const apartments = apartmentsData || []
       const sales = salesData || []
-      
+
+      // Calculate total revenue including linked units
+      const total_revenue = sales.reduce((sum, sale) => {
+        let saleTotal = sale.sale_price
+
+        // Add garage price if linked
+        if (sale.apartments?.garage_id) {
+          saleTotal += garageMap.get(sale.apartments.garage_id) || 0
+        }
+
+        // Add storage price if linked
+        if (sale.apartments?.repository_id) {
+          saleTotal += storageMap.get(sale.apartments.repository_id) || 0
+        }
+
+        return sum + saleTotal
+      }, 0)
+
       // Calculate project statistics
       const total_units = apartments.length
       const sold_units = apartments.filter(apt => apt.status === 'Sold').length
       const available_units = apartments.filter(apt => apt.status === 'Available').length
       const reserved_units = apartments.filter(apt => apt.status === 'Reserved').length
-      const total_revenue = sales.reduce((sum, sale) => sum + sale.sale_price, 0)
-      const average_price = total_units > 0 
-        ? apartments.reduce((sum, apt) => sum + apt.price, 0) / total_units 
-        : 0
+
+      // Calculate average price including linked units
+      const totalValue = apartments.reduce((sum, apt) => {
+        let aptTotal = apt.price
+        if (apt.garage_id) aptTotal += garageMap.get(apt.garage_id) || 0
+        if (apt.repository_id) aptTotal += storageMap.get(apt.repository_id) || 0
+        return sum + aptTotal
+      }, 0)
+      const average_price = total_units > 0 ? totalValue / total_units : 0
       const sales_rate = total_units > 0 ? (sold_units / total_units) * 100 : 0
 
       // Generate monthly sales data
@@ -189,16 +231,28 @@ const SalesReports: React.FC = () => {
       const monthly_sales: SalesData[] = months.map(month => {
         const monthStart = startOfMonth(month)
         const monthEnd = endOfMonth(month)
-        
+
         const monthSales = sales.filter(sale => {
           const saleDate = new Date(sale.sale_date)
           return saleDate >= monthStart && saleDate <= monthEnd
         })
-        
+
+        // Calculate revenue including linked units
+        const monthRevenue = monthSales.reduce((sum, sale) => {
+          let saleTotal = sale.sale_price
+          if (sale.apartments?.garage_id) {
+            saleTotal += garageMap.get(sale.apartments.garage_id) || 0
+          }
+          if (sale.apartments?.repository_id) {
+            saleTotal += storageMap.get(sale.apartments.repository_id) || 0
+          }
+          return sum + saleTotal
+        }, 0)
+
         return {
           month: format(month, 'MMM yyyy'),
           sales: monthSales.length,
-          revenue: monthSales.reduce((sum, sale) => sum + sale.sale_price, 0),
+          revenue: monthRevenue,
           units_sold: monthSales.length
         }
       })
