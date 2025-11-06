@@ -226,7 +226,6 @@ const ApartmentManagement: React.FC = () => {
   }
 
   const handleDeleteApartment = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this apartment?')) return
 
     try {
       await apartmentService.deleteApartment(id)
