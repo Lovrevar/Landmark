@@ -150,7 +150,7 @@ const GeneralReports: React.FC = () => {
   const fetchAllData = async (): Promise<ComprehensiveReport> => {
     const { data: projects } = await supabase.from('projects').select('*')
     const { data: apartments } = await supabase.from('apartments').select('*')
-    const { data: sales } = await supabase.from('sales').select('*')
+    const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*')
     const { data: wirePayments } = await supabase.from('wire_payments').select('*')
@@ -178,11 +178,38 @@ const GeneralReports: React.FC = () => {
     const bankCreditsArray = bankCredits || []
     const projectInvestmentsArray = projectInvestments || []
 
+    // Fetch garages and repositories for calculating total revenue
+    const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
+    const storageIds = apartmentsArray.map(apt => apt.repository_id).filter(Boolean)
+
+    const { data: garagesData } = await supabase
+      .from('garages')
+      .select('id, price')
+      .in('id', garageIds.length > 0 ? garageIds : [''])
+
+    const { data: storagesData } = await supabase
+      .from('repositories')
+      .select('id, price')
+      .in('id', storageIds.length > 0 ? storageIds : [''])
+
+    const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
+    const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+
     const filteredProjects = selectedProject === 'all'
       ? projectsArray
       : projectsArray.filter(p => p.id === selectedProject)
 
-    const totalRevenue = salesArray.reduce((sum, s) => sum + s.sale_price, 0)
+    // Calculate total revenue including linked garages and storages
+    const totalRevenue = salesArray.reduce((sum, s) => {
+      let saleTotal = s.sale_price
+      if (s.apartments?.garage_id) {
+        saleTotal += garageMap.get(s.apartments.garage_id) || 0
+      }
+      if (s.apartments?.repository_id) {
+        saleTotal += storageMap.get(s.apartments.repository_id) || 0
+      }
+      return sum + saleTotal
+    }, 0)
     const totalExpenses = wirePaymentsArray.reduce((sum, p) => sum + p.amount, 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
@@ -268,7 +295,13 @@ const GeneralReports: React.FC = () => {
         const projectExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
-        const projectRevenue = soldApts.reduce((sum, a) => sum + a.price, 0)
+        // Calculate project revenue including linked garages and storages
+        const projectRevenue = soldApts.reduce((sum, a) => {
+          let total = a.price
+          if (a.garage_id) total += garageMap.get(a.garage_id) || 0
+          if (a.repository_id) total += storageMap.get(a.repository_id) || 0
+          return sum + total
+        }, 0)
         const projectProfit = projectRevenue - projectExpenses
         const projectProfitMargin = projectRevenue > 0 ? (projectProfit / projectRevenue) * 100 : 0
         const projectSalesRate = projectApartments.length > 0
