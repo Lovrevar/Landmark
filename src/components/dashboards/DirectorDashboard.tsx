@@ -205,6 +205,7 @@ const DirectorDashboard: React.FC = () => {
 
           const contractIds = contracts?.map(c => c.id) || []
 
+          // Calculate expenses from direct contract payments
           let totalExpenses = 0
           if (contractIds.length > 0) {
             const { data: payments } = await supabase
@@ -213,6 +214,15 @@ const DirectorDashboard: React.FC = () => {
               .in('contract_id', contractIds)
             totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
           }
+
+          // Add expenses from milestone payments
+          const { data: milestonePayments } = await supabase
+            .from('wire_payments')
+            .select('amount, subcontractor_milestones!inner(project_id)')
+            .eq('subcontractor_milestones.project_id', project.id)
+
+          const milestoneExpenses = milestonePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+          totalExpenses += milestoneExpenses
 
           const { data: apartments } = await supabase
             .from('apartments')
