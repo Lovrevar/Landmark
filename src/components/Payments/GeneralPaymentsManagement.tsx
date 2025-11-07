@@ -117,6 +117,9 @@ const GeneralPaymentsManagement: React.FC = () => {
           ),
           subcontractors (
             name
+          ),
+          subcontractor_milestones (
+            project_id
           )
         `)
         .order('created_at', { ascending: false })
@@ -124,9 +127,15 @@ const GeneralPaymentsManagement: React.FC = () => {
       if (wireError) throw wireError
 
       const supervisionPayments: BasePayment[] = (wirePaymentsData || []).map(payment => {
-        const project = payment.contracts?.project_id
-          ? projectsData?.find(p => p.id === payment.contracts.project_id)
-          : null
+        let projectId = null
+
+        if (payment.contracts?.project_id) {
+          projectId = payment.contracts.project_id
+        } else if (payment.subcontractor_milestones?.project_id) {
+          projectId = payment.subcontractor_milestones.project_id
+        }
+
+        const project = projectId ? projectsData?.find(p => p.id === projectId) : null
 
         return {
           id: payment.id,
