@@ -241,9 +241,17 @@ export const updateSubcontractor = async (
     progress: number
   }
 ) => {
+  const updateData: any = { ...updates }
+
+  if (updates.progress === 100) {
+    updateData.completed_at = new Date().toISOString()
+  } else if (updates.progress < 100) {
+    updateData.completed_at = null
+  }
+
   const { error } = await supabase
     .from('subcontractors')
-    .update(updates)
+    .update(updateData)
     .eq('id', subcontractorId)
 
   if (error) throw error
