@@ -47,10 +47,10 @@ interface SubcontractorStatus {
 }
 
 interface WeeklyStats {
-  active_workers: number
-  sites_worked_this_week: number
+  completed_this_week: number
+  active_crews: number
+  active_sites: number
   work_logs_this_week: number
-  subcontractors_active: number
   overdue_tasks: number
   critical_deadlines: number
 }
@@ -59,10 +59,10 @@ const SupervisionDashboard: React.FC = () => {
   const [weekLogs, setWeekLogs] = useState<WorkLog[]>([])
   const [subcontractorStatus, setSubcontractorStatus] = useState<SubcontractorStatus[]>([])
   const [stats, setStats] = useState<WeeklyStats>({
-    active_workers: 0,
-    sites_worked_this_week: 0,
+    completed_this_week: 0,
+    active_crews: 0,
+    active_sites: 0,
     work_logs_this_week: 0,
-    subcontractors_active: 0,
     overdue_tasks: 0,
     critical_deadlines: 0
   })
@@ -104,6 +104,7 @@ const SupervisionDashboard: React.FC = () => {
           cost,
           budget_realized,
           phase_id,
+          completed_at,
           project_phases!inner (
             project_id,
             projects (name)
@@ -148,7 +149,20 @@ const SupervisionDashboard: React.FC = () => {
         })
       )
 
-      const uniqueSites = new Set(logsWithNames.map(log => log.subcontractor_id)).size
+      const completedThisWeek = (allSubcontractors || []).filter((sub: any) => {
+        if (!sub.completed_at) return false
+        const completedDate = parseISO(sub.completed_at)
+        return completedDate >= startOfWeek(today, { weekStartsOn: 1 }) &&
+               completedDate <= endOfWeek(today, { weekStartsOn: 1 })
+      }).length
+
+      const activeCrews = subcontractorStatusData.filter(s => s.progress < 100).length
+      const activePhaseIds = new Set(
+        (allSubcontractors || [])
+          .filter((sub: any) => sub.progress < 100)
+          .map((sub: any) => sub.phase_id)
+      )
+      const activeSites = activePhaseIds.size
       const overdueCount = subcontractorStatusData.filter(s => s.is_overdue).length
       const criticalDeadlines = subcontractorStatusData.filter(
         s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
@@ -157,10 +171,10 @@ const SupervisionDashboard: React.FC = () => {
       setWeekLogs(logsWithNames)
       setSubcontractorStatus(subcontractorStatusData)
       setStats({
-        active_workers: logsWithNames.length,
-        sites_worked_this_week: uniqueSites,
+        completed_this_week: completedThisWeek,
+        active_crews: activeCrews,
+        active_sites: activeSites,
         work_logs_this_week: logsWithNames.length,
-        subcontractors_active: subcontractorStatusData.filter(s => s.recent_work_logs > 0).length,
         overdue_tasks: overdueCount,
         critical_deadlines: criticalDeadlines
       })
@@ -200,24 +214,11 @@ const SupervisionDashboard: React.FC = () => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-600">Active Crews</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.active_workers}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <HardHat className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">Active this week</p>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600">Work Logs</p>
-              <p className="text-2xl font-bold text-green-600">{stats.work_logs_this_week}</p>
+              <p className="text-xs text-gray-600">Completed</p>
+              <p className="text-2xl font-bold text-green-600">{stats.completed_this_week}</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <ClipboardCheck className="w-6 h-6 text-green-600" />
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-1">This week</p>
@@ -226,24 +227,37 @@ const SupervisionDashboard: React.FC = () => {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-600">Active Sites</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.sites_worked_this_week}</p>
+              <p className="text-xs text-gray-600">Active Crews</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.active_crews}</p>
             </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Wrench className="w-6 h-6 text-purple-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Work in progress</p>
+          <p className="text-xs text-gray-500 mt-1">In progress</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-600">Active Crews</p>
-              <p className="text-2xl font-bold text-teal-600">{stats.subcontractors_active}</p>
+              <p className="text-xs text-gray-600">Active Sites</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.active_sites}</p>
+            </div>
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Wrench className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Phases with work</p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-600">Work Logs</p>
+              <p className="text-2xl font-bold text-teal-600">{stats.work_logs_this_week}</p>
             </div>
             <div className="p-2 bg-teal-100 rounded-lg">
-              <Users className="w-6 h-6 text-teal-600" />
+              <ClipboardCheck className="w-6 h-6 text-teal-600" />
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-1">This week</p>
