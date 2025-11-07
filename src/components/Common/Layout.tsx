@@ -14,7 +14,9 @@ import {
   User,
   ClipboardCheck,
   TrendingUp,
-  FileText
+  FileText,
+  Menu,
+  X
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -24,6 +26,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout } = useAuth()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 
   const getMenuItems = () => {
@@ -70,6 +73,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden mr-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
               <h1 className="text-xl font-bold text-gray-900">Landmark</h1>
             </div>
@@ -116,14 +125,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
 
-      <div className="flex">
-        <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
+      <div className="flex relative">
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        <aside
+          className={`
+            fixed lg:static inset-y-0 left-0 z-50
+            w-64 bg-white shadow-sm border-r border-gray-200
+            transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            lg:min-h-screen
+          `}
+        >
+          <div className="flex justify-between items-center p-4 border-b border-gray-200 lg:hidden">
+            <span className="font-semibold text-gray-900">Menu</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
           <nav className="p-4">
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.name}>
                   <Link
                     to={item.path}
+                    onClick={() => setSidebarOpen(false)}
                     className="flex items-center px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200"
                   >
                     <item.icon className="w-5 h-5 mr-3" />
@@ -135,7 +169,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
         </aside>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 w-full lg:w-auto">
           {children}
         </main>
       </div>
