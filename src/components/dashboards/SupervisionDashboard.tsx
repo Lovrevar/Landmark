@@ -17,7 +17,7 @@ import {
   BarChart3,
   Activity
 } from 'lucide-react'
-import { format, isToday, parseISO, differenceInDays } from 'date-fns'
+import { format, isToday, parseISO, differenceInDays, startOfWeek, endOfWeek } from 'date-fns'
 
 interface WorkLog {
   id: string
@@ -46,28 +46,28 @@ interface SubcontractorStatus {
   last_activity: string | null
 }
 
-interface DailyStats {
+interface WeeklyStats {
   active_workers: number
-  sites_worked_today: number
-  work_logs_today: number
+  sites_worked_this_week: number
+  work_logs_this_week: number
   subcontractors_active: number
   overdue_tasks: number
   critical_deadlines: number
 }
 
 const SupervisionDashboard: React.FC = () => {
-  const [todayLogs, setTodayLogs] = useState<WorkLog[]>([])
+  const [weekLogs, setWeekLogs] = useState<WorkLog[]>([])
   const [subcontractorStatus, setSubcontractorStatus] = useState<SubcontractorStatus[]>([])
-  const [stats, setStats] = useState<DailyStats>({
+  const [stats, setStats] = useState<WeeklyStats>({
     active_workers: 0,
-    sites_worked_today: 0,
-    work_logs_today: 0,
+    sites_worked_this_week: 0,
+    work_logs_this_week: 0,
     subcontractors_active: 0,
     overdue_tasks: 0,
     critical_deadlines: 0
   })
   const [loading, setLoading] = useState(true)
-  const [selectedView, setSelectedView] = useState<'today' | 'status' | 'issues'>('today')
+  const [selectedView, setSelectedView] = useState<'week' | 'status' | 'issues'>('week')
 
   useEffect(() => {
     fetchSupervisionData()
@@ -77,7 +77,9 @@ const SupervisionDashboard: React.FC = () => {
     try {
       setLoading(true)
 
-      const today = format(new Date(), 'yyyy-MM-dd')
+      const today = new Date()
+      const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+      const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
 
       const { data: workLogs, error: logsError } = await supabase
         .from('work_logs')
@@ -86,7 +88,8 @@ const SupervisionDashboard: React.FC = () => {
           subcontractors!work_logs_subcontractor_id_fkey (name),
           contracts!work_logs_contract_id_fkey (contract_number, job_description)
         `)
-        .eq('date', today)
+        .gte('date', weekStart)
+        .lte('date', weekEnd)
         .order('created_at', { ascending: false })
 
       if (logsError) throw logsError
@@ -151,12 +154,12 @@ const SupervisionDashboard: React.FC = () => {
         s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
       ).length
 
-      setTodayLogs(logsWithNames)
+      setWeekLogs(logsWithNames)
       setSubcontractorStatus(subcontractorStatusData)
       setStats({
         active_workers: logsWithNames.length,
-        sites_worked_today: uniqueSites,
-        work_logs_today: logsWithNames.length,
+        sites_worked_this_week: uniqueSites,
+        work_logs_this_week: logsWithNames.length,
         subcontractors_active: subcontractorStatusData.filter(s => s.recent_work_logs > 0).length,
         overdue_tasks: overdueCount,
         critical_deadlines: criticalDeadlines
@@ -185,11 +188,11 @@ const SupervisionDashboard: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Site Supervision</h1>
-          <p className="text-gray-600 mt-1">Daily operations and quality control</p>
+          <p className="text-gray-600 mt-1">Weekly operations and quality control</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600">Today</p>
-          <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'EEEE, MMMM dd, yyyy')}</p>
+          <p className="text-sm text-gray-600">This Week</p>
+          <p className="text-lg font-semibold text-gray-900">{format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd')} - {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd, yyyy')}</p>
         </div>
       </div>
 
@@ -204,27 +207,27 @@ const SupervisionDashboard: React.FC = () => {
               <HardHat className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Working today</p>
+          <p className="text-xs text-gray-500 mt-1">Active this week</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600">Work Logs</p>
-              <p className="text-2xl font-bold text-green-600">{stats.work_logs_today}</p>
+              <p className="text-2xl font-bold text-green-600">{stats.work_logs_this_week}</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
               <ClipboardCheck className="w-6 h-6 text-green-600" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Submitted today</p>
+          <p className="text-xs text-gray-500 mt-1">This week</p>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600">Active Sites</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.sites_worked_today}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.sites_worked_this_week}</p>
             </div>
             <div className="p-2 bg-purple-100 rounded-lg">
               <Wrench className="w-6 h-6 text-purple-600" />
@@ -275,15 +278,15 @@ const SupervisionDashboard: React.FC = () => {
 
       <div className="flex space-x-2 border-b border-gray-200">
         <button
-          onClick={() => setSelectedView('today')}
+          onClick={() => setSelectedView('week')}
           className={`px-4 py-2 font-medium transition-colors ${
-            selectedView === 'today'
+            selectedView === 'week'
               ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           <Activity className="w-4 h-4 inline mr-2" />
-          Today's Activity
+          This Week's Activity
         </button>
         <button
           onClick={() => setSelectedView('status')}
@@ -309,25 +312,25 @@ const SupervisionDashboard: React.FC = () => {
         </button>
       </div>
 
-      {selectedView === 'today' && (
+      {selectedView === 'week' && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                 <ClipboardCheck className="w-5 h-5 mr-2 text-blue-600" />
-                Today's Work Logs ({todayLogs.length})
+                This Week's Work Logs ({weekLogs.length})
               </h2>
             </div>
             <div className="p-6">
-              {todayLogs.length === 0 ? (
+              {weekLogs.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                   <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">No work logs submitted today</p>
+                  <p className="text-gray-600 mb-2">No work logs submitted this week</p>
                   <p className="text-sm text-gray-500">Work logs will appear here as they are submitted</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {todayLogs.map((log) => (
+                  {weekLogs.map((log) => (
                     <div
                       key={log.id}
                       className="border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white border border-gray-200"
