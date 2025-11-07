@@ -154,6 +154,7 @@ const GeneralReports: React.FC = () => {
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*')
     const { data: wirePayments } = await supabase.from('wire_payments').select('*')
+    const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
     const { data: apartmentPayments } = await supabase.from('apartment_payments').select('*')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
     const { data: projectPhases } = await supabase.from('project_phases').select('*')
@@ -169,6 +170,7 @@ const GeneralReports: React.FC = () => {
     const customersArray = customers || []
     const contractsArray = contracts || []
     const wirePaymentsArray = wirePayments || []
+    const subcontractorMilestonesArray = subcontractorMilestones || []
     const apartmentPaymentsArray = apartmentPayments || []
     const subcontractorsArray = subcontractors || []
     const projectPhasesArray = projectPhases || []
@@ -288,11 +290,23 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
+        // Calculate expenses from direct contract payments
         const contractIds = projectContracts.map(c => c.id)
         const projectPayments = contractIds.length > 0
-          ? wirePaymentsArray.filter(p => contractIds.includes(p.contract_id))
+          ? wirePaymentsArray.filter(p => p.contract_id && contractIds.includes(p.contract_id))
           : []
-        const projectExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
+        const contractExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
+
+        // Add expenses from milestone payments
+        const projectMilestoneIds = subcontractorMilestonesArray
+          .filter(m => m.project_id === project.id)
+          .map(m => m.id)
+        const milestonePayments = projectMilestoneIds.length > 0
+          ? wirePaymentsArray.filter(p => p.milestone_id && projectMilestoneIds.includes(p.milestone_id))
+          : []
+        const milestoneExpenses = milestonePayments.reduce((sum, p) => sum + p.amount, 0)
+
+        const projectExpenses = contractExpenses + milestoneExpenses
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
