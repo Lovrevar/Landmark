@@ -44,8 +44,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'General Payments', icon: DollarSign, path: '/general-payments' }
       ],
       Supervision: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' }
+        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
+        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
+        { name: 'Reports', icon: FileText, path: '/supervision-reports' }
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
