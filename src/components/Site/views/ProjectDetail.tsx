@@ -11,12 +11,13 @@ interface ProjectDetailProps {
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void
-  onWirePayment: (subcontractor: Subcontractor) => void
-  onOpenPaymentHistory: (subcontractor: Subcontractor) => void
+  onWirePayment?: (subcontractor: Subcontractor) => void
+  onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  canManagePayments?: boolean
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -31,7 +32,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onEditSubcontractor,
   onOpenSubDetails,
   onDeleteSubcontractor,
-  onManageMilestones
+  onManageMilestones,
+  canManagePayments = true
 }) => {
   return (
     <div>
@@ -128,22 +130,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <div className="text-2xl font-bold text-gray-900">{project.subcontractors.length}</div>
             <div className="text-sm text-gray-600">Total Subcontractors</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {project.subcontractors.filter(s => s.budget_realized >= s.cost).length}
+          {canManagePayments && (
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {project.subcontractors.filter(s => s.budget_realized >= s.cost).length}
+              </div>
+              <div className="text-sm text-gray-600">Fully Paid</div>
             </div>
-            <div className="text-sm text-gray-600">Fully Paid</div>
-          </div>
+          )}
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">€{project.total_subcontractor_cost.toLocaleString()}</div>
             <div className="text-sm text-gray-600">Contract Total</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-teal-600">
-              €{project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString()}
+          {canManagePayments && (
+            <div className="text-center">
+              <div className="text-2xl font-bold text-teal-600">
+                €{project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Total Paid</div>
             </div>
-            <div className="text-sm text-gray-600">Total Paid</div>
-          </div>
+          )}
         </div>
       </div>
     </div>

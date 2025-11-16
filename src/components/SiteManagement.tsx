@@ -14,6 +14,7 @@ import { PaymentHistoryModal } from './Site/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Site/forms/EditPaymentModal'
 import { SubcontractorDetailsModal } from './Site/forms/SubcontractorDetailsModal'
 import { MilestoneList } from './Site/views/MilestoneList'
+import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../utils/permissions'
 
 const SiteManagement: React.FC = () => {
   const { user } = useAuth()
@@ -270,6 +271,12 @@ const SiteManagement: React.FC = () => {
     return <div className="text-center py-12">Loading site management...</div>
   }
 
+  const filteredProjects = isSupervisionRole(user)
+    ? projects.filter(p => getAccessibleProjectIds(user).includes(p.id))
+    : projects
+
+  const userCanManagePayments = canManagePayments(user)
+
   if (selectedProject) {
     return (
       <div>
@@ -283,15 +290,15 @@ const SiteManagement: React.FC = () => {
             setSelectedPhase(phase)
             setShowSubcontractorForm(true)
           }}
-          onWirePayment={(sub) => {
+          onWirePayment={userCanManagePayments ? (sub) => {
             console.log('Opening wire payment modal for:', sub.name)
             setSelectedSubcontractorForPayment(sub)
             setPaymentAmount(0)
             setPaymentDate('')
             setPaymentNotes('')
             setShowPaymentModal(true)
-          }}
-          onOpenPaymentHistory={openPaymentHistory}
+          } : undefined}
+          onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
           onEditSubcontractor={(sub) => {
             setEditingSubcontractor(sub)
             setShowEditModal(true)
@@ -299,6 +306,7 @@ const SiteManagement: React.FC = () => {
           onOpenSubDetails={openSubcontractorDetails}
           onDeleteSubcontractor={handleDeleteSubcontractor}
           onManageMilestones={handleManageMilestones}
+          canManagePayments={userCanManagePayments}
         />
 
         <PhaseSetupModal
@@ -441,7 +449,7 @@ const SiteManagement: React.FC = () => {
 
   return (
     <ProjectsGrid
-      projects={projects}
+      projects={filteredProjects}
       onSelectProject={setSelectedProject}
     />
   )

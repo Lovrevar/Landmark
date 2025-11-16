@@ -11,8 +11,8 @@ interface PhaseCardProps {
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void
-  onWirePayment: (subcontractor: Subcontractor) => void
-  onOpenPaymentHistory: (subcontractor: Subcontractor) => void
+  onWirePayment?: (subcontractor: Subcontractor) => void
+  onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
@@ -212,21 +212,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => onWirePayment(subcontractor)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-                      >
-                        <DollarSign className="w-3 h-3 mr-1" />
-                        Wire
-                      </button>
-                      <button
-                        onClick={() => onOpenPaymentHistory(subcontractor)}
-                        className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
-                      >
-                        Payments
-                      </button>
-                    </div>
+                    {(onWirePayment || onOpenPaymentHistory) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {onWirePayment && (
+                          <button
+                            onClick={() => onWirePayment(subcontractor)}
+                            className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                          >
+                            <DollarSign className="w-3 h-3 mr-1" />
+                            Wire
+                          </button>
+                        )}
+                        {onOpenPaymentHistory && (
+                          <button
+                            onClick={() => onOpenPaymentHistory(subcontractor)}
+                            className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                          >
+                            Payments
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-4 gap-2">
                       <button
                         onClick={() => onEditSubcontractor(subcontractor)}

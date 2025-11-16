@@ -2,12 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '../lib/supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+export interface ProjectAssignment {
+  id: string
+  project_id: string
+  project_name: string
+  assigned_at: string
+}
+
 export interface User {
   id: string
   auth_user_id: string
   username: string
   email: string
   role: 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
+  assignedProjects?: ProjectAssignment[]
 }
 
 export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
@@ -20,6 +28,7 @@ interface AuthContextType {
   setCurrentProfile: (profile: Profile) => void
   login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
+  hasProjectAccess: (projectId: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -63,12 +72,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null
       }
 
+      let assignedProjects: ProjectAssignment[] = []
+
+      if (data.role === 'Supervision') {
+        const { data: projectData, error: projectError } = await supabase
+          .from('project_managers')
+          .select(`
+            id,
+            project_id,
+            assigned_at,
+            projects:project_id (
+              name
+            )
+          `)
+          .eq('user_id', data.id)
+
+        if (!projectError && projectData) {
+          assignedProjects = projectData.map((pm: any) => ({
+            id: pm.id,
+            project_id: pm.project_id,
+            project_name: pm.projects?.name || 'Unknown Project',
+            assigned_at: pm.assigned_at
+          }))
+        }
+      }
+
       return {
         id: data.id,
         auth_user_id: data.auth_user_id,
         username: data.username,
         email: data.email,
-        role: data.role as User['role']
+        role: data.role as User['role'],
+        assignedProjects
       }
     } catch (error) {
       console.error('Exception fetching user data:', error)
@@ -186,6 +221,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('currentProfile', profile)
   }
 
+  const hasProjectAccess = (projectId: string): boolean => {
+    if (!user) return false
+
+    if (user.role === 'Director') return true
+
+    if (user.role === 'Supervision') {
+      return user.assignedProjects?.some(p => p.project_id === projectId) || false
+    }
+
+    return false
+  }
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
@@ -193,7 +240,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     currentProfile,
     setCurrentProfile: handleSetCurrentProfile,
     login,
-    logout
+    logout,
+    hasProjectAccess
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

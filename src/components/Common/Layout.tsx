@@ -24,12 +24,19 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { currentProfile, setCurrentProfile, logout } = useAuth()
+  const { currentProfile, setCurrentProfile, logout, user } = useAuth()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 
   const getMenuItems = () => {
+    if (user?.role === 'Supervision') {
+      return [
+        { name: 'Site Management', icon: Building2, path: '/site-management' },
+        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' }
+      ]
+    }
+
     const menuConfig = {
       General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
@@ -37,12 +44,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'General Payments', icon: DollarSign, path: '/general-payments' }
       ],
       Supervision: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
-        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' },
-        { name: 'Reports', icon: BarChart3, path: '/supervision-reports' }
+        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' }
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
@@ -83,36 +86,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-xl font-bold text-gray-900">Landmark</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="font-medium">{currentProfile}</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
+              {user?.role !== 'Supervision' && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="font-medium">{currentProfile}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
 
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    {(['General', 'Supervision', 'Sales', 'Funding'] as Profile[]).map((profile) => (
-                      <button
-                        key={profile}
-                        onClick={() => {
-                          setCurrentProfile(profile)
-                          setShowProfileDropdown(false)
-                          navigate('/')
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 ${
-                          currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-                        }`}
-                      >
-                        {profile}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      {(['General', 'Supervision', 'Sales', 'Funding'] as Profile[]).map((profile) => (
+                        <button
+                          key={profile}
+                          onClick={() => {
+                            setCurrentProfile(profile)
+                            setShowProfileDropdown(false)
+                            navigate('/')
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 ${
+                            currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {profile}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 onClick={logout}
                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-red-600 transition-colors duration-200"
