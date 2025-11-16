@@ -24,7 +24,7 @@ import FundingOverview from './components/Finance/overview/FundingOverview'
 import GeneralReports from './components/Reports/GeneralReports'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
 
   if (loading) {
     return (
@@ -45,6 +45,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 }
 
 function AppContent() {
+  const { user } = useAuth()
+
   return (
     <Router>
       <Routes>
@@ -52,7 +54,7 @@ function AppContent() {
           path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              {user?.role === 'Supervision' ? <Navigate to="/site-management" replace /> : <Dashboard />}
             </ProtectedRoute>
           }
         />
