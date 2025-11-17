@@ -127,7 +127,7 @@ const SupervisionReports: React.FC = () => {
       if (phasesError) throw phasesError
 
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select(`
           *,
           contracts!inner(project_id)
