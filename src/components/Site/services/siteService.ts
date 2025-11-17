@@ -388,7 +388,7 @@ export const updateWirePayment = async (
   }
 ) => {
   const { error } = await supabase
-    .from('wire_payments')
+    .from('subcontractor_payments')
     .update(updates)
     .eq('id', paymentId)
 
