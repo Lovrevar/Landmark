@@ -166,7 +166,7 @@ const InvestmentProjects: React.FC = () => {
       if (creditsError) throw creditsError
 
       const { data: wirePaymentsData, error: paymentsError } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select('*')
 
       if (paymentsError) throw paymentsError
