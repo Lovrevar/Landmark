@@ -397,7 +397,7 @@ export const updateWirePayment = async (
 
 export const deleteWirePayment = async (paymentId: string) => {
   const { error } = await supabase
-    .from('wire_payments')
+    .from('subcontractor_payments')
     .delete()
     .eq('id', paymentId)
 
