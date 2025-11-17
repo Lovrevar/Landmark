@@ -281,7 +281,7 @@ const DirectorDashboard: React.FC = () => {
   const fetchFinancialData = async () => {
     try {
       const { data: sales } = await supabase.from('sales').select('sale_price, apartments(garage_id, repository_id)')
-      const { data: wirePayments } = await supabase.from('wire_payments').select('amount')
+      const { data: wirePayments } = await supabase.from('subcontractor_payments').select('amount')
       const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
       const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
