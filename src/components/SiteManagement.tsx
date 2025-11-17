@@ -9,7 +9,6 @@ import { PhaseSetupModal } from './Site/forms/PhaseSetupModal'
 import { EditPhaseModal } from './Site/forms/EditPhaseModal'
 import { SubcontractorFormModal } from './Site/forms/SubcontractorFormModal'
 import { EditSubcontractorModal } from './Site/forms/EditSubcontractorModal'
-import { WirePaymentModal } from './Site/forms/WirePaymentModal'
 import { PaymentHistoryModal } from './Site/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Site/forms/EditPaymentModal'
 import { SubcontractorDetailsModal } from './Site/forms/SubcontractorDetailsModal'
@@ -53,11 +52,7 @@ const SiteManagement: React.FC = () => {
   const [selectedPhase, setSelectedPhase] = useState<ProjectPhase | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedSubcontractorForPayment, setSelectedSubcontractorForPayment] = useState<Subcontractor | null>(null)
-  const [paymentAmount, setPaymentAmount] = useState(0)
-  const [paymentDate, setPaymentDate] = useState('')
-  const [paymentNotes, setPaymentNotes] = useState('')
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
   const [wirePayments, setWirePayments] = useState<WirePayment[]>([])
   const [editingPayment, setEditingPayment] = useState<WirePayment | null>(null)
@@ -131,59 +126,6 @@ const SiteManagement: React.FC = () => {
     await deleteSubcontractor(subcontractorId)
   }
 
-  const handleAddPayment = async (
-    milestoneId?: string,
-    paidByType?: 'investor' | 'bank' | null,
-    paidByInvestorId?: string | null,
-    paidByBankId?: string | null
-  ) => {
-    console.log('handleAddPayment called', {
-      hasSubcontractor: !!selectedSubcontractorForPayment,
-      hasUser: !!user?.id,
-      paymentAmount,
-      paymentDate,
-      paymentNotes,
-      milestoneId,
-      paidByType,
-      paidByInvestorId,
-      paidByBankId
-    })
-
-    if (!selectedSubcontractorForPayment) {
-      alert('No subcontractor selected')
-      return
-    }
-
-    if (!user?.id) {
-      alert('User not authenticated. Please log in again.')
-      return
-    }
-
-    if (paymentAmount <= 0) {
-      alert('Please enter a valid payment amount')
-      return
-    }
-
-    const success = await addPaymentToSubcontractor(
-      selectedSubcontractorForPayment,
-      paymentAmount,
-      paymentDate,
-      paymentNotes,
-      user.id,
-      milestoneId,
-      paidByType,
-      paidByInvestorId,
-      paidByBankId
-    )
-
-    if (success) {
-      setShowPaymentModal(false)
-      setPaymentAmount(0)
-      setPaymentDate('')
-      setPaymentNotes('')
-      setSelectedSubcontractorForPayment(null)
-    }
-  }
 
   const openPaymentHistory = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractorForPayment(subcontractor)
@@ -290,14 +232,6 @@ const SiteManagement: React.FC = () => {
             setSelectedPhase(phase)
             setShowSubcontractorForm(true)
           }}
-          onWirePayment={userCanManagePayments ? (sub) => {
-            console.log('Opening wire payment modal for:', sub.name)
-            setSelectedSubcontractorForPayment(sub)
-            setPaymentAmount(0)
-            setPaymentDate('')
-            setPaymentNotes('')
-            setShowPaymentModal(true)
-          } : undefined}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
           onEditSubcontractor={(sub) => {
             setEditingSubcontractor(sub)
@@ -348,26 +282,6 @@ const SiteManagement: React.FC = () => {
           subcontractor={editingSubcontractor}
           onChange={setEditingSubcontractor}
           onSubmit={handleUpdateSubcontractor}
-        />
-
-        <WirePaymentModal
-          visible={showPaymentModal}
-          onClose={() => {
-            setShowPaymentModal(false)
-            setPaymentAmount(0)
-            setPaymentDate('')
-            setPaymentNotes('')
-            setSelectedSubcontractorForPayment(null)
-          }}
-          subcontractor={selectedSubcontractorForPayment}
-          amount={paymentAmount}
-          paymentDate={paymentDate}
-          notes={paymentNotes}
-          onAmountChange={setPaymentAmount}
-          onDateChange={setPaymentDate}
-          onNotesChange={setPaymentNotes}
-          onSubmit={handleAddPayment}
-          projectId={selectedProject?.id || ''}
         />
 
         <PaymentHistoryModal

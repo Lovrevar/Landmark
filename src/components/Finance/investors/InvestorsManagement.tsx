@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Investor, ProjectInvestment, Project } from '../../../lib/supabase'
-import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building, Send } from 'lucide-react'
+import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { InvestorWirePaymentModal } from '../forms/InvestorWirePaymentModal'
 
 interface InvestorWithInvestments extends Investor {
   investments: ProjectInvestment[]
@@ -50,13 +49,6 @@ const InvestorsManagement: React.FC = () => {
     grace_period: 0
   })
   const [loading, setLoading] = useState(true)
-  const [showWirePaymentModal, setShowWirePaymentModal] = useState(false)
-  const [selectedInvestment, setSelectedInvestment] = useState<ProjectInvestment | null>(null)
-  const [wirePayment, setWirePayment] = useState({
-    amount: 0,
-    paymentDate: '',
-    notes: ''
-  })
 
   useEffect(() => {
     fetchData()
@@ -334,44 +326,6 @@ const InvestorsManagement: React.FC = () => {
     }
   }
 
-  const handleOpenWirePayment = (investment: ProjectInvestment) => {
-    setSelectedInvestment(investment)
-    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
-    setShowWirePaymentModal(true)
-  }
-
-  const handleCloseWirePayment = () => {
-    setShowWirePaymentModal(false)
-    setSelectedInvestment(null)
-    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
-  }
-
-  const handleRecordPayment = async () => {
-    if (!selectedInvestment || !selectedInvestor || wirePayment.amount <= 0) {
-      alert('Please enter a valid payment amount')
-      return
-    }
-
-    try {
-      const { error: paymentError } = await supabase
-        .from('investor_payments')
-        .insert({
-          project_investment_id: selectedInvestment.id,
-          investor_id: selectedInvestor.id,
-          amount: wirePayment.amount,
-          payment_date: wirePayment.paymentDate || null,
-          notes: wirePayment.notes || null
-        })
-
-      if (paymentError) throw paymentError
-
-      handleCloseWirePayment()
-      await fetchData()
-    } catch (error) {
-      console.error('Error recording payment:', error)
-      alert('Failed to record payment. Please try again.')
-    }
-  }
 
   const handleEditInvestor = (investor: Investor) => {
     setEditingInvestor(investor)
@@ -1194,21 +1148,15 @@ const InvestorsManagement: React.FC = () => {
                           {/* Action Buttons */}
                           <div className="pt-3 mt-3 border-t border-gray-200 flex gap-2">
                             <button
-                              onClick={() => handleOpenWirePayment(investment)}
-                              className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                            >
-                              <Send className="w-4 h-4 mr-2" />
-                              Wire Payment
-                            </button>
-                            <button
                               onClick={() => handleEditInvestment(investment)}
-                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                              className="flex-1 items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-4 h-4 inline mr-2" />
+                              Edit
                             </button>
                             <button
                               onClick={() => handleDeleteInvestment(investment.id)}
-                              className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1232,20 +1180,6 @@ const InvestorsManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Wire Payment Modal */}
-      <InvestorWirePaymentModal
-        visible={showWirePaymentModal}
-        onClose={handleCloseWirePayment}
-        investment={selectedInvestment}
-        investorName={selectedInvestor?.name || ''}
-        amount={wirePayment.amount}
-        paymentDate={wirePayment.paymentDate}
-        notes={wirePayment.notes}
-        onAmountChange={(amount) => setWirePayment({ ...wirePayment, amount })}
-        onDateChange={(date) => setWirePayment({ ...wirePayment, paymentDate: date })}
-        onNotesChange={(notes) => setWirePayment({ ...wirePayment, notes })}
-        onSubmit={handleRecordPayment}
-      />
     </div>
   )
 }

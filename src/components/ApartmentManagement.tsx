@@ -8,7 +8,6 @@ import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
 import { SingleApartmentModal } from './Apartments/forms/SingleApartmentModal'
 import { EditApartmentModal } from './Apartments/forms/EditApartmentModal'
 import { ApartmentDetailsModal } from './Apartments/forms/ApartmentDetailsModal'
-import { WirePaymentModal } from './Apartments/forms/WirePaymentModal'
 import { PaymentHistoryModal } from './Apartments/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Apartments/forms/EditPaymentModal'
 import { LinkUnitsModal } from './Apartments/forms/LinkUnitsModal'
@@ -28,24 +27,18 @@ const ApartmentManagement: React.FC = () => {
   const [showSingleModal, setShowSingleModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [showWireModal, setShowWireModal] = useState(false)
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
   const [showLinkUnitsModal, setShowLinkUnitsModal] = useState(false)
 
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
-  const [paymentAmount, setPaymentAmount] = useState(0)
-  const [paymentDate, setPaymentDate] = useState('')
-  const [paymentNotes, setPaymentNotes] = useState('')
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
-  const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
   const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
   const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
   const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
   const [linkedGarages, setLinkedGarages] = useState<Record<string, any>>({})
   const [linkedStorages, setLinkedStorages] = useState<Record<string, any>>({})
-  const [paymentUnitType, setPaymentUnitType] = useState<'apartment' | 'garage' | 'storage'>('apartment')
 
   useEffect(() => {
     fetchData()
@@ -235,103 +228,6 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
-  const handleAddPayment = async () => {
-    if (!selectedApartment) {
-      alert('Missing apartment information')
-      return
-    }
-
-    if (paymentAmount <= 0) {
-      alert('Please enter a valid payment amount')
-      return
-    }
-
-    try {
-      const { data: sale } = await supabase
-        .from('sales')
-        .select('id, customer_id')
-        .eq('apartment_id', selectedApartment.id)
-        .maybeSingle()
-
-      if (!sale) {
-        alert('No sale found for this apartment. Please create a sale first.')
-        return
-      }
-
-      const garageId = paymentUnitType === 'garage' && linkedGarages[selectedApartment.id]
-        ? linkedGarages[selectedApartment.id].id
-        : null
-      const storageId = paymentUnitType === 'storage' && linkedStorages[selectedApartment.id]
-        ? linkedStorages[selectedApartment.id].id
-        : null
-
-      await apartmentService.addPaymentToApartment(
-        selectedApartment.id,
-        sale.customer_id,
-        selectedApartment.project_id,
-        sale.id,
-        paymentAmount,
-        paymentDate,
-        paymentType,
-        paymentNotes,
-        garageId,
-        storageId
-      )
-      setShowWireModal(false)
-      setPaymentAmount(0)
-      setPaymentDate('')
-      setPaymentNotes('')
-      setPaymentType('installment')
-      setPaymentUnitType('apartment')
-      setSelectedApartment(null)
-      fetchData()
-    } catch (error) {
-      console.error('Error adding payment:', error)
-    }
-  }
-
-  const handleMultiUnitPayment = async (
-    selectedUnits: Array<{ unitId: string; unitType: 'apartment' | 'garage' | 'storage'; amount: number }>
-  ) => {
-    if (!selectedApartment) {
-      alert('Missing apartment information')
-      return
-    }
-
-    try {
-      const { data: sale } = await supabase
-        .from('sales')
-        .select('id, customer_id')
-        .eq('apartment_id', selectedApartment.id)
-        .maybeSingle()
-
-      if (!sale) {
-        alert('No sale found for this apartment. Please create a sale first.')
-        return
-      }
-
-      await apartmentService.addMultiplePayments(
-        selectedUnits,
-        sale.customer_id,
-        selectedApartment.project_id,
-        sale.id,
-        paymentDate,
-        paymentType,
-        paymentNotes
-      )
-
-      setShowWireModal(false)
-      setPaymentAmount(0)
-      setPaymentDate('')
-      setPaymentNotes('')
-      setPaymentType('installment')
-      setPaymentUnitType('apartment')
-      setSelectedApartment(null)
-      fetchData()
-    } catch (error) {
-      console.error('Error adding multi-unit payment:', error)
-    }
-  }
 
   const openPaymentHistory = async (apartment: ApartmentWithDetails) => {
     try {
@@ -637,28 +533,12 @@ const ApartmentManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedApartment(apartment)
-                        setPaymentAmount(0)
-                        setPaymentDate(new Date().toISOString().split('T')[0])
-                        setPaymentNotes('')
-                        setPaymentUnitType('apartment')
-                        setShowWireModal(true)
-                      }}
-                      className="px-3 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-                    >
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Wire
-                    </button>
-                    <button
-                      onClick={() => openPaymentHistory(apartment)}
-                      className="px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
-                    >
-                      Payments
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => openPaymentHistory(apartment)}
+                    className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    View Payments
+                  </button>
                   {(!linkedGarage || !linkedStorage) && (
                     <button
                       onClick={() => {
@@ -752,34 +632,6 @@ const ApartmentManagement: React.FC = () => {
           setSelectedApartment(null)
         }}
         apartment={selectedApartment}
-      />
-
-      <WirePaymentModal
-        visible={showWireModal}
-        onClose={() => {
-          setShowWireModal(false)
-          setSelectedApartment(null)
-          setPaymentAmount(0)
-          setPaymentDate('')
-          setPaymentNotes('')
-          setPaymentType('installment')
-          setPaymentUnitType('apartment')
-        }}
-        apartment={selectedApartment}
-        amount={paymentAmount}
-        paymentDate={paymentDate}
-        paymentType={paymentType}
-        notes={paymentNotes}
-        linkedGarage={selectedApartment ? linkedGarages[selectedApartment.id] : null}
-        linkedStorage={selectedApartment ? linkedStorages[selectedApartment.id] : null}
-        paymentUnitType={paymentUnitType}
-        onAmountChange={setPaymentAmount}
-        onDateChange={setPaymentDate}
-        onPaymentTypeChange={setPaymentType}
-        onNotesChange={setPaymentNotes}
-        onPaymentUnitTypeChange={setPaymentUnitType}
-        onSubmit={handleAddPayment}
-        onMultiUnitSubmit={handleMultiUnitPayment}
       />
 
       <PaymentHistoryModal

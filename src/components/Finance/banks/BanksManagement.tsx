@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../../../lib/supabase'
-import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock, Send } from 'lucide-react'
+import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { BankWirePaymentModal } from '../forms/BankWirePaymentModal'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]
@@ -49,13 +48,6 @@ const BanksManagement: React.FC = () => {
     credit_seniority: 'senior' as const
   })
   const [loading, setLoading] = useState(true)
-  const [showWirePaymentModal, setShowWirePaymentModal] = useState(false)
-  const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
-  const [wirePayment, setWirePayment] = useState({
-    amount: 0,
-    paymentDate: '',
-    notes: ''
-  })
 
   useEffect(() => {
     fetchData()
@@ -421,52 +413,6 @@ const BanksManagement: React.FC = () => {
     }
   }
 
-  const handleOpenWirePayment = (credit: BankCredit) => {
-    setSelectedCredit(credit)
-    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
-    setShowWirePaymentModal(true)
-  }
-
-  const handleCloseWirePayment = () => {
-    setShowWirePaymentModal(false)
-    setSelectedCredit(null)
-    setWirePayment({ amount: 0, paymentDate: '', notes: '' })
-  }
-
-  const handleRecordPayment = async () => {
-    if (!selectedCredit || !selectedBank || wirePayment.amount <= 0) {
-      alert('Please enter a valid payment amount')
-      return
-    }
-
-    try {
-      const { error: paymentError } = await supabase
-        .from('bank_credit_payments')
-        .insert({
-          bank_credit_id: selectedCredit.id,
-          bank_id: selectedBank.id,
-          amount: wirePayment.amount,
-          payment_date: wirePayment.paymentDate || null,
-          notes: wirePayment.notes || null
-        })
-
-      if (paymentError) throw paymentError
-
-      const newOutstandingBalance = Math.max(0, selectedCredit.outstanding_balance - wirePayment.amount)
-      const { error: updateError } = await supabase
-        .from('bank_credits')
-        .update({ outstanding_balance: newOutstandingBalance })
-        .eq('id', selectedCredit.id)
-
-      if (updateError) throw updateError
-
-      handleCloseWirePayment()
-      await fetchData()
-    } catch (error) {
-      console.error('Error recording payment:', error)
-      alert('Failed to record payment. Please try again.')
-    }
-  }
 
   const handleEditBank = (bank: Bank) => {
     setEditingBank(bank)
@@ -1176,21 +1122,15 @@ const BanksManagement: React.FC = () => {
                           {/* Action Buttons */}
                           <div className="pt-3 border-t border-gray-200 flex gap-2">
                             <button
-                              onClick={() => handleOpenWirePayment(credit)}
-                              className="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                            >
-                              <Send className="w-4 h-4 mr-2" />
-                              Wire Payment
-                            </button>
-                            <button
                               onClick={() => handleEditCredit(credit)}
-                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                              className="flex-1 items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-4 h-4 inline mr-2" />
+                              Edit
                             </button>
                             <button
                               onClick={() => handleDeleteCredit(credit.id)}
-                              className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1214,20 +1154,6 @@ const BanksManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Wire Payment Modal */}
-      <BankWirePaymentModal
-        visible={showWirePaymentModal}
-        onClose={handleCloseWirePayment}
-        credit={selectedCredit}
-        bankName={selectedBank?.name || ''}
-        amount={wirePayment.amount}
-        paymentDate={wirePayment.paymentDate}
-        notes={wirePayment.notes}
-        onAmountChange={(amount) => setWirePayment({ ...wirePayment, amount })}
-        onDateChange={(date) => setWirePayment({ ...wirePayment, paymentDate: date })}
-        onNotesChange={(notes) => setWirePayment({ ...wirePayment, notes })}
-        onSubmit={handleRecordPayment}
-      />
     </div>
   )
 }

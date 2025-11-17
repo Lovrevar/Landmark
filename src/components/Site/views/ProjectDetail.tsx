@@ -11,7 +11,6 @@ interface ProjectDetailProps {
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void
-  onWirePayment?: (subcontractor: Subcontractor) => void
   onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
@@ -27,7 +26,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onEditPhase,
   onDeletePhase,
   onAddSubcontractor,
-  onWirePayment,
   onOpenPaymentHistory,
   onEditSubcontractor,
   onOpenSubDetails,
@@ -95,7 +93,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onEditPhase={onEditPhase}
                 onDeletePhase={onDeletePhase}
                 onAddSubcontractor={onAddSubcontractor}
-                onWirePayment={onWirePayment}
                 onOpenPaymentHistory={onOpenPaymentHistory}
                 onEditSubcontractor={onEditSubcontractor}
                 onOpenSubDetails={onOpenSubDetails}
