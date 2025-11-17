@@ -330,7 +330,7 @@ export const createWirePayment = async (data: {
   paid_by_bank_id?: string | null
 }) => {
   const { data: paymentData, error } = await supabase
-    .from('wire_payments')
+    .from('subcontractor_payments')
     .insert(data)
     .select()
 
