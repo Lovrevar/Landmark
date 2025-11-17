@@ -153,7 +153,7 @@ const GeneralReports: React.FC = () => {
     const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*')
-    const { data: wirePayments } = await supabase.from('subcontractor_payments').select('*')
+    const { data: wirePayments } = await supabase.from('wire_payments').select('*')
     const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
     const { data: apartmentPayments } = await supabase.from('apartment_payments').select('*')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')

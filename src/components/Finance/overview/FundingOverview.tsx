@@ -100,7 +100,7 @@ const FundingOverview: React.FC = () => {
       if (creditsError) throw creditsError
 
       const { data: wirePaymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select('*')
 
       if (paymentsError) throw paymentsError
@@ -236,7 +236,7 @@ const FundingOverview: React.FC = () => {
   const fetchSourceTransactions = async (source: FundingSource) => {
     try {
       const { data, error } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select(`
           *,
           subcontractors(name),

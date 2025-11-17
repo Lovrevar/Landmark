@@ -165,10 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (mounted) {
           setUser(null)
           setIsAuthenticated(false)
-          localStorage.removeItem('currentProfile')
         }
-      } else if (event === 'USER_UPDATED') {
-        handleAuthChange(session?.user || null)
       }
     })
 
@@ -208,26 +205,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        console.error('Supabase signOut error:', error)
-        throw error
-      }
-
+      await supabase.auth.signOut()
       setUser(null)
       setIsAuthenticated(false)
       localStorage.removeItem('currentProfile')
-      localStorage.clear()
 
-      window.location.replace('/')
+      window.location.href = '/'
     } catch (error) {
       console.error('Logout error:', error)
-
-      setUser(null)
-      setIsAuthenticated(false)
-      localStorage.clear()
-      window.location.replace('/')
     }
   }
 

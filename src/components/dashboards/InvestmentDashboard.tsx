@@ -127,7 +127,7 @@ const InvestmentDashboard: React.FC = () => {
 
       // Fetch wire payments to calculate utilized amounts
       const { data: wirePaymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select('amount, paid_by_bank_id, paid_by_investor_id')
 
       if (paymentsError) throw paymentsError

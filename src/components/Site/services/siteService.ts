@@ -330,7 +330,7 @@ export const createWirePayment = async (data: {
   paid_by_bank_id?: string | null
 }) => {
   const { data: paymentData, error } = await supabase
-    .from('subcontractor_payments')
+    .from('wire_payments')
     .insert(data)
     .select()
 
@@ -365,7 +365,7 @@ export const updateContractBudgetRealized = async (
 
 export const fetchWirePayments = async (subcontractorId: string) => {
   const { data, error } = await supabase
-    .from('subcontractor_payments')
+    .from('wire_payments')
     .select(`
       *,
       investor:paid_by_investor_id(id, name, type),
@@ -388,7 +388,7 @@ export const updateWirePayment = async (
   }
 ) => {
   const { error } = await supabase
-    .from('subcontractor_payments')
+    .from('wire_payments')
     .update(updates)
     .eq('id', paymentId)
 
@@ -397,7 +397,7 @@ export const updateWirePayment = async (
 
 export const deleteWirePayment = async (paymentId: string) => {
   const { error } = await supabase
-    .from('subcontractor_payments')
+    .from('wire_payments')
     .delete()
     .eq('id', paymentId)
 

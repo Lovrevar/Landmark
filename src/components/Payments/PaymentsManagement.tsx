@@ -36,7 +36,7 @@ const PaymentsManagement: React.FC = () => {
     try {
       // Fetch all wire payments with related data
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select(`
           *,
           contracts (

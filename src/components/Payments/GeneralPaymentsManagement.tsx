@@ -109,7 +109,7 @@ const GeneralPaymentsManagement: React.FC = () => {
       allPayments.push(...salesPayments)
 
       const { data: wirePaymentsData, error: wireError } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select(`
           *,
           contracts (

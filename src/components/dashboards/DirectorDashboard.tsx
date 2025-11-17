@@ -209,7 +209,7 @@ const DirectorDashboard: React.FC = () => {
           let totalExpenses = 0
           if (contractIds.length > 0) {
             const { data: payments } = await supabase
-              .from('subcontractor_payments')
+              .from('wire_payments')
               .select('amount')
               .in('contract_id', contractIds)
             totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
@@ -217,7 +217,7 @@ const DirectorDashboard: React.FC = () => {
 
           // Add expenses from milestone payments
           const { data: milestonePayments } = await supabase
-            .from('subcontractor_payments')
+            .from('wire_payments')
             .select('amount, subcontractor_milestones!inner(project_id)')
             .eq('subcontractor_milestones.project_id', project.id)
 
@@ -281,7 +281,7 @@ const DirectorDashboard: React.FC = () => {
   const fetchFinancialData = async () => {
     try {
       const { data: sales } = await supabase.from('sales').select('sale_price, apartments(garage_id, repository_id)')
-      const { data: wirePayments } = await supabase.from('subcontractor_payments').select('amount')
+      const { data: wirePayments } = await supabase.from('wire_payments').select('amount')
       const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
       const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
@@ -441,7 +441,7 @@ const DirectorDashboard: React.FC = () => {
         .select('id, contract_amount, status')
 
       const { data: wirePayments } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select('amount, contract_id')
 
       const totalSubcontractors = subcontractors?.length || 0
@@ -488,7 +488,7 @@ const DirectorDashboard: React.FC = () => {
         .from('project_investments')
         .select('amount')
       const { data: wirePayments } = await supabase
-        .from('subcontractor_payments')
+        .from('wire_payments')
         .select('amount')
       const { data: bankCreditPayments } = await supabase
         .from('bank_credit_payments')
