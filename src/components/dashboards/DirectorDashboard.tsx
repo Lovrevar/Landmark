@@ -209,7 +209,7 @@ const DirectorDashboard: React.FC = () => {
           let totalExpenses = 0
           if (contractIds.length > 0) {
             const { data: payments } = await supabase
-              .from('wire_payments')
+              .from('subcontractor_payments')
               .select('amount')
               .in('contract_id', contractIds)
             totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
