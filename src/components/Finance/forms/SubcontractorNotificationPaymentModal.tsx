@@ -103,7 +103,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
     try {
       const { data, error } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select('amount')
         .eq('subcontractor_id', notification.subcontractor_id)
 
@@ -181,7 +181,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
     try {
       // Insert wire payment (created_by is nullable, so we don't need to include it)
       const { error: paymentError } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .insert({
           subcontractor_id: notification.subcontractor_id,
           amount,
