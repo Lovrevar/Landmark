@@ -217,7 +217,7 @@ const DirectorDashboard: React.FC = () => {
 
           // Add expenses from milestone payments
           const { data: milestonePayments } = await supabase
-            .from('wire_payments')
+            .from('subcontractor_payments')
             .select('amount, subcontractor_milestones!inner(project_id)')
             .eq('subcontractor_milestones.project_id', project.id)
 
