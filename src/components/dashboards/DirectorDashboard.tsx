@@ -441,7 +441,7 @@ const DirectorDashboard: React.FC = () => {
         .select('id, contract_amount, status')
 
       const { data: wirePayments } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select('amount, contract_id')
 
       const totalSubcontractors = subcontractors?.length || 0
