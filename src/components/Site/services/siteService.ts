@@ -365,7 +365,7 @@ export const updateContractBudgetRealized = async (
 
 export const fetchWirePayments = async (subcontractorId: string) => {
   const { data, error } = await supabase
-    .from('wire_payments')
+    .from('subcontractor_payments')
     .select(`
       *,
       investor:paid_by_investor_id(id, name, type),
