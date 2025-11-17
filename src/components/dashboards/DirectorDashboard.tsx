@@ -488,7 +488,7 @@ const DirectorDashboard: React.FC = () => {
         .from('project_investments')
         .select('amount')
       const { data: wirePayments } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select('amount')
       const { data: bankCreditPayments } = await supabase
         .from('bank_credit_payments')
