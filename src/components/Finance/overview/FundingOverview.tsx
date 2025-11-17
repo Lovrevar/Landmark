@@ -236,7 +236,7 @@ const FundingOverview: React.FC = () => {
   const fetchSourceTransactions = async (source: FundingSource) => {
     try {
       const { data, error } = await supabase
-        .from('wire_payments')
+        .from('subcontractor_payments')
         .select(`
           *,
           subcontractors(name),
