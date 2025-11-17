@@ -558,7 +558,7 @@ export const generateComprehensiveExecutiveReport = async () => {
       supabase.from('sales').select('*'),
       supabase.from('customers').select('*'),
       supabase.from('contracts').select('*'),
-      supabase.from('wire_payments').select('*'),
+      supabase.from('subcontractor_payments').select('*'),
       supabase.from('investors').select('*'),
       supabase.from('banks').select('*'),
       supabase.from('bank_credits').select('*'),
