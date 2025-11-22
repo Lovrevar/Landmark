@@ -22,6 +22,11 @@ import FundingPaymentsManagement from './components/Payments/FundingPaymentsMana
 import GeneralPaymentsManagement from './components/Payments/GeneralPaymentsManagement'
 import FundingOverview from './components/Finance/overview/FundingOverview'
 import GeneralReports from './components/Reports/GeneralReports'
+import AccountingInvoices from './components/Accounting/AccountingInvoices'
+import AccountingPayments from './components/Accounting/AccountingPayments'
+import AccountingSuppliers from './components/Accounting/AccountingSuppliers'
+import AccountingCompanies from './components/Accounting/AccountingCompanies'
+import AccountingCustomers from './components/Accounting/AccountingCustomers'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth()
@@ -223,6 +228,46 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <GeneralReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-invoices"
+          element={
+            <ProtectedRoute>
+              <AccountingInvoices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-payments"
+          element={
+            <ProtectedRoute>
+              <AccountingPayments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-suppliers"
+          element={
+            <ProtectedRoute>
+              <AccountingSuppliers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-companies"
+          element={
+            <ProtectedRoute>
+              <AccountingCompanies />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-customers"
+          element={
+            <ProtectedRoute>
+              <AccountingCustomers />
             </ProtectedRoute>
           }
         />

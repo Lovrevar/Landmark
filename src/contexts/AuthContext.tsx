@@ -18,7 +18,7 @@ export interface User {
   assignedProjects?: ProjectAssignment[]
 }
 
-export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
+export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding' | 'Accounting'
 
 interface AuthContextType {
   user: User | null

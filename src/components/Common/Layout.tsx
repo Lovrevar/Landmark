@@ -66,6 +66,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Investors', icon: Users, path: '/investors' },
         { name: 'Payments', icon: DollarSign, path: '/funding-payments' }
+      ],
+      Accounting: [
+        { name: 'Računi', icon: FileText, path: '/accounting-invoices' },
+        { name: 'Plaćanja', icon: DollarSign, path: '/accounting-payments' },
+        { name: 'Dobavljači', icon: Users, path: '/accounting-suppliers' },
+        { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
+        { name: 'Kupci', icon: Users, path: '/accounting-customers' }
       ]
     }
 
@@ -103,7 +110,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                      {(['General', 'Supervision', 'Sales', 'Funding'] as Profile[]).map((profile) => (
+                      {(['General', 'Supervision', 'Sales', 'Funding', 'Accounting'] as Profile[]).map((profile) => (
                         <button
                           key={profile}
                           onClick={() => {
