@@ -69,6 +69,8 @@ const AccountingInvoices: React.FC = () => {
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
   const [formData, setFormData] = useState({
     invoice_type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
@@ -82,6 +84,14 @@ const AccountingInvoices: React.FC = () => {
     vat_rate: 25,
     category: '',
     project_id: '',
+    description: ''
+  })
+
+  const [paymentFormData, setPaymentFormData] = useState({
+    payment_date: new Date().toISOString().split('T')[0],
+    amount: 0,
+    payment_method: 'WIRE' as 'WIRE' | 'CASH' | 'CHECK' | 'CARD',
+    reference_number: '',
     description: ''
   })
 
@@ -294,6 +304,55 @@ const AccountingInvoices: React.FC = () => {
     } catch (error) {
       console.error('Error saving invoice:', error)
       alert('Greška prilikom spremanja računa')
+    }
+  }
+
+  const handleOpenPaymentModal = (invoice: Invoice) => {
+    setPayingInvoice(invoice)
+    setPaymentFormData({
+      payment_date: new Date().toISOString().split('T')[0],
+      amount: invoice.remaining_amount,
+      payment_method: 'WIRE',
+      reference_number: '',
+      description: ''
+    })
+    setShowPaymentModal(true)
+  }
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentModal(false)
+    setPayingInvoice(null)
+  }
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!payingInvoice) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const paymentData = {
+        invoice_id: payingInvoice.id,
+        payment_date: paymentFormData.payment_date,
+        amount: paymentFormData.amount,
+        payment_method: paymentFormData.payment_method,
+        reference_number: paymentFormData.reference_number || null,
+        description: paymentFormData.description,
+        created_by: user?.id
+      }
+
+      const { error } = await supabase
+        .from('accounting_payments')
+        .insert([paymentData])
+
+      if (error) throw error
+
+      await fetchData()
+      handleClosePaymentModal()
+    } catch (error) {
+      console.error('Error saving payment:', error)
+      alert('Greška prilikom spremanja plaćanja')
     }
   }
 
@@ -633,6 +692,7 @@ const AccountingInvoices: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         {invoice.status !== 'PAID' && (
                           <button
+                            onClick={() => handleOpenPaymentModal(invoice)}
                             title="Plaćanje"
                             className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors duration-200"
                           >
@@ -918,6 +978,147 @@ const AccountingInvoices: React.FC = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
                   {editingInvoice ? 'Spremi promjene' : 'Kreiraj račun'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && payingInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                Plati račun: {payingInvoice.invoice_number}
+              </h2>
+              <button
+                onClick={handleClosePaymentModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePaymentSubmit} className="p-6 space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Ukupan iznos:</span>
+                  <span className="font-medium">€{payingInvoice.total_amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Plaćeno:</span>
+                  <span className="font-medium text-green-600">€{payingInvoice.paid_amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-base border-t border-gray-300 pt-2">
+                  <span className="font-semibold text-gray-900">Preostalo za plaćanje:</span>
+                  <span className="font-bold text-red-600">€{payingInvoice.remaining_amount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Datum plaćanja *
+                </label>
+                <input
+                  type="date"
+                  value={paymentFormData.payment_date}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, payment_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Iznos plaćanja *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={payingInvoice.remaining_amount}
+                  value={paymentFormData.amount}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Max iznos: €{payingInvoice.remaining_amount.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Način plaćanja *
+                </label>
+                <select
+                  value={paymentFormData.payment_method}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, payment_method: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="WIRE">Virman</option>
+                  <option value="CASH">Gotovina</option>
+                  <option value="CHECK">Ček</option>
+                  <option value="CARD">Kartica</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Referenca (opcionalno)
+                </label>
+                <input
+                  type="text"
+                  value={paymentFormData.reference_number}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, reference_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Poziv na broj..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Opis (opcionalno)
+                </label>
+                <textarea
+                  value={paymentFormData.description}
+                  onChange={(e) => setPaymentFormData({ ...paymentFormData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Dodatne napomene..."
+                />
+              </div>
+
+              {paymentFormData.amount > 0 && paymentFormData.amount <= payingInvoice.remaining_amount && (
+                <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+                  <p className="text-sm text-blue-800 font-medium">
+                    {paymentFormData.amount === payingInvoice.remaining_amount
+                      ? 'Račun će biti označen kao PLAĆEN'
+                      : `Preostalo nakon plaćanja: €${(payingInvoice.remaining_amount - paymentFormData.amount).toLocaleString()}`}
+                  </p>
+                  {paymentFormData.amount < payingInvoice.remaining_amount && (
+                    <p className="text-xs text-blue-700">
+                      Status će biti promijenjen na DJELOMIČNO PLAĆENO
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleClosePaymentModal}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Odustani
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  Potvrdi plaćanje
                 </button>
               </div>
             </form>
