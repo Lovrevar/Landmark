@@ -63,170 +63,74 @@ const GeneralPaymentsManagement: React.FC = () => {
   const fetchAllPayments = async () => {
     setLoading(true)
     try {
-      const allPayments: BasePayment[] = []
-
-      const { data: salesPaymentsData, error: salesError } = await supabase
-        .from('apartment_payments')
+      // Fetch all payments from unified accounting_payments table
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('accounting_payments')
         .select(`
           *,
-          apartments (
+          invoice:accounting_invoices!inner(
+            invoice_type,
+            invoice_category,
             project_id,
-            number
-          ),
-          customers (
-            name,
-            surname
+            customer_id,
+            supplier_id,
+            apartment_id,
+            bank_credit_id,
+            investment_id,
+            customers(name, surname),
+            subcontractors(name),
+            banks:bank_credit_id(name),
+            investors:investment_id(name),
+            projects(name)
           )
         `)
-        .order('created_at', { ascending: false })
+        .order('payment_date', { ascending: false })
 
-      if (salesError) throw salesError
+      if (paymentsError) throw paymentsError
 
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('id, name')
+      const allPayments: BasePayment[] = (paymentsData || []).map(payment => {
+        const invoice = payment.invoice
+        let category: PaymentCategory = 'expense'
+        let type: PaymentType = 'general'
+        let sourceRecipient = 'Unknown'
+        let description = payment.description || 'Payment'
 
-      const salesPayments: BasePayment[] = (salesPaymentsData || []).map(payment => {
-        const customerName = payment.customers
-          ? `${payment.customers.name} ${payment.customers.surname}`
-          : 'Unknown Customer'
-
-        const project = projectsData?.find(p => p.id === payment.project_id)
+        // Determine category and type based on invoice
+        if (invoice.invoice_type === 'INCOME') {
+          category = 'income'
+          if (invoice.invoice_category === 'APARTMENT' || invoice.invoice_category === 'CUSTOMER') {
+            type = 'sales'
+            sourceRecipient = invoice.customers
+              ? `${invoice.customers.name} ${invoice.customers.surname}`
+              : 'Unknown Customer'
+          }
+        } else if (invoice.invoice_type === 'EXPENSE') {
+          category = 'expense'
+          if (invoice.invoice_category === 'SUBCONTRACTOR') {
+            type = 'supervision'
+            sourceRecipient = invoice.subcontractors?.name || 'Unknown Subcontractor'
+          } else if (invoice.invoice_category === 'BANK_CREDIT') {
+            type = 'bank'
+            sourceRecipient = invoice.banks?.name || 'Unknown Bank'
+          } else if (invoice.invoice_category === 'INVESTOR') {
+            type = 'investor'
+            sourceRecipient = invoice.investors?.name || 'Unknown Investor'
+          }
+        }
 
         return {
           id: payment.id,
           amount: Number(payment.amount),
           payment_date: payment.payment_date,
-          notes: payment.notes,
+          notes: payment.description,
           created_at: payment.created_at,
-          category: 'income' as PaymentCategory,
-          type: 'sales' as PaymentType,
-          source_recipient: customerName,
-          project_name: project?.name || 'No Project',
-          description: `Apartment Payment - ${payment.payment_type || 'installment'}`
+          category,
+          type,
+          source_recipient: sourceRecipient,
+          project_name: invoice.projects?.name || 'No Project',
+          description
         }
       })
-      allPayments.push(...salesPayments)
-
-      const { data: wirePaymentsData, error: wireError } = await supabase
-        .from('subcontractor_payments')
-        .select(`
-          *,
-          contracts (
-            project_id
-          ),
-          subcontractors (
-            name
-          ),
-          subcontractor_milestones (
-            project_id
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (wireError) throw wireError
-
-      const supervisionPayments: BasePayment[] = (wirePaymentsData || []).map(payment => {
-        let projectId = null
-
-        if (payment.contracts?.project_id) {
-          projectId = payment.contracts.project_id
-        } else if (payment.subcontractor_milestones?.project_id) {
-          projectId = payment.subcontractor_milestones.project_id
-        }
-
-        const project = projectId ? projectsData?.find(p => p.id === projectId) : null
-
-        return {
-          id: payment.id,
-          amount: Number(payment.amount),
-          payment_date: payment.payment_date,
-          notes: payment.notes,
-          created_at: payment.created_at,
-          category: 'expense' as PaymentCategory,
-          type: 'supervision' as PaymentType,
-          source_recipient: payment.subcontractors?.name || 'Unknown Subcontractor',
-          project_name: project?.name || 'No Project',
-          description: 'Subcontractor Payment'
-        }
-      })
-      allPayments.push(...supervisionPayments)
-
-      const { data: bankPaymentsData, error: bankError } = await supabase
-        .from('bank_credit_payments')
-        .select(`
-          *,
-          bank_credits (
-            project_id,
-            credit_type
-          ),
-          banks (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (bankError) throw bankError
-
-      const bankPayments: BasePayment[] = (bankPaymentsData || []).map(payment => {
-        const project = payment.bank_credits?.project_id
-          ? projectsData?.find(p => p.id === payment.bank_credits.project_id)
-          : null
-
-        return {
-          id: payment.id,
-          amount: Number(payment.amount),
-          payment_date: payment.payment_date,
-          notes: payment.notes,
-          created_at: payment.created_at,
-          category: 'expense' as PaymentCategory,
-          type: 'bank' as PaymentType,
-          source_recipient: payment.banks?.name || 'Unknown Bank',
-          project_name: project?.name || 'No Project',
-          description: `Bank Payment - ${payment.bank_credits?.credit_type?.replace('_', ' ') || 'Credit'}`
-        }
-      })
-      allPayments.push(...bankPayments)
-
-      const { data: investorPaymentsData, error: investorError } = await supabase
-        .from('investor_payments')
-        .select(`
-          *,
-          project_investments (
-            project_id,
-            investment_type
-          ),
-          investors (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (investorError) throw investorError
-
-      const investorPayments: BasePayment[] = (investorPaymentsData || []).map(payment => {
-        const project = payment.project_investments?.project_id
-          ? projectsData?.find(p => p.id === payment.project_investments.project_id)
-          : null
-
-        return {
-          id: payment.id,
-          amount: Number(payment.amount),
-          payment_date: payment.payment_date,
-          notes: payment.notes,
-          created_at: payment.created_at,
-          category: 'expense' as PaymentCategory,
-          type: 'investor' as PaymentType,
-          source_recipient: payment.investors?.name || 'Unknown Investor',
-          project_name: project?.name || 'No Project',
-          description: `Investor Payment - ${payment.project_investments?.investment_type || 'Investment'}`
-        }
-      })
-      allPayments.push(...investorPayments)
-
-      allPayments.sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
 
       setPayments(allPayments)
       calculateStats(allPayments)

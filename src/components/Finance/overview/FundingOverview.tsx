@@ -338,14 +338,50 @@ const FundingOverview: React.FC = () => {
 
       const newOutstandingBalance = creditData.outstanding_balance - paymentAmount
 
-      const { error: paymentError } = await supabase
-        .from('bank_credit_payments')
+      // Get active company
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+
+      if (companyError) throw companyError
+      if (!company) throw new Error('No active company found')
+
+      // Create invoice
+      const invoiceNumber = `BANK-${Date.now()}`
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('accounting_invoices')
         .insert({
+          invoice_type: 'EXPENSE',
+          invoice_category: 'BANK_CREDIT',
+          company_id: company.id,
           bank_credit_id: selectedNotification.bank_credit_id,
-          bank_id: selectedNotification.bank_id,
-          amount: paymentAmount,
+          invoice_number: invoiceNumber,
+          issue_date: paymentDate,
+          due_date: paymentDate,
+          base_amount: paymentAmount,
+          vat_rate: 0,
+          category: 'Bank Credit Payment',
+          description: paymentNotes || 'Bank credit payment',
+          created_by: userId
+        })
+        .select()
+        .single()
+
+      if (invoiceError) throw invoiceError
+
+      // Create payment
+      const { error: paymentError } = await supabase
+        .from('accounting_payments')
+        .insert({
+          invoice_id: invoice.id,
           payment_date: paymentDate,
-          notes: paymentNotes,
+          amount: paymentAmount,
+          payment_method: 'WIRE',
+          reference_number: selectedNotification.bank_credit_id || '',
+          description: paymentNotes || 'Bank credit payment',
           created_by: userId
         })
 
@@ -360,14 +396,15 @@ const FundingOverview: React.FC = () => {
 
       if (updateError) throw updateError
 
-      const { error: notificationError } = await supabase
-        .from('payment_notifications')
-        .update({
-          status: 'completed'
-        })
-        .eq('id', selectedNotification.id)
-
-      if (notificationError) throw notificationError
+      // TODO: Re-implement payment notifications system later
+      // const { error: notificationError } = await supabase
+      //   .from('payment_notifications')
+      //   .update({
+      //     status: 'completed'
+      //   })
+      //   .eq('id', selectedNotification.id)
+      //
+      // if (notificationError) throw notificationError
 
       alert('Payment recorded successfully!')
 

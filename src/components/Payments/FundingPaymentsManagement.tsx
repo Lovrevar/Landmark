@@ -42,35 +42,43 @@ const FundingPaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
+      // Fetch bank credit payments from accounting_payments
       const { data: bankPaymentsData, error: bankError } = await supabase
-        .from('bank_credit_payments')
+        .from('accounting_payments')
         .select(`
           *,
-          bank_credits (
-            credit_type,
-            project_id
-          ),
-          banks (
-            name
+          invoice:accounting_invoices!inner(
+            bank_credit_id,
+            bank_credits(
+              credit_type,
+              project_id,
+              bank_id,
+              banks(name)
+            )
           )
         `)
-        .order('created_at', { ascending: false })
+        .not('invoice.bank_credit_id', 'is', null)
+        .order('payment_date', { ascending: false })
 
       if (bankError) throw bankError
 
+      // Fetch investor payments from accounting_payments
       const { data: investorPaymentsData, error: investorError } = await supabase
-        .from('investor_payments')
+        .from('accounting_payments')
         .select(`
           *,
-          project_investments (
-            investment_type,
-            project_id
-          ),
-          investors (
-            name
+          invoice:accounting_invoices!inner(
+            investment_id,
+            project_investments(
+              investment_type,
+              project_id,
+              investor_id,
+              investors(name)
+            )
           )
         `)
-        .order('created_at', { ascending: false })
+        .not('invoice.investment_id', 'is', null)
+        .order('payment_date', { ascending: false })
 
       if (investorError) throw investorError
 
@@ -81,30 +89,36 @@ const FundingPaymentsManagement: React.FC = () => {
       if (projectsError) throw projectsError
 
       const enrichedBankPayments: BankPaymentWithDetails[] = (bankPaymentsData || []).map(payment => {
-        const project = payment.bank_credits?.project_id
-          ? projectsData?.find(p => p.id === payment.bank_credits.project_id)
+        const bankCredit = payment.invoice?.bank_credits
+        const project = bankCredit?.project_id
+          ? projectsData?.find(p => p.id === bankCredit.project_id)
           : undefined
 
         return {
           ...payment,
-          bank_name: payment.banks?.name || 'Unknown Bank',
-          credit_type: payment.bank_credits?.credit_type || 'N/A',
+          bank_name: bankCredit?.banks?.name || 'Unknown Bank',
+          credit_type: bankCredit?.credit_type || 'N/A',
           project_name: project?.name || 'No Project',
-          payment_type: 'bank' as const
+          payment_type: 'bank' as const,
+          created_at: payment.created_at,
+          notes: payment.description
         }
       })
 
       const enrichedInvestorPayments: InvestorPaymentWithDetails[] = (investorPaymentsData || []).map(payment => {
-        const project = payment.project_investments?.project_id
-          ? projectsData?.find(p => p.id === payment.project_investments.project_id)
+        const investment = payment.invoice?.project_investments
+        const project = investment?.project_id
+          ? projectsData?.find(p => p.id === investment.project_id)
           : undefined
 
         return {
           ...payment,
-          investor_name: payment.investors?.name || 'Unknown Investor',
-          investment_type: payment.project_investments?.investment_type || 'N/A',
+          investor_name: investment?.investors?.name || 'Unknown Investor',
+          investment_type: investment?.investment_type || 'N/A',
           project_name: project?.name || 'No Project',
-          payment_type: 'investor' as const
+          payment_type: 'investor' as const,
+          created_at: payment.created_at,
+          notes: payment.description
         }
       })
 
