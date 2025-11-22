@@ -67,6 +67,23 @@ const AccountingInvoices: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
+
+  const [formData, setFormData] = useState({
+    invoice_type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
+    company_id: '',
+    supplier_id: '',
+    customer_id: '',
+    invoice_number: '',
+    issue_date: new Date().toISOString().split('T')[0],
+    due_date: '',
+    base_amount: 0,
+    vat_rate: 25,
+    category: '',
+    project_id: '',
+    description: ''
+  })
 
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const saved = localStorage.getItem('accountingInvoicesColumns')
@@ -193,6 +210,93 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
+  const handleOpenModal = (invoice?: Invoice) => {
+    if (invoice) {
+      setEditingInvoice(invoice)
+      setFormData({
+        invoice_type: invoice.invoice_type,
+        company_id: invoice.company_id,
+        supplier_id: invoice.supplier_id || '',
+        customer_id: invoice.customer_id || '',
+        invoice_number: invoice.invoice_number,
+        issue_date: invoice.issue_date,
+        due_date: invoice.due_date,
+        base_amount: invoice.base_amount,
+        vat_rate: invoice.vat_rate,
+        category: invoice.category,
+        project_id: invoice.project_id || '',
+        description: invoice.description
+      })
+    } else {
+      setEditingInvoice(null)
+      setFormData({
+        invoice_type: 'EXPENSE',
+        company_id: '',
+        supplier_id: '',
+        customer_id: '',
+        invoice_number: '',
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: '',
+        base_amount: 0,
+        vat_rate: 25,
+        category: '',
+        project_id: '',
+        description: ''
+      })
+    }
+    setShowInvoiceModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowInvoiceModal(false)
+    setEditingInvoice(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const invoiceData = {
+        invoice_type: formData.invoice_type,
+        company_id: formData.company_id,
+        supplier_id: formData.invoice_type === 'EXPENSE' ? formData.supplier_id : null,
+        customer_id: formData.invoice_type === 'INCOME' ? formData.customer_id : null,
+        invoice_number: formData.invoice_number,
+        issue_date: formData.issue_date,
+        due_date: formData.due_date,
+        base_amount: formData.base_amount,
+        vat_rate: formData.vat_rate,
+        category: formData.category,
+        project_id: formData.project_id || null,
+        description: formData.description,
+        created_by: user?.id
+      }
+
+      if (editingInvoice) {
+        const { error } = await supabase
+          .from('accounting_invoices')
+          .update(invoiceData)
+          .eq('id', editingInvoice.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('accounting_invoices')
+          .insert([invoiceData])
+
+        if (error) throw error
+      }
+
+      await fetchData()
+      handleCloseModal()
+    } catch (error) {
+      console.error('Error saving invoice:', error)
+      alert('Greška prilikom spremanja računa')
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Jeste li sigurni da želite obrisati ovaj račun?')) return
 
@@ -287,7 +391,10 @@ const AccountingInvoices: React.FC = () => {
               </div>
             )}
           </div>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap">
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
+          >
             <Plus className="w-5 h-5 mr-2" />
             Novi račun
           </button>
@@ -533,6 +640,7 @@ const AccountingInvoices: React.FC = () => {
                           </button>
                         )}
                         <button
+                          onClick={() => handleOpenModal(invoice)}
                           title="Uredi"
                           className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-200"
                         >
@@ -579,6 +687,243 @@ const AccountingInvoices: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showInvoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingInvoice ? 'Uredi račun' : 'Novi račun'}
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tip računa *
+                  </label>
+                  <select
+                    value={formData.invoice_type}
+                    onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as 'EXPENSE' | 'INCOME' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="EXPENSE">Ulazni (od dobavljača)</option>
+                    <option value="INCOME">Izlazni (prema kupcu)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Firma *
+                  </label>
+                  <select
+                    value={formData.company_id}
+                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Odaberi firmu</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.invoice_type === 'EXPENSE' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dobavljač *
+                    </label>
+                    <select
+                      value={formData.supplier_id}
+                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi dobavljača</option>
+                      {suppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kupac *
+                    </label>
+                    <select
+                      value={formData.customer_id}
+                      onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi kupca</option>
+                      {customers.map(customer => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name} {customer.surname}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Broj računa *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoice_number}
+                    onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum izdavanja *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.issue_date}
+                    onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum dospijeća *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Osnovica (bez PDV-a) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.base_amount}
+                    onChange={(e) => setFormData({ ...formData, base_amount: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    PDV stopa *
+                  </label>
+                  <select
+                    value={formData.vat_rate}
+                    onChange={(e) => setFormData({ ...formData, vat_rate: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="0">0%</option>
+                    <option value="13">13%</option>
+                    <option value="25">25%</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorija *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    placeholder="npr. Materijal, Usluge, Opći troškovi..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Projekt (opcionalno)
+                  </label>
+                  <select
+                    value={formData.project_id}
+                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Bez projekta</option>
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>{project.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Opis (opcionalno)
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Dodatne napomene..."
+                />
+              </div>
+
+              {formData.base_amount > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Osnovica:</span>
+                    <span className="font-medium">€{formData.base_amount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">PDV ({formData.vat_rate}%):</span>
+                    <span className="font-medium">€{(formData.base_amount * (formData.vat_rate / 100)).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold border-t border-gray-300 pt-2">
+                    <span>Ukupno:</span>
+                    <span>€{(formData.base_amount * (1 + formData.vat_rate / 100)).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Odustani
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  {editingInvoice ? 'Spremi promjene' : 'Kreiraj račun'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
