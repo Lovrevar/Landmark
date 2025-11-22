@@ -394,41 +394,15 @@ export const useSiteData = () => {
         await siteService.updateSubcontractorContract(subcontractor.id, contractId)
       }
 
-      console.log('Creating wire payment record')
-      await siteService.createWirePayment({
-        subcontractor_id: subcontractor.id,
-        contract_id: contractId,
-        amount: amount,
-        payment_date: paymentDate || null,
-        notes: notes || null,
-        created_by: userId,
-        milestone_id: milestoneId || null,
-        paid_by_type: paidByType || null,
-        paid_by_investor_id: paidByInvestorId || null,
-        paid_by_bank_id: paidByBankId || null
-      })
+      // DEPRECATED: Payment creation moved to Accounting module
+      // Users should create invoices and payments in Accounting → Invoices
+      alert('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
+      return false
 
-      if (milestoneId) {
-        console.log('Marking milestone as paid:', milestoneId)
-        await siteService.updateMilestoneStatus(milestoneId, 'paid', {
-          paid_date: paymentDate || new Date().toISOString().split('T')[0]
-        })
-      }
-
-      const newRealizedAmount = currentBudgetRealized + amount
-      console.log('New realized amount:', newRealizedAmount)
-
-      console.log('Updating subcontractor budget realized')
-      await siteService.updateSubcontractorBudgetRealized(subcontractor.id, newRealizedAmount)
-
-      if (contractId) {
-        console.log('Updating contract budget realized')
-        await siteService.updateContractBudgetRealized(contractId, newRealizedAmount)
-      }
-
-      console.log('Fetching updated projects')
-      await fetchProjects()
-      return true
+      // The following code is deprecated and will not execute:
+      // - Milestone status updates
+      // - Budget realized updates
+      // These updates now happen automatically when payments are created in Accounting module
     } catch (error: any) {
       console.error('Error adding payment:', error)
       alert(error.message || 'Error recording payment. Please check the console for details.')
@@ -454,52 +428,13 @@ export const useSiteData = () => {
     subcontractor: Subcontractor,
     oldAmount: number
   ) => {
-    if (amount <= 0) {
-      alert('Please enter a valid payment amount')
-      return false
-    }
-
-    try {
-      const amountDifference = amount - oldAmount
-      const currentBudgetRealized = subcontractor.budget_realized || 0
-
-      await siteService.updateWirePayment(paymentId, {
-        amount: amount,
-        payment_date: paymentDate || null,
-        notes: notes || null
-      })
-
-      const newRealizedAmount = currentBudgetRealized + amountDifference
-
-      await siteService.updateSubcontractorBudgetRealized(subcontractor.id, newRealizedAmount)
-
-      if (subcontractor.contract_id) {
-        await siteService.updateContractBudgetRealized(subcontractor.contract_id, newRealizedAmount)
-      }
-
-      await fetchProjects()
-      return true
-    } catch (error: any) {
-      console.error('Error updating payment:', error)
-      alert(error.message || 'Error updating payment. Please check the console for details.')
-      return false
-    }
+    alert('Payment updates have moved to Accounting module. Please go to Accounting → Payments to edit payments.')
+    return false
   }
 
   const deleteWirePayment = async (paymentId: string, amount: number, subcontractor: Subcontractor) => {
-    if (!confirm('Are you sure you want to delete this payment? This will adjust the total paid amount.')) {
-      return false
-    }
-
-    try {
-      await siteService.deleteWirePayment(paymentId)
-      await fetchProjects()
-      return true
-    } catch (error: any) {
-      console.error('Error deleting payment:', error)
-      alert(error.message || 'Error deleting payment. Please check the console for details.')
-      return false
-    }
+    alert('Payment deletion has moved to Accounting module. Please go to Accounting → Payments to delete payments.')
+    return false
   }
 
   const fetchSubcontractorComments = async (subcontractorId: string) => {

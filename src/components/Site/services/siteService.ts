@@ -317,89 +317,8 @@ export const updateSubcontractorContract = async (subcontractorId: string, contr
   if (error) throw error
 }
 
-export const createWirePayment = async (data: {
-  subcontractor_id: string
-  contract_id: string | null
-  amount: number
-  payment_date: string | null
-  notes: string | null
-  created_by: string
-  milestone_id?: string | null
-  paid_by_type?: 'investor' | 'bank' | null
-  paid_by_investor_id?: string | null
-  paid_by_bank_id?: string | null
-}) => {
-  // Get subcontractor details to get project_id
-  const { data: subcontractor, error: subError } = await supabase
-    .from('subcontractors')
-    .select('phase_id, project_phases!inner(project_id)')
-    .eq('id', data.subcontractor_id)
-    .single()
-
-  if (subError) throw subError
-
-  const projectId = subcontractor?.project_phases?.project_id
-
-  // Get first active company (or create one if needed)
-  const { data: company, error: companyError } = await supabase
-    .from('companies')
-    .select('id')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle()
-
-  if (companyError) throw companyError
-
-  if (!company) {
-    throw new Error('No active company found. Please create a company first.')
-  }
-
-  // Generate invoice number
-  const invoiceNumber = `SUB-${Date.now()}`
-
-  // Create invoice first
-  const { data: invoice, error: invoiceError } = await supabase
-    .from('accounting_invoices')
-    .insert({
-      invoice_type: 'EXPENSE',
-      invoice_category: 'SUBCONTRACTOR',
-      company_id: company.id,
-      supplier_id: data.subcontractor_id,
-      project_id: projectId,
-      milestone_id: data.milestone_id,
-      invoice_number: invoiceNumber,
-      issue_date: data.payment_date || new Date().toISOString().split('T')[0],
-      due_date: data.payment_date || new Date().toISOString().split('T')[0],
-      base_amount: data.amount,
-      vat_rate: 0,
-      category: 'Subcontractor Work',
-      description: data.notes || 'Subcontractor payment',
-      created_by: data.created_by
-    })
-    .select()
-    .single()
-
-  if (invoiceError) throw invoiceError
-
-  // Create payment
-  const { data: payment, error: paymentError } = await supabase
-    .from('accounting_payments')
-    .insert({
-      invoice_id: invoice.id,
-      payment_date: data.payment_date || new Date().toISOString().split('T')[0],
-      amount: data.amount,
-      payment_method: 'WIRE',
-      reference_number: data.contract_id || '',
-      description: data.notes || 'Subcontractor payment',
-      created_by: data.created_by
-    })
-    .select()
-    .single()
-
-  if (paymentError) throw paymentError
-
-  return payment
-}
+// DEPRECATED: Payment creation moved to Accounting module
+// Site Management only displays payments, creation happens in Accounting → Invoices
 
 export const updateSubcontractorBudgetRealized = async (
   subcontractorId: string,
@@ -446,30 +365,9 @@ export const fetchWirePayments = async (subcontractorId: string) => {
   return data || []
 }
 
-export const updateWirePayment = async (
-  paymentId: string,
-  updates: {
-    amount: number
-    payment_date: string | null
-    description: string | null
-  }
-) => {
-  const { error } = await supabase
-    .from('accounting_payments')
-    .update(updates)
-    .eq('id', paymentId)
+// DEPRECATED: Payment updates moved to Accounting module
 
-  if (error) throw error
-}
-
-export const deleteWirePayment = async (paymentId: string) => {
-  const { error } = await supabase
-    .from('accounting_payments')
-    .delete()
-    .eq('id', paymentId)
-
-  if (error) throw error
-}
+// DEPRECATED: Payment deletion moved to Accounting module
 
 export const getPhaseInfo = async (phaseId: string) => {
   const { data, error } = await supabase
