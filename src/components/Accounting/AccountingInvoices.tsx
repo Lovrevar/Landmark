@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X } from 'lucide-react'
+import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface Company {
@@ -66,10 +66,74 @@ const AccountingInvoices: React.FC = () => {
   const [filterType, setFilterType] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
+  const [showColumnMenu, setShowColumnMenu] = useState(false)
+
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const saved = localStorage.getItem('accountingInvoicesColumns')
+    return saved ? JSON.parse(saved) : {
+      type: true,
+      invoice_number: true,
+      company: true,
+      supplier_customer: true,
+      category: true,
+      issue_date: true,
+      due_date: true,
+      base_amount: true,
+      vat: true,
+      total_amount: true,
+      paid_amount: true,
+      remaining_amount: true,
+      status: true
+    }
+  })
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
+  }, [visibleColumns])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.column-menu-container')) {
+        setShowColumnMenu(false)
+      }
+    }
+
+    if (showColumnMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showColumnMenu])
+
+  const toggleColumn = (column: string) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }))
+  }
+
+  const columnLabels = {
+    type: 'Tip',
+    invoice_number: 'Broj računa',
+    company: 'Firma',
+    supplier_customer: 'Dobavljač/Kupac',
+    category: 'Kategorija',
+    issue_date: 'Datum izdavanja',
+    due_date: 'Dospijeće',
+    base_amount: 'Osnovica',
+    vat: 'PDV',
+    total_amount: 'Ukupno',
+    paid_amount: 'Plaćeno',
+    remaining_amount: 'Preostalo',
+    status: 'Status'
+  }
 
   const fetchData = async () => {
     try {
@@ -191,15 +255,43 @@ const AccountingInvoices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Računi</h1>
           <p className="text-sm text-gray-600 mt-1">Upravljanje ulaznim i izlaznim računima</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-          <Plus className="w-5 h-5 mr-2" />
-          Novi račun
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative column-menu-container">
+            <button
+              onClick={() => setShowColumnMenu(!showColumnMenu)}
+              className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+            >
+              <Columns className="w-5 h-5 mr-2" />
+              Polja
+            </button>
+            {showColumnMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+                <div className="px-3 py-2 border-b border-gray-200">
+                  <p className="text-sm font-semibold text-gray-700">Prikaži kolone</p>
+                </div>
+                {Object.entries(columnLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => toggleColumn(key)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between"
+                  >
+                    <span className="text-gray-700">{label}</span>
+                    {visibleColumns[key] && <Check className="w-4 h-4 text-blue-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap">
+            <Plus className="w-5 h-5 mr-2" />
+            Novi račun
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -323,29 +415,29 @@ const AccountingInvoices: React.FC = () => {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full min-w-max">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dobavljač/Kupac</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategorija</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum izdavanja</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dospijeće</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Osnovica</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PDV</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ukupno</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plaćeno</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preostalo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akcije</th>
+                {visibleColumns.type && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>}
+                {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>}
+                {visibleColumns.company && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma</th>}
+                {visibleColumns.supplier_customer && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dobavljač/Kupac</th>}
+                {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategorija</th>}
+                {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum izdavanja</th>}
+                {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dospijeće</th>}
+                {visibleColumns.base_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Osnovica</th>}
+                {visibleColumns.vat && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PDV</th>}
+                {visibleColumns.total_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ukupno</th>}
+                {visibleColumns.paid_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plaćeno</th>}
+                {visibleColumns.remaining_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preostalo</th>}
+                {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>}
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">Akcije</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-6 py-12 text-center">
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} className="px-6 py-12 text-center">
                     <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">Nema pronađenih računa</p>
                   </td>
@@ -356,55 +448,81 @@ const AccountingInvoices: React.FC = () => {
                     key={invoice.id}
                     className={`hover:bg-gray-50 ${isOverdue(invoice.due_date, invoice.status) ? 'bg-red-50' : ''}`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                        {invoice.invoice_type === 'EXPENSE' ? 'ULAZNI' : 'IZLAZNI'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {invoice.invoice_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.companies?.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.invoice_type === 'EXPENSE'
-                        ? invoice.subcontractors?.name
-                        : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {invoice.category}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <span className={isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-semibold' : ''}>
-                        {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      €{invoice.base_amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {invoice.vat_rate}% (€{invoice.vat_amount.toLocaleString()})
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      €{invoice.total_amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                      €{invoice.paid_amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                      €{invoice.remaining_amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                        {invoice.status === 'UNPAID' ? 'Neplaćeno' :
-                         invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Plaćeno'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {visibleColumns.type && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
+                          {invoice.invoice_type === 'EXPENSE' ? 'ULAZNI' : 'IZLAZNI'}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.invoice_number && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {invoice.invoice_number}
+                      </td>
+                    )}
+                    {visibleColumns.company && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {invoice.companies?.name}
+                      </td>
+                    )}
+                    {visibleColumns.supplier_customer && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {invoice.invoice_type === 'EXPENSE'
+                          ? invoice.subcontractors?.name
+                          : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
+                      </td>
+                    )}
+                    {visibleColumns.category && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {invoice.category}
+                      </td>
+                    )}
+                    {visibleColumns.issue_date && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                      </td>
+                    )}
+                    {visibleColumns.due_date && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <span className={isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-semibold' : ''}>
+                          {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.base_amount && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        €{invoice.base_amount.toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.vat && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {invoice.vat_rate}% (€{invoice.vat_amount.toLocaleString()})
+                      </td>
+                    )}
+                    {visibleColumns.total_amount && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        €{invoice.total_amount.toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.paid_amount && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600">
+                        €{invoice.paid_amount.toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.remaining_amount && (
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                        €{invoice.remaining_amount.toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.status && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
+                          {invoice.status === 'UNPAID' ? 'Neplaćeno' :
+                           invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Plaćeno'}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-4 py-4 whitespace-nowrap text-sm sticky right-0 bg-white">
                       <div className="flex items-center space-x-2">
                         {invoice.status !== 'PAID' && (
                           <button
