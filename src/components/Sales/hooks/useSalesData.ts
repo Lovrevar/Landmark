@@ -105,9 +105,9 @@ export const useSalesData = () => {
         const sold_repositories = buildingRepositories.filter(rep => rep.status === 'Sold').length
 
         const total_revenue =
-          buildingApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0) +
-          buildingGarages.filter(gar => gar.status === 'Sold').reduce((sum, gar) => sum + gar.price, 0) +
-          buildingRepositories.filter(rep => rep.status === 'Sold').reduce((sum, rep) => sum + rep.price, 0)
+          buildingApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + (apt.sale_info?.total_paid || 0), 0) +
+          buildingGarages.filter(gar => gar.status === 'Sold').reduce((sum, gar) => sum + (gar.sale_info?.total_paid || 0), 0) +
+          buildingRepositories.filter(rep => rep.status === 'Sold').reduce((sum, rep) => sum + (rep.sale_info?.total_paid || 0), 0)
 
         return {
           ...building,

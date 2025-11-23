@@ -89,7 +89,7 @@ const SalesDashboard: React.FC = () => {
       const availableUnits = apartments.filter(a => a.status === 'Available').length
       const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
       const soldUnits = apartments.filter(a => a.status === 'Sold').length
-      const totalRevenue = sales.reduce((sum, s) => sum + s.sale_price, 0)
+      const totalRevenue = sales.reduce((sum, s) => sum + s.total_paid, 0)
       const avgSalePrice = sales.length > 0 ? totalRevenue / sales.length : 0
       const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
       const totalCustomers = customers.length
@@ -99,7 +99,7 @@ const SalesDashboard: React.FC = () => {
       const monthlySales = sales.filter(s =>
         new Date(s.sale_date) >= currentMonth
       )
-      const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
+      const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.total_paid, 0)
 
       setStats({
         totalUnits,
@@ -128,7 +128,7 @@ const SalesDashboard: React.FC = () => {
         const sold = projectApartments.filter(a => a.status === 'Sold').length
         const reserved = projectApartments.filter(a => a.status === 'Reserved').length
         const available = projectApartments.filter(a => a.status === 'Available').length
-        const revenue = projectSales.reduce((sum, s) => sum + s.sale_price, 0)
+        const revenue = projectSales.reduce((sum, s) => sum + s.total_paid, 0)
 
         if (total > 0) {
           projectStatsMap.set(project.id, {
@@ -160,7 +160,7 @@ const SalesDashboard: React.FC = () => {
         last6Months.push({
           month: format(monthDate, 'MMM'),
           sales_count: monthSales.length,
-          revenue: monthSales.reduce((sum, s) => sum + s.sale_price, 0)
+          revenue: monthSales.reduce((sum, s) => sum + s.total_paid, 0)
         })
       }
 
@@ -461,6 +461,7 @@ const SalesDashboard: React.FC = () => {
                 </div>
                 <div className="text-right ml-4">
                   <p className="text-sm font-bold text-gray-900">€{(sale.sale_price / 1000).toFixed(0)}K</p>
+                  <p className="text-xs text-green-600">Paid: €{(sale.total_paid / 1000).toFixed(0)}K</p>
                   <p className="text-xs text-gray-500">{format(new Date(sale.sale_date), 'MMM dd')}</p>
                 </div>
               </div>
