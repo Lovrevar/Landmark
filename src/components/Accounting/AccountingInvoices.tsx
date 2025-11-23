@@ -67,6 +67,7 @@ const AccountingInvoices: React.FC = () => {
   const [investors, setInvestors] = useState<any[]>([])
   const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [customerSales, setCustomerSales] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -239,6 +240,19 @@ const AccountingInvoices: React.FC = () => {
 
       if (projectsError) throw projectsError
       setProjects(projectsData || [])
+
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select(`
+          customer_id,
+          apartment_id,
+          apartments!inner (
+            project_id
+          )
+        `)
+
+      if (salesError) throw salesError
+      setCustomerSales(salesData || [])
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -470,6 +484,20 @@ const AccountingInvoices: React.FC = () => {
     if (invoice.investors?.name) return invoice.investors.name
     if (invoice.banks?.name) return invoice.banks.name
     return '-'
+  }
+
+  const getCustomerProjects = (customerId: string) => {
+    if (!customerId) return projects
+
+    // Get unique project IDs where this customer has purchased apartments
+    const customerProjectIds = new Set(
+      customerSales
+        .filter(sale => sale.customer_id === customerId)
+        .map(sale => sale.apartments?.project_id)
+        .filter(Boolean)
+    )
+
+    return projects.filter(project => customerProjectIds.has(project.id))
   }
 
   const isOverdue = (dueDate: string, status: string) => {
@@ -941,7 +969,17 @@ const AccountingInvoices: React.FC = () => {
                     </label>
                     <select
                       value={formData.customer_id}
-                      onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                      onChange={(e) => {
+                        const newCustomerId = e.target.value
+                        const customerProjects = getCustomerProjects(newCustomerId)
+                        const currentProjectInList = customerProjects.some(p => p.id === formData.project_id)
+
+                        setFormData({
+                          ...formData,
+                          customer_id: newCustomerId,
+                          project_id: currentProjectInList ? formData.project_id : ''
+                        })
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
@@ -1065,7 +1103,10 @@ const AccountingInvoices: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Bez projekta</option>
-                    {projects.map(project => (
+                    {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
+                      ? getCustomerProjects(formData.customer_id)
+                      : projects
+                    ).map(project => (
                       <option key={project.id} value={project.id}>{project.name}</option>
                     ))}
                   </select>
