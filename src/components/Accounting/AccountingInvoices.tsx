@@ -30,11 +30,13 @@ interface Project {
 
 interface Invoice {
   id: string
-  invoice_type: 'EXPENSE' | 'INCOME'
-  invoice_category: 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
+  invoice_category?: string
   company_id: string
   supplier_id: string | null
   customer_id: string | null
+  investor_id: string | null
+  bank_id: string | null
   invoice_number: string
   issue_date: string
   due_date: string
@@ -52,6 +54,8 @@ interface Invoice {
   companies?: { name: string }
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
+  investors?: { name: string }
+  banks?: { name: string }
   projects?: { name: string }
 }
 
@@ -60,11 +64,13 @@ const AccountingInvoices: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [investors, setInvestors] = useState<any[]>([])
+  const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
+  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
@@ -74,11 +80,12 @@ const AccountingInvoices: React.FC = () => {
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
   const [formData, setFormData] = useState({
-    invoice_type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
-    invoice_category: 'GENERAL' as 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL',
+    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES',
     company_id: '',
     supplier_id: '',
     customer_id: '',
+    investor_id: '',
+    bank_id: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -175,6 +182,8 @@ const AccountingInvoices: React.FC = () => {
           companies:company_id (name),
           subcontractors:supplier_id (name),
           customers:customer_id (name, surname),
+          investors:investor_id (name),
+          banks:bank_id (name),
           projects:project_id (name)
         `)
         .order('issue_date', { ascending: false })
@@ -207,6 +216,22 @@ const AccountingInvoices: React.FC = () => {
       if (customersError) throw customersError
       setCustomers(customersData || [])
 
+      const { data: investorsData, error: investorsError } = await supabase
+        .from('investors')
+        .select('id, name, type')
+        .order('name')
+
+      if (investorsError) throw investorsError
+      setInvestors(investorsData || [])
+
+      const { data: banksData, error: banksError } = await supabase
+        .from('banks')
+        .select('id, name')
+        .order('name')
+
+      if (banksError) throw banksError
+      setBanks(banksData || [])
+
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name')
@@ -227,10 +252,11 @@ const AccountingInvoices: React.FC = () => {
       setEditingInvoice(invoice)
       setFormData({
         invoice_type: invoice.invoice_type,
-        invoice_category: invoice.invoice_category || 'GENERAL',
         company_id: invoice.company_id,
         supplier_id: invoice.supplier_id || '',
         customer_id: invoice.customer_id || '',
+        investor_id: invoice.investor_id || '',
+        bank_id: invoice.bank_id || '',
         invoice_number: invoice.invoice_number,
         issue_date: invoice.issue_date,
         due_date: invoice.due_date,
@@ -243,11 +269,12 @@ const AccountingInvoices: React.FC = () => {
     } else {
       setEditingInvoice(null)
       setFormData({
-        invoice_type: 'EXPENSE',
-        invoice_category: 'GENERAL',
+        invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
         supplier_id: '',
         customer_id: '',
+        investor_id: '',
+        bank_id: '',
         invoice_number: '',
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
@@ -272,12 +299,33 @@ const AccountingInvoices: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
+      // Map form data based on invoice type
+      let supplier_id = null
+      let customer_id = null
+      let investor_id = null
+      let bank_id = null
+      let invoice_category = 'GENERAL'
+
+      if (formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') {
+        supplier_id = formData.supplier_id || null
+        invoice_category = 'SUBCONTRACTOR'
+      } else if (formData.invoice_type === 'INCOMING_INVESTMENT') {
+        investor_id = formData.investor_id || null
+        bank_id = formData.bank_id || null
+        invoice_category = investor_id ? 'INVESTOR' : 'BANK_CREDIT'
+      } else if (formData.invoice_type === 'OUTGOING_SALES') {
+        customer_id = formData.customer_id || null
+        invoice_category = 'CUSTOMER'
+      }
+
       const invoiceData = {
         invoice_type: formData.invoice_type,
-        invoice_category: formData.invoice_category,
+        invoice_category,
         company_id: formData.company_id,
-        supplier_id: formData.invoice_type === 'EXPENSE' ? formData.supplier_id : null,
-        customer_id: formData.invoice_type === 'INCOME' ? formData.customer_id : null,
+        supplier_id,
+        customer_id,
+        investor_id,
+        bank_id,
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
@@ -403,7 +451,25 @@ const AccountingInvoices: React.FC = () => {
   }
 
   const getTypeColor = (type: string) => {
-    return type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'
+    return type.startsWith('INCOMING') ? 'text-red-600' : 'text-green-600'
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'INCOMING_SUPPLIER': return 'ULAZNI (DOB)'
+      case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
+      case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
+      case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'
+      default: return type
+    }
+  }
+
+  const getSupplierCustomerName = (invoice: Invoice) => {
+    if (invoice.subcontractors?.name) return invoice.subcontractors.name
+    if (invoice.customers) return `${invoice.customers.name} ${invoice.customers.surname}`
+    if (invoice.investors?.name) return invoice.investors.name
+    if (invoice.banks?.name) return invoice.banks.name
+    return '-'
   }
 
   const isOverdue = (dueDate: string, status: string) => {
@@ -541,8 +607,10 @@ const AccountingInvoices: React.FC = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="ALL">Svi tipovi</option>
-            <option value="EXPENSE">Ulazni</option>
-            <option value="INCOME">Izlazni</option>
+            <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
+            <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
+            <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
+            <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
           </select>
 
           <select
@@ -622,7 +690,7 @@ const AccountingInvoices: React.FC = () => {
                     {visibleColumns.type && (
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                          {invoice.invoice_type === 'EXPENSE' ? 'ULAZNI' : 'IZLAZNI'}
+                          {getTypeLabel(invoice.invoice_type)}
                         </span>
                       </td>
                     )}
@@ -638,9 +706,7 @@ const AccountingInvoices: React.FC = () => {
                     )}
                     {visibleColumns.supplier_customer && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {invoice.invoice_type === 'EXPENSE'
-                          ? invoice.subcontractors?.name
-                          : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
+                        {getSupplierCustomerName(invoice)}
                       </td>
                     )}
                     {visibleColumns.category && (
@@ -776,49 +842,26 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.invoice_type}
-                    onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as 'EXPENSE' | 'INCOME' })}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      invoice_type: e.target.value as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES',
+                      supplier_id: '',
+                      customer_id: '',
+                      investor_id: '',
+                      bank_id: ''
+                    })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
-                    <option value="EXPENSE">Ulazni (od dobavljača)</option>
-                    <option value="INCOME">Izlazni (prema kupcu)</option>
+                    <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
+                    <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
+                    <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
+                    <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kupac *
-                  </label>
-                  <select
-                    value={formData.invoice_category}
-                    onChange={(e) => setFormData({ ...formData, invoice_category: e.target.value as 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="GENERAL">Opći troškovi</option>
-                    <option value="SUBCONTRACTOR">Podizvodjač</option>
-                    <option value="CUSTOMER">Klijent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Firma *
-                  </label>
-                  <select
-                    value={formData.company_id}
-                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Odaberi firmu</option>
-                    {companies.map(company => (
-                      <option key={company.id} value={company.id}>{company.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {formData.invoice_type === 'EXPENSE' ? (
+                {/* Conditional dropdown based on invoice type */}
+                {formData.invoice_type === 'INCOMING_SUPPLIER' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Dobavljač *
@@ -835,7 +878,63 @@ const AccountingInvoices: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                ) : (
+                )}
+
+                {formData.invoice_type === 'INCOMING_INVESTMENT' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Investor (opcionalno)
+                      </label>
+                      <select
+                        value={formData.investor_id}
+                        onChange={(e) => setFormData({ ...formData, investor_id: e.target.value, bank_id: '' })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Bez investora</option>
+                        {investors.map(investor => (
+                          <option key={investor.id} value={investor.id}>{investor.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Banka (opcionalno)
+                      </label>
+                      <select
+                        value={formData.bank_id}
+                        onChange={(e) => setFormData({ ...formData, bank_id: e.target.value, investor_id: '' })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Bez banke</option>
+                        {banks.map(bank => (
+                          <option key={bank.id} value={bank.id}>{bank.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {formData.invoice_type === 'OUTGOING_SUPPLIER' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dobavljač *
+                    </label>
+                    <select
+                      value={formData.supplier_id}
+                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi dobavljača</option>
+                      {suppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {formData.invoice_type === 'OUTGOING_SALES' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Kupac *
@@ -855,6 +954,23 @@ const AccountingInvoices: React.FC = () => {
                     </select>
                   </div>
                 )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Firma (koja izdaje račun) *
+                  </label>
+                  <select
+                    value={formData.company_id}
+                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Odaberi firmu</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
+                    ))}
+                  </select>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
