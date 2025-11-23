@@ -44,7 +44,16 @@ export const fetchSubcontractorsWithPhases = async () => {
     `)
     .eq('status', 'active')
 
-  if (contractError) throw contractError
+  console.log('fetchSubcontractorsWithPhases result:', {
+    contractsCount: contractsData?.length || 0,
+    error: contractError,
+    sampleContract: contractsData?.[0]
+  })
+
+  if (contractError) {
+    console.error('Error fetching subcontractors with phases:', contractError)
+    throw contractError
+  }
 
   const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => ({
     id: contract.subcontractors.id,
