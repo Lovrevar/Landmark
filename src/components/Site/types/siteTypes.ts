@@ -13,6 +13,13 @@ export interface ProjectWithPhases extends Project {
 
 export interface SubcontractorWithPhase extends Subcontractor {
   phase_name?: string
+  job_description?: string
+  deadline?: string
+  cost?: number
+  budget_realized?: number
+  phase_id?: string
+  contract_id?: string
+  subcontractor_id?: string
 }
 
 export interface SubcontractorWithMilestones extends Subcontractor {
@@ -47,7 +54,6 @@ export interface SubcontractorFormData {
   job_description: string
   deadline: string
   cost: number
-  budget_realized: number
   phase_id: string
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null

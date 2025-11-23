@@ -35,7 +35,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     job_description: '',
     deadline: '',
     cost: 0,
-    budget_realized: 0,
     phase_id: '',
     financed_by_type: null,
     financed_by_investor_id: null,

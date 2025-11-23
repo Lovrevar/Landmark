@@ -214,11 +214,6 @@ export const resequencePhases = async (phases: ProjectPhase[]) => {
 export const createSubcontractor = async (data: {
   name: string
   contact: string
-  job_description: string
-  deadline: string
-  cost: number
-  budget_realized: number
-  phase_id: string
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
   financed_by_bank_id?: string | null
@@ -233,11 +228,6 @@ export const createSubcontractor = async (data: {
 export const createSubcontractorWithReturn = async (data: {
   name: string
   contact: string
-  job_description: string
-  deadline: string
-  cost: number
-  budget_realized: number
-  phase_id: string
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
   financed_by_bank_id?: string | null
@@ -392,17 +382,6 @@ export const updateSubcontractorContract = async (subcontractorId: string, contr
 // DEPRECATED: Payment creation moved to Accounting module
 // Site Management only displays payments, creation happens in Accounting → Invoices
 
-export const updateSubcontractorBudgetRealized = async (
-  subcontractorId: string,
-  budgetRealized: number
-) => {
-  const { error } = await supabase
-    .from('subcontractors')
-    .update({ budget_realized: budgetRealized })
-    .eq('id', subcontractorId)
-
-  if (error) throw error
-}
 
 export const updateContractBudgetRealized = async (
   contractId: string,

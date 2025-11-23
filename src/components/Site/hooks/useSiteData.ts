@@ -189,7 +189,6 @@ export const useSiteData = () => {
       job_description: string
       deadline: string
       cost: number
-      budget_realized?: number
     }
   ) => {
     try {
@@ -242,12 +241,7 @@ export const useSiteData = () => {
 
         const newSubcontractor = await siteService.createSubcontractorWithReturn({
           name: data.name,
-          contact: data.contact,
-          job_description: data.job_description,
-          deadline: data.deadline,
-          cost: data.cost,
-          budget_realized: 0,
-          phase_id: phase.id
+          contact: data.contact
         })
 
         const newContract = await siteService.createContract({
