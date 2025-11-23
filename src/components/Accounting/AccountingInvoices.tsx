@@ -37,6 +37,7 @@ interface Invoice {
   customer_id: string | null
   investor_id: string | null
   bank_id: string | null
+  apartment_id: string | null
   invoice_number: string
   issue_date: string
   due_date: string
@@ -68,6 +69,7 @@ const AccountingInvoices: React.FC = () => {
   const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [customerSales, setCustomerSales] = useState<any[]>([])
+  const [customerApartments, setCustomerApartments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -87,6 +89,7 @@ const AccountingInvoices: React.FC = () => {
     customer_id: '',
     investor_id: '',
     bank_id: '',
+    apartment_id: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -247,12 +250,25 @@ const AccountingInvoices: React.FC = () => {
           customer_id,
           apartment_id,
           apartments!inner (
-            project_id
+            id,
+            number,
+            project_id,
+            price,
+            projects:project_id (name),
+            buildings:building_id (name)
           )
         `)
 
       if (salesError) throw salesError
       setCustomerSales(salesData || [])
+
+      // Transform sales data to apartment list with customer info
+      const aptList = (salesData || []).map(sale => ({
+        ...sale.apartments,
+        customer_id: sale.customer_id,
+        apartment_id: sale.apartment_id
+      }))
+      setCustomerApartments(aptList)
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -271,6 +287,7 @@ const AccountingInvoices: React.FC = () => {
         customer_id: invoice.customer_id || '',
         investor_id: invoice.investor_id || '',
         bank_id: invoice.bank_id || '',
+        apartment_id: invoice.apartment_id || '',
         invoice_number: invoice.invoice_number,
         issue_date: invoice.issue_date,
         due_date: invoice.due_date,
@@ -289,6 +306,7 @@ const AccountingInvoices: React.FC = () => {
         customer_id: '',
         investor_id: '',
         bank_id: '',
+        apartment_id: '',
         invoice_number: '',
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
@@ -340,6 +358,7 @@ const AccountingInvoices: React.FC = () => {
         customer_id,
         investor_id,
         bank_id,
+        apartment_id: formData.apartment_id || null,
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
@@ -498,6 +517,15 @@ const AccountingInvoices: React.FC = () => {
     )
 
     return projects.filter(project => customerProjectIds.has(project.id))
+  }
+
+  const getCustomerApartmentsByProject = (customerId: string, projectId: string) => {
+    if (!customerId) return []
+
+    return customerApartments.filter(apt =>
+      apt.customer_id === customerId &&
+      (!projectId || apt.project_id === projectId)
+    )
   }
 
   const isOverdue = (dueDate: string, status: string) => {
@@ -876,7 +904,8 @@ const AccountingInvoices: React.FC = () => {
                       supplier_id: '',
                       customer_id: '',
                       investor_id: '',
-                      bank_id: ''
+                      bank_id: '',
+                      apartment_id: ''
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
@@ -977,7 +1006,8 @@ const AccountingInvoices: React.FC = () => {
                         setFormData({
                           ...formData,
                           customer_id: newCustomerId,
-                          project_id: currentProjectInList ? formData.project_id : ''
+                          project_id: currentProjectInList ? formData.project_id : '',
+                          apartment_id: ''
                         })
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1099,7 +1129,7 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value, apartment_id: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Bez projekta</option>
@@ -1111,6 +1141,26 @@ const AccountingInvoices: React.FC = () => {
                     ))}
                   </select>
                 </div>
+
+                {formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stan (opcionalno)
+                    </label>
+                    <select
+                      value={formData.apartment_id}
+                      onChange={(e) => setFormData({ ...formData, apartment_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Odaberi stan</option>
+                      {getCustomerApartmentsByProject(formData.customer_id, formData.project_id).map(apt => (
+                        <option key={apt.id} value={apt.id}>
+                          {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{apt.price.toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div>
