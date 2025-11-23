@@ -29,7 +29,7 @@ export const fetchSubcontractorsWithPhases = async () => {
     .from('contracts')
     .select(`
       *,
-      subcontractors!inner(
+      subcontractors!contracts_subcontractor_id_fkey(
         id,
         name,
         contact,
@@ -40,7 +40,7 @@ export const fetchSubcontractorsWithPhases = async () => {
         completed_at,
         created_at
       ),
-      project_phases!inner(phase_name)
+      project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .eq('status', 'active')
 
