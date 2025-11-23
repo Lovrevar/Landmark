@@ -19,7 +19,6 @@ import SalesPaymentsManagement from './components/Payments/SalesPaymentsManageme
 import SupervisionReports from './components/Reports/SupervisionReports'
 import WorkLogs from './components/Subcontractors/WorkLogs'
 import FundingPaymentsManagement from './components/Payments/FundingPaymentsManagement'
-import GeneralPaymentsManagement from './components/Payments/GeneralPaymentsManagement'
 import FundingOverview from './components/Finance/overview/FundingOverview'
 import GeneralReports from './components/Reports/GeneralReports'
 import AccountingInvoices from './components/Accounting/AccountingInvoices'
@@ -204,14 +203,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <FundingPaymentsManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/general-payments"
-          element={
-            <ProtectedRoute>
-              <GeneralPaymentsManagement />
             </ProtectedRoute>
           }
         />
