@@ -29,7 +29,7 @@ export const fetchSubcontractorsWithPhases = async () => {
     .from('contracts')
     .select(`
       *,
-      subcontractors!contracts_subcontractor_id_fkey(
+      subcontractor:subcontractors!contracts_subcontractor_id_fkey(
         id,
         name,
         contact,
@@ -40,7 +40,7 @@ export const fetchSubcontractorsWithPhases = async () => {
         completed_at,
         created_at
       ),
-      project_phases!contracts_phase_id_fkey(phase_name)
+      phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .eq('status', 'active')
 
@@ -56,22 +56,22 @@ export const fetchSubcontractorsWithPhases = async () => {
   }
 
   const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => ({
-    id: contract.subcontractors.id,
-    name: contract.subcontractors.name,
-    contact: contract.subcontractors.contact,
+    id: contract.subcontractor.id,
+    name: contract.subcontractor.name,
+    contact: contract.subcontractor.contact,
     job_description: contract.job_description,
     deadline: contract.end_date,
-    cost: contract.contract_amount,
-    budget_realized: contract.budget_realized,
+    cost: parseFloat(contract.contract_amount || 0),
+    budget_realized: parseFloat(contract.budget_realized || 0),
     phase_id: contract.phase_id,
-    progress: contract.subcontractors.progress || 0,
-    financed_by_type: contract.subcontractors.financed_by_type,
-    financed_by_investor_id: contract.subcontractors.financed_by_investor_id,
-    financed_by_bank_id: contract.subcontractors.financed_by_bank_id,
-    completed_at: contract.subcontractors.completed_at,
+    progress: contract.subcontractor.progress || 0,
+    financed_by_type: contract.subcontractor.financed_by_type,
+    financed_by_investor_id: contract.subcontractor.financed_by_investor_id,
+    financed_by_bank_id: contract.subcontractor.financed_by_bank_id,
+    completed_at: contract.subcontractor.completed_at,
     contract_id: contract.id,
-    created_at: contract.subcontractors.created_at,
-    project_phases: contract.project_phases
+    created_at: contract.subcontractor.created_at,
+    project_phases: contract.phase
   }))
 
   return subcontractorsWithPhaseData
