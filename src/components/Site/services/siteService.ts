@@ -273,7 +273,7 @@ export const linkSubcontractorToPhase = async (
 }
 
 export const updateSubcontractor = async (
-  subcontractorId: string,
+  contractId: string,
   updates: {
     name: string
     contact: string
@@ -283,41 +283,70 @@ export const updateSubcontractor = async (
     progress: number
   }
 ) => {
-  const updateData: any = { ...updates }
+  // First, get the contract to find the subcontractor
+  const { data: contract, error: contractError } = await supabase
+    .from('contracts')
+    .select('subcontractor_id')
+    .eq('id', contractId)
+    .single()
 
-  if (updates.progress === 100) {
-    updateData.completed_at = new Date().toISOString()
-  } else if (updates.progress < 100) {
-    updateData.completed_at = null
+  if (contractError) throw contractError
+
+  // Update contract-specific fields in contracts table
+  const { error: contractUpdateError } = await supabase
+    .from('contracts')
+    .update({
+      job_description: updates.job_description,
+      end_date: updates.deadline,
+      contract_amount: updates.cost
+    })
+    .eq('id', contractId)
+
+  if (contractUpdateError) throw contractUpdateError
+
+  // Update subcontractor fields (name, contact, progress) in subcontractors table
+  const subcontractorUpdateData: any = {
+    name: updates.name,
+    contact: updates.contact,
+    progress: updates.progress
   }
 
-  const { error } = await supabase
-    .from('subcontractors')
-    .update(updateData)
-    .eq('id', subcontractorId)
+  if (updates.progress === 100) {
+    subcontractorUpdateData.completed_at = new Date().toISOString()
+  } else if (updates.progress < 100) {
+    subcontractorUpdateData.completed_at = null
+  }
 
-  if (error) throw error
+  const { error: subError } = await supabase
+    .from('subcontractors')
+    .update(subcontractorUpdateData)
+    .eq('id', contract.subcontractor_id)
+
+  if (subError) throw subError
 }
 
-export const deleteSubcontractor = async (subcontractorId: string) => {
+export const deleteSubcontractor = async (contractId: string) => {
   const { error } = await supabase
-    .from('subcontractors')
+    .from('contracts')
     .delete()
-    .eq('id', subcontractorId)
+    .eq('id', contractId)
 
   if (error) throw error
 }
 
-export const getSubcontractorDetails = async (subcontractorId: string) => {
+export const getSubcontractorDetails = async (contractId: string) => {
   const { data, error } = await supabase
-    .from('subcontractors')
-    .select('cost, phase_id')
-    .eq('id', subcontractorId)
+    .from('contracts')
+    .select('contract_amount, phase_id')
+    .eq('id', contractId)
     .single()
 
   if (error) throw error
 
-  return data
+  return {
+    cost: parseFloat(data.contract_amount || 0),
+    phase_id: data.phase_id
+  }
 }
 
 export const createContract = async (data: {
