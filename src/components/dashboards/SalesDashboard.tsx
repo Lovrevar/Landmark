@@ -67,12 +67,21 @@ const SalesDashboard: React.FC = () => {
         apartmentsData,
         salesData,
         customersData,
-        projectsData
+        projectsData,
+        paymentsData
       ] = await Promise.all([
         supabase.from('apartments').select('*'),
-        supabase.from('sales').select('*'),
+        supabase.from('sales').select('*, apartment_id'),
         supabase.from('customers').select('*'),
-        supabase.from('projects').select('*')
+        supabase.from('projects').select('*'),
+        supabase.from('accounting_payments').select(`
+          amount,
+          payment_date,
+          invoice:accounting_invoices!inner(
+            apartment_id,
+            invoice_type
+          )
+        `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null)
       ])
 
       if (apartmentsData.error) throw apartmentsData.error
@@ -84,22 +93,25 @@ const SalesDashboard: React.FC = () => {
       const sales = salesData.data || []
       const customers = customersData.data || []
       const projects = projectsData.data || []
+      const payments = paymentsData.data || []
+
+      // Calculate total revenue from payments
+      const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
 
       const totalUnits = apartments.length
       const availableUnits = apartments.filter(a => a.status === 'Available').length
       const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
       const soldUnits = apartments.filter(a => a.status === 'Sold').length
-      const totalRevenue = sales.reduce((sum, s) => sum + s.total_paid, 0)
-      const avgSalePrice = sales.length > 0 ? totalRevenue / sales.length : 0
+      const avgSalePrice = soldUnits > 0 ? totalRevenue / soldUnits : 0
       const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
       const totalCustomers = customers.length
       const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
 
       const currentMonth = startOfMonth(new Date())
-      const monthlySales = sales.filter(s =>
-        new Date(s.sale_date) >= currentMonth
+      const monthlyPayments = payments.filter(p =>
+        new Date(p.payment_date) >= currentMonth
       )
-      const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.total_paid, 0)
+      const monthlyRevenue = monthlyPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
 
       setStats({
         totalUnits,
@@ -119,16 +131,18 @@ const SalesDashboard: React.FC = () => {
 
       projects.forEach(project => {
         const projectApartments = apartments.filter(a => a.project_id === project.id)
-        const projectSales = sales.filter(s => {
-          const apt = apartments.find(a => a.id === s.apartment_id)
+
+        // Calculate revenue from payments for this project
+        const projectPayments = payments.filter(p => {
+          const apt = apartments.find(a => a.id === p.invoice?.apartment_id)
           return apt && apt.project_id === project.id
         })
+        const revenue = projectPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
 
         const total = projectApartments.length
         const sold = projectApartments.filter(a => a.status === 'Sold').length
         const reserved = projectApartments.filter(a => a.status === 'Reserved').length
         const available = projectApartments.filter(a => a.status === 'Available').length
-        const revenue = projectSales.reduce((sum, s) => sum + s.total_paid, 0)
 
         if (total > 0) {
           projectStatsMap.set(project.id, {
@@ -152,6 +166,11 @@ const SalesDashboard: React.FC = () => {
         const monthStart = startOfMonth(monthDate)
         const monthEnd = endOfMonth(monthDate)
 
+        const monthPayments = payments.filter(p => {
+          const paymentDate = new Date(p.payment_date)
+          return paymentDate >= monthStart && paymentDate <= monthEnd
+        })
+
         const monthSales = sales.filter(s => {
           const saleDate = new Date(s.sale_date)
           return saleDate >= monthStart && saleDate <= monthEnd
@@ -160,7 +179,7 @@ const SalesDashboard: React.FC = () => {
         last6Months.push({
           month: format(monthDate, 'MMM'),
           sales_count: monthSales.length,
-          revenue: monthSales.reduce((sum, s) => sum + s.total_paid, 0)
+          revenue: monthPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
         })
       }
 

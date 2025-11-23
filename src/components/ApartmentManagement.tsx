@@ -80,9 +80,16 @@ const ApartmentManagement: React.FC = () => {
         .select('id, name')
         .in('id', buildingIds)
 
+      // Fetch payments from new accounting system
       const { data: paymentsData } = await supabase
-        .from('apartment_payments')
-        .select('apartment_id, garage_id, storage_id, amount')
+        .from('accounting_payments')
+        .select(`
+          amount,
+          invoice:accounting_invoices!inner(
+            apartment_id
+          )
+        `)
+        .not('invoice.apartment_id', 'is', null)
 
       const aptPaymentTotals: Record<string, number> = {}
       const garPaymentTotals: Record<string, number> = {}
@@ -90,21 +97,12 @@ const ApartmentManagement: React.FC = () => {
 
       if (paymentsData) {
         paymentsData.forEach((payment: any) => {
-          if (payment.garage_id) {
-            if (!garPaymentTotals[payment.garage_id]) {
-              garPaymentTotals[payment.garage_id] = 0
+          const apartmentId = payment.invoice?.apartment_id
+          if (apartmentId) {
+            if (!aptPaymentTotals[apartmentId]) {
+              aptPaymentTotals[apartmentId] = 0
             }
-            garPaymentTotals[payment.garage_id] += Number(payment.amount)
-          } else if (payment.storage_id) {
-            if (!storPaymentTotals[payment.storage_id]) {
-              storPaymentTotals[payment.storage_id] = 0
-            }
-            storPaymentTotals[payment.storage_id] += Number(payment.amount)
-          } else {
-            if (!aptPaymentTotals[payment.apartment_id]) {
-              aptPaymentTotals[payment.apartment_id] = 0
-            }
-            aptPaymentTotals[payment.apartment_id] += Number(payment.amount)
+            aptPaymentTotals[apartmentId] += parseFloat(payment.amount)
           }
         })
       }
