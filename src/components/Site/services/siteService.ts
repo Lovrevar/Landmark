@@ -81,7 +81,7 @@ export const fetchSubcontractorsWithPhases = async () => {
 export const fetchAllSubcontractors = async () => {
   const { data: allSubcontractorsData, error: subError2 } = await supabase
     .from('subcontractors')
-    .select('id, name, contact, created_at, progress, financed_by_type, financed_by_investor_id, financed_by_bank_id, completed_at, active_contracts_count, notes')
+    .select('*')
     .order('name')
 
   if (subError2) throw subError2
@@ -92,7 +92,7 @@ export const fetchAllSubcontractors = async () => {
 export const getSubcontractorById = async (id: string) => {
   const { data, error } = await supabase
     .from('subcontractors')
-    .select('id, name, contact, created_at, progress, financed_by_type, financed_by_investor_id, financed_by_bank_id, completed_at, active_contracts_count, notes')
+    .select('*')
     .eq('id', id)
     .single()
 

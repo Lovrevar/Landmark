@@ -59,14 +59,17 @@ export type Subcontractor = {
   id: string
   name: string
   contact: string
+  job_description: string
+  deadline: string
+  cost: number
+  budget_realized: number
   created_at: string
+  phase_id?: string | null
+  contract_id?: string | null
   progress?: number
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
   financed_by_bank_id?: string | null
-  completed_at?: string | null
-  active_contracts_count?: number
-  notes?: string | null
 }
 
 export type Contract = {

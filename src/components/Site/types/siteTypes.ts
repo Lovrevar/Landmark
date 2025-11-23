@@ -47,6 +47,7 @@ export interface SubcontractorFormData {
   job_description: string
   deadline: string
   cost: number
+  budget_realized: number
   phase_id: string
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
