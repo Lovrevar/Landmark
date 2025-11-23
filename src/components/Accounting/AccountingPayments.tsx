@@ -458,15 +458,15 @@ const AccountingPayments: React.FC = () => {
                       )}
                       {visibleColumns.invoice_type && (
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`text-xs font-semibold ${invoice.invoice_type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'}`}>
-                            {invoice.invoice_type === 'EXPENSE' ? 'ULAZNI' : 'IZLAZNI'}
+                          <span className={`text-xs font-semibold ${invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'text-red-600' : 'text-green-600'}`}>
+                            {invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'ULAZNI' : 'IZLAZNI'}
                           </span>
                         </td>
                       )}
                       {visibleColumns.company_supplier && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.invoice_type === 'EXPENSE'
-                            ? invoice.subcontractors?.name
+                          {invoice.invoice_type === 'INCOMING_SUPPLIER'
+                            ? invoice.subcontractors?.name || '-'
                             : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
                         </td>
                       )}
