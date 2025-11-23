@@ -400,9 +400,9 @@ export const useSiteData = () => {
     }
   }
 
-  const fetchWirePayments = async (subcontractorId: string) => {
+  const fetchWirePayments = async (contractId: string) => {
     try {
-      const payments = await siteService.fetchWirePayments(subcontractorId)
+      const payments = await siteService.fetchWirePayments(contractId)
       return payments
     } catch (error) {
       console.error('Error fetching wire payments:', error)
