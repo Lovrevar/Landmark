@@ -25,16 +25,47 @@ export const fetchProjectPhases = async () => {
 }
 
 export const fetchSubcontractorsWithPhases = async () => {
-  const { data: subcontractorsData, error: subError } = await supabase
-    .from('subcontractors')
+  const { data: contractsData, error: contractError } = await supabase
+    .from('contracts')
     .select(`
       *,
-      project_phases(phase_name)
+      subcontractors!inner(
+        id,
+        name,
+        contact,
+        progress,
+        financed_by_type,
+        financed_by_investor_id,
+        financed_by_bank_id,
+        completed_at,
+        created_at
+      ),
+      project_phases!inner(phase_name)
     `)
+    .eq('status', 'active')
 
-  if (subError) throw subError
+  if (contractError) throw contractError
 
-  return subcontractorsData || []
+  const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => ({
+    id: contract.subcontractors.id,
+    name: contract.subcontractors.name,
+    contact: contract.subcontractors.contact,
+    job_description: contract.job_description,
+    deadline: contract.end_date,
+    cost: contract.contract_amount,
+    budget_realized: contract.budget_realized,
+    phase_id: contract.phase_id,
+    progress: contract.subcontractors.progress || 0,
+    financed_by_type: contract.subcontractors.financed_by_type,
+    financed_by_investor_id: contract.subcontractors.financed_by_investor_id,
+    financed_by_bank_id: contract.subcontractors.financed_by_bank_id,
+    completed_at: contract.subcontractors.completed_at,
+    contract_id: contract.id,
+    created_at: contract.subcontractors.created_at,
+    project_phases: contract.project_phases
+  }))
+
+  return subcontractorsWithPhaseData
 }
 
 export const fetchAllSubcontractors = async () => {
