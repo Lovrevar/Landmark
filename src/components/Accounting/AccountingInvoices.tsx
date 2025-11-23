@@ -31,6 +31,7 @@ interface Project {
 interface Invoice {
   id: string
   invoice_type: 'EXPENSE' | 'INCOME'
+  invoice_category: 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL'
   company_id: string
   supplier_id: string | null
   customer_id: string | null
@@ -74,6 +75,7 @@ const AccountingInvoices: React.FC = () => {
 
   const [formData, setFormData] = useState({
     invoice_type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
+    invoice_category: 'GENERAL' as 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL',
     company_id: '',
     supplier_id: '',
     customer_id: '',
@@ -225,6 +227,7 @@ const AccountingInvoices: React.FC = () => {
       setEditingInvoice(invoice)
       setFormData({
         invoice_type: invoice.invoice_type,
+        invoice_category: invoice.invoice_category || 'GENERAL',
         company_id: invoice.company_id,
         supplier_id: invoice.supplier_id || '',
         customer_id: invoice.customer_id || '',
@@ -241,6 +244,7 @@ const AccountingInvoices: React.FC = () => {
       setEditingInvoice(null)
       setFormData({
         invoice_type: 'EXPENSE',
+        invoice_category: 'GENERAL',
         company_id: '',
         supplier_id: '',
         customer_id: '',
@@ -270,6 +274,7 @@ const AccountingInvoices: React.FC = () => {
 
       const invoiceData = {
         invoice_type: formData.invoice_type,
+        invoice_category: formData.invoice_category,
         company_id: formData.company_id,
         supplier_id: formData.invoice_type === 'EXPENSE' ? formData.supplier_id : null,
         customer_id: formData.invoice_type === 'INCOME' ? formData.customer_id : null,
@@ -777,6 +782,22 @@ const AccountingInvoices: React.FC = () => {
                   >
                     <option value="EXPENSE">Ulazni (od dobavljača)</option>
                     <option value="INCOME">Izlazni (prema kupcu)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kupac *
+                  </label>
+                  <select
+                    value={formData.invoice_category}
+                    onChange={(e) => setFormData({ ...formData, invoice_category: e.target.value as 'SUBCONTRACTOR' | 'CUSTOMER' | 'GENERAL' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="GENERAL">Opći troškovi</option>
+                    <option value="SUBCONTRACTOR">Podizvodjač</option>
+                    <option value="CUSTOMER">Klijent</option>
                   </select>
                 </div>
 
