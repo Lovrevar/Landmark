@@ -370,14 +370,8 @@ export const getContractCount = async () => {
   return count || 0
 }
 
-export const updateSubcontractorContract = async (subcontractorId: string, contractId: string) => {
-  const { error } = await supabase
-    .from('subcontractors')
-    .update({ contract_id: contractId })
-    .eq('id', subcontractorId)
-
-  if (error) throw error
-}
+// DEPRECATED: contract_id column removed from subcontractors table
+// Relationship is maintained through contracts.subcontractor_id
 
 // DEPRECATED: Payment creation moved to Accounting module
 // Site Management only displays payments, creation happens in Accounting → Invoices

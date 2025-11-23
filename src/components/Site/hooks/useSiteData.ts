@@ -255,8 +255,6 @@ export const useSiteData = () => {
           end_date: data.deadline,
           status: 'active'
         })
-
-        await siteService.updateSubcontractorContract(newSubcontractor.id, newContract.id)
       }
 
       await siteService.recalculatePhaseBudget(phase.id)
@@ -375,7 +373,6 @@ export const useSiteData = () => {
 
         contractId = newContract.id
         console.log('Created contract:', contractId)
-        await siteService.updateSubcontractorContract(subcontractor.id, contractId)
       }
 
       // DEPRECATED: Payment creation moved to Accounting module
