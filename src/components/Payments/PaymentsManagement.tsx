@@ -34,97 +34,76 @@ const PaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch all wire payments with related data
+      // Fetch payments from accounting_payments with EXPENSE invoices for SUBCONTRACTOR category
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
+        .from('accounting_payments')
         .select(`
           *,
-          contracts (
+          invoice:accounting_invoices(
             id,
-            contract_number,
+            invoice_number,
+            invoice_type,
+            invoice_category,
+            supplier_id,
             project_id,
-            phase_id,
-            subcontractor_id,
-            job_description,
-            contract_amount,
-            budget_realized,
+            milestone_id,
+            total_amount,
             status
-          ),
-          investor:paid_by_investor_id(id, name, type),
-          bank:paid_by_bank_id(id, name)
+          )
         `)
-        .order('created_at', { ascending: false })
+        .eq('invoice.invoice_type', 'EXPENSE')
+        .eq('invoice.invoice_category', 'SUBCONTRACTOR')
+        .not('invoice.project_id', 'is', null)
+        .order('payment_date', { ascending: false })
 
       if (paymentsError) throw paymentsError
 
-      // Fetch subcontractors for names
+      // Fetch subcontractors (suppliers)
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
         .select('id, name, phase_id')
 
       if (subError) throw subError
 
-      // Fetch projects for names
+      // Fetch projects
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name')
 
       if (projectsError) throw projectsError
 
-      // Fetch phases for names
+      // Fetch phases
       const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
         .select('id, phase_name, project_id')
 
       if (phasesError) throw phasesError
 
-      // Fetch milestones for payments with milestone_id
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('subcontractor_milestones')
-        .select('id, project_id, phase_id')
-
-      if (milestonesError) throw milestonesError
-
       // Enrich payments with names
       const enrichedPayments = (paymentsData || []).map(payment => {
-        const subcontractor = subcontractorsData?.find(s => s.id === payment.subcontractor_id)
-        const contract = payment.contracts as Contract | undefined
+        const invoice = payment.invoice
+        if (!invoice) return null
 
-        // Determine project and phase
-        let projectId: string | undefined
+        const subcontractor = subcontractorsData?.find(s => s.id === invoice.supplier_id)
+        const project = projectsData?.find(p => p.id === invoice.project_id)
+
         let phaseId: string | undefined
-
-        if (payment.milestone_id) {
-          // If payment is linked to a milestone, get project and phase from milestone
-          const milestone = milestonesData?.find(m => m.id === payment.milestone_id)
-          if (milestone) {
-            projectId = milestone.project_id
-            phaseId = milestone.phase_id || undefined
-          }
-        } else if (contract) {
-          // If payment is linked to a contract, get project and phase from contract
-          projectId = contract.project_id
-          phaseId = contract.phase_id || undefined
-        } else if (subcontractor?.phase_id) {
-          // Otherwise, get from subcontractor phase
+        if (subcontractor?.phase_id) {
           phaseId = subcontractor.phase_id
-          const subPhase = phasesData?.find(p => p.id === phaseId)
-          projectId = subPhase?.project_id
         }
-
-        const project = projectId ? projectsData?.find(p => p.id === projectId) : undefined
         const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
 
         return {
           ...payment,
-          contract,
+          subcontractor_id: invoice.supplier_id,
           subcontractor_name: subcontractor?.name || 'Unknown',
           project_name: project?.name || 'No Project',
           phase_name: phase?.phase_name || null,
-          investor: (payment as any).investor || null,
-          bank: (payment as any).bank || null
+          contract: null,
+          investor: null,
+          bank: null
         }
-      })
+      }).filter(Boolean) as PaymentWithDetails[]
 
       setPayments(enrichedPayments)
       calculateStats(enrichedPayments)

@@ -349,15 +349,21 @@ export const fetchWirePayments = async (subcontractorId: string) => {
     .from('accounting_payments')
     .select(`
       *,
-      invoice:accounting_invoices!inner(
+      invoice:accounting_invoices(
         id,
         invoice_number,
+        invoice_type,
+        invoice_category,
         supplier_id,
+        project_id,
         total_amount,
         status
       )
     `)
     .eq('invoice.supplier_id', subcontractorId)
+    .eq('invoice.invoice_type', 'EXPENSE')
+    .eq('invoice.invoice_category', 'SUBCONTRACTOR')
+    .not('invoice.project_id', 'is', null)
     .order('payment_date', { ascending: false })
 
   if (error) throw error
