@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check } from 'lucide-react'
 import { format } from 'date-fns'
-import SupplierInvoiceForm from './SupplierInvoiceForm'
 
 interface Company {
   id: string
@@ -79,7 +78,6 @@ const AccountingInvoices: React.FC = () => {
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
-  const [showSupplierInvoiceModal, setShowSupplierInvoiceModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
@@ -580,18 +578,11 @@ const AccountingInvoices: React.FC = () => {
             )}
           </div>
           <button
-            onClick={() => setShowSupplierInvoiceModal(true)}
+            onClick={() => handleOpenModal()}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
           >
             <Plus className="w-5 h-5 mr-2" />
-            Novi račun (Dobavljač)
-          </button>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Ostali računi
+            Novi račun
           </button>
         </div>
       </div>
@@ -1361,15 +1352,6 @@ const AccountingInvoices: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
-      {showSupplierInvoiceModal && (
-        <SupplierInvoiceForm
-          onClose={() => setShowSupplierInvoiceModal(false)}
-          onSuccess={() => {
-            fetchData()
-            setShowSupplierInvoiceModal(false)
-          }}
-        />
       )}
     </div>
   )
