@@ -109,7 +109,8 @@ const SupervisionDashboard: React.FC = () => {
 
       // Map to subcontractor format
       const allSubcontractors = contractsData?.map((c: any) => ({
-        id: c.subcontractor.id,
+        id: c.id,
+        subcontractor_id: c.subcontractor.id,
         name: c.subcontractor.name,
         deadline: c.end_date,
         progress: c.subcontractor.progress || 0,

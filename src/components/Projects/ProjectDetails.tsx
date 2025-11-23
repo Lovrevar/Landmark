@@ -82,7 +82,8 @@ const ProjectDetails: React.FC = () => {
 
       // Map contracts to subcontractor format for backwards compatibility
       const subcontractorsData = contractsData?.map((c: any) => ({
-        id: c.subcontractor.id,
+        id: c.id,
+        subcontractor_id: c.subcontractor.id,
         name: c.subcontractor.name,
         contact: c.subcontractor.contact,
         job_description: c.job_description,

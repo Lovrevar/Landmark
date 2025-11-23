@@ -56,7 +56,8 @@ export const fetchSubcontractorsWithPhases = async () => {
   }
 
   const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => ({
-    id: contract.subcontractor.id,
+    id: contract.id,
+    subcontractor_id: contract.subcontractor.id,
     name: contract.subcontractor.name,
     contact: contract.subcontractor.contact,
     job_description: contract.job_description,
