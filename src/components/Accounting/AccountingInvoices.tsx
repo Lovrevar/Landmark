@@ -28,6 +28,18 @@ interface Project {
   name: string
 }
 
+interface Contract {
+  id: string
+  contract_number: string
+  project_id: string
+  phase_id: string | null
+  subcontractor_id: string
+  job_description: string
+  contract_amount: number
+  projects?: { name: string }
+  phases?: { phase_name: string }
+}
+
 interface Invoice {
   id: string
   invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
@@ -38,6 +50,7 @@ interface Invoice {
   investor_id: string | null
   bank_id: string | null
   apartment_id: string | null
+  contract_id: string | null
   invoice_number: string
   issue_date: string
   due_date: string
@@ -58,6 +71,7 @@ interface Invoice {
   investors?: { name: string }
   banks?: { name: string }
   projects?: { name: string }
+  contracts?: { contract_number: string; job_description: string }
 }
 
 const AccountingInvoices: React.FC = () => {
@@ -68,6 +82,7 @@ const AccountingInvoices: React.FC = () => {
   const [investors, setInvestors] = useState<any[]>([])
   const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [contracts, setContracts] = useState<Contract[]>([])
   const [customerSales, setCustomerSales] = useState<any[]>([])
   const [customerApartments, setCustomerApartments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,6 +105,7 @@ const AccountingInvoices: React.FC = () => {
     investor_id: '',
     bank_id: '',
     apartment_id: '',
+    contract_id: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -188,7 +204,8 @@ const AccountingInvoices: React.FC = () => {
           customers:customer_id (name, surname),
           investors:investor_id (name),
           banks:bank_id (name),
-          projects:project_id (name)
+          projects:project_id (name),
+          contracts:contract_id (contract_number, job_description)
         `)
         .order('issue_date', { ascending: false })
 
@@ -244,6 +261,25 @@ const AccountingInvoices: React.FC = () => {
       if (projectsError) throw projectsError
       setProjects(projectsData || [])
 
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          project_id,
+          phase_id,
+          subcontractor_id,
+          job_description,
+          contract_amount,
+          projects:project_id (name),
+          phases:phase_id (phase_name)
+        `)
+        .in('status', ['draft', 'active'])
+        .order('contract_number')
+
+      if (contractsError) throw contractsError
+      setContracts(contractsData || [])
+
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
         .select(`
@@ -288,6 +324,7 @@ const AccountingInvoices: React.FC = () => {
         investor_id: invoice.investor_id || '',
         bank_id: invoice.bank_id || '',
         apartment_id: invoice.apartment_id || '',
+        contract_id: invoice.contract_id || '',
         invoice_number: invoice.invoice_number,
         issue_date: invoice.issue_date,
         due_date: invoice.due_date,
@@ -307,6 +344,7 @@ const AccountingInvoices: React.FC = () => {
         investor_id: '',
         bank_id: '',
         apartment_id: '',
+        contract_id: '',
         invoice_number: '',
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
@@ -359,6 +397,7 @@ const AccountingInvoices: React.FC = () => {
         investor_id,
         bank_id,
         apartment_id: formData.apartment_id || null,
+        contract_id: formData.contract_id || null,
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
@@ -525,6 +564,27 @@ const AccountingInvoices: React.FC = () => {
     return customerApartments.filter(apt =>
       apt.customer_id === customerId &&
       (!projectId || apt.project_id === projectId)
+    )
+  }
+
+  const getSupplierProjects = (supplierId: string) => {
+    if (!supplierId) return []
+
+    const supplierProjectIds = new Set(
+      contracts
+        .filter(contract => contract.subcontractor_id === supplierId)
+        .map(contract => contract.project_id)
+    )
+
+    return projects.filter(project => supplierProjectIds.has(project.id))
+  }
+
+  const getSupplierContractsByProject = (supplierId: string, projectId: string) => {
+    if (!supplierId) return []
+
+    return contracts.filter(contract =>
+      contract.subcontractor_id === supplierId &&
+      (!projectId || contract.project_id === projectId)
     )
   }
 
@@ -925,7 +985,18 @@ const AccountingInvoices: React.FC = () => {
                     </label>
                     <select
                       value={formData.supplier_id}
-                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                      onChange={(e) => {
+                        const newSupplierId = e.target.value
+                        const supplierProjects = getSupplierProjects(newSupplierId)
+                        const currentProjectInList = supplierProjects.some(p => p.id === formData.project_id)
+
+                        setFormData({
+                          ...formData,
+                          supplier_id: newSupplierId,
+                          project_id: currentProjectInList ? formData.project_id : '',
+                          contract_id: ''
+                        })
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
@@ -1129,18 +1200,47 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value, apartment_id: '' })}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      project_id: e.target.value,
+                      apartment_id: '',
+                      contract_id: ''
+                    })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Bez projekta</option>
                     {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
                       ? getCustomerProjects(formData.customer_id)
+                      : formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id
+                      ? getSupplierProjects(formData.supplier_id)
                       : projects
                     ).map(project => (
                       <option key={project.id} value={project.id}>{project.name}</option>
                     ))}
                   </select>
                 </div>
+
+                {(formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') && formData.supplier_id && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ugovor / Faza (opcionalno)
+                    </label>
+                    <select
+                      value={formData.contract_id}
+                      onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Bez ugovora</option>
+                      {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
+                        <option key={contract.id} value={contract.id}>
+                          {contract.contract_number} - {contract.projects?.name || 'N/A'}
+                          {contract.phases?.phase_name && ` - ${contract.phases.phase_name}`}
+                          {contract.job_description && ` (${contract.job_description})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id && (
                   <div>
