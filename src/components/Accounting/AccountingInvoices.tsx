@@ -38,7 +38,6 @@ interface Invoice {
   investor_id: string | null
   bank_id: string | null
   apartment_id: string | null
-  contract_id: string | null
   invoice_number: string
   issue_date: string
   due_date: string
@@ -59,7 +58,6 @@ interface Invoice {
   investors?: { name: string }
   banks?: { name: string }
   projects?: { name: string }
-  contracts?: { id: string; phases: { name: string } }
 }
 
 const AccountingInvoices: React.FC = () => {
@@ -72,7 +70,6 @@ const AccountingInvoices: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [customerSales, setCustomerSales] = useState<any[]>([])
   const [customerApartments, setCustomerApartments] = useState<any[]>([])
-  const [supplierContracts, setSupplierContracts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -100,7 +97,6 @@ const AccountingInvoices: React.FC = () => {
     vat_rate: 25,
     category: '',
     project_id: '',
-    contract_id: '',
     description: ''
   })
 
@@ -192,11 +188,7 @@ const AccountingInvoices: React.FC = () => {
           customers:customer_id (name, surname),
           investors:investor_id (name),
           banks:bank_id (name),
-          projects:project_id (name),
-          contracts:contract_id (
-            id,
-            phases!inner (name)
-          )
+          projects:project_id (name)
         `)
         .order('issue_date', { ascending: false })
 
@@ -278,23 +270,6 @@ const AccountingInvoices: React.FC = () => {
       }))
       setCustomerApartments(aptList)
 
-      const { data: contractsData, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          subcontractor_id,
-          phase_id,
-          phases!inner (
-            id,
-            name,
-            project_id,
-            projects:project_id (id, name)
-          )
-        `)
-
-      if (contractsError) throw contractsError
-      setSupplierContracts(contractsData || [])
-
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -302,7 +277,7 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
-  const handleOpenModal = (invoice?: Invoice, defaultType?: 'INCOMING_SUPPLIER' | 'OUTGOING_SALES') => {
+  const handleOpenModal = (invoice?: Invoice) => {
     if (invoice) {
       setEditingInvoice(invoice)
       setFormData({
@@ -320,13 +295,12 @@ const AccountingInvoices: React.FC = () => {
         vat_rate: invoice.vat_rate,
         category: invoice.category,
         project_id: invoice.project_id || '',
-        contract_id: (invoice as any).contract_id || '',
         description: invoice.description
       })
     } else {
       setEditingInvoice(null)
       setFormData({
-        invoice_type: defaultType || 'INCOMING_SUPPLIER',
+        invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
         supplier_id: '',
         customer_id: '',
@@ -340,7 +314,6 @@ const AccountingInvoices: React.FC = () => {
         vat_rate: 25,
         category: '',
         project_id: '',
-        contract_id: '',
         description: ''
       })
     }
@@ -393,7 +366,6 @@ const AccountingInvoices: React.FC = () => {
         vat_rate: formData.vat_rate,
         category: formData.category,
         project_id: formData.project_id || null,
-        contract_id: formData.contract_id || null,
         description: formData.description,
         created_by: user?.id
       }
@@ -556,28 +528,6 @@ const AccountingInvoices: React.FC = () => {
     )
   }
 
-  const getSupplierProjects = (supplierId: string) => {
-    if (!supplierId) return []
-
-    const supplierProjectIds = new Set(
-      supplierContracts
-        .filter(contract => contract.subcontractor_id === supplierId)
-        .map(contract => contract.phases?.projects?.id)
-        .filter(Boolean)
-    )
-
-    return projects.filter(project => supplierProjectIds.has(project.id))
-  }
-
-  const getSupplierContractsByProject = (supplierId: string, projectId: string) => {
-    if (!supplierId || !projectId) return []
-
-    return supplierContracts.filter(contract =>
-      contract.subcontractor_id === supplierId &&
-      contract.phases?.project_id === projectId
-    )
-  }
-
   const isOverdue = (dueDate: string, status: string) => {
     return status !== 'PAID' && new Date(dueDate) < new Date()
   }
@@ -628,18 +578,11 @@ const AccountingInvoices: React.FC = () => {
             )}
           </div>
           <button
-            onClick={() => handleOpenModal(undefined, 'INCOMING_SUPPLIER')}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 whitespace-nowrap"
+            onClick={() => handleOpenModal()}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
           >
             <Plus className="w-5 h-5 mr-2" />
-            Račun Dobavljač
-          </button>
-          <button
-            onClick={() => handleOpenModal(undefined, 'OUTGOING_SALES')}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Račun Kupac
+            Novi račun
           </button>
         </div>
       </div>
@@ -823,13 +766,8 @@ const AccountingInvoices: React.FC = () => {
                       </td>
                     )}
                     {visibleColumns.category && (
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        <div>{invoice.category}</div>
-                        {invoice.contracts?.phases?.name && (
-                          <div className="text-xs text-blue-600 mt-1">
-                            Faza: {invoice.contracts.phases.name}
-                          </div>
-                        )}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {invoice.category}
                       </td>
                     )}
                     {visibleColumns.issue_date && (
@@ -987,18 +925,7 @@ const AccountingInvoices: React.FC = () => {
                     </label>
                     <select
                       value={formData.supplier_id}
-                      onChange={(e) => {
-                        const newSupplierId = e.target.value
-                        const supplierProjects = getSupplierProjects(newSupplierId)
-                        const currentProjectInList = supplierProjects.some(p => p.id === formData.project_id)
-
-                        setFormData({
-                          ...formData,
-                          supplier_id: newSupplierId,
-                          project_id: currentProjectInList ? formData.project_id : '',
-                          contract_id: ''
-                        })
-                      }}
+                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
@@ -1202,40 +1129,18 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.project_id}
-                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value, apartment_id: '', contract_id: '' })}
+                    onChange={(e) => setFormData({ ...formData, project_id: e.target.value, apartment_id: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Bez projekta</option>
                     {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
                       ? getCustomerProjects(formData.customer_id)
-                      : formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id
-                      ? getSupplierProjects(formData.supplier_id)
                       : projects
                     ).map(project => (
                       <option key={project.id} value={project.id}>{project.name}</option>
                     ))}
                   </select>
                 </div>
-
-                {formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id && formData.project_id && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ugovor / Faza (opcionalno)
-                    </label>
-                    <select
-                      value={formData.contract_id}
-                      onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Odaberi ugovor</option>
-                      {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
-                        <option key={contract.id} value={contract.id}>
-                          {contract.phases?.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
 
                 {formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id && (
                   <div>

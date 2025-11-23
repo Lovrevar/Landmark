@@ -416,24 +416,26 @@ export const updateContractBudgetRealized = async (
   if (error) throw error
 }
 
-export const fetchWirePayments = async (contractId: string) => {
+export const fetchWirePayments = async (subcontractorId: string) => {
   const { data, error } = await supabase
     .from('accounting_payments')
     .select(`
       *,
-      invoice:accounting_invoices!inner(
+      invoice:accounting_invoices(
         id,
         invoice_number,
         invoice_type,
         invoice_category,
         supplier_id,
-        contract_id,
         project_id,
         total_amount,
         status
       )
     `)
-    .eq('invoice.contract_id', contractId)
+    .eq('invoice.supplier_id', subcontractorId)
+    .eq('invoice.invoice_type', 'EXPENSE')
+    .eq('invoice.invoice_category', 'SUBCONTRACTOR')
+    .not('invoice.project_id', 'is', null)
     .order('payment_date', { ascending: false })
 
   if (error) throw error
