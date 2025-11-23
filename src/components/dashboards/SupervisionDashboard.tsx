@@ -94,23 +94,36 @@ const SupervisionDashboard: React.FC = () => {
 
       if (logsError) throw logsError
 
-      const { data: allSubcontractors, error: subError } = await supabase
-        .from('subcontractors')
+      const { data: contractsData, error: subError } = await supabase
+        .from('contracts')
         .select(`
-          id,
-          name,
-          deadline,
-          progress,
-          cost,
-          budget_realized,
-          phase_id,
-          completed_at,
-          project_phases!inner (
+          *,
+          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, progress, completed_at),
+          phase:project_phases!contracts_phase_id_fkey(
             project_id,
-            projects (name)
+            project:projects!project_phases_project_id_fkey(name)
           )
         `)
-        .order('deadline', { ascending: true })
+        .eq('status', 'active')
+        .order('end_date', { ascending: true })
+
+      // Map to subcontractor format
+      const allSubcontractors = contractsData?.map((c: any) => ({
+        id: c.subcontractor.id,
+        name: c.subcontractor.name,
+        deadline: c.end_date,
+        progress: c.subcontractor.progress || 0,
+        cost: parseFloat(c.contract_amount || 0),
+        budget_realized: parseFloat(c.budget_realized || 0),
+        phase_id: c.phase_id,
+        completed_at: c.subcontractor.completed_at,
+        project_phases: {
+          project_id: c.phase?.project_id,
+          projects: {
+            name: c.phase?.project?.name
+          }
+        }
+      })) || []
 
       if (subError) throw subError
 

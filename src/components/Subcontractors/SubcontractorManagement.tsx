@@ -39,36 +39,40 @@ const SubcontractorManagement: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch all subcontractors with their project and phase info
-      const { data: subcontractorsData, error } = await supabase
-        .from('subcontractors')
+      // Fetch all active contracts with subcontractor, phase, and project info
+      const { data: contractsData, error } = await supabase
+        .from('contracts')
         .select(`
           *,
-          project_phases!inner(
+          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact, progress),
+          phase:project_phases!contracts_phase_id_fkey(
             phase_name,
-            projects!inner(name)
+            project:projects!project_phases_project_id_fkey(name)
           )
         `)
-        .order('name')
+        .eq('status', 'active')
+        .order('subcontractor(name)')
 
       if (error) throw error
 
       // Group contracts by subcontractor name and contact
       const grouped = new Map<string, SubcontractorSummary>()
 
-      subcontractorsData?.forEach((sub: any) => {
+      contractsData?.forEach((contractData: any) => {
+        const sub = contractData.subcontractor
+        const phase = contractData.phase
         const key = `${sub.name}|${sub.contact}`
 
         const contract: SubcontractorContract = {
-          id: sub.id,
-          project_name: sub.project_phases?.projects?.name || 'Unknown Project',
-          phase_name: sub.project_phases?.phase_name || null,
-          job_description: sub.job_description,
-          cost: sub.cost || 0,
-          budget_realized: sub.budget_realized || 0,
+          id: contractData.id,
+          project_name: phase?.project?.name || 'Unknown Project',
+          phase_name: phase?.phase_name || null,
+          job_description: contractData.job_description || '',
+          cost: parseFloat(contractData.contract_amount || 0),
+          budget_realized: parseFloat(contractData.budget_realized || 0),
           progress: sub.progress || 0,
-          deadline: sub.deadline,
-          created_at: sub.created_at
+          deadline: contractData.end_date || '',
+          created_at: contractData.created_at
         }
 
         if (grouped.has(key)) {

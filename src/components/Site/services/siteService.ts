@@ -101,14 +101,15 @@ export const getSubcontractorById = async (id: string) => {
 }
 
 export const recalculatePhaseBudget = async (phaseId: string) => {
-  const { data: phaseSubcontractors, error: subError } = await supabase
-    .from('subcontractors')
-    .select('cost')
+  const { data: phaseContracts, error: subError } = await supabase
+    .from('contracts')
+    .select('contract_amount')
     .eq('phase_id', phaseId)
+    .eq('status', 'active')
 
   if (subError) throw subError
 
-  const budgetUsed = (phaseSubcontractors || []).reduce((sum, sub) => sum + sub.cost, 0)
+  const budgetUsed = (phaseContracts || []).reduce((sum, contract) => sum + parseFloat(contract.contract_amount || 0), 0)
 
   const { error: updateError } = await supabase
     .from('project_phases')
@@ -128,17 +129,18 @@ export const recalculateAllPhaseBudgets = async () => {
   if (phasesError) throw phasesError
 
   for (const phase of phases || []) {
-    const { data: phaseSubcontractors, error: subError } = await supabase
-      .from('subcontractors')
-      .select('cost')
+    const { data: phaseContracts, error: subError } = await supabase
+      .from('contracts')
+      .select('contract_amount')
       .eq('phase_id', phase.id)
+      .eq('status', 'active')
 
     if (subError) {
-      console.error(`Error fetching subcontractors for phase ${phase.id}:`, subError)
+      console.error(`Error fetching contracts for phase ${phase.id}:`, subError)
       continue
     }
 
-    const budgetUsed = (phaseSubcontractors || []).reduce((sum, sub) => sum + sub.cost, 0)
+    const budgetUsed = (phaseContracts || []).reduce((sum, contract) => sum + parseFloat(contract.contract_amount || 0), 0)
 
     await supabase
       .from('project_phases')

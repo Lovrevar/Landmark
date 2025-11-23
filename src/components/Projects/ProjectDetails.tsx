@@ -68,15 +68,30 @@ const ProjectDetails: React.FC = () => {
 
       if (projectError) throw projectError
 
-      // Fetch subcontractors
-      const { data: subcontractorsData, error: subError } = await supabase
-        .from('subcontractors')
+      // Fetch contracts (subcontractors) for this project
+      const { data: contractsData, error: subError } = await supabase
+        .from('contracts')
         .select(`
           *,
-          project_phases!inner(project_id)
+          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact, progress),
+          phase:project_phases!contracts_phase_id_fkey(phase_name)
         `)
-        .eq('project_phases.project_id', id)
-        .order('deadline', { ascending: true })
+        .eq('project_id', id)
+        .eq('status', 'active')
+        .order('end_date', { ascending: true })
+
+      // Map contracts to subcontractor format for backwards compatibility
+      const subcontractorsData = contractsData?.map((c: any) => ({
+        id: c.subcontractor.id,
+        name: c.subcontractor.name,
+        contact: c.subcontractor.contact,
+        job_description: c.job_description,
+        deadline: c.end_date,
+        cost: parseFloat(c.contract_amount || 0),
+        budget_realized: parseFloat(c.budget_realized || 0),
+        progress: c.subcontractor.progress || 0,
+        phase_name: c.phase?.phase_name
+      })) || []
 
       if (subError) throw subError
 
