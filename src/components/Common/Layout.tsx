@@ -16,7 +16,8 @@ import {
   TrendingUp,
   FileText,
   Menu,
-  X
+  X,
+  FolderKanban
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -40,10 +41,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const menuConfig = {
       General: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Reports', icon: FileText, path: '/general-reports' }
       ],
       Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
@@ -52,17 +55,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Apartments', icon: Home, path: '/apartments' },
-        { name: 'Projects', icon: Building2, path: '/sales-projects' },
+        { name: 'Sales Projects', icon: Building2, path: '/sales-projects' },
         { name: 'Customers', icon: Users, path: '/customers' },
         { name: 'Payments', icon: DollarSign, path: '/sales-payments' },
         { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
       ],
       Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Funding Overview', icon: TrendingUp, path: '/funding-overview' },
         { name: 'Banks', icon: Building2, path: '/banks' },
-        { name: 'Projects', icon: Building2, path: '/investment-projects' },
+        { name: 'Investment Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Investors', icon: Users, path: '/investors' },
         { name: 'Payments', icon: DollarSign, path: '/funding-payments' }
       ],

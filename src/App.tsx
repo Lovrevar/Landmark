@@ -6,6 +6,8 @@ import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
 import SubcontractorManagement from './components/Subcontractors/SubcontractorManagement'
 import ProjectDetails from './components/Projects/ProjectDetails'
+import ProjectDetailsEnhanced from './components/Projects/ProjectDetailsEnhanced'
+import ProjectsManagement from './components/Projects/ProjectsManagement'
 import SiteManagement from './components/SiteManagement'
 import SalesProjects from './components/SalesProjectsEnhanced'
 import CustomersManagement from './components/CustomersManagement'
@@ -63,10 +65,18 @@ function AppContent() {
           }
         />
         <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/projects/:id"
           element={
             <ProtectedRoute>
-              <ProjectDetails />
+              <ProjectDetailsEnhanced />
             </ProtectedRoute>
           }
         />
