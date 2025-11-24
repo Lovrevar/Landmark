@@ -214,7 +214,7 @@ const AccountingInvoices: React.FC = () => {
 
       const { data: companiesData, error: companiesError } = await supabase
         .from('accounting_companies')
-        .select('id, name, oib as tax_id, oib as vat_id')
+        .select('id, name, oib')
         .order('name')
 
       if (companiesError) {
