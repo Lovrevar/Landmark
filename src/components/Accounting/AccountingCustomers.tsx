@@ -23,6 +23,13 @@ interface Invoice {
   company?: { name: string }
 }
 
+interface Property {
+  apartment_price: number
+  garage_price: number | null
+  repository_price: number | null
+  total_property_price: number
+}
+
 interface CustomerStats {
   id: string
   name: string
@@ -34,6 +41,7 @@ interface CustomerStats {
   total_amount: number
   total_paid: number
   total_unpaid: number
+  property_price: number
   invoices: Invoice[]
 }
 
@@ -83,6 +91,33 @@ const AccountingCustomers: React.FC = () => {
           const totalPaid = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
           const totalUnpaid = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
 
+          const { data: propertyData } = await supabase
+            .from('sales')
+            .select(`
+              apartment_id,
+              apartments!inner (
+                price,
+                garage_id,
+                repository_id,
+                garages (price),
+                repositories (price)
+              )
+            `)
+            .eq('customer_id', customer.id)
+            .maybeSingle()
+
+          let propertyPrice = 0
+          if (propertyData?.apartments) {
+            const apt = propertyData.apartments
+            propertyPrice = Number(apt.price || 0)
+            if (apt.garages) {
+              propertyPrice += Number(apt.garages.price || 0)
+            }
+            if (apt.repositories) {
+              propertyPrice += Number(apt.repositories.price || 0)
+            }
+          }
+
           return {
             id: customer.id,
             name: customer.name,
@@ -94,6 +129,7 @@ const AccountingCustomers: React.FC = () => {
             total_amount: totalAmount,
             total_paid: totalPaid,
             total_unpaid: totalUnpaid,
+            property_price: propertyPrice,
             invoices: invoices
           }
         })
@@ -131,9 +167,9 @@ const AccountingCustomers: React.FC = () => {
 
   const totalStats = {
     total_invoices: customers.reduce((sum, c) => sum + c.total_invoices, 0),
-    total_amount: customers.reduce((sum, c) => sum + c.total_amount, 0),
+    total_property_value: customers.reduce((sum, c) => sum + c.property_price, 0),
     total_paid: customers.reduce((sum, c) => sum + c.total_paid, 0),
-    total_unpaid: customers.reduce((sum, c) => sum + c.total_unpaid, 0)
+    total_debt: customers.reduce((sum, c) => sum + (c.property_price - c.total_paid), 0)
   }
 
   return (
@@ -159,8 +195,8 @@ const AccountingCustomers: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Ukupan iznos</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{totalStats.total_amount.toLocaleString()}</p>
+              <p className="text-sm font-medium text-gray-600">Vrijednost nekretnina</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">€{totalStats.total_property_value.toLocaleString()}</p>
             </div>
             <DollarSign className="w-8 h-8 text-gray-600" />
           </div>
@@ -179,8 +215,8 @@ const AccountingCustomers: React.FC = () => {
         <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-red-700">Preostalo</p>
-              <p className="text-2xl font-bold text-red-900 mt-1">€{totalStats.total_unpaid.toLocaleString()}</p>
+              <p className="text-sm font-medium text-red-700">Dužno</p>
+              <p className="text-2xl font-bold text-red-900 mt-1">€{totalStats.total_debt.toLocaleString()}</p>
             </div>
             <TrendingDown className="w-8 h-8 text-red-600" />
           </div>
@@ -226,13 +262,13 @@ const AccountingCustomers: React.FC = () => {
                     Računi
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ukupno
+                    Cijena nekretnine
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Plaćeno
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Preostalo
+                    Dužno
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Akcije
@@ -253,13 +289,13 @@ const AccountingCustomers: React.FC = () => {
                       <span className="text-sm font-medium text-gray-900">{customer.total_invoices}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900">€{customer.total_amount.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">€{customer.property_price.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-green-600">€{customer.total_paid.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-red-600">€{customer.total_unpaid.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-red-600">€{(customer.property_price - customer.total_paid).toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
@@ -302,8 +338,8 @@ const AccountingCustomers: React.FC = () => {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700">Ukupan iznos</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">€{selectedCustomer.total_amount.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-700">Cijena nekretnine</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">€{selectedCustomer.property_price.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -312,8 +348,8 @@ const AccountingCustomers: React.FC = () => {
                 </div>
 
                 <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                  <p className="text-sm font-medium text-red-700">Preostalo duga</p>
-                  <p className="text-2xl font-bold text-red-900 mt-1">€{selectedCustomer.total_unpaid.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-red-700">Dužno</p>
+                  <p className="text-2xl font-bold text-red-900 mt-1">€{(selectedCustomer.property_price - selectedCustomer.total_paid).toLocaleString()}</p>
                 </div>
               </div>
 
