@@ -13,7 +13,7 @@ interface Company {
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOME' | 'EXPENSE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -93,8 +93,12 @@ const AccountingCompanies: React.FC = () => {
 
           const invoices = invoicesData || []
 
-          const incomeInvoices = invoices.filter(i => i.invoice_type === 'INCOME')
-          const expenseInvoices = invoices.filter(i => i.invoice_type === 'EXPENSE')
+          const incomeInvoices = invoices.filter(i =>
+            i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES'
+          )
+          const expenseInvoices = invoices.filter(i =>
+            i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_SUPPLIER'
+          )
 
           const totalIncomeAmount = incomeInvoices.reduce((sum, i) => sum + i.total_amount, 0)
           const totalIncomePaid = incomeInvoices.reduce((sum, i) => sum + i.paid_amount, 0)
