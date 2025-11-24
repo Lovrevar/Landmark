@@ -217,7 +217,11 @@ const AccountingInvoices: React.FC = () => {
         .select('id, name, oib as tax_id, oib as vat_id')
         .order('name')
 
-      if (companiesError) throw companiesError
+      if (companiesError) {
+        console.error('Error loading companies:', companiesError)
+        throw companiesError
+      }
+      console.log('Loaded companies:', companiesData)
       setCompanies(companiesData || [])
 
       const { data: suppliersData, error: suppliersError } = await supabase
@@ -225,7 +229,11 @@ const AccountingInvoices: React.FC = () => {
         .select('id, name, contact')
         .order('name')
 
-      if (suppliersError) throw suppliersError
+      if (suppliersError) {
+        console.error('Error loading suppliers:', suppliersError)
+        throw suppliersError
+      }
+      console.log('Loaded suppliers:', suppliersData)
       setSuppliers(suppliersData || [])
 
       const { data: customersData, error: customersError } = await supabase
@@ -233,7 +241,11 @@ const AccountingInvoices: React.FC = () => {
         .select('id, name, surname, email')
         .order('name')
 
-      if (customersError) throw customersError
+      if (customersError) {
+        console.error('Error loading customers:', customersError)
+        throw customersError
+      }
+      console.log('Loaded customers:', customersData)
       setCustomers(customersData || [])
 
       const { data: investorsData, error: investorsError } = await supabase
@@ -257,7 +269,11 @@ const AccountingInvoices: React.FC = () => {
         .select('id, name')
         .order('name')
 
-      if (projectsError) throw projectsError
+      if (projectsError) {
+        console.error('Error loading projects:', projectsError)
+        throw projectsError
+      }
+      console.log('Loaded projects:', projectsData)
       setProjects(projectsData || [])
 
       const { data: contractsData, error: contractsError } = await supabase
