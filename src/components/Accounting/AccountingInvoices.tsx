@@ -199,7 +199,7 @@ const AccountingInvoices: React.FC = () => {
         .from('accounting_invoices')
         .select(`
           *,
-          companies:accounting_companies!accounting_invoices_company_id_fkey (name),
+          companies:company_id (name),
           subcontractors:supplier_id (name),
           customers:customer_id (name, surname),
           investors:investor_id (name),
