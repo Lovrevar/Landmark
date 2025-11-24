@@ -46,7 +46,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Supervision: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
@@ -55,7 +54,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Apartments', icon: Home, path: '/apartments' },
         { name: 'Sales Projects', icon: Building2, path: '/sales-projects' },
         { name: 'Customers', icon: Users, path: '/customers' },
@@ -64,7 +62,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projects', icon: FolderKanban, path: '/projects' },
         { name: 'Funding Overview', icon: TrendingUp, path: '/funding-overview' },
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Investment Projects', icon: Building2, path: '/investment-projects' },
