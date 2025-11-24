@@ -199,7 +199,7 @@ const AccountingInvoices: React.FC = () => {
         .from('accounting_invoices')
         .select(`
           *,
-          companies:company_id (name),
+          companies:accounting_companies!accounting_invoices_company_id_fkey (name),
           subcontractors:supplier_id (name),
           customers:customer_id (name, surname),
           investors:investor_id (name),
@@ -213,9 +213,8 @@ const AccountingInvoices: React.FC = () => {
       setInvoices(invoicesData || [])
 
       const { data: companiesData, error: companiesError } = await supabase
-        .from('companies')
-        .select('id, name, tax_id, vat_id')
-        .eq('is_active', true)
+        .from('accounting_companies')
+        .select('id, name, oib as tax_id, oib as vat_id')
         .order('name')
 
       if (companiesError) throw companiesError
