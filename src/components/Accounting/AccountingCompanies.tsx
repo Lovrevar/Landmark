@@ -20,7 +20,7 @@ interface Invoice {
   status: string
   issue_date: string
   supplier?: { name: string }
-  customer?: { name: string }
+  customer?: { name: string; surname: string }
 }
 
 interface CompanyStats {
@@ -86,7 +86,7 @@ const AccountingCompanies: React.FC = () => {
               status,
               issue_date,
               supplier:supplier_id (name),
-              customer:customer_id (name)
+              customer:customer_id (name, surname)
             `)
             .eq('company_id', company.id)
             .order('issue_date', { ascending: false })
@@ -138,6 +138,21 @@ const AccountingCompanies: React.FC = () => {
       console.error('Error fetching companies:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const isIncomeInvoice = (invoiceType: string) => {
+    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES'
+  }
+
+  const getInvoiceEntityName = (invoice: Invoice) => {
+    if (invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES') {
+      if (invoice.customer) {
+        return `${invoice.customer.name} ${invoice.customer.surname}`.trim()
+      }
+      return 'N/A'
+    } else {
+      return invoice.supplier?.name || 'N/A'
     }
   }
 
@@ -596,27 +611,27 @@ const AccountingCompanies: React.FC = () => {
                   <div className="space-y-3">
                     {selectedCompany.invoices.map((invoice) => (
                       <div key={invoice.id} className={`border-2 rounded-lg p-4 ${
-                        invoice.invoice_type === 'INCOME' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                        isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                       }`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              {invoice.invoice_type === 'INCOME' ? (
+                              {isIncomeInvoice(invoice.invoice_type) ? (
                                 <ArrowUpCircle className="w-5 h-5 text-green-600" />
                               ) : (
                                 <ArrowDownCircle className="w-5 h-5 text-red-600" />
                               )}
                               <p className="font-medium text-gray-900">{invoice.invoice_number}</p>
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                invoice.invoice_type === 'INCOME' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                                isIncomeInvoice(invoice.invoice_type) ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
                               }`}>
-                                {invoice.invoice_type === 'INCOME' ? 'PRIHOD' : 'RASHOD'}
+                                {isIncomeInvoice(invoice.invoice_type) ? 'PRIHOD' : 'RASHOD'}
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
-                              {invoice.invoice_type === 'INCOME'
-                                ? `Kupac: ${invoice.customer?.name || 'N/A'}`
-                                : `Dobavljač: ${invoice.supplier?.name || 'N/A'}`}
+                              {isIncomeInvoice(invoice.invoice_type)
+                                ? `Kupac: ${getInvoiceEntityName(invoice)}`
+                                : `Dobavljač: ${getInvoiceEntityName(invoice)}`}
                             </p>
                             <p className="text-xs text-gray-500">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
                           </div>
