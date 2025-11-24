@@ -1,18 +1,639 @@
-import React from 'react'
-import { Users } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
+import { Users, Plus, Search, DollarSign, FileText, Briefcase, Phone, Mail, Edit, Trash2, X, Eye, TrendingUp } from 'lucide-react'
+
+interface Contract {
+  id: string
+  contract_number: string
+  project_id: string
+  phase_id: string | null
+  job_description: string
+  contract_amount: number
+  budget_realized: number
+  end_date: string | null
+  status: string
+  projects?: { name: string }
+  phases?: { phase_name: string }
+}
+
+interface Invoice {
+  id: string
+  invoice_number: string
+  invoice_type: string
+  total_amount: number
+  paid_amount: number
+  remaining_amount: number
+  status: string
+  issue_date: string
+}
+
+interface Payment {
+  id: string
+  payment_date: string
+  amount: number
+  payment_method: string
+}
+
+interface SupplierSummary {
+  id: string
+  name: string
+  contact: string
+  total_contracts: number
+  total_contract_value: number
+  total_paid: number
+  total_remaining: number
+  total_invoices: number
+  contracts: Contract[]
+  invoices: Invoice[]
+}
 
 const AccountingSuppliers: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <Users className="w-16 h-16 text-gray-400" />
-          <h2 className="text-2xl font-semibold text-gray-900">Dobavljači</h2>
-          <p className="text-gray-500 text-center max-w-md">
-            Modul za upravljanje dobavljačima je u pripremi.
-          </p>
+  const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
+  const [editingSupplier, setEditingSupplier] = useState<string | null>(null)
+
+  const [formData, setFormData] = useState({
+    name: '',
+    contact: ''
+  })
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+
+      const { data: suppliersData, error: suppliersError } = await supabase
+        .from('subcontractors')
+        .select('id, name, contact')
+        .order('name')
+
+      if (suppliersError) throw suppliersError
+
+      const suppliersWithDetails = await Promise.all(
+        (suppliersData || []).map(async (supplier) => {
+          const { data: contractsData } = await supabase
+            .from('contracts')
+            .select(`
+              id,
+              contract_number,
+              project_id,
+              phase_id,
+              job_description,
+              contract_amount,
+              budget_realized,
+              end_date,
+              status,
+              projects:project_id (name),
+              phases:phase_id (phase_name)
+            `)
+            .eq('subcontractor_id', supplier.id)
+            .in('status', ['draft', 'active'])
+
+          const { data: invoicesData } = await supabase
+            .from('accounting_invoices')
+            .select(`
+              id,
+              invoice_number,
+              invoice_type,
+              total_amount,
+              paid_amount,
+              remaining_amount,
+              status,
+              issue_date
+            `)
+            .eq('supplier_id', supplier.id)
+
+          const contracts = contractsData || []
+          const invoices = invoicesData || []
+
+          const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
+          const totalPaidFromContracts = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
+          const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
+          const totalRemainingFromInvoices = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
+
+          return {
+            id: supplier.id,
+            name: supplier.name,
+            contact: supplier.contact,
+            total_contracts: contracts.length,
+            total_contract_value: totalContractValue,
+            total_paid: totalPaidFromContracts + totalPaidFromInvoices,
+            total_remaining: (totalContractValue - totalPaidFromContracts) + totalRemainingFromInvoices,
+            total_invoices: invoices.length,
+            contracts,
+            invoices
+          }
+        })
+      )
+
+      setSuppliers(suppliersWithDetails)
+    } catch (error) {
+      console.error('Error fetching suppliers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOpenAddModal = (supplier?: SupplierSummary) => {
+    if (supplier) {
+      setEditingSupplier(supplier.id)
+      setFormData({
+        name: supplier.name,
+        contact: supplier.contact
+      })
+    } else {
+      setEditingSupplier(null)
+      setFormData({
+        name: '',
+        contact: ''
+      })
+    }
+    document.body.style.overflow = 'hidden'
+    setShowAddModal(true)
+  }
+
+  const handleCloseAddModal = () => {
+    document.body.style.overflow = 'unset'
+    setShowAddModal(false)
+    setEditingSupplier(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (editingSupplier) {
+        const { error } = await supabase
+          .from('subcontractors')
+          .update({
+            name: formData.name,
+            contact: formData.contact
+          })
+          .eq('id', editingSupplier)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('subcontractors')
+          .insert([{
+            name: formData.name,
+            contact: formData.contact
+          }])
+
+        if (error) throw error
+      }
+
+      await fetchData()
+      handleCloseAddModal()
+    } catch (error) {
+      console.error('Error saving supplier:', error)
+      alert('Greška prilikom spremanja dobavljača')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane ugovore i račune.')) return
+
+    try {
+      const { error } = await supabase
+        .from('subcontractors')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting supplier:', error)
+      alert('Greška prilikom brisanja dobavljača')
+    }
+  }
+
+  const handleViewDetails = (supplier: SupplierSummary) => {
+    setSelectedSupplier(supplier)
+    document.body.style.overflow = 'hidden'
+    setShowDetailsModal(true)
+  }
+
+  const handleCloseDetailsModal = () => {
+    document.body.style.overflow = 'unset'
+    setShowDetailsModal(false)
+    setSelectedSupplier(null)
+  }
+
+  const filteredSuppliers = suppliers.filter(supplier =>
+    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Učitavanje...</p>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dobavljači</h1>
+          <p className="text-sm text-gray-600 mt-1">Pregled svih dobavljača, ugovora i plaćanja</p>
+        </div>
+        <button
+          onClick={() => handleOpenAddModal()}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Novi dobavljač
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Ukupno dobavljača</p>
+              <p className="text-2xl font-bold text-gray-900">{suppliers.length}</p>
+            </div>
+            <Users className="w-8 h-8 text-blue-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Ukupno ugovora</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {suppliers.reduce((sum, s) => sum + s.total_contracts, 0)}
+              </p>
+            </div>
+            <Briefcase className="w-8 h-8 text-gray-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Ukupno plaćeno</p>
+              <p className="text-2xl font-bold text-green-600">
+                €{suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString()}
+              </p>
+            </div>
+            <DollarSign className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Ukupno dugovi</p>
+              <p className="text-2xl font-bold text-orange-600">
+                €{suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString()}
+              </p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-orange-600" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Pretraži dobavljače..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {filteredSuppliers.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            {searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
+          </h3>
+          <p className="text-gray-600">
+            {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača klikom na gumb iznad'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSuppliers.map((supplier) => {
+            const paymentPercentage = supplier.total_contract_value > 0
+              ? (supplier.total_paid / (supplier.total_contract_value + supplier.invoices.reduce((sum, i) => sum + i.total_amount, 0))) * 100
+              : 0
+
+            return (
+              <div
+                key={supplier.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                      <Phone className="w-3 h-3 mr-1" />
+                      {supplier.contact}
+                    </div>
+                  </div>
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Users className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Ugovori:</span>
+                    <span className="font-medium text-gray-900">{supplier.total_contracts}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Računi:</span>
+                    <span className="font-medium text-gray-900">{supplier.total_invoices}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                    <span className="text-gray-600">Vrijednost:</span>
+                    <span className="font-bold text-gray-900">€{supplier.total_contract_value.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Plaćeno:</span>
+                    <span className="font-medium text-green-600">€{supplier.total_paid.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Dugovi:</span>
+                    <span className="font-medium text-orange-600">€{supplier.total_remaining.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-gray-200 mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-gray-600">Napredak plaćanja</span>
+                    <span className="text-xs font-medium text-gray-900">{paymentPercentage.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, paymentPercentage)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleViewDetails(supplier)}
+                    className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Detalji
+                  </button>
+                  <button
+                    onClick={() => handleOpenAddModal(supplier)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Uredi"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(supplier.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Obriši"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingSupplier ? 'Uredi dobavljača' : 'Novi dobavljač'}
+              </h2>
+              <button
+                onClick={handleCloseAddModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Naziv dobavljača *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    placeholder="npr. Elektro servis d.o.o."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kontakt (email ili telefon) *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    placeholder="info@example.com ili +385 99 123 4567"
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Napomena:</strong> Nakon dodavanja dobavljača, možete kreirati račune za njih u sekciji "Računi".
+                    Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
+                  </p>
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCloseAddModal}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Odustani
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  {editingSupplier ? 'Spremi promjene' : 'Dodaj dobavljača'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDetailsModal && selectedSupplier && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{selectedSupplier.name}</h2>
+                <p className="text-sm text-gray-600">{selectedSupplier.contact}</p>
+              </div>
+              <button
+                onClick={handleCloseDetailsModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Ukupno ugovora</p>
+                  <p className="text-2xl font-bold text-gray-900">{selectedSupplier.total_contracts}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Vrijednost</p>
+                  <p className="text-2xl font-bold text-gray-900">€{selectedSupplier.total_contract_value.toLocaleString()}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-green-700">Plaćeno</p>
+                  <p className="text-2xl font-bold text-green-900">€{selectedSupplier.total_paid.toLocaleString()}</p>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <p className="text-sm text-orange-700">Dugovi</p>
+                  <p className="text-2xl font-bold text-orange-900">€{selectedSupplier.total_remaining.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <Briefcase className="w-5 h-5 mr-2" />
+                  Ugovori ({selectedSupplier.contracts.length})
+                </h3>
+                {selectedSupplier.contracts.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Nema ugovora</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedSupplier.contracts.map((contract) => (
+                      <div key={contract.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{contract.contract_number}</p>
+                            <p className="text-sm text-gray-600">{contract.projects?.name || 'N/A'}</p>
+                            {contract.phases?.phase_name && (
+                              <p className="text-xs text-gray-500">{contract.phases.phase_name}</p>
+                            )}
+                            <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            contract.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {contract.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
+                          <div>
+                            <p className="text-xs text-gray-500">Ugovor</p>
+                            <p className="text-sm font-medium">€{parseFloat(contract.contract_amount).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Plaćeno</p>
+                            <p className="text-sm font-medium text-green-600">€{parseFloat(contract.budget_realized).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Preostalo</p>
+                            <p className="text-sm font-medium text-orange-600">
+                              €{(parseFloat(contract.contract_amount) - parseFloat(contract.budget_realized)).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Računi ({selectedSupplier.invoices.length})
+                </h3>
+                {selectedSupplier.invoices.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Nema računa</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedSupplier.invoices.map((invoice) => (
+                      <div key={invoice.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{invoice.invoice_number}</p>
+                            <p className="text-xs text-gray-500">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            invoice.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                            invoice.status === 'PARTIALLY_PAID' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {invoice.status === 'PAID' ? 'Plaćeno' :
+                             invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
+                          <div>
+                            <p className="text-xs text-gray-500">Ukupno</p>
+                            <p className="text-sm font-medium">€{invoice.total_amount.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Plaćeno</p>
+                            <p className="text-sm font-medium text-green-600">€{invoice.paid_amount.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Preostalo</p>
+                            <p className="text-sm font-medium text-orange-600">€{invoice.remaining_amount.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
+              <button
+                onClick={handleCloseDetailsModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+              >
+                Zatvori
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
