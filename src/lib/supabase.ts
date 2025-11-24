@@ -3,46 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-const isWebContainer = typeof window !== 'undefined' &&
-  (window.location.hostname.includes('webcontainer') ||
-   window.location.hostname.includes('local-credentialless'))
-
-const authUrl = isWebContainer
-  ? `${supabaseUrl}/functions/v1/auth-proxy`
-  : supabaseUrl
-
 console.log('Supabase config:', {
   url: supabaseUrl,
-  authUrl,
-  key: supabaseAnonKey ? 'Present' : 'Missing',
-  isWebContainer
+  key: supabaseAnonKey ? 'Present' : 'Missing'
 })
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'supabase.auth.token',
-  },
-  global: {
-    headers: {
-      'x-client-info': 'supabase-js-web',
-    },
-    fetch: isWebContainer ? async (url, options = {}) => {
-      if (url.toString().includes('/auth/v1/')) {
-        const authPath = url.toString().split('/auth/v1')[1];
-        const proxyUrl = `${supabaseUrl}/functions/v1/auth-proxy?path=/auth/v1${authPath}`;
-        console.log('Using auth proxy:', proxyUrl);
-        return fetch(proxyUrl, options);
-      }
-      return fetch(url, options);
-    } : undefined,
-  },
-  db: {
-    schema: 'public'
-  }
-})
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type User = {
   id: string

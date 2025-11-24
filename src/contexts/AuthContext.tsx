@@ -177,25 +177,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       })
 
-      if (!response.ok) {
-        console.error('Login failed:', response.statusText)
+      if (error) {
+        console.error('Login error:', error)
         return false
       }
 
-      const { user: authUser, session } = await response.json()
-
-      if (authUser && session) {
-        localStorage.setItem('supabase.auth.token', JSON.stringify(session))
-
-        const userData = await fetchUserData(authUser)
+      if (data.user) {
+        const userData = await fetchUserData(data.user)
         if (userData) {
           setUser(userData)
           setIsAuthenticated(true)
