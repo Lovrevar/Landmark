@@ -710,12 +710,16 @@ const AccountingInvoices: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Plaćeno</p>
+              <p className="text-sm text-gray-600">Neto plaćeno</p>
               <p className="text-2xl font-bold text-green-600">
-                €{invoices
-                  .filter(i => i.status === 'PAID')
-                  .reduce((sum, i) => sum + i.total_amount, 0)
-                  .toLocaleString()}
+                €{(
+                  invoices
+                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
+                  invoices
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
+                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
@@ -943,35 +947,25 @@ const AccountingInvoices: React.FC = () => {
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Neto stanje (primljeno - plaćeno): </span>
+              <span className="text-gray-600">Neto plaćeno: </span>
               <span className={`font-semibold ${
                 filteredInvoices
                   .filter(i => i.invoice_type === 'OUTGOING_SALES')
-                  .reduce((sum, i) => sum + i.paid_amount, 0) -
+                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                 filteredInvoices
                   .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
-                  .reduce((sum, i) => sum + i.paid_amount, 0) >= 0
+                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) >= 0
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}>
                 €{(
                   filteredInvoices
                     .filter(i => i.invoice_type === 'OUTGOING_SALES')
-                    .reduce((sum, i) => sum + i.paid_amount, 0) -
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                   filteredInvoices
                     .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
-                    .reduce((sum, i) => sum + i.paid_amount, 0)
-                ).toLocaleString()}
-              </span>
-              <span className="text-xs text-gray-500 ml-2">
-                (€{filteredInvoices
-                  .filter(i => i.invoice_type === 'OUTGOING_SALES')
-                  .reduce((sum, i) => sum + i.paid_amount, 0)
-                  .toLocaleString()} primljeno -
-                 €{filteredInvoices
-                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
-                  .reduce((sum, i) => sum + i.paid_amount, 0)
-                  .toLocaleString()} plaćeno)
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
+                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
             </div>
           </div>
