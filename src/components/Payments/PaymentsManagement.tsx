@@ -61,9 +61,22 @@ const PaymentsManagement: React.FC = () => {
       // Fetch subcontractors (suppliers)
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
-        .select('id, name, phase_id')
+        .select('id, name')
 
       if (subError) throw subError
+
+      // Fetch contracts with phase info
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          subcontractor_id,
+          phase_id,
+          project_phases(id, phase_name)
+        `)
+
+      if (contractsError) throw contractsError
 
       // Fetch projects
       const { data: projectsData, error: projectsError } = await supabase
@@ -71,13 +84,6 @@ const PaymentsManagement: React.FC = () => {
         .select('id, name')
 
       if (projectsError) throw projectsError
-
-      // Fetch phases
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('id, phase_name, project_id')
-
-      if (phasesError) throw phasesError
 
       // Enrich payments with names
       const enrichedPayments = (paymentsData || []).map(payment => {
@@ -87,19 +93,29 @@ const PaymentsManagement: React.FC = () => {
         const subcontractor = subcontractorsData?.find(s => s.id === invoice.supplier_id)
         const project = projectsData?.find(p => p.id === invoice.project_id)
 
-        let phaseId: string | undefined
-        if (subcontractor?.phase_id) {
-          phaseId = subcontractor.phase_id
+        // Find contract either from invoice.contract_id or from contracts linked to this subcontractor
+        let contract = contractsData?.find(c => c.id === invoice.contract_id)
+        if (!contract) {
+          // Fallback: find any contract for this subcontractor on this project
+          contract = contractsData?.find(c =>
+            c.subcontractor_id === invoice.supplier_id
+          )
         }
-        const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
+
+        const phaseName = contract?.project_phases?.phase_name || null
 
         return {
           ...payment,
           subcontractor_id: invoice.supplier_id,
           subcontractor_name: subcontractor?.name || 'Unknown',
           project_name: project?.name || 'No Project',
-          phase_name: phase?.phase_name || null,
-          contract: null,
+          phase_name: phaseName,
+          contract: contract ? {
+            id: contract.id,
+            contract_number: contract.contract_number,
+            subcontractor_id: contract.subcontractor_id,
+            phase_id: contract.phase_id
+          } as any : null,
           investor: null,
           bank: null
         }
