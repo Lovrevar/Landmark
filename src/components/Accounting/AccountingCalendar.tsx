@@ -5,9 +5,10 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, Check
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
   supplier_id: string | null
   customer_id: string | null
+  office_supplier_id: string | null
   due_date: string
   total_amount: number
   base_amount: number
@@ -20,6 +21,7 @@ interface Invoice {
   company?: { name: string }
   supplier?: { name: string }
   customer?: { name: string }
+  office_supplier?: { name: string }
 }
 
 const AccountingCalendar: React.FC = () => {
@@ -42,7 +44,8 @@ const AccountingCalendar: React.FC = () => {
           *,
           company:accounting_companies(name),
           supplier:subcontractors(name),
-          customer:customers(name)
+          customer:customers(name),
+          office_supplier:office_suppliers(name)
         `)
         .not('due_date', 'is', null)
         .order('due_date', { ascending: true })
@@ -320,8 +323,10 @@ const AccountingCalendar: React.FC = () => {
                     switch(invoice.invoice_type) {
                       case 'INCOMING_SUPPLIER': return 'Ulazni - Dobavljač'
                       case 'INCOMING_INVESTMENT': return 'Ulazni - Investicije'
+                      case 'INCOMING_OFFICE': return 'Ulazni - Office'
                       case 'OUTGOING_SUPPLIER': return 'Izlazni - Dobavljač'
                       case 'OUTGOING_SALES': return 'Izlazni - Prodaja'
+                      case 'OUTGOING_OFFICE': return 'Izlazni - Office'
                       default: return invoice.invoice_type
                     }
                   }
@@ -347,7 +352,7 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel()}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {invoice.supplier?.name || invoice.customer?.name || 'N/A'}
+                        {invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
