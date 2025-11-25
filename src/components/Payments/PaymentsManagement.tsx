@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 
 interface PaymentWithDetails extends WirePayment {
   contract?: Contract
+  invoice_category?: string
   subcontractor_name?: string
   project_name?: string
   phase_name?: string
@@ -19,6 +20,7 @@ const PaymentsManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
+  const [filterCategory, setFilterCategory] = useState<'all' | 'SUBCONTRACTOR' | 'BANK_CREDIT' | 'INVESTOR' | 'MISCELLANEOUS'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const [stats, setStats] = useState({
     totalPayments: 0,
@@ -34,7 +36,7 @@ const PaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch payments from accounting_payments with EXPENSE invoices for SUBCONTRACTOR category
+      // Fetch payments from accounting_payments with EXPENSE invoices (all suppliers)
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('accounting_payments')
         .select(`
@@ -45,6 +47,8 @@ const PaymentsManagement: React.FC = () => {
             invoice_type,
             invoice_category,
             supplier_id,
+            bank_credit_id,
+            investment_id,
             project_id,
             milestone_id,
             total_amount,
@@ -52,7 +56,6 @@ const PaymentsManagement: React.FC = () => {
           )
         `)
         .eq('invoice.invoice_type', 'EXPENSE')
-        .eq('invoice.invoice_category', 'SUBCONTRACTOR')
         .not('invoice.project_id', 'is', null)
         .order('payment_date', { ascending: false })
 
@@ -93,10 +96,23 @@ const PaymentsManagement: React.FC = () => {
         }
         const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
 
+        // Determine supplier name based on category
+        let supplierName = 'Unknown'
+        if (invoice.invoice_category === 'SUBCONTRACTOR' && subcontractor) {
+          supplierName = subcontractor.name
+        } else if (invoice.invoice_category === 'BANK_CREDIT') {
+          supplierName = 'Bank Credit'
+        } else if (invoice.invoice_category === 'INVESTOR') {
+          supplierName = 'Investor'
+        } else if (invoice.invoice_category === 'MISCELLANEOUS') {
+          supplierName = 'Miscellaneous'
+        }
+
         return {
           ...payment,
+          invoice_category: invoice.invoice_category,
           subcontractor_id: invoice.supplier_id,
-          subcontractor_name: subcontractor?.name || 'Unknown',
+          subcontractor_name: supplierName,
           project_name: project?.name || 'No Project',
           phase_name: phase?.phase_name || null,
           contract: null,
@@ -147,11 +163,15 @@ const PaymentsManagement: React.FC = () => {
       (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && payment.amount > 10000)
 
-    return matchesSearch && matchesDateRange && matchesFilter
+    const matchesCategory =
+      filterCategory === 'all' ||
+      payment.invoice_category === filterCategory
+
+    return matchesSearch && matchesDateRange && matchesFilter && matchesCategory
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
+    const headers = ['Date', 'Supplier', 'Category', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
     const rows = filteredPayments.map(p => {
       let paidBy = '-'
       if (p.paid_by_type === 'investor' && p.investor) {
@@ -162,6 +182,7 @@ const PaymentsManagement: React.FC = () => {
       return [
         format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
         p.subcontractor_name,
+        p.invoice_category || '',
         p.project_name,
         p.phase_name || '',
         paidBy,
@@ -232,7 +253,7 @@ const PaymentsManagement: React.FC = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -244,6 +265,20 @@ const PaymentsManagement: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+          </div>
+
+          <div>
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Categories</option>
+              <option value="SUBCONTRACTOR">Subcontractors</option>
+              <option value="BANK_CREDIT">Bank Credits</option>
+              <option value="INVESTOR">Investors</option>
+              <option value="MISCELLANEOUS">Miscellaneous</option>
+            </select>
           </div>
 
           <div>
@@ -298,7 +333,8 @@ const PaymentsManagement: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
@@ -309,7 +345,7 @@ const PaymentsManagement: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-lg font-medium mb-1">No payments found</p>
                     <p className="text-sm">Try adjusting your search or filters</p>
@@ -323,6 +359,16 @@ const PaymentsManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        payment.invoice_category === 'SUBCONTRACTOR' ? 'bg-blue-100 text-blue-800' :
+                        payment.invoice_category === 'BANK_CREDIT' ? 'bg-green-100 text-green-800' :
+                        payment.invoice_category === 'INVESTOR' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {payment.invoice_category || 'N/A'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
