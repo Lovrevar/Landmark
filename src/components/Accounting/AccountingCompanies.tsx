@@ -13,7 +13,7 @@ interface Company {
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -21,6 +21,7 @@ interface Invoice {
   issue_date: string
   supplier?: { name: string }
   customer?: { name: string; surname: string }
+  office_supplier?: { name: string }
 }
 
 interface CompanyStats {
@@ -86,7 +87,8 @@ const AccountingCompanies: React.FC = () => {
               status,
               issue_date,
               supplier:supplier_id (name),
-              customer:customer_id (name, surname)
+              customer:customer_id (name, surname),
+              office_supplier:office_supplier_id (name)
             `)
             .eq('company_id', company.id)
             .order('issue_date', { ascending: false })
@@ -94,10 +96,10 @@ const AccountingCompanies: React.FC = () => {
           const invoices = invoicesData || []
 
           const incomeInvoices = invoices.filter(i =>
-            i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES'
+            i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE'
           )
           const expenseInvoices = invoices.filter(i =>
-            i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_SUPPLIER'
+            i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE'
           )
 
           const totalIncomeAmount = incomeInvoices.reduce((sum, i) => sum + i.total_amount, 0)
@@ -142,7 +144,7 @@ const AccountingCompanies: React.FC = () => {
   }
 
   const isIncomeInvoice = (invoiceType: string) => {
-    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES'
+    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES' || invoiceType === 'OUTGOING_OFFICE'
   }
 
   const getInvoiceEntityName = (invoice: Invoice) => {
@@ -151,6 +153,8 @@ const AccountingCompanies: React.FC = () => {
         return `${invoice.customer.name} ${invoice.customer.surname}`.trim()
       }
       return 'N/A'
+    } else if (invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE') {
+      return invoice.office_supplier?.name || 'N/A'
     } else {
       return invoice.supplier?.name || 'N/A'
     }
@@ -629,7 +633,9 @@ const AccountingCompanies: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
-                              {isIncomeInvoice(invoice.invoice_type)
+                              {invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
+                                ? `Office dobavljač: ${getInvoiceEntityName(invoice)}`
+                                : isIncomeInvoice(invoice.invoice_type)
                                 ? `Kupac: ${getInvoiceEntityName(invoice)}`
                                 : `Dobavljač: ${getInvoiceEntityName(invoice)}`}
                             </p>
