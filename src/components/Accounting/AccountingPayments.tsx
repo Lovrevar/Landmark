@@ -6,15 +6,13 @@ import { format } from 'date-fns'
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: string
+  invoice_type: 'EXPENSE' | 'INCOME'
   total_amount: number
   paid_amount: number
   remaining_amount: number
-  project_id: string | null
   companies?: { name: string }
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
-  projects?: { name: string }
 }
 
 interface Payment {
@@ -36,8 +34,7 @@ const AccountingPayments: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMethod, setFilterMethod] = useState<'ALL' | 'WIRE' | 'CASH' | 'CHECK' | 'CARD'>('ALL')
-  const [filterProject, setFilterProject] = useState<string>('ALL')
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+  const [filterInvoiceType, setFilterInvoiceType] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
@@ -56,8 +53,8 @@ const AccountingPayments: React.FC = () => {
     return saved ? JSON.parse(saved) : {
       payment_date: true,
       invoice_number: true,
-      project: true,
-      supplier: true,
+      invoice_type: true,
+      company_supplier: true,
       amount: true,
       payment_method: true,
       reference_number: true,
@@ -100,8 +97,8 @@ const AccountingPayments: React.FC = () => {
   const columnLabels = {
     payment_date: 'Datum plaćanja',
     invoice_number: 'Broj računa',
-    project: 'Projekat',
-    supplier: 'Dobavljač',
+    invoice_type: 'Tip računa',
+    company_supplier: 'Firma/Dobavljač',
     amount: 'Iznos',
     payment_method: 'Način plaćanja',
     reference_number: 'Referenca',
@@ -116,22 +113,18 @@ const AccountingPayments: React.FC = () => {
         .from('accounting_payments')
         .select(`
           *,
-          accounting_invoices!inner (
+          accounting_invoices (
             id,
             invoice_number,
             invoice_type,
             total_amount,
             paid_amount,
             remaining_amount,
-            project_id,
             companies:company_id (name),
             subcontractors:supplier_id (name),
-            customers:customer_id (name, surname),
-            projects:project_id (name)
+            customers:customer_id (name, surname)
           )
         `)
-        .eq('accounting_invoices.invoice_type', 'incoming')
-        .not('accounting_invoices.project_id', 'is', null)
         .order('payment_date', { ascending: false })
 
       if (paymentsError) throw paymentsError
@@ -146,26 +139,15 @@ const AccountingPayments: React.FC = () => {
           total_amount,
           paid_amount,
           remaining_amount,
-          project_id,
           companies:company_id (name),
           subcontractors:supplier_id (name),
-          projects:project_id (name)
+          customers:customer_id (name, surname)
         `)
-        .eq('invoice_type', 'incoming')
-        .not('project_id', 'is', null)
         .neq('status', 'PAID')
         .order('invoice_number')
 
       if (invoicesError) throw invoicesError
       setInvoices(invoicesData || [])
-
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
-
-      if (projectsError) throw projectsError
-      setProjects(projectsData || [])
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -269,14 +251,12 @@ const AccountingPayments: React.FC = () => {
     const matchesSearch =
       invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (payment.reference_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.subcontractors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.projects?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+      payment.description.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesMethod = filterMethod === 'ALL' || payment.payment_method === filterMethod
-    const matchesProject = filterProject === 'ALL' || invoice.project_id === filterProject
+    const matchesInvoiceType = filterInvoiceType === 'ALL' || invoice.invoice_type === filterInvoiceType
 
-    return matchesSearch && matchesMethod && matchesProject
+    return matchesSearch && matchesMethod && matchesInvoiceType
   })
 
   const getPaymentMethodLabel = (method: string) => {
@@ -311,8 +291,8 @@ const AccountingPayments: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plaćanja dobavljačima</h1>
-          <p className="text-sm text-gray-600 mt-1">Pregled plaćanja dobavljačima na projektima</p>
+          <h1 className="text-2xl font-bold text-gray-900">Plaćanja</h1>
+          <p className="text-sm text-gray-600 mt-1">Pregled svih izvršenih plaćanja</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative column-menu-container">
@@ -426,14 +406,13 @@ const AccountingPayments: React.FC = () => {
           </select>
 
           <select
-            value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
+            value={filterInvoiceType}
+            onChange={(e) => setFilterInvoiceType(e.target.value as any)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="ALL">Svi projekti</option>
-            {projects.map(project => (
-              <option key={project.id} value={project.id}>{project.name}</option>
-            ))}
+            <option value="ALL">Svi tipovi računa</option>
+            <option value="EXPENSE">Ulazni</option>
+            <option value="INCOME">Izlazni</option>
           </select>
         </div>
       </div>
@@ -445,8 +424,8 @@ const AccountingPayments: React.FC = () => {
               <tr>
                 {visibleColumns.payment_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum plaćanja</th>}
                 {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>}
-                {visibleColumns.project && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projekat</th>}
-                {visibleColumns.supplier && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dobavljač</th>}
+                {visibleColumns.invoice_type && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>}
+                {visibleColumns.company_supplier && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma/Dobavljač</th>}
                 {visibleColumns.amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Iznos</th>}
                 {visibleColumns.payment_method && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Način plaćanja</th>}
                 {visibleColumns.reference_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referenca</th>}
@@ -479,14 +458,18 @@ const AccountingPayments: React.FC = () => {
                           {invoice.invoice_number}
                         </td>
                       )}
-                      {visibleColumns.project && (
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.projects?.name || '-'}
+                      {visibleColumns.invoice_type && (
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className={`text-xs font-semibold ${invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'text-red-600' : 'text-green-600'}`}>
+                            {invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'ULAZNI' : 'IZLAZNI'}
+                          </span>
                         </td>
                       )}
-                      {visibleColumns.supplier && (
+                      {visibleColumns.company_supplier && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.subcontractors?.name || '-'}
+                          {invoice.invoice_type === 'INCOMING_SUPPLIER'
+                            ? invoice.subcontractors?.name || '-'
+                            : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
                         </td>
                       )}
                       {visibleColumns.amount && (
@@ -591,7 +574,11 @@ const AccountingPayments: React.FC = () => {
                     <option value="">Odaberi račun</option>
                     {invoices.map(invoice => (
                       <option key={invoice.id} value={invoice.id}>
-                        {invoice.invoice_number} - {invoice.projects?.name || 'N/A'} - {invoice.subcontractors?.name || 'N/A'} - Preostalo: €{invoice.remaining_amount.toLocaleString()}
+                        {invoice.invoice_number} -
+                        {invoice.invoice_type === 'EXPENSE'
+                          ? ` ${invoice.subcontractors?.name}`
+                          : invoice.customers ? ` ${invoice.customers.name} ${invoice.customers.surname}` : ''} -
+                        Preostalo: €{invoice.remaining_amount.toLocaleString()}
                       </option>
                     ))}
                   </select>
