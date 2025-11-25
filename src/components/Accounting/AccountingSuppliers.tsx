@@ -20,6 +20,7 @@ interface Invoice {
   id: string
   invoice_number: string
   invoice_type: string
+  base_amount: number
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -102,6 +103,7 @@ const AccountingSuppliers: React.FC = () => {
               id,
               invoice_number,
               invoice_type,
+              base_amount,
               total_amount,
               paid_amount,
               remaining_amount,
@@ -114,9 +116,12 @@ const AccountingSuppliers: React.FC = () => {
           const invoices = invoicesData || []
 
           const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
-          const totalPaidFromContracts = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
-          const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
-          const totalRemainingFromInvoices = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
+          const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
+          const totalRemainingFromInvoices = invoices.reduce((sum, i) => {
+            const baseAmount = parseFloat(i.base_amount || 0)
+            const paidBase = i.paid_amount > 0 ? (parseFloat(i.base_amount || 0) / parseFloat(i.total_amount || 1)) * i.paid_amount : 0
+            return sum + (baseAmount - paidBase)
+          }, 0)
 
           return {
             id: supplier.id,
@@ -124,8 +129,8 @@ const AccountingSuppliers: React.FC = () => {
             contact: supplier.contact,
             total_contracts: contracts.length,
             total_contract_value: totalContractValue,
-            total_paid: totalPaidFromContracts + totalPaidFromInvoices,
-            total_remaining: (totalContractValue - totalPaidFromContracts) + totalRemainingFromInvoices,
+            total_paid: totalPaidFromInvoices,
+            total_remaining: (totalContractValue - totalPaidFromInvoices) + totalRemainingFromInvoices,
             total_invoices: invoices.length,
             contracts,
             invoices
@@ -333,8 +338,9 @@ const AccountingSuppliers: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSuppliers.map((supplier) => {
-            const paymentPercentage = supplier.total_contract_value > 0
-              ? (supplier.total_paid / (supplier.total_contract_value + supplier.invoices.reduce((sum, i) => sum + i.total_amount, 0))) * 100
+            const totalValue = supplier.total_contract_value + supplier.invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
+            const paymentPercentage = totalValue > 0
+              ? (supplier.total_paid / totalValue) * 100
               : 0
 
             return (
@@ -604,16 +610,16 @@ const AccountingSuppliers: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                           <div>
-                            <p className="text-xs text-gray-500">Ukupno</p>
-                            <p className="text-sm font-medium">€{invoice.total_amount.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Ukupno (bez PDV)</p>
+                            <p className="text-sm font-medium">€{parseFloat(invoice.base_amount || 0).toLocaleString()}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-600">€{invoice.paid_amount.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-green-600">€{parseFloat(invoice.base_amount || 0).toLocaleString()}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Preostalo</p>
-                            <p className="text-sm font-medium text-orange-600">€{invoice.remaining_amount.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-orange-600">€0</p>
                           </div>
                         </div>
                       </div>
