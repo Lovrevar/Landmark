@@ -77,6 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       Accounting: [
         { name: 'Računi', icon: FileText, path: '/accounting-invoices' },
         { name: 'Plaćanja', icon: DollarSign, path: '/accounting-payments' },
+        { name: 'Kalendar dospijeća', icon: Calendar, path: '/accounting-calendar' },
         { name: 'Dobavljači', icon: Users, path: '/accounting-suppliers' },
         { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
         { name: 'Kupci', icon: Users, path: '/accounting-customers' }

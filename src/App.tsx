@@ -28,6 +28,7 @@ import AccountingPayments from './components/Accounting/AccountingPayments'
 import AccountingSuppliers from './components/Accounting/AccountingSuppliers'
 import AccountingCompanies from './components/Accounting/AccountingCompanies'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
+import AccountingCalendar from './components/Accounting/AccountingCalendar'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth()
@@ -269,6 +270,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingCustomers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-calendar"
+          element={
+            <ProtectedRoute>
+              <AccountingCalendar />
             </ProtectedRoute>
           }
         />
