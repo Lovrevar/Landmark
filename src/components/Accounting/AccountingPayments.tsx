@@ -6,13 +6,14 @@ import { format } from 'date-fns'
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'EXPENSE' | 'INCOME'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
   total_amount: number
   paid_amount: number
   remaining_amount: number
   companies?: { name: string }
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
+  office_suppliers?: { name: string }
 }
 
 interface Payment {
@@ -34,7 +35,7 @@ const AccountingPayments: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMethod, setFilterMethod] = useState<'ALL' | 'WIRE' | 'CASH' | 'CHECK' | 'CARD'>('ALL')
-  const [filterInvoiceType, setFilterInvoiceType] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
+  const [filterInvoiceType, setFilterInvoiceType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
@@ -122,7 +123,8 @@ const AccountingPayments: React.FC = () => {
             remaining_amount,
             companies:company_id (name),
             subcontractors:supplier_id (name),
-            customers:customer_id (name, surname)
+            customers:customer_id (name, surname),
+            office_suppliers:office_supplier_id (name)
           )
         `)
         .order('payment_date', { ascending: false })
@@ -141,7 +143,8 @@ const AccountingPayments: React.FC = () => {
           remaining_amount,
           companies:company_id (name),
           subcontractors:supplier_id (name),
-          customers:customer_id (name, surname)
+          customers:customer_id (name, surname),
+          office_suppliers:office_supplier_id (name)
         `)
         .neq('status', 'PAID')
         .order('invoice_number')
@@ -254,7 +257,13 @@ const AccountingPayments: React.FC = () => {
       payment.description.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesMethod = filterMethod === 'ALL' || payment.payment_method === filterMethod
-    const matchesInvoiceType = filterInvoiceType === 'ALL' || invoice.invoice_type === filterInvoiceType
+
+    const isExpense = invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+    const isIncome = invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES' || invoice.invoice_type === 'OUTGOING_OFFICE'
+
+    const matchesInvoiceType = filterInvoiceType === 'ALL' ||
+                               (filterInvoiceType === 'EXPENSE' && isExpense) ||
+                               (filterInvoiceType === 'INCOME' && isIncome)
 
     return matchesSearch && matchesMethod && matchesInvoiceType
   })
@@ -460,16 +469,21 @@ const AccountingPayments: React.FC = () => {
                       )}
                       {visibleColumns.invoice_type && (
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`text-xs font-semibold ${invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'text-red-600' : 'text-green-600'}`}>
-                            {invoice.invoice_type === 'INCOMING_SUPPLIER' ? 'ULAZNI' : 'IZLAZNI'}
+                          <span className={`text-xs font-semibold ${
+                            invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                            ? 'text-red-600' : 'text-green-600'}`}>
+                            {invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                            ? 'RASHOD' : 'PRIHOD'}
                           </span>
                         </td>
                       )}
                       {visibleColumns.company_supplier && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.invoice_type === 'INCOMING_SUPPLIER'
-                            ? invoice.subcontractors?.name || '-'
-                            : invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '-'}
+                          {invoice.office_suppliers?.name ||
+                           invoice.subcontractors?.name ||
+                           (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '') ||
+                           invoice.companies?.name ||
+                           '-'}
                         </td>
                       )}
                       {visibleColumns.amount && (
