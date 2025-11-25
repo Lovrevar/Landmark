@@ -26,6 +26,7 @@ import GeneralReports from './components/Reports/GeneralReports'
 import AccountingInvoices from './components/Accounting/AccountingInvoices'
 import AccountingPayments from './components/Accounting/AccountingPayments'
 import AccountingSuppliers from './components/Accounting/AccountingSuppliers'
+import OfficeSuppliers from './components/Accounting/OfficeSuppliers'
 import AccountingCompanies from './components/Accounting/AccountingCompanies'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
 import AccountingCalendar from './components/Accounting/AccountingCalendar'
@@ -254,6 +255,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingSuppliers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/office-suppliers"
+          element={
+            <ProtectedRoute>
+              <OfficeSuppliers />
             </ProtectedRoute>
           }
         />

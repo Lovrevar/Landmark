@@ -16,6 +16,13 @@ interface Supplier {
   contact: string
 }
 
+interface OfficeSupplier {
+  id: string
+  name: string
+  contact: string | null
+  email: string | null
+}
+
 interface Customer {
   id: string
   name: string
@@ -42,7 +49,7 @@ interface Contract {
 
 interface Invoice {
   id: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE'
   invoice_category?: string
   company_id: string
   supplier_id: string | null
@@ -51,6 +58,7 @@ interface Invoice {
   bank_id: string | null
   apartment_id: string | null
   contract_id: string | null
+  office_supplier_id: string | null
   invoice_number: string
   issue_date: string
   due_date: string
@@ -72,12 +80,14 @@ interface Invoice {
   banks?: { name: string }
   projects?: { name: string }
   contracts?: { contract_number: string; job_description: string }
+  office_suppliers?: { name: string }
 }
 
 const AccountingInvoices: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [officeSuppliers, setOfficeSuppliers] = useState<OfficeSupplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [investors, setInvestors] = useState<any[]>([])
   const [banks, setBanks] = useState<any[]>([])
@@ -88,7 +98,7 @@ const AccountingInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'>('ALL')
+  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
@@ -98,9 +108,10 @@ const AccountingInvoices: React.FC = () => {
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
   const [formData, setFormData] = useState({
-    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES',
+    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE',
     company_id: '',
     supplier_id: '',
+    office_supplier_id: '',
     customer_id: '',
     investor_id: '',
     bank_id: '',
@@ -205,7 +216,8 @@ const AccountingInvoices: React.FC = () => {
           investors:investor_id (name),
           banks:bank_id (name),
           projects:project_id (name),
-          contracts:contract_id (contract_number, job_description)
+          contracts:contract_id (contract_number, job_description),
+          office_suppliers:office_supplier_id (name)
         `)
         .order('issue_date', { ascending: false })
 
@@ -235,6 +247,18 @@ const AccountingInvoices: React.FC = () => {
       }
       console.log('Loaded suppliers:', suppliersData)
       setSuppliers(suppliersData || [])
+
+      const { data: officeSuppliersData, error: officeSuppliersError } = await supabase
+        .from('office_suppliers')
+        .select('id, name, contact, email')
+        .order('name')
+
+      if (officeSuppliersError) {
+        console.error('Error loading office suppliers:', officeSuppliersError)
+        throw officeSuppliersError
+      }
+      console.log('Loaded office suppliers:', officeSuppliersData)
+      setOfficeSuppliers(officeSuppliersData || [])
 
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
@@ -335,6 +359,7 @@ const AccountingInvoices: React.FC = () => {
         invoice_type: invoice.invoice_type,
         company_id: invoice.company_id,
         supplier_id: invoice.supplier_id || '',
+        office_supplier_id: invoice.office_supplier_id || '',
         customer_id: invoice.customer_id || '',
         investor_id: invoice.investor_id || '',
         bank_id: invoice.bank_id || '',
@@ -355,6 +380,7 @@ const AccountingInvoices: React.FC = () => {
         invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
         supplier_id: '',
+        office_supplier_id: '',
         customer_id: '',
         investor_id: '',
         bank_id: '',
@@ -388,6 +414,7 @@ const AccountingInvoices: React.FC = () => {
 
       // Map form data based on invoice type
       let supplier_id = null
+      let office_supplier_id = null
       let customer_id = null
       let investor_id = null
       let bank_id = null
@@ -396,6 +423,9 @@ const AccountingInvoices: React.FC = () => {
       if (formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') {
         supplier_id = formData.supplier_id || null
         invoice_category = 'SUBCONTRACTOR'
+      } else if (formData.invoice_type === 'INCOMING_OFFICE') {
+        office_supplier_id = formData.office_supplier_id || null
+        invoice_category = 'OFFICE'
       } else if (formData.invoice_type === 'INCOMING_INVESTMENT') {
         investor_id = formData.investor_id || null
         bank_id = formData.bank_id || null
@@ -410,6 +440,7 @@ const AccountingInvoices: React.FC = () => {
         invoice_category,
         company_id: formData.company_id,
         supplier_id,
+        office_supplier_id,
         customer_id,
         investor_id,
         bank_id,
@@ -549,6 +580,7 @@ const AccountingInvoices: React.FC = () => {
     switch (type) {
       case 'INCOMING_SUPPLIER': return 'ULAZNI (DOB)'
       case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
+      case 'INCOMING_OFFICE': return 'ULAZNI (URED)'
       case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
       case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'
       default: return type
@@ -557,6 +589,7 @@ const AccountingInvoices: React.FC = () => {
 
   const getSupplierCustomerName = (invoice: Invoice) => {
     if (invoice.subcontractors?.name) return invoice.subcontractors.name
+    if (invoice.office_suppliers?.name) return invoice.office_suppliers.name
     if (invoice.customers) return `${invoice.customers.name} ${invoice.customers.surname}`
     if (invoice.investors?.name) return invoice.investors.name
     if (invoice.banks?.name) return invoice.banks.name
@@ -656,6 +689,29 @@ const AccountingInvoices: React.FC = () => {
               </div>
             )}
           </div>
+          <button
+            onClick={() => {
+              setFormData({
+                ...formData,
+                invoice_type: 'INCOMING_OFFICE',
+                supplier_id: '',
+                customer_id: '',
+                investor_id: '',
+                bank_id: '',
+                apartment_id: '',
+                contract_id: '',
+                project_id: '',
+                category: ''
+              })
+              setEditingInvoice(null)
+              document.body.style.overflow = 'hidden'
+              setShowInvoiceModal(true)
+            }}
+            className="flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200 whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Novi Office Račun
+          </button>
           <button
             onClick={() => handleOpenModal()}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
@@ -766,6 +822,7 @@ const AccountingInvoices: React.FC = () => {
           >
             <option value="ALL">Svi tipovi</option>
             <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
+            <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
             <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
             <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
             <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
@@ -1017,8 +1074,9 @@ const AccountingInvoices: React.FC = () => {
                     value={formData.invoice_type}
                     onChange={(e) => setFormData({
                       ...formData,
-                      invoice_type: e.target.value as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES',
+                      invoice_type: e.target.value as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE',
                       supplier_id: '',
+                      office_supplier_id: '',
                       customer_id: '',
                       investor_id: '',
                       bank_id: '',
@@ -1028,6 +1086,7 @@ const AccountingInvoices: React.FC = () => {
                     required
                   >
                     <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
+                    <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
                     <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
                     <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
                     <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
@@ -1059,6 +1118,25 @@ const AccountingInvoices: React.FC = () => {
                     >
                       <option value="">Odaberi dobavljača</option>
                       {suppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {formData.invoice_type === 'INCOMING_OFFICE' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Office Dobavljač *
+                    </label>
+                    <select
+                      value={formData.office_supplier_id}
+                      onChange={(e) => setFormData({ ...formData, office_supplier_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi office dobavljača</option>
+                      {officeSuppliers.map(supplier => (
                         <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                       ))}
                     </select>
@@ -1241,14 +1319,37 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Kategorija *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    placeholder="npr. Materijal, Usluge, Opći troškovi..."
-                  />
+                  {formData.invoice_type === 'INCOMING_OFFICE' ? (
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi kategoriju</option>
+                      <option value="Plaće">Plaće</option>
+                      <option value="Lizing automobila">Lizing automobila</option>
+                      <option value="Najam ureda">Najam ureda</option>
+                      <option value="Struja">Struja</option>
+                      <option value="Voda">Voda</option>
+                      <option value="Internet">Internet</option>
+                      <option value="Telefon">Telefon</option>
+                      <option value="Održavanje">Održavanje</option>
+                      <option value="Osiguranje">Osiguranje</option>
+                      <option value="Računovodstvo">Računovodstvo</option>
+                      <option value="Pravne usluge">Pravne usluge</option>
+                      <option value="Ostalo">Ostalo</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                      placeholder="npr. Materijal, Usluge, Opći troškovi..."
+                    />
+                  )}
                 </div>
 
                 <div>

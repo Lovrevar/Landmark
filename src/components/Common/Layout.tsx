@@ -79,6 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Plaćanja', icon: DollarSign, path: '/accounting-payments' },
         { name: 'Kalendar dospijeća', icon: Calendar, path: '/accounting-calendar' },
         { name: 'Dobavljači', icon: Users, path: '/accounting-suppliers' },
+        { name: 'Office Dobavljači', icon: Building2, path: '/office-suppliers' },
         { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
         { name: 'Kupci', icon: Users, path: '/accounting-customers' }
       ]
