@@ -943,11 +943,35 @@ const AccountingInvoices: React.FC = () => {
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Ukupno plaćeno: </span>
-              <span className="font-semibold text-green-600">
-                €{filteredInvoices
+              <span className="text-gray-600">Neto stanje (primljeno - plaćeno): </span>
+              <span className={`font-semibold ${
+                filteredInvoices
+                  .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                  .reduce((sum, i) => sum + i.paid_amount, 0) -
+                filteredInvoices
+                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                  .reduce((sum, i) => sum + i.paid_amount, 0) >= 0
+                  ? 'text-green-600'
+                  : 'text-red-600'
+              }`}>
+                €{(
+                  filteredInvoices
+                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .reduce((sum, i) => sum + i.paid_amount, 0) -
+                  filteredInvoices
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .reduce((sum, i) => sum + i.paid_amount, 0)
+                ).toLocaleString()}
+              </span>
+              <span className="text-xs text-gray-500 ml-2">
+                (€{filteredInvoices
+                  .filter(i => i.invoice_type === 'OUTGOING_SALES')
                   .reduce((sum, i) => sum + i.paid_amount, 0)
-                  .toLocaleString()}
+                  .toLocaleString()} primljeno -
+                 €{filteredInvoices
+                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                  .reduce((sum, i) => sum + i.paid_amount, 0)
+                  .toLocaleString()} plaćeno)
               </span>
             </div>
           </div>
