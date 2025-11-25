@@ -34,7 +34,7 @@ const PaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch payments from accounting_payments with EXPENSE invoices for SUBCONTRACTOR category
+      // Fetch payments from accounting_payments with INCOMING_SUPPLIER invoices for SUBCONTRACTOR category
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('accounting_payments')
         .select(`
@@ -51,7 +51,7 @@ const PaymentsManagement: React.FC = () => {
             status
           )
         `)
-        .eq('invoice.invoice_type', 'EXPENSE')
+        .eq('invoice.invoice_type', 'INCOMING_SUPPLIER')
         .eq('invoice.invoice_category', 'SUBCONTRACTOR')
         .not('invoice.project_id', 'is', null)
         .order('payment_date', { ascending: false })
