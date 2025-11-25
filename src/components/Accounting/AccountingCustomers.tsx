@@ -42,6 +42,7 @@ interface CustomerStats {
   total_paid: number
   total_unpaid: number
   property_price: number
+  total_apartments: number
   invoices: Invoice[]
 }
 
@@ -104,18 +105,23 @@ const AccountingCustomers: React.FC = () => {
               )
             `)
             .eq('customer_id', customer.id)
-            .maybeSingle()
 
           let propertyPrice = 0
-          if (propertyData?.apartments) {
-            const apt = propertyData.apartments
-            propertyPrice = Number(apt.price || 0)
-            if (apt.garages) {
-              propertyPrice += Number(apt.garages.price || 0)
-            }
-            if (apt.repositories) {
-              propertyPrice += Number(apt.repositories.price || 0)
-            }
+          let totalApartments = 0
+          if (propertyData && propertyData.length > 0) {
+            totalApartments = propertyData.length
+            propertyData.forEach((sale) => {
+              if (sale.apartments) {
+                const apt = sale.apartments
+                propertyPrice += Number(apt.price || 0)
+                if (apt.garages) {
+                  propertyPrice += Number(apt.garages.price || 0)
+                }
+                if (apt.repositories) {
+                  propertyPrice += Number(apt.repositories.price || 0)
+                }
+              }
+            })
           }
 
           return {
@@ -130,6 +136,7 @@ const AccountingCustomers: React.FC = () => {
             total_paid: totalPaid,
             total_unpaid: totalUnpaid,
             property_price: propertyPrice,
+            total_apartments: totalApartments,
             invoices: invoices
           }
         })
@@ -262,6 +269,9 @@ const AccountingCustomers: React.FC = () => {
                     Računi
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Apartmani
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Cijena nekretnine
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -287,6 +297,9 @@ const AccountingCustomers: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-gray-900">{customer.total_invoices}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <span className="text-sm font-medium text-blue-600">{customer.total_apartments}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-gray-900">€{customer.property_price.toLocaleString()}</span>
@@ -331,10 +344,15 @@ const AccountingCustomers: React.FC = () => {
             </div>
 
             <div className="overflow-y-auto flex-1 p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <p className="text-sm font-medium text-blue-700">Ukupno računa</p>
                   <p className="text-2xl font-bold text-blue-900 mt-1">{selectedCustomer.total_invoices}</p>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <p className="text-sm font-medium text-blue-700">Apartmani</p>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">{selectedCustomer.total_apartments}</p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
