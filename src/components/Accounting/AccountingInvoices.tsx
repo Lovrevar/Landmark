@@ -49,7 +49,7 @@ interface Contract {
 
 interface Invoice {
   id: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
   invoice_category?: string
   company_id: string
   supplier_id: string | null
@@ -98,17 +98,18 @@ const AccountingInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE'>('ALL')
+  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+  const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
   const [formData, setFormData] = useState({
-    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE',
+    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE',
     company_id: '',
     supplier_id: '',
     office_supplier_id: '',
@@ -355,6 +356,7 @@ const AccountingInvoices: React.FC = () => {
   const handleOpenModal = (invoice?: Invoice) => {
     if (invoice) {
       setEditingInvoice(invoice)
+      setIsOfficeInvoice(invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE')
       setFormData({
         invoice_type: invoice.invoice_type,
         company_id: invoice.company_id,
@@ -376,6 +378,7 @@ const AccountingInvoices: React.FC = () => {
       })
     } else {
       setEditingInvoice(null)
+      setIsOfficeInvoice(false)
       setFormData({
         invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
@@ -404,6 +407,7 @@ const AccountingInvoices: React.FC = () => {
     document.body.style.overflow = 'unset'
     setShowInvoiceModal(false)
     setEditingInvoice(null)
+    setIsOfficeInvoice(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -423,7 +427,7 @@ const AccountingInvoices: React.FC = () => {
       if (formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') {
         supplier_id = formData.supplier_id || null
         invoice_category = 'SUBCONTRACTOR'
-      } else if (formData.invoice_type === 'INCOMING_OFFICE') {
+      } else if (formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') {
         office_supplier_id = formData.office_supplier_id || null
         invoice_category = 'OFFICE'
       } else if (formData.invoice_type === 'INCOMING_INVESTMENT') {
@@ -581,6 +585,7 @@ const AccountingInvoices: React.FC = () => {
       case 'INCOMING_SUPPLIER': return 'ULAZNI (DOB)'
       case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
       case 'INCOMING_OFFICE': return 'ULAZNI (URED)'
+      case 'OUTGOING_OFFICE': return 'IZLAZNI (URED)'
       case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
       case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'
       default: return type
@@ -691,6 +696,7 @@ const AccountingInvoices: React.FC = () => {
           </div>
           <button
             onClick={() => {
+              setIsOfficeInvoice(true)
               setFormData({
                 ...formData,
                 invoice_type: 'INCOMING_OFFICE',
@@ -825,6 +831,7 @@ const AccountingInvoices: React.FC = () => {
             <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
             <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
             <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
+            <option value="OUTGOING_OFFICE">Izlazni (Ured)</option>
             <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
           </select>
 
@@ -1074,7 +1081,7 @@ const AccountingInvoices: React.FC = () => {
                     value={formData.invoice_type}
                     onChange={(e) => setFormData({
                       ...formData,
-                      invoice_type: e.target.value as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE',
+                      invoice_type: e.target.value as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE',
                       supplier_id: '',
                       office_supplier_id: '',
                       customer_id: '',
@@ -1084,12 +1091,21 @@ const AccountingInvoices: React.FC = () => {
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    disabled={editingInvoice !== null}
                   >
-                    <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
-                    <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
-                    <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
-                    <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
-                    <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
+                    {isOfficeInvoice ? (
+                      <>
+                        <option value="INCOMING_OFFICE">Ulazni</option>
+                        <option value="OUTGOING_OFFICE">Izlazni</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
+                        <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
+                        <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
+                        <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -1124,7 +1140,7 @@ const AccountingInvoices: React.FC = () => {
                   </div>
                 )}
 
-                {formData.invoice_type === 'INCOMING_OFFICE' && (
+                {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Office Dobavljač *
@@ -1319,7 +1335,7 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Kategorija *
                   </label>
-                  {formData.invoice_type === 'INCOMING_OFFICE' ? (
+                  {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') ? (
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -1352,31 +1368,33 @@ const AccountingInvoices: React.FC = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Projekt (opcionalno)
-                  </label>
-                  <select
-                    value={formData.project_id}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      project_id: e.target.value,
-                      apartment_id: '',
-                      contract_id: ''
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Bez projekta</option>
-                    {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
-                      ? getCustomerProjects(formData.customer_id)
-                      : formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id
-                      ? getSupplierProjects(formData.supplier_id)
-                      : projects
-                    ).map(project => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {!isOfficeInvoice && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Projekt (opcionalno)
+                    </label>
+                    <select
+                      value={formData.project_id}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        project_id: e.target.value,
+                        apartment_id: '',
+                        contract_id: ''
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Bez projekta</option>
+                      {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
+                        ? getCustomerProjects(formData.customer_id)
+                        : formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id
+                        ? getSupplierProjects(formData.supplier_id)
+                        : projects
+                      ).map(project => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {(formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') && formData.supplier_id && (
                   <div>
