@@ -6,7 +6,8 @@ interface Invoice {
   id: string
   invoice_number: string
   invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
-  supplier_customer_name: string
+  supplier_id: string | null
+  customer_id: string | null
   due_date: string
   total_amount: number
   base_amount: number
@@ -17,6 +18,8 @@ interface Invoice {
   company_id: string
   category: string | null
   company?: { name: string }
+  supplier?: { name: string }
+  customer?: { name: string }
 }
 
 const AccountingCalendar: React.FC = () => {
@@ -37,7 +40,9 @@ const AccountingCalendar: React.FC = () => {
         .from('accounting_invoices')
         .select(`
           *,
-          company:accounting_companies(name)
+          company:accounting_companies(name),
+          supplier:subcontractors(name),
+          customer:customers(name)
         `)
         .not('due_date', 'is', null)
         .order('due_date', { ascending: true })
@@ -341,7 +346,9 @@ const AccountingCalendar: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel()}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.supplier_customer_name}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {invoice.supplier?.name || invoice.customer?.name || 'N/A'}
+                      </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.base_amount.toLocaleString()}</td>
