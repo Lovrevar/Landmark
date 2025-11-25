@@ -25,7 +25,6 @@ interface Invoice {
   remaining_amount: number
   status: string
   issue_date: string
-  contract_id: string | null
 }
 
 interface Payment {
@@ -107,22 +106,17 @@ const AccountingSuppliers: React.FC = () => {
               paid_amount,
               remaining_amount,
               status,
-              issue_date,
-              contract_id
+              issue_date
             `)
             .eq('supplier_id', supplier.id)
 
           const contracts = contractsData || []
           const invoices = invoicesData || []
 
-          // Calculate totals from contracts (budget_realized already includes payments from accounting_payments)
           const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
           const totalPaidFromContracts = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
-
-          // Only include invoices that are NOT linked to contracts (to avoid double counting)
-          const invoicesNotLinkedToContracts = invoices.filter(inv => !inv.contract_id)
-          const totalPaidFromStandaloneInvoices = invoicesNotLinkedToContracts.reduce((sum, i) => sum + i.paid_amount, 0)
-          const totalRemainingFromStandaloneInvoices = invoicesNotLinkedToContracts.reduce((sum, i) => sum + i.remaining_amount, 0)
+          const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
+          const totalRemainingFromInvoices = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
 
           return {
             id: supplier.id,
@@ -130,8 +124,8 @@ const AccountingSuppliers: React.FC = () => {
             contact: supplier.contact,
             total_contracts: contracts.length,
             total_contract_value: totalContractValue,
-            total_paid: totalPaidFromContracts + totalPaidFromStandaloneInvoices,
-            total_remaining: (totalContractValue - totalPaidFromContracts) + totalRemainingFromStandaloneInvoices,
+            total_paid: totalPaidFromContracts + totalPaidFromInvoices,
+            total_remaining: (totalContractValue - totalPaidFromContracts) + totalRemainingFromInvoices,
             total_invoices: invoices.length,
             contracts,
             invoices
