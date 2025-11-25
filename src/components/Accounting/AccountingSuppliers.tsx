@@ -20,6 +20,7 @@ interface Invoice {
   id: string
   invoice_number: string
   invoice_type: string
+  base_amount: number
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -102,6 +103,7 @@ const AccountingSuppliers: React.FC = () => {
               id,
               invoice_number,
               invoice_type,
+              base_amount,
               total_amount,
               paid_amount,
               remaining_amount,
@@ -115,6 +117,7 @@ const AccountingSuppliers: React.FC = () => {
 
           const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
           const totalPaidFromContracts = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
+          const totalInvoicesBaseAmount = invoices.reduce((sum, i) => sum + i.base_amount, 0)
           const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
           const totalRemainingFromInvoices = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
 
@@ -124,8 +127,8 @@ const AccountingSuppliers: React.FC = () => {
             contact: supplier.contact,
             total_contracts: contracts.length,
             total_contract_value: totalContractValue,
-            total_paid: totalPaidFromContracts + totalPaidFromInvoices,
-            total_remaining: (totalContractValue - totalPaidFromContracts) + totalRemainingFromInvoices,
+            total_paid: totalPaidFromContracts,
+            total_remaining: (totalContractValue - totalPaidFromContracts),
             total_invoices: invoices.length,
             contracts,
             invoices
@@ -334,7 +337,7 @@ const AccountingSuppliers: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSuppliers.map((supplier) => {
             const paymentPercentage = supplier.total_contract_value > 0
-              ? (supplier.total_paid / (supplier.total_contract_value + supplier.invoices.reduce((sum, i) => sum + i.total_amount, 0))) * 100
+              ? (supplier.total_paid / supplier.total_contract_value) * 100
               : 0
 
             return (
@@ -604,8 +607,8 @@ const AccountingSuppliers: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                           <div>
-                            <p className="text-xs text-gray-500">Ukupno</p>
-                            <p className="text-sm font-medium">€{invoice.total_amount.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Iznos (bez PDV)</p>
+                            <p className="text-sm font-medium">€{invoice.base_amount.toLocaleString()}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
