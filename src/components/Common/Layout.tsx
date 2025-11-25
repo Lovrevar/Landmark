@@ -17,7 +17,9 @@ import {
   FileText,
   Menu,
   X,
-  FolderKanban
+  FolderKanban,
+  Lock,
+  AlertCircle
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -28,6 +30,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [pendingProfile, setPendingProfile] = useState<Profile | null>(null)
   const navigate = useNavigate()
 
   const getMenuItems = () => {
@@ -82,6 +88,40 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const menuItems = getMenuItems()
 
+  const handleProfileChange = (profile: Profile) => {
+    if (profile === 'Accounting') {
+      setPendingProfile(profile)
+      setShowPasswordModal(true)
+      setShowProfileDropdown(false)
+    } else {
+      setCurrentProfile(profile)
+      setShowProfileDropdown(false)
+      navigate('/')
+    }
+  }
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (password === 'admin') {
+      setCurrentProfile(pendingProfile!)
+      setShowPasswordModal(false)
+      setPassword('')
+      setPasswordError('')
+      setPendingProfile(null)
+      navigate('/')
+    } else {
+      setPasswordError('Netočna šifra. Pokušajte ponovno.')
+    }
+  }
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false)
+    setPassword('')
+    setPasswordError('')
+    setPendingProfile(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -114,16 +154,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       {(['General', 'Supervision', 'Sales', 'Funding', 'Accounting'] as Profile[]).map((profile) => (
                         <button
                           key={profile}
-                          onClick={() => {
-                            setCurrentProfile(profile)
-                            setShowProfileDropdown(false)
-                            navigate('/')
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 ${
+                          onClick={() => handleProfileChange(profile)}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between ${
                             currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
                           }`}
                         >
-                          {profile}
+                          <span>{profile}</span>
+                          {profile === 'Accounting' && <Lock className="w-3 h-3" />}
                         </button>
                       ))}
                     </div>
@@ -190,6 +227,64 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Lock className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Accounting Access</h2>
+                <p className="text-sm text-gray-600">Unesite šifru za pristup</p>
+              </div>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Šifra
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setPasswordError('')
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Unesite šifru"
+                  autoFocus
+                />
+              </div>
+
+              {passwordError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{passwordError}</p>
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Potvrdi
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePasswordCancel}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Odustani
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
