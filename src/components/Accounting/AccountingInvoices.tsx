@@ -715,14 +715,33 @@ const AccountingInvoices: React.FC = () => {
                 €{(
                   invoices
                     .filter(i => i.invoice_type === 'OUTGOING_SALES')
-                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
+                    .reduce((sum, i) => sum + i.paid_amount, 0) -
                   invoices
                     .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
-                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
+                    .reduce((sum, i) => sum + i.paid_amount, 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">PDV za platiti</p>
+              <p className="text-2xl font-bold text-blue-600">
+                €{(
+                  invoices
+                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0) -
+                  invoices
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0)
+                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+            </div>
+            <DollarSign className="w-8 h-8 text-blue-600" />
           </div>
         </div>
       </div>
@@ -947,7 +966,7 @@ const AccountingInvoices: React.FC = () => {
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Neto plaćeno: </span>
+              <span className="text-gray-600">Neto plaćeno (bez PDV): </span>
               <span className={`font-semibold ${
                 filteredInvoices
                   .filter(i => i.invoice_type === 'OUTGOING_SALES')
