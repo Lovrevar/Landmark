@@ -278,52 +278,110 @@ const AccountingCalendar: React.FC = () => {
       {selectedDate && selectedInvoices.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h4 className="font-bold text-gray-900 mb-3">
-            Računi za {selectedDate.getDate()}. {monthNames[selectedDate.getMonth()]}
+            Računi za {selectedDate.getDate()}. {monthNames[selectedDate.getMonth()]} - {selectedInvoices.length} računa
           </h4>
-          <div className="space-y-2">
-            {selectedInvoices.map(invoice => (
-              <div
-                key={invoice.id}
-                className={`p-3 rounded-lg border ${
-                  invoice.status === 'PAID'
-                    ? 'bg-green-50 border-green-200'
-                    : new Date(invoice.due_date) < today
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-yellow-50 border-yellow-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">
-                      {invoice.invoice_number}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {invoice.supplier_customer_name}
-                    </p>
+          <div className="space-y-3">
+            {selectedInvoices.map(invoice => {
+              const isOverdue = new Date(invoice.due_date) < today && invoice.status !== 'PAID'
+              const getTypeLabel = () => {
+                switch(invoice.invoice_type) {
+                  case 'INCOMING_SUPPLIER': return 'Ulazni - Dobavljač'
+                  case 'INCOMING_INVESTMENT': return 'Ulazni - Investicije'
+                  case 'OUTGOING_SUPPLIER': return 'Izlazni - Dobavljač'
+                  case 'OUTGOING_SALES': return 'Izlazni - Prodaja'
+                  default: return invoice.invoice_type
+                }
+              }
+
+              return (
+                <div
+                  key={invoice.id}
+                  className={`p-4 rounded-lg border-2 ${
+                    invoice.status === 'PAID'
+                      ? 'bg-green-50 border-green-300'
+                      : isOverdue
+                      ? 'bg-red-50 border-red-300'
+                      : 'bg-yellow-50 border-yellow-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <p className="font-bold text-base text-gray-900">
+                          {invoice.invoice_number}
+                        </p>
+                        <span
+                          className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+                            invoice.status === 'PAID'
+                              ? 'bg-green-100 text-green-800'
+                              : invoice.status === 'PARTIALLY_PAID'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {invoice.status === 'PAID'
+                            ? 'Plaćeno'
+                            : invoice.status === 'PARTIALLY_PAID'
+                            ? 'Djelomično'
+                            : 'Neplaćeno'}
+                        </span>
+                        {isOverdue && (
+                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-600 text-white">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            OVERDUE
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium">{getTypeLabel()}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm text-gray-900">
-                      €{invoice.total_amount.toLocaleString()}
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        invoice.status === 'PAID'
-                          ? 'bg-green-100 text-green-800'
-                          : invoice.status === 'PARTIALLY_PAID'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {invoice.status === 'PAID'
-                        ? 'Plaćeno'
-                        : invoice.status === 'PARTIALLY_PAID'
-                        ? 'Djelomično'
-                        : 'Neplaćeno'}
-                    </span>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Dobavljač/Kupac</p>
+                      <p className="text-sm font-semibold text-gray-900">{invoice.supplier_customer_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Moja firma</p>
+                      <p className="text-sm font-semibold text-gray-900">{invoice.company_name}</p>
+                    </div>
+                    {invoice.category && (
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-600 font-medium">Kategorija</p>
+                        <p className="text-sm font-semibold text-gray-900">{invoice.category}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-300 pt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Osnovica:</span>
+                      <span className="font-semibold text-gray-900">€{invoice.base_amount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PDV:</span>
+                      <span className="font-semibold text-gray-900">€{invoice.vat_amount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-base font-bold border-t border-gray-300 pt-2">
+                      <span className="text-gray-900">Ukupno:</span>
+                      <span className="text-gray-900">€{invoice.total_amount.toLocaleString()}</span>
+                    </div>
+                    {invoice.status !== 'UNPAID' && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Plaćeno:</span>
+                          <span className="font-semibold text-green-600">€{invoice.paid_amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Preostalo:</span>
+                          <span className="font-semibold text-red-600">€{invoice.remaining_amount.toLocaleString()}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
