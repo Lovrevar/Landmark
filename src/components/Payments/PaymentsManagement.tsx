@@ -34,36 +34,39 @@ const PaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch payments from accounting_payments with EXPENSE invoices for SUBCONTRACTOR category
+      // Fetch ALL invoices that have a project assigned
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select('*')
+        .not('project_id', 'is', null)
+        .order('created_at', { ascending: false })
+
+      if (invoicesError) throw invoicesError
+
+      // Fetch payments for these invoices
+      const invoiceIds = invoicesData?.map(inv => inv.id) || []
+
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('accounting_payments')
-        .select(`
-          *,
-          invoice:accounting_invoices(
-            id,
-            invoice_number,
-            invoice_type,
-            invoice_category,
-            supplier_id,
-            project_id,
-            milestone_id,
-            total_amount,
-            status
-          )
-        `)
-        .eq('invoice.invoice_type', 'EXPENSE')
-        .eq('invoice.invoice_category', 'SUBCONTRACTOR')
-        .not('invoice.project_id', 'is', null)
+        .select('*')
+        .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
       if (paymentsError) throw paymentsError
 
-      // Fetch subcontractors (suppliers)
-      const { data: subcontractorsData, error: subError } = await supabase
-        .from('subcontractors')
-        .select('id, name, phase_id')
+      // Fetch suppliers (all from accounting_companies)
+      const { data: suppliersData, error: suppliersError } = await supabase
+        .from('accounting_companies')
+        .select('id, name')
 
-      if (subError) throw subError
+      if (suppliersError) throw suppliersError
+
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('id, name')
+
+      if (customersError) throw customersError
 
       // Fetch projects
       const { data: projectsData, error: projectsError } = await supabase
@@ -72,33 +75,30 @@ const PaymentsManagement: React.FC = () => {
 
       if (projectsError) throw projectsError
 
-      // Fetch phases
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('id, phase_name, project_id')
-
-      if (phasesError) throw phasesError
-
-      // Enrich payments with names
+      // Enrich payments with invoice and names
       const enrichedPayments = (paymentsData || []).map(payment => {
-        const invoice = payment.invoice
+        const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
         if (!invoice) return null
 
-        const subcontractor = subcontractorsData?.find(s => s.id === invoice.supplier_id)
-        const project = projectsData?.find(p => p.id === invoice.project_id)
-
-        let phaseId: string | undefined
-        if (subcontractor?.phase_id) {
-          phaseId = subcontractor.phase_id
+        let entityName = 'Unknown'
+        if (invoice.invoice_type === 'EXPENSE' && invoice.supplier_id) {
+          const supplier = suppliersData?.find(s => s.id === invoice.supplier_id)
+          entityName = supplier?.name || 'Unknown Supplier'
+        } else if (invoice.invoice_type === 'INCOME' && invoice.customer_id) {
+          const customer = customersData?.find(c => c.id === invoice.customer_id)
+          entityName = customer?.name || 'Unknown Customer'
         }
-        const phase = phaseId ? phasesData?.find(p => p.id === phaseId) : undefined
+
+        const project = projectsData?.find(p => p.id === invoice.project_id)
 
         return {
           ...payment,
-          subcontractor_id: invoice.supplier_id,
-          subcontractor_name: subcontractor?.name || 'Unknown',
+          invoice_number: invoice.invoice_number,
+          invoice_type: invoice.invoice_type,
+          invoice_category: invoice.invoice_category,
+          subcontractor_name: entityName,
           project_name: project?.name || 'No Project',
-          phase_name: phase?.phase_name || null,
+          phase_name: null,
           contract: null,
           investor: null,
           bank: null
@@ -151,20 +151,15 @@ const PaymentsManagement: React.FC = () => {
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => {
-      let paidBy = '-'
-      if (p.paid_by_type === 'investor' && p.investor) {
-        paidBy = `${p.investor.name} (Investor)`
-      } else if (p.paid_by_type === 'bank' && p.bank) {
-        paidBy = `${p.bank.name} (Bank)`
-      }
+    const headers = ['Date', 'Invoice #', 'Type', 'Entity', 'Project', 'Category', 'Amount', 'Notes']
+    const rows = filteredPayments.map((p: any) => {
       return [
         format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
-        p.subcontractor_name,
-        p.project_name,
-        p.phase_name || '',
-        paidBy,
+        p.invoice_number || '',
+        p.invoice_type || '',
+        p.subcontractor_name || '',
+        p.project_name || '',
+        p.invoice_category || '',
         p.amount.toString(),
         p.notes || ''
       ]
@@ -298,10 +293,11 @@ const PaymentsManagement: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               </tr>
@@ -309,17 +305,29 @@ const PaymentsManagement: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-lg font-medium mb-1">No payments found</p>
                     <p className="text-sm">Try adjusting your search or filters</p>
                   </td>
                 </tr>
               ) : (
-                filteredPayments.map((payment) => (
+                filteredPayments.map((payment: any) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                      {payment.invoice_number || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        payment.invoice_type === 'INCOME'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {payment.invoice_type || '-'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
@@ -327,33 +335,16 @@ const PaymentsManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.phase_name || '-'}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id) ? (
-                        payment.paid_by_type === 'investor' ? (
-                          <div className="flex items-center space-x-2">
-                            <User className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm text-blue-600 font-medium">
-                              {payment.investor?.name || 'Investor'}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">
-                              {payment.bank?.name || 'Bank'}
-                            </span>
-                          </div>
-                        )
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
+                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                        {payment.invoice_category || '-'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-semibold text-green-600">
-                        €{payment.amount.toLocaleString()}
+                      <span className={`text-sm font-semibold ${
+                        payment.invoice_type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {payment.invoice_type === 'INCOME' ? '+' : '-'}€{payment.amount.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
