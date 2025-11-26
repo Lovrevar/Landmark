@@ -185,14 +185,16 @@ const AccountingCompanies: React.FC = () => {
       setFormData({
         name: company.name,
         oib: company.oib,
-        initial_balance: company.initial_balance
+        accountCount: 1,
+        bankAccounts: [{ bank_name: '', initial_balance: 0 }]
       })
     } else {
       setEditingCompany(null)
       setFormData({
         name: '',
         oib: '',
-        initial_balance: 0
+        accountCount: 1,
+        bankAccounts: [{ bank_name: '', initial_balance: 0 }]
       })
     }
     document.body.style.overflow = 'hidden'
