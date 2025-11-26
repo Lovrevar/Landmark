@@ -224,46 +224,29 @@ const AccountingDashboard: React.FC = () => {
       const companyStats: TopCompany[] = []
 
       for (const company of companies || []) {
-        // Get all invoices for this company
-        const { data: invoices } = await supabase
-          .from('accounting_invoices')
-          .select('id, invoice_type, total_amount')
+        // Get all bank accounts for this company
+        const { data: bankAccounts } = await supabase
+          .from('company_bank_accounts')
+          .select('current_balance')
           .eq('company_id', company.id)
 
-        if (!invoices) continue
+        // Get invoice count
+        const { count: invoiceCount } = await supabase
+          .from('accounting_invoices')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', company.id)
 
-        const outgoingInvoices = invoices.filter(inv =>
-          inv.invoice_type.startsWith('OUTGOING')
-        )
-        const incomingInvoices = invoices.filter(inv =>
-          inv.invoice_type.startsWith('INCOMING')
-        )
-
-        // Get payments for these invoices
-        const invoiceIds = invoices.map(inv => inv.id)
-        const { data: payments } = await supabase
-          .from('accounting_payments')
-          .select('amount, invoice_id')
-          .in('invoice_id', invoiceIds)
-
-        const outgoingPayments = payments?.filter(p =>
-          outgoingInvoices.some(inv => inv.id === p.invoice_id)
-        ) || []
-
-        const incomingPayments = payments?.filter(p =>
-          incomingInvoices.some(inv => inv.id === p.invoice_id)
-        ) || []
-
-        const totalIncoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-        const totalOutgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+        const totalBalance = bankAccounts?.reduce((sum, acc) =>
+          sum + parseFloat(acc.current_balance || '0'), 0
+        ) || 0
 
         companyStats.push({
           id: company.id,
           name: company.name,
-          totalIncoming,
-          totalOutgoing,
-          netBalance: totalIncoming - totalOutgoing,
-          invoiceCount: invoices.length
+          totalIncoming: 0,
+          totalOutgoing: 0,
+          netBalance: totalBalance,
+          invoiceCount: invoiceCount || 0
         })
       }
 
