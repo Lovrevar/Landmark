@@ -10,6 +10,14 @@ interface Company {
   created_at: string
 }
 
+interface BankAccount {
+  id: string
+  bank_name: string
+  account_number: string | null
+  initial_balance: number
+  current_balance: number
+}
+
 interface Invoice {
   id: string
   invoice_number: string
@@ -40,6 +48,7 @@ interface CompanyStats {
   current_balance: number
   profit: number
   revenue: number
+  bank_accounts: BankAccount[]
   invoices: Invoice[]
 }
 
@@ -55,7 +64,8 @@ const AccountingCompanies: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     oib: '',
-    initial_balance: 0
+    accountCount: 1,
+    bankAccounts: [{ bank_name: '', initial_balance: 0 }]
   })
 
   useEffect(() => {
@@ -75,6 +85,12 @@ const AccountingCompanies: React.FC = () => {
 
       const companiesWithStats = await Promise.all(
         (companiesData || []).map(async (company) => {
+          const { data: bankAccountsData } = await supabase
+            .from('company_bank_accounts')
+            .select('*')
+            .eq('company_id', company.id)
+            .order('bank_name')
+
           const { data: invoicesData } = await supabase
             .from('accounting_invoices')
             .select(`
@@ -94,6 +110,7 @@ const AccountingCompanies: React.FC = () => {
             .order('issue_date', { ascending: false })
 
           const invoices = invoicesData || []
+          const bankAccounts = bankAccountsData || []
 
           const incomeInvoices = invoices.filter(i =>
             i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE'
@@ -110,7 +127,8 @@ const AccountingCompanies: React.FC = () => {
           const totalExpensePaid = expenseInvoices.reduce((sum, i) => sum + i.paid_amount, 0)
           const totalExpenseUnpaid = expenseInvoices.reduce((sum, i) => sum + i.remaining_amount, 0)
 
-          const currentBalance = company.initial_balance + totalIncomePaid - totalExpensePaid
+          const totalBankBalance = bankAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
+          const currentBalance = totalBankBalance
           const profit = totalIncomePaid - totalExpensePaid
           const revenue = totalIncomeAmount
 
@@ -130,6 +148,7 @@ const AccountingCompanies: React.FC = () => {
             current_balance: currentBalance,
             profit: profit,
             revenue: revenue,
+            bank_accounts: bankAccounts,
             invoices: invoices
           }
         })
@@ -181,6 +200,7 @@ const AccountingCompanies: React.FC = () => {
   }
 
   const handleCloseAddModal = () => {
+    setFormData({ name: '', oib: '', accountCount: 1, bankAccounts: [{ bank_name: '', initial_balance: 0 }] })
     document.body.style.overflow = 'unset'
     setShowAddModal(false)
     setEditingCompany(null)
@@ -196,22 +216,36 @@ const AccountingCompanies: React.FC = () => {
           .update({
             name: formData.name,
             oib: formData.oib,
-            initial_balance: formData.initial_balance,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingCompany)
 
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { data: companyData, error: companyError } = await supabase
           .from('accounting_companies')
           .insert([{
             name: formData.name,
             oib: formData.oib,
-            initial_balance: formData.initial_balance
+            initial_balance: 0
           }])
+          .select()
+          .single()
 
-        if (error) throw error
+        if (companyError) throw companyError
+
+        const bankAccountsToInsert = formData.bankAccounts.map(acc => ({
+          company_id: companyData.id,
+          bank_name: acc.bank_name,
+          initial_balance: acc.initial_balance,
+          current_balance: acc.initial_balance
+        }))
+
+        const { error: bankError } = await supabase
+          .from('company_bank_accounts')
+          .insert(bankAccountsToInsert)
+
+        if (bankError) throw bankError
       }
 
       await fetchData()
@@ -253,6 +287,27 @@ const AccountingCompanies: React.FC = () => {
     document.body.style.overflow = 'unset'
     setShowDetailsModal(false)
     setSelectedCompany(null)
+  }
+
+  const handleAccountCountChange = (count: number) => {
+    const newCount = Math.max(1, Math.min(10, count))
+    const currentAccounts = formData.bankAccounts
+
+    if (newCount > currentAccounts.length) {
+      const newAccounts = [...currentAccounts]
+      for (let i = currentAccounts.length; i < newCount; i++) {
+        newAccounts.push({ bank_name: '', initial_balance: 0 })
+      }
+      setFormData({ ...formData, accountCount: newCount, bankAccounts: newAccounts })
+    } else if (newCount < currentAccounts.length) {
+      setFormData({ ...formData, accountCount: newCount, bankAccounts: currentAccounts.slice(0, newCount) })
+    }
+  }
+
+  const handleBankAccountChange = (index: number, field: 'bank_name' | 'initial_balance', value: string | number) => {
+    const newAccounts = [...formData.bankAccounts]
+    newAccounts[index] = { ...newAccounts[index], [field]: value }
+    setFormData({ ...formData, bankAccounts: newAccounts })
   }
 
   const filteredCompanies = companies.filter(company =>
@@ -514,28 +569,68 @@ const AccountingCompanies: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Unesite 11-znamenkasti OIB</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Početno stanje (€) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.initial_balance}
-                    onChange={(e) => setFormData({ ...formData, initial_balance: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Početno stanje na računu firme</p>
-                </div>
+                {!editingCompany && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Broj bankovnih računa *
+                      </label>
+                      <select
+                        value={formData.accountCount}
+                        onChange={(e) => handleAccountCountChange(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">Odaberite broj bankovnih računa</p>
+                    </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Napomena:</strong> Nakon dodavanja firme, možete kreirathi račune i povezati ih s ovom firmom
-                    u sekciji "Računi". Stanje će se automatski ažurirati.
-                  </p>
-                </div>
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-gray-900">Bankovni računi</h3>
+                      {formData.bankAccounts.map((account, index) => (
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
+                          <p className="text-sm font-medium text-gray-700">Račun #{index + 1}</p>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Naziv banke *
+                            </label>
+                            <input
+                              type="text"
+                              value={account.bank_name}
+                              onChange={(e) => handleBankAccountChange(index, 'bank_name', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              required
+                              placeholder="npr. Erste banka"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Početno stanje (€) *
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={account.initial_balance}
+                              onChange={(e) => handleBankAccountChange(index, 'initial_balance', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              required
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>Napomena:</strong> Nakon dodavanja firme i bankovnih računa, svaki račun će se automatski
+                        ažurirati kada izdajete ili plaćate račune.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
@@ -602,6 +697,39 @@ const AccountingCompanies: React.FC = () => {
                     €{Math.abs(selectedCompany.profit).toLocaleString()}
                   </p>
                 </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Bankovni računi ({selectedCompany.bank_accounts.length})
+                </h3>
+                {selectedCompany.bank_accounts.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nema dodanih bankovnih računa</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedCompany.bank_accounts.map((account) => (
+                      <div key={account.id} className="bg-white border-2 border-blue-200 rounded-lg p-4">
+                        <p className="font-semibold text-gray-900 mb-2">{account.bank_name}</p>
+                        {account.account_number && (
+                          <p className="text-xs text-gray-500 mb-2">{account.account_number}</p>
+                        )}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Početno:</span>
+                            <span className="font-medium text-gray-900">€{account.initial_balance.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Trenutno:</span>
+                            <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              €{account.current_balance.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mb-6">
