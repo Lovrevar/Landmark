@@ -121,7 +121,6 @@ const AccountingInvoices: React.FC = () => {
   const [formData, setFormData] = useState({
     invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE',
     company_id: '',
-    company_bank_account_id: '',
     supplier_id: '',
     office_supplier_id: '',
     customer_id: '',
@@ -381,7 +380,6 @@ const AccountingInvoices: React.FC = () => {
       setFormData({
         invoice_type: invoice.invoice_type,
         company_id: invoice.company_id,
-        company_bank_account_id: invoice.company_bank_account_id || '',
         supplier_id: invoice.supplier_id || '',
         office_supplier_id: invoice.office_supplier_id || '',
         customer_id: invoice.customer_id || '',
@@ -404,7 +402,6 @@ const AccountingInvoices: React.FC = () => {
       setFormData({
         invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
-        company_bank_account_id: '',
         supplier_id: '',
         office_supplier_id: '',
         customer_id: '',
@@ -466,7 +463,7 @@ const AccountingInvoices: React.FC = () => {
         invoice_type: formData.invoice_type,
         invoice_category,
         company_id: formData.company_id,
-        company_bank_account_id: formData.company_bank_account_id || null,
+        company_bank_account_id: null,
         supplier_id,
         office_supplier_id,
         customer_id,
@@ -1111,8 +1108,7 @@ const AccountingInvoices: React.FC = () => {
                       customer_id: '',
                       investor_id: '',
                       bank_id: '',
-                      apartment_id: '',
-                      company_bank_account_id: ''
+                      apartment_id: ''
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
@@ -1276,7 +1272,7 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.company_id}
-                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value, company_bank_account_id: '' })}
+                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
@@ -1286,34 +1282,6 @@ const AccountingInvoices: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {formData.company_id && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bankovni račun *
-                    </label>
-                    <select
-                      value={formData.company_bank_account_id}
-                      onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Odaberi račun</option>
-                      {companyBankAccounts
-                        .filter(acc => acc.company_id === formData.company_id)
-                        .map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
-                          </option>
-                        ))}
-                    </select>
-                    {companyBankAccounts.filter(acc => acc.company_id === formData.company_id).length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -11,10 +11,18 @@ interface Invoice {
   paid_amount: number
   remaining_amount: number
   vat_amount: number
+  company_id: string
   companies?: { name: string }
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
   office_suppliers?: { name: string }
+}
+
+interface CompanyBankAccount {
+  id: string
+  company_id: string
+  bank_name: string
+  current_balance: number
 }
 
 interface Payment {
@@ -32,6 +40,7 @@ interface Payment {
 const AccountingPayments: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -43,6 +52,7 @@ const AccountingPayments: React.FC = () => {
 
   const [formData, setFormData] = useState({
     invoice_id: '',
+    company_bank_account_id: '',
     payment_date: new Date().toISOString().split('T')[0],
     amount: 0,
     payment_method: 'WIRE' as 'WIRE' | 'CASH' | 'CHECK' | 'CARD',
@@ -143,6 +153,7 @@ const AccountingPayments: React.FC = () => {
           total_amount,
           paid_amount,
           remaining_amount,
+          company_id,
           companies:company_id (name),
           subcontractors:supplier_id (name),
           customers:customer_id (name, surname),
@@ -153,6 +164,14 @@ const AccountingPayments: React.FC = () => {
 
       if (invoicesError) throw invoicesError
       setInvoices(invoicesData || [])
+
+      const { data: bankAccountsData, error: bankAccountsError } = await supabase
+        .from('company_bank_accounts')
+        .select('*')
+        .order('bank_name')
+
+      if (bankAccountsError) throw bankAccountsError
+      setCompanyBankAccounts(bankAccountsData || [])
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -166,6 +185,7 @@ const AccountingPayments: React.FC = () => {
       setEditingPayment(payment)
       setFormData({
         invoice_id: payment.invoice_id,
+        company_bank_account_id: '',
         payment_date: payment.payment_date,
         amount: payment.amount,
         payment_method: payment.payment_method,
@@ -176,6 +196,7 @@ const AccountingPayments: React.FC = () => {
       setEditingPayment(null)
       setFormData({
         invoice_id: '',
+        company_bank_account_id: '',
         payment_date: new Date().toISOString().split('T')[0],
         amount: 0,
         payment_method: 'WIRE',
@@ -201,6 +222,7 @@ const AccountingPayments: React.FC = () => {
 
       const paymentData = {
         invoice_id: formData.invoice_id,
+        company_bank_account_id: formData.company_bank_account_id || null,
         payment_date: formData.payment_date,
         amount: formData.amount,
         payment_method: formData.payment_method,
@@ -637,6 +659,7 @@ const AccountingPayments: React.FC = () => {
                       setFormData({
                         ...formData,
                         invoice_id: e.target.value,
+                        company_bank_account_id: '',
                         amount: selectedInvoice ? selectedInvoice.remaining_amount : 0
                       })
                     }}
@@ -656,6 +679,40 @@ const AccountingPayments: React.FC = () => {
                     ))}
                   </select>
                 </div>
+
+                {formData.invoice_id && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bankovni račun *
+                    </label>
+                    <select
+                      value={formData.company_bank_account_id}
+                      onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Odaberi bankovni račun</option>
+                      {companyBankAccounts
+                        .filter(acc => {
+                          const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+                          return selectedInvoice && acc.company_id === selectedInvoice.company_id
+                        })
+                        .map(account => (
+                          <option key={account.id} value={account.id}>
+                            {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
+                          </option>
+                        ))}
+                    </select>
+                    {formData.invoice_id && companyBankAccounts.filter(acc => {
+                      const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+                      return selectedInvoice && acc.company_id === selectedInvoice.company_id
+                    }).length === 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
