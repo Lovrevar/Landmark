@@ -30,6 +30,13 @@ interface Invoice {
   supplier?: { name: string }
   customer?: { name: string; surname: string }
   office_supplier?: { name: string }
+  company?: { name: string }
+  is_cesija_payment?: boolean
+  payments?: Array<{
+    is_cesija: boolean
+    cesija_company_id: string | null
+    cesija_bank_account_id: string | null
+  }>
 }
 
 interface CompanyStats {
@@ -104,12 +111,46 @@ const AccountingCompanies: React.FC = () => {
               issue_date,
               supplier:supplier_id (name),
               customer:customer_id (name, surname),
-              office_supplier:office_supplier_id (name)
+              office_supplier:office_supplier_id (name),
+              company:company_id (name),
+              payments:accounting_payments (
+                is_cesija,
+                cesija_company_id,
+                cesija_bank_account_id
+              )
             `)
             .eq('company_id', company.id)
             .order('issue_date', { ascending: false })
 
-          const invoices = invoicesData || []
+          const { data: cesijainvoicesData } = await supabase
+            .from('accounting_invoices')
+            .select(`
+              id,
+              invoice_number,
+              invoice_type,
+              total_amount,
+              paid_amount,
+              remaining_amount,
+              status,
+              issue_date,
+              supplier:supplier_id (name),
+              customer:customer_id (name, surname),
+              office_supplier:office_supplier_id (name),
+              company:company_id (name),
+              payments:accounting_payments!inner (
+                is_cesija,
+                cesija_company_id,
+                cesija_bank_account_id
+              )
+            `)
+            .eq('payments.cesija_company_id', company.id)
+            .eq('payments.is_cesija', true)
+            .order('issue_date', { ascending: false })
+
+          const invoices = [
+            ...(invoicesData || []).map(inv => ({ ...inv, is_cesija_payment: false })),
+            ...(cesijainvoicesData || []).map(inv => ({ ...inv, is_cesija_payment: true }))
+          ]
           const bankAccounts = bankAccountsData || []
 
           const incomeInvoices = invoices.filter(i =>
@@ -799,7 +840,9 @@ const AccountingCompanies: React.FC = () => {
                   <div className="space-y-3">
                     {selectedCompany.invoices.map((invoice) => (
                       <div key={invoice.id} className={`border-2 rounded-lg p-4 ${
-                        isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                        invoice.is_cesija_payment
+                          ? 'border-purple-200 bg-purple-50'
+                          : isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                       }`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
@@ -815,9 +858,16 @@ const AccountingCompanies: React.FC = () => {
                               }`}>
                                 {isIncomeInvoice(invoice.invoice_type) ? 'PRIHOD' : 'RASHOD'}
                               </span>
+                              {invoice.is_cesija_payment && (
+                                <span className="px-2 py-1 rounded text-xs font-bold bg-purple-200 text-purple-900 border border-purple-400">
+                                  CESIJA
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
-                              {invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
+                              {invoice.is_cesija_payment && invoice.company
+                                ? `Firma: ${invoice.company.name}`
+                                : invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
                                 ? `Office dobavljač: ${getInvoiceEntityName(invoice)}`
                                 : isIncomeInvoice(invoice.invoice_type)
                                 ? `Kupac: ${getInvoiceEntityName(invoice)}`
