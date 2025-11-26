@@ -250,9 +250,9 @@ const AccountingCompanies: React.FC = () => {
             if (paymentsSum && paymentsSum.length > 0) {
               totalChange = paymentsSum.reduce((sum, payment: any) => {
                 const invoiceType = payment.invoice?.invoice_type
-                if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_INVESTMENT', 'INCOMING_OFFICE'].includes(invoiceType)) {
+                if (invoiceType && ['INCOMING_INVESTMENT', 'OUTGOING_SALES'].includes(invoiceType)) {
                   return sum + payment.amount
-                } else if (invoiceType && ['OUTGOING_SUPPLIER', 'OUTGOING_SALES', 'OUTGOING_OFFICE'].includes(invoiceType)) {
+                } else if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_OFFICE'].includes(invoiceType)) {
                   return sum - payment.amount
                 }
                 return sum
