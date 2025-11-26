@@ -11,7 +11,7 @@ interface SalesPaymentWithDetails {
   notes?: string
   created_at: string
   invoice_number: string
-  invoice_date: string
+  issue_date: string
   invoice_total_amount: number
   apartment_number?: string
   project_name?: string
@@ -45,7 +45,7 @@ const SalesPaymentsManagement: React.FC = () => {
         .select(`
           id,
           invoice_number,
-          invoice_date,
+          issue_date,
           total_amount,
           customer_id,
           apartment_id,
@@ -61,7 +61,7 @@ const SalesPaymentsManagement: React.FC = () => {
           )
         `)
         .eq('invoice_type', 'OUTGOING_SALES')
-        .order('invoice_date', { ascending: false })
+        .order('issue_date', { ascending: false })
 
       if (invoicesError) throw invoicesError
 
@@ -107,7 +107,7 @@ const SalesPaymentsManagement: React.FC = () => {
           notes: payment.notes,
           created_at: payment.created_at,
           invoice_number: invoice?.invoice_number || 'N/A',
-          invoice_date: invoice?.invoice_date || '',
+          issue_date: invoice?.issue_date || '',
           invoice_total_amount: invoice?.total_amount || 0,
           apartment_number: (invoice?.apartments as any)?.number || 'N/A',
           project_name: (invoice?.apartments as any)?.projects?.name || 'N/A',
@@ -169,7 +169,7 @@ const SalesPaymentsManagement: React.FC = () => {
     const rows = filteredPayments.map(p => [
       format(new Date(p.payment_date), 'yyyy-MM-dd'),
       p.invoice_number,
-      p.invoice_date ? format(new Date(p.invoice_date), 'yyyy-MM-dd') : '',
+      p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
       p.apartment_number,
       p.project_name,
       p.customer_name,
@@ -335,7 +335,7 @@ const SalesPaymentsManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{payment.invoice_number}</div>
                       <div className="text-xs text-gray-500">
-                        {payment.invoice_date ? format(new Date(payment.invoice_date), 'MMM dd, yyyy') : '-'}
+                        {payment.issue_date ? format(new Date(payment.issue_date), 'MMM dd, yyyy') : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
