@@ -42,6 +42,9 @@ interface SupplierSummary {
   total_contracts: number
   total_contract_value: number
   total_paid: number
+  total_paid_neto: number
+  total_paid_pdv: number
+  total_paid_total: number
   total_remaining: number
   total_invoices: number
   contracts: Contract[]
@@ -116,6 +119,18 @@ const AccountingSuppliers: React.FC = () => {
           const invoices = invoicesData || []
 
           const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
+
+          const totalPaidNeto = invoices.reduce((sum, i) => {
+            return sum + parseFloat(i.paid_amount || 0) * (parseFloat(i.base_amount || 0) / parseFloat(i.total_amount || 1))
+          }, 0)
+
+          const totalPaidPdv = invoices.reduce((sum, i) => {
+            const pdvAmount = parseFloat(i.total_amount || 0) - parseFloat(i.base_amount || 0)
+            return sum + parseFloat(i.paid_amount || 0) * (pdvAmount / parseFloat(i.total_amount || 1))
+          }, 0)
+
+          const totalPaidTotal = invoices.reduce((sum, i) => sum + parseFloat(i.paid_amount || 0), 0)
+
           const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
           const totalRemainingFromInvoices = invoices.reduce((sum, i) => {
             const baseAmount = parseFloat(i.base_amount || 0)
@@ -130,6 +145,9 @@ const AccountingSuppliers: React.FC = () => {
             total_contracts: contracts.length,
             total_contract_value: totalContractValue,
             total_paid: totalPaidFromInvoices,
+            total_paid_neto: totalPaidNeto,
+            total_paid_pdv: totalPaidPdv,
+            total_paid_total: totalPaidTotal,
             total_remaining: (totalContractValue - totalPaidFromInvoices) + totalRemainingFromInvoices,
             total_invoices: invoices.length,
             contracts,
@@ -378,7 +396,19 @@ const AccountingSuppliers: React.FC = () => {
                     <span className="text-gray-600">Plaćeno:</span>
                     <span className="font-medium text-green-600">€{supplier.total_paid.toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs pl-4">
+                    <span className="text-gray-500">└ Plaćeno PDV:</span>
+                    <span className="font-medium text-blue-600">€{supplier.total_paid_pdv.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pl-4">
+                    <span className="text-gray-500">└ Plaćeno Neto:</span>
+                    <span className="font-medium text-blue-600">€{supplier.total_paid_neto.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pl-4">
+                    <span className="text-gray-500">└ Plaćeno Ukupno:</span>
+                    <span className="font-medium text-green-700">€{supplier.total_paid_total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                     <span className="text-gray-600">Dugovi:</span>
                     <span className="font-medium text-orange-600">€{supplier.total_remaining.toLocaleString()}</span>
                   </div>
