@@ -165,18 +165,19 @@ const AccountingDashboard: React.FC = () => {
 
       if (error) throw error
 
-      const incomingPayments = payments?.filter(p =>
-        (p.accounting_invoices as any).invoice_type === 'OUTGOING_SALES' ||
-        (p.accounting_invoices as any).invoice_type === 'INCOMING_BANK_CREDIT' ||
-        (p.accounting_invoices as any).invoice_type === 'INCOMING_INVESTOR'
-      ) || []
+      const incomingPayments = payments?.filter(p => {
+        const invoiceType = (p.accounting_invoices as any).invoice_type
+        return invoiceType.startsWith('OUTGOING') ||
+               invoiceType === 'INCOMING_BANK_CREDIT' ||
+               invoiceType === 'INCOMING_INVESTOR'
+      }) || []
 
-      const outgoingPayments = payments?.filter(p =>
-        (p.accounting_invoices as any).invoice_type === 'INCOMING_SUBCONTRACTOR' ||
-        (p.accounting_invoices as any).invoice_type === 'INCOMING_OFFICE' ||
-        (p.accounting_invoices as any).invoice_type === 'OUTGOING_SUBCONTRACTOR' ||
-        (p.accounting_invoices as any).invoice_type === 'OUTGOING_OFFICE'
-      ) || []
+      const outgoingPayments = payments?.filter(p => {
+        const invoiceType = (p.accounting_invoices as any).invoice_type
+        return invoiceType.startsWith('INCOMING') &&
+               invoiceType !== 'INCOMING_BANK_CREDIT' &&
+               invoiceType !== 'INCOMING_INVESTOR'
+      }) || []
 
       const totalIncoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
       const totalOutgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
