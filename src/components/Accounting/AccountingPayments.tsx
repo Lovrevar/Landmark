@@ -25,6 +25,11 @@ interface CompanyBankAccount {
   current_balance: number
 }
 
+interface Company {
+  id: string
+  name: string
+}
+
 interface Payment {
   id: string
   invoice_id: string
@@ -40,6 +45,7 @@ interface Payment {
 const AccountingPayments: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,6 +59,9 @@ const AccountingPayments: React.FC = () => {
   const [formData, setFormData] = useState({
     invoice_id: '',
     company_bank_account_id: '',
+    is_cesija: false,
+    cesija_company_id: '',
+    cesija_bank_account_id: '',
     payment_date: new Date().toISOString().split('T')[0],
     amount: 0,
     payment_method: 'WIRE' as 'WIRE' | 'CASH' | 'CHECK' | 'CARD',
@@ -165,6 +174,14 @@ const AccountingPayments: React.FC = () => {
       if (invoicesError) throw invoicesError
       setInvoices(invoicesData || [])
 
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('accounting_companies')
+        .select('id, name')
+        .order('name')
+
+      if (companiesError) throw companiesError
+      setCompanies(companiesData || [])
+
       const { data: bankAccountsData, error: bankAccountsError } = await supabase
         .from('company_bank_accounts')
         .select('*')
@@ -186,6 +203,9 @@ const AccountingPayments: React.FC = () => {
       setFormData({
         invoice_id: payment.invoice_id,
         company_bank_account_id: '',
+        is_cesija: false,
+        cesija_company_id: '',
+        cesija_bank_account_id: '',
         payment_date: payment.payment_date,
         amount: payment.amount,
         payment_method: payment.payment_method,
@@ -197,6 +217,9 @@ const AccountingPayments: React.FC = () => {
       setFormData({
         invoice_id: '',
         company_bank_account_id: '',
+        is_cesija: false,
+        cesija_company_id: '',
+        cesija_bank_account_id: '',
         payment_date: new Date().toISOString().split('T')[0],
         amount: 0,
         payment_method: 'WIRE',
@@ -222,7 +245,10 @@ const AccountingPayments: React.FC = () => {
 
       const paymentData = {
         invoice_id: formData.invoice_id,
-        company_bank_account_id: formData.company_bank_account_id || null,
+        company_bank_account_id: formData.is_cesija ? null : (formData.company_bank_account_id || null),
+        is_cesija: formData.is_cesija,
+        cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
+        cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,
         payment_date: formData.payment_date,
         amount: formData.amount,
         payment_method: formData.payment_method,
@@ -680,7 +706,7 @@ const AccountingPayments: React.FC = () => {
                   </select>
                 </div>
 
-                {formData.invoice_id && (
+{formData.invoice_id && !formData.is_cesija && (
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Bankovni račun *
@@ -712,6 +738,86 @@ const AccountingPayments: React.FC = () => {
                       </p>
                     )}
                   </div>
+                )}
+
+                {formData.invoice_id && (
+                  <div className="md:col-span-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_cesija}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          is_cesija: e.target.checked,
+                          company_bank_account_id: e.target.checked ? '' : formData.company_bank_account_id,
+                          cesija_company_id: '',
+                          cesija_bank_account_id: ''
+                        })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Ugovor o cesiji (plaćanje iz druge firme)
+                      </span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">
+                      Označite ako želite platiti račun s bankovnog računa druge firme
+                    </p>
+                  </div>
+                )}
+
+                {formData.is_cesija && (
+                  <>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Firma koja plaća (cesija) *
+                      </label>
+                      <select
+                        value={formData.cesija_company_id}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          cesija_company_id: e.target.value,
+                          cesija_bank_account_id: ''
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Odaberi firmu koja plaća</option>
+                        {companies.map(company => (
+                          <option key={company.id} value={company.id}>
+                            {company.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.cesija_company_id && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Bankovni račun (cesija) *
+                        </label>
+                        <select
+                          value={formData.cesija_bank_account_id}
+                          onChange={(e) => setFormData({ ...formData, cesija_bank_account_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi bankovni račun</option>
+                          {companyBankAccounts
+                            .filter(acc => acc.company_id === formData.cesija_company_id)
+                            .map(account => (
+                              <option key={account.id} value={account.id}>
+                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
+                              </option>
+                            ))}
+                        </select>
+                        {formData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === formData.cesija_company_id).length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div>
