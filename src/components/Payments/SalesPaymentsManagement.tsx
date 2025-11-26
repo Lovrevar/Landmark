@@ -77,27 +77,28 @@ const SalesPaymentsManagement: React.FC = () => {
 
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('accounting_payments')
-        .select(`
-          id,
-          payment_date,
-          amount,
-          payment_method,
-          notes,
-          created_at,
-          invoice_id,
-          bank_account_id,
-          company_bank_accounts (
-            account_name
-          )
-        `)
+        .select('id, payment_date, amount, payment_method, notes, created_at, invoice_id, company_bank_account_id')
         .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
       if (paymentsError) throw paymentsError
 
+      // Fetch bank accounts separately
+      const bankAccountIds = [...new Set(paymentsData?.map(p => p.company_bank_account_id).filter(Boolean) || [])]
+
+      let bankAccountsData: any[] = []
+      if (bankAccountIds.length > 0) {
+        const { data: accounts } = await supabase
+          .from('company_bank_accounts')
+          .select('id, account_name')
+          .in('id', bankAccountIds)
+        bankAccountsData = accounts || []
+      }
+
       // Enrich payments with invoice details
       const enrichedPayments: SalesPaymentWithDetails[] = (paymentsData || []).map(payment => {
         const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
+        const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
 
         return {
           id: payment.id,
@@ -114,7 +115,7 @@ const SalesPaymentsManagement: React.FC = () => {
           customer_name: invoice?.customers
             ? `${(invoice.customers as any).name} ${(invoice.customers as any).surname}`
             : 'N/A',
-          bank_account_name: (payment.company_bank_accounts as any)?.account_name || 'N/A'
+          bank_account_name: bankAccount?.account_name || 'N/A'
         }
       })
 
