@@ -483,7 +483,6 @@ const SalesDashboard: React.FC = () => {
                 </div>
                 <div className="text-right ml-4">
                   <p className="text-sm font-bold text-gray-900">€{(sale.sale_price / 1000).toFixed(0)}K</p>
-                  <p className="text-xs text-green-600">Paid: €{(sale.total_paid / 1000).toFixed(0)}K</p>
                   <p className="text-xs text-gray-500">{format(new Date(sale.sale_date), 'MMM dd')}</p>
                 </div>
               </div>
