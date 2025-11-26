@@ -114,14 +114,13 @@ const AccountingDashboard: React.FC = () => {
       if (error) throw error
 
       const outgoingInvoices = invoices?.filter(inv =>
-        inv.invoice_type === 'OUTGOING_SALES' ||
-        inv.invoice_type === 'OUTGOING_SUBCONTRACTOR' ||
-        inv.invoice_type === 'OUTGOING_OFFICE'
+        inv.invoice_type.startsWith('OUTGOING')
       ) || []
 
       const incomingInvoices = invoices?.filter(inv =>
-        inv.invoice_type === 'INCOMING_SUBCONTRACTOR' ||
-        inv.invoice_type === 'INCOMING_OFFICE'
+        inv.invoice_type.startsWith('INCOMING') &&
+        inv.invoice_type !== 'INCOMING_INVESTOR' &&
+        inv.invoice_type !== 'INCOMING_BANK_CREDIT'
       ) || []
 
       const totalVATCollected = outgoingInvoices.reduce((sum, inv) => sum + parseFloat(inv.vat_amount || 0), 0)
