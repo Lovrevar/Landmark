@@ -98,11 +98,14 @@ const SalesDashboard: React.FC = () => {
       // Calculate total revenue from payments
       const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
 
+      // Calculate total sales value from sales table (not payments)
+      const totalSalesValue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price), 0)
+
       const totalUnits = apartments.length
       const availableUnits = apartments.filter(a => a.status === 'Available').length
       const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
       const soldUnits = apartments.filter(a => a.status === 'Sold').length
-      const avgSalePrice = soldUnits > 0 ? totalRevenue / soldUnits : 0
+      const avgSalePrice = sales.length > 0 ? totalSalesValue / sales.length : 0
       const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
       const totalCustomers = customers.length
       const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
