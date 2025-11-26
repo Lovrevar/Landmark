@@ -8,7 +8,7 @@ interface SalesPaymentWithDetails {
   payment_date: string
   amount: number
   payment_method: string
-  notes?: string
+  description?: string
   created_at: string
   invoice_number: string
   issue_date: string
@@ -77,7 +77,7 @@ const SalesPaymentsManagement: React.FC = () => {
 
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('accounting_payments')
-        .select('id, payment_date, amount, payment_method, notes, created_at, invoice_id, company_bank_account_id')
+        .select('id, payment_date, amount, payment_method, description, created_at, invoice_id, company_bank_account_id')
         .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
@@ -105,7 +105,7 @@ const SalesPaymentsManagement: React.FC = () => {
           payment_date: payment.payment_date,
           amount: parseFloat(payment.amount),
           payment_method: payment.payment_method,
-          notes: payment.notes,
+          description: payment.description,
           created_at: payment.created_at,
           invoice_number: invoice?.invoice_number || 'N/A',
           issue_date: invoice?.issue_date || '',
@@ -151,7 +151,7 @@ const SalesPaymentsManagement: React.FC = () => {
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+      payment.description?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDateRange =
       (!dateRange.start || new Date(payment.payment_date) >= new Date(dateRange.start)) &&
@@ -166,7 +166,7 @@ const SalesPaymentsManagement: React.FC = () => {
   })
 
   const exportToCSV = () => {
-    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Notes']
+    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
     const rows = filteredPayments.map(p => [
       format(new Date(p.payment_date), 'yyyy-MM-dd'),
       p.invoice_number,
@@ -178,7 +178,7 @@ const SalesPaymentsManagement: React.FC = () => {
       p.amount.toString(),
       p.payment_method,
       p.bank_account_name,
-      p.notes || ''
+      p.description || ''
     ])
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
