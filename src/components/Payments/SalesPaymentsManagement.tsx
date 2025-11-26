@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, ApartmentPayment, Apartment, Building, Project, Sale, Customer } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface PaymentWithDetails extends ApartmentPayment {
+interface SalesPaymentWithDetails {
+  id: string
+  payment_date: string
+  amount: number
+  payment_method: string
+  notes?: string
+  created_at: string
+  invoice_number: string
+  invoice_date: string
+  invoice_total_amount: number
   apartment_number?: string
-  building_name?: string
   project_name?: string
-  buyer_name?: string
-  sale_price?: number
+  customer_name?: string
+  bank_account_name?: string
 }
 
 const SalesPaymentsManagement: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentWithDetails[]>([])
+  const [payments, setPayments] = useState<SalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
@@ -31,93 +39,82 @@ const SalesPaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
+      // Fetch all OUTGOING_SALES invoices with related data
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          total_amount,
+          customer_id,
+          apartment_id,
+          customers (
+            name,
+            surname
+          ),
+          apartments (
+            number,
+            projects (
+              name
+            )
+          )
+        `)
+        .eq('invoice_type', 'OUTGOING_SALES')
+        .order('invoice_date', { ascending: false })
+
+      if (invoicesError) throw invoicesError
+
+      // Fetch all payments for these invoices
+      const invoiceIds = invoicesData?.map(inv => inv.id) || []
+
+      if (invoiceIds.length === 0) {
+        setPayments([])
+        calculateStats([])
+        setLoading(false)
+        return
+      }
+
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from('apartment_payments')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from('accounting_payments')
+        .select(`
+          id,
+          payment_date,
+          amount,
+          payment_method,
+          notes,
+          created_at,
+          invoice_id,
+          bank_account_id,
+          company_bank_accounts (
+            account_name
+          )
+        `)
+        .in('invoice_id', invoiceIds)
+        .order('payment_date', { ascending: false })
 
       if (paymentsError) throw paymentsError
 
-      const { data: apartmentsData, error: apartmentsError } = await supabase
-        .from('apartments')
-        .select('id, number, building_id, project_id')
-
-      if (apartmentsError) throw apartmentsError
-
-      const { data: garagesData } = await supabase
-        .from('garages')
-        .select('id, number, building_id, price')
-
-      const { data: repositoriesData } = await supabase
-        .from('repositories')
-        .select('id, number, building_id, price')
-
-      const { data: buildingsData, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('id, name, project_id')
-
-      if (buildingsError) throw buildingsError
-
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-
-      if (projectsError) throw projectsError
-
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('apartment_id, customer_id, sale_price')
-
-      if (salesError) throw salesError
-
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('id, name, surname')
-
-      if (customersError) throw customersError
-
-      const enrichedPayments = (paymentsData || []).map(payment => {
-        let unitNumber = 'Unknown'
-        let building = undefined
-        let project = undefined
-        let unitPrice = 0
-
-        if (payment.apartment_id) {
-          const apartment = apartmentsData?.find(a => a.id === payment.apartment_id)
-          if (apartment) {
-            unitNumber = apartment.number
-            building = buildingsData?.find(b => b.id === apartment.building_id)
-            project = projectsData?.find(p => p.id === apartment.project_id)
-          }
-          const sale = salesData?.find(s => s.apartment_id === payment.apartment_id)
-          unitPrice = sale?.sale_price || 0
-        } else if (payment.garage_id) {
-          const garage = garagesData?.find(g => g.id === payment.garage_id)
-          if (garage) {
-            unitNumber = garage.number
-            building = buildingsData?.find(b => b.id === garage.building_id)
-            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
-            unitPrice = Number(garage.price) || 0
-          }
-        } else if (payment.storage_id) {
-          const storage = repositoriesData?.find(r => r.id === payment.storage_id)
-          if (storage) {
-            unitNumber = storage.number
-            building = buildingsData?.find(b => b.id === storage.building_id)
-            project = building ? projectsData?.find(p => p.id === building.project_id) : undefined
-            unitPrice = Number(storage.price) || 0
-          }
-        }
-
-        const customer = customersData?.find(c => c.id === payment.customer_id)
+      // Enrich payments with invoice details
+      const enrichedPayments: SalesPaymentWithDetails[] = (paymentsData || []).map(payment => {
+        const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
 
         return {
-          ...payment,
-          apartment_number: unitNumber,
-          building_name: building?.name || 'No Building',
-          project_name: project?.name || 'No Project',
-          buyer_name: customer ? `${customer.name} ${customer.surname}` : 'Unknown Buyer',
-          sale_price: unitPrice
+          id: payment.id,
+          payment_date: payment.payment_date,
+          amount: parseFloat(payment.amount),
+          payment_method: payment.payment_method,
+          notes: payment.notes,
+          created_at: payment.created_at,
+          invoice_number: invoice?.invoice_number || 'N/A',
+          invoice_date: invoice?.invoice_date || '',
+          invoice_total_amount: invoice?.total_amount || 0,
+          apartment_number: (invoice?.apartments as any)?.number || 'N/A',
+          project_name: (invoice?.apartments as any)?.projects?.name || 'N/A',
+          customer_name: invoice?.customers
+            ? `${(invoice.customers as any).name} ${(invoice.customers as any).surname}`
+            : 'N/A',
+          bank_account_name: (payment.company_bank_accounts as any)?.account_name || 'N/A'
         }
       })
 
@@ -131,12 +128,12 @@ const SalesPaymentsManagement: React.FC = () => {
     }
   }
 
-  const calculateStats = (paymentsData: PaymentWithDetails[]) => {
+  const calculateStats = (paymentsData: SalesPaymentWithDetails[]) => {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
     const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-    const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
+    const paymentsThisMonth = paymentsData.filter(p => new Date(p.payment_date) >= firstDayOfMonth)
     const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
 
     setStats({
@@ -151,32 +148,35 @@ const SalesPaymentsManagement: React.FC = () => {
     const matchesSearch =
       payment.apartment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.building_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDateRange =
-      (!dateRange.start || new Date(payment.payment_date || payment.created_at) >= new Date(dateRange.start)) &&
-      (!dateRange.end || new Date(payment.payment_date || payment.created_at) <= new Date(dateRange.end))
+      (!dateRange.start || new Date(payment.payment_date) >= new Date(dateRange.start)) &&
+      (!dateRange.end || new Date(payment.payment_date) <= new Date(dateRange.end))
 
     const matchesFilter =
       filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && Number(payment.amount) > 10000)
 
     return matchesSearch && matchesDateRange && matchesFilter
   })
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Apartment', 'Project', 'Building', 'Buyer', 'Sale Price', 'Amount', 'Notes']
+    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Notes']
     const rows = filteredPayments.map(p => [
-      p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
+      format(new Date(p.payment_date), 'yyyy-MM-dd'),
+      p.invoice_number,
+      p.invoice_date ? format(new Date(p.invoice_date), 'yyyy-MM-dd') : '',
       p.apartment_number,
       p.project_name,
-      p.building_name,
-      p.buyer_name,
-      p.sale_price?.toString() || '0',
+      p.customer_name,
+      p.invoice_total_amount.toString(),
       p.amount.toString(),
+      p.payment_method,
+      p.bank_account_name,
       p.notes || ''
     ])
 
@@ -185,7 +185,7 @@ const SalesPaymentsManagement: React.FC = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `apartment-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
   }
 
@@ -200,8 +200,8 @@ const SalesPaymentsManagement: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments Management</h1>
-        <p className="text-gray-600">Track and manage all payments across all projects</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Payments</h1>
+        <p className="text-gray-600">Track all payments from customers for apartment sales</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -306,19 +306,21 @@ const SalesPaymentsManagement: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apartment</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Price</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Total</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-lg font-medium mb-1">No payments found</p>
                     <p className="text-sm">Try adjusting your search or filters</p>
@@ -328,30 +330,36 @@ const SalesPaymentsManagement: React.FC = () => {
                 filteredPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.payment_date
-                        ? format(new Date(payment.payment_date), 'MMM dd, yyyy')
-                        : format(new Date(payment.created_at), 'MMM dd, yyyy')}
+                      {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.apartment_number}</div>
-                      <div className="text-xs text-gray-500">{payment.building_name}</div>
+                      <div className="text-sm font-medium text-gray-900">{payment.invoice_number}</div>
+                      <div className="text-xs text-gray-500">
+                        {payment.invoice_date ? format(new Date(payment.invoice_date), 'MMM dd, yyyy') : '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {payment.customer_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {payment.apartment_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.buyer_name}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                      €{payment.sale_price?.toLocaleString() || '0'}
+                      €{payment.invoice_total_amount.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
                         €{Number(payment.amount).toLocaleString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {payment.notes || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {payment.payment_method}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.bank_account_name}
                     </td>
                   </tr>
                 ))
