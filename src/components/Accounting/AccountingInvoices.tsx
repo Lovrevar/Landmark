@@ -90,9 +90,6 @@ interface Invoice {
   projects?: { name: string }
   contracts?: { contract_number: string; job_description: string }
   office_suppliers?: { name: string }
-  is_cesija_display?: boolean
-  cesija_company_name?: string
-  cesija_paid_amount?: number
 }
 
 const AccountingInvoices: React.FC = () => {
@@ -236,74 +233,19 @@ const AccountingInvoices: React.FC = () => {
         .order('issue_date', { ascending: false })
 
       if (invoicesError) throw invoicesError
+      setInvoices(invoicesData || [])
 
       const { data: companiesData, error: companiesError } = await supabase
-        .from('accounting_companies')
-        .select('id, name')
-
-      if (companiesError) throw companiesError
-
-      const { data: cesijaPayments, error: cesijaError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          invoice_id,
-          amount,
-          cesija_company_id,
-          accounting_invoices!inner (
-            *,
-            companies:company_id (name),
-            subcontractors:supplier_id (name),
-            customers:customer_id (name, surname),
-            investors:investor_id (name),
-            banks:bank_id (name),
-            projects:project_id (name),
-            contracts:contract_id (contract_number, job_description),
-            office_suppliers:office_supplier_id (name)
-          )
-        `)
-        .eq('is_cesija', true)
-        .not('cesija_company_id', 'is', null)
-
-      if (cesijaError) throw cesijaError
-
-      const cesijaInvoicesMap = new Map<string, any>()
-      cesijaPayments?.forEach(payment => {
-        const invoice = payment.accounting_invoices
-        const cesijaCompanyId = payment.cesija_company_id
-        const key = `${invoice.id}-${cesijaCompanyId}`
-
-        if (!cesijaInvoicesMap.has(key)) {
-          const company = companiesData?.find(c => c.id === cesijaCompanyId)
-          cesijaInvoicesMap.set(key, {
-            ...invoice,
-            is_cesija_display: true,
-            cesija_company_name: company?.name || 'N/A',
-            cesija_paid_amount: payment.amount
-          })
-        } else {
-          const existing = cesijaInvoicesMap.get(key)
-          existing.cesija_paid_amount += payment.amount
-        }
-      })
-
-      const allInvoices = [
-        ...(invoicesData || []),
-        ...Array.from(cesijaInvoicesMap.values())
-      ]
-
-      setInvoices(allInvoices)
-
-      const { data: companiesDataFull, error: companiesErrorFull } = await supabase
         .from('accounting_companies')
         .select('id, name, oib')
         .order('name')
 
-      if (companiesErrorFull) {
-        console.error('Error loading companies:', companiesErrorFull)
-        throw companiesErrorFull
+      if (companiesError) {
+        console.error('Error loading companies:', companiesError)
+        throw companiesError
       }
-      console.log('Loaded companies:', companiesDataFull)
-      setCompanies(companiesDataFull || [])
+      console.log('Loaded companies:', companiesData)
+      setCompanies(companiesData || [])
 
       const { data: bankAccountsData, error: bankAccountsError } = await supabase
         .from('company_bank_accounts')
@@ -997,26 +939,12 @@ const AccountingInvoices: React.FC = () => {
                     )}
                     {visibleColumns.invoice_number && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        <div className="flex items-center gap-2">
-                          {invoice.invoice_number}
-                          {invoice.is_cesija_display && (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                              CESIJA
-                            </span>
-                          )}
-                        </div>
+                        {invoice.invoice_number}
                       </td>
                     )}
                     {visibleColumns.company && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {invoice.is_cesija_display ? (
-                          <div className="flex flex-col">
-                            <span className="font-medium">{invoice.cesija_company_name}</span>
-                            <span className="text-xs text-gray-500">← plaća za {invoice.companies?.name}</span>
-                          </div>
-                        ) : (
-                          invoice.companies?.name
-                        )}
+                        {invoice.companies?.name}
                       </td>
                     )}
                     {visibleColumns.supplier_customer && (
@@ -1058,14 +986,7 @@ const AccountingInvoices: React.FC = () => {
                     )}
                     {visibleColumns.paid_amount && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600">
-                        {invoice.is_cesija_display ? (
-                          <div className="flex flex-col">
-                            <span>€{invoice.cesija_paid_amount?.toLocaleString()}</span>
-                            <span className="text-xs text-gray-500">(cesija)</span>
-                          </div>
-                        ) : (
-                          `€${invoice.paid_amount.toLocaleString()}`
-                        )}
+                        €{invoice.paid_amount.toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.remaining_amount && (
@@ -1082,37 +1003,31 @@ const AccountingInvoices: React.FC = () => {
                       </td>
                     )}
                     <td className="px-4 py-4 whitespace-nowrap text-sm sticky right-0 bg-white">
-                      {invoice.is_cesija_display ? (
-                        <div className="text-xs text-gray-500 italic">
-                          Cesija račun (read-only)
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          {invoice.status !== 'PAID' && (
-                            <button
-                              onClick={() => handleOpenPaymentModal(invoice)}
-                              title="Plaćanje"
-                              className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors duration-200"
-                            >
-                              <DollarSign className="w-4 h-4" />
-                            </button>
-                          )}
+                      <div className="flex items-center space-x-2">
+                        {invoice.status !== 'PAID' && (
                           <button
-                            onClick={() => handleOpenModal(invoice)}
-                            title="Uredi"
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-200"
+                            onClick={() => handleOpenPaymentModal(invoice)}
+                            title="Plaćanje"
+                            className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors duration-200"
                           >
-                            <Edit className="w-4 h-4" />
+                            <DollarSign className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(invoice.id)}
-                            title="Obriši"
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                          >
+                        )}
+                        <button
+                          onClick={() => handleOpenModal(invoice)}
+                          title="Uredi"
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-200"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(invoice.id)}
+                          title="Obriši"
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      )}
                     </td>
                   </tr>
                 ))
