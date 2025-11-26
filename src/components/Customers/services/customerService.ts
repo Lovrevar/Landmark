@@ -59,6 +59,25 @@ export const customerService = {
                     repositoryData = rData
                   }
 
+                  // Calculate actual total paid from accounting_payments
+                  const { data: invoicesData } = await supabase
+                    .from('accounting_invoices')
+                    .select('id')
+                    .eq('apartment_id', aptData.id)
+                    .eq('customer_id', customer.id)
+                    .eq('invoice_type', 'OUTGOING_SALES')
+
+                  let actualTotalPaid = 0
+                  if (invoicesData && invoicesData.length > 0) {
+                    const invoiceIds = invoicesData.map(inv => inv.id)
+                    const { data: paymentsData } = await supabase
+                      .from('accounting_payments')
+                      .select('amount')
+                      .in('invoice_id', invoiceIds)
+
+                    actualTotalPaid = paymentsData?.reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0
+                  }
+
                   purchasedUnits.push({
                     type: 'apartment',
                     id: aptData.id,
@@ -71,7 +90,7 @@ export const customerService = {
                     sale_price: sale.sale_price,
                     sale_date: sale.sale_date,
                     down_payment: sale.down_payment,
-                    total_paid: sale.total_paid,
+                    total_paid: actualTotalPaid,
                     garage: garageData,
                     repository: repositoryData
                   })
