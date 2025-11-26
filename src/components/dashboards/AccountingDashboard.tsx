@@ -230,21 +230,48 @@ const AccountingDashboard: React.FC = () => {
           .select('current_balance')
           .eq('company_id', company.id)
 
+        // Get all payments for this company's invoices
+        const { data: payments } = await supabase
+          .from('accounting_payments')
+          .select(`
+            amount,
+            accounting_invoices!inner(invoice_type, company_id)
+          `)
+          .eq('accounting_invoices.company_id', company.id)
+
+        // Calculate incoming (money received) and outgoing (money paid)
+        const incomingPayments = payments?.filter(p => {
+          const invoiceType = (p.accounting_invoices as any).invoice_type
+          return invoiceType.startsWith('OUTGOING') ||
+                 invoiceType === 'INCOMING_BANK_CREDIT' ||
+                 invoiceType === 'INCOMING_INVESTOR'
+        }) || []
+
+        const outgoingPayments = payments?.filter(p => {
+          const invoiceType = (p.accounting_invoices as any).invoice_type
+          return invoiceType.startsWith('INCOMING') &&
+                 invoiceType !== 'INCOMING_BANK_CREDIT' &&
+                 invoiceType !== 'INCOMING_INVESTOR'
+        }) || []
+
+        const totalIncoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+        const totalOutgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+
+        const totalBalance = bankAccounts?.reduce((sum, acc) =>
+          sum + parseFloat(acc.current_balance || '0'), 0
+        ) || 0
+
         // Get invoice count
         const { count: invoiceCount } = await supabase
           .from('accounting_invoices')
           .select('id', { count: 'exact', head: true })
           .eq('company_id', company.id)
 
-        const totalBalance = bankAccounts?.reduce((sum, acc) =>
-          sum + parseFloat(acc.current_balance || '0'), 0
-        ) || 0
-
         companyStats.push({
           id: company.id,
           name: company.name,
-          totalIncoming: 0,
-          totalOutgoing: 0,
+          totalIncoming,
+          totalOutgoing,
           netBalance: totalBalance,
           invoiceCount: invoiceCount || 0
         })
