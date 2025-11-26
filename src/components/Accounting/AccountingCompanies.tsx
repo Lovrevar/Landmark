@@ -182,11 +182,16 @@ const AccountingCompanies: React.FC = () => {
   const handleOpenAddModal = (company?: CompanyStats) => {
     if (company) {
       setEditingCompany(company.id)
+      const bankAccountsForEdit = company.bank_accounts.map(acc => ({
+        id: acc.id,
+        bank_name: acc.bank_name,
+        initial_balance: acc.initial_balance
+      }))
       setFormData({
         name: company.name,
         oib: company.oib,
-        accountCount: 1,
-        bankAccounts: [{ bank_name: '', initial_balance: 0 }]
+        accountCount: bankAccountsForEdit.length,
+        bankAccounts: bankAccountsForEdit
       })
     } else {
       setEditingCompany(null)
@@ -223,6 +228,47 @@ const AccountingCompanies: React.FC = () => {
           .eq('id', editingCompany)
 
         if (error) throw error
+
+        for (const account of formData.bankAccounts) {
+          if (account.id) {
+            const { error: updateError } = await supabase
+              .from('company_bank_accounts')
+              .update({
+                initial_balance: account.initial_balance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', account.id)
+
+            if (updateError) throw updateError
+
+            const { data: paymentsSum } = await supabase
+              .from('accounting_payments')
+              .select('amount, invoice:accounting_invoices!inner(invoice_type)')
+              .eq('invoice.company_bank_account_id', account.id)
+
+            let totalChange = 0
+            if (paymentsSum && paymentsSum.length > 0) {
+              totalChange = paymentsSum.reduce((sum, payment: any) => {
+                const invoiceType = payment.invoice?.invoice_type
+                if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_INVESTMENT', 'INCOMING_OFFICE'].includes(invoiceType)) {
+                  return sum + payment.amount
+                } else if (invoiceType && ['OUTGOING_SUPPLIER', 'OUTGOING_SALES', 'OUTGOING_OFFICE'].includes(invoiceType)) {
+                  return sum - payment.amount
+                }
+                return sum
+              }, 0)
+            }
+
+            const { error: balanceError } = await supabase
+              .from('company_bank_accounts')
+              .update({
+                current_balance: account.initial_balance + totalChange
+              })
+              .eq('id', account.id)
+
+            if (balanceError) throw balanceError
+          }
+        }
       } else {
         const { data: companyData, error: companyError } = await supabase
           .from('accounting_companies')
@@ -572,67 +618,75 @@ const AccountingCompanies: React.FC = () => {
                 </div>
 
                 {!editingCompany && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Broj bankovnih računa *
-                      </label>
-                      <select
-                        value={formData.accountCount}
-                        onChange={(e) => handleAccountCountChange(parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">Odaberite broj bankovnih računa</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900">Bankovni računi</h3>
-                      {formData.bankAccounts.map((account, index) => (
-                        <div key={index} className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
-                          <p className="text-sm font-medium text-gray-700">Račun #{index + 1}</p>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Naziv banke *
-                            </label>
-                            <input
-                              type="text"
-                              value={account.bank_name}
-                              onChange={(e) => handleBankAccountChange(index, 'bank_name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                              required
-                              placeholder="npr. Erste banka"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Početno stanje (€) *
-                            </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={account.initial_balance}
-                              onChange={(e) => handleBankAccountChange(index, 'initial_balance', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                              required
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Broj bankovnih računa *
+                    </label>
+                    <select
+                      value={formData.accountCount}
+                      onChange={(e) => handleAccountCountChange(parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                        <option key={n} value={n}>{n}</option>
                       ))}
-                    </div>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Odaberite broj bankovnih računa</p>
+                  </div>
+                )}
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-800">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Bankovni računi</h3>
+                  {formData.bankAccounts.map((account, index) => (
+                    <div key={index} className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
+                      <p className="text-sm font-medium text-gray-700">Račun #{index + 1}</p>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Naziv banke *
+                        </label>
+                        <input
+                          type="text"
+                          value={account.bank_name}
+                          onChange={(e) => handleBankAccountChange(index, 'bank_name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          required
+                          placeholder="npr. Erste banka"
+                          disabled={editingCompany !== null}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Početno stanje (€) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={account.initial_balance}
+                          onChange={(e) => handleBankAccountChange(index, 'initial_balance', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          required
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    {editingCompany ? (
+                      <>
+                        <strong>Napomena:</strong> Možete promijeniti početna stanja računa. Current balance će se preračunati
+                        automatski na osnovu novih početnih stanja.
+                      </>
+                    ) : (
+                      <>
                         <strong>Napomena:</strong> Nakon dodavanja firme i bankovnih računa, svaki račun će se automatski
                         ažurirati kada izdajete ili plaćate račune.
-                      </p>
-                    </div>
-                  </>
-                )}
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
