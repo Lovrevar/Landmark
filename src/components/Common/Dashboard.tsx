@@ -4,6 +4,7 @@ import DirectorDashboard from '../dashboards/DirectorDashboard'
 import SalesDashboard from '../dashboards/SalesDashboard'
 import SupervisionDashboard from '../dashboards/SupervisionDashboard'
 import InvestmentDashboard from '../dashboards/InvestmentDashboard'
+import AccountingDashboard from '../dashboards/AccountingDashboard'
 
 const Dashboard: React.FC = () => {
   const { currentProfile } = useAuth()
@@ -18,6 +19,8 @@ const Dashboard: React.FC = () => {
         return <SupervisionDashboard key={currentProfile} />
       case 'Funding':
         return <InvestmentDashboard key={currentProfile} />
+      case 'Accounting':
+        return <AccountingDashboard key={currentProfile} />
       default:
         return <DirectorDashboard key={currentProfile} />
     }
