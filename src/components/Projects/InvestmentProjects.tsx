@@ -43,6 +43,17 @@ const InvestmentProjects: React.FC = () => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    if (selectedProject) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedProject])
+
   const fetchData = async () => {
     setLoading(true)
     try {
