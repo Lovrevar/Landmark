@@ -54,6 +54,17 @@ const InvestorsManagement: React.FC = () => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    if (showInvestorForm || showInvestmentForm || selectedInvestor) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showInvestorForm, showInvestmentForm, selectedInvestor])
+
   const fetchData = async () => {
     setLoading(true)
     try {

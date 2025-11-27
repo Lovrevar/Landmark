@@ -53,6 +53,17 @@ const BanksManagement: React.FC = () => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    if (showBankForm || showCreditForm || selectedBank) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showBankForm, showCreditForm, selectedBank])
+
   const fetchData = async () => {
     setLoading(true)
     try {
