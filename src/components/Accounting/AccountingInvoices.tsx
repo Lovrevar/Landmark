@@ -134,7 +134,6 @@ const AccountingInvoices: React.FC = () => {
   const [formData, setFormData] = useState({
     invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE',
     company_id: '',
-    company_bank_account_id: '',
     supplier_id: '',
     office_supplier_id: '',
     customer_id: '',
@@ -395,7 +394,6 @@ const AccountingInvoices: React.FC = () => {
       setFormData({
         invoice_type: invoice.invoice_type,
         company_id: invoice.company_id,
-        company_bank_account_id: invoice.company_bank_account_id || '',
         supplier_id: invoice.supplier_id || '',
         office_supplier_id: invoice.office_supplier_id || '',
         customer_id: invoice.customer_id || '',
@@ -419,7 +417,6 @@ const AccountingInvoices: React.FC = () => {
       setFormData({
         invoice_type: 'INCOMING_SUPPLIER',
         company_id: '',
-        company_bank_account_id: '',
         supplier_id: '',
         office_supplier_id: '',
         customer_id: '',
@@ -482,7 +479,7 @@ const AccountingInvoices: React.FC = () => {
         invoice_type: formData.invoice_type,
         invoice_category,
         company_id: formData.company_id,
-        company_bank_account_id: formData.company_bank_account_id || null,
+        company_bank_account_id: null,
         supplier_id,
         office_supplier_id,
         customer_id,
@@ -691,11 +688,6 @@ const AccountingInvoices: React.FC = () => {
     return milestones.filter(m => m.contract_id === contractId && m.status !== 'paid')
   }
 
-  const getCompanyBankAccounts = (companyId: string) => {
-    if (!companyId) return []
-    return companyBankAccounts.filter(acc => acc.company_id === companyId)
-  }
-
   useEffect(() => {
     const loadMilestones = async () => {
       if (formData.contract_id) {
@@ -784,8 +776,7 @@ const AccountingInvoices: React.FC = () => {
                 contract_id: '',
                 milestone_id: '',
                 project_id: '',
-                category: '',
-                company_bank_account_id: ''
+                category: ''
               })
               setEditingInvoice(null)
               document.body.style.overflow = 'hidden'
@@ -1332,7 +1323,7 @@ const AccountingInvoices: React.FC = () => {
                   </label>
                   <select
                     value={formData.company_id}
-                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value, company_bank_account_id: '' })}
+                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
@@ -1342,30 +1333,6 @@ const AccountingInvoices: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {formData.company_id && getCompanyBankAccounts(formData.company_id).length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bankovni račun *
-                    </label>
-                    <select
-                      value={formData.company_bank_account_id}
-                      onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Odaberi bankovni račun</option>
-                      {getCompanyBankAccounts(formData.company_id).map(account => (
-                        <option key={account.id} value={account.id}>
-                          {account.bank_name} (Stanje: €{account.current_balance.toLocaleString()})
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Odabirom bankovnog računa, plaćanja će automatski ažurirati stanje
-                    </p>
-                  </div>
-                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
