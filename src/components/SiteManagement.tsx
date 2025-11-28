@@ -21,6 +21,7 @@ const SiteManagement: React.FC = () => {
     projects,
     loading,
     existingSubcontractors,
+    fetchProjects,
     createProjectPhases,
     updatePhase,
     deletePhase,
@@ -371,6 +372,8 @@ const SiteManagement: React.FC = () => {
     <ProjectsGrid
       projects={filteredProjects}
       onSelectProject={setSelectedProject}
+      onRefresh={fetchProjects}
+      isRefreshing={loading}
     />
   )
 }
