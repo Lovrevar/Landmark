@@ -4,19 +4,17 @@ import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
 import { MilestoneFormModal } from '../forms/MilestoneFormModal'
 import {
-  fetchMilestonesBySubcontractorAndPhase,
+  fetchMilestonesByContract,
   getNextMilestoneNumber,
   createMilestone,
   updateMilestone,
   deleteMilestone,
-  getMilestoneStatsForPhase
+  getMilestoneStatsForContract
 } from '../services/siteService'
 import { MilestoneStats } from '../types/siteTypes'
 
 interface MilestoneListProps {
-  subcontractorId: string
-  projectId: string
-  phaseId: string
+  contractId: string
   subcontractorName: string
   projectName: string
   phaseName: string
@@ -25,9 +23,7 @@ interface MilestoneListProps {
 }
 
 export const MilestoneList: React.FC<MilestoneListProps> = ({
-  subcontractorId,
-  projectId,
-  phaseId,
+  contractId,
   subcontractorName,
   projectName,
   phaseName,
@@ -42,15 +38,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
   useEffect(() => {
     loadMilestones()
-  }, [subcontractorId, phaseId])
+  }, [contractId])
 
   const loadMilestones = async () => {
     try {
       setLoading(true)
-      const data = await fetchMilestonesBySubcontractorAndPhase(subcontractorId, phaseId)
+      const data = await fetchMilestonesByContract(contractId)
       setMilestones(data)
 
-      const statsData = await getMilestoneStatsForPhase(subcontractorId, phaseId, contractCost)
+      const statsData = await getMilestoneStatsForContract(contractId, contractCost)
       setStats(statsData)
     } catch (error) {
       console.error('Error loading milestones:', error)
@@ -61,7 +57,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
   const handleAddMilestone = async (data: any) => {
     try {
-      const milestoneNumber = await getNextMilestoneNumber(subcontractorId, phaseId)
+      const milestoneNumber = await getNextMilestoneNumber(contractId)
       await createMilestone({
         ...data,
         milestone_number: milestoneNumber
@@ -316,9 +312,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             setEditingMilestone(null)
           }}
           onSubmit={editingMilestone ? handleEditMilestone : handleAddMilestone}
-          subcontractorId={subcontractorId}
-          projectId={projectId}
-          phaseId={phaseId}
+          contractId={contractId}
           subcontractorName={subcontractorName}
           projectName={projectName}
           phaseName={phaseName}

@@ -61,9 +61,7 @@ export interface SubcontractorFormData {
 }
 
 export interface MilestoneFormData {
-  subcontractor_id: string
-  project_id: string
-  phase_id: string
+  contract_id: string
   milestone_name: string
   description: string
   percentage: number

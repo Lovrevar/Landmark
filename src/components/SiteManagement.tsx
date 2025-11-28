@@ -352,9 +352,7 @@ const SiteManagement: React.FC = () => {
             <div className="max-w-6xl w-full my-8">
               <div className="bg-white rounded-xl shadow-2xl">
                 <MilestoneList
-                  subcontractorId={milestoneContext.subcontractor.id}
-                  projectId={milestoneContext.project.id}
-                  phaseId={milestoneContext.phase.id}
+                  contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
                   subcontractorName={milestoneContext.subcontractor.name}
                   projectName={milestoneContext.project.name}
                   phaseName={milestoneContext.phase.phase_name}

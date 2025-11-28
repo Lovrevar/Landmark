@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { X, AlertCircle } from 'lucide-react'
 import { MilestoneFormData } from '../types/siteTypes'
-import { validateMilestonePercentagesForPhase } from '../services/siteService'
+import { validateMilestonePercentagesForContract } from '../services/siteService'
 
 interface MilestoneFormModalProps {
   visible: boolean
   onClose: () => void
   onSubmit: (data: MilestoneFormData) => void
-  subcontractorId: string
-  projectId: string
-  phaseId: string
+  contractId: string
   subcontractorName: string
   projectName: string
   phaseName: string
@@ -27,9 +25,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   visible,
   onClose,
   onSubmit,
-  subcontractorId,
-  projectId,
-  phaseId,
+  contractId,
   subcontractorName,
   projectName,
   phaseName,
@@ -37,9 +33,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   editingMilestone
 }) => {
   const [formData, setFormData] = useState<MilestoneFormData>({
-    subcontractor_id: subcontractorId,
-    project_id: projectId,
-    phase_id: phaseId,
+    contract_id: contractId,
     milestone_name: '',
     description: '',
     percentage: 0,
@@ -53,9 +47,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
     if (visible) {
       if (editingMilestone) {
         setFormData({
-          subcontractor_id: subcontractorId,
-          project_id: projectId,
-          phase_id: phaseId,
+          contract_id: contractId,
           milestone_name: editingMilestone.milestone_name,
           description: editingMilestone.description,
           percentage: editingMilestone.percentage,
@@ -63,9 +55,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
         })
       } else {
         setFormData({
-          subcontractor_id: subcontractorId,
-          project_id: projectId,
-          phase_id: phaseId,
+          contract_id: contractId,
           milestone_name: '',
           description: '',
           percentage: 0,
@@ -74,13 +64,12 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
       }
       loadRemainingPercentage()
     }
-  }, [visible, subcontractorId, projectId, phaseId, editingMilestone])
+  }, [visible, contractId, editingMilestone])
 
   const loadRemainingPercentage = async () => {
     try {
-      const validation = await validateMilestonePercentagesForPhase(
-        subcontractorId,
-        phaseId,
+      const validation = await validateMilestonePercentagesForContract(
+        contractId,
         editingMilestone?.id
       )
       setRemainingPercentage(validation.remainingPercentage)

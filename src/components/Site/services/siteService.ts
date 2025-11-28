@@ -461,15 +461,13 @@ export const createSubcontractorComment = async (data: {
   if (error) throw error
 }
 
-export const fetchMilestonesBySubcontractorAndPhase = async (
-  subcontractorId: string,
-  phaseId: string
+export const fetchMilestonesByContract = async (
+  contractId: string
 ) => {
   const { data, error } = await supabase
     .from('subcontractor_milestones')
     .select('*')
-    .eq('subcontractor_id', subcontractorId)
-    .eq('phase_id', phaseId)
+    .eq('contract_id', contractId)
     .order('milestone_number', { ascending: true })
 
   if (error) throw error
@@ -480,9 +478,11 @@ export const fetchMilestonesBySubcontractorAndPhase = async (
 export const fetchMilestonesBySubcontractor = async (subcontractorId: string) => {
   const { data, error } = await supabase
     .from('subcontractor_milestones')
-    .select('*')
-    .eq('subcontractor_id', subcontractorId)
-    .order('phase_id', { ascending: true })
+    .select(`
+      *,
+      contract:contracts!inner(subcontractor_id, project_id, phase_id)
+    `)
+    .eq('contract.subcontractor_id', subcontractorId)
     .order('milestone_number', { ascending: true })
 
   if (error) throw error
@@ -491,14 +491,12 @@ export const fetchMilestonesBySubcontractor = async (subcontractorId: string) =>
 }
 
 export const getNextMilestoneNumber = async (
-  subcontractorId: string,
-  phaseId: string
+  contractId: string
 ) => {
   const { data, error } = await supabase
     .from('subcontractor_milestones')
     .select('milestone_number')
-    .eq('subcontractor_id', subcontractorId)
-    .eq('phase_id', phaseId)
+    .eq('contract_id', contractId)
     .order('milestone_number', { ascending: false })
     .limit(1)
 
@@ -508,9 +506,7 @@ export const getNextMilestoneNumber = async (
 }
 
 export const createMilestone = async (data: {
-  subcontractor_id: string
-  project_id: string
-  phase_id: string
+  contract_id: string
   milestone_number: number
   milestone_name: string
   description: string
@@ -572,16 +568,14 @@ export const deleteMilestone = async (milestoneId: string) => {
   if (error) throw error
 }
 
-export const validateMilestonePercentagesForPhase = async (
-  subcontractorId: string,
-  phaseId: string,
+export const validateMilestonePercentagesForContract = async (
+  contractId: string,
   excludeMilestoneId?: string
 ) => {
   let query = supabase
     .from('subcontractor_milestones')
     .select('percentage')
-    .eq('subcontractor_id', subcontractorId)
-    .eq('phase_id', phaseId)
+    .eq('contract_id', contractId)
 
   if (excludeMilestoneId) {
     query = query.neq('id', excludeMilestoneId)
@@ -599,12 +593,11 @@ export const validateMilestonePercentagesForPhase = async (
   }
 }
 
-export const getMilestoneStatsForPhase = async (
-  subcontractorId: string,
-  phaseId: string,
+export const getMilestoneStatsForContract = async (
+  contractId: string,
   contractCost: number
 ) => {
-  const milestones = await fetchMilestonesBySubcontractorAndPhase(subcontractorId, phaseId)
+  const milestones = await fetchMilestonesByContract(contractId)
 
   const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0)
   const remainingPercentage = 100 - totalPercentage
