@@ -90,7 +90,7 @@ const SalesPaymentsManagement: React.FC = () => {
       if (bankAccountIds.length > 0) {
         const { data: accounts } = await supabase
           .from('company_bank_accounts')
-          .select('id, account_name')
+          .select('id, bank_name')
           .in('id', bankAccountIds)
         bankAccountsData = accounts || []
       }
@@ -115,7 +115,7 @@ const SalesPaymentsManagement: React.FC = () => {
           customer_name: invoice?.customers
             ? `${(invoice.customers as any).name} ${(invoice.customers as any).surname}`
             : 'N/A',
-          bank_account_name: bankAccount?.account_name || 'N/A'
+          bank_account_name: bankAccount?.bank_name || 'N/A'
         }
       })
 

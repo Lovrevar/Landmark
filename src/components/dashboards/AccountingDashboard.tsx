@@ -44,7 +44,7 @@ interface TopCompany {
 
 interface BankAccountStats {
   id: string
-  account_name: string
+  bank_name: string
   account_number: string
   current_balance: number
   total_incoming: number
@@ -289,7 +289,7 @@ const AccountingDashboard: React.FC = () => {
     try {
       const { data: accounts, error } = await supabase
         .from('company_bank_accounts')
-        .select('id, account_name, account_number, current_balance')
+        .select('id, bank_name, account_number, current_balance')
 
       if (error) throw error
 
@@ -323,7 +323,7 @@ const AccountingDashboard: React.FC = () => {
 
         accountStats.push({
           id: account.id,
-          account_name: account.account_name,
+          bank_name: account.bank_name,
           account_number: account.account_number,
           current_balance: parseFloat(account.current_balance || 0),
           total_incoming,
@@ -637,7 +637,7 @@ const AccountingDashboard: React.FC = () => {
                       <div className="flex items-center">
                         <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
                         <div>
-                          <p className="font-semibold text-gray-900">{account.account_name}</p>
+                          <p className="font-semibold text-gray-900">{account.bank_name}</p>
                           <p className="text-xs text-gray-500">{account.account_number}</p>
                         </div>
                       </div>
