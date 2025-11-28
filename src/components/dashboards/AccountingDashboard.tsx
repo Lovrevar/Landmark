@@ -296,8 +296,8 @@ const AccountingDashboard: React.FC = () => {
       const accountStats: BankAccountStats[] = []
 
       for (const account of accounts || []) {
-        // Get all payments through this account
-        const { data: payments } = await supabase
+        // Get all payments through this account (both regular and cesija)
+        const { data: regularPayments } = await supabase
           .from('accounting_payments')
           .select(`
             amount,
@@ -305,18 +305,30 @@ const AccountingDashboard: React.FC = () => {
           `)
           .eq('company_bank_account_id', account.id)
 
-        const incomingPayments = payments?.filter(p =>
-          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SALES' ||
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_BANK_CREDIT' ||
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_INVESTOR'
-        ) || []
+        // Get cesija payments where this account is the cesija_bank_account_id
+        const { data: cesijaPayments } = await supabase
+          .from('accounting_payments')
+          .select(`
+            amount,
+            accounting_invoices!inner(invoice_type)
+          `)
+          .eq('cesija_bank_account_id', account.id)
 
-        const outgoingPayments = payments?.filter(p =>
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_SUBCONTRACTOR' ||
+        // Combine all payments for this account
+        const allPayments = [...(regularPayments || []), ...(cesijaPayments || [])]
+
+        const incomingPayments = allPayments.filter(p =>
+          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SALES' ||
+          (p.accounting_invoices as any).invoice_type === 'INCOMING_INVESTMENT' ||
+          (p.accounting_invoices as any).invoice_type === 'INCOMING_BANK_CREDIT'
+        )
+
+        const outgoingPayments = allPayments.filter(p =>
+          (p.accounting_invoices as any).invoice_type === 'INCOMING_SUPPLIER' ||
           (p.accounting_invoices as any).invoice_type === 'INCOMING_OFFICE' ||
-          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SUBCONTRACTOR' ||
+          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SUPPLIER' ||
           (p.accounting_invoices as any).invoice_type === 'OUTGOING_OFFICE'
-        ) || []
+        )
 
         const total_incoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
         const total_outgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
@@ -328,7 +340,7 @@ const AccountingDashboard: React.FC = () => {
           current_balance: parseFloat(account.current_balance || 0),
           total_incoming,
           total_outgoing,
-          transaction_count: (payments || []).length
+          transaction_count: allPayments.length
         })
       }
 
