@@ -28,6 +28,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   projectId
 }) => {
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
+  const [baseAmount, setBaseAmount] = useState(0)
+  const [vatRate, setVatRate] = useState(0)
   const [formData, setFormData] = useState<SubcontractorFormData>({
     existing_subcontractor_id: '',
     name: '',
@@ -44,11 +46,28 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [banks, setBanks] = useState<Funder[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
 
+  const calculateTotalCost = (base: number, vat: number) => {
+    const vatAmount = base * (vat / 100)
+    return base + vatAmount
+  }
+
+  useEffect(() => {
+    const totalCost = calculateTotalCost(baseAmount, vatRate)
+    setFormData(prev => ({ ...prev, cost: totalCost }))
+  }, [baseAmount, vatRate])
+
   useEffect(() => {
     if (phase) {
       setFormData(prev => ({ ...prev, phase_id: phase.id }))
     }
   }, [phase])
+
+  useEffect(() => {
+    if (!visible) {
+      setBaseAmount(0)
+      setVatRate(0)
+    }
+  }, [visible])
 
   useEffect(() => {
     if (visible && projectId) {
@@ -196,15 +215,48 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contract Cost (€) *
+                    Osnovica (€) *
                   </label>
                   <input
                     type="number"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                    value={baseAmount}
+                    onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    PDV *
+                  </label>
+                  <select
+                    value={vatRate}
+                    onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="0">0%</option>
+                    <option value="13">13%</option>
+                    <option value="25">25%</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contract Cost (€)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.cost.toFixed(2)}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Automatski izračunato: Osnovica + PDV
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -295,18 +347,39 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Osnovica (€) *</label>
                 <input
                   type="number"
-                  value={formData.cost}
-                  onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                  value={baseAmount}
+                  onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="0"
-                  max={availableBudget}
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">PDV *</label>
+                <select
+                  value={vatRate}
+                  onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="0">0%</option>
+                  <option value="13">13%</option>
+                  <option value="25">25%</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
+                <input
+                  type="number"
+                  value={formData.cost.toFixed(2)}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                />
                 <p className="text-xs text-gray-500 mt-1">
-                  Max: €{availableBudget.toLocaleString()}
+                  Automatski izračunato: Osnovica + PDV
                 </p>
               </div>
               <div>
