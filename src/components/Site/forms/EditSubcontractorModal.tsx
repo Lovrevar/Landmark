@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { Subcontractor } from '../../../lib/supabase'
 
@@ -17,6 +17,40 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   onChange,
   onSubmit
 }) => {
+  const [baseAmount, setBaseAmount] = useState(0)
+  const [vatRate, setVatRate] = useState(0)
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      const possibleVatRates = [0, 13, 25]
+      let foundVat = 0
+      let foundBase = subcontractor.cost
+
+      for (const rate of possibleVatRates) {
+        const calculatedBase = subcontractor.cost / (1 + rate / 100)
+        const calculatedVat = calculatedBase * (rate / 100)
+        const calculatedTotal = calculatedBase + calculatedVat
+
+        if (Math.abs(calculatedTotal - subcontractor.cost) < 0.01) {
+          foundVat = rate
+          foundBase = calculatedBase
+          break
+        }
+      }
+
+      setBaseAmount(foundBase)
+      setVatRate(foundVat)
+    }
+  }, [visible, subcontractor])
+
+  useEffect(() => {
+    if (subcontractor) {
+      const vatAmount = baseAmount * (vatRate / 100)
+      const totalCost = baseAmount + vatAmount
+      onChange({ ...subcontractor, cost: totalCost })
+    }
+  }, [baseAmount, vatRate])
+
   if (!visible || !subcontractor) return null
 
   return (
@@ -68,15 +102,43 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Osnovica (€) *</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                value={subcontractor.cost}
-                onChange={(e) => onChange({ ...subcontractor, cost: parseFloat(e.target.value) || 0 })}
+                value={baseAmount}
+                onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PDV *</label>
+              <select
+                value={vatRate}
+                onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="0">0%</option>
+                <option value="13">13%</option>
+                <option value="25">25%</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
+              <input
+                type="number"
+                value={subcontractor.cost.toFixed(2)}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Automatski izračunato: Osnovica + PDV
+              </p>
             </div>
 
             <div>
