@@ -1111,7 +1111,7 @@ const AccountingInvoices: React.FC = () => {
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Neto plaćeno (bez PDV): </span>
+              <span className="text-gray-600">Neto dobit: </span>
               <span className={`font-semibold ${
                 filteredInvoices
                   .filter(i => i.invoice_type === 'OUTGOING_SALES')
