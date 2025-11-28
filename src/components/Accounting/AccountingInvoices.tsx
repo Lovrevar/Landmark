@@ -55,6 +55,17 @@ interface Contract {
   phases?: { phase_name: string }
 }
 
+interface Milestone {
+  id: string
+  contract_id: string
+  milestone_number: number
+  milestone_name: string
+  description: string
+  percentage: number
+  due_date: string | null
+  status: 'pending' | 'completed' | 'paid'
+}
+
 interface Invoice {
   id: string
   invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
@@ -67,6 +78,7 @@ interface Invoice {
   bank_id: string | null
   apartment_id: string | null
   contract_id: string | null
+  milestone_id: string | null
   office_supplier_id: string | null
   invoice_number: string
   issue_date: string
@@ -103,6 +115,7 @@ const AccountingInvoices: React.FC = () => {
   const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [contracts, setContracts] = useState<Contract[]>([])
+  const [milestones, setMilestones] = useState<Milestone[]>([])
   const [customerSales, setCustomerSales] = useState<any[]>([])
   const [customerApartments, setCustomerApartments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -128,6 +141,7 @@ const AccountingInvoices: React.FC = () => {
     bank_id: '',
     apartment_id: '',
     contract_id: '',
+    milestone_id: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -387,6 +401,7 @@ const AccountingInvoices: React.FC = () => {
         bank_id: invoice.bank_id || '',
         apartment_id: invoice.apartment_id || '',
         contract_id: invoice.contract_id || '',
+        milestone_id: invoice.milestone_id || '',
         invoice_number: invoice.invoice_number,
         issue_date: invoice.issue_date,
         due_date: invoice.due_date,
@@ -409,6 +424,7 @@ const AccountingInvoices: React.FC = () => {
         bank_id: '',
         apartment_id: '',
         contract_id: '',
+        milestone_id: '',
         invoice_number: '',
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
@@ -471,6 +487,7 @@ const AccountingInvoices: React.FC = () => {
         bank_id,
         apartment_id: formData.apartment_id || null,
         contract_id: formData.contract_id || null,
+        milestone_id: formData.milestone_id || null,
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
@@ -666,6 +683,36 @@ const AccountingInvoices: React.FC = () => {
     )
   }
 
+  const getMilestonesByContract = (contractId: string) => {
+    if (!contractId) return []
+    return milestones.filter(m => m.contract_id === contractId && m.status !== 'paid')
+  }
+
+  useEffect(() => {
+    const loadMilestones = async () => {
+      if (formData.contract_id) {
+        try {
+          const { data, error } = await supabase
+            .from('subcontractor_milestones')
+            .select('*')
+            .eq('contract_id', formData.contract_id)
+            .order('milestone_number', { ascending: true })
+
+          if (error) throw error
+          setMilestones(data || [])
+        } catch (error) {
+          console.error('Error loading milestones:', error)
+          setMilestones([])
+        }
+      } else {
+        setMilestones([])
+        setFormData(prev => ({ ...prev, milestone_id: '' }))
+      }
+    }
+
+    loadMilestones()
+  }, [formData.contract_id])
+
   const isOverdue = (dueDate: string, status: string) => {
     return status !== 'PAID' && new Date(dueDate) < new Date()
   }
@@ -727,6 +774,7 @@ const AccountingInvoices: React.FC = () => {
                 bank_id: '',
                 apartment_id: '',
                 contract_id: '',
+                milestone_id: '',
                 project_id: '',
                 category: ''
               })
@@ -1108,7 +1156,9 @@ const AccountingInvoices: React.FC = () => {
                       customer_id: '',
                       investor_id: '',
                       bank_id: '',
-                      apartment_id: ''
+                      apartment_id: '',
+                      contract_id: '',
+                      milestone_id: ''
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
@@ -1147,7 +1197,8 @@ const AccountingInvoices: React.FC = () => {
                           ...formData,
                           supplier_id: newSupplierId,
                           project_id: currentProjectInList ? formData.project_id : '',
-                          contract_id: ''
+                          contract_id: '',
+                          milestone_id: ''
                         })
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1400,7 +1451,8 @@ const AccountingInvoices: React.FC = () => {
                         ...formData,
                         project_id: e.target.value,
                         apartment_id: '',
-                        contract_id: ''
+                        contract_id: '',
+                        milestone_id: ''
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
@@ -1418,25 +1470,52 @@ const AccountingInvoices: React.FC = () => {
                 )}
 
                 {(formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') && formData.supplier_id && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ugovor / Faza (opcionalno)
-                    </label>
-                    <select
-                      value={formData.contract_id}
-                      onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Bez ugovora</option>
-                      {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
-                        <option key={contract.id} value={contract.id}>
-                          {contract.contract_number} - {contract.projects?.name || 'N/A'}
-                          {contract.phases?.phase_name && ` - ${contract.phases.phase_name}`}
-                          {contract.job_description && ` (${contract.job_description})`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ugovor / Faza (opcionalno)
+                      </label>
+                      <select
+                        value={formData.contract_id}
+                        onChange={(e) => setFormData({ ...formData, contract_id: e.target.value, milestone_id: '' })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Bez ugovora</option>
+                        {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
+                          <option key={contract.id} value={contract.id}>
+                            {contract.contract_number} - {contract.projects?.name || 'N/A'}
+                            {contract.phases?.phase_name && ` - ${contract.phases.phase_name}`}
+                            {contract.job_description && ` (${contract.job_description})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.contract_id && getMilestonesByContract(formData.contract_id).length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Milestone (opcionalno)
+                        </label>
+                        <select
+                          value={formData.milestone_id}
+                          onChange={(e) => setFormData({ ...formData, milestone_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Bez milestone-a</option>
+                          {getMilestonesByContract(formData.contract_id).map(milestone => (
+                            <option key={milestone.id} value={milestone.id}>
+                              #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
+                              {milestone.status === 'completed' && ' - Završeno'}
+                              {milestone.status === 'pending' && ' - Na čekanju'}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Odabir milestone-a će automatski ažurirati njegov status na "plaćen"
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id && (
