@@ -71,15 +71,20 @@ const AccountingCalendar: React.FC = () => {
   }
 
   const getInvoicesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0]
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
     return invoices.filter(inv => inv.due_date?.split('T')[0] === dateStr)
   }
 
   const getMonthStats = () => {
     const { year, month } = getDaysInMonth(currentDate)
     const monthInvoices = invoices.filter(inv => {
-      const invDate = new Date(inv.due_date)
-      return invDate.getFullYear() === year && invDate.getMonth() === month
+      const dateParts = inv.due_date.split('T')[0].split('-')
+      const invYear = parseInt(dateParts[0])
+      const invMonth = parseInt(dateParts[1]) - 1
+      return invYear === year && invMonth === month
     })
 
     const today = new Date()
@@ -90,7 +95,8 @@ const AccountingCalendar: React.FC = () => {
       paid: monthInvoices.filter(inv => inv.status === 'PAID').length,
       unpaid: monthInvoices.filter(inv => inv.status === 'UNPAID').length,
       overdue: monthInvoices.filter(inv => {
-        const dueDate = new Date(inv.due_date)
+        const dateParts = inv.due_date.split('T')[0].split('-')
+        const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
         dueDate.setHours(0, 0, 0, 0)
         return inv.status !== 'PAID' && dueDate < today
       }).length,
@@ -240,7 +246,8 @@ const AccountingCalendar: React.FC = () => {
             const hasPaid = dayInvoices.some(inv => inv.status === 'PAID')
             const hasUnpaid = dayInvoices.some(inv => inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID')
             const hasOverdue = dayInvoices.some(inv => {
-              const dueDate = new Date(inv.due_date)
+              const dateParts = inv.due_date.split('T')[0].split('-')
+              const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
               dueDate.setHours(0, 0, 0, 0)
               return inv.status !== 'PAID' && dueDate < today
             })
