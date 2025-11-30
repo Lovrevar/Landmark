@@ -80,57 +80,33 @@ const AccountingSuppliers: React.FC = () => {
 
       if (suppliersError) throw suppliersError
 
-      const suppliersWithDetails = await Promise.all(
+      const suppliersWithStats = await Promise.all(
         (suppliersData || []).map(async (supplier) => {
-          const { data: contractsData } = await supabase
+          const { count: contractsCount } = await supabase
             .from('contracts')
-            .select(`
-              id,
-              contract_number,
-              project_id,
-              phase_id,
-              job_description,
-              contract_amount,
-              budget_realized,
-              end_date,
-              status,
-              projects:project_id (name),
-              phases:phase_id (phase_name)
-            `)
+            .select('*', { count: 'exact', head: true })
             .eq('subcontractor_id', supplier.id)
             .in('status', ['draft', 'active'])
 
-          const { data: invoicesData } = await supabase
+          const { data: contractsSumData } = await supabase
+            .from('contracts')
+            .select('contract_amount')
+            .eq('subcontractor_id', supplier.id)
+            .in('status', ['draft', 'active'])
+
+          const { data: invoicesStatsData } = await supabase
             .from('accounting_invoices')
-            .select(`
-              id,
-              invoice_number,
-              invoice_type,
-              base_amount,
-              total_amount,
-              paid_amount,
-              remaining_amount,
-              status,
-              issue_date
-            `)
+            .select('base_amount, total_amount, paid_amount, remaining_amount')
             .eq('supplier_id', supplier.id)
 
-          const contracts = contractsData || []
-          const invoices = invoicesData || []
+          const totalContractValue = (contractsSumData || []).reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
 
-          const totalContractValue = contracts.reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
-
+          const invoices = invoicesStatsData || []
           const totalPaidNeto = invoices.reduce((sum, i) => {
             return sum + parseFloat(i.paid_amount || 0) * (parseFloat(i.base_amount || 0) / parseFloat(i.total_amount || 1))
           }, 0)
 
-          const totalPaidPdv = invoices.reduce((sum, i) => {
-            const pdvAmount = parseFloat(i.total_amount || 0) - parseFloat(i.base_amount || 0)
-            return sum + parseFloat(i.paid_amount || 0) * (pdvAmount / parseFloat(i.total_amount || 1))
-          }, 0)
-
           const totalPaidTotal = invoices.reduce((sum, i) => sum + parseFloat(i.paid_amount || 0), 0)
-
           const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
           const totalRemainingFromInvoices = invoices.reduce((sum, i) => {
             const baseAmount = parseFloat(i.base_amount || 0)
@@ -142,21 +118,21 @@ const AccountingSuppliers: React.FC = () => {
             id: supplier.id,
             name: supplier.name,
             contact: supplier.contact,
-            total_contracts: contracts.length,
+            total_contracts: contractsCount || 0,
             total_contract_value: totalContractValue,
             total_paid: totalPaidFromInvoices,
             total_paid_neto: totalPaidNeto,
-            total_paid_pdv: totalPaidPdv,
+            total_paid_pdv: totalPaidTotal - totalPaidNeto,
             total_paid_total: totalPaidTotal,
             total_remaining: (totalContractValue - totalPaidFromInvoices) + totalRemainingFromInvoices,
             total_invoices: invoices.length,
-            contracts,
-            invoices
+            contracts: [],
+            invoices: []
           }
         })
       )
 
-      setSuppliers(suppliersWithDetails)
+      setSuppliers(suppliersWithStats)
     } catch (error) {
       console.error('Error fetching suppliers:', error)
     } finally {
@@ -238,10 +214,54 @@ const AccountingSuppliers: React.FC = () => {
     }
   }
 
-  const handleViewDetails = (supplier: SupplierSummary) => {
-    setSelectedSupplier(supplier)
-    document.body.style.overflow = 'hidden'
-    setShowDetailsModal(true)
+  const handleViewDetails = async (supplier: SupplierSummary) => {
+    try {
+      const { data: contractsData } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          project_id,
+          phase_id,
+          job_description,
+          contract_amount,
+          budget_realized,
+          end_date,
+          status,
+          projects:project_id (name),
+          phases:phase_id (phase_name)
+        `)
+        .eq('subcontractor_id', supplier.id)
+        .in('status', ['draft', 'active'])
+
+      const { data: invoicesData } = await supabase
+        .from('accounting_invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_type,
+          base_amount,
+          total_amount,
+          paid_amount,
+          remaining_amount,
+          status,
+          issue_date
+        `)
+        .eq('supplier_id', supplier.id)
+
+      const supplierWithDetails = {
+        ...supplier,
+        contracts: contractsData || [],
+        invoices: invoicesData || []
+      }
+
+      setSelectedSupplier(supplierWithDetails)
+      document.body.style.overflow = 'hidden'
+      setShowDetailsModal(true)
+    } catch (error) {
+      console.error('Error loading supplier details:', error)
+      alert('Greška prilikom učitavanja detalja dobavljača')
+    }
   }
 
   const handleCloseDetailsModal = () => {
@@ -343,116 +363,96 @@ const AccountingSuppliers: React.FC = () => {
         </div>
       </div>
 
-      {filteredSuppliers.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača klikom na gumb iznad'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSuppliers.map((supplier) => {
-            const totalValue = supplier.total_contract_value + supplier.invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
-            const paymentPercentage = totalValue > 0
-              ? (supplier.total_paid / totalValue) * 100
-              : 0
-
-            return (
-              <div
-                key={supplier.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
-              >
-                <div className="flex items-start justify-between mb-4">
+      {searchTerm && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {filteredSuppliers.length === 0 ? (
+            <div className="p-12 text-center">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Nema rezultata pretrage
+              </h3>
+              <p className="text-gray-600">
+                Pokušajte s drugim pojmom
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredSuppliers.map((supplier) => (
+                <div
+                  key={supplier.id}
+                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between"
+                  onClick={() => handleViewDetails(supplier)}
+                >
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                      <Phone className="w-3 h-3 mr-1" />
-                      {supplier.contact}
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Phone className="w-4 h-4 mr-1" />
+                        {supplier.contact}
+                      </div>
+                      <div className="flex items-center">
+                        <Briefcase className="w-4 h-4 mr-1" />
+                        {supplier.total_contracts} ugovora
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="w-4 h-4 mr-1" />
+                        {supplier.total_invoices} računa
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-6 mt-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">Vrijednost: </span>
+                        <span className="font-semibold text-gray-900">€{supplier.total_contract_value.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Plaćeno: </span>
+                        <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Dugovi: </span>
+                        <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Users className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenAddModal(supplier)
+                      }}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                      title="Uredi"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(supplier.id)
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                      title="Obriši"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <Eye className="w-5 h-5 text-blue-600 ml-2" />
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Ugovori:</span>
-                    <span className="font-medium text-gray-900">{supplier.total_contracts}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Računi:</span>
-                    <span className="font-medium text-gray-900">{supplier.total_invoices}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">Vrijednost:</span>
-                    <span className="font-bold text-gray-900">€{supplier.total_contract_value.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Plaćeno:</span>
-                    <span className="font-medium text-green-600">€{supplier.total_paid.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs pl-4">
-                    <span className="text-gray-500">└ Plaćeno PDV:</span>
-                    <span className="font-medium text-blue-600">€{supplier.total_paid_pdv.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs pl-4">
-                    <span className="text-gray-500">└ Plaćeno Neto:</span>
-                    <span className="font-medium text-blue-600">€{supplier.total_paid_neto.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs pl-4">
-                    <span className="text-gray-500">└ Plaćeno Ukupno:</span>
-                    <span className="font-medium text-green-700">€{supplier.total_paid_total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">Dugovi:</span>
-                    <span className="font-medium text-orange-600">€{supplier.total_remaining.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-gray-200 mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-gray-600">Napredak plaćanja</span>
-                    <span className="text-xs font-medium text-gray-900">{paymentPercentage.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, paymentPercentage)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleViewDetails(supplier)}
-                    className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Detalji
-                  </button>
-                  <button
-                    onClick={() => handleOpenAddModal(supplier)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Uredi"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(supplier.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Obriši"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+      {!searchTerm && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Pretražite dobavljače
+          </h3>
+          <p className="text-gray-600">
+            Unesite ime ili kontakt dobavljača u tražilicu iznad
+          </p>
         </div>
       )}
 
