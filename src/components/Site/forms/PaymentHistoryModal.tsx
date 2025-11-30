@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { X, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../lib/supabase'
@@ -20,12 +20,23 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  useEffect(() => {
+    if (visible) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [visible])
+
   if (!visible || !subcontractor) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-white">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Payment History</h3>
@@ -40,7 +51,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
