@@ -44,6 +44,12 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const fetchInvoices = async () => {
     if (!subcontractor) return
 
+    console.log('🔍 InvoicesModal - Fetching invoices for subcontractor:', {
+      subcontractor_id: subcontractor.id,
+      subcontractor_name: subcontractor.company_name || subcontractor.name,
+      contract_title: subcontractor.contract_title
+    })
+
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -67,6 +73,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
         .eq('supplier_id', subcontractor.id)
         .order('issue_date', { ascending: false })
 
+      console.log('📦 InvoicesModal - Supabase response:', { data, error, count: data?.length })
+
       if (error) throw error
 
       const formattedInvoices = (data || []).map((inv: any) => ({
@@ -85,6 +93,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
         company_name: inv.accounting_companies?.name || 'N/A',
         contract_id: inv.contracts?.id || ''
       }))
+
+      console.log('✅ InvoicesModal - Formatted invoices:', formattedInvoices)
 
       setInvoices(formattedInvoices)
     } catch (error) {
@@ -134,10 +144,10 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
           <div>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <FileText className="w-6 h-6 mr-2 text-blue-600" />
-              Invoices - {subcontractor.company_name}
+              Invoices - {(subcontractor as any).company_name || subcontractor.name}
             </h2>
             <p className="text-gray-600 mt-1">
-              Contract: {subcontractor.contract_title || 'N/A'}
+              Contract: {(subcontractor as any).contract_title || (subcontractor as any).contract_number || 'N/A'}
             </p>
           </div>
           <button

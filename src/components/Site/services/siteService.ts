@@ -28,7 +28,15 @@ export const fetchSubcontractorsWithPhases = async () => {
   const { data: contractsData, error: contractError } = await supabase
     .from('contracts')
     .select(`
-      *,
+      id,
+      contract_number,
+      contract_amount,
+      budget_realized,
+      job_description,
+      end_date,
+      phase_id,
+      project_id,
+      status,
       subcontractor:subcontractors!contracts_subcontractor_id_fkey(
         id,
         name,
@@ -71,6 +79,8 @@ export const fetchSubcontractorsWithPhases = async () => {
     financed_by_bank_id: contract.subcontractor.financed_by_bank_id,
     completed_at: contract.subcontractor.completed_at,
     contract_id: contract.id,
+    contract_title: contract.contract_number,
+    company_name: contract.subcontractor.name,
     created_at: contract.subcontractor.created_at,
     project_phases: contract.phase
   }))
