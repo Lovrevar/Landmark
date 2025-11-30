@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   FolderKanban,
+  CreditCard,
   Lock,
   AlertCircle
 } from 'lucide-react'
