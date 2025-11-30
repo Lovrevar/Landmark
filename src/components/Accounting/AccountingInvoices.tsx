@@ -901,10 +901,10 @@ const AccountingInvoices: React.FC = () => {
               <p className="text-2xl font-bold text-blue-600">
                 €{(
                   invoices
-                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .filter(i => i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE')
                     .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0) -
                   invoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE')
                     .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
