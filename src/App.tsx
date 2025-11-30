@@ -31,6 +31,10 @@ import AccountingCompanies from './components/Accounting/AccountingCompanies'
 import CompanyCredits from './components/Accounting/CompanyCredits'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
 import AccountingCalendar from './components/Accounting/AccountingCalendar'
+import RetailLandPlots from './components/Retail/RetailLandPlots'
+import RetailCustomers from './components/Retail/RetailCustomers'
+import RetailSales from './components/Retail/RetailSales'
+import RetailReports from './components/Retail/RetailReports'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth()
@@ -296,6 +300,38 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-land-plots"
+          element={
+            <ProtectedRoute>
+              <RetailLandPlots />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-customers"
+          element={
+            <ProtectedRoute>
+              <RetailCustomers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-sales"
+          element={
+            <ProtectedRoute>
+              <RetailSales />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-reports"
+          element={
+            <ProtectedRoute>
+              <RetailReports />
             </ProtectedRoute>
           }
         />

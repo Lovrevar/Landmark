@@ -20,7 +20,9 @@ import {
   FolderKanban,
   CreditCard,
   Lock,
-  AlertCircle
+  AlertCircle,
+  MapPin,
+  ShoppingCart
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -85,6 +87,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
         { name: 'Krediti', icon: CreditCard, path: '/company-credits' },
         { name: 'Kupci', icon: Users, path: '/accounting-customers' }
+      ],
+      Retail: [
+        { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Zemljišta', icon: MapPin, path: '/retail-land-plots' },
+        { name: 'Kupci', icon: Users, path: '/retail-customers' },
+        { name: 'Prodaje', icon: ShoppingCart, path: '/retail-sales' },
+        { name: 'Izvještaji', icon: FileText, path: '/retail-reports' }
       ]
     }
 
@@ -156,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                      {(['General', 'Supervision', 'Sales', 'Funding', 'Accounting'] as Profile[]).map((profile) => (
+                      {(['General', 'Supervision', 'Sales', 'Funding', 'Accounting', 'Retail'] as Profile[]).map((profile) => (
                         <button
                           key={profile}
                           onClick={() => handleProfileChange(profile)}
