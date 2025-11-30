@@ -25,6 +25,14 @@ interface CompanyBankAccount {
   current_balance: number
 }
 
+interface CompanyCredit {
+  id: string
+  company_id: string
+  credit_name: string
+  initial_amount: number
+  current_balance: number
+}
+
 interface Company {
   id: string
   name: string
@@ -47,6 +55,7 @@ const AccountingPayments: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
+  const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -58,7 +67,9 @@ const AccountingPayments: React.FC = () => {
 
   const [formData, setFormData] = useState({
     invoice_id: '',
+    payment_source_type: 'bank_account' as 'bank_account' | 'credit',
     company_bank_account_id: '',
+    credit_id: '',
     is_cesija: false,
     cesija_company_id: '',
     cesija_bank_account_id: '',
@@ -190,6 +201,14 @@ const AccountingPayments: React.FC = () => {
       if (bankAccountsError) throw bankAccountsError
       setCompanyBankAccounts(bankAccountsData || [])
 
+      const { data: creditsData, error: creditsError } = await supabase
+        .from('company_credits')
+        .select('*')
+        .order('credit_name')
+
+      if (creditsError) throw creditsError
+      setCompanyCredits(creditsData || [])
+
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -202,7 +221,9 @@ const AccountingPayments: React.FC = () => {
       setEditingPayment(payment)
       setFormData({
         invoice_id: payment.invoice_id,
+        payment_source_type: 'bank_account',
         company_bank_account_id: '',
+        credit_id: '',
         is_cesija: false,
         cesija_company_id: '',
         cesija_bank_account_id: '',
@@ -216,7 +237,9 @@ const AccountingPayments: React.FC = () => {
       setEditingPayment(null)
       setFormData({
         invoice_id: '',
+        payment_source_type: 'bank_account',
         company_bank_account_id: '',
+        credit_id: '',
         is_cesija: false,
         cesija_company_id: '',
         cesija_bank_account_id: '',
@@ -245,7 +268,9 @@ const AccountingPayments: React.FC = () => {
 
       const paymentData = {
         invoice_id: formData.invoice_id,
-        company_bank_account_id: formData.is_cesija ? null : (formData.company_bank_account_id || null),
+        payment_source_type: formData.is_cesija ? 'bank_account' : formData.payment_source_type,
+        company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' ? (formData.company_bank_account_id || null) : null),
+        credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' ? (formData.credit_id || null) : null),
         is_cesija: formData.is_cesija,
         cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
         cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,
@@ -707,37 +732,98 @@ const AccountingPayments: React.FC = () => {
                 </div>
 
 {formData.invoice_id && !formData.is_cesija && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bankovni račun *
-                    </label>
-                    <select
-                      value={formData.company_bank_account_id}
-                      onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Odaberi bankovni račun</option>
-                      {companyBankAccounts
-                        .filter(acc => {
+                  <>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Izvor plaćanja *
+                      </label>
+                      <select
+                        value={formData.payment_source_type}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          payment_source_type: e.target.value as 'bank_account' | 'credit',
+                          company_bank_account_id: '',
+                          credit_id: ''
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="bank_account">Bankovni račun</option>
+                        <option value="credit">Kredit</option>
+                      </select>
+                    </div>
+
+                    {formData.payment_source_type === 'bank_account' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Bankovni račun *
+                        </label>
+                        <select
+                          value={formData.company_bank_account_id}
+                          onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi bankovni račun</option>
+                          {companyBankAccounts
+                            .filter(acc => {
+                              const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+                              return selectedInvoice && acc.company_id === selectedInvoice.company_id
+                            })
+                            .map(account => (
+                              <option key={account.id} value={account.id}>
+                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
+                              </option>
+                            ))}
+                        </select>
+                        {formData.invoice_id && companyBankAccounts.filter(acc => {
                           const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
                           return selectedInvoice && acc.company_id === selectedInvoice.company_id
-                        })
-                        .map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
-                          </option>
-                        ))}
-                    </select>
-                    {formData.invoice_id && companyBankAccounts.filter(acc => {
-                      const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                      return selectedInvoice && acc.company_id === selectedInvoice.company_id
-                    }).length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                      </p>
+                        }).length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </div>
+
+                    {formData.payment_source_type === 'credit' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Kredit *
+                        </label>
+                        <select
+                          value={formData.credit_id}
+                          onChange={(e) => setFormData({ ...formData, credit_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi kredit</option>
+                          {companyCredits
+                            .filter(credit => {
+                              const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+                              return selectedInvoice && credit.company_id === selectedInvoice.company_id
+                            })
+                            .map(credit => {
+                              const available = credit.initial_amount - credit.current_balance
+                              return (
+                                <option key={credit.id} value={credit.id}>
+                                  {credit.credit_name} (Dostupno: €{available.toLocaleString()})
+                                </option>
+                              )
+                            })}
+                        </select>
+                        {formData.invoice_id && companyCredits.filter(credit => {
+                          const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+                          return selectedInvoice && credit.company_id === selectedInvoice.company_id
+                        }).length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {formData.invoice_id && (

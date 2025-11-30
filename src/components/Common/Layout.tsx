@@ -82,6 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Dobavljači', icon: Users, path: '/accounting-suppliers' },
         { name: 'Office Dobavljači', icon: Building2, path: '/office-suppliers' },
         { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
+        { name: 'Krediti', icon: CreditCard, path: '/company-credits' },
         { name: 'Kupci', icon: Users, path: '/accounting-customers' }
       ]
     }
