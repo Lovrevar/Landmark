@@ -36,12 +36,14 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && subcontractor) {
       fetchInvoices()
     }
-  }, [isOpen, subcontractor.id])
+  }, [isOpen, subcontractor?.id])
 
   const fetchInvoices = async () => {
+    if (!subcontractor) return
+
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -123,7 +125,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     return new Date(dueDate) < new Date()
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !subcontractor) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

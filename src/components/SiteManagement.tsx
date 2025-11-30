@@ -329,14 +329,16 @@ const SiteManagement: React.FC = () => {
           onSubmit={handleUpdatePayment}
         />
 
-        <InvoicesModal
-          isOpen={showInvoicesModal}
-          onClose={() => {
-            setShowInvoicesModal(false)
-            setSelectedSubcontractorForInvoices(null)
-          }}
-          subcontractor={selectedSubcontractorForInvoices!}
-        />
+        {selectedSubcontractorForInvoices && (
+          <InvoicesModal
+            isOpen={showInvoicesModal}
+            onClose={() => {
+              setShowInvoicesModal(false)
+              setSelectedSubcontractorForInvoices(null)
+            }}
+            subcontractor={selectedSubcontractorForInvoices}
+          />
+        )}
 
         <SubcontractorDetailsModal
           visible={!!selectedSubcontractor}
