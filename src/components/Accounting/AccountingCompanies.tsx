@@ -18,6 +18,17 @@ interface BankAccount {
   current_balance: number
 }
 
+interface Credit {
+  id: string
+  credit_name: string
+  start_date: string
+  end_date: string
+  grace_period_months: number
+  interest_rate: number
+  initial_amount: number
+  current_balance: number
+}
+
 interface Invoice {
   id: string
   invoice_number: string
@@ -56,6 +67,7 @@ interface CompanyStats {
   profit: number
   revenue: number
   bank_accounts: BankAccount[]
+  credits: Credit[]
   invoices: Invoice[]
 }
 
@@ -97,6 +109,12 @@ const AccountingCompanies: React.FC = () => {
             .select('*')
             .eq('company_id', company.id)
             .order('bank_name')
+
+          const { data: creditsData } = await supabase
+            .from('company_credits')
+            .select('*')
+            .eq('company_id', company.id)
+            .order('credit_name')
 
           const { data: invoicesData } = await supabase
             .from('accounting_invoices')
@@ -152,6 +170,7 @@ const AccountingCompanies: React.FC = () => {
             ...(cesijainvoicesData || []).map(inv => ({ ...inv, is_cesija_payment: true }))
           ]
           const bankAccounts = bankAccountsData || []
+          const credits = creditsData || []
 
           const incomeInvoices = invoices.filter(i =>
             i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE'
@@ -169,7 +188,8 @@ const AccountingCompanies: React.FC = () => {
           const totalExpenseUnpaid = expenseInvoices.reduce((sum, i) => sum + i.remaining_amount, 0)
 
           const totalBankBalance = bankAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
-          const currentBalance = totalBankBalance
+          const totalCreditsAvailable = credits.reduce((sum, credit) => sum + (credit.initial_amount - credit.current_balance), 0)
+          const currentBalance = totalBankBalance + totalCreditsAvailable
           const profit = totalIncomePaid - totalExpensePaid
           const revenue = totalIncomeAmount
 
@@ -190,6 +210,7 @@ const AccountingCompanies: React.FC = () => {
             profit: profit,
             revenue: revenue,
             bank_accounts: bankAccounts,
+            credits: credits,
             invoices: invoices
           }
         })
@@ -825,6 +846,66 @@ const AccountingCompanies: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Krediti ({selectedCompany.credits.length})
+                </h3>
+                {selectedCompany.credits.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nema dodanih kredita</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedCompany.credits.map((credit) => {
+                      const available = credit.initial_amount - credit.current_balance
+                      const utilizationPercent = credit.initial_amount > 0 ? (credit.current_balance / credit.initial_amount) * 100 : 0
+                      const isExpired = new Date(credit.end_date) < new Date()
+
+                      return (
+                        <div key={credit.id} className="bg-white border-2 border-orange-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <p className="font-semibold text-gray-900">{credit.credit_name}</p>
+                            {isExpired && (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
+                                ISTEKAO
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-1 mb-3">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Limit:</span>
+                              <span className="font-medium text-gray-900">€{credit.initial_amount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Iskorišteno:</span>
+                              <span className="font-medium text-orange-600">€{credit.current_balance.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Dostupno:</span>
+                              <span className="font-bold text-green-600">€{available.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Kamata:</span>
+                              <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                utilizationPercent >= 90 ? 'bg-red-500' :
+                                utilizationPercent >= 70 ? 'bg-orange-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 text-right">{utilizationPercent.toFixed(1)}% iskorišteno</p>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
