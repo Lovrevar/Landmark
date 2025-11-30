@@ -18,6 +18,14 @@ interface CompanyBankAccount {
   current_balance: number
 }
 
+interface CompanyCredit {
+  id: string
+  company_id: string
+  credit_name: string
+  initial_amount: number
+  current_balance: number
+}
+
 interface Supplier {
   id: string
   name: string
@@ -108,6 +116,7 @@ const AccountingInvoices: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
+  const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [officeSuppliers, setOfficeSuppliers] = useState<OfficeSupplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -153,10 +162,13 @@ const AccountingInvoices: React.FC = () => {
   })
 
   const [paymentFormData, setPaymentFormData] = useState({
+    payment_source_type: 'bank_account' as 'bank_account' | 'credit',
     company_bank_account_id: '',
+    credit_id: '',
     is_cesija: false,
     cesija_company_id: '',
     cesija_bank_account_id: '',
+    cesija_credit_id: '',
     payment_date: new Date().toISOString().split('T')[0],
     amount: 0,
     payment_method: 'WIRE' as 'WIRE' | 'CASH' | 'CHECK' | 'CARD',
@@ -274,6 +286,16 @@ const AccountingInvoices: React.FC = () => {
         console.error('Error loading bank accounts:', bankAccountsError)
       }
       setCompanyBankAccounts(bankAccountsData || [])
+
+      const { data: creditsData, error: creditsError } = await supabase
+        .from('company_credits')
+        .select('*')
+        .order('credit_name')
+
+      if (creditsError) {
+        console.error('Error loading credits:', creditsError)
+      }
+      setCompanyCredits(creditsData || [])
 
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('subcontractors')
@@ -559,10 +581,13 @@ const AccountingInvoices: React.FC = () => {
 
       const paymentData = {
         invoice_id: payingInvoice.id,
-        company_bank_account_id: paymentFormData.is_cesija ? null : (paymentFormData.company_bank_account_id || null),
+        payment_source_type: paymentFormData.payment_source_type,
+        company_bank_account_id: paymentFormData.is_cesija ? null : (paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.company_bank_account_id || null) : null),
+        credit_id: paymentFormData.is_cesija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_id || null) : null),
         is_cesija: paymentFormData.is_cesija,
         cesija_company_id: paymentFormData.is_cesija ? (paymentFormData.cesija_company_id || null) : null,
-        cesija_bank_account_id: paymentFormData.is_cesija ? (paymentFormData.cesija_bank_account_id || null) : null,
+        cesija_bank_account_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.cesija_bank_account_id || null) : null,
+        cesija_credit_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_id || null) : null,
         payment_date: paymentFormData.payment_date,
         amount: paymentFormData.amount,
         payment_method: paymentFormData.payment_method,
@@ -1636,31 +1661,86 @@ const AccountingInvoices: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {!paymentFormData.is_cesija && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bankovni račun *
-                    </label>
-                    <select
-                      value={paymentFormData.company_bank_account_id}
-                      onChange={(e) => setPaymentFormData({ ...paymentFormData, company_bank_account_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Odaberi bankovni račun</option>
-                      {companyBankAccounts
-                        .filter(acc => acc.company_id === payingInvoice.company_id)
-                        .map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString()})
-                          </option>
-                        ))}
-                    </select>
-                    {companyBankAccounts.filter(acc => acc.company_id === payingInvoice.company_id).length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                      </p>
+                  <>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Izvor plaćanja *
+                      </label>
+                      <select
+                        value={paymentFormData.payment_source_type}
+                        onChange={(e) => setPaymentFormData({
+                          ...paymentFormData,
+                          payment_source_type: e.target.value as 'bank_account' | 'credit',
+                          company_bank_account_id: '',
+                          credit_id: ''
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="bank_account">Bankovni račun</option>
+                        <option value="credit">Kredit</option>
+                      </select>
+                    </div>
+
+                    {paymentFormData.payment_source_type === 'bank_account' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Bankovni račun *
+                        </label>
+                        <select
+                          value={paymentFormData.company_bank_account_id}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, company_bank_account_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi bankovni račun</option>
+                          {companyBankAccounts
+                            .filter(acc => acc.company_id === payingInvoice.company_id)
+                            .map(account => (
+                              <option key={account.id} value={account.id}>
+                                {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString()})
+                              </option>
+                            ))}
+                        </select>
+                        {companyBankAccounts.filter(acc => acc.company_id === payingInvoice.company_id).length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </div>
+
+                    {paymentFormData.payment_source_type === 'credit' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Kredit *
+                        </label>
+                        <select
+                          value={paymentFormData.credit_id}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, credit_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi kredit</option>
+                          {companyCredits
+                            .filter(credit => credit.company_id === payingInvoice.company_id)
+                            .map(credit => {
+                              const available = credit.initial_amount - credit.current_balance
+                              return (
+                                <option key={credit.id} value={credit.id}>
+                                  {credit.credit_name} (Dostupno: €{available.toLocaleString()})
+                                </option>
+                              )
+                            })}
+                        </select>
+                        {companyCredits.filter(credit => credit.company_id === payingInvoice.company_id).length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="md:col-span-2">
@@ -1712,31 +1792,86 @@ const AccountingInvoices: React.FC = () => {
                     </div>
 
                     {paymentFormData.cesija_company_id && (
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Bankovni račun (cesija) *
-                        </label>
-                        <select
-                          value={paymentFormData.cesija_bank_account_id}
-                          onChange={(e) => setPaymentFormData({ ...paymentFormData, cesija_bank_account_id: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        >
-                          <option value="">Odaberi bankovni račun</option>
-                          {companyBankAccounts
-                            .filter(acc => acc.company_id === paymentFormData.cesija_company_id)
-                            .map(account => (
-                              <option key={account.id} value={account.id}>
-                                {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString()})
-                              </option>
-                            ))}
-                        </select>
-                        {paymentFormData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === paymentFormData.cesija_company_id).length === 0 && (
-                          <p className="text-xs text-red-600 mt-1">
-                            Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                          </p>
+                      <>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Izvor plaćanja (cesija) *
+                          </label>
+                          <select
+                            value={paymentFormData.payment_source_type}
+                            onChange={(e) => setPaymentFormData({
+                              ...paymentFormData,
+                              payment_source_type: e.target.value as 'bank_account' | 'credit',
+                              cesija_bank_account_id: '',
+                              cesija_credit_id: ''
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          >
+                            <option value="bank_account">Bankovni račun</option>
+                            <option value="credit">Kredit</option>
+                          </select>
+                        </div>
+
+                        {paymentFormData.payment_source_type === 'bank_account' && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Bankovni račun (cesija) *
+                            </label>
+                            <select
+                              value={paymentFormData.cesija_bank_account_id}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cesija_bank_account_id: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">Odaberi bankovni račun</option>
+                              {companyBankAccounts
+                                .filter(acc => acc.company_id === paymentFormData.cesija_company_id)
+                                .map(account => (
+                                  <option key={account.id} value={account.id}>
+                                    {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString()})
+                                  </option>
+                                ))}
+                            </select>
+                            {paymentFormData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === paymentFormData.cesija_company_id).length === 0 && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
+                              </p>
+                            )}
+                          </div>
                         )}
-                      </div>
+
+                        {paymentFormData.payment_source_type === 'credit' && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Kredit (cesija) *
+                            </label>
+                            <select
+                              value={paymentFormData.cesija_credit_id}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cesija_credit_id: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">Odaberi kredit</option>
+                              {companyCredits
+                                .filter(credit => credit.company_id === paymentFormData.cesija_company_id)
+                                .map(credit => {
+                                  const available = credit.initial_amount - credit.current_balance
+                                  return (
+                                    <option key={credit.id} value={credit.id}>
+                                      {credit.credit_name} (Dostupno: €{available.toLocaleString()})
+                                    </option>
+                                  )
+                                })}
+                            </select>
+                            {paymentFormData.cesija_company_id && companyCredits.filter(credit => credit.company_id === paymentFormData.cesija_company_id).length === 0 && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
