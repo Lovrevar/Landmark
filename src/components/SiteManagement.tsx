@@ -12,6 +12,7 @@ import { EditSubcontractorModal } from './Site/forms/EditSubcontractorModal'
 import { PaymentHistoryModal } from './Site/forms/PaymentHistoryModal'
 import { EditPaymentModal } from './Site/forms/EditPaymentModal'
 import { SubcontractorDetailsModal } from './Site/forms/SubcontractorDetailsModal'
+import { InvoicesModal } from './Site/forms/InvoicesModal'
 import { MilestoneList } from './Site/views/MilestoneList'
 import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../utils/permissions'
 
@@ -68,6 +69,8 @@ const SiteManagement: React.FC = () => {
     phase: ProjectPhase
     project: ProjectWithPhases
   } | null>(null)
+  const [showInvoicesModal, setShowInvoicesModal] = useState(false)
+  const [selectedSubcontractorForInvoices, setSelectedSubcontractorForInvoices] = useState<Subcontractor | null>(null)
 
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
@@ -133,6 +136,11 @@ const SiteManagement: React.FC = () => {
     const payments = await fetchWirePayments(subcontractor.id)
     setWirePayments(payments)
     setShowPaymentHistory(true)
+  }
+
+  const openInvoices = (subcontractor: Subcontractor) => {
+    setSelectedSubcontractorForInvoices(subcontractor)
+    setShowInvoicesModal(true)
   }
 
   const handleUpdatePayment = async () => {
@@ -242,6 +250,7 @@ const SiteManagement: React.FC = () => {
             setShowSubcontractorForm(true)
           }}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
+          onOpenInvoices={openInvoices}
           onEditSubcontractor={(sub) => {
             setEditingSubcontractor(sub)
             setShowEditModal(true)
@@ -318,6 +327,15 @@ const SiteManagement: React.FC = () => {
           payment={editingPayment}
           onChange={setEditingPayment}
           onSubmit={handleUpdatePayment}
+        />
+
+        <InvoicesModal
+          isOpen={showInvoicesModal}
+          onClose={() => {
+            setShowInvoicesModal(false)
+            setSelectedSubcontractorForInvoices(null)
+          }}
+          subcontractor={selectedSubcontractorForInvoices!}
         />
 
         <SubcontractorDetailsModal

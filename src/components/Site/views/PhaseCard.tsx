@@ -12,6 +12,7 @@ interface PhaseCardProps {
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void
   onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
+  onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
@@ -26,6 +27,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onDeletePhase,
   onAddSubcontractor,
   onOpenPaymentHistory,
+  onOpenInvoices,
   onEditSubcontractor,
   onOpenSubDetails,
   onDeleteSubcontractor,
@@ -216,6 +218,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
                       >
                         View Payments
+                      </button>
+                    )}
+                    {onOpenInvoices && (
+                      <button
+                        onClick={() => onOpenInvoices(subcontractor)}
+                        className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center"
+                      >
+                        View Invoices
                       </button>
                     )}
                     <div className="grid grid-cols-4 gap-2">
