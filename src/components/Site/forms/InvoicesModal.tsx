@@ -44,10 +44,13 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const fetchInvoices = async () => {
     if (!subcontractor) return
 
+    const supplierId = (subcontractor as any).subcontractor_id || subcontractor.id
+
     console.log('🔍 InvoicesModal - Fetching invoices for subcontractor:', {
-      subcontractor_id: subcontractor.id,
-      subcontractor_name: subcontractor.company_name || subcontractor.name,
-      contract_title: subcontractor.contract_title
+      contract_id: subcontractor.id,
+      subcontractor_id: supplierId,
+      subcontractor_name: (subcontractor as any).company_name || subcontractor.name,
+      contract_title: (subcontractor as any).contract_title
     })
 
     setLoading(true)
@@ -70,7 +73,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
           accounting_companies!inner(name),
           contracts!inner(id)
         `)
-        .eq('supplier_id', subcontractor.id)
+        .eq('supplier_id', supplierId)
         .order('issue_date', { ascending: false })
 
       console.log('📦 InvoicesModal - Supabase response:', { data, error, count: data?.length })
