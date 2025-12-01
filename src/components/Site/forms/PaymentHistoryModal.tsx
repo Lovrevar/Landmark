@@ -1,13 +1,30 @@
 import React, { useEffect } from 'react'
-import { X, Building2, User } from 'lucide-react'
+import { X, Building2, User, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../lib/supabase'
+
+interface AccountingPayment {
+  id: string
+  amount: number
+  payment_date: string | null
+  payment_method: string | null
+  reference_number: string | null
+  description: string | null
+  created_at: string
+  invoice?: {
+    id: string
+    invoice_number: string
+    invoice_type: string
+    total_amount: number
+    status: string
+  }
+}
 
 interface PaymentHistoryModalProps {
   visible: boolean
   onClose: () => void
   subcontractor: Subcontractor | null
-  payments: WirePayment[]
+  payments: (WirePayment | AccountingPayment)[]
   onEditPayment: (payment: WirePayment) => void
   onDeletePayment: (paymentId: string, amount: number) => void
 }
@@ -79,69 +96,116 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {payments.map((payment) => (
-                <div key={payment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString()}</span>
-                        {payment.payment_date && (
-                          <span className="text-sm text-gray-600">
-                            {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
-                          </span>
-                        )}
-                        {!payment.payment_date && (
-                          <span className="text-sm text-gray-400 italic">Date not set</span>
-                        )}
-                      </div>
-                      {(payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id)) && (
-                        <div className="flex items-center space-x-2 mb-2">
-                          {payment.paid_by_type === 'investor' ? (
-                            <>
-                              <User className="w-4 h-4 text-blue-600" />
-                              <span className="text-sm text-gray-700">
-                                Paid by: <span className="font-medium text-blue-600">
-                                  {(payment as any).investor?.name || 'Investor'}
-                                  {(payment as any).investor?.type && ` (${(payment as any).investor.type})`}
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Building2 className="w-4 h-4 text-green-600" />
-                              <span className="text-sm text-gray-700">
-                                Paid by: <span className="font-medium text-green-600">
-                                  {(payment as any).bank?.name || 'Bank'}
-                                </span>
-                              </span>
-                            </>
+              {payments.map((payment) => {
+                const isAccountingPayment = 'invoice' in payment
+                const accountingPayment = payment as AccountingPayment
+
+                return (
+                  <div key={payment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString()}</span>
+                          {payment.payment_date && (
+                            <span className="text-sm text-gray-600">
+                              {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
+                            </span>
+                          )}
+                          {!payment.payment_date && (
+                            <span className="text-sm text-gray-400 italic">Date not set</span>
                           )}
                         </div>
+
+                        {isAccountingPayment && accountingPayment.invoice && (
+                          <div className="flex items-center space-x-2 mb-2">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm text-gray-700">
+                              Invoice: <span className="font-medium text-blue-600">
+                                {accountingPayment.invoice.invoice_number}
+                              </span>
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              accountingPayment.invoice.status === 'paid'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {accountingPayment.invoice.status}
+                            </span>
+                          </div>
+                        )}
+
+                        {isAccountingPayment && accountingPayment.payment_method && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            Method: <span className="font-medium">{accountingPayment.payment_method}</span>
+                          </div>
+                        )}
+
+                        {isAccountingPayment && accountingPayment.reference_number && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            Ref: {accountingPayment.reference_number}
+                          </div>
+                        )}
+
+                        {!isAccountingPayment && (payment as WirePayment).paid_by_type && ((payment as WirePayment).paid_by_investor_id || (payment as WirePayment).paid_by_bank_id) && (
+                          <div className="flex items-center space-x-2 mb-2">
+                            {(payment as WirePayment).paid_by_type === 'investor' ? (
+                              <>
+                                <User className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm text-gray-700">
+                                  Paid by: <span className="font-medium text-blue-600">
+                                    {(payment as any).investor?.name || 'Investor'}
+                                    {(payment as any).investor?.type && ` (${(payment as any).investor.type})`}
+                                  </span>
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Building2 className="w-4 h-4 text-green-600" />
+                                <span className="text-sm text-gray-700">
+                                  Paid by: <span className="font-medium text-green-600">
+                                    {(payment as any).bank?.name || 'Bank'}
+                                  </span>
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {((isAccountingPayment && accountingPayment.description) || (!isAccountingPayment && (payment as WirePayment).notes)) && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            {isAccountingPayment ? accountingPayment.description : (payment as WirePayment).notes}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-gray-400">
+                          Created {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
+                        </p>
+                      </div>
+                      {!isAccountingPayment && (
+                        <div className="flex space-x-2 ml-4">
+                          <button
+                            onClick={() => onEditPayment(payment as WirePayment)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => onDeletePayment(payment.id, payment.amount)}
+                            className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       )}
-                      {payment.notes && (
-                        <p className="text-sm text-gray-600 mb-2">{payment.notes}</p>
+                      {isAccountingPayment && (
+                        <div className="ml-4">
+                          <span className="text-xs text-gray-500 italic">Managed in Accounting</span>
+                        </div>
                       )}
-                      <p className="text-xs text-gray-400">
-                        Created {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2 ml-4">
-                      <button
-                        onClick={() => onEditPayment(payment)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDeletePayment(payment.id, payment.amount)}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                      >
-                        Delete
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
