@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw } from 'lucide-react'
 import { PhaseCard } from './PhaseCard'
+import { MilestoneList } from './MilestoneList'
 import { ContractFormModal } from '../forms/ContractFormModal'
 import { AcquisitionFormModal } from '../forms/AcquisitionFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
@@ -21,6 +22,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   const [showContractModal, setShowContractModal] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<RetailProjectPhase | null>(null)
   const [selectedContract, setSelectedContract] = useState<RetailContract | null>(null)
+  const [showMilestoneManagement, setShowMilestoneManagement] = useState(false)
+  const [milestoneContext, setMilestoneContext] = useState<{
+    contract: RetailContract
+    phase: RetailProjectPhase
+    project: RetailProjectWithPhases
+  } | null>(null)
 
   useEffect(() => {
     loadProjectDetails()
@@ -132,7 +139,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   }
 
   const handleManageMilestones = (contract: RetailContract, phase: RetailProjectPhase, project: RetailProjectWithPhases) => {
-    console.log('Manage milestones:', { contract, phase, project })
+    setMilestoneContext({ contract, phase, project })
+    setShowMilestoneManagement(true)
+  }
+
+  const closeMilestoneManagement = () => {
+    setShowMilestoneManagement(false)
+    setMilestoneContext(null)
   }
 
   return (
@@ -261,6 +274,21 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
             />
           )}
         </>
+      )}
+
+      {showMilestoneManagement && milestoneContext && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="max-w-6xl w-full my-8">
+            <MilestoneList
+              contractId={milestoneContext.contract.id}
+              supplierName={milestoneContext.contract.supplier?.name || 'Unknown Supplier'}
+              projectName={milestoneContext.project.name}
+              phaseName={milestoneContext.phase.phase_name}
+              contractCost={milestoneContext.contract.contract_amount}
+              onClose={closeMilestoneManagement}
+            />
+          </div>
+        </div>
       )}
     </div>
   )

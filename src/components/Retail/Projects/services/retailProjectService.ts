@@ -371,5 +371,107 @@ export const retailProjectService = {
     const newNumber = lastNumber + 1
     const year = new Date().getFullYear()
     return `RET-${year}-${String(newNumber).padStart(6, '0')}`
+  },
+
+  async fetchMilestonesByContract(contractId: string): Promise<RetailContractMilestone[]> {
+    const { data, error } = await supabase
+      .from('retail_contract_milestones')
+      .select('*')
+      .eq('contract_id', contractId)
+      .order('milestone_number', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async getNextMilestoneNumber(contractId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('retail_contract_milestones')
+      .select('milestone_number')
+      .eq('contract_id', contractId)
+      .order('milestone_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    return (data && data[0]?.milestone_number) ? data[0].milestone_number + 1 : 1
+  },
+
+  async createMilestone(milestone: {
+    contract_id: string
+    milestone_number: number
+    milestone_name: string
+    description: string
+    percentage: number
+    due_date: string | null
+  }): Promise<RetailContractMilestone> {
+    const { data, error } = await supabase
+      .from('retail_contract_milestones')
+      .insert([milestone])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async updateMilestone(
+    milestoneId: string,
+    updates: {
+      milestone_name: string
+      description: string
+      percentage: number
+      due_date: string | null
+    }
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('retail_contract_milestones')
+      .update(updates)
+      .eq('id', milestoneId)
+
+    if (error) throw error
+  },
+
+  async deleteMilestone(milestoneId: string): Promise<void> {
+    const { error } = await supabase
+      .from('retail_contract_milestones')
+      .delete()
+      .eq('id', milestoneId)
+
+    if (error) throw error
+  },
+
+  async getMilestoneStatsForContract(contractId: string, contractCost: number) {
+    const milestones = await this.fetchMilestonesByContract(contractId)
+
+    const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0)
+    const totalAmount = milestones.reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
+    const paidAmount = milestones.filter(m => m.status === 'paid').reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
+    const pendingAmount = milestones.filter(m => m.status === 'pending').reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
+
+    return {
+      totalPercentage,
+      remainingPercentage: 100 - totalPercentage,
+      totalAmount,
+      paidAmount,
+      pendingAmount,
+      milestonesCount: milestones.length
+    }
+  },
+
+  async validateMilestonePercentagesForContract(contractId: string, excludeMilestoneId?: string) {
+    const milestones = await this.fetchMilestonesByContract(contractId)
+    const filteredMilestones = excludeMilestoneId
+      ? milestones.filter(m => m.id !== excludeMilestoneId)
+      : milestones
+
+    const totalPercentage = filteredMilestones.reduce((sum, m) => sum + m.percentage, 0)
+    const remainingPercentage = 100 - totalPercentage
+
+    return {
+      isValid: totalPercentage <= 100,
+      totalPercentage,
+      remainingPercentage
+    }
   }
 }
