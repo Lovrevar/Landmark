@@ -114,6 +114,8 @@ export interface RetailContract {
   status: 'Active' | 'Completed' | 'Cancelled'
   start_date: string | null
   end_date: string | null
+  land_area_m2: number | null
+  contract_date: string | null
   notes: string | null
   created_at: string
   updated_at: string

@@ -197,7 +197,29 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
-                    {contract.end_date && (
+                    {contract.contract_date && phase.phase_type === 'acquisition' && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Datum ugovora:</span>
+                        <span className="font-medium text-gray-900">
+                          {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
+                        </span>
+                      </div>
+                    )}
+                    {contract.land_area_m2 && phase.phase_type === 'acquisition' && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Površina:</span>
+                        <span className="font-medium text-blue-600">{contract.land_area_m2.toLocaleString()} m²</span>
+                      </div>
+                    )}
+                    {contract.land_area_m2 && contract.contract_amount && phase.phase_type === 'acquisition' && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Cijena po m²:</span>
+                        <span className="font-medium text-purple-600">
+                          {formatCurrency(contract.contract_amount / contract.land_area_m2)}
+                        </span>
+                      </div>
+                    )}
+                    {contract.end_date && phase.phase_type !== 'acquisition' && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Deadline:</span>
                         <span className="font-medium text-gray-900">
