@@ -35,6 +35,7 @@ import RetailLandPlots from './components/Retail/RetailLandPlots'
 import RetailCustomers from './components/Retail/RetailCustomers'
 import RetailSales from './components/Retail/RetailSales'
 import RetailReports from './components/Retail/RetailReports'
+import RetailProjects from './components/Retail/Projects/RetailProjects'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth()
@@ -300,6 +301,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-projects"
+          element={
+            <ProtectedRoute>
+              <RetailProjects />
             </ProtectedRoute>
           }
         />

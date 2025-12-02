@@ -90,6 +90,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Retail: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
+        { name: 'Projekti', icon: FolderKanban, path: '/retail-projects' },
         { name: 'Zemljišta', icon: MapPin, path: '/retail-land-plots' },
         { name: 'Kupci', icon: Users, path: '/retail-customers' },
         { name: 'Prodaje', icon: ShoppingCart, path: '/retail-sales' },

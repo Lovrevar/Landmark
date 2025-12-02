@@ -58,3 +58,91 @@ export interface RetailCustomerWithSales extends RetailCustomer {
   total_paid: number
   total_remaining: number
 }
+
+export interface RetailProject {
+  id: string
+  name: string
+  location: string
+  plot_number: string
+  total_area_m2: number
+  purchase_price: number
+  price_per_m2: number
+  status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold'
+  start_date: string | null
+  end_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RetailProjectPhase {
+  id: string
+  project_id: string
+  phase_name: string
+  phase_type: 'acquisition' | 'development' | 'sales'
+  phase_order: number
+  budget_allocated: number
+  status: 'Pending' | 'In Progress' | 'Completed'
+  start_date: string | null
+  end_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RetailSupplier {
+  id: string
+  name: string
+  supplier_type: 'Geodet' | 'Arhitekt' | 'Projektant' | 'Consultant' | 'Other'
+  contact_person: string | null
+  contact_phone: string | null
+  contact_email: string | null
+  oib: string | null
+  address: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RetailContract {
+  id: string
+  phase_id: string
+  supplier_id: string
+  contract_number: string
+  contract_amount: number
+  budget_realized: number
+  status: 'Active' | 'Completed' | 'Cancelled'
+  start_date: string | null
+  end_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  supplier?: RetailSupplier
+}
+
+export interface RetailContractMilestone {
+  id: string
+  contract_id: string
+  customer_id: string
+  milestone_name: string
+  amount: number
+  status: 'pending' | 'approved' | 'in_progress' | 'completed' | 'paid'
+  due_date: string | null
+  completed_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  customer?: RetailCustomer
+}
+
+export interface RetailProjectWithPhases extends RetailProject {
+  phases: RetailProjectPhase[]
+}
+
+export interface RetailPhaseWithContracts extends RetailProjectPhase {
+  contracts: RetailContract[]
+}
+
+export interface RetailContractWithMilestones extends RetailContract {
+  milestones: RetailContractMilestone[]
+}
