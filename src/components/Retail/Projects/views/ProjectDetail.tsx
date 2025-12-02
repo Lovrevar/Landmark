@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, DollarSign, Layers, Plus, Edit2, Trash2 } from 'lucide-react'
+import { ArrowLeft, MapPin, RefreshCw } from 'lucide-react'
+import { PhaseCard } from './PhaseCard'
+import { ContractFormModal } from '../forms/ContractFormModal'
 import { retailProjectService } from '../services/retailProjectService'
-import type { RetailProjectWithPhases, RetailProjectPhase } from '../../../../types/retail'
+import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../../types/retail'
 
 interface ProjectDetailProps {
   project: RetailProjectWithPhases
@@ -11,8 +13,12 @@ interface ProjectDetailProps {
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialProject, onBack, onRefresh }) => {
   const [project, setProject] = useState(initialProject)
-  const [selectedPhase, setSelectedPhase] = useState<RetailProjectPhase | null>(null)
+  const [phaseContracts, setPhaseContracts] = useState<Record<string, RetailContract[]>>({})
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showContractModal, setShowContractModal] = useState(false)
+  const [selectedPhase, setSelectedPhase] = useState<RetailProjectPhase | null>(null)
+  const [selectedContract, setSelectedContract] = useState<RetailContract | null>(null)
 
   useEffect(() => {
     loadProjectDetails()
@@ -24,12 +30,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       const data = await retailProjectService.fetchProjectById(initialProject.id)
       if (data) {
         setProject(data)
+
+        const contractsMap: Record<string, RetailContract[]> = {}
+        await Promise.all(
+          data.phases.map(async (phase) => {
+            const contracts = await retailProjectService.fetchContractsByPhase(phase.id)
+            contractsMap[phase.id] = contracts
+          })
+        )
+        setPhaseContracts(contractsMap)
       }
     } catch (error) {
       console.error('Error loading project details:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await loadProjectDetails()
+    setRefreshing(false)
+    onRefresh()
   }
 
   const formatCurrency = (amount: number) => {
@@ -41,41 +63,95 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     }).format(amount)
   }
 
-  const getPhaseTypeLabel = (type: string) => {
-    switch (type) {
-      case 'acquisition':
-        return 'Stjecanje zemljišta'
-      case 'development':
-        return 'Razvoj'
-      case 'sales':
-        return 'Prodaja'
-      default:
-        return type
+  const handleEditPhase = (phase: RetailProjectPhase) => {
+    console.log('Edit phase:', phase)
+  }
+
+  const handleDeletePhase = async (phase: RetailProjectPhase) => {
+    if (confirm(`Jeste li sigurni da želite obrisati fazu "${phase.phase_name}"?`)) {
+      try {
+        await retailProjectService.deletePhase(phase.id)
+        await handleRefresh()
+      } catch (error) {
+        console.error('Error deleting phase:', error)
+        alert('Greška pri brisanju faze')
+      }
     }
   }
 
-  const getPhaseStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800'
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const handleAddContract = (phase: RetailProjectPhase) => {
+    setSelectedPhase(phase)
+    setSelectedContract(null)
+    setShowContractModal(true)
+  }
+
+  const handleEditContract = (contract: RetailContract) => {
+    setSelectedContract(contract)
+    const phase = project.phases.find(p => p.id === contract.phase_id)
+    if (phase) {
+      setSelectedPhase(phase)
+      setShowContractModal(true)
     }
+  }
+
+  const handleContractModalClose = () => {
+    setShowContractModal(false)
+    setSelectedPhase(null)
+    setSelectedContract(null)
+  }
+
+  const handleContractSuccess = async () => {
+    setShowContractModal(false)
+    setSelectedPhase(null)
+    setSelectedContract(null)
+    await handleRefresh()
+  }
+
+  const handleDeleteContract = async (contractId: string) => {
+    if (confirm('Jeste li sigurni da želite obrisati ovaj ugovor?')) {
+      try {
+        await retailProjectService.deleteContract(contractId)
+        await handleRefresh()
+      } catch (error) {
+        console.error('Error deleting contract:', error)
+        alert('Greška pri brisanju ugovora')
+      }
+    }
+  }
+
+  const handleViewPayments = (contract: RetailContract) => {
+    console.log('View payments for contract:', contract)
+    alert('View Payments funkcionalnost će biti dodana - povezati sa Accounting modulom')
+  }
+
+  const handleViewInvoices = (contract: RetailContract) => {
+    console.log('View invoices for contract:', contract)
+    alert('View Invoices funkcionalnost će biti dodana - povezati sa Accounting modulom')
+  }
+
+  const handleManageMilestones = (contract: RetailContract, phase: RetailProjectPhase, project: RetailProjectWithPhases) => {
+    console.log('Manage milestones:', { contract, phase, project })
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <button
-        onClick={onBack}
-        className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Nazad na projekte
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Nazad na projekte
+        </button>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </button>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex justify-between items-start mb-6">
@@ -116,86 +192,55 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Faze projekta</h2>
-          <button
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Dodaj fazu
-          </button>
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Učitavam detalje...</p>
         </div>
-
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {project.phases.length === 0 ? (
-              <div className="text-center py-12">
-                <Layers className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Nema definisanih faza</p>
-                <p className="text-gray-400 text-sm mt-2">Kliknite "Dodaj fazu" da kreirate prvu fazu</p>
-              </div>
-            ) : (
-              project.phases.map((phase) => (
-                <div
+      ) : (
+        <div className="space-y-6">
+          {project.phases.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <p className="text-gray-500 text-lg mb-2">Nema faza u projektu</p>
+              <p className="text-gray-400 text-sm">Faze će biti automatski kreirane</p>
+            </div>
+          ) : (
+            project.phases
+              .sort((a, b) => a.phase_order - b.phase_order)
+              .map((phase) => (
+                <PhaseCard
                   key={phase.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => setSelectedPhase(phase)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-lg font-semibold text-gray-900">{phase.phase_name}</span>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPhaseStatusColor(phase.status)}`}>
-                          {phase.status}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          ({getPhaseTypeLabel(phase.phase_type)})
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          Budget: {formatCurrency(phase.budget_allocated)}
-                        </div>
-                        <div>Redoslijed: #{phase.phase_order}</div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                        }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                        }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  phase={phase}
+                  project={project}
+                  phaseContracts={phaseContracts[phase.id] || []}
+                  onEditPhase={handleEditPhase}
+                  onDeletePhase={handleDeletePhase}
+                  onAddContract={handleAddContract}
+                  onEditContract={handleEditContract}
+                  onDeleteContract={handleDeleteContract}
+                  onViewPayments={handleViewPayments}
+                  onViewInvoices={handleViewInvoices}
+                  onManageMilestones={handleManageMilestones}
+                />
               ))
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {project.notes && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Napomene</h3>
           <p className="text-gray-600 whitespace-pre-wrap">{project.notes}</p>
         </div>
+      )}
+
+      {showContractModal && selectedPhase && (
+        <ContractFormModal
+          phase={selectedPhase}
+          contract={selectedContract || undefined}
+          onClose={handleContractModalClose}
+          onSuccess={handleContractSuccess}
+        />
       )}
     </div>
   )
