@@ -197,12 +197,18 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
-                    {contract.contract_date && phase.phase_type === 'acquisition' && (
+                    {contract.contract_date && (phase.phase_type === 'acquisition' || phase.phase_type === 'development') && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Datum ugovora:</span>
                         <span className="font-medium text-gray-900">
                           {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
                         </span>
+                      </div>
+                    )}
+                    {contract.notes && phase.phase_type === 'development' && (
+                      <div className="mb-2">
+                        <span className="text-gray-600">Opis:</span>
+                        <p className="text-gray-700 mt-1 text-xs line-clamp-2">{contract.notes}</p>
                       </div>
                     )}
                     {contract.land_area_m2 && phase.phase_type === 'acquisition' && (
