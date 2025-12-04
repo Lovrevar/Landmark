@@ -118,6 +118,22 @@ const AccountingCalendar: React.FC = () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    const incomingInvoices = monthInvoices.filter(inv =>
+      inv.invoice_type === 'INCOMING_SUPPLIER' ||
+      inv.invoice_type === 'INCOMING_INVESTMENT' ||
+      inv.invoice_type === 'INCOMING_OFFICE'
+    )
+
+    const outgoingInvoices = monthInvoices.filter(inv =>
+      inv.invoice_type === 'OUTGOING_SUPPLIER' ||
+      inv.invoice_type === 'OUTGOING_SALES' ||
+      inv.invoice_type === 'OUTGOING_OFFICE'
+    )
+
+    const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
+    const outgoingPaid = outgoingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
+    const netAmount = incomingPaid - outgoingPaid
+
     return {
       total: monthInvoices.length,
       paid: monthInvoices.filter(inv => inv.status === 'PAID').length,
@@ -130,7 +146,10 @@ const AccountingCalendar: React.FC = () => {
       }).length,
       totalAmount: monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0),
       paidAmount: monthInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
-      unpaidAmount: monthInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
+      unpaidAmount: monthInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
+      incomingPaid,
+      outgoingPaid,
+      netAmount
     }
   }
 
@@ -262,32 +281,40 @@ const AccountingCalendar: React.FC = () => {
       {/* Amount Statistics */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ukupan iznos:</span>
-          <span className="font-semibold text-gray-900">€{monthStats.totalAmount.toLocaleString()}</span>
+          <span className="text-gray-600">Ukupno računa:</span>
+          <span className="font-semibold text-gray-900">{monthStats.total}</span>
+        </div>
+        <div className="border-t border-gray-300 my-2"></div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Ulazni računi (Prihodi):</span>
+          <span className="font-semibold text-green-600">€{monthStats.incomingPaid.toLocaleString()}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Plaćeno:</span>
-          <span className="font-semibold text-green-600">€{monthStats.paidAmount.toLocaleString()}</span>
+          <span className="text-gray-600">Izlazni računi (Troškovi):</span>
+          <span className="font-semibold text-red-600">€{monthStats.outgoingPaid.toLocaleString()}</span>
         </div>
+        <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Neplaćeno:</span>
-          <span className="font-semibold text-red-600">€{monthStats.unpaidAmount.toLocaleString()}</span>
+          <span className="text-gray-700 font-medium">NETO (Prihodi - Troškovi):</span>
+          <span className={`font-bold text-lg ${monthStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            €{monthStats.netAmount.toLocaleString()}
+          </span>
         </div>
         {(() => {
           const budget = getCurrentMonthBudget()
           if (budget && budget.budget_amount > 0) {
-            const difference = budget.budget_amount - monthStats.paidAmount
+            const difference = monthStats.netAmount - budget.budget_amount
             return (
               <>
                 <div className="border-t border-gray-300 my-2"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Mjesečni budžet:</span>
+                  <span className="text-gray-600">Planirani budžet (Neto cilj):</span>
                   <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Razlika (Budžet - Plaćeno):</span>
+                  <span className="text-gray-700 font-medium">Razlika od budžeta:</span>
                   <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{difference.toLocaleString()} {difference >= 0 ? '(Dobro)' : '(Prekoračenje)'}
+                    €{difference.toLocaleString()} {difference >= 0 ? '(Iznad cilja)' : '(Ispod cilja)'}
                   </span>
                 </div>
               </>
