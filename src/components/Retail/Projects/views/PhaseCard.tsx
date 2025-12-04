@@ -179,9 +179,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">
-                        {contract.supplier?.name || 'Unknown Supplier'}
+                        {phase.phase_type === 'sales'
+                          ? (contract.customer?.name || 'Unknown Customer')
+                          : (contract.supplier?.name || 'Unknown Supplier')
+                        }
                       </h4>
-                      <p className="text-sm text-gray-600 mb-1">{contract.supplier?.supplier_type}</p>
+                      {phase.phase_type !== 'sales' && contract.supplier?.supplier_type && (
+                        <p className="text-sm text-gray-600 mb-1">{contract.supplier.supplier_type}</p>
+                      )}
                       <p className="text-xs text-gray-500">{contract.contract_number}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${

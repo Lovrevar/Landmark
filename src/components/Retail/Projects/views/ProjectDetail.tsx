@@ -5,6 +5,7 @@ import { MilestoneList } from './MilestoneList'
 import { ContractFormModal } from '../forms/ContractFormModal'
 import { AcquisitionFormModal } from '../forms/AcquisitionFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
+import { SalesFormModal } from '../forms/SalesFormModal'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../../types/retail'
 
@@ -265,6 +266,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
               onClose={handleContractModalClose}
               onSuccess={handleContractSuccess}
             />
+          ) : selectedPhase.phase_type === 'sales' ? (
+            <SalesFormModal
+              phase={selectedPhase}
+              contract={selectedContract || undefined}
+              onClose={handleContractModalClose}
+              onSuccess={handleContractSuccess}
+            />
           ) : (
             <ContractFormModal
               phase={selectedPhase}
@@ -281,7 +289,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           <div className="max-w-6xl w-full my-8">
             <MilestoneList
               contractId={milestoneContext.contract.id}
-              supplierName={milestoneContext.contract.supplier?.name || 'Unknown Supplier'}
+              supplierName={
+                milestoneContext.phase.phase_type === 'sales'
+                  ? (milestoneContext.contract.customer?.name || 'Unknown Customer')
+                  : (milestoneContext.contract.supplier?.name || 'Unknown Supplier')
+              }
               projectName={milestoneContext.project.name}
               phaseName={milestoneContext.phase.phase_name}
               contractCost={milestoneContext.contract.contract_amount}

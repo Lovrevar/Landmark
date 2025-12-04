@@ -236,12 +236,34 @@ export const retailProjectService = {
     if (error) throw error
   },
 
+  async fetchCustomers() {
+    const { data, error } = await supabase
+      .from('retail_customers')
+      .select('*')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async createCustomer(customer: { name: string; contact_phone?: string; contact_email?: string; oib?: string; address?: string }) {
+    const { data, error } = await supabase
+      .from('retail_customers')
+      .insert([customer])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
   async fetchContractsByPhase(phaseId: string): Promise<RetailContract[]> {
     const { data, error } = await supabase
       .from('retail_contracts')
       .select(`
         *,
-        supplier:retail_suppliers(*)
+        supplier:retail_suppliers(*),
+        customer:retail_customers(*)
       `)
       .eq('phase_id', phaseId)
       .order('created_at', { ascending: false })
@@ -255,7 +277,8 @@ export const retailProjectService = {
       .from('retail_contracts')
       .select(`
         *,
-        supplier:retail_suppliers(*)
+        supplier:retail_suppliers(*),
+        customer:retail_customers(*)
       `)
       .eq('id', contractId)
       .single()
@@ -264,10 +287,7 @@ export const retailProjectService = {
 
     const { data: milestones } = await supabase
       .from('retail_contract_milestones')
-      .select(`
-        *,
-        customer:retail_customers(*)
-      `)
+      .select('*')
       .eq('contract_id', contractId)
       .order('created_at', { ascending: true })
 

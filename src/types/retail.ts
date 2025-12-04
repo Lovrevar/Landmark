@@ -107,7 +107,8 @@ export interface RetailSupplier {
 export interface RetailContract {
   id: string
   phase_id: string
-  supplier_id: string
+  supplier_id: string | null
+  customer_id: string | null
   contract_number: string
   contract_amount: number
   budget_realized: number
@@ -120,21 +121,22 @@ export interface RetailContract {
   created_at: string
   updated_at: string
   supplier?: RetailSupplier
+  customer?: RetailCustomer
 }
 
 export interface RetailContractMilestone {
   id: string
   contract_id: string
-  customer_id: string
+  milestone_number: number
   milestone_name: string
-  amount: number
-  status: 'pending' | 'approved' | 'in_progress' | 'completed' | 'paid'
+  description: string
+  percentage: number
+  status: 'pending' | 'paid' | 'cancelled'
   due_date: string | null
   completed_date: string | null
   notes: string | null
   created_at: string
   updated_at: string
-  customer?: RetailCustomer
 }
 
 export interface RetailProjectWithPhases extends RetailProject {
