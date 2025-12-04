@@ -115,7 +115,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             bank_name,
             account_number
           ),
-          company_credits(
+          cesija_credit:company_credits!accounting_payments_cesija_credit_id_fkey(
             credit_name
           )
         `)
@@ -140,7 +140,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         created_at: payment.created_at,
         invoice: payment.accounting_invoices,
         company_bank_account: payment.company_bank_account,
-        credit: payment.company_credits
+        credit: payment.cesija_credit
       }))
 
       console.log('Formatted Payments:', formattedPayments)
