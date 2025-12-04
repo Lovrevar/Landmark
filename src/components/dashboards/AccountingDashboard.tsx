@@ -5,9 +5,7 @@ import {
   TrendingUp,
   TrendingDown,
   Building2,
-  CreditCard,
   AlertCircle,
-  Wallet,
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
@@ -42,16 +40,6 @@ interface TopCompany {
   invoiceCount: number
 }
 
-interface BankAccountStats {
-  id: string
-  bank_name: string
-  account_number: string
-  current_balance: number
-  total_incoming: number
-  total_outgoing: number
-  transaction_count: number
-}
-
 interface MonthlyData {
   month: string
   incoming: number
@@ -77,7 +65,6 @@ const AccountingDashboard: React.FC = () => {
     previousMonthOutgoing: 0
   })
   const [topCompanies, setTopCompanies] = useState<TopCompany[]>([])
-  const [bankAccounts, setBankAccounts] = useState<BankAccountStats[]>([])
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
 
   useEffect(() => {
@@ -91,7 +78,6 @@ const AccountingDashboard: React.FC = () => {
         fetchVATStats(),
         fetchCashFlowStats(),
         fetchTopCompanies(),
-        fetchBankAccountStats(),
         fetchMonthlyTrends()
       ])
     } catch (error) {
@@ -282,73 +268,6 @@ const AccountingDashboard: React.FC = () => {
       setTopCompanies(companyStats.slice(0, 5))
     } catch (error) {
       console.error('Error fetching top companies:', error)
-    }
-  }
-
-  const fetchBankAccountStats = async () => {
-    try {
-      const { data: accounts, error } = await supabase
-        .from('company_bank_accounts')
-        .select('id, bank_name, account_number, current_balance')
-
-      if (error) throw error
-
-      const accountStats: BankAccountStats[] = []
-
-      for (const account of accounts || []) {
-        // Get all payments through this account (both regular and cesija)
-        const { data: regularPayments } = await supabase
-          .from('accounting_payments')
-          .select(`
-            amount,
-            accounting_invoices!inner(invoice_type)
-          `)
-          .eq('company_bank_account_id', account.id)
-
-        // Get cesija payments where this account is the cesija_bank_account_id
-        const { data: cesijaPayments } = await supabase
-          .from('accounting_payments')
-          .select(`
-            amount,
-            accounting_invoices!inner(invoice_type)
-          `)
-          .eq('cesija_bank_account_id', account.id)
-
-        // Combine all payments for this account
-        const allPayments = [...(regularPayments || []), ...(cesijaPayments || [])]
-
-        const incomingPayments = allPayments.filter(p =>
-          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SALES' ||
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_INVESTMENT' ||
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_BANK_CREDIT'
-        )
-
-        const outgoingPayments = allPayments.filter(p =>
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_SUPPLIER' ||
-          (p.accounting_invoices as any).invoice_type === 'INCOMING_OFFICE' ||
-          (p.accounting_invoices as any).invoice_type === 'OUTGOING_SUPPLIER' ||
-          (p.accounting_invoices as any).invoice_type === 'OUTGOING_OFFICE'
-        )
-
-        const total_incoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-        const total_outgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-        accountStats.push({
-          id: account.id,
-          bank_name: account.bank_name,
-          account_number: account.account_number,
-          current_balance: parseFloat(account.current_balance || 0),
-          total_incoming,
-          total_outgoing,
-          transaction_count: allPayments.length
-        })
-      }
-
-      // Sort by current balance (highest first)
-      accountStats.sort((a, b) => b.current_balance - a.current_balance)
-      setBankAccounts(accountStats)
-    } catch (error) {
-      console.error('Error fetching bank account stats:', error)
     }
   }
 
@@ -584,9 +503,8 @@ const AccountingDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Companies and Bank Accounts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Companies */}
+      {/* Top Companies */}
+      <div className="grid grid-cols-1 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center">
@@ -622,53 +540,6 @@ const AccountingDashboard: React.FC = () => {
                       <p className="text-xs text-gray-500">
                         In: €{company.totalIncoming.toLocaleString()} | Out: €{company.totalOutgoing.toLocaleString()}
                       </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bank Accounts */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <Wallet className="w-5 h-5 text-gray-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Bank Accounts Performance</h2>
-            </div>
-          </div>
-          <div className="p-6">
-            {bankAccounts.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No bank account data available</p>
-            ) : (
-              <div className="space-y-4">
-                {bankAccounts.map((account) => (
-                  <div key={account.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-                        <div>
-                          <p className="font-semibold text-gray-900">{account.bank_name}</p>
-                          <p className="text-xs text-gray-500">{account.account_number}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-blue-600">
-                          €{account.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-gray-500">{account.transaction_count} transactions</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-600 mt-2 pt-2 border-t border-gray-200">
-                      <span className="flex items-center">
-                        <ArrowUpRight className="w-3 h-3 text-green-600 mr-1" />
-                        In: €{account.total_incoming.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                      <span className="flex items-center">
-                        <ArrowDownRight className="w-3 h-3 text-red-600 mr-1" />
-                        Out: €{account.total_outgoing.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
                     </div>
                   </div>
                 ))}
