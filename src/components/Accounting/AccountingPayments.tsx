@@ -141,73 +141,81 @@ const AccountingPayments: React.FC = () => {
     try {
       setLoading(true)
 
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          *,
-          accounting_invoices (
+      const [
+        paymentsResult,
+        invoicesResult,
+        companiesResult,
+        bankAccountsResult,
+        creditsResult
+      ] = await Promise.all([
+        supabase
+          .from('accounting_payments')
+          .select(`
+            *,
+            accounting_invoices (
+              id,
+              invoice_number,
+              invoice_type,
+              total_amount,
+              paid_amount,
+              remaining_amount,
+              vat_amount,
+              companies:company_id (name),
+              subcontractors:supplier_id (name),
+              customers:customer_id (name, surname),
+              office_suppliers:office_supplier_id (name)
+            )
+          `)
+          .order('payment_date', { ascending: false }),
+
+        supabase
+          .from('accounting_invoices')
+          .select(`
             id,
             invoice_number,
             invoice_type,
             total_amount,
             paid_amount,
             remaining_amount,
-            vat_amount,
+            company_id,
             companies:company_id (name),
             subcontractors:supplier_id (name),
             customers:customer_id (name, surname),
             office_suppliers:office_supplier_id (name)
-          )
-        `)
-        .order('payment_date', { ascending: false })
+          `)
+          .neq('status', 'PAID')
+          .order('invoice_number'),
 
-      if (paymentsError) throw paymentsError
-      setPayments(paymentsData || [])
+        supabase
+          .from('accounting_companies')
+          .select('id, name')
+          .order('name'),
 
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          invoice_type,
-          total_amount,
-          paid_amount,
-          remaining_amount,
-          company_id,
-          companies:company_id (name),
-          subcontractors:supplier_id (name),
-          customers:customer_id (name, surname),
-          office_suppliers:office_supplier_id (name)
-        `)
-        .neq('status', 'PAID')
-        .order('invoice_number')
+        supabase
+          .from('company_bank_accounts')
+          .select('*')
+          .order('bank_name'),
 
-      if (invoicesError) throw invoicesError
-      setInvoices(invoicesData || [])
+        supabase
+          .from('company_credits')
+          .select('*')
+          .order('credit_name')
+      ])
 
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('accounting_companies')
-        .select('id, name')
-        .order('name')
+      if (paymentsResult.error) throw paymentsResult.error
+      setPayments(paymentsResult.data || [])
 
-      if (companiesError) throw companiesError
-      setCompanies(companiesData || [])
+      if (invoicesResult.error) throw invoicesResult.error
+      setInvoices(invoicesResult.data || [])
 
-      const { data: bankAccountsData, error: bankAccountsError } = await supabase
-        .from('company_bank_accounts')
-        .select('*')
-        .order('bank_name')
+      if (companiesResult.error) throw companiesResult.error
+      setCompanies(companiesResult.data || [])
 
-      if (bankAccountsError) throw bankAccountsError
-      setCompanyBankAccounts(bankAccountsData || [])
+      if (bankAccountsResult.error) throw bankAccountsResult.error
+      setCompanyBankAccounts(bankAccountsResult.data || [])
 
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('company_credits')
-        .select('*')
-        .order('credit_name')
-
-      if (creditsError) throw creditsError
-      setCompanyCredits(creditsData || [])
+      if (creditsResult.error) throw creditsResult.error
+      setCompanyCredits(creditsResult.data || [])
 
     } catch (error) {
       console.error('Error fetching data:', error)

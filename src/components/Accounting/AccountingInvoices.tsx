@@ -253,161 +253,175 @@ const AccountingInvoices: React.FC = () => {
     try {
       setLoading(true)
 
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          *,
-          companies:company_id (name),
-          subcontractors:supplier_id (name),
-          customers:customer_id (name, surname),
-          investors:investor_id (name),
-          banks:bank_id (name),
-          projects:project_id (name),
-          contracts:contract_id (contract_number, job_description),
-          office_suppliers:office_supplier_id (name),
-          retail_suppliers:retail_supplier_id (name),
-          retail_customers:retail_customer_id (name)
-        `)
-        .order('issue_date', { ascending: false })
-
-      if (invoicesError) throw invoicesError
-      setInvoices(invoicesData || [])
-
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('accounting_companies')
-        .select('id, name, oib')
-        .order('name')
-
-      if (companiesError) {
-        console.error('Error loading companies:', companiesError)
-        throw companiesError
-      }
-      console.log('Loaded companies:', companiesData)
-      setCompanies(companiesData || [])
-
-      const { data: bankAccountsData, error: bankAccountsError } = await supabase
-        .from('company_bank_accounts')
-        .select('*')
-        .order('bank_name')
-
-      if (bankAccountsError) {
-        console.error('Error loading bank accounts:', bankAccountsError)
-      }
-      setCompanyBankAccounts(bankAccountsData || [])
-
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('company_credits')
-        .select('*')
-        .order('credit_name')
-
-      if (creditsError) {
-        console.error('Error loading credits:', creditsError)
-      }
-      setCompanyCredits(creditsData || [])
-
-      const { data: suppliersData, error: suppliersError } = await supabase
-        .from('subcontractors')
-        .select('id, name, contact')
-        .order('name')
-
-      if (suppliersError) {
-        console.error('Error loading suppliers:', suppliersError)
-        throw suppliersError
-      }
-      console.log('Loaded suppliers:', suppliersData)
-      setSuppliers(suppliersData || [])
-
-      const { data: officeSuppliersData, error: officeSuppliersError } = await supabase
-        .from('office_suppliers')
-        .select('id, name, contact, email')
-        .order('name')
-
-      if (officeSuppliersError) {
-        console.error('Error loading office suppliers:', officeSuppliersError)
-        throw officeSuppliersError
-      }
-      console.log('Loaded office suppliers:', officeSuppliersData)
-      setOfficeSuppliers(officeSuppliersData || [])
-
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('id, name, surname, email')
-        .order('name')
-
-      if (customersError) {
-        console.error('Error loading customers:', customersError)
-        throw customersError
-      }
-      console.log('Loaded customers:', customersData)
-      setCustomers(customersData || [])
-
-      const { data: investorsData, error: investorsError } = await supabase
-        .from('investors')
-        .select('id, name, type')
-        .order('name')
-
-      if (investorsError) throw investorsError
-      setInvestors(investorsData || [])
-
-      const { data: banksData, error: banksError } = await supabase
-        .from('banks')
-        .select('id, name')
-        .order('name')
-
-      if (banksError) throw banksError
-      setBanks(banksData || [])
-
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
-
-      if (projectsError) {
-        console.error('Error loading projects:', projectsError)
-        throw projectsError
-      }
-      console.log('Loaded projects:', projectsData)
-      setProjects(projectsData || [])
-
-      const { data: contractsData, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          project_id,
-          phase_id,
-          subcontractor_id,
-          job_description,
-          contract_amount,
-          projects:project_id (name),
-          phases:phase_id (phase_name)
-        `)
-        .in('status', ['draft', 'active'])
-        .order('contract_number')
-
-      if (contractsError) throw contractsError
-      setContracts(contractsData || [])
-
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select(`
-          customer_id,
-          apartment_id,
-          apartments!inner (
-            id,
-            number,
-            project_id,
-            price,
+      const [
+        invoicesResult,
+        companiesResult,
+        bankAccountsResult,
+        creditsResult,
+        suppliersResult,
+        officeSuppliersResult,
+        customersResult,
+        investorsResult,
+        banksResult,
+        projectsResult,
+        contractsResult,
+        salesResult
+      ] = await Promise.all([
+        supabase
+          .from('accounting_invoices')
+          .select(`
+            *,
+            companies:company_id (name),
+            subcontractors:supplier_id (name),
+            customers:customer_id (name, surname),
+            investors:investor_id (name),
+            banks:bank_id (name),
             projects:project_id (name),
-            buildings:building_id (name)
-          )
-        `)
+            contracts:contract_id (contract_number, job_description),
+            office_suppliers:office_supplier_id (name),
+            retail_suppliers:retail_supplier_id (name),
+            retail_customers:retail_customer_id (name)
+          `)
+          .order('issue_date', { ascending: false }),
 
-      if (salesError) throw salesError
-      setCustomerSales(salesData || [])
+        supabase
+          .from('accounting_companies')
+          .select('id, name, oib')
+          .order('name'),
 
-      // Transform sales data to apartment list with customer info
-      const aptList = (salesData || []).map(sale => ({
+        supabase
+          .from('company_bank_accounts')
+          .select('*')
+          .order('bank_name'),
+
+        supabase
+          .from('company_credits')
+          .select('*')
+          .order('credit_name'),
+
+        supabase
+          .from('subcontractors')
+          .select('id, name, contact')
+          .order('name'),
+
+        supabase
+          .from('office_suppliers')
+          .select('id, name, contact, email')
+          .order('name'),
+
+        supabase
+          .from('customers')
+          .select('id, name, surname, email')
+          .order('name'),
+
+        supabase
+          .from('investors')
+          .select('id, name, type')
+          .order('name'),
+
+        supabase
+          .from('banks')
+          .select('id, name')
+          .order('name'),
+
+        supabase
+          .from('projects')
+          .select('id, name')
+          .order('name'),
+
+        supabase
+          .from('contracts')
+          .select(`
+            id,
+            contract_number,
+            project_id,
+            phase_id,
+            subcontractor_id,
+            job_description,
+            contract_amount,
+            projects:project_id (name),
+            phases:phase_id (phase_name)
+          `)
+          .in('status', ['draft', 'active'])
+          .order('contract_number'),
+
+        supabase
+          .from('sales')
+          .select(`
+            customer_id,
+            apartment_id,
+            apartments!inner (
+              id,
+              number,
+              project_id,
+              price,
+              projects:project_id (name),
+              buildings:building_id (name)
+            )
+          `)
+      ])
+
+      if (invoicesResult.error) throw invoicesResult.error
+      setInvoices(invoicesResult.data || [])
+
+      if (companiesResult.error) {
+        console.error('Error loading companies:', companiesResult.error)
+        throw companiesResult.error
+      }
+      console.log('Loaded companies:', companiesResult.data)
+      setCompanies(companiesResult.data || [])
+
+      if (bankAccountsResult.error) {
+        console.error('Error loading bank accounts:', bankAccountsResult.error)
+      }
+      setCompanyBankAccounts(bankAccountsResult.data || [])
+
+      if (creditsResult.error) {
+        console.error('Error loading credits:', creditsResult.error)
+      }
+      setCompanyCredits(creditsResult.data || [])
+
+      if (suppliersResult.error) {
+        console.error('Error loading suppliers:', suppliersResult.error)
+        throw suppliersResult.error
+      }
+      console.log('Loaded suppliers:', suppliersResult.data)
+      setSuppliers(suppliersResult.data || [])
+
+      if (officeSuppliersResult.error) {
+        console.error('Error loading office suppliers:', officeSuppliersResult.error)
+        throw officeSuppliersResult.error
+      }
+      console.log('Loaded office suppliers:', officeSuppliersResult.data)
+      setOfficeSuppliers(officeSuppliersResult.data || [])
+
+      if (customersResult.error) {
+        console.error('Error loading customers:', customersResult.error)
+        throw customersResult.error
+      }
+      console.log('Loaded customers:', customersResult.data)
+      setCustomers(customersResult.data || [])
+
+      if (investorsResult.error) throw investorsResult.error
+      setInvestors(investorsResult.data || [])
+
+      if (banksResult.error) throw banksResult.error
+      setBanks(banksResult.data || [])
+
+      if (projectsResult.error) {
+        console.error('Error loading projects:', projectsResult.error)
+        throw projectsResult.error
+      }
+      console.log('Loaded projects:', projectsResult.data)
+      setProjects(projectsResult.data || [])
+
+      if (contractsResult.error) throw contractsResult.error
+      setContracts(contractsResult.data || [])
+
+      if (salesResult.error) throw salesResult.error
+      setCustomerSales(salesResult.data || [])
+
+      const aptList = (salesResult.data || []).map(sale => ({
         ...sale.apartments,
         customer_id: sale.customer_id,
         apartment_id: sale.apartment_id

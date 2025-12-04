@@ -200,70 +200,93 @@ const AccountingDashboard: React.FC = () => {
 
   const fetchTopCompanies = async () => {
     try {
-      // Fetch all companies with their invoices and payments
       const { data: companies, error } = await supabase
         .from('accounting_companies')
         .select('id, name')
 
       if (error) throw error
 
-      const companyStats: TopCompany[] = []
+      if (!companies || companies.length === 0) {
+        setTopCompanies([])
+        return
+      }
 
-      for (const company of companies || []) {
-        // Get all bank accounts for this company
-        const { data: bankAccounts } = await supabase
+      const companyIds = companies.map(c => c.id)
+
+      const [bankAccountsResult, paymentsResult, invoiceCountsResult] = await Promise.all([
+        supabase
           .from('company_bank_accounts')
-          .select('current_balance')
-          .eq('company_id', company.id)
+          .select('company_id, current_balance')
+          .in('company_id', companyIds),
 
-        // Get all payments for this company's invoices
-        const { data: payments } = await supabase
+        supabase
           .from('accounting_payments')
           .select(`
             amount,
             accounting_invoices!inner(invoice_type, company_id)
           `)
-          .eq('accounting_invoices.company_id', company.id)
+          .in('accounting_invoices.company_id', companyIds),
 
-        // Calculate incoming (money received) and outgoing (money paid)
-        const incomingPayments = payments?.filter(p => {
-          const invoiceType = (p.accounting_invoices as any).invoice_type
-          return invoiceType.startsWith('OUTGOING') ||
-                 invoiceType === 'INCOMING_BANK_CREDIT' ||
-                 invoiceType === 'INCOMING_INVESTOR'
-        }) || []
+        Promise.all(
+          companyIds.map(id =>
+            supabase
+              .from('accounting_invoices')
+              .select('id', { count: 'exact', head: true })
+              .eq('company_id', id)
+              .then(result => ({ company_id: id, count: result.count || 0 }))
+          )
+        )
+      ])
 
-        const outgoingPayments = payments?.filter(p => {
-          const invoiceType = (p.accounting_invoices as any).invoice_type
-          return invoiceType.startsWith('INCOMING') &&
-                 invoiceType !== 'INCOMING_BANK_CREDIT' &&
-                 invoiceType !== 'INCOMING_INVESTOR'
-        }) || []
-
-        const totalIncoming = incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-        const totalOutgoing = outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-        const totalBalance = bankAccounts?.reduce((sum, acc) =>
-          sum + parseFloat(acc.current_balance || '0'), 0
-        ) || 0
-
-        // Get invoice count
-        const { count: invoiceCount } = await supabase
-          .from('accounting_invoices')
-          .select('id', { count: 'exact', head: true })
-          .eq('company_id', company.id)
-
-        companyStats.push({
-          id: company.id,
-          name: company.name,
-          totalIncoming,
-          totalOutgoing,
-          netBalance: totalBalance,
-          invoiceCount: invoiceCount || 0
-        })
+      const bankAccountsByCompany = new Map<string, number>()
+      for (const acc of bankAccountsResult.data || []) {
+        const current = bankAccountsByCompany.get(acc.company_id) || 0
+        bankAccountsByCompany.set(acc.company_id, current + parseFloat(acc.current_balance || '0'))
       }
 
-      // Sort by net balance (most profitable first)
+      const paymentsByCompany = new Map<string, { incoming: number; outgoing: number }>()
+      for (const payment of paymentsResult.data || []) {
+        const companyId = (payment.accounting_invoices as any).company_id
+        const invoiceType = (payment.accounting_invoices as any).invoice_type
+
+        if (!paymentsByCompany.has(companyId)) {
+          paymentsByCompany.set(companyId, { incoming: 0, outgoing: 0 })
+        }
+
+        const stats = paymentsByCompany.get(companyId)!
+        const amount = parseFloat(payment.amount)
+
+        if (invoiceType.startsWith('OUTGOING') ||
+            invoiceType === 'INCOMING_BANK_CREDIT' ||
+            invoiceType === 'INCOMING_INVESTOR') {
+          stats.incoming += amount
+        } else if (invoiceType.startsWith('INCOMING') &&
+                   invoiceType !== 'INCOMING_BANK_CREDIT' &&
+                   invoiceType !== 'INCOMING_INVESTOR') {
+          stats.outgoing += amount
+        }
+      }
+
+      const invoiceCountsByCompany = new Map<string, number>()
+      for (const row of invoiceCountsResult) {
+        invoiceCountsByCompany.set(row.company_id, row.count)
+      }
+
+      const companyStats: TopCompany[] = companies.map(company => {
+        const payments = paymentsByCompany.get(company.id) || { incoming: 0, outgoing: 0 }
+        const totalBalance = bankAccountsByCompany.get(company.id) || 0
+        const invoiceCount = invoiceCountsByCompany.get(company.id) || 0
+
+        return {
+          id: company.id,
+          name: company.name,
+          totalIncoming: payments.incoming,
+          totalOutgoing: payments.outgoing,
+          netBalance: totalBalance,
+          invoiceCount
+        }
+      })
+
       companyStats.sort((a, b) => b.netBalance - a.netBalance)
       setTopCompanies(companyStats.slice(0, 5))
     } catch (error) {
