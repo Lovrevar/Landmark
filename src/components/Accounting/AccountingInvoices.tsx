@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check } from 'lucide-react'
+import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart } from 'lucide-react'
 import { format } from 'date-fns'
+import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 
 interface Company {
   id: string
@@ -136,6 +137,7 @@ const AccountingInvoices: React.FC = () => {
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
+  const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
@@ -823,6 +825,13 @@ const AccountingInvoices: React.FC = () => {
           >
             <Plus className="w-5 h-5 mr-2" />
             Novi Office Račun
+          </button>
+          <button
+            onClick={() => setShowRetailInvoiceModal(true)}
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 whitespace-nowrap"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            Novi Retail Račun
           </button>
           <button
             onClick={() => handleOpenModal()}
@@ -1986,6 +1995,16 @@ const AccountingInvoices: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {showRetailInvoiceModal && (
+        <RetailInvoiceFormModal
+          onClose={() => setShowRetailInvoiceModal(false)}
+          onSuccess={() => {
+            setShowRetailInvoiceModal(false)
+            fetchData()
+          }}
+        />
       )}
     </div>
   )
