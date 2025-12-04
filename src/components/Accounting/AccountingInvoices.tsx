@@ -83,6 +83,8 @@ interface Invoice {
   company_bank_account_id: string | null
   supplier_id: string | null
   customer_id: string | null
+  retail_supplier_id: string | null
+  retail_customer_id: string | null
   investor_id: string | null
   bank_id: string | null
   apartment_id: string | null
@@ -106,6 +108,8 @@ interface Invoice {
   companies?: { name: string }
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
+  retail_suppliers?: { name: string }
+  retail_customers?: { name: string }
   investors?: { name: string }
   banks?: { name: string }
   projects?: { name: string }
@@ -260,7 +264,9 @@ const AccountingInvoices: React.FC = () => {
           banks:bank_id (name),
           projects:project_id (name),
           contracts:contract_id (contract_number, job_description),
-          office_suppliers:office_supplier_id (name)
+          office_suppliers:office_supplier_id (name),
+          retail_suppliers:retail_supplier_id (name),
+          retail_customers:retail_customer_id (name)
         `)
         .order('issue_date', { ascending: false })
 
@@ -417,6 +423,12 @@ const AccountingInvoices: React.FC = () => {
 
   const handleOpenModal = (invoice?: Invoice) => {
     if (invoice) {
+      // Prevent editing retail invoices through regular modal
+      if (invoice.invoice_category === 'RETAIL') {
+        alert('Retail računi se ne mogu editovati ovdje. Molimo koristite "Novi Retail Račun" formu ili obrišite i kreirajte novi.')
+        return
+      }
+
       setEditingInvoice(invoice)
       setIsOfficeInvoice(invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE')
       setFormData({
@@ -671,8 +683,10 @@ const AccountingInvoices: React.FC = () => {
 
   const getSupplierCustomerName = (invoice: Invoice) => {
     if (invoice.subcontractors?.name) return invoice.subcontractors.name
+    if (invoice.retail_suppliers?.name) return invoice.retail_suppliers.name
     if (invoice.office_suppliers?.name) return invoice.office_suppliers.name
     if (invoice.customers) return `${invoice.customers.name} ${invoice.customers.surname}`
+    if (invoice.retail_customers?.name) return invoice.retail_customers.name
     if (invoice.investors?.name) return invoice.investors.name
     if (invoice.banks?.name) return invoice.banks.name
     return '-'
