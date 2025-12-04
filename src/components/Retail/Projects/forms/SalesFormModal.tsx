@@ -30,6 +30,9 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
     customer_id: contract?.customer_id || '',
     contract_number: contract?.contract_number || '',
     contract_amount: contract?.contract_amount?.toString() || '',
+    building_surface_m2: contract?.building_surface_m2?.toString() || '',
+    total_surface_m2: contract?.total_surface_m2?.toString() || '',
+    price_per_m2: contract?.price_per_m2?.toString() || '',
     contract_date: contract?.contract_date || '',
     start_date: contract?.start_date || '',
     end_date: contract?.end_date || '',
@@ -45,6 +48,18 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
       generateContractNumber()
     }
   }, [])
+
+  useEffect(() => {
+    const amount = parseFloat(formData.contract_amount)
+    const surface = parseFloat(formData.total_surface_m2)
+
+    if (amount > 0 && surface > 0) {
+      const pricePerM2 = (amount / surface).toFixed(2)
+      setFormData(prev => ({ ...prev, price_per_m2: pricePerM2 }))
+    } else {
+      setFormData(prev => ({ ...prev, price_per_m2: '' }))
+    }
+  }, [formData.contract_amount, formData.total_surface_m2])
 
   const loadCustomers = async () => {
     try {
@@ -87,6 +102,9 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
         customer_id: formData.customer_id,
         contract_number: formData.contract_number,
         contract_amount: parseFloat(formData.contract_amount),
+        building_surface_m2: formData.building_surface_m2 ? parseFloat(formData.building_surface_m2) : null,
+        total_surface_m2: formData.total_surface_m2 ? parseFloat(formData.total_surface_m2) : null,
+        price_per_m2: formData.price_per_m2 ? parseFloat(formData.price_per_m2) : null,
         contract_date: formData.contract_date,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
@@ -205,6 +223,55 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 placeholder="npr. 500000"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Površina objekta (m²)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.building_surface_m2}
+                onChange={(e) => setFormData({ ...formData, building_surface_m2: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="npr. 350"
+              />
+              <p className="text-xs text-gray-500 mt-1">Površina samog objekta/prostora</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Površina ukupno (m²)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.total_surface_m2}
+                onChange={(e) => setFormData({ ...formData, total_surface_m2: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="npr. 500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Ukupna površina (sa parkingom, skladištem...)</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cijena po m² (€)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price_per_m2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                placeholder="Automatski izračunato"
+                readOnly
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.price_per_m2
+                  ? 'Izračunato: Cijena ugovora ÷ Površina ukupno'
+                  : 'Unesite cijenu i površinu za automatski izračun'}
+              </p>
             </div>
 
             <div>

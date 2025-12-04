@@ -117,6 +117,9 @@ export interface RetailContract {
   end_date: string | null
   land_area_m2: number | null
   contract_date: string | null
+  building_surface_m2: number | null
+  total_surface_m2: number | null
+  price_per_m2: number | null
   notes: string | null
   created_at: string
   updated_at: string
