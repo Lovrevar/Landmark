@@ -475,44 +475,44 @@ const AccountingDashboard: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Planirani budžet (Neto cilj)</p>
+              <p className="text-sm text-gray-600 mb-1">Planirani budžet</p>
               <p className="text-2xl font-bold text-blue-600">
                 €{parseFloat(monthlyBudget.budget_amount.toString()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Mjesečni cilj</p>
+              <p className="text-xs text-gray-500 mt-1">Maksimalni troškovi</p>
             </div>
             <div className="bg-white rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Trenutno neto stanje</p>
-              <p className={`text-2xl font-bold ${
-                (cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) >= 0
-                  ? 'text-green-600'
-                  : 'text-red-600'
-              }`}>
-                €{Math.abs(cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <p className="text-sm text-gray-600 mb-1">Trenutno potrošeno</p>
+              <p className="text-2xl font-bold text-gray-900">
+                €{cashFlowStats.currentMonthOutgoing.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Prihodi - Troškovi
+                Ukupni troškovi ovog mjeseca
               </p>
             </div>
             <div className="bg-white rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Razlika od budžeta</p>
+              <p className="text-sm text-gray-600 mb-1">
+                {parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing >= 0
+                  ? 'Preostalo u budžetu'
+                  : 'Prekoračenje budžeta'}
+              </p>
               <p className={`text-2xl font-bold ${
-                ((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0
+                parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing >= 0
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}>
-                €{Math.abs((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                €{Math.abs(parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0
-                  ? 'Ispod budžeta - dobro'
-                  : 'Preko budžeta - loše'}
+                {parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing >= 0
+                  ? 'Još možeš potrošiti'
+                  : 'Preko limita'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Status budžeta</p>
               <div className="flex items-center mt-2">
-                {((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0 ? (
+                {cashFlowStats.currentMonthOutgoing <= parseFloat(monthlyBudget.budget_amount.toString()) ? (
                   <div className="flex items-center">
                     <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                     <span className="text-lg font-bold text-green-600">U redu</span>
@@ -525,7 +525,7 @@ const AccountingDashboard: React.FC = () => {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {Math.abs(((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) / parseFloat(monthlyBudget.budget_amount.toString()) * 100).toFixed(1)}% razlike
+                {((cashFlowStats.currentMonthOutgoing / parseFloat(monthlyBudget.budget_amount.toString())) * 100).toFixed(1)}% budžeta iskorišteno
               </p>
             </div>
           </div>
