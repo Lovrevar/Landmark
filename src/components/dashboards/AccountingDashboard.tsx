@@ -46,6 +46,12 @@ interface MonthlyData {
   outgoing: number
 }
 
+interface MonthlyBudget {
+  budget_amount: number
+  month: number
+  year: number
+}
+
 const AccountingDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [vatStats, setVatStats] = useState<VATStats>({
@@ -66,6 +72,7 @@ const AccountingDashboard: React.FC = () => {
   })
   const [topCompanies, setTopCompanies] = useState<TopCompany[]>([])
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null)
 
   useEffect(() => {
     fetchDashboardData()
@@ -78,7 +85,8 @@ const AccountingDashboard: React.FC = () => {
         fetchVATStats(),
         fetchCashFlowStats(),
         fetchTopCompanies(),
-        fetchMonthlyTrends()
+        fetchMonthlyTrends(),
+        fetchMonthlyBudget()
       ])
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -343,6 +351,27 @@ const AccountingDashboard: React.FC = () => {
     }
   }
 
+  const fetchMonthlyBudget = async () => {
+    try {
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth() + 1
+      const currentYear = currentDate.getFullYear()
+
+      const { data, error } = await supabase
+        .from('monthly_budgets')
+        .select('*')
+        .eq('month', currentMonth)
+        .eq('year', currentYear)
+        .maybeSingle()
+
+      if (error) throw error
+
+      setMonthlyBudget(data)
+    } catch (error) {
+      console.error('Error fetching monthly budget:', error)
+    }
+  }
+
   const calculateChangePercentage = (current: number, previous: number): number => {
     if (previous === 0) return 0
     return ((current - previous) / previous) * 100
@@ -436,6 +465,72 @@ const AccountingDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Monthly Budget Overview */}
+      {monthlyBudget && (
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+          <div className="flex items-center mb-4">
+            <Calendar className="w-6 h-6 text-purple-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900">Mjesečni Budžet - {format(new Date(), 'MMMM yyyy')}</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Planirani budžet (Neto cilj)</p>
+              <p className="text-2xl font-bold text-blue-600">
+                €{parseFloat(monthlyBudget.budget_amount.toString()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Mjesečni cilj</p>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Trenutno neto stanje</p>
+              <p className={`text-2xl font-bold ${
+                (cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) >= 0
+                  ? 'text-green-600'
+                  : 'text-red-600'
+              }`}>
+                €{Math.abs(cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Prihodi - Troškovi
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Razlika od budžeta</p>
+              <p className={`text-2xl font-bold ${
+                ((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0
+                  ? 'text-green-600'
+                  : 'text-red-600'
+              }`}>
+                €{Math.abs((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0
+                  ? 'Ispod budžeta - dobro'
+                  : 'Preko budžeta - loše'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Status budžeta</p>
+              <div className="flex items-center mt-2">
+                {((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) <= 0 ? (
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-lg font-bold text-green-600">U redu</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-lg font-bold text-red-600">Prekoračenje</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {Math.abs(((cashFlowStats.currentMonthIncoming - cashFlowStats.currentMonthOutgoing) - parseFloat(monthlyBudget.budget_amount.toString())) / parseFloat(monthlyBudget.budget_amount.toString()) * 100).toFixed(1)}% razlike
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cash Flow Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
