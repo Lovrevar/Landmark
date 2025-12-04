@@ -6,6 +6,8 @@ import { ContractFormModal } from '../forms/ContractFormModal'
 import { AcquisitionFormModal } from '../forms/AcquisitionFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
 import { SalesFormModal } from '../forms/SalesFormModal'
+import { RetailPaymentHistoryModal } from '../forms/RetailPaymentHistoryModal'
+import { RetailInvoicesModal } from '../forms/RetailInvoicesModal'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../../types/retail'
 
@@ -29,6 +31,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     phase: RetailProjectPhase
     project: RetailProjectWithPhases
   } | null>(null)
+  const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false)
+  const [showInvoicesModal, setShowInvoicesModal] = useState(false)
+  const [selectedContractForModal, setSelectedContractForModal] = useState<RetailContract | null>(null)
 
   useEffect(() => {
     loadProjectDetails()
@@ -130,13 +135,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   }
 
   const handleViewPayments = (contract: RetailContract) => {
-    console.log('View payments for contract:', contract)
-    alert('View Payments funkcionalnost će biti dodana - povezati sa Accounting modulom')
+    setSelectedContractForModal(contract)
+    setShowPaymentHistoryModal(true)
   }
 
   const handleViewInvoices = (contract: RetailContract) => {
-    console.log('View invoices for contract:', contract)
-    alert('View Invoices funkcionalnost će biti dodana - povezati sa Accounting modulom')
+    setSelectedContractForModal(contract)
+    setShowInvoicesModal(true)
+  }
+
+  const handleClosePaymentHistoryModal = () => {
+    setShowPaymentHistoryModal(false)
+    setSelectedContractForModal(null)
+  }
+
+  const handleCloseInvoicesModal = () => {
+    setShowInvoicesModal(false)
+    setSelectedContractForModal(null)
   }
 
   const handleManageMilestones = (contract: RetailContract, phase: RetailProjectPhase, project: RetailProjectWithPhases) => {
@@ -302,6 +317,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           </div>
         </div>
       )}
+
+      <RetailPaymentHistoryModal
+        visible={showPaymentHistoryModal}
+        onClose={handleClosePaymentHistoryModal}
+        contract={selectedContractForModal}
+      />
+
+      <RetailInvoicesModal
+        isOpen={showInvoicesModal}
+        onClose={handleCloseInvoicesModal}
+        contract={selectedContractForModal}
+      />
     </div>
   )
 }
