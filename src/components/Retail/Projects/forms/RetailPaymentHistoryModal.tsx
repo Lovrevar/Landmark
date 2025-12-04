@@ -65,6 +65,20 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
 
     setLoading(true)
     try {
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select('id')
+        .eq('retail_contract_id', contract.id)
+
+      if (invoicesError) throw invoicesError
+
+      const invoiceIds = (invoicesData || []).map(inv => inv.id)
+
+      if (invoiceIds.length === 0) {
+        setPayments([])
+        return
+      }
+
       const { data, error } = await supabase
         .from('accounting_payments')
         .select(`
@@ -76,13 +90,15 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
           description,
           is_cesija,
           created_at,
-          accounting_invoices!inner(
+          invoice_id,
+          company_bank_account_id,
+          cesija_credit_id,
+          accounting_invoices(
             id,
             invoice_number,
             invoice_type,
             total_amount,
-            status,
-            retail_contract_id
+            status
           ),
           company_bank_accounts(
             bank_name,
@@ -92,7 +108,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             credit_name
           )
         `)
-        .eq('accounting_invoices.retail_contract_id', contract.id)
+        .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
       if (error) throw error
