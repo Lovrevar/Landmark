@@ -142,7 +142,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   const loadContracts = async () => {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('retail_contracts')
         .select(`
           id,
@@ -150,17 +150,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
           phase_id,
           supplier_id,
           customer_id,
-          phases:retail_phases!inner(phase_type, phase_name)
+          phases:retail_project_phases!inner(phase_type, phase_name, project_id)
         `)
-        .eq('phases.project_id', formData.retail_project_id)
-
-      if (formData.entity_type === 'supplier') {
-        query.eq('supplier_id', formData.entity_id)
-      } else {
-        query.eq('customer_id', formData.entity_id)
-      }
-
-      const { data, error } = await query.order('contract_number')
+        .eq('retail_project_phases.project_id', formData.retail_project_id)
+        .eq(formData.entity_type === 'supplier' ? 'supplier_id' : 'customer_id', formData.entity_id)
+        .order('contract_number')
 
       if (error) throw error
       setContracts(data || [])
