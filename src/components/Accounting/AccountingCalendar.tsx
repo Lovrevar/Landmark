@@ -132,7 +132,7 @@ const AccountingCalendar: React.FC = () => {
 
     const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
     const outgoingPaid = outgoingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
-    const netAmount = incomingPaid - outgoingPaid
+    const netAmount = outgoingPaid - incomingPaid
 
     return {
       total: monthInvoices.length,
@@ -286,12 +286,12 @@ const AccountingCalendar: React.FC = () => {
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ulazni računi (Prihodi):</span>
-          <span className="font-semibold text-green-600">€{monthStats.incomingPaid.toLocaleString()}</span>
+          <span className="text-gray-600">Izlazni računi (Prihodi - izdao sam):</span>
+          <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString()}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Izlazni računi (Troškovi):</span>
-          <span className="font-semibold text-red-600">€{monthStats.outgoingPaid.toLocaleString()}</span>
+          <span className="text-gray-600">Ulazni računi (Troškovi - moram platiti):</span>
+          <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString()}</span>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
