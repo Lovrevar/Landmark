@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign, X } from 'lucide-react'
 
 interface Invoice {
   id: string
@@ -24,15 +24,28 @@ interface Invoice {
   office_supplier?: { name: string }
 }
 
+interface MonthlyBudget {
+  id: string
+  year: number
+  month: number
+  budget_amount: number
+  notes: string
+}
+
 const AccountingCalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([])
+  const [budgets, setBudgets] = useState<MonthlyBudget[]>([])
+  const [showBudgetModal, setShowBudgetModal] = useState(false)
+  const [budgetYear, setBudgetYear] = useState(new Date().getFullYear())
+  const [budgetFormData, setBudgetFormData] = useState<{ [key: number]: number }>({})
 
   useEffect(() => {
     fetchInvoices()
+    fetchBudgets()
   }, [currentDate])
 
   const fetchInvoices = async () => {
@@ -56,6 +69,21 @@ const AccountingCalendar: React.FC = () => {
       console.error('Error fetching invoices:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBudgets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_budgets')
+        .select('*')
+        .order('year', { ascending: false })
+        .order('month', { ascending: true })
+
+      if (error) throw error
+      setBudgets(data || [])
+    } catch (error) {
+      console.error('Error fetching budgets:', error)
     }
   }
 
@@ -118,6 +146,52 @@ const AccountingCalendar: React.FC = () => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
     setSelectedDate(clickedDate)
     setSelectedInvoices(getInvoicesForDate(clickedDate))
+  }
+
+  const handleOpenBudgetModal = () => {
+    const initialData: { [key: number]: number } = {}
+    for (let m = 1; m <= 12; m++) {
+      const existing = budgets.find(b => b.year === budgetYear && b.month === m)
+      initialData[m] = existing?.budget_amount || 0
+    }
+    setBudgetFormData(initialData)
+    setShowBudgetModal(true)
+  }
+
+  const handleSaveBudgets = async () => {
+    try {
+      for (let m = 1; m <= 12; m++) {
+        const amount = budgetFormData[m] || 0
+        const existing = budgets.find(b => b.year === budgetYear && b.month === m)
+
+        if (existing) {
+          await supabase
+            .from('monthly_budgets')
+            .update({ budget_amount: amount })
+            .eq('id', existing.id)
+        } else {
+          await supabase
+            .from('monthly_budgets')
+            .insert({
+              year: budgetYear,
+              month: m,
+              budget_amount: amount,
+              notes: ''
+            })
+        }
+      }
+
+      await fetchBudgets()
+      setShowBudgetModal(false)
+      alert('Budžeti uspješno spremljeni!')
+    } catch (error) {
+      console.error('Error saving budgets:', error)
+      alert('Greška pri spremanju budžeta')
+    }
+  }
+
+  const getCurrentMonthBudget = () => {
+    return budgets.find(b => b.year === year && b.month === month + 1)
   }
 
   const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate)
@@ -199,6 +273,28 @@ const AccountingCalendar: React.FC = () => {
           <span className="text-gray-600">Neplaćeno:</span>
           <span className="font-semibold text-red-600">€{monthStats.unpaidAmount.toLocaleString()}</span>
         </div>
+        {(() => {
+          const budget = getCurrentMonthBudget()
+          if (budget && budget.budget_amount > 0) {
+            const difference = budget.budget_amount - monthStats.paidAmount
+            return (
+              <>
+                <div className="border-t border-gray-300 my-2"></div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Mjesečni budžet:</span>
+                  <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Razlika (Budžet - Plaćeno):</span>
+                  <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    €{difference.toLocaleString()} {difference >= 0 ? '(Dobro)' : '(Prekoračenje)'}
+                  </span>
+                </div>
+              </>
+            )
+          }
+          return null
+        })()}
       </div>
 
       {/* Calendar Header */}
@@ -207,7 +303,14 @@ const AccountingCalendar: React.FC = () => {
           <h3 className="text-lg font-bold text-gray-900">
             {monthNames[month]} {year}
           </h3>
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleOpenBudgetModal}
+              className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Namjesti Budžet</span>
+            </button>
             <button
               onClick={handlePreviousMonth}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -300,6 +403,97 @@ const AccountingCalendar: React.FC = () => {
       </div>
 
       {/* Selected Date Invoices - Table View */}
+      {showBudgetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Namjesti Godišnji Budžet</h2>
+              <button
+                onClick={() => setShowBudgetModal(false)}
+                className="text-white hover:bg-green-800 rounded-lg p-1 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 flex-1 overflow-y-auto">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Godina
+                </label>
+                <select
+                  value={budgetYear}
+                  onChange={(e) => {
+                    setBudgetYear(parseInt(e.target.value))
+                    const initialData: { [key: number]: number } = {}
+                    const newYear = parseInt(e.target.value)
+                    for (let m = 1; m <= 12; m++) {
+                      const existing = budgets.find(b => b.year === newYear && b.month === m)
+                      initialData[m] = existing?.budget_amount || 0
+                    }
+                    setBudgetFormData(initialData)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {monthNames.map((monthName, idx) => {
+                  const monthNum = idx + 1
+                  return (
+                    <div key={monthNum} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {monthName}
+                      </label>
+                      <input
+                        type="number"
+                        value={budgetFormData[monthNum] || 0}
+                        onChange={(e) => setBudgetFormData({
+                          ...budgetFormData,
+                          [monthNum]: parseFloat(e.target.value) || 0
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        placeholder="0"
+                        min="0"
+                        step="1000"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-blue-900">Ukupan godišnji budžet:</span>
+                  <span className="font-bold text-blue-900 text-lg">
+                    €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200">
+              <button
+                onClick={() => setShowBudgetModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Odustani
+              </button>
+              <button
+                onClick={handleSaveBudgets}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Spremi Budžete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedDate && selectedInvoices.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="p-4 border-b border-gray-200">
