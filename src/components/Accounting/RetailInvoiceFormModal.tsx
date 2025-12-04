@@ -10,13 +10,13 @@ interface Company {
 interface RetailSupplier {
   id: string
   name: string
-  contact: string | null
+  contact_person: string | null
 }
 
 interface RetailCustomer {
   id: string
   name: string
-  email: string | null
+  contact_email: string | null
 }
 
 interface RetailProject {
@@ -71,6 +71,8 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   useEffect(() => {
     loadInitialData()
+    loadSuppliers()
+    loadCustomers()
   }, [])
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     try {
       const { data, error } = await supabase
         .from('retail_suppliers')
-        .select('id, name, contact')
+        .select('id, name, contact_person')
         .order('name')
 
       if (error) throw error
@@ -128,7 +130,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     try {
       const { data, error } = await supabase
         .from('retail_customers')
-        .select('id, name, email')
+        .select('id, name, contact_email')
         .order('name')
 
       if (error) throw error
