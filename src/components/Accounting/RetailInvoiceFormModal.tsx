@@ -65,7 +65,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     issue_date: '',
     due_date: '',
     base_amount: '',
-    vat_amount: '',
+    vat_rate: '25',
     notes: ''
   })
 
@@ -180,30 +180,39 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       if (!formData.base_amount) throw new Error('Morate unijeti osnovicu')
 
       const baseAmount = parseFloat(formData.base_amount)
-      const vatAmount = formData.vat_amount ? parseFloat(formData.vat_amount) : 0
+      const vatRate = parseFloat(formData.vat_rate)
+      const vatAmount = (baseAmount * vatRate) / 100
       const totalAmount = baseAmount + vatAmount
+
+      const invoiceData: any = {
+        invoice_type: formData.invoice_type,
+        company_id: formData.company_id,
+        invoice_category: 'RETAIL',
+        retail_project_id: formData.retail_project_id,
+        retail_contract_id: formData.retail_contract_id,
+        invoice_number: formData.invoice_number,
+        issue_date: formData.issue_date,
+        due_date: formData.due_date,
+        base_amount: baseAmount,
+        vat_rate: vatRate,
+        vat_amount: vatAmount,
+        total_amount: totalAmount,
+        paid_amount: 0,
+        remaining_amount: totalAmount,
+        status: 'Unpaid',
+        category: 'project',
+        description: formData.notes || null
+      }
+
+      if (formData.entity_type === 'supplier') {
+        invoiceData.supplier_id = formData.entity_id
+      } else {
+        invoiceData.customer_id = formData.entity_id
+      }
 
       const { error: insertError } = await supabase
         .from('accounting_invoices')
-        .insert({
-          invoice_type: formData.invoice_type,
-          entity_type: formData.entity_type,
-          entity_id: formData.entity_id,
-          company_id: formData.company_id,
-          invoice_category: 'RETAIL',
-          retail_project_id: formData.retail_project_id,
-          retail_contract_id: formData.retail_contract_id,
-          invoice_number: formData.invoice_number,
-          issue_date: formData.issue_date,
-          due_date: formData.due_date,
-          base_amount: baseAmount,
-          vat_amount: vatAmount,
-          total_amount: totalAmount,
-          paid_amount: 0,
-          remaining_amount: totalAmount,
-          payment_status: 'Unpaid',
-          notes: formData.notes || null
-        })
+        .insert(invoiceData)
 
       if (insertError) throw insertError
 
@@ -224,6 +233,16 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       return customers.map(c => ({ id: c.id, name: c.name }))
     }
   }
+
+  const calculateVatAndTotal = () => {
+    const baseAmount = parseFloat(formData.base_amount) || 0
+    const vatRate = parseFloat(formData.vat_rate) || 0
+    const vatAmount = (baseAmount * vatRate) / 100
+    const totalAmount = baseAmount + vatAmount
+    return { vatAmount, totalAmount }
+  }
+
+  const { vatAmount, totalAmount } = calculateVatAndTotal()
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -409,15 +428,43 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                PDV (€)
+                PDV stopa *
+              </label>
+              <select
+                value={formData.vat_rate}
+                onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="0">0%</option>
+                <option value="13">13%</option>
+                <option value="25">25%</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                PDV iznos (€)
               </label>
               <input
-                type="number"
-                step="0.01"
-                value={formData.vat_amount}
-                onChange={(e) => setFormData({ ...formData, vat_amount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="npr. 2500"
+                type="text"
+                value={vatAmount.toFixed(2)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                disabled
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ukupno (€)
+              </label>
+              <input
+                type="text"
+                value={totalAmount.toFixed(2)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-semibold"
+                disabled
+                readOnly
               />
             </div>
           </div>
