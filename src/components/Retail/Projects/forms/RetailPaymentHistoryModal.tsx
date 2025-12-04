@@ -111,7 +111,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             total_amount,
             status
           ),
-          company_bank_accounts(
+          company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(
             bank_name,
             account_number
           ),
@@ -139,7 +139,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         is_cesija: payment.is_cesija,
         created_at: payment.created_at,
         invoice: payment.accounting_invoices,
-        company_bank_account: payment.company_bank_accounts,
+        company_bank_account: payment.company_bank_account,
         credit: payment.company_credits
       }))
 
