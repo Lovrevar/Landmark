@@ -218,9 +218,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       }
 
       if (formData.entity_type === 'supplier') {
-        invoiceData.supplier_id = formData.entity_id
+        invoiceData.retail_supplier_id = formData.entity_id
       } else {
-        invoiceData.customer_id = formData.entity_id
+        invoiceData.retail_customer_id = formData.entity_id
       }
 
       const { error: insertError } = await supabase
