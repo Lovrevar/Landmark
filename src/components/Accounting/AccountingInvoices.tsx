@@ -133,6 +133,9 @@ const AccountingInvoices: React.FC = () => {
   const [customerSales, setCustomerSales] = useState<any[]>([])
   const [customerApartments, setCustomerApartments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 100
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'>('ALL')
@@ -203,7 +206,7 @@ const AccountingInvoices: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [currentPage])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -255,6 +258,7 @@ const AccountingInvoices: React.FC = () => {
 
       const [
         invoicesResult,
+        invoiceCountResult,
         companiesResult,
         bankAccountsResult,
         creditsResult,
@@ -282,7 +286,12 @@ const AccountingInvoices: React.FC = () => {
             retail_suppliers:retail_supplier_id (name),
             retail_customers:retail_customer_id (name)
           `)
-          .order('issue_date', { ascending: false }),
+          .order('issue_date', { ascending: false })
+          .range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
+
+        supabase
+          .from('accounting_invoices')
+          .select('*', { count: 'exact', head: true }),
 
         supabase
           .from('accounting_companies')
@@ -363,6 +372,8 @@ const AccountingInvoices: React.FC = () => {
 
       if (invoicesResult.error) throw invoicesResult.error
       setInvoices(invoicesResult.data || [])
+
+      setTotalCount(invoiceCountResult.count || 0)
 
       if (companiesResult.error) {
         console.error('Error loading companies:', companiesResult.error)
@@ -1164,7 +1175,30 @@ const AccountingInvoices: React.FC = () => {
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Prikazano: {filteredInvoices.length} od {invoices.length} računa</span>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">
+              Prikazano: {Math.min((currentPage - 1) * pageSize + 1, totalCount)}-{Math.min(currentPage * pageSize, totalCount)} od {totalCount} računa
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Prethodna
+              </button>
+              <span className="text-sm text-gray-600">
+                Stranica {currentPage} od {Math.ceil(totalCount / pageSize)}
+              </span>
+              <button
+                onClick={() => setCurrentPage(Math.min(Math.ceil(totalCount / pageSize), currentPage + 1))}
+                disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sljedeća
+              </button>
+            </div>
+          </div>
           <div className="flex items-center space-x-6 text-sm">
             <div>
               <span className="text-gray-600">Ukupno neplaćeno: </span>

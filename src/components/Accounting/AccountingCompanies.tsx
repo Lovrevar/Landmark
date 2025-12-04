@@ -95,170 +95,33 @@ const AccountingCompanies: React.FC = () => {
     try {
       setLoading(true)
 
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('accounting_companies')
+      const { data: statsData, error: statsError } = await supabase
+        .from('company_statistics')
         .select('*')
         .order('name')
 
-      if (companiesError) throw companiesError
+      if (statsError) throw statsError
 
-      if (!companiesData || companiesData.length === 0) {
-        setCompanies([])
-        setLoading(false)
-        return
-      }
-
-      const companyIds = companiesData.map(c => c.id)
-
-      const [
-        bankAccountsResult,
-        creditsResult,
-        invoicesResult,
-        cesijaInvoicesResult
-      ] = await Promise.all([
-        supabase
-          .from('company_bank_accounts')
-          .select('*')
-          .in('company_id', companyIds)
-          .order('bank_name'),
-
-        supabase
-          .from('company_credits')
-          .select('*')
-          .in('company_id', companyIds)
-          .order('credit_name'),
-
-        supabase
-          .from('accounting_invoices')
-          .select(`
-            id,
-            invoice_number,
-            invoice_type,
-            total_amount,
-            paid_amount,
-            remaining_amount,
-            status,
-            issue_date,
-            company_id,
-            supplier:supplier_id (name),
-            customer:customer_id (name, surname),
-            office_supplier:office_supplier_id (name),
-            company:company_id (name)
-          `)
-          .in('company_id', companyIds)
-          .order('issue_date', { ascending: false }),
-
-        supabase
-          .from('accounting_payments')
-          .select(`
-            invoice_id,
-            cesija_company_id,
-            accounting_invoices!inner (
-              id,
-              invoice_number,
-              invoice_type,
-              total_amount,
-              paid_amount,
-              remaining_amount,
-              status,
-              issue_date,
-              company_id,
-              supplier:supplier_id (name),
-              customer:customer_id (name, surname),
-              office_supplier:office_supplier_id (name),
-              company:company_id (name)
-            )
-          `)
-          .in('cesija_company_id', companyIds)
-          .eq('is_cesija', true)
-      ])
-
-      const bankAccountsByCompany = new Map<string, BankAccount[]>()
-      for (const acc of bankAccountsResult.data || []) {
-        if (!bankAccountsByCompany.has(acc.company_id)) {
-          bankAccountsByCompany.set(acc.company_id, [])
-        }
-        bankAccountsByCompany.get(acc.company_id)!.push(acc)
-      }
-
-      const creditsByCompany = new Map<string, Credit[]>()
-      for (const credit of creditsResult.data || []) {
-        if (!creditsByCompany.has(credit.company_id)) {
-          creditsByCompany.set(credit.company_id, [])
-        }
-        creditsByCompany.get(credit.company_id)!.push(credit)
-      }
-
-      const invoicesByCompany = new Map<string, Invoice[]>()
-      for (const invoice of invoicesResult.data || []) {
-        if (!invoicesByCompany.has(invoice.company_id)) {
-          invoicesByCompany.set(invoice.company_id, [])
-        }
-        invoicesByCompany.get(invoice.company_id)!.push({
-          ...invoice,
-          is_cesija_payment: false
-        })
-      }
-
-      for (const payment of cesijaInvoicesResult.data || []) {
-        const invoice = (payment.accounting_invoices as any)
-        const cesijaCompanyId = payment.cesija_company_id
-        if (!invoicesByCompany.has(cesijaCompanyId)) {
-          invoicesByCompany.set(cesijaCompanyId, [])
-        }
-        invoicesByCompany.get(cesijaCompanyId)!.push({
-          ...invoice,
-          is_cesija_payment: true
-        })
-      }
-
-      const companiesWithStats = companiesData.map((company) => {
-        const bankAccounts = bankAccountsByCompany.get(company.id) || []
-        const credits = creditsByCompany.get(company.id) || []
-        const invoices = invoicesByCompany.get(company.id) || []
-
-        const incomeInvoices = invoices.filter(i =>
-          i.invoice_type === 'INCOMING_INVESTMENT' || i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE'
-        )
-        const expenseInvoices = invoices.filter(i =>
-          i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE'
-        )
-
-        const totalIncomeAmount = incomeInvoices.reduce((sum, i) => sum + i.total_amount, 0)
-        const totalIncomePaid = incomeInvoices.reduce((sum, i) => sum + i.paid_amount, 0)
-        const totalIncomeUnpaid = incomeInvoices.reduce((sum, i) => sum + i.remaining_amount, 0)
-
-        const totalExpenseAmount = expenseInvoices.reduce((sum, i) => sum + i.total_amount, 0)
-        const totalExpensePaid = expenseInvoices.reduce((sum, i) => sum + i.paid_amount, 0)
-        const totalExpenseUnpaid = expenseInvoices.reduce((sum, i) => sum + i.remaining_amount, 0)
-
-        const totalBankBalance = bankAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
-        const totalCreditsAvailable = credits.reduce((sum, credit) => sum + (credit.initial_amount - credit.current_balance), 0)
-        const currentBalance = totalBankBalance + totalCreditsAvailable
-        const profit = totalIncomePaid - totalExpensePaid
-        const revenue = totalIncomeAmount
-
-        return {
-          id: company.id,
-          name: company.name,
-          oib: company.oib,
-          initial_balance: company.initial_balance,
-          total_income_invoices: incomeInvoices.length,
-          total_income_amount: totalIncomeAmount,
-          total_income_paid: totalIncomePaid,
-          total_income_unpaid: totalIncomeUnpaid,
-          total_expense_invoices: expenseInvoices.length,
-          total_expense_amount: totalExpenseAmount,
-          total_expense_paid: totalExpensePaid,
-          total_expense_unpaid: totalExpenseUnpaid,
-          current_balance: currentBalance,
-          profit: profit,
-          revenue: revenue,
-          bank_accounts: bankAccounts,
-          credits: credits,
-          invoices: invoices
-        }
-      })
+      const companiesWithStats = (statsData || []).map((stats: any) => ({
+        id: stats.id,
+        name: stats.name,
+        oib: stats.oib,
+        initial_balance: stats.initial_balance,
+        total_income_invoices: stats.total_income_invoices,
+        total_income_amount: stats.total_income_amount,
+        total_income_paid: stats.total_income_paid,
+        total_income_unpaid: stats.total_income_unpaid,
+        total_expense_invoices: stats.total_expense_invoices,
+        total_expense_amount: stats.total_expense_amount,
+        total_expense_paid: stats.total_expense_paid,
+        total_expense_unpaid: stats.total_expense_unpaid,
+        current_balance: stats.total_bank_balance + stats.total_credits_available,
+        profit: stats.total_income_paid - stats.total_expense_paid,
+        revenue: stats.total_income_amount,
+        bank_accounts: [],
+        credits: [],
+        invoices: []
+      }))
 
       setCompanies(companiesWithStats)
     } catch (error) {
@@ -431,10 +294,62 @@ const AccountingCompanies: React.FC = () => {
     }
   }
 
-  const handleViewDetails = (company: CompanyStats) => {
-    setSelectedCompany(company)
-    document.body.style.overflow = 'hidden'
-    setShowDetailsModal(true)
+  const handleViewDetails = async (company: CompanyStats) => {
+    try {
+      const [
+        bankAccountsResult,
+        creditsResult,
+        invoicesResult
+      ] = await Promise.all([
+        supabase
+          .from('company_bank_accounts')
+          .select('*')
+          .eq('company_id', company.id)
+          .order('bank_name'),
+
+        supabase
+          .from('company_credits')
+          .select('*')
+          .eq('company_id', company.id)
+          .order('credit_name'),
+
+        supabase
+          .from('accounting_invoices')
+          .select(`
+            id,
+            invoice_number,
+            invoice_type,
+            total_amount,
+            paid_amount,
+            remaining_amount,
+            status,
+            issue_date,
+            supplier:supplier_id (name),
+            customer:customer_id (name, surname),
+            office_supplier:office_supplier_id (name)
+          `)
+          .eq('company_id', company.id)
+          .order('issue_date', { ascending: false })
+          .limit(100)
+      ])
+
+      const companyWithDetails = {
+        ...company,
+        bank_accounts: bankAccountsResult.data || [],
+        credits: creditsResult.data || [],
+        invoices: (invoicesResult.data || []).map(inv => ({
+          ...inv,
+          is_cesija_payment: false
+        }))
+      }
+
+      setSelectedCompany(companyWithDetails)
+      document.body.style.overflow = 'hidden'
+      setShowDetailsModal(true)
+    } catch (error) {
+      console.error('Error loading company details:', error)
+      alert('Greška pri učitavanju detalja firme')
+    }
   }
 
   const handleCloseDetailsModal = () => {
