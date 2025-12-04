@@ -65,16 +65,27 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
 
     setLoading(true)
     try {
+      console.log('=== RETAIL PAYMENTS DEBUG ===')
+      console.log('Contract ID:', contract.id)
+      console.log('Contract Number:', contract.contract_number)
+
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
-        .select('id')
+        .select('id, invoice_number, invoice_category, retail_contract_id')
         .eq('retail_contract_id', contract.id)
 
-      if (invoicesError) throw invoicesError
+      console.log('Invoices Query Result:', { invoicesData, invoicesError })
+
+      if (invoicesError) {
+        console.error('Invoices Error:', invoicesError)
+        throw invoicesError
+      }
 
       const invoiceIds = (invoicesData || []).map(inv => inv.id)
+      console.log('Invoice IDs:', invoiceIds)
 
       if (invoiceIds.length === 0) {
+        console.log('No invoices found for this contract')
         setPayments([])
         return
       }
@@ -111,7 +122,12 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
-      if (error) throw error
+      console.log('Payments Query Result:', { data, error })
+
+      if (error) {
+        console.error('Payments Error:', error)
+        throw error
+      }
 
       const formattedPayments = (data || []).map((payment: any) => ({
         id: payment.id,
@@ -126,6 +142,9 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         company_bank_account: payment.company_bank_accounts,
         credit: payment.company_credits
       }))
+
+      console.log('Formatted Payments:', formattedPayments)
+      console.log('=== END DEBUG ===')
 
       setPayments(formattedPayments)
     } catch (error) {
