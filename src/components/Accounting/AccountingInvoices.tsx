@@ -565,10 +565,13 @@ const AccountingInvoices: React.FC = () => {
   const handleOpenPaymentModal = (invoice: Invoice) => {
     setPayingInvoice(invoice)
     setPaymentFormData({
+      payment_source_type: 'bank_account',
       company_bank_account_id: '',
+      credit_id: '',
       is_cesija: false,
       cesija_company_id: '',
       cesija_bank_account_id: '',
+      cesija_credit_id: '',
       payment_date: new Date().toISOString().split('T')[0],
       amount: invoice.remaining_amount,
       payment_method: 'WIRE',
