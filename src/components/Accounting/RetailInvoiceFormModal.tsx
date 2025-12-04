@@ -184,8 +184,21 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       const vatAmount = (baseAmount * vatRate) / 100
       const totalAmount = baseAmount + vatAmount
 
+      let invoiceType: string
+      if (formData.invoice_type === 'incoming' && formData.entity_type === 'supplier') {
+        invoiceType = 'INCOMING_SUPPLIER'
+      } else if (formData.invoice_type === 'outgoing' && formData.entity_type === 'customer') {
+        invoiceType = 'OUTGOING_SALES'
+      } else if (formData.invoice_type === 'outgoing' && formData.entity_type === 'supplier') {
+        invoiceType = 'OUTGOING_SUPPLIER'
+      } else if (formData.invoice_type === 'incoming' && formData.entity_type === 'customer') {
+        invoiceType = 'INCOMING_INVESTMENT'
+      } else {
+        throw new Error('Nevalidna kombinacija tipa računa i entiteta')
+      }
+
       const invoiceData: any = {
-        invoice_type: formData.invoice_type,
+        invoice_type: invoiceType,
         company_id: formData.company_id,
         invoice_category: 'RETAIL',
         retail_project_id: formData.retail_project_id,
