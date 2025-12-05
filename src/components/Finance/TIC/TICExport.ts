@@ -175,7 +175,7 @@ export const exportToPDF = (
   ctx.lineWidth = 0.3
 
   ctx.strokeRect(20, currentY, colWidths[0], rowHeight * 2)
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 4.5px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.fillText('NAMJENA', 22, currentY + 9)
 
@@ -187,7 +187,7 @@ export const exportToPDF = (
   ]
 
   ctx.textAlign = 'center'
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 4.5px Arial, sans-serif'
   headerCols.forEach(col => {
     ctx.strokeRect(xPos, currentY, col.width, rowHeight)
     ctx.fillText(col.text, xPos + col.width / 2, currentY + 4.5)
