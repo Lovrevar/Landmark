@@ -170,6 +170,13 @@ const TICManagement: React.FC = () => {
     }).format(num)
   }
 
+  const formatPercentage = (num: number): string => {
+    return new Intl.NumberFormat('de-DE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num)
+  }
+
   const calculateRowTotal = (vlastita: number, kreditna: number): number => {
     return vlastita + kreditna
   }
@@ -345,7 +352,7 @@ const TICManagement: React.FC = () => {
                         />
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right text-gray-700">
-                        {formatNumber(vlastitaPercent)}%
+                        {formatPercentage(vlastitaPercent)}%
                       </td>
                       <td className="border border-gray-300 px-2 py-2">
                         <input
@@ -357,7 +364,7 @@ const TICManagement: React.FC = () => {
                         />
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right text-gray-700">
-                        {formatNumber(kreditnaPercent)}%
+                        {formatPercentage(kreditnaPercent)}%
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-gray-900">
                         {formatNumber(rowTotal)}
@@ -371,13 +378,13 @@ const TICManagement: React.FC = () => {
                     {formatNumber(totals.vlastita)}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-right text-blue-900">
-                    {formatNumber(calculateRowPercentages(totals.vlastita, grandTotal))}%
+                    {formatPercentage(calculateRowPercentages(totals.vlastita, grandTotal))}%
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-right text-blue-900">
                     {formatNumber(totals.kreditna)}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-right text-blue-900">
-                    {formatNumber(calculateRowPercentages(totals.kreditna, grandTotal))}%
+                    {formatPercentage(calculateRowPercentages(totals.kreditna, grandTotal))}%
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-right text-blue-900">
                     {formatNumber(grandTotal)}

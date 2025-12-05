@@ -25,6 +25,13 @@ const formatNumberForExcel = (num: number): string => {
   }).format(num)
 }
 
+const formatPercentageForExcel = (num: number): string => {
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)
+}
+
 const calculatePercentage = (value: number, total: number): number => {
   if (total === 0) return 0
   return (value / total) * 100
@@ -86,9 +93,9 @@ export const exportToExcel = (
       <tr>
         <td>${item.name}</td>
         <td class="text-right">${formatNumberForExcel(item.vlastita)}</td>
-        <td class="text-right">${formatNumberForExcel(vlastitaPercent)}%</td>
+        <td class="text-right">${formatPercentageForExcel(vlastitaPercent)}%</td>
         <td class="text-right">${formatNumberForExcel(item.kreditna)}</td>
-        <td class="text-right">${formatNumberForExcel(kreditnaPercent)}%</td>
+        <td class="text-right">${formatPercentageForExcel(kreditnaPercent)}%</td>
         <td class="text-right">${formatNumberForExcel(rowTotal)}</td>
       </tr>
     `
@@ -101,9 +108,9 @@ export const exportToExcel = (
             <tr class="total-row">
               <td><strong>UKUPNO:</strong></td>
               <td class="text-right"><strong>${formatNumberForExcel(totals.vlastita)}</strong></td>
-              <td class="text-right"><strong>${formatNumberForExcel(vlastitaTotalPercent)}%</strong></td>
+              <td class="text-right"><strong>${formatPercentageForExcel(vlastitaTotalPercent)}%</strong></td>
               <td class="text-right"><strong>${formatNumberForExcel(totals.kreditna)}</strong></td>
-              <td class="text-right"><strong>${formatNumberForExcel(kreditnaTotalPercent)}%</strong></td>
+              <td class="text-right"><strong>${formatPercentageForExcel(kreditnaTotalPercent)}%</strong></td>
               <td class="text-right"><strong>${formatNumberForExcel(grandTotal)}</strong></td>
             </tr>
           </tbody>
@@ -242,7 +249,7 @@ export const exportToPDF = (
     xPos += colWidths[1]
 
     ctx.strokeRect(xPos, currentY, colWidths[2], rowHeight)
-    ctx.fillText(formatNumberForExcel(vlastitaPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
+    ctx.fillText(formatPercentageForExcel(vlastitaPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
     xPos += colWidths[2]
 
     ctx.strokeRect(xPos, currentY, colWidths[3], rowHeight)
@@ -250,7 +257,7 @@ export const exportToPDF = (
     xPos += colWidths[3]
 
     ctx.strokeRect(xPos, currentY, colWidths[4], rowHeight)
-    ctx.fillText(formatNumberForExcel(kreditnaPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
+    ctx.fillText(formatPercentageForExcel(kreditnaPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
     xPos += colWidths[4]
 
     ctx.strokeRect(xPos, currentY, colWidths[5], rowHeight)
@@ -281,7 +288,7 @@ export const exportToPDF = (
   xPos += colWidths[1]
 
   ctx.strokeRect(xPos, currentY, colWidths[2], rowHeight)
-  ctx.fillText(formatNumberForExcel(vlastitaTotalPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
+  ctx.fillText(formatPercentageForExcel(vlastitaTotalPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
   xPos += colWidths[2]
 
   ctx.strokeRect(xPos, currentY, colWidths[3], rowHeight)
@@ -289,7 +296,7 @@ export const exportToPDF = (
   xPos += colWidths[3]
 
   ctx.strokeRect(xPos, currentY, colWidths[4], rowHeight)
-  ctx.fillText(formatNumberForExcel(kreditnaTotalPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
+  ctx.fillText(formatPercentageForExcel(kreditnaTotalPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
   xPos += colWidths[4]
 
   ctx.strokeRect(xPos, currentY, colWidths[5], rowHeight)
