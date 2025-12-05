@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
+import type { RetailLandPlot } from '../../../../types/retail'
 
 interface ProjectFormModalProps {
   onClose: () => void
@@ -14,6 +15,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   project
 }) => {
   const [formData, setFormData] = useState({
+    land_plot_id: project?.land_plot_id || '',
     name: project?.name || '',
     location: project?.location || '',
     plot_number: project?.plot_number || '',
@@ -24,8 +26,50 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     end_date: project?.end_date || '',
     notes: project?.notes || ''
   })
+  const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadingLandPlots, setLoadingLandPlots] = useState(true)
+
+  useEffect(() => {
+    loadLandPlots()
+  }, [])
+
+  const loadLandPlots = async () => {
+    try {
+      setLoadingLandPlots(true)
+      const plots = await retailProjectService.fetchLandPlots()
+      setLandPlots(plots)
+    } catch (err) {
+      console.error('Error loading land plots:', err)
+    } finally {
+      setLoadingLandPlots(false)
+    }
+  }
+
+  const handleLandPlotChange = (landPlotId: string) => {
+    if (landPlotId === '') {
+      setFormData({
+        ...formData,
+        land_plot_id: '',
+        location: '',
+        plot_number: '',
+        purchase_price: ''
+      })
+      return
+    }
+
+    const selectedPlot = landPlots.find(plot => plot.id === landPlotId)
+    if (selectedPlot) {
+      setFormData({
+        ...formData,
+        land_plot_id: landPlotId,
+        location: selectedPlot.location || '',
+        plot_number: selectedPlot.plot_number,
+        purchase_price: selectedPlot.total_price.toString()
+      })
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +79,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     try {
       const dataToSubmit = {
         ...formData,
+        land_plot_id: formData.land_plot_id || null,
         total_area_m2: parseFloat(formData.total_area_m2 as any),
         purchase_price: parseFloat(formData.purchase_price as any),
         start_date: formData.start_date || null,
@@ -57,6 +102,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       setLoading(false)
     }
   }
+
+  const selectedPlot = landPlots.find(plot => plot.id === formData.land_plot_id)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -96,6 +143,44 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Zemljište
+              </label>
+              {loadingLandPlots ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Učitavam zemljišta...
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={formData.land_plot_id}
+                    onChange={(e) => handleLandPlotChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">-- Bez zemljišta (ručni unos) --</option>
+                    {landPlots.map(plot => (
+                      <option key={plot.id} value={plot.id}>
+                        {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name} ({plot.purchased_area_m2} m²)
+                      </option>
+                    ))}
+                  </select>
+                  {selectedPlot && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                      <div className="font-medium text-blue-900 mb-1">Info o zemljištu:</div>
+                      <div className="text-blue-800 space-y-1">
+                        <div>Vlasnik: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
+                        <div>Ukupna površina: {selectedPlot.total_area_m2} m²</div>
+                        <div>Kupljena površina: {selectedPlot.purchased_area_m2} m²</div>
+                        <div>Cijena po m²: €{selectedPlot.price_per_m2.toFixed(2)}</div>
+                        <div>Ukupna cijena: €{selectedPlot.total_price.toFixed(2)}</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lokacija *
               </label>
               <input
@@ -104,7 +189,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
+                disabled={!!formData.land_plot_id}
               />
+              {formData.land_plot_id && (
+                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno iz odabranog zemljišta</p>
+              )}
             </div>
 
             <div>
@@ -117,7 +206,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
+                disabled={!!formData.land_plot_id}
               />
+              {formData.land_plot_id && (
+                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno</p>
+              )}
             </div>
 
             <div>
@@ -152,7 +245,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cijena kupovine (€) *
+                Budžet projekta (€) *
               </label>
               <input
                 type="number"
@@ -161,7 +254,14 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
+                disabled={!!formData.land_plot_id}
               />
+              {formData.land_plot_id && (
+                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno (cijena zemljišta)</p>
+              )}
+              {!formData.land_plot_id && (
+                <p className="mt-1 text-xs text-gray-500">Budžet projekta - zvijezda vodilja za potrošnju</p>
+              )}
             </div>
 
             <div>

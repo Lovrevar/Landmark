@@ -62,6 +62,7 @@ export interface RetailCustomerWithSales extends RetailCustomer {
 
 export interface RetailProject {
   id: string
+  land_plot_id: string | null
   name: string
   location: string
   plot_number: string
@@ -74,6 +75,7 @@ export interface RetailProject {
   notes: string | null
   created_at: string
   updated_at: string
+  land_plot?: RetailLandPlot
 }
 
 export interface RetailProjectPhase {

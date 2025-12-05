@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { MapPin, Plus, Search, Edit, Trash2, Eye, X, Calendar } from 'lucide-react'
+import { MapPin, Plus, Search, Edit, Trash2, Eye, X, Calendar, Link } from 'lucide-react'
 import type { RetailLandPlot, RetailSale } from '../../types/retail'
 
 interface LandPlotWithSales extends RetailLandPlot {
@@ -36,13 +36,30 @@ const RetailLandPlots: React.FC = () => {
   const fetchLandPlots = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+
+      const { data: plots, error: plotsError } = await supabase
         .from('retail_land_plots')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setLandPlots(data || [])
+      if (plotsError) throw plotsError
+
+      const { data: projects, error: projectsError } = await supabase
+        .from('retail_projects')
+        .select('id, land_plot_id, name')
+        .not('land_plot_id', 'is', null)
+
+      if (projectsError) throw projectsError
+
+      const plotsWithProjects = (plots || []).map(plot => {
+        const connectedProject = projects?.find(p => p.land_plot_id === plot.id)
+        return {
+          ...plot,
+          connectedProject: connectedProject || null
+        }
+      })
+
+      setLandPlots(plotsWithProjects as any)
     } catch (error) {
       console.error('Error fetching land plots:', error)
       alert('Greška pri učitavanju zemljišta')
@@ -343,15 +360,25 @@ const RetailLandPlots: React.FC = () => {
                       <div className="text-sm font-semibold text-gray-900">€{plot.total_price.toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        plot.payment_status === 'paid'
-                          ? 'bg-green-100 text-green-800'
-                          : plot.payment_status === 'partial'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {plot.payment_status === 'paid' ? 'Plaćeno' : plot.payment_status === 'partial' ? 'Djelomično' : 'Pending'}
-                      </span>
+                      <div className="space-y-1">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          plot.payment_status === 'paid'
+                            ? 'bg-green-100 text-green-800'
+                            : plot.payment_status === 'partial'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {plot.payment_status === 'paid' ? 'Plaćeno' : plot.payment_status === 'partial' ? 'Djelomično' : 'Pending'}
+                        </span>
+                        {(plot as any).connectedProject && (
+                          <div className="flex items-center">
+                            <span className="px-2 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                              <Link className="w-3 h-3 mr-1" />
+                              U projektu
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">

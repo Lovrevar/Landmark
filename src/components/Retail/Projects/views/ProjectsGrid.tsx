@@ -1,5 +1,5 @@
 import React from 'react'
-import { MapPin, ArrowRight, DollarSign, Layers } from 'lucide-react'
+import { MapPin, ArrowRight, DollarSign, Layers, Link } from 'lucide-react'
 import type { RetailProjectWithPhases } from '../../../../types/retail'
 
 interface ProjectsGridProps {
@@ -51,6 +51,12 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
                   {project.status}
                 </span>
+                {project.land_plot_id && (
+                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 flex items-center">
+                    <Link className="w-3 h-3 mr-1" />
+                    Povezano zemljište
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -67,7 +73,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Cijena kupovine:</span>
+              <span className="text-sm text-gray-600">Budžet projekta:</span>
               <span className="text-sm font-semibold text-gray-900">{formatCurrency(project.purchase_price)}</span>
             </div>
 

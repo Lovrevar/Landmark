@@ -7,14 +7,28 @@ import type {
   RetailContractMilestone,
   RetailProjectWithPhases,
   RetailPhaseWithContracts,
-  RetailContractWithMilestones
+  RetailContractWithMilestones,
+  RetailLandPlot
 } from '../../../../types/retail'
 
 export const retailProjectService = {
+  async fetchLandPlots(): Promise<RetailLandPlot[]> {
+    const { data, error } = await supabase
+      .from('retail_land_plots')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  },
+
   async fetchProjects(): Promise<RetailProjectWithPhases[]> {
     const { data: projects, error: projectsError } = await supabase
       .from('retail_projects')
-      .select('*')
+      .select(`
+        *,
+        land_plot:retail_land_plots(*)
+      `)
       .order('created_at', { ascending: false })
 
     if (projectsError) throw projectsError
@@ -40,7 +54,10 @@ export const retailProjectService = {
   async fetchProjectById(id: string): Promise<RetailProjectWithPhases | null> {
     const { data: project, error: projectError } = await supabase
       .from('retail_projects')
-      .select('*')
+      .select(`
+        *,
+        land_plot:retail_land_plots(*)
+      `)
       .eq('id', id)
       .single()
 
