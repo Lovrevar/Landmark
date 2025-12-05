@@ -31,7 +31,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
     salesPhases.some(p => p.id === c.phase_id)
   )
 
-  const landCost = project.purchase_price
+  const landCost = project.land_plot?.total_price || 0
   const developmentCost = developmentContracts.reduce((sum, c) => sum + c.budget_realized, 0)
   const constructionCost = constructionContracts.reduce((sum, c) => sum + c.budget_realized, 0)
   const totalExpenses = landCost + developmentCost + constructionCost
@@ -134,6 +134,14 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
           </div>
         </div>
       </div>
+
+      {!project.land_plot && (
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            Projekt nije povezan sa zemljištem. Povežite projekt sa zemljištem da bi se prikazala stvarna cijena zemljišta u rashodima.
+          </p>
+        </div>
+      )}
 
       {totalRevenue === 0 && (
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
