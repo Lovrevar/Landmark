@@ -76,8 +76,8 @@ export const exportToExcel = (
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
-    const vlastitaPercent = calculatePercentage(item.vlastita, rowTotal)
-    const kreditnaPercent = calculatePercentage(item.kreditna, rowTotal)
+    const vlastitaPercent = calculatePercentage(item.vlastita, grandTotal)
+    const kreditnaPercent = calculatePercentage(item.kreditna, grandTotal)
 
     html += `
       <tr>
@@ -198,8 +198,8 @@ export const exportToPDF = (
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
-    const vlastitaPercent = calculatePercentage(item.vlastita, rowTotal)
-    const kreditnaPercent = calculatePercentage(item.kreditna, rowTotal)
+    const vlastitaPercent = calculatePercentage(item.vlastita, grandTotal)
+    const kreditnaPercent = calculatePercentage(item.kreditna, grandTotal)
 
     xPos = 20
 

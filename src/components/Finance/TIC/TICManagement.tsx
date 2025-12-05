@@ -329,8 +329,8 @@ const TICManagement: React.FC = () => {
               <tbody>
                 {lineItems.map((item, index) => {
                   const rowTotal = calculateRowTotal(item.vlastita, item.kreditna)
-                  const vlastitaPercent = calculateRowPercentages(item.vlastita, rowTotal)
-                  const kreditnaPercent = calculateRowPercentages(item.kreditna, rowTotal)
+                  const vlastitaPercent = calculateRowPercentages(item.vlastita, grandTotal)
+                  const kreditnaPercent = calculateRowPercentages(item.kreditna, grandTotal)
 
                   return (
                     <tr key={index} className="hover:bg-gray-50">
