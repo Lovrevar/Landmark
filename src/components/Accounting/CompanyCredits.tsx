@@ -9,9 +9,15 @@ interface Company {
   oib: string
 }
 
+interface Project {
+  id: string
+  name: string
+}
+
 interface Credit {
   id: string
   company_id: string
+  project_id: string | null
   credit_name: string
   start_date: string
   end_date: string
@@ -24,17 +30,20 @@ interface Credit {
 
 interface CreditWithCompany extends Credit {
   company: Company
+  project?: Project
 }
 
 const CompanyCredits: React.FC = () => {
   const [credits, setCredits] = useState<CreditWithCompany[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingCredit, setEditingCredit] = useState<Credit | null>(null)
 
   const [formData, setFormData] = useState({
     company_id: '',
+    project_id: '',
     credit_name: '',
     start_date: '',
     end_date: '',
@@ -62,15 +71,18 @@ const CompanyCredits: React.FC = () => {
     try {
       setLoading(true)
 
-      const [{ data: companiesData }, { data: creditsData }] = await Promise.all([
+      const [{ data: companiesData }, { data: projectsData }, { data: creditsData }] = await Promise.all([
         supabase.from('accounting_companies').select('*').order('name'),
+        supabase.from('projects').select('id, name').order('name'),
         supabase.from('company_credits').select(`
           *,
-          company:accounting_companies(id, name, oib)
+          company:accounting_companies(id, name, oib),
+          project:projects(id, name)
         `).order('created_at', { ascending: false })
       ])
 
       setCompanies(companiesData || [])
+      setProjects(projectsData || [])
       setCredits(creditsData || [])
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -82,6 +94,7 @@ const CompanyCredits: React.FC = () => {
   const resetForm = () => {
     setFormData({
       company_id: '',
+      project_id: '',
       credit_name: '',
       start_date: '',
       end_date: '',
@@ -97,6 +110,7 @@ const CompanyCredits: React.FC = () => {
       setEditingCredit(credit)
       setFormData({
         company_id: credit.company_id,
+        project_id: credit.project_id || '',
         credit_name: credit.credit_name,
         start_date: credit.start_date,
         end_date: credit.end_date,
@@ -124,6 +138,7 @@ const CompanyCredits: React.FC = () => {
           .from('company_credits')
           .update({
             company_id: formData.company_id,
+            project_id: formData.project_id || null,
             credit_name: formData.credit_name,
             start_date: formData.start_date,
             end_date: formData.end_date,
@@ -140,6 +155,7 @@ const CompanyCredits: React.FC = () => {
           .from('company_credits')
           .insert([{
             ...formData,
+            project_id: formData.project_id || null,
             current_balance: 0
           }])
 
@@ -223,6 +239,11 @@ const CompanyCredits: React.FC = () => {
                   <div className="flex items-center space-x-3 mb-2">
                     <CreditCard className="w-6 h-6 text-blue-600" />
                     <h3 className="text-xl font-bold text-gray-900">{credit.credit_name}</h3>
+                    {credit.project && (
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        {credit.project.name}
+                      </span>
+                    )}
                     {expired && (
                       <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
                         EXPIRED
@@ -378,6 +399,23 @@ const CompanyCredits: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
+                <select
+                  value={formData.project_id}
+                  onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No Project (General Credit)</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Link credit to a specific project for tracking expenses</p>
               </div>
 
               <div>

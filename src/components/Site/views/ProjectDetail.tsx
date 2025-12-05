@@ -1,8 +1,23 @@
-import React from 'react'
-import { ArrowLeft, Building2, Settings } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { ArrowLeft, Building2, Settings, CreditCard, DollarSign, Percent } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from '../types/siteTypes'
 import { PhaseCard } from './PhaseCard'
+import { supabase } from '../../../lib/supabase'
+
+interface Company {
+  id: string
+  name: string
+}
+
+interface Credit {
+  id: string
+  credit_name: string
+  initial_amount: number
+  current_balance: number
+  interest_rate: number
+  company: Company
+}
 
 interface ProjectDetailProps {
   project: ProjectWithPhases
@@ -35,6 +50,37 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onManageMilestones,
   canManagePayments = true
 }) => {
+  const [credits, setCredits] = useState<Credit[]>([])
+  const [loadingCredits, setLoadingCredits] = useState(false)
+
+  useEffect(() => {
+    fetchProjectCredits()
+  }, [project.id])
+
+  const fetchProjectCredits = async () => {
+    try {
+      setLoadingCredits(true)
+      const { data, error } = await supabase
+        .from('company_credits')
+        .select(`
+          id,
+          credit_name,
+          initial_amount,
+          current_balance,
+          interest_rate,
+          company:accounting_companies(id, name)
+        `)
+        .eq('project_id', project.id)
+
+      if (error) throw error
+      setCredits(data || [])
+    } catch (error) {
+      console.error('Error fetching project credits:', error)
+    } finally {
+      setLoadingCredits(false)
+    }
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -80,6 +126,67 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Project Credits Section */}
+      {credits.length > 0 && (
+        <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+          <div className="flex items-center mb-4">
+            <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
+            <h2 className="text-lg font-semibold text-gray-900">Bank Credits for This Project</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {credits.map((credit) => {
+              const available = credit.initial_amount - credit.current_balance
+              const utilizationPercent = credit.initial_amount > 0
+                ? (credit.current_balance / credit.initial_amount) * 100
+                : 0
+
+              return (
+                <div key={credit.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h3 className="font-semibold text-gray-900 mb-1">{credit.credit_name}</h3>
+                  <p className="text-xs text-gray-600 mb-3">{credit.company.name}</p>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Credit Limit:</span>
+                      <span className="font-semibold text-gray-900">€{credit.initial_amount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Used:</span>
+                      <span className="font-semibold text-blue-600">€{credit.current_balance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Available:</span>
+                      <span className="font-semibold text-green-600">€{available.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Interest Rate:</span>
+                      <span className="font-semibold text-orange-600">{credit.interest_rate}%</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-500">Utilization</span>
+                      <span className="font-semibold text-gray-700">{utilizationPercent.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          utilizationPercent >= 90 ? 'bg-red-500' :
+                          utilizationPercent >= 70 ? 'bg-orange-500' :
+                          'bg-blue-500'
+                        }`}
+                        style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {project.has_phases ? (
         <div className="space-y-6">
