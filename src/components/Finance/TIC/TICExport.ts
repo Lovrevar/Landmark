@@ -167,17 +167,17 @@ export const exportToPDF = (
   ctx.fillText(`INVESTITOR: ${investorName}`, 20, currentHeaderY + 5)
 
   const startY = projectName ? 52 : 48
-  const rowHeight = 6
-  const colWidths = [70, 28, 20, 28, 20, 28]
+  const rowHeight = 7
+  const colWidths = [75, 30, 22, 30, 22, 30]
   let currentY = startY
 
   ctx.strokeStyle = 'black'
   ctx.lineWidth = 0.3
 
   ctx.strokeRect(20, currentY, colWidths[0], rowHeight * 2)
-  ctx.font = 'bold 8px Arial, sans-serif'
+  ctx.font = 'bold 7px Arial, sans-serif'
   ctx.textAlign = 'left'
-  ctx.fillText('NAMJENA', 22, currentY + 8)
+  ctx.fillText('NAMJENA', 22, currentY + 9)
 
   let xPos = 20 + colWidths[0]
   const headerCols = [
@@ -187,9 +187,10 @@ export const exportToPDF = (
   ]
 
   ctx.textAlign = 'center'
+  ctx.font = 'bold 7px Arial, sans-serif'
   headerCols.forEach(col => {
     ctx.strokeRect(xPos, currentY, col.width, rowHeight)
-    ctx.fillText(col.text, xPos + col.width / 2, currentY + 4)
+    ctx.fillText(col.text, xPos + col.width / 2, currentY + 4.5)
     xPos += col.width
   })
 
@@ -197,27 +198,27 @@ export const exportToPDF = (
 
   xPos = 20 + colWidths[0]
   ctx.strokeRect(xPos, currentY, colWidths[1], rowHeight)
-  ctx.fillText('EUR', xPos + colWidths[1] / 2, currentY + 4)
+  ctx.fillText('EUR', xPos + colWidths[1] / 2, currentY + 4.5)
   xPos += colWidths[1]
 
   ctx.strokeRect(xPos, currentY, colWidths[2], rowHeight)
-  ctx.fillText('(%)', xPos + colWidths[2] / 2, currentY + 4)
+  ctx.fillText('(%)', xPos + colWidths[2] / 2, currentY + 4.5)
   xPos += colWidths[2]
 
   ctx.strokeRect(xPos, currentY, colWidths[3], rowHeight)
-  ctx.fillText('EUR', xPos + colWidths[3] / 2, currentY + 4)
+  ctx.fillText('EUR', xPos + colWidths[3] / 2, currentY + 4.5)
   xPos += colWidths[3]
 
   ctx.strokeRect(xPos, currentY, colWidths[4], rowHeight)
-  ctx.fillText('(%)', xPos + colWidths[4] / 2, currentY + 4)
+  ctx.fillText('(%)', xPos + colWidths[4] / 2, currentY + 4.5)
   xPos += colWidths[4]
 
   ctx.strokeRect(xPos, currentY, colWidths[5], rowHeight)
-  ctx.fillText('EUR', xPos + colWidths[5] / 2, currentY + 4)
+  ctx.fillText('EUR', xPos + colWidths[5] / 2, currentY + 4.5)
 
   currentY += rowHeight
 
-  ctx.font = 'normal 7px Arial, sans-serif'
+  ctx.font = 'normal 6px Arial, sans-serif'
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
@@ -228,34 +229,34 @@ export const exportToPDF = (
 
     ctx.strokeRect(xPos, currentY, colWidths[0], rowHeight)
     ctx.textAlign = 'left'
-    const itemName = item.name.length > 42 ? item.name.substring(0, 39) + '...' : item.name
-    ctx.fillText(itemName, xPos + 1, currentY + 4.2)
+    const itemName = item.name.length > 45 ? item.name.substring(0, 42) + '...' : item.name
+    ctx.fillText(itemName, xPos + 1.5, currentY + 5)
     xPos += colWidths[0]
 
     ctx.textAlign = 'right'
     ctx.strokeRect(xPos, currentY, colWidths[1], rowHeight)
-    ctx.fillText(formatNumberForExcel(item.vlastita), xPos + colWidths[1] - 1, currentY + 4.2)
+    ctx.fillText(formatNumberForExcel(item.vlastita), xPos + colWidths[1] - 1.5, currentY + 5)
     xPos += colWidths[1]
 
     ctx.strokeRect(xPos, currentY, colWidths[2], rowHeight)
-    ctx.fillText(formatNumberForExcel(vlastitaPercent) + '%', xPos + colWidths[2] - 1, currentY + 4.2)
+    ctx.fillText(formatNumberForExcel(vlastitaPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
     xPos += colWidths[2]
 
     ctx.strokeRect(xPos, currentY, colWidths[3], rowHeight)
-    ctx.fillText(formatNumberForExcel(item.kreditna), xPos + colWidths[3] - 1, currentY + 4.2)
+    ctx.fillText(formatNumberForExcel(item.kreditna), xPos + colWidths[3] - 1.5, currentY + 5)
     xPos += colWidths[3]
 
     ctx.strokeRect(xPos, currentY, colWidths[4], rowHeight)
-    ctx.fillText(formatNumberForExcel(kreditnaPercent) + '%', xPos + colWidths[4] - 1, currentY + 4.2)
+    ctx.fillText(formatNumberForExcel(kreditnaPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
     xPos += colWidths[4]
 
     ctx.strokeRect(xPos, currentY, colWidths[5], rowHeight)
-    ctx.fillText(formatNumberForExcel(rowTotal), xPos + colWidths[5] - 1, currentY + 4.2)
+    ctx.fillText(formatNumberForExcel(rowTotal), xPos + colWidths[5] - 1.5, currentY + 5)
 
     currentY += rowHeight
   })
 
-  ctx.font = 'bold 8px Arial, sans-serif'
+  ctx.font = 'bold 7px Arial, sans-serif'
 
   const vlastitaTotalPercent = calculatePercentage(totals.vlastita, grandTotal)
   const kreditnaTotalPercent = calculatePercentage(totals.kreditna, grandTotal)
@@ -268,28 +269,28 @@ export const exportToPDF = (
 
   ctx.strokeRect(xPos, currentY, colWidths[0], rowHeight)
   ctx.textAlign = 'left'
-  ctx.fillText('UKUPNO:', xPos + 1, currentY + 4.5)
+  ctx.fillText('UKUPNO:', xPos + 1.5, currentY + 5)
   xPos += colWidths[0]
 
   ctx.textAlign = 'right'
   ctx.strokeRect(xPos, currentY, colWidths[1], rowHeight)
-  ctx.fillText(formatNumberForExcel(totals.vlastita), xPos + colWidths[1] - 1, currentY + 4.5)
+  ctx.fillText(formatNumberForExcel(totals.vlastita), xPos + colWidths[1] - 1.5, currentY + 5)
   xPos += colWidths[1]
 
   ctx.strokeRect(xPos, currentY, colWidths[2], rowHeight)
-  ctx.fillText(formatNumberForExcel(vlastitaTotalPercent) + '%', xPos + colWidths[2] - 1, currentY + 4.5)
+  ctx.fillText(formatNumberForExcel(vlastitaTotalPercent) + '%', xPos + colWidths[2] - 1.5, currentY + 5)
   xPos += colWidths[2]
 
   ctx.strokeRect(xPos, currentY, colWidths[3], rowHeight)
-  ctx.fillText(formatNumberForExcel(totals.kreditna), xPos + colWidths[3] - 1, currentY + 4.5)
+  ctx.fillText(formatNumberForExcel(totals.kreditna), xPos + colWidths[3] - 1.5, currentY + 5)
   xPos += colWidths[3]
 
   ctx.strokeRect(xPos, currentY, colWidths[4], rowHeight)
-  ctx.fillText(formatNumberForExcel(kreditnaTotalPercent) + '%', xPos + colWidths[4] - 1, currentY + 4.5)
+  ctx.fillText(formatNumberForExcel(kreditnaTotalPercent) + '%', xPos + colWidths[4] - 1.5, currentY + 5)
   xPos += colWidths[4]
 
   ctx.strokeRect(xPos, currentY, colWidths[5], rowHeight)
-  ctx.fillText(formatNumberForExcel(grandTotal), xPos + colWidths[5] - 1, currentY + 4.5)
+  ctx.fillText(formatNumberForExcel(grandTotal), xPos + colWidths[5] - 1.5, currentY + 5)
 
   currentY += rowHeight + 12
 
