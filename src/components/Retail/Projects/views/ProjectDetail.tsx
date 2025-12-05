@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { PhaseCard } from './PhaseCard'
+import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
 import { ContractFormModal } from '../forms/ContractFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
@@ -278,6 +279,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           </div>
         )}
       </div>
+
+      {!loading && (
+        <ProjectStatistics
+          project={project}
+          allContracts={Object.values(phaseContracts).flat()}
+        />
+      )}
 
       {loading ? (
         <div className="text-center py-12">
