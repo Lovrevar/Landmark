@@ -53,8 +53,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         ...formData,
         land_plot_id: '',
         location: '',
-        plot_number: '',
-        purchase_price: ''
+        plot_number: ''
       })
       return
     }
@@ -65,8 +64,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         ...formData,
         land_plot_id: landPlotId,
         location: selectedPlot.location || '',
-        plot_number: selectedPlot.plot_number,
-        purchase_price: selectedPlot.total_price.toString()
+        plot_number: selectedPlot.plot_number
       })
     }
   }
@@ -254,14 +252,13 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
-                disabled={!!formData.land_plot_id}
               />
-              {formData.land_plot_id && (
-                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno (cijena zemljišta)</p>
-              )}
-              {!formData.land_plot_id && (
-                <p className="mt-1 text-xs text-gray-500">Budžet projekta - zvijezda vodilja za potrošnju</p>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {selectedPlot
+                  ? `Zvijezda vodilja za potrošnju (Cijena zemljišta: €${selectedPlot.total_price.toLocaleString()})`
+                  : 'Budžet projekta - zvijezda vodilja za potrošnju'
+                }
+              </p>
             </div>
 
             <div>
