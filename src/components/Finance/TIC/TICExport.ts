@@ -175,7 +175,7 @@ export const exportToPDF = (
   ctx.lineWidth = 0.3
 
   ctx.strokeRect(20, currentY, colWidths[0], rowHeight * 2)
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 2.5px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.fillText('NAMJENA', 22, currentY + 9)
 
@@ -187,7 +187,7 @@ export const exportToPDF = (
   ]
 
   ctx.textAlign = 'center'
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 2.5px Arial, sans-serif'
   headerCols.forEach(col => {
     ctx.strokeRect(xPos, currentY, col.width, rowHeight)
     ctx.fillText(col.text, xPos + col.width / 2, currentY + 4.5)
@@ -218,7 +218,7 @@ export const exportToPDF = (
 
   currentY += rowHeight
 
-  ctx.font = 'normal 4.5px Arial, sans-serif'
+  ctx.font = 'normal 1.5px Arial, sans-serif'
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
@@ -256,7 +256,7 @@ export const exportToPDF = (
     currentY += rowHeight
   })
 
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 1.5px Arial, sans-serif'
 
   const vlastitaTotalPercent = calculatePercentage(totals.vlastita, grandTotal)
   const kreditnaTotalPercent = calculatePercentage(totals.kreditna, grandTotal)
