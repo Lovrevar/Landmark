@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 interface LineItem {
   name: string
@@ -152,124 +153,86 @@ export const exportToPDF = (
   pdf.setFontSize(11)
   pdf.text(`INVESTITOR: ${investorName}`, 20, currentHeaderY + 5)
 
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(9)
-
   const startY = projectName ? 55 : 50
-  const rowHeight = 7
-  const colWidths = [70, 28, 20, 28, 20, 28]
-  let currentY = startY
-
-  pdf.rect(20, currentY, colWidths.reduce((a, b) => a + b), rowHeight)
-  pdf.text('NAMJENA', 22, currentY + 5)
-  pdf.text('VLASTITA SREDSTVA', 110, currentY + 5, { align: 'center' })
-  pdf.text('KREDITNA SREDSTVA', 166, currentY + 5, { align: 'center' })
-  pdf.text('UKUPNO', 207, currentY + 5, { align: 'center' })
-
-  currentY += rowHeight
-
-  let xPos = 20
-  pdf.rect(xPos, currentY, colWidths[0], rowHeight)
-  xPos += colWidths[0]
-
-  pdf.rect(xPos, currentY, colWidths[1], rowHeight)
-  pdf.text('EUR', xPos + colWidths[1] / 2, currentY + 5, { align: 'center' })
-  xPos += colWidths[1]
-
-  pdf.rect(xPos, currentY, colWidths[2], rowHeight)
-  pdf.text('(%)', xPos + colWidths[2] / 2, currentY + 5, { align: 'center' })
-  xPos += colWidths[2]
-
-  pdf.rect(xPos, currentY, colWidths[3], rowHeight)
-  pdf.text('EUR', xPos + colWidths[3] / 2, currentY + 5, { align: 'center' })
-  xPos += colWidths[3]
-
-  pdf.rect(xPos, currentY, colWidths[4], rowHeight)
-  pdf.text('(%)', xPos + colWidths[4] / 2, currentY + 5, { align: 'center' })
-  xPos += colWidths[4]
-
-  pdf.rect(xPos, currentY, colWidths[5], rowHeight)
-  pdf.text('EUR', xPos + colWidths[5] / 2, currentY + 5, { align: 'center' })
-
-  currentY += rowHeight
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(8)
-
-  lineItems.forEach((item) => {
-    const rowTotal = item.vlastita + item.kreditna
-    const vlastitaPercent = calculatePercentage(item.vlastita, grandTotal)
-    const kreditnaPercent = calculatePercentage(item.kreditna, grandTotal)
-
-    xPos = 20
-
-    pdf.rect(xPos, currentY, colWidths[0], rowHeight)
-    pdf.text(item.name.substring(0, 45), xPos + 2, currentY + 5)
-    xPos += colWidths[0]
-
-    pdf.rect(xPos, currentY, colWidths[1], rowHeight)
-    pdf.text(formatNumberForExcel(item.vlastita), xPos + colWidths[1] - 2, currentY + 5, { align: 'right' })
-    xPos += colWidths[1]
-
-    pdf.rect(xPos, currentY, colWidths[2], rowHeight)
-    pdf.text(formatNumberForExcel(vlastitaPercent) + '%', xPos + colWidths[2] - 2, currentY + 5, { align: 'right' })
-    xPos += colWidths[2]
-
-    pdf.rect(xPos, currentY, colWidths[3], rowHeight)
-    pdf.text(formatNumberForExcel(item.kreditna), xPos + colWidths[3] - 2, currentY + 5, { align: 'right' })
-    xPos += colWidths[3]
-
-    pdf.rect(xPos, currentY, colWidths[4], rowHeight)
-    pdf.text(formatNumberForExcel(kreditnaPercent) + '%', xPos + colWidths[4] - 2, currentY + 5, { align: 'right' })
-    xPos += colWidths[4]
-
-    pdf.rect(xPos, currentY, colWidths[5], rowHeight)
-    pdf.text(formatNumberForExcel(rowTotal), xPos + colWidths[5] - 2, currentY + 5, { align: 'right' })
-
-    currentY += rowHeight
-  })
-
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(9)
 
   const vlastitaTotalPercent = calculatePercentage(totals.vlastita, grandTotal)
   const kreditnaTotalPercent = calculatePercentage(totals.kreditna, grandTotal)
 
-  xPos = 20
+  const tableBody = lineItems.map((item) => {
+    const rowTotal = item.vlastita + item.kreditna
+    const vlastitaPercent = calculatePercentage(item.vlastita, grandTotal)
+    const kreditnaPercent = calculatePercentage(item.kreditna, grandTotal)
 
-  pdf.setFillColor(227, 242, 253)
-  pdf.rect(xPos, currentY, colWidths.reduce((a, b) => a + b), rowHeight, 'FD')
+    return [
+      item.name,
+      formatNumberForExcel(item.vlastita),
+      formatNumberForExcel(vlastitaPercent) + '%',
+      formatNumberForExcel(item.kreditna),
+      formatNumberForExcel(kreditnaPercent) + '%',
+      formatNumberForExcel(rowTotal),
+    ]
+  })
 
-  pdf.rect(xPos, currentY, colWidths[0], rowHeight)
-  pdf.text('UKUPNO:', xPos + 2, currentY + 5)
-  xPos += colWidths[0]
+  autoTable(pdf, {
+    startY: startY,
+    head: [
+      [
+        { content: 'NAMJENA', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+        { content: 'VLASTITA SREDSTVA', colSpan: 2, styles: { halign: 'center' } },
+        { content: 'KREDITNA SREDSTVA', colSpan: 2, styles: { halign: 'center' } },
+        { content: 'UKUPNA INVESTICIJA', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+      ],
+      ['', 'EUR', '(%)', 'EUR', '(%)', 'EUR'],
+    ],
+    body: tableBody,
+    foot: [
+      [
+        'UKUPNO:',
+        formatNumberForExcel(totals.vlastita),
+        formatNumberForExcel(vlastitaTotalPercent) + '%',
+        formatNumberForExcel(totals.kreditna),
+        formatNumberForExcel(kreditnaTotalPercent) + '%',
+        formatNumberForExcel(grandTotal),
+      ],
+    ],
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      cellPadding: 2,
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+    },
+    headStyles: {
+      fillColor: [240, 240, 240],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      fontSize: 9,
+      halign: 'center',
+    },
+    footStyles: {
+      fillColor: [227, 242, 253],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    columnStyles: {
+      0: { cellWidth: 70, halign: 'left' },
+      1: { cellWidth: 28, halign: 'right' },
+      2: { cellWidth: 20, halign: 'right' },
+      3: { cellWidth: 28, halign: 'right' },
+      4: { cellWidth: 20, halign: 'right' },
+      5: { cellWidth: 28, halign: 'right' },
+    },
+    margin: { left: 20 },
+  })
 
-  pdf.rect(xPos, currentY, colWidths[1], rowHeight)
-  pdf.text(formatNumberForExcel(totals.vlastita), xPos + colWidths[1] - 2, currentY + 5, { align: 'right' })
-  xPos += colWidths[1]
-
-  pdf.rect(xPos, currentY, colWidths[2], rowHeight)
-  pdf.text(formatNumberForExcel(vlastitaTotalPercent) + '%', xPos + colWidths[2] - 2, currentY + 5, { align: 'right' })
-  xPos += colWidths[2]
-
-  pdf.rect(xPos, currentY, colWidths[3], rowHeight)
-  pdf.text(formatNumberForExcel(totals.kreditna), xPos + colWidths[3] - 2, currentY + 5, { align: 'right' })
-  xPos += colWidths[3]
-
-  pdf.rect(xPos, currentY, colWidths[4], rowHeight)
-  pdf.text(formatNumberForExcel(kreditnaTotalPercent) + '%', xPos + colWidths[4] - 2, currentY + 5, { align: 'right' })
-  xPos += colWidths[4]
-
-  pdf.rect(xPos, currentY, colWidths[5], rowHeight)
-  pdf.text(formatNumberForExcel(grandTotal), xPos + colWidths[5] - 2, currentY + 5, { align: 'right' })
-
-  currentY += rowHeight + 15
+  const finalY = (pdf as any).lastAutoTable.finalY || startY + 100
 
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(10)
-  pdf.text('Za investitora: _________________________', 20, currentY)
-  currentY += 10
-  pdf.text(`Datum: ${documentDate}`, 20, currentY)
+  pdf.text('Za investitora: _________________________', 20, finalY + 15)
+  pdf.text(`Datum: ${documentDate}`, 20, finalY + 25)
 
   const pdfFileName = projectName
     ? `TIC_${projectName.replace(/\s+/g, '_')}_${documentDate}.pdf`
