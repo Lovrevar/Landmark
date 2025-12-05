@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, Trash2 } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
 
@@ -30,6 +30,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loadingLandPlots, setLoadingLandPlots] = useState(true)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadLandPlots()
@@ -98,6 +100,24 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       console.error('Error saving project:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!project) return
+
+    setDeleting(true)
+    setError(null)
+
+    try {
+      await retailProjectService.deleteProject(project.id)
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Greška pri brisanju projekta')
+      console.error('Error deleting project:', err)
+    } finally {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -298,25 +318,69 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              disabled={loading}
-            >
-              Odustani
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Spremam...' : project ? 'Spremi promjene' : 'Kreiraj projekt'}
-            </button>
+          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+            <div>
+              {project && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                  disabled={loading || deleting}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Obriši projekt
+                </button>
+              )}
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={loading || deleting}
+              >
+                Odustani
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={loading || deleting}
+              >
+                {loading ? 'Spremam...' : project ? 'Spremi promjene' : 'Kreiraj projekt'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Potvrda brisanja</h3>
+            <p className="text-gray-600 mb-6">
+              Jeste li sigurni da želite obrisati projekt "<strong>{project?.name}</strong>"?
+              <br /><br />
+              Ova akcija će obrisati projekt i sve povezane podatke (faze, ugovore, milestones). Ova akcija se ne može poništiti.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={deleting}
+              >
+                Odustani
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                disabled={deleting}
+              >
+                {deleting ? 'Brišem...' : 'Da, obriši'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
