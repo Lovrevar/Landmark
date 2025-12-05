@@ -144,7 +144,7 @@ export const exportToPDF = (
 
   const pageWidth = 297
   const pageHeight = 210
-  const scale = 4
+  const scale = 10
 
   canvas.width = pageWidth * scale
   canvas.height = pageHeight * scale
