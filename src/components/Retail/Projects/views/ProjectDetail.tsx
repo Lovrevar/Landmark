@@ -5,6 +5,7 @@ import { MilestoneList } from './MilestoneList'
 import { ContractFormModal } from '../forms/ContractFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
 import { SalesFormModal } from '../forms/SalesFormModal'
+import { EditPhaseModal } from '../forms/EditPhaseModal'
 import { RetailPaymentHistoryModal } from '../forms/RetailPaymentHistoryModal'
 import { RetailInvoicesModal } from '../forms/RetailInvoicesModal'
 import { retailProjectService } from '../services/retailProjectService'
@@ -33,6 +34,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false)
   const [showInvoicesModal, setShowInvoicesModal] = useState(false)
   const [selectedContractForModal, setSelectedContractForModal] = useState<RetailContract | null>(null)
+  const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
+  const [phaseToEdit, setPhaseToEdit] = useState<RetailProjectPhase | null>(null)
 
   useEffect(() => {
     loadProjectDetails()
@@ -78,7 +81,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   }
 
   const handleEditPhase = (phase: RetailProjectPhase) => {
-    console.log('Edit phase:', phase)
+    setPhaseToEdit(phase)
+    setShowEditPhaseModal(true)
+  }
+
+  const handleEditPhaseModalClose = () => {
+    setShowEditPhaseModal(false)
+    setPhaseToEdit(null)
+  }
+
+  const handleEditPhaseSuccess = async () => {
+    setShowEditPhaseModal(false)
+    setPhaseToEdit(null)
+    await handleRefresh()
   }
 
   const handleDeletePhase = async (phase: RetailProjectPhase) => {
@@ -363,6 +378,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         onClose={handleCloseInvoicesModal}
         contract={selectedContractForModal}
       />
+
+      {showEditPhaseModal && phaseToEdit && (
+        <EditPhaseModal
+          phase={phaseToEdit}
+          project={project}
+          onClose={handleEditPhaseModalClose}
+          onSuccess={handleEditPhaseSuccess}
+        />
+      )}
     </div>
   )
 }
