@@ -218,7 +218,7 @@ export const exportToPDF = (
 
   currentY += rowHeight
 
-  ctx.font = 'normal 2.5px Arial, sans-serif'
+  ctx.font = 'normal 3px Arial, sans-serif'
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
