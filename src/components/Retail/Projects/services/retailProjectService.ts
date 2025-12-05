@@ -393,17 +393,6 @@ export const retailProjectService = {
     return `RET-${year}-${String(newNumber).padStart(6, '0')}`
   },
 
-  async fetchMilestonesByContract(contractId: string): Promise<RetailContractMilestone[]> {
-    const { data, error } = await supabase
-      .from('retail_contract_milestones')
-      .select('*')
-      .eq('contract_id', contractId)
-      .order('milestone_number', { ascending: true })
-
-    if (error) throw error
-    return data || []
-  },
-
   async getNextMilestoneNumber(contractId: string): Promise<number> {
     const { data, error } = await supabase
       .from('retail_contract_milestones')
@@ -415,50 +404,6 @@ export const retailProjectService = {
     if (error) throw error
 
     return (data && data[0]?.milestone_number) ? data[0].milestone_number + 1 : 1
-  },
-
-  async createMilestone(milestone: {
-    contract_id: string
-    milestone_number: number
-    milestone_name: string
-    description: string
-    percentage: number
-    due_date: string | null
-  }): Promise<RetailContractMilestone> {
-    const { data, error } = await supabase
-      .from('retail_contract_milestones')
-      .insert([milestone])
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  },
-
-  async updateMilestone(
-    milestoneId: string,
-    updates: {
-      milestone_name: string
-      description: string
-      percentage: number
-      due_date: string | null
-    }
-  ): Promise<void> {
-    const { error } = await supabase
-      .from('retail_contract_milestones')
-      .update(updates)
-      .eq('id', milestoneId)
-
-    if (error) throw error
-  },
-
-  async deleteMilestone(milestoneId: string): Promise<void> {
-    const { error } = await supabase
-      .from('retail_contract_milestones')
-      .delete()
-      .eq('id', milestoneId)
-
-    if (error) throw error
   },
 
   async getMilestoneStatsForContract(contractId: string, contractCost: number) {

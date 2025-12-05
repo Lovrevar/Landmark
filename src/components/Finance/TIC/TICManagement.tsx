@@ -164,9 +164,9 @@ const TICManagement: React.FC = () => {
   }
 
   const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('hr-HR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    return new Intl.NumberFormat('de-DE', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(num)
   }
 
