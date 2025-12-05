@@ -77,9 +77,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Uredi Fazu</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Dostupan budžet: {formatCurrency(availableBudget)}
-              </p>
+              {phase.phase_type !== 'sales' && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Dostupan budžet: {formatCurrency(availableBudget)}
+                </p>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -104,25 +106,27 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Budžet (EUR)
-            </label>
-            <input
-              type="number"
-              value={formData.budget_allocated}
-              onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              min="0"
-              step="0.01"
-              required
-            />
-            {formData.budget_allocated > availableBudget && (
-              <p className="text-xs text-red-600 mt-1">
-                Upozorenje: Prekoračenje dostupnog budžeta za {formatCurrency(formData.budget_allocated - availableBudget)}
-              </p>
-            )}
-          </div>
+          {phase.phase_type !== 'sales' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Budžet (EUR)
+              </label>
+              <input
+                type="number"
+                value={formData.budget_allocated}
+                onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+                step="0.01"
+                required
+              />
+              {formData.budget_allocated > availableBudget && (
+                <p className="text-xs text-red-600 mt-1">
+                  Upozorenje: Prekoračenje dostupnog budžeta za {formatCurrency(formData.budget_allocated - availableBudget)}
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

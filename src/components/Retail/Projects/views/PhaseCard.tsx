@@ -70,10 +70,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(phase.budget_allocated)}</p>
-              <p className="text-sm text-gray-600">Allocated Budget</p>
-            </div>
+            {phase.phase_type !== 'sales' && (
+              <div className="text-right">
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(phase.budget_allocated)}</p>
+                <p className="text-sm text-gray-600">Allocated Budget</p>
+              </div>
+            )}
             <button
               onClick={() => onEditPhase(phase)}
               className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors"
@@ -100,50 +102,54 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`mt-4 grid grid-cols-1 gap-4 ${phase.phase_type === 'sales' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">Contract Cost</p>
+            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? 'Sales Revenue' : 'Contract Cost'}</p>
             <p className="text-lg font-bold text-gray-900">{formatCurrency(totalContractCost)}</p>
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
-            <p className="text-sm text-teal-700">Paid Out</p>
+            <p className="text-sm text-teal-700">{phase.phase_type === 'sales' ? 'Received' : 'Paid Out'}</p>
             <p className="text-lg font-bold text-teal-900">{formatCurrency(totalBudgetRealized)}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
-            <p className="text-sm text-orange-700">Unpaid Contracts</p>
+            <p className="text-sm text-orange-700">{phase.phase_type === 'sales' ? 'Outstanding' : 'Unpaid Contracts'}</p>
             <p className="text-lg font-bold text-orange-900">{formatCurrency(unpaidContracts)}</p>
           </div>
-          <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-            <p className={`text-sm ${availableBudget < 0 ? 'text-red-700' : 'text-green-700'}`}>
-              Available Budget
-            </p>
-            <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900' : 'text-green-900'}`}>
-              {formatCurrency(availableBudget)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">Budget Utilization (Realized vs Allocated)</span>
-            <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                budgetUtilization > 100 ? 'bg-red-600' :
-                budgetUtilization > 80 ? 'bg-orange-600' :
-                'bg-teal-600'
-              }`}
-              style={{ width: `${Math.min(100, budgetUtilization)}%` }}
-            ></div>
-          </div>
-          {budgetUtilization > 100 && (
-            <p className="text-xs text-red-600 mt-1">
-              Over budget by {formatCurrency(totalBudgetRealized - phase.budget_allocated)}
-            </p>
+          {phase.phase_type !== 'sales' && (
+            <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+              <p className={`text-sm ${availableBudget < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                Available Budget
+              </p>
+              <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900' : 'text-green-900'}`}>
+                {formatCurrency(availableBudget)}
+              </p>
+            </div>
           )}
         </div>
+
+        {phase.phase_type !== 'sales' && (
+          <div className="mt-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm text-gray-600">Budget Utilization (Realized vs Allocated)</span>
+              <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  budgetUtilization > 100 ? 'bg-red-600' :
+                  budgetUtilization > 80 ? 'bg-orange-600' :
+                  'bg-teal-600'
+                }`}
+                style={{ width: `${Math.min(100, budgetUtilization)}%` }}
+              ></div>
+            </div>
+            {budgetUtilization > 100 && (
+              <p className="text-xs text-red-600 mt-1">
+                Over budget by {formatCurrency(totalBudgetRealized - phase.budget_allocated)}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="p-6">
