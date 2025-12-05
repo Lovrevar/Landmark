@@ -32,7 +32,8 @@ export const exportToExcel = (
   investorName: string,
   documentDate: string,
   totals: Totals,
-  grandTotal: number
+  grandTotal: number,
+  projectName?: string
 ) => {
   let html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
@@ -50,6 +51,7 @@ export const exportToExcel = (
       </head>
       <body>
         <div class="header-title">STRUKTURA TROŠKOVA INVESTICIJE (bez PDV-a)</div>
+        ${projectName ? `<div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 10px;">Projekt: ${projectName}</div>` : ''}
         <div style="margin-bottom: 20px;">
           <strong>INVESTITOR:</strong> ${investorName}
         </div>
@@ -116,7 +118,10 @@ export const exportToExcel = (
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `TIC_Struktura_Troskova_${documentDate}.xls`
+  const fileName = projectName
+    ? `TIC_${projectName.replace(/\s+/g, '_')}_${documentDate}.xls`
+    : `TIC_Struktura_Troskova_${documentDate}.xls`
+  link.download = fileName
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -128,7 +133,8 @@ export const exportToPDF = (
   investorName: string,
   documentDate: string,
   totals: Totals,
-  grandTotal: number
+  grandTotal: number,
+  projectName?: string
 ) => {
   const pdf = new jsPDF('landscape', 'mm', 'a4')
 
@@ -136,13 +142,20 @@ export const exportToPDF = (
   pdf.setFontSize(14)
   pdf.text('STRUKTURA TROŠKOVA INVESTICIJE (bez PDV-a)', 148, 20, { align: 'center' })
 
+  let currentHeaderY = 30
+  if (projectName) {
+    pdf.setFontSize(12)
+    pdf.text(`Projekt: ${projectName}`, 148, currentHeaderY, { align: 'center' })
+    currentHeaderY += 10
+  }
+
   pdf.setFontSize(11)
-  pdf.text(`INVESTITOR: ${investorName}`, 20, 35)
+  pdf.text(`INVESTITOR: ${investorName}`, 20, currentHeaderY + 5)
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(9)
 
-  const startY = 50
+  const startY = projectName ? 55 : 50
   const rowHeight = 7
   const colWidths = [70, 28, 20, 28, 20, 28]
   let currentY = startY
@@ -258,5 +271,8 @@ export const exportToPDF = (
   currentY += 10
   pdf.text(`Datum: ${documentDate}`, 20, currentY)
 
-  pdf.save(`TIC_Struktura_Troskova_${documentDate}.pdf`)
+  const pdfFileName = projectName
+    ? `TIC_${projectName.replace(/\s+/g, '_')}_${documentDate}.pdf`
+    : `TIC_Struktura_Troskova_${documentDate}.pdf`
+  pdf.save(pdfFileName)
 }
