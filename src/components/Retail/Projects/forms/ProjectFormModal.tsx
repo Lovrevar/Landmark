@@ -255,7 +255,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               />
               <p className="mt-1 text-xs text-gray-500">
                 {selectedPlot
-                  ? `Zvijezda vodilja za potrošnju (Cijena zemljišta: €${selectedPlot.total_price.toLocaleString()})`
+                  ? `Cijena zemljišta: €${selectedPlot.total_price.toLocaleString()}`
                   : 'Budžet projekta - zvijezda vodilja za potrošnju'
                 }
               </p>
