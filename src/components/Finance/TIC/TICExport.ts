@@ -151,18 +151,18 @@ export const exportToPDF = (
   ctx.fillRect(0, 0, pageWidth, pageHeight)
 
   ctx.fillStyle = 'black'
-  ctx.font = 'bold 14px Arial, sans-serif'
+  ctx.font = 'bold 7px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('STRUKTURA TROŠKOVA INVESTICIJE (bez PDV-a)', pageWidth / 2, 18)
 
   let currentHeaderY = 28
   if (projectName) {
-    ctx.font = 'bold 12px Arial, sans-serif'
+    ctx.font = 'bold 5px Arial, sans-serif'
     ctx.fillText(`Projekt: ${projectName}`, pageWidth / 2, currentHeaderY)
     currentHeaderY += 8
   }
 
-  ctx.font = 'bold 10px Arial, sans-serif'
+  ctx.font = 'bold 5px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.fillText(`INVESTITOR: ${investorName}`, 20, currentHeaderY + 5)
 
@@ -218,7 +218,7 @@ export const exportToPDF = (
 
   currentY += rowHeight
 
-  ctx.font = 'normal 4.5px Arial, sans-serif'
+  ctx.font = 'normal 2.5px Arial, sans-serif'
 
   lineItems.forEach((item) => {
     const rowTotal = item.vlastita + item.kreditna
@@ -256,7 +256,7 @@ export const exportToPDF = (
     currentY += rowHeight
   })
 
-  ctx.font = 'bold 5.5px Arial, sans-serif'
+  ctx.font = 'bold 3.5px Arial, sans-serif'
 
   const vlastitaTotalPercent = calculatePercentage(totals.vlastita, grandTotal)
   const kreditnaTotalPercent = calculatePercentage(totals.kreditna, grandTotal)
@@ -294,7 +294,7 @@ export const exportToPDF = (
 
   currentY += rowHeight + 12
 
-  ctx.font = 'normal 9px Arial, sans-serif'
+  ctx.font = 'normal 4px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.fillText('Za investitora: _________________________', 20, currentY)
   currentY += 8
