@@ -1,13 +1,14 @@
 import React from 'react'
-import { MapPin, ArrowRight, DollarSign, Layers, Link } from 'lucide-react'
+import { MapPin, ArrowRight, DollarSign, Layers, Link, Edit2 } from 'lucide-react'
 import type { RetailProjectWithPhases } from '../../../../types/retail'
 
 interface ProjectsGridProps {
   projects: RetailProjectWithPhases[]
   onSelectProject: (project: RetailProjectWithPhases) => void
+  onEditProject: (project: RetailProjectWithPhases) => void
 }
 
-export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject }) => {
+export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onEditProject }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -91,16 +92,28 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             </div>
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelectProject(project)
-            }}
-            className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            Otvori projekt
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onEditProject(project)
+              }}
+              className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Uredi
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelectProject(project)
+              }}
+              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              Otvori
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </button>
+          </div>
         </div>
       ))}
 

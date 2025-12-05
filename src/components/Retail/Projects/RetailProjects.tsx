@@ -10,6 +10,7 @@ const RetailProjects: React.FC = () => {
   const { projects, loading, refetch } = useRetailProjects()
   const [selectedProject, setSelectedProject] = useState<RetailProjectWithPhases | null>(null)
   const [showProjectModal, setShowProjectModal] = useState(false)
+  const [editingProject, setEditingProject] = useState<RetailProjectWithPhases | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
@@ -20,7 +21,12 @@ const RetailProjects: React.FC = () => {
 
   const handleProjectCreated = async () => {
     setShowProjectModal(false)
+    setEditingProject(null)
     await refetch()
+  }
+
+  const handleEditProject = (project: RetailProjectWithPhases) => {
+    setEditingProject(project)
   }
 
   const handleBackToList = () => {
@@ -77,12 +83,17 @@ const RetailProjects: React.FC = () => {
       <ProjectsGrid
         projects={projects}
         onSelectProject={setSelectedProject}
+        onEditProject={handleEditProject}
       />
 
-      {showProjectModal && (
+      {(showProjectModal || editingProject) && (
         <ProjectFormModal
-          onClose={() => setShowProjectModal(false)}
+          onClose={() => {
+            setShowProjectModal(false)
+            setEditingProject(null)
+          }}
           onSuccess={handleProjectCreated}
+          project={editingProject || undefined}
         />
       )}
     </div>
