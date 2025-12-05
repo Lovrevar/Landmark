@@ -82,7 +82,7 @@ export interface RetailProjectPhase {
   id: string
   project_id: string
   phase_name: string
-  phase_type: 'acquisition' | 'development' | 'sales'
+  phase_type: 'development' | 'construction' | 'sales'
   phase_order: number
   budget_allocated: number
   status: 'Pending' | 'In Progress' | 'Completed'

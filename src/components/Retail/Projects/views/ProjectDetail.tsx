@@ -3,7 +3,6 @@ import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { PhaseCard } from './PhaseCard'
 import { MilestoneList } from './MilestoneList'
 import { ContractFormModal } from '../forms/ContractFormModal'
-import { AcquisitionFormModal } from '../forms/AcquisitionFormModal'
 import { DevelopmentFormModal } from '../forms/DevelopmentFormModal'
 import { SalesFormModal } from '../forms/SalesFormModal'
 import { RetailPaymentHistoryModal } from '../forms/RetailPaymentHistoryModal'
@@ -309,14 +308,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
       {showContractModal && selectedPhase && (
         <>
-          {selectedPhase.phase_type === 'acquisition' ? (
-            <AcquisitionFormModal
-              phase={selectedPhase}
-              contract={selectedContract || undefined}
-              onClose={handleContractModalClose}
-              onSuccess={handleContractSuccess}
-            />
-          ) : selectedPhase.phase_type === 'development' ? (
+          {selectedPhase.phase_type === 'development' ? (
             <DevelopmentFormModal
               phase={selectedPhase}
               contract={selectedContract || undefined}

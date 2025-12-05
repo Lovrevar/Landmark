@@ -47,10 +47,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   const getPhaseIcon = (type: string) => {
     switch (type) {
-      case 'acquisition':
-        return '🏗️'
       case 'development':
         return '📐'
+      case 'construction':
+        return '🏗️'
       case 'sales':
         return '💰'
       default:
@@ -93,8 +93,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
-              {phase.phase_type === 'acquisition' ? 'Add Acquisition' :
-               phase.phase_type === 'development' ? 'Add Supplier' :
+              {phase.phase_type === 'development' ? 'Add Supplier' :
+               phase.phase_type === 'construction' ? 'Add Contract' :
                'Add Sale'}
             </button>
           </div>
@@ -202,7 +202,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
-                    {contract.contract_date && (phase.phase_type === 'acquisition' || phase.phase_type === 'development') && (
+                    {contract.contract_date && phase.phase_type !== 'sales' && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Datum ugovora:</span>
                         <span className="font-medium text-gray-900">
@@ -210,24 +210,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </span>
                       </div>
                     )}
-                    {contract.notes && phase.phase_type === 'development' && (
+                    {contract.notes && (phase.phase_type === 'development' || phase.phase_type === 'construction') && (
                       <div className="mb-2">
                         <span className="text-gray-600">Opis:</span>
                         <p className="text-gray-700 mt-1 text-xs line-clamp-2">{contract.notes}</p>
-                      </div>
-                    )}
-                    {contract.land_area_m2 && phase.phase_type === 'acquisition' && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Površina:</span>
-                        <span className="font-medium text-blue-600">{contract.land_area_m2.toLocaleString()} m²</span>
-                      </div>
-                    )}
-                    {contract.land_area_m2 && contract.contract_amount && phase.phase_type === 'acquisition' && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Cijena po m²:</span>
-                        <span className="font-medium text-purple-600">
-                          {formatCurrency(contract.contract_amount / contract.land_area_m2)}
-                        </span>
                       </div>
                     )}
                     {contract.building_surface_m2 && phase.phase_type === 'sales' && (
@@ -250,7 +236,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </span>
                       </div>
                     )}
-                    {contract.end_date && phase.phase_type !== 'acquisition' && (
+                    {contract.end_date && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Deadline:</span>
                         <span className="font-medium text-gray-900">

@@ -157,16 +157,16 @@ export const retailProjectService = {
     const defaultPhases = [
       {
         project_id: projectId,
-        phase_name: 'Stjecanje zemljišta',
-        phase_type: 'acquisition' as const,
+        phase_name: 'Razvoj',
+        phase_type: 'development' as const,
         phase_order: 1,
         budget_allocated: 0,
         status: 'Pending' as const
       },
       {
         project_id: projectId,
-        phase_name: 'Razvoj',
-        phase_type: 'development' as const,
+        phase_name: 'Gradnja',
+        phase_type: 'construction' as const,
         phase_order: 2,
         budget_allocated: 0,
         status: 'Pending' as const
