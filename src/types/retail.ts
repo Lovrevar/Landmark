@@ -3,6 +3,7 @@ export interface RetailLandPlot {
   owner_first_name: string
   owner_last_name: string
   plot_number: string
+  location: string | null
   total_area_m2: number
   purchased_area_m2: number
   price_per_m2: number

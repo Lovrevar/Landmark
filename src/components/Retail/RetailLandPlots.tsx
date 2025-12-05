@@ -20,6 +20,7 @@ const RetailLandPlots: React.FC = () => {
     owner_first_name: '',
     owner_last_name: '',
     plot_number: '',
+    location: '',
     total_area_m2: '',
     purchased_area_m2: '',
     price_per_m2: '',
@@ -57,6 +58,7 @@ const RetailLandPlots: React.FC = () => {
         owner_first_name: plot.owner_first_name,
         owner_last_name: plot.owner_last_name,
         plot_number: plot.plot_number,
+        location: plot.location || '',
         total_area_m2: plot.total_area_m2.toString(),
         purchased_area_m2: plot.purchased_area_m2.toString(),
         price_per_m2: plot.price_per_m2.toString(),
@@ -70,6 +72,7 @@ const RetailLandPlots: React.FC = () => {
         owner_first_name: '',
         owner_last_name: '',
         plot_number: '',
+        location: '',
         total_area_m2: '',
         purchased_area_m2: '',
         price_per_m2: '',
@@ -96,6 +99,7 @@ const RetailLandPlots: React.FC = () => {
         owner_first_name: formData.owner_first_name,
         owner_last_name: formData.owner_last_name,
         plot_number: formData.plot_number,
+        location: formData.location || null,
         total_area_m2: parseFloat(formData.total_area_m2),
         purchased_area_m2: parseFloat(formData.purchased_area_m2),
         price_per_m2: parseFloat(formData.price_per_m2),
@@ -177,7 +181,8 @@ const RetailLandPlots: React.FC = () => {
   const filteredPlots = landPlots.filter(plot =>
     plot.owner_first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     plot.owner_last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    plot.plot_number.toLowerCase().includes(searchTerm.toLowerCase())
+    plot.plot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (plot.location && plot.location.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const totalStats = {
@@ -261,7 +266,7 @@ const RetailLandPlots: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Pretraži po vlasniku ili broju čestice..."
+            placeholder="Pretraži po vlasniku, broju čestice ili lokaciji..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -292,6 +297,9 @@ const RetailLandPlots: React.FC = () => {
                     Čestica
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lokacija
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Površina
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -318,6 +326,9 @@ const RetailLandPlots: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{plot.plot_number}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{plot.location || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{plot.purchased_area_m2.toLocaleString()} m²</div>
@@ -428,6 +439,19 @@ const RetailLandPlots: React.FC = () => {
                     value={formData.plot_number}
                     onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lokacija
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Npr. Banja Luka, Kozarska Dubica..."
                   />
                 </div>
 
@@ -558,6 +582,12 @@ const RetailLandPlots: React.FC = () => {
                   <p className="text-sm text-gray-600">Broj čestice</p>
                   <p className="text-lg font-semibold">{selectedPlot.plot_number}</p>
                 </div>
+                {selectedPlot.location && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600">Lokacija</p>
+                    <p className="text-lg font-semibold">{selectedPlot.location}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-gray-600">Ukupna površina</p>
                   <p className="text-lg font-semibold">{selectedPlot.total_area_m2.toLocaleString()} m²</p>
