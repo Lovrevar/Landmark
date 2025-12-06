@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Projekti', icon: FolderKanban, path: '/retail-projects' },
         { name: 'Zemljišta', icon: MapPin, path: '/retail-land-plots' },
         { name: 'Kupci', icon: Users, path: '/retail-customers' },
-        { name: 'Prodaje', icon: ShoppingCart, path: '/retail-sales' },
+        { name: 'Prodaje', icon: ShoppingCart, path: '/retail-sales-payments' },
         { name: 'Izvještaji', icon: FileText, path: '/retail-reports' }
       ]
     }

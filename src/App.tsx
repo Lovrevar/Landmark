@@ -18,6 +18,7 @@ import InvestorsManagement from './components/Finance/investors/InvestorsManagem
 import PaymentsManagement from './components/Payments/PaymentsManagement'
 import ApartmentManagement from './components/ApartmentManagement'
 import SalesPaymentsManagement from './components/Payments/SalesPaymentsManagement'
+import RetailSalesPaymentsManagement from './components/Payments/RetailSalesPaymentsManagement'
 import SupervisionReports from './components/Reports/SupervisionReports'
 import WorkLogs from './components/Subcontractors/WorkLogs'
 import FundingPaymentsManagement from './components/Payments/FundingPaymentsManagement'
@@ -342,6 +343,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <RetailSales />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-sales-payments"
+          element={
+            <ProtectedRoute>
+              <RetailSalesPaymentsManagement />
             </ProtectedRoute>
           }
         />

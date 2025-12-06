@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface SalesPaymentWithDetails {
+interface RetailSalesPaymentWithDetails {
   id: string
   payment_date: string
   amount: number
@@ -13,14 +13,14 @@ interface SalesPaymentWithDetails {
   invoice_number: string
   issue_date: string
   invoice_total_amount: number
-  apartment_number?: string
   project_name?: string
   customer_name?: string
+  contract_number?: string
   bank_account_name?: string
 }
 
-const SalesPaymentsManagement: React.FC = () => {
-  const [payments, setPayments] = useState<SalesPaymentWithDetails[]>([])
+const RetailSalesPaymentsManagement: React.FC = () => {
+  const [payments, setPayments] = useState<RetailSalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
@@ -39,7 +39,7 @@ const SalesPaymentsManagement: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      // Fetch only apartment sales invoices (OUTGOING_SALES with apartment_id)
+      // Fetch only retail sales invoices (OUTGOING_SALES with retail_contract_id or retail_customer_id)
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
         .select(`
@@ -47,21 +47,24 @@ const SalesPaymentsManagement: React.FC = () => {
           invoice_number,
           issue_date,
           total_amount,
-          customer_id,
-          apartment_id,
-          customers (
-            name,
-            surname
+          retail_customer_id,
+          retail_contract_id,
+          retail_project_id,
+          retail_customers (
+            name
           ),
-          apartments (
-            number,
-            projects (
+          retail_contracts (
+            contract_number,
+            retail_projects (
               name
             )
+          ),
+          retail_projects (
+            name
           )
         `)
         .eq('invoice_type', 'OUTGOING_SALES')
-        .not('apartment_id', 'is', null)
+        .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
         .order('issue_date', { ascending: false })
 
       if (invoicesError) throw invoicesError
@@ -97,9 +100,16 @@ const SalesPaymentsManagement: React.FC = () => {
       }
 
       // Enrich payments with invoice details
-      const enrichedPayments: SalesPaymentWithDetails[] = (paymentsData || []).map(payment => {
+      const enrichedPayments: RetailSalesPaymentWithDetails[] = (paymentsData || []).map(payment => {
         const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
         const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
+
+        let projectName = 'N/A'
+        if ((invoice?.retail_contracts as any)?.retail_projects?.name) {
+          projectName = (invoice.retail_contracts as any).retail_projects.name
+        } else if ((invoice?.retail_projects as any)?.name) {
+          projectName = (invoice.retail_projects as any).name
+        }
 
         return {
           id: payment.id,
@@ -111,11 +121,9 @@ const SalesPaymentsManagement: React.FC = () => {
           invoice_number: invoice?.invoice_number || 'N/A',
           issue_date: invoice?.issue_date || '',
           invoice_total_amount: invoice?.total_amount || 0,
-          apartment_number: (invoice?.apartments as any)?.number || 'N/A',
-          project_name: (invoice?.apartments as any)?.projects?.name || 'N/A',
-          customer_name: invoice?.customers
-            ? `${(invoice.customers as any).name} ${(invoice.customers as any).surname}`
-            : 'N/A',
+          contract_number: (invoice?.retail_contracts as any)?.contract_number || 'N/A',
+          project_name: projectName,
+          customer_name: (invoice?.retail_customers as any)?.name || 'N/A',
           bank_account_name: bankAccount?.bank_name || 'N/A'
         }
       })
@@ -130,7 +138,7 @@ const SalesPaymentsManagement: React.FC = () => {
     }
   }
 
-  const calculateStats = (paymentsData: SalesPaymentWithDetails[]) => {
+  const calculateStats = (paymentsData: RetailSalesPaymentWithDetails[]) => {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -148,7 +156,7 @@ const SalesPaymentsManagement: React.FC = () => {
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      payment.apartment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -167,12 +175,12 @@ const SalesPaymentsManagement: React.FC = () => {
   })
 
   const exportToCSV = () => {
-    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
+    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Contract #', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
     const rows = filteredPayments.map(p => [
       format(new Date(p.payment_date), 'yyyy-MM-dd'),
       p.invoice_number,
       p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
-      p.apartment_number,
+      p.contract_number,
       p.project_name,
       p.customer_name,
       p.invoice_total_amount.toString(),
@@ -187,7 +195,7 @@ const SalesPaymentsManagement: React.FC = () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `retail-sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
   }
 
@@ -202,8 +210,8 @@ const SalesPaymentsManagement: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Payments</h1>
-        <p className="text-gray-600">Track all payments from customers for apartment sales</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Retail Sales Payments</h1>
+        <p className="text-gray-600">Track all payments from retail customers</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -311,7 +319,7 @@ const SalesPaymentsManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apartment</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Total</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
@@ -344,7 +352,7 @@ const SalesPaymentsManagement: React.FC = () => {
                       {payment.customer_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.apartment_number}
+                      {payment.contract_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
@@ -391,4 +399,4 @@ const SalesPaymentsManagement: React.FC = () => {
   )
 }
 
-export default SalesPaymentsManagement
+export default RetailSalesPaymentsManagement
