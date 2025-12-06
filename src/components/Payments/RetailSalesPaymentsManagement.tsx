@@ -55,8 +55,11 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           ),
           retail_contracts (
             contract_number,
-            retail_projects (
-              name
+            customer_id,
+            retail_project_phases (
+              retail_projects (
+                name
+              )
             )
           ),
           retail_projects (
@@ -105,10 +108,15 @@ const RetailSalesPaymentsManagement: React.FC = () => {
         const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
 
         let projectName = 'N/A'
-        if ((invoice?.retail_contracts as any)?.retail_projects?.name) {
-          projectName = (invoice.retail_contracts as any).retail_projects.name
+        if ((invoice?.retail_contracts as any)?.retail_project_phases?.retail_projects?.name) {
+          projectName = (invoice.retail_contracts as any).retail_project_phases.retail_projects.name
         } else if ((invoice?.retail_projects as any)?.name) {
           projectName = (invoice.retail_projects as any).name
+        }
+
+        let customerName = 'N/A'
+        if ((invoice?.retail_customers as any)?.name) {
+          customerName = (invoice.retail_customers as any).name
         }
 
         return {
@@ -123,7 +131,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           invoice_total_amount: invoice?.total_amount || 0,
           contract_number: (invoice?.retail_contracts as any)?.contract_number || 'N/A',
           project_name: projectName,
-          customer_name: (invoice?.retail_customers as any)?.name || 'N/A',
+          customer_name: customerName,
           bank_account_name: bankAccount?.bank_name || 'N/A'
         }
       })
