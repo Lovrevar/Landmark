@@ -14,12 +14,13 @@ interface DashboardStats {
   profit: number
 }
 
-interface OverdueSale {
+interface OverdueInvoice {
   id: string
+  invoice_number: string
   customer_name: string
-  plot_number: string
+  contract_number: string
   remaining_amount: number
-  payment_deadline: string
+  due_date: string
   days_overdue: number
 }
 
@@ -35,7 +36,7 @@ const RetailDashboard: React.FC = () => {
     total_remaining: 0,
     profit: 0
   })
-  const [overdueSales, setOverdueSales] = useState<OverdueSale[]>([])
+  const [overdueInvoices, setOverdueInvoices] = useState<OverdueInvoice[]>([])
 
   useEffect(() => {
     fetchDashboardData()
@@ -45,52 +46,77 @@ const RetailDashboard: React.FC = () => {
     try {
       setLoading(true)
 
-      const [plotsRes, customersRes, salesRes] = await Promise.all([
-        supabase.from('retail_land_plots').select('*'),
-        supabase.from('retail_customers').select('*'),
-        supabase
-          .from('retail_sales')
-          .select(`
-            *,
-            customer:retail_customers(name),
-            land_plot:retail_land_plots(plot_number)
-          `)
-      ])
+      // Fetch land plots (investments)
+      const { data: plots } = await supabase
+        .from('retail_land_plots')
+        .select('id, purchased_area_m2, total_price')
 
-      const plots = plotsRes.data || []
-      const customers = customersRes.data || []
-      const sales = salesRes.data || []
+      // Fetch customers
+      const { data: customers } = await supabase
+        .from('retail_customers')
+        .select('id')
 
-      const total_invested = plots.reduce((sum, p) => sum + p.total_price, 0)
-      const total_revenue = sales.reduce((sum, s) => sum + s.total_sale_price, 0)
-      const total_paid = sales.reduce((sum, s) => sum + s.paid_amount, 0)
-      const total_remaining = sales.reduce((sum, s) => sum + s.remaining_amount, 0)
+      // Fetch sales contracts (contracts with customer_id)
+      const { data: salesContracts } = await supabase
+        .from('retail_contracts')
+        .select('id, contract_number, contract_amount, customer_id')
+        .not('customer_id', 'is', null)
+
+      // Fetch sales invoices
+      const { data: salesInvoices } = await supabase
+        .from('accounting_invoices')
+        .select(`
+          id,
+          invoice_number,
+          total_amount,
+          paid_amount,
+          remaining_amount,
+          status,
+          due_date,
+          retail_contract_id,
+          retail_customer_id,
+          retail_contracts (
+            contract_number,
+            customer_id
+          ),
+          retail_customers (
+            name
+          )
+        `)
+        .eq('invoice_type', 'OUTGOING_SALES')
+        .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
+
+      const total_invested = (plots || []).reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0)
+      const total_revenue = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
+      const total_paid = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+      const total_remaining = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
 
       const today = new Date()
-      const overdue = sales
-        .filter(s => s.payment_status !== 'paid' && new Date(s.payment_deadline) < today)
-        .map(s => ({
-          id: s.id,
-          customer_name: (s.customer as any)?.name || 'N/A',
-          plot_number: (s.land_plot as any)?.plot_number || 'N/A',
-          remaining_amount: s.remaining_amount,
-          payment_deadline: s.payment_deadline,
-          days_overdue: Math.floor((today.getTime() - new Date(s.payment_deadline).getTime()) / (1000 * 60 * 60 * 24))
+      const overdue = (salesInvoices || [])
+        .filter(inv => inv.status !== 'PAID' && inv.due_date && new Date(inv.due_date) < today)
+        .map(inv => ({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          customer_name: (inv.retail_customers as any)?.name || 'N/A',
+          contract_number: (inv.retail_contracts as any)?.contract_number || 'N/A',
+          remaining_amount: parseFloat(inv.remaining_amount || 0),
+          due_date: inv.due_date || '',
+          days_overdue: Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24))
         }))
         .sort((a, b) => b.days_overdue - a.days_overdue)
 
       setStats({
-        total_plots: plots.length,
-        total_area: plots.reduce((sum, p) => sum + p.purchased_area_m2, 0),
+        total_plots: (plots || []).length,
+        total_area: (plots || []).reduce((sum, p) => sum + parseFloat(p.purchased_area_m2 || 0), 0),
         total_invested,
-        total_customers: customers.length,
+        total_customers: (customers || []).length,
         total_revenue,
         total_paid,
         total_remaining,
         profit: total_paid - total_invested
       })
 
-      setOverdueSales(overdue)
+      setOverdueInvoices(overdue)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -227,38 +253,41 @@ const RetailDashboard: React.FC = () => {
         </div>
       </div>
 
-      {overdueSales.length > 0 && (
+      {overdueInvoices.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-start space-x-3 mb-4">
             <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-red-900 mb-2">
-                Kašnjenja u plaćanju ({overdueSales.length})
+                Kašnjenja u plaćanju ({overdueInvoices.length})
               </h3>
               <div className="space-y-2">
-                {overdueSales.slice(0, 5).map((sale) => (
-                  <div key={sale.id} className="bg-white rounded-lg p-4 border border-red-200">
+                {overdueInvoices.slice(0, 5).map((invoice) => (
+                  <div key={invoice.id} className="bg-white rounded-lg p-4 border border-red-200">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-medium text-gray-900">{sale.customer_name}</p>
+                        <p className="font-medium text-gray-900">{invoice.customer_name}</p>
                         <p className="text-sm text-gray-600">
-                          Čestica {sale.plot_number} • Rok: {format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}
+                          {invoice.invoice_number} • Ugovor {invoice.contract_number}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Rok: {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                         </p>
                         <p className="text-xs text-red-600 mt-1">
-                          Kasni {sale.days_overdue} {sale.days_overdue === 1 ? 'dan' : 'dana'}
+                          Kasni {invoice.days_overdue} {invoice.days_overdue === 1 ? 'dan' : 'dana'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-red-600">€{sale.remaining_amount.toLocaleString()}</p>
+                        <p className="font-bold text-red-600">€{invoice.remaining_amount.toLocaleString()}</p>
                         <p className="text-xs text-gray-500">za naplatu</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              {overdueSales.length > 5 && (
+              {overdueInvoices.length > 5 && (
                 <p className="text-sm text-red-700 mt-3">
-                  + još {overdueSales.length - 5} kašnjenja
+                  + još {overdueInvoices.length - 5} kašnjenja
                 </p>
               )}
             </div>
