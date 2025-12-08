@@ -442,7 +442,7 @@ const AccountingDashboard: React.FC = () => {
           <div className="bg-white rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">Net PDV Position</p>
             <p className={`text-2xl font-bold ${vatStats.netVAT >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              €{Math.abs(vatStats.netVAT).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              €{Math.abs(vatStats.netVAT).toLocaleString('en-US')}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {vatStats.netVAT >= 0 ? 'To pay to tax office' : 'To receive from tax office'}
