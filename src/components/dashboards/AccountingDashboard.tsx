@@ -552,7 +552,7 @@ const AccountingDashboard: React.FC = () => {
             <span className="text-gray-600">This Month:</span>
             <div className="flex items-center">
               <span className="font-semibold text-gray-900 mr-2">
-                €{cashFlowStats.currentMonthIncoming.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                €{cashFlowStats.currentMonthIncoming.toLocaleString('en-US')}
               </span>
               {incomingChange !== 0 && (
                 <span className={`flex items-center ${incomingChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
