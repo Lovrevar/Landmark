@@ -349,18 +349,15 @@ export const retailProjectService = {
   async fetchMilestonesByContract(contractId: string): Promise<RetailContractMilestone[]> {
     const { data, error } = await supabase
       .from('retail_contract_milestones')
-      .select(`
-        *,
-        customer:retail_customers(*)
-      `)
+      .select('*')
       .eq('contract_id', contractId)
-      .order('created_at', { ascending: true })
+      .order('milestone_number', { ascending: true })
 
     if (error) throw error
     return data || []
   },
 
-  async createMilestone(milestone: Omit<RetailContractMilestone, 'id' | 'created_at' | 'updated_at' | 'customer'>): Promise<RetailContractMilestone> {
+  async createMilestone(milestone: Omit<RetailContractMilestone, 'id' | 'created_at' | 'updated_at'>): Promise<RetailContractMilestone> {
     const { data, error } = await supabase
       .from('retail_contract_milestones')
       .insert([milestone])
