@@ -351,14 +351,74 @@ const AccountingCompanies: React.FC = () => {
           .limit(100)
       ])
 
+      const credits = creditsResult.data || []
+      const creditIds = credits.map(c => c.id)
+
+      let cesijaPaidInvoices: any[] = []
+      if (creditIds.length > 0) {
+        const { data: paymentsData } = await supabase
+          .from('accounting_payments')
+          .select(`
+            invoice_id
+          `)
+          .in('cesija_credit_id', creditIds)
+          .eq('is_cesija', true)
+
+        const cesijaPaidInvoiceIds = [...new Set((paymentsData || []).map(p => p.invoice_id))]
+
+        if (cesijaPaidInvoiceIds.length > 0) {
+          const { data: cesiaInvoicesData } = await supabase
+            .from('accounting_invoices')
+            .select(`
+              id,
+              invoice_number,
+              invoice_type,
+              invoice_category,
+              total_amount,
+              paid_amount,
+              remaining_amount,
+              status,
+              issue_date,
+              supplier:supplier_id (name),
+              customer:customer_id (name, surname),
+              office_supplier:office_supplier_id (name),
+              retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
+              retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name)
+            `)
+            .in('id', cesijaPaidInvoiceIds)
+            .order('issue_date', { ascending: false })
+
+          cesijaPaidInvoices = (cesiaInvoicesData || []).map(inv => ({
+            ...inv,
+            is_cesija_payment: true
+          }))
+        }
+      }
+
+      const ownInvoices = (invoicesResult.data || []).map(inv => ({
+        ...inv,
+        is_cesija_payment: false
+      }))
+
+      const allInvoicesMap = new Map()
+      ownInvoices.forEach(inv => allInvoicesMap.set(inv.id, inv))
+      cesijaPaidInvoices.forEach(inv => {
+        if (!allInvoicesMap.has(inv.id)) {
+          allInvoicesMap.set(inv.id, inv)
+        } else {
+          allInvoicesMap.set(inv.id, { ...allInvoicesMap.get(inv.id), is_cesija_payment: true })
+        }
+      })
+
+      const allInvoices = Array.from(allInvoicesMap.values()).sort((a, b) =>
+        new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()
+      )
+
       const companyWithDetails = {
         ...company,
         bank_accounts: bankAccountsResult.data || [],
-        credits: creditsResult.data || [],
-        invoices: (invoicesResult.data || []).map(inv => ({
-          ...inv,
-          is_cesija_payment: false
-        }))
+        credits,
+        invoices: allInvoices
       }
 
       setSelectedCompany(companyWithDetails)
@@ -923,9 +983,7 @@ const AccountingCompanies: React.FC = () => {
                               )}
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
-                              {invoice.is_cesija_payment && invoice.company
-                                ? `Firma: ${invoice.company.name}`
-                                : invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
+                              {invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
                                 ? `Office dobavljač: ${getInvoiceEntityName(invoice)}`
                                 : isIncomeInvoice(invoice.invoice_type)
                                 ? `Kupac: ${getInvoiceEntityName(invoice)}`
