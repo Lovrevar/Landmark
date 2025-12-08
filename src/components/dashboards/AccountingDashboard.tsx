@@ -501,7 +501,7 @@ const AccountingDashboard: React.FC = () => {
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}>
-                €{Math.abs(parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                €{Math.abs(parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing).toLocaleString('en-US')}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {parseFloat(monthlyBudget.budget_amount.toString()) - cashFlowStats.currentMonthOutgoing >= 0
