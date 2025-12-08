@@ -32,7 +32,7 @@ interface Credit {
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'OUTGOING_RETAIL_DEVELOPMENT' | 'OUTGOING_RETAIL_CONSTRUCTION' | 'INCOMING_RETAIL_SALES'
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -41,6 +41,8 @@ interface Invoice {
   supplier?: { name: string }
   customer?: { name: string; surname: string }
   office_supplier?: { name: string }
+  retail_supplier?: { name: string }
+  retail_customer?: { name: string }
   company?: { name: string }
   is_cesija_payment?: boolean
   payments?: Array<{
@@ -132,7 +134,7 @@ const AccountingCompanies: React.FC = () => {
   }
 
   const isIncomeInvoice = (invoiceType: string) => {
-    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES' || invoiceType === 'OUTGOING_OFFICE'
+    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES' || invoiceType === 'OUTGOING_OFFICE' || invoiceType === 'INCOMING_RETAIL_SALES'
   }
 
   const getInvoiceEntityName = (invoice: Invoice) => {
@@ -143,6 +145,10 @@ const AccountingCompanies: React.FC = () => {
       return 'N/A'
     } else if (invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE') {
       return invoice.office_supplier?.name || 'N/A'
+    } else if (invoice.invoice_type === 'OUTGOING_RETAIL_DEVELOPMENT' || invoice.invoice_type === 'OUTGOING_RETAIL_CONSTRUCTION') {
+      return invoice.retail_supplier?.name || 'N/A'
+    } else if (invoice.invoice_type === 'INCOMING_RETAIL_SALES') {
+      return invoice.retail_customer?.name || 'N/A'
     } else {
       return invoice.supplier?.name || 'N/A'
     }
@@ -326,7 +332,9 @@ const AccountingCompanies: React.FC = () => {
             issue_date,
             supplier:supplier_id (name),
             customer:customer_id (name, surname),
-            office_supplier:office_supplier_id (name)
+            office_supplier:office_supplier_id (name),
+            retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
+            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name)
           `)
           .eq('company_id', company.id)
           .order('issue_date', { ascending: false })
