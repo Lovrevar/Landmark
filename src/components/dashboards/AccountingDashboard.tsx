@@ -424,7 +424,7 @@ const AccountingDashboard: React.FC = () => {
           <div className="bg-white rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">PDV Collected (Total)</p>
             <p className="text-2xl font-bold text-green-600">
-              €{vatStats.totalVATCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              €{vatStats.totalVATCollected.toLocaleString('en-US')}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               This month: €{vatStats.currentMonthVATCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
