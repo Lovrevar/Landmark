@@ -46,6 +46,8 @@ interface Invoice {
   retail_customer?: { name: string }
   company?: { name: string }
   is_cesija_payment?: boolean
+  cesija_company_id?: string
+  cesija_company_name?: string
   payments?: Array<{
     is_cesija: boolean
     cesija_company_id: string | null
@@ -344,69 +346,80 @@ const AccountingCompanies: React.FC = () => {
             customer:customer_id (name, surname),
             office_supplier:office_supplier_id (name),
             retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
-            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name)
+            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name),
+            company:company_id (name)
           `)
           .eq('company_id', company.id)
           .order('issue_date', { ascending: false })
           .limit(100)
       ])
 
+      const bankAccounts = bankAccountsResult.data || []
+      const bankAccountIds = bankAccounts.map(ba => ba.id)
       const credits = creditsResult.data || []
       const creditIds = credits.map(c => c.id)
 
       let cesijaPaidInvoices: any[] = []
-      if (creditIds.length > 0) {
-        const { data: paymentsData } = await supabase
-          .from('accounting_payments')
+
+      const { data: paymentsData } = await supabase
+        .from('accounting_payments')
+        .select(`
+          invoice_id,
+          cesija_company_id,
+          accounting_invoices!inner(company_id)
+        `)
+        .eq('is_cesija', true)
+        .or(`cesija_credit_id.in.(${creditIds.length > 0 ? creditIds.join(',') : 'null'}),cesija_bank_account_id.in.(${bankAccountIds.length > 0 ? bankAccountIds.join(',') : 'null'})`)
+
+      const cesijaPaidInvoiceIds = [...new Set((paymentsData || []).map(p => p.invoice_id))]
+
+      if (cesijaPaidInvoiceIds.length > 0) {
+        const { data: cesiaInvoicesData } = await supabase
+          .from('accounting_invoices')
           .select(`
-            invoice_id
+            id,
+            invoice_number,
+            invoice_type,
+            invoice_category,
+            total_amount,
+            paid_amount,
+            remaining_amount,
+            status,
+            issue_date,
+            supplier:supplier_id (name),
+            customer:customer_id (name, surname),
+            office_supplier:office_supplier_id (name),
+            retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
+            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name),
+            company:company_id (name)
           `)
-          .in('cesija_credit_id', creditIds)
-          .eq('is_cesija', true)
+          .in('id', cesijaPaidInvoiceIds)
+          .order('issue_date', { ascending: false })
 
-        const cesijaPaidInvoiceIds = [...new Set((paymentsData || []).map(p => p.invoice_id))]
-
-        if (cesijaPaidInvoiceIds.length > 0) {
-          const { data: cesiaInvoicesData } = await supabase
-            .from('accounting_invoices')
-            .select(`
-              id,
-              invoice_number,
-              invoice_type,
-              invoice_category,
-              total_amount,
-              paid_amount,
-              remaining_amount,
-              status,
-              issue_date,
-              supplier:supplier_id (name),
-              customer:customer_id (name, surname),
-              office_supplier:office_supplier_id (name),
-              retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
-              retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name)
-            `)
-            .in('id', cesijaPaidInvoiceIds)
-            .order('issue_date', { ascending: false })
-
-          cesijaPaidInvoices = (cesiaInvoicesData || []).map(inv => ({
+        cesijaPaidInvoices = (cesiaInvoicesData || []).map(inv => {
+          const payment = paymentsData?.find(p => p.invoice_id === inv.id)
+          return {
             ...inv,
-            is_cesija_payment: true
-          }))
-        }
+            is_cesija_payment: true,
+            cesija_company_id: payment?.cesija_company_id
+          }
+        })
       }
 
-      const ownInvoices = (invoicesResult.data || []).map(inv => ({
-        ...inv,
-        is_cesija_payment: false
-      }))
+      const ownInvoices = (invoicesResult.data || []).map(inv => {
+        const payment = paymentsData?.find(p => p.invoice_id === inv.id)
+        return {
+          ...inv,
+          is_cesija_payment: !!payment,
+          cesija_company_id: payment?.cesija_company_id
+        }
+      })
 
       const allInvoicesMap = new Map()
       ownInvoices.forEach(inv => allInvoicesMap.set(inv.id, inv))
       cesijaPaidInvoices.forEach(inv => {
         if (!allInvoicesMap.has(inv.id)) {
           allInvoicesMap.set(inv.id, inv)
-        } else {
-          allInvoicesMap.set(inv.id, { ...allInvoicesMap.get(inv.id), is_cesija_payment: true })
         }
       })
 
@@ -414,11 +427,34 @@ const AccountingCompanies: React.FC = () => {
         new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()
       )
 
+      const companiesData = await supabase
+        .from('accounting_companies')
+        .select('id, name')
+
+      const companiesMap = new Map((companiesData.data || []).map(c => [c.id, c.name]))
+
+      const allInvoicesWithCesija = allInvoices.map(inv => {
+        let cesija_name = null
+
+        if (inv.is_cesija_payment) {
+          if (inv.cesija_company_id === company.id) {
+            cesija_name = inv.company?.name || companiesMap.get(inv.company_id)
+          } else {
+            cesija_name = companiesMap.get(inv.cesija_company_id)
+          }
+        }
+
+        return {
+          ...inv,
+          cesija_company_name: cesija_name
+        }
+      })
+
       const companyWithDetails = {
         ...company,
-        bank_accounts: bankAccountsResult.data || [],
+        bank_accounts: bankAccounts,
         credits,
-        invoices: allInvoices
+        invoices: allInvoicesWithCesija
       }
 
       setSelectedCompany(companyWithDetails)
@@ -978,7 +1014,7 @@ const AccountingCompanies: React.FC = () => {
                               </span>
                               {invoice.is_cesija_payment && (
                                 <span className="px-2 py-1 rounded text-xs font-bold bg-purple-200 text-purple-900 border border-purple-400">
-                                  CESIJA
+                                  CESIJA - {invoice.cesija_company_name || 'Nepoznata firma'}
                                 </span>
                               )}
                             </div>

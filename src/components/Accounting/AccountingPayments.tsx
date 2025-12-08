@@ -47,6 +47,9 @@ interface Payment {
   reference_number: string | null
   description: string
   created_at: string
+  is_cesija: boolean
+  cesija_company_id: string | null
+  cesija_company_name?: string
   accounting_invoices?: Invoice
 }
 
@@ -203,19 +206,26 @@ const AccountingPayments: React.FC = () => {
       ])
 
       if (paymentsResult.error) throw paymentsResult.error
-      setPayments(paymentsResult.data || [])
 
       if (invoicesResult.error) throw invoicesResult.error
       setInvoices(invoicesResult.data || [])
 
       if (companiesResult.error) throw companiesResult.error
-      setCompanies(companiesResult.data || [])
+      const companiesData = companiesResult.data || []
+      setCompanies(companiesData)
 
       if (bankAccountsResult.error) throw bankAccountsResult.error
       setCompanyBankAccounts(bankAccountsResult.data || [])
 
       if (creditsResult.error) throw creditsResult.error
       setCompanyCredits(creditsResult.data || [])
+
+      const companiesMap = new Map(companiesData.map(c => [c.id, c.name]))
+      const paymentsWithCesija = (paymentsResult.data || []).map((payment: any) => ({
+        ...payment,
+        cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id) : null
+      }))
+      setPayments(paymentsWithCesija)
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -645,7 +655,13 @@ const AccountingPayments: React.FC = () => {
                       )}
                       {visibleColumns.description && (
                         <td className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate">
-                          {payment.description || '-'}
+                          {payment.is_cesija && payment.cesija_company_name ? (
+                            <span className="font-medium text-purple-700">
+                              Cesija - {payment.cesija_company_name}
+                            </span>
+                          ) : (
+                            payment.description || '-'
+                          )}
                         </td>
                       )}
                       <td className="px-4 py-4 whitespace-nowrap text-sm sticky right-0 bg-white">
