@@ -603,7 +603,7 @@ const AccountingDashboard: React.FC = () => {
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Net Cash Flow</p>
                 <p className={`text-2xl font-bold ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  €{Math.abs(cashFlowStats.netCashFlow).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  €{Math.abs(cashFlowStats.netCashFlow).toLocaleString('en-US')}
                 </p>
               </div>
             </div>
