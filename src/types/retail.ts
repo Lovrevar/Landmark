@@ -143,6 +143,7 @@ export interface RetailContractMilestone {
   notes: string | null
   created_at: string
   updated_at: string
+  amount_paid?: number
 }
 
 export interface RetailProjectWithPhases extends RetailProject {

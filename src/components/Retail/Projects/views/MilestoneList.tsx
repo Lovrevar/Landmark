@@ -260,7 +260,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         <p className="text-sm text-gray-600 mb-3">{milestone.description}</p>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <p className="text-xs text-gray-500">Postotak</p>
                           <p className="text-lg font-semibold text-gray-900">{milestone.percentage}%</p>
@@ -268,6 +268,31 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         <div>
                           <p className="text-xs text-gray-500">Iznos</p>
                           <p className="text-lg font-semibold text-gray-900">{formatCurrency(amount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Plaćeno</p>
+                          <p className="text-lg font-semibold text-teal-600">
+                            {formatCurrency(milestone.amount_paid || 0)}
+                          </p>
+                          {amount > 0 && (
+                            <div className="mt-1">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full transition-all ${
+                                    (milestone.amount_paid || 0) >= amount
+                                      ? 'bg-green-500'
+                                      : (milestone.amount_paid || 0) > 0
+                                      ? 'bg-teal-500'
+                                      : 'bg-gray-300'
+                                  }`}
+                                  style={{ width: `${Math.min(100, ((milestone.amount_paid || 0) / amount) * 100)}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {Math.min(100, ((milestone.amount_paid || 0) / amount) * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                          )}
                         </div>
                         {milestone.due_date && (
                           <div>

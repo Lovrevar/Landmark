@@ -347,14 +347,34 @@ export const retailProjectService = {
   },
 
   async fetchMilestonesByContract(contractId: string): Promise<RetailContractMilestone[]> {
-    const { data, error } = await supabase
+    const { data: milestones, error } = await supabase
       .from('retail_contract_milestones')
       .select('*')
       .eq('contract_id', contractId)
       .order('milestone_number', { ascending: true })
 
     if (error) throw error
-    return data || []
+
+    const { data: invoices } = await supabase
+      .from('accounting_invoices')
+      .select('retail_milestone_id, base_amount, status')
+      .eq('retail_contract_id', contractId)
+      .in('status', ['PAID', 'PARTIAL'])
+
+    const milestonePayments = new Map<string, number>()
+    if (invoices) {
+      invoices.forEach(inv => {
+        if (inv.retail_milestone_id && inv.base_amount) {
+          const current = milestonePayments.get(inv.retail_milestone_id) || 0
+          milestonePayments.set(inv.retail_milestone_id, current + parseFloat(inv.base_amount))
+        }
+      })
+    }
+
+    return (milestones || []).map(m => ({
+      ...m,
+      amount_paid: milestonePayments.get(m.id) || 0
+    }))
   },
 
   async createMilestone(milestone: Omit<RetailContractMilestone, 'id' | 'created_at' | 'updated_at'>): Promise<RetailContractMilestone> {
