@@ -361,7 +361,7 @@ const AccountingCompanies: React.FC = () => {
 
       let cesijaPaidInvoices: any[] = []
 
-      const { data: paymentsData } = await supabase
+      const { data: paymentsWhereWePayOthers } = await supabase
         .from('accounting_payments')
         .select(`
           invoice_id,
@@ -371,7 +371,22 @@ const AccountingCompanies: React.FC = () => {
         .eq('is_cesija', true)
         .or(`cesija_credit_id.in.(${creditIds.length > 0 ? creditIds.join(',') : 'null'}),cesija_bank_account_id.in.(${bankAccountIds.length > 0 ? bankAccountIds.join(',') : 'null'})`)
 
-      const cesijaPaidInvoiceIds = [...new Set((paymentsData || []).map(p => p.invoice_id))]
+      const ownInvoiceIds = (invoicesResult.data || []).map(inv => inv.id)
+      const { data: paymentsWhereOthersPayUs } = await supabase
+        .from('accounting_payments')
+        .select(`
+          invoice_id,
+          cesija_company_id
+        `)
+        .eq('is_cesija', true)
+        .in('invoice_id', ownInvoiceIds.length > 0 ? ownInvoiceIds : ['null'])
+
+      const allCesijaPayments = [
+        ...(paymentsWhereWePayOthers || []),
+        ...(paymentsWhereOthersPayUs || [])
+      ]
+
+      const cesijaPaidInvoiceIds = [...new Set(allCesijaPayments.map(p => p.invoice_id))]
 
       if (cesijaPaidInvoiceIds.length > 0) {
         const { data: cesiaInvoicesData } = await supabase
@@ -397,7 +412,7 @@ const AccountingCompanies: React.FC = () => {
           .order('issue_date', { ascending: false })
 
         cesijaPaidInvoices = (cesiaInvoicesData || []).map(inv => {
-          const payment = paymentsData?.find(p => p.invoice_id === inv.id)
+          const payment = allCesijaPayments.find(p => p.invoice_id === inv.id)
           return {
             ...inv,
             is_cesija_payment: true,
@@ -407,7 +422,7 @@ const AccountingCompanies: React.FC = () => {
       }
 
       const ownInvoices = (invoicesResult.data || []).map(inv => {
-        const payment = paymentsData?.find(p => p.invoice_id === inv.id)
+        const payment = allCesijaPayments.find(p => p.invoice_id === inv.id)
         return {
           ...inv,
           is_cesija_payment: !!payment,
