@@ -7,6 +7,7 @@ import type { RetailContract } from '../../../../types/retail'
 interface AccountingPayment {
   id: string
   amount: number
+  base_amount_paid: number
   payment_date: string | null
   payment_method: string | null
   reference_number: string | null
@@ -17,6 +18,7 @@ interface AccountingPayment {
     id: string
     invoice_number: string
     invoice_type: string
+    base_amount: number
     total_amount: number
     status: string
   }
@@ -108,6 +110,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             id,
             invoice_number,
             invoice_type,
+            base_amount,
             total_amount,
             status
           ),
@@ -129,19 +132,30 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         throw error
       }
 
-      const formattedPayments = (data || []).map((payment: any) => ({
-        id: payment.id,
-        amount: parseFloat(payment.amount),
-        payment_date: payment.payment_date,
-        payment_method: payment.payment_method,
-        reference_number: payment.reference_number,
-        description: payment.description,
-        is_cesija: payment.is_cesija,
-        created_at: payment.created_at,
-        invoice: payment.accounting_invoices,
-        company_bank_account: payment.company_bank_account,
-        credit: payment.cesija_credit
-      }))
+      const formattedPayments = (data || []).map((payment: any) => {
+        const paymentAmount = parseFloat(payment.amount)
+        const invoice = payment.accounting_invoices
+        let baseAmountPaid = paymentAmount
+
+        if (invoice && invoice.total_amount > 0) {
+          baseAmountPaid = (paymentAmount / parseFloat(invoice.total_amount)) * parseFloat(invoice.base_amount)
+        }
+
+        return {
+          id: payment.id,
+          amount: paymentAmount,
+          base_amount_paid: baseAmountPaid,
+          payment_date: payment.payment_date,
+          payment_method: payment.payment_method,
+          reference_number: payment.reference_number,
+          description: payment.description,
+          is_cesija: payment.is_cesija,
+          created_at: payment.created_at,
+          invoice: invoice,
+          company_bank_account: payment.company_bank_account,
+          credit: payment.cesija_credit
+        }
+      })
 
       console.log('Formatted Payments:', formattedPayments)
       console.log('=== END DEBUG ===')
@@ -164,6 +178,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Povijest plaćanja</h3>
               <p className="text-sm text-gray-600 mt-1">{contract.contract_number}</p>
+              <p className="text-xs text-blue-600 mt-1">* Svi iznosi prikazani bez PDV-a</p>
             </div>
             <button
               onClick={onClose}
@@ -212,7 +227,14 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString()}</span>
+                        <div className="flex flex-col">
+                          <span className="text-lg font-bold text-teal-700">
+                            €{payment.base_amount_paid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            (sa PDV: €{payment.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                          </span>
+                        </div>
                         {payment.payment_date && (
                           <span className="text-sm text-gray-600">
                             {format(new Date(payment.payment_date), 'dd.MM.yyyy')}

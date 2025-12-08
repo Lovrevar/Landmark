@@ -425,15 +425,43 @@ export const retailProjectService = {
 
     const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0)
     const totalAmount = milestones.reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
-    const paidAmount = milestones.filter(m => m.status === 'paid').reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
-    const pendingAmount = milestones.filter(m => m.status === 'pending').reduce((sum, m) => sum + ((contractCost * m.percentage) / 100), 0)
+
+    const { data: invoices } = await supabase
+      .from('accounting_invoices')
+      .select('retail_milestone_id, base_amount, status')
+      .eq('retail_contract_id', contractId)
+      .in('status', ['PAID', 'PARTIAL'])
+
+    const milestonePayments = new Map<string, number>()
+    if (invoices) {
+      invoices.forEach(inv => {
+        if (inv.retail_milestone_id && inv.base_amount) {
+          const current = milestonePayments.get(inv.retail_milestone_id) || 0
+          milestonePayments.set(inv.retail_milestone_id, current + parseFloat(inv.base_amount))
+        }
+      })
+    }
+
+    let actualPaidAmount = 0
+    let actualPendingAmount = 0
+
+    milestones.forEach(m => {
+      const milestoneAmount = (contractCost * m.percentage) / 100
+      const paidForMilestone = milestonePayments.get(m.id) || 0
+
+      if (m.status === 'paid') {
+        actualPaidAmount += paidForMilestone || milestoneAmount
+      } else if (m.status === 'pending') {
+        actualPendingAmount += milestoneAmount - paidForMilestone
+      }
+    })
 
     return {
       totalPercentage,
       remainingPercentage: 100 - totalPercentage,
       totalAmount,
-      paidAmount,
-      pendingAmount,
+      paidAmount: actualPaidAmount,
+      pendingAmount: actualPendingAmount,
       milestonesCount: milestones.length
     }
   },
