@@ -37,6 +37,15 @@ interface RetailContract {
   }
 }
 
+interface RetailMilestone {
+  id: string
+  milestone_number: number
+  milestone_name: string
+  percentage: number
+  status: 'pending' | 'paid' | 'cancelled'
+  due_date: string | null
+}
+
 interface RetailInvoiceFormModalProps {
   onClose: () => void
   onSuccess: () => void
@@ -51,6 +60,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
   const [projects, setProjects] = useState<RetailProject[]>([])
   const [contracts, setContracts] = useState<RetailContract[]>([])
+  const [milestones, setMilestones] = useState<RetailMilestone[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,6 +71,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     company_id: '',
     retail_project_id: '',
     retail_contract_id: '',
+    retail_milestone_id: '',
     invoice_number: '',
     issue_date: '',
     due_date: '',
@@ -81,8 +92,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     } else {
       loadCustomers()
     }
-    setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '' }))
+    setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '', retail_milestone_id: '' }))
     setContracts([])
+    setMilestones([])
   }, [formData.entity_type])
 
   useEffect(() => {
@@ -90,9 +102,18 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       loadContracts()
     } else {
       setContracts([])
-      setFormData(prev => ({ ...prev, retail_contract_id: '' }))
+      setFormData(prev => ({ ...prev, retail_contract_id: '', retail_milestone_id: '' }))
     }
   }, [formData.retail_project_id, formData.entity_id, formData.entity_type])
+
+  useEffect(() => {
+    if (formData.retail_contract_id) {
+      loadMilestones()
+    } else {
+      setMilestones([])
+      setFormData(prev => ({ ...prev, retail_milestone_id: '' }))
+    }
+  }, [formData.retail_contract_id])
 
   const loadInitialData = async () => {
     try {
@@ -164,6 +185,22 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     }
   }
 
+  const loadMilestones = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('retail_contract_milestones')
+        .select('id, milestone_number, milestone_name, percentage, status, due_date')
+        .eq('contract_id', formData.retail_contract_id)
+        .order('milestone_number', { ascending: true })
+
+      if (error) throw error
+      setMilestones(data || [])
+    } catch (err) {
+      console.error('Error loading milestones:', err)
+      setError('Greška pri učitavanju milestones')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -203,6 +240,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         invoice_category: 'RETAIL',
         retail_project_id: formData.retail_project_id,
         retail_contract_id: formData.retail_contract_id,
+        retail_milestone_id: formData.retail_milestone_id || null,
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
@@ -382,6 +420,39 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Milestone (opcionalno)
+              </label>
+              <select
+                value={formData.retail_milestone_id}
+                onChange={(e) => setFormData({ ...formData, retail_milestone_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                disabled={!formData.retail_contract_id}
+              >
+                <option value="">
+                  {!formData.retail_contract_id
+                    ? 'Odaberi ugovor prvo'
+                    : milestones.length === 0
+                    ? 'Nema dostupnih milestones'
+                    : 'Odaberi milestone (opcionalno)'}
+                </option>
+                {milestones.map(milestone => (
+                  <option key={milestone.id} value={milestone.id}>
+                    #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
+                    {milestone.status === 'paid' ? ' ✓ Plaćeno' :
+                     milestone.status === 'pending' ? ' ⏳ U čekanju' :
+                     ' ✗ Otkazano'}
+                  </option>
+                ))}
+              </select>
+              {formData.retail_milestone_id && milestones.find(m => m.id === formData.retail_milestone_id)?.status === 'paid' && (
+                <p className="mt-1 text-xs text-amber-600">
+                  ⚠️ Ovaj milestone je već označen kao plaćen
+                </p>
+              )}
             </div>
 
             <div>
