@@ -303,18 +303,18 @@ const AccountingCalendar: React.FC = () => {
         {(() => {
           const budget = getCurrentMonthBudget()
           if (budget && budget.budget_amount > 0) {
-            const difference = monthStats.netAmount - budget.budget_amount
+            const difference = budget.budget_amount - monthStats.incomingPaid
             return (
               <>
                 <div className="border-t border-gray-300 my-2"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Planirani budžet (Neto cilj):</span>
+                  <span className="text-gray-600">Planirani budžet (Rashodi):</span>
                   <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700 font-medium">Razlika od budžeta:</span>
-                  <span className={`font-bold ${difference <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{difference.toLocaleString()} {difference <= 0 ? '(Ispod budžeta - dobro)' : '(Preko budžeta - loše)'}
+                  <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    €{Math.abs(difference).toLocaleString()} {difference >= 0 ? '(Ispod budžeta - dobro)' : '(Preko budžeta - loše)'}
                   </span>
                 </div>
               </>
