@@ -543,7 +543,7 @@ const AccountingDashboard: React.FC = () => {
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Total Incoming</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  €{cashFlowStats.totalIncoming.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  €{cashFlowStats.totalIncoming.toLocaleString('en-US')}
                 </p>
               </div>
             </div>
