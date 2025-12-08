@@ -33,6 +33,7 @@ interface Invoice {
   id: string
   invoice_number: string
   invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'OUTGOING_RETAIL_DEVELOPMENT' | 'OUTGOING_RETAIL_CONSTRUCTION' | 'INCOMING_RETAIL_SALES'
+  invoice_category: string
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -138,6 +139,14 @@ const AccountingCompanies: React.FC = () => {
   }
 
   const getInvoiceEntityName = (invoice: Invoice) => {
+    if (invoice.invoice_category === 'RETAIL') {
+      if (invoice.invoice_type === 'INCOMING_SUPPLIER') {
+        return invoice.retail_supplier?.name || 'N/A'
+      } else if (invoice.invoice_type === 'OUTGOING_SALES') {
+        return invoice.retail_customer?.name || 'N/A'
+      }
+    }
+
     if (invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES') {
       if (invoice.customer) {
         return `${invoice.customer.name} ${invoice.customer.surname}`.trim()
@@ -325,6 +334,7 @@ const AccountingCompanies: React.FC = () => {
             id,
             invoice_number,
             invoice_type,
+            invoice_category,
             total_amount,
             paid_amount,
             remaining_amount,
