@@ -687,7 +687,7 @@ const InvestorsManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
                   <select
                     value={newInvestment.project_id}
                     onChange={(e) => setNewInvestment({ ...newInvestment, project_id: e.target.value })}

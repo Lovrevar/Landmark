@@ -767,7 +767,7 @@ const BanksManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Type</label>
                   <select
                     value={newCredit.credit_type}
                     onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
@@ -778,8 +778,6 @@ const BanksManagement: React.FC = () => {
                     <option value="line_of_credit_senior">Line of Credit - Senior</option>
                     <option value="line_of_credit_junior">Line of Credit - Junior</option>
                     <option value="bridge_loan_senior">Bridge Loan</option>
-                    <option value="operation_cost_senior">Operation Cost</option>
-                    <option value="refinancing_senior">Refinancing</option>
                   </select>
                 </div>
                 <div>
