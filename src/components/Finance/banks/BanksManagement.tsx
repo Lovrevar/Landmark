@@ -101,11 +101,13 @@ const BanksManagement: React.FC = () => {
 
       if (companiesError) throw companiesError
 
-      // Fetch bank credits
+      // Fetch bank credits with used and repaid amounts
       const { data: creditsData, error: creditsError } = await supabase
         .from('bank_credits')
         .select(`
           *,
+          used_amount,
+          repaid_amount,
           projects(name),
           accounting_companies(name)
         `)
@@ -1196,11 +1198,31 @@ const BanksManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                             <div>
-                              <p className="text-xs text-gray-500">Outstanding Balance</p>
+                              <p className="text-xs text-gray-500">Used Amount</p>
+                              <p className="text-sm font-medium text-blue-600">€{((credit as any).used_amount || 0).toLocaleString()}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {credit.amount > 0 ? (((credit as any).used_amount || 0) / credit.amount * 100).toFixed(1) : 0}% drawn
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Repaid to Bank</p>
+                              <p className="text-sm font-medium text-green-600">€{((credit as any).repaid_amount || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Outstanding Debt</p>
                               <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
                             </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Available to Use</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                €{(credit.amount - ((credit as any).used_amount || 0)).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 pt-3 border-t border-gray-100">
                             <div>
                               <p className="text-xs text-gray-500">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment</p>
                               <p className="text-sm font-medium text-gray-900">€{credit.monthly_payment.toLocaleString()}</p>
