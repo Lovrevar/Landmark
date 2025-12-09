@@ -213,7 +213,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       if (!formData.retail_contract_id) throw new Error('Morate odabrati ugovor/fazu')
       if (!formData.invoice_number) throw new Error('Morate unijeti broj računa')
       if (!formData.issue_date) throw new Error('Morate unijeti datum izdavanja')
-      if (!formData.due_date) throw new Error('Morate unijeti datum dospeća')
+      if (!formData.due_date) throw new Error('Morate unijeti datum dospijeća')
       if (!formData.base_amount) throw new Error('Morate unijeti osnovicu')
 
       const baseAmount = parseFloat(formData.base_amount)
