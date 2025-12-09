@@ -11,9 +11,16 @@ interface BankWithCredits extends Bank {
   credit_utilized: number
 }
 
+interface Company {
+  id: string
+  name: string
+  oib: string
+}
+
 const BanksManagement: React.FC = () => {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [selectedBank, setSelectedBank] = useState<BankWithCredits | null>(null)
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
@@ -33,6 +40,7 @@ const BanksManagement: React.FC = () => {
   })
   const [newCredit, setNewCredit] = useState({
     bank_id: '',
+    company_id: '',
     project_id: '',
     credit_type: 'construction_loan' as const,
     amount: 0,
@@ -85,12 +93,21 @@ const BanksManagement: React.FC = () => {
 
       if (projectsError) throw projectsError
 
+      // Fetch companies
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('accounting_companies')
+        .select('id, name, oib')
+        .order('name')
+
+      if (companiesError) throw companiesError
+
       // Fetch bank credits
       const { data: creditsData, error: creditsError } = await supabase
         .from('bank_credits')
         .select(`
           *,
-          projects(name)
+          projects(name),
+          accounting_companies(name)
         `)
         .order('start_date', { ascending: false })
 
@@ -130,6 +147,7 @@ const BanksManagement: React.FC = () => {
 
       setBanks(banksWithCredits)
       setProjects(projectsData || [])
+      setCompanies(companiesData || [])
     } catch (error) {
       console.error('Error fetching banks data:', error)
     } finally {
@@ -293,6 +311,7 @@ const BanksManagement: React.FC = () => {
   const resetCreditForm = () => {
     setNewCredit({
       bank_id: '',
+      company_id: '',
       project_id: '',
       credit_type: 'construction_loan_senior',
       amount: 0,
@@ -317,6 +336,7 @@ const BanksManagement: React.FC = () => {
     setEditingCredit(credit)
     setNewCredit({
       bank_id: credit.bank_id,
+      company_id: (credit as any).company_id || '',
       project_id: credit.project_id || '',
       credit_type: `${credit.credit_type}_${credit.credit_seniority}`,
       amount: credit.amount,
@@ -842,6 +862,21 @@ const BanksManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                  <select
+                    value={newCredit.company_id}
+                    onChange={(e) => setNewCredit({ ...newCredit, company_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select company</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
                   <select
                     value={newCredit.project_id}
@@ -1148,6 +1183,9 @@ const BanksManagement: React.FC = () => {
                                 )}
                               </div>
                               <p className="text-sm text-gray-600 mb-2">{credit.purpose}</p>
+                              {(credit as any).accounting_companies && (
+                                <p className="text-xs text-gray-500 mb-1">Company: {(credit as any).accounting_companies.name}</p>
+                              )}
                               {credit.projects && (
                                 <p className="text-xs text-gray-500">Project: {credit.projects.name}</p>
                               )}
