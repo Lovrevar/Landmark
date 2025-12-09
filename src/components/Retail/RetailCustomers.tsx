@@ -44,15 +44,27 @@ const RetailCustomers: React.FC = () => {
 
       const customersWithStats = await Promise.all(
         (data || []).map(async (customer) => {
-          const { data: sales } = await supabase
-            .from('retail_sales')
-            .select('*')
+          const { data: contracts } = await supabase
+            .from('retail_contracts')
+            .select('id, contract_amount, budget_realized, total_surface_m2, building_surface_m2')
             .eq('customer_id', customer.id)
 
-          const total_purchased_area = sales?.reduce((sum, s) => sum + s.sale_area_m2, 0) || 0
-          const total_spent = sales?.reduce((sum, s) => sum + s.total_sale_price, 0) || 0
-          const total_paid = sales?.reduce((sum, s) => sum + s.paid_amount, 0) || 0
-          const total_remaining = sales?.reduce((sum, s) => sum + s.remaining_amount, 0) || 0
+          const total_purchased_area = contracts?.reduce((sum, c) => sum + (c.total_surface_m2 || c.building_surface_m2 || 0), 0) || 0
+          const total_spent = contracts?.reduce((sum, c) => sum + (c.contract_amount || 0), 0) || 0
+
+          const contractIds = contracts?.map(c => c.id) || []
+          let total_paid = 0
+
+          if (contractIds.length > 0) {
+            const { data: invoices } = await supabase
+              .from('accounting_invoices')
+              .select('paid_amount')
+              .in('retail_contract_id', contractIds)
+
+            total_paid = invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0
+          }
+
+          const total_remaining = total_spent - total_paid
 
           return {
             ...customer,
@@ -157,19 +169,48 @@ const RetailCustomers: React.FC = () => {
 
   const handleViewDetails = async (customer: CustomerWithSales) => {
     try {
-      const { data: sales, error } = await supabase
-        .from('retail_sales')
+      const { data: contracts, error } = await supabase
+        .from('retail_contracts')
         .select(`
-          *,
-          land_plot:retail_land_plots(*)
+          id,
+          contract_number,
+          contract_amount,
+          budget_realized,
+          total_surface_m2,
+          building_surface_m2,
+          price_per_m2,
+          status,
+          phase:retail_project_phases!inner(
+            phase_name,
+            project:retail_projects(name, plot_number)
+          )
         `)
         .eq('customer_id', customer.id)
 
       if (error) throw error
 
+      const contractsWithPayments = await Promise.all(
+        (contracts || []).map(async (contract) => {
+          const { data: invoices } = await supabase
+            .from('accounting_invoices')
+            .select('paid_amount, remaining_amount, status')
+            .eq('retail_contract_id', contract.id)
+
+          const paid_amount = invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0
+          const remaining_amount = (contract.contract_amount || 0) - paid_amount
+
+          return {
+            ...contract,
+            paid_amount,
+            remaining_amount,
+            payment_status: remaining_amount === 0 ? 'paid' : paid_amount > 0 ? 'partial' : 'pending'
+          }
+        })
+      )
+
       setSelectedCustomer({
         ...customer,
-        sales: sales || []
+        sales: contractsWithPayments as any
       })
       document.body.style.overflow = 'hidden'
       setShowDetailsModal(true)
@@ -516,23 +557,32 @@ const RetailCustomers: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-3">Prodaje ({selectedCustomer.sales?.length || 0})</h3>
                 {selectedCustomer.sales && selectedCustomer.sales.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedCustomer.sales.map((sale) => (
+                    {selectedCustomer.sales.map((sale: any) => (
                       <div key={sale.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium">Čestica: {(sale.land_plot as any)?.plot_number || 'N/A'}</p>
-                            <p className="text-sm text-gray-600">{sale.sale_area_m2} m² × €{sale.sale_price_per_m2} = €{sale.total_sale_price.toLocaleString()}</p>
-                            <p className="text-xs text-gray-500 mt-1">Plaćeno: €{sale.paid_amount.toLocaleString()} | Preostalo: €{sale.remaining_amount.toLocaleString()}</p>
+                            <p className="font-medium">
+                              {sale.phase?.project?.name || 'N/A'} - {sale.phase?.phase_name || ''}
+                            </p>
+                            <p className="text-sm text-gray-600">Ugovor: {sale.contract_number}</p>
+                            <p className="text-sm text-gray-600">
+                              {(sale.total_surface_m2 || sale.building_surface_m2 || 0).toLocaleString()} m²
+                              {sale.price_per_m2 && ` × €${sale.price_per_m2.toLocaleString()}`}
+                              {' = €'}{(sale.contract_amount || 0).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Plaćeno: €{(sale.paid_amount || 0).toLocaleString()} |
+                              Preostalo: €{(sale.remaining_amount || 0).toLocaleString()}
+                            </p>
                           </div>
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                             sale.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
                             sale.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                            sale.payment_status === 'overdue' ? 'bg-red-100 text-red-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
                             {sale.payment_status === 'paid' ? 'Plaćeno' :
                              sale.payment_status === 'partial' ? 'Djelomično' :
-                             sale.payment_status === 'overdue' ? 'Kašnjenje' : 'Pending'}
+                             'Pending'}
                           </span>
                         </div>
                       </div>
