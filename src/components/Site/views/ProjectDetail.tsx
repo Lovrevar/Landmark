@@ -14,6 +14,8 @@ interface Credit {
   id: string
   credit_name: string
   amount: number
+  used_amount: number
+  repaid_amount: number
   outstanding_balance: number
   interest_rate: number
   company: Company
@@ -66,6 +68,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           id,
           credit_name,
           amount,
+          used_amount,
+          repaid_amount,
           outstanding_balance,
           interest_rate,
           company:accounting_companies(id, name)
@@ -136,9 +140,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {credits.map((credit) => {
-              const available = credit.amount - credit.outstanding_balance
+              const usedAmount = credit.used_amount || 0
+              const available = credit.amount - usedAmount
               const utilizationPercent = credit.amount > 0
-                ? (credit.outstanding_balance / credit.amount) * 100
+                ? (usedAmount / credit.amount) * 100
                 : 0
 
               return (
@@ -153,7 +158,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Used:</span>
-                      <span className="font-semibold text-blue-600">€{credit.outstanding_balance.toLocaleString()}</span>
+                      <span className="font-semibold text-blue-600">€{usedAmount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Available:</span>

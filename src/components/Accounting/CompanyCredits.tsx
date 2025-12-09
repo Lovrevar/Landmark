@@ -24,6 +24,8 @@ interface Credit {
   grace_period: number
   interest_rate: number
   amount: number
+  used_amount: number
+  repaid_amount: number
   outstanding_balance: number
   created_at: string
 }
@@ -76,6 +78,8 @@ const CompanyCredits: React.FC = () => {
         supabase.from('projects').select('id, name').order('name'),
         supabase.from('bank_credits').select(`
           *,
+          used_amount,
+          repaid_amount,
           company:accounting_companies(id, name, oib),
           project:projects(id, name)
         `).order('created_at', { ascending: false })
@@ -197,7 +201,8 @@ const CompanyCredits: React.FC = () => {
 
   const getUtilizationPercentage = (credit: Credit) => {
     if (credit.amount === 0) return 0
-    return (credit.outstanding_balance / credit.amount) * 100
+    const usedAmount = credit.used_amount || 0
+    return (usedAmount / credit.amount) * 100
   }
 
   const isExpiringSoon = (endDate: string) => {
@@ -238,7 +243,8 @@ const CompanyCredits: React.FC = () => {
           const utilizationPercent = getUtilizationPercentage(credit)
           const expiringSoon = isExpiringSoon(credit.maturity_date)
           const expired = isExpired(credit.maturity_date)
-          const remaining = credit.amount - credit.outstanding_balance
+          const usedAmount = credit.used_amount || 0
+          const remaining = credit.amount - usedAmount
 
           return (
             <div key={credit.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -297,7 +303,7 @@ const CompanyCredits: React.FC = () => {
                     <DollarSign className="w-4 h-4" />
                     <span className="text-sm">Used</span>
                   </div>
-                  <p className="text-xl font-bold text-blue-900">€{credit.outstanding_balance.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-blue-900">€{usedAmount.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
