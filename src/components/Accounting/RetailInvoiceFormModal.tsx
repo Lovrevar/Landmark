@@ -484,7 +484,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum dospeća *
+                Datum dospijeća *
               </label>
               <input
                 type="date"
