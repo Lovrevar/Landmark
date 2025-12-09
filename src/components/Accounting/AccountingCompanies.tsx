@@ -26,6 +26,8 @@ interface Credit {
   grace_period_months: number
   interest_rate: number
   amount: number
+  used_amount: number
+  repaid_amount: number
   outstanding_balance: number
 }
 
@@ -326,7 +328,7 @@ const AccountingCompanies: React.FC = () => {
 
         supabase
           .from('bank_credits')
-          .select('*')
+          .select('*, used_amount, repaid_amount')
           .eq('company_id', company.id)
           .order('credit_name'),
 
@@ -948,8 +950,9 @@ const AccountingCompanies: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {selectedCompany.credits.map((credit) => {
-                      const available = credit.amount - credit.outstanding_balance
-                      const utilizationPercent = credit.amount > 0 ? (credit.outstanding_balance / credit.amount) * 100 : 0
+                      const usedAmount = credit.used_amount || 0
+                      const available = credit.amount - usedAmount
+                      const utilizationPercent = credit.amount > 0 ? (usedAmount / credit.amount) * 100 : 0
                       const isExpired = new Date(credit.maturity_date) < new Date()
 
                       return (
@@ -969,7 +972,7 @@ const AccountingCompanies: React.FC = () => {
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Iskorišteno:</span>
-                              <span className="font-medium text-orange-600">€{credit.outstanding_balance.toLocaleString()}</span>
+                              <span className="font-medium text-orange-600">€{usedAmount.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Dostupno:</span>
