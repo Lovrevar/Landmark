@@ -200,7 +200,7 @@ const AccountingPayments: React.FC = () => {
           .order('bank_name'),
 
         supabase
-          .from('company_credits')
+          .from('bank_credits')
           .select('*')
           .order('credit_name')
       ])

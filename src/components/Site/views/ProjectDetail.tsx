@@ -13,8 +13,8 @@ interface Company {
 interface Credit {
   id: string
   credit_name: string
-  initial_amount: number
-  current_balance: number
+  amount: number
+  outstanding_balance: number
   interest_rate: number
   company: Company
 }
@@ -61,12 +61,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     try {
       setLoadingCredits(true)
       const { data, error } = await supabase
-        .from('company_credits')
+        .from('bank_credits')
         .select(`
           id,
           credit_name,
-          initial_amount,
-          current_balance,
+          amount,
+          outstanding_balance,
           interest_rate,
           company:accounting_companies(id, name)
         `)
@@ -136,9 +136,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {credits.map((credit) => {
-              const available = credit.initial_amount - credit.current_balance
-              const utilizationPercent = credit.initial_amount > 0
-                ? (credit.current_balance / credit.initial_amount) * 100
+              const available = credit.amount - credit.outstanding_balance
+              const utilizationPercent = credit.amount > 0
+                ? (credit.outstanding_balance / credit.amount) * 100
                 : 0
 
               return (
@@ -149,11 +149,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Credit Limit:</span>
-                      <span className="font-semibold text-gray-900">€{credit.initial_amount.toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">€{credit.amount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Used:</span>
-                      <span className="font-semibold text-blue-600">€{credit.current_balance.toLocaleString()}</span>
+                      <span className="font-semibold text-blue-600">€{credit.outstanding_balance.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Available:</span>

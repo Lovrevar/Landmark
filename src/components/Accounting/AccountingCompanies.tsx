@@ -325,7 +325,7 @@ const AccountingCompanies: React.FC = () => {
           .order('bank_name'),
 
         supabase
-          .from('company_credits')
+          .from('bank_credits')
           .select('*')
           .eq('company_id', company.id)
           .order('credit_name'),

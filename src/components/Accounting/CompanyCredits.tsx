@@ -74,7 +74,7 @@ const CompanyCredits: React.FC = () => {
       const [{ data: companiesData }, { data: projectsData }, { data: creditsData }] = await Promise.all([
         supabase.from('accounting_companies').select('*').order('name'),
         supabase.from('projects').select('id, name').order('name'),
-        supabase.from('company_credits').select(`
+        supabase.from('bank_credits').select(`
           *,
           company:accounting_companies(id, name, oib),
           project:projects(id, name)
@@ -135,7 +135,7 @@ const CompanyCredits: React.FC = () => {
     try {
       if (editingCredit) {
         const { error } = await supabase
-          .from('company_credits')
+          .from('bank_credits')
           .update({
             company_id: formData.company_id,
             project_id: formData.project_id || null,
@@ -152,7 +152,7 @@ const CompanyCredits: React.FC = () => {
         if (error) throw error
       } else {
         const { error } = await supabase
-          .from('company_credits')
+          .from('bank_credits')
           .insert([{
             ...formData,
             project_id: formData.project_id || null,
@@ -175,7 +175,7 @@ const CompanyCredits: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('company_credits')
+        .from('bank_credits')
         .delete()
         .eq('id', id)
 
