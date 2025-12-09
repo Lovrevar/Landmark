@@ -20,11 +20,11 @@ interface Credit {
   project_id: string | null
   credit_name: string
   start_date: string
-  end_date: string
-  grace_period_months: number
+  maturity_date: string
+  grace_period: number
   interest_rate: number
-  initial_amount: number
-  current_balance: number
+  amount: number
+  outstanding_balance: number
   created_at: string
 }
 
@@ -113,10 +113,10 @@ const CompanyCredits: React.FC = () => {
         project_id: credit.project_id || '',
         credit_name: credit.credit_name,
         start_date: credit.start_date,
-        end_date: credit.end_date,
-        grace_period_months: credit.grace_period_months,
+        end_date: credit.maturity_date,
+        grace_period_months: Math.round(credit.grace_period / 30),
         interest_rate: credit.interest_rate,
-        initial_amount: credit.initial_amount
+        initial_amount: credit.amount
       })
     } else {
       resetForm()
@@ -141,11 +141,10 @@ const CompanyCredits: React.FC = () => {
             project_id: formData.project_id || null,
             credit_name: formData.credit_name,
             start_date: formData.start_date,
-            end_date: formData.end_date,
-            grace_period_months: formData.grace_period_months,
+            maturity_date: formData.end_date,
+            grace_period: formData.grace_period_months * 30,
             interest_rate: formData.interest_rate,
-            initial_amount: formData.initial_amount,
-            updated_at: new Date().toISOString()
+            amount: formData.initial_amount
           })
           .eq('id', editingCredit.id)
 
@@ -154,9 +153,18 @@ const CompanyCredits: React.FC = () => {
         const { error } = await supabase
           .from('bank_credits')
           .insert([{
-            ...formData,
+            company_id: formData.company_id,
             project_id: formData.project_id || null,
-            current_balance: 0
+            credit_name: formData.credit_name,
+            start_date: formData.start_date,
+            maturity_date: formData.end_date,
+            grace_period: formData.grace_period_months * 30,
+            interest_rate: formData.interest_rate,
+            amount: formData.initial_amount,
+            outstanding_balance: 0,
+            credit_type: 'line_of_credit',
+            status: 'active',
+            purpose: formData.credit_name
           }])
 
         if (error) throw error
@@ -188,8 +196,8 @@ const CompanyCredits: React.FC = () => {
   }
 
   const getUtilizationPercentage = (credit: Credit) => {
-    if (credit.initial_amount === 0) return 0
-    return (credit.current_balance / credit.initial_amount) * 100
+    if (credit.amount === 0) return 0
+    return (credit.outstanding_balance / credit.amount) * 100
   }
 
   const isExpiringSoon = (endDate: string) => {
@@ -228,9 +236,9 @@ const CompanyCredits: React.FC = () => {
       <div className="grid gap-6">
         {credits.map((credit) => {
           const utilizationPercent = getUtilizationPercentage(credit)
-          const expiringSoon = isExpiringSoon(credit.end_date)
-          const expired = isExpired(credit.end_date)
-          const remaining = credit.initial_amount - credit.current_balance
+          const expiringSoon = isExpiringSoon(credit.maturity_date)
+          const expired = isExpired(credit.maturity_date)
+          const remaining = credit.amount - credit.outstanding_balance
 
           return (
             <div key={credit.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -281,7 +289,7 @@ const CompanyCredits: React.FC = () => {
                     <DollarSign className="w-4 h-4" />
                     <span className="text-sm">Credit Limit</span>
                   </div>
-                  <p className="text-xl font-bold text-gray-900">€{credit.initial_amount.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-gray-900">€{credit.amount.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -289,7 +297,7 @@ const CompanyCredits: React.FC = () => {
                     <DollarSign className="w-4 h-4" />
                     <span className="text-sm">Used</span>
                   </div>
-                  <p className="text-xl font-bold text-blue-900">€{credit.current_balance.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-blue-900">€{credit.outstanding_balance.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
@@ -320,16 +328,16 @@ const CompanyCredits: React.FC = () => {
                 <div>
                   <span className="text-gray-600 flex items-center space-x-1">
                     <Calendar className="w-3 h-3" />
-                    <span>End Date:</span>
+                    <span>Maturity Date:</span>
                   </span>
-                  <p className="font-medium text-gray-900">{format(new Date(credit.end_date), 'MMM dd, yyyy')}</p>
+                  <p className="font-medium text-gray-900">{format(new Date(credit.maturity_date), 'MMM dd, yyyy')}</p>
                 </div>
                 <div>
                   <span className="text-gray-600 flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
                     <span>Grace Period:</span>
                   </span>
-                  <p className="font-medium text-gray-900">{credit.grace_period_months} months</p>
+                  <p className="font-medium text-gray-900">{Math.round(credit.grace_period / 30)} months</p>
                 </div>
               </div>
 
