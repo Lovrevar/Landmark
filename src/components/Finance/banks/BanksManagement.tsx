@@ -794,6 +794,36 @@ const BanksManagement: React.FC = () => {
             </div>
             
             <div className="p-6 max-h-[calc(90vh-180px)] overflow-y-auto">
+              {(() => {
+                const calculation = calculatePayments()
+                if (calculation) {
+                  return (
+                    <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
+                          <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                          <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
+                          <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-700 mb-1">Interest Payment</p>
+                          <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                          <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
+                          <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+                        <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Bank *</label>
@@ -926,35 +956,6 @@ const BanksManagement: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-
-                {(() => {
-                  const calculation = calculatePayments()
-                  if (!calculation) return null
-
-                  return (
-                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
-                          <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                          <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
-                          <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-green-700 mb-1">Interest Payment</p>
-                          <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                          <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
-                          <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
-                        <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
-                      </div>
-                    </div>
-                  )
-                })()}
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
