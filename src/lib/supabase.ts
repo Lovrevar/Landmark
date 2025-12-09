@@ -323,6 +323,8 @@ export type BankCredit = {
   grace_period: number
   credit_seniority: 'junior' | 'senior'
   repayment_type: 'monthly' | 'yearly'
+  principal_repayment_type?: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
+  interest_repayment_type?: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
 }
 
 export type Investor = {

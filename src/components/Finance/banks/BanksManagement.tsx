@@ -45,7 +45,9 @@ const BanksManagement: React.FC = () => {
     usage_expiration_date: '',
     grace_period: 0,
     repayment_type: 'monthly' as const,
-    credit_seniority: 'senior' as const
+    credit_seniority: 'senior' as const,
+    principal_repayment_type: 'yearly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
+    interest_repayment_type: 'monthly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
   })
   const [loading, setLoading] = useState(true)
 
@@ -256,7 +258,9 @@ const BanksManagement: React.FC = () => {
           credit_type: actualCreditType,
           credit_seniority: seniority,
           outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
-          monthly_payment: calculateRateAmount()
+          monthly_payment: calculateRateAmount(),
+          principal_repayment_type: newCredit.principal_repayment_type,
+          interest_repayment_type: newCredit.interest_repayment_type
         })
 
       if (error) throw error
@@ -301,7 +305,9 @@ const BanksManagement: React.FC = () => {
       usage_expiration_date: '',
       grace_period: 0,
       repayment_type: 'monthly',
-      credit_seniority: 'senior'
+      credit_seniority: 'senior',
+      principal_repayment_type: 'yearly',
+      interest_repayment_type: 'monthly'
     })
     setEditingCredit(null)
     setShowCreditForm(false)
@@ -323,7 +329,9 @@ const BanksManagement: React.FC = () => {
       usage_expiration_date: credit.usage_expiration_date || '',
       grace_period: credit.grace_period || 0,
       repayment_type: credit.repayment_type,
-      credit_seniority: credit.credit_seniority
+      credit_seniority: credit.credit_seniority,
+      principal_repayment_type: credit.principal_repayment_type || 'yearly',
+      interest_repayment_type: credit.interest_repayment_type || 'monthly'
     })
     setSelectedBank(null)
     setShowCreditForm(true)
@@ -410,7 +418,9 @@ const BanksManagement: React.FC = () => {
           purpose: newCredit.purpose,
           usage_expiration_date: newCredit.usage_expiration_date || null,
           grace_period: newCredit.grace_period,
-          repayment_type: newCredit.repayment_type
+          repayment_type: newCredit.repayment_type,
+          principal_repayment_type: newCredit.principal_repayment_type,
+          interest_repayment_type: newCredit.interest_repayment_type
         })
         .eq('id', editingCredit.id)
 
@@ -440,6 +450,56 @@ const BanksManagement: React.FC = () => {
       notes: bank.notes || ''
     })
     setShowBankForm(true)
+  }
+
+  const getPaymentFrequency = (type: string) => {
+    switch (type) {
+      case 'monthly': return 12
+      case 'quarterly': return 4
+      case 'biyearly': return 2
+      case 'yearly': return 1
+      default: return 12
+    }
+  }
+
+  const calculatePayments = () => {
+    if (!newCredit.start_date || !newCredit.maturity_date || !newCredit.amount) {
+      return null
+    }
+
+    const startDate = new Date(newCredit.start_date)
+    const endDate = new Date(newCredit.maturity_date)
+    const gracePeriodMonths = newCredit.grace_period || 0
+
+    const paymentStartDate = new Date(startDate)
+    paymentStartDate.setMonth(paymentStartDate.getMonth() + gracePeriodMonths)
+
+    if (paymentStartDate >= endDate) {
+      return null
+    }
+
+    const totalYears = (endDate.getTime() - paymentStartDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+
+    const principalFreq = getPaymentFrequency(newCredit.principal_repayment_type)
+    const interestFreq = getPaymentFrequency(newCredit.interest_repayment_type)
+
+    const totalPrincipalPayments = Math.floor(totalYears * principalFreq)
+    const totalInterestPayments = Math.floor(totalYears * interestFreq)
+
+    const principalPerPayment = totalPrincipalPayments > 0 ? newCredit.amount / totalPrincipalPayments : 0
+
+    const annualInterest = newCredit.amount * (newCredit.interest_rate / 100)
+    const interestPerPayment = totalInterestPayments > 0 ? annualInterest / interestFreq : 0
+
+    return {
+      principalPerPayment,
+      interestPerPayment,
+      totalPrincipalPayments,
+      totalInterestPayments,
+      paymentStartDate,
+      principalFrequency: newCredit.principal_repayment_type,
+      interestFrequency: newCredit.interest_repayment_type
+    }
   }
 
   const getCreditTypeColor = (type: string) => {
@@ -801,64 +861,42 @@ const BanksManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Repayment Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (months)</label>
+                  <input
+                    type="number"
+                    value={newCredit.grace_period}
+                    onChange={(e) => setNewCredit({ ...newCredit, grace_period: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Principal Repayment Type</label>
                   <select
-                    value={newCredit.repayment_type}
-                    onChange={(e) => setNewCredit({ ...newCredit, repayment_type: e.target.value as 'monthly' | 'yearly' })}
+                    value={newCredit.principal_repayment_type}
+                    onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="biyearly">Biyearly</option>
                     <option value="yearly">Yearly</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">How often to repay principal</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rate Amount (€) - {newCredit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment
-                  </label>
-                  <input
-                    type="text"
-                    value={(() => {
-                      if (!newCredit.amount || !newCredit.start_date) return 'Enter amount and dates to calculate'
-                      
-                      const principal = newCredit.amount
-                      const annualRate = newCredit.interest_rate / 100
-                      const gracePeriodYears = newCredit.grace_period / 12
-                      
-                      let maturityYears = 10 // default
-                      if (newCredit.maturity_date && newCredit.start_date) {
-                        const startDate = new Date(newCredit.start_date)
-                        const maturityDate = new Date(newCredit.maturity_date)
-                        maturityYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-                      }
-                      
-                      const repaymentYears = Math.max(0.1, maturityYears - gracePeriodYears)
-                      
-                      if (annualRate === 0) {
-                        const payment = newCredit.repayment_type === 'yearly' 
-                          ? principal / repaymentYears
-                          : principal / (repaymentYears * 12)
-                        return `${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      }
-                      
-                      let payment
-                      if (newCredit.repayment_type === 'yearly') {
-                        payment = (principal * annualRate * Math.pow(1 + annualRate, repaymentYears)) / 
-                                 (Math.pow(1 + annualRate, repaymentYears) - 1)
-                      } else {
-                        const monthlyRate = annualRate / 12
-                        const totalMonths = repaymentYears * 12
-                        payment = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
-                                 (Math.pow(1 + monthlyRate, totalMonths) - 1)
-                      }
-                      
-                      return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                    })()}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Calculated based on amount, interest rate, maturity period minus grace period
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Interest Repayment Type</label>
+                  <select
+                    value={newCredit.interest_repayment_type}
+                    onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="biyearly">Biyearly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">How often to pay interest</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
@@ -888,16 +926,36 @@ const BanksManagement: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (months)</label>
-                  <input
-                    type="number"
-                    value={newCredit.grace_period}
-                    onChange={(e) => setNewCredit({ ...newCredit, grace_period: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
+
+                {(() => {
+                  const calculation = calculatePayments()
+                  if (!calculation) return null
+
+                  return (
+                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
+                          <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                          <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
+                          <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-700 mb-1">Interest Payment</p>
+                          <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                          <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
+                          <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+                        <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
                   <textarea
