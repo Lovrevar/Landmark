@@ -289,7 +289,7 @@ const CompanyCredits: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center space-x-2 text-gray-600 mb-1">
                     <DollarSign className="w-4 h-4" />
@@ -304,6 +304,14 @@ const CompanyCredits: React.FC = () => {
                     <span className="text-sm">Used</span>
                   </div>
                   <p className="text-xl font-bold text-blue-900">€{usedAmount.toLocaleString()}</p>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 text-purple-600 mb-1">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="text-sm">Repaid</span>
+                  </div>
+                  <p className="text-xl font-bold text-purple-900">€{(credit.repaid_amount || 0).toLocaleString()}</p>
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
