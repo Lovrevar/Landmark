@@ -34,7 +34,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
 
   const [formData, setFormData] = useState({
-    invoice_type: 'INCOMING_INVESTMENT' as 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER',
+    invoice_type: 'OUTGOING_SUPPLIER' as 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER',
     company_id: '',
     bank_id: '',
     bank_credit_id: '',
@@ -204,8 +204,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
-                <option value="INCOMING_INVESTMENT">Ulazni (Povlačenje kredita)</option>
-                <option value="OUTGOING_SUPPLIER">Izlazni (Otplata kredita)</option>
+                <option value="OUTGOING_SUPPLIER">Ulazni (Otplata kredita - mi plaćamo)</option>
+                <option value="INCOMING_INVESTMENT">Izlazni (Povlačenje kredita - nama plaćaju)</option>
               </select>
             </div>
 
