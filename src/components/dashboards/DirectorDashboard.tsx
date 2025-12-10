@@ -200,29 +200,20 @@ const DirectorDashboard: React.FC = () => {
         (projectsData || []).map(async (project) => {
           const { data: contracts } = await supabase
             .from('contracts')
-            .select('id')
+            .select('id, budget_realized')
             .eq('project_id', project.id)
 
           const contractIds = contracts?.map(c => c.id) || []
 
-          // Calculate expenses from direct contract payments
           let totalExpenses = 0
           if (contractIds.length > 0) {
-            const { data: payments } = await supabase
-              .from('subcontractor_payments')
-              .select('amount')
+            const { data: invoices } = await supabase
+              .from('accounting_invoices')
+              .select('paid_amount')
               .in('contract_id', contractIds)
-            totalExpenses = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
+              .eq('invoice_category', 'subcontractor')
+            totalExpenses = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
           }
-
-          // Add expenses from milestone payments
-          const { data: milestonePayments } = await supabase
-            .from('subcontractor_payments')
-            .select('amount, subcontractor_milestones!inner(project_id)')
-            .eq('subcontractor_milestones.project_id', project.id)
-
-          const milestoneExpenses = milestonePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
-          totalExpenses += milestoneExpenses
 
           const { data: apartments } = await supabase
             .from('apartments')
@@ -281,7 +272,7 @@ const DirectorDashboard: React.FC = () => {
   const fetchFinancialData = async () => {
     try {
       const { data: sales } = await supabase.from('sales').select('sale_price, apartments(garage_id, repository_id)')
-      const { data: wirePayments } = await supabase.from('subcontractor_payments').select('amount')
+      const { data: invoices } = await supabase.from('accounting_invoices').select('paid_amount')
       const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
       const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
@@ -315,7 +306,7 @@ const DirectorDashboard: React.FC = () => {
         }
         return sum + saleTotal
       }, 0) || 0
-      const totalExpenses = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+      const totalExpenses = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
       const totalProfit = totalRevenue - totalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
       const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
@@ -432,39 +423,45 @@ const DirectorDashboard: React.FC = () => {
 
   const fetchConstructionData = async () => {
     try {
-      const { data: subcontractors } = await supabase
-        .from('subcontractors')
-        .select('id, deadline, progress')
-
       const { data: contracts } = await supabase
         .from('contracts')
-        .select('id, contract_amount, status')
+        .select('id, contract_amount, budget_realized, status')
 
-      const { data: wirePayments } = await supabase
-        .from('subcontractor_payments')
-        .select('amount, contract_id')
+      const { data: subcontractors } = await supabase
+        .from('subcontractors_master')
+        .select('id, name')
+
+      const { data: milestones } = await supabase
+        .from('subcontractor_milestones')
+        .select('id, deadline, status, contract_id')
+
+      const { data: invoices } = await supabase
+        .from('accounting_invoices')
+        .select('total_amount, paid_amount, invoice_category, contract_id')
+        .eq('invoice_category', 'subcontractor')
 
       const totalSubcontractors = subcontractors?.length || 0
-      const activeSubcontractors = subcontractors?.filter(s => s.progress < 100).length || 0
       const completedContracts = contracts?.filter(c => c.status === 'completed').length || 0
-      const totalContractValue = contracts?.reduce((sum, c) => sum + c.contract_amount, 0) || 0
-      const totalPaid = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
-      const pendingPayments = totalContractValue - totalPaid
+      const activeContracts = contracts?.filter(c => c.status === 'active').length || 0
+
+      const totalContractValue = contracts?.reduce((sum, c) => sum + Number(c.contract_amount), 0) || 0
+      const totalPaid = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
+      const pendingPayments = invoices?.reduce((sum, inv) => sum + Number(inv.total_amount - inv.paid_amount), 0) || 0
 
       const today = new Date()
-      const overdueTasks = subcontractors?.filter(s =>
-        s.deadline && new Date(s.deadline) < today && s.progress < 100
+      const overdueTasks = milestones?.filter(m =>
+        m.deadline && new Date(m.deadline) < today && m.status !== 'completed'
       ).length || 0
 
-      const criticalDeadlines = subcontractors?.filter(s => {
-        if (!s.deadline || s.progress >= 100) return false
-        const daysUntil = differenceInDays(new Date(s.deadline), today)
+      const criticalDeadlines = milestones?.filter(m => {
+        if (!m.deadline || m.status === 'completed') return false
+        const daysUntil = differenceInDays(new Date(m.deadline), today)
         return daysUntil >= 0 && daysUntil <= 7
       }).length || 0
 
       setConstructionMetrics({
         total_subcontractors: totalSubcontractors,
-        active_subcontractors: activeSubcontractors,
+        active_subcontractors: activeContracts,
         completed_contracts: completedContracts,
         total_contract_value: totalContractValue,
         total_paid: totalPaid,
@@ -480,37 +477,35 @@ const DirectorDashboard: React.FC = () => {
   const fetchFundingData = async () => {
     try {
       const { data: investors } = await supabase.from('investors').select('*')
-      const { data: banks } = await supabase.from('banks').select('*')
+      const { data: companies } = await supabase.from('accounting_companies').select('*').eq('is_bank', true)
       const { data: bankCredits } = await supabase
         .from('bank_credits')
-        .select('amount, outstanding_balance, interest_rate, monthly_payment, maturity_date')
+        .select('amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date')
       const { data: projectInvestments } = await supabase
         .from('project_investments')
         .select('amount')
-      const { data: wirePayments } = await supabase
-        .from('subcontractor_payments')
-        .select('amount')
-      const { data: bankCreditPayments } = await supabase
-        .from('bank_credit_payments')
-        .select('amount')
+      const { data: invoices } = await supabase
+        .from('accounting_invoices')
+        .select('paid_amount')
 
       const totalInvestors = investors?.length || 0
-      const totalBanks = banks?.length || 0
+      const totalBanks = companies?.length || 0
 
-      const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + bc.amount, 0) || 0
-      const totalEquityInvestments = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
+      const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.amount), 0) || 0
+      const totalEquityInvestments = projectInvestments?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0
       const totalInvestments = totalBankCredit + totalEquityInvestments
 
-      const investmentsSpent = wirePayments?.reduce((sum, p) => sum + p.amount, 0) || 0
+      const investmentsSpent = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
 
-      const totalPaidOut = bankCreditPayments?.reduce((sum, p) => sum + p.amount, 0) || 0
-      const creditPaidOut = totalBankCredit > 0 ? (totalPaidOut / totalBankCredit) * 100 : 0
+      const totalUsedCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0) || 0
+      const totalRepaidCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.repaid_amount || 0), 0) || 0
+      const creditPaidOut = totalBankCredit > 0 ? (totalUsedCredit / totalBankCredit) * 100 : 0
 
       const avgInterestRate = bankCredits?.length
-        ? bankCredits.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCredits.length
+        ? bankCredits.reduce((sum, bc) => sum + Number(bc.interest_rate || 0), 0) / bankCredits.length
         : 0
 
-      const monthlyDebtService = bankCredits?.reduce((sum, bc) => sum + bc.monthly_payment, 0) || 0
+      const monthlyDebtService = 0
 
       const upcomingMaturities = bankCredits?.filter(bc => {
         if (!bc.maturity_date) return false
@@ -537,28 +532,28 @@ const DirectorDashboard: React.FC = () => {
     const newAlerts: Alert[] = []
 
     try {
-      const { data: subcontractors } = await supabase
-        .from('subcontractors')
-        .select('name, deadline, progress')
+      const { data: milestones } = await supabase
+        .from('subcontractor_milestones')
+        .select('name, deadline, status, contracts(job_description)')
 
       const today = new Date()
 
-      subcontractors?.forEach(sub => {
-        if (sub.deadline && sub.progress < 100) {
-          const daysUntil = differenceInDays(new Date(sub.deadline), today)
+      milestones?.forEach(milestone => {
+        if (milestone.deadline && milestone.status !== 'completed') {
+          const daysUntil = differenceInDays(new Date(milestone.deadline), today)
           if (daysUntil < 0) {
             newAlerts.push({
               type: 'critical',
-              title: 'Overdue Task',
-              message: `${sub.name} is ${Math.abs(daysUntil)} days overdue (${sub.progress}% complete)`,
-              date: sub.deadline
+              title: 'Overdue Milestone',
+              message: `${milestone.name || 'Milestone'} is ${Math.abs(daysUntil)} days overdue`,
+              date: milestone.deadline
             })
           } else if (daysUntil <= 3) {
             newAlerts.push({
               type: 'warning',
               title: 'Urgent Deadline',
-              message: `${sub.name} due in ${daysUntil} days (${sub.progress}% complete)`,
-              date: sub.deadline
+              message: `${milestone.name || 'Milestone'} due in ${daysUntil} days`,
+              date: milestone.deadline
             })
           }
         }
@@ -566,7 +561,7 @@ const DirectorDashboard: React.FC = () => {
 
       const { data: bankCredits } = await supabase
         .from('bank_credits')
-        .select('maturity_date, amount, banks(name)')
+        .select('maturity_date, amount, credit_name, company:accounting_companies(name)')
 
       bankCredits?.forEach(credit => {
         if (credit.maturity_date) {
@@ -575,7 +570,7 @@ const DirectorDashboard: React.FC = () => {
             newAlerts.push({
               type: 'warning',
               title: 'Credit Maturity',
-              message: `${credit.banks?.name || 'Bank'} credit of €${credit.amount.toLocaleString()} matures in ${daysUntil} days`,
+              message: `${credit.credit_name || credit.company?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
               date: credit.maturity_date
             })
           }
@@ -855,7 +850,7 @@ const DirectorDashboard: React.FC = () => {
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <p className="text-sm text-gray-600 mb-1">Total Subcontractors</p>
             <p className="text-3xl font-bold text-blue-600">{constructionMetrics.total_subcontractors}</p>
-            <p className="text-xs text-gray-500 mt-1">{constructionMetrics.active_subcontractors} active</p>
+            <p className="text-xs text-gray-500 mt-1">{constructionMetrics.active_subcontractors} active contracts</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <p className="text-sm text-gray-600 mb-1">Completed Contracts</p>
