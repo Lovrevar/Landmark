@@ -23,6 +23,7 @@ interface BankWithCredits {
   name: string
   oib: string
   is_bank: boolean
+  bank_id: string
   total_credit_limit: number
   total_used: number
   total_repaid: number
@@ -45,7 +46,7 @@ const AccountingBanks: React.FC = () => {
       // Fetch all banks (companies marked as banks)
       const { data: banksData, error: banksError } = await supabase
         .from('accounting_companies')
-        .select('id, name, oib, is_bank')
+        .select('id, name, oib, is_bank, bank_id')
         .eq('is_bank', true)
         .order('name')
 
@@ -55,6 +56,8 @@ const AccountingBanks: React.FC = () => {
       const banksWithCredits: BankWithCredits[] = []
 
       for (const bank of banksData || []) {
+        if (!bank.bank_id) continue
+
         const { data: creditsData, error: creditsError } = await supabase
           .from('bank_credits')
           .select(`
@@ -69,7 +72,7 @@ const AccountingBanks: React.FC = () => {
             maturity_date,
             project:projects(id, name)
           `)
-          .eq('company_id', bank.id)
+          .eq('bank_id', bank.bank_id)
           .order('credit_name')
 
         if (creditsError) throw creditsError
