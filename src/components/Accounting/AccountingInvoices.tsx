@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart } from 'lucide-react'
 import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
+import BankInvoiceFormModal from './BankInvoiceFormModal'
 
 interface Company {
   id: string
@@ -145,6 +146,7 @@ const AccountingInvoices: React.FC = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
   const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
+  const [showBankInvoiceModal, setShowBankInvoiceModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
@@ -874,6 +876,13 @@ const AccountingInvoices: React.FC = () => {
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
             Novi Retail Račun
+          </button>
+          <button
+            onClick={() => setShowBankInvoiceModal(true)}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 whitespace-nowrap"
+          >
+            <DollarSign className="w-5 h-5 mr-2" />
+            Novi Račun Banka
           </button>
           <button
             onClick={() => handleOpenModal()}
@@ -2067,6 +2076,16 @@ const AccountingInvoices: React.FC = () => {
           onClose={() => setShowRetailInvoiceModal(false)}
           onSuccess={() => {
             setShowRetailInvoiceModal(false)
+            fetchData()
+          }}
+        />
+      )}
+
+      {showBankInvoiceModal && (
+        <BankInvoiceFormModal
+          onClose={() => setShowBankInvoiceModal(false)}
+          onSuccess={() => {
+            setShowBankInvoiceModal(false)
             fetchData()
           }}
         />
