@@ -29,6 +29,7 @@ import AccountingPayments from './components/Accounting/AccountingPayments'
 import AccountingSuppliers from './components/Accounting/AccountingSuppliers'
 import OfficeSuppliers from './components/Accounting/OfficeSuppliers'
 import AccountingCompanies from './components/Accounting/AccountingCompanies'
+import AccountingBanks from './components/Accounting/AccountingBanks'
 import CompanyCredits from './components/Accounting/CompanyCredits'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
 import AccountingCalendar from './components/Accounting/AccountingCalendar'
@@ -287,6 +288,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingCompanies />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-banks"
+          element={
+            <ProtectedRoute>
+              <AccountingBanks />
             </ProtectedRoute>
           }
         />
