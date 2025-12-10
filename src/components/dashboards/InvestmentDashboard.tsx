@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, Project, Bank, Investor, ProjectInvestment, BankCredit } from '../../lib/supabase'
-import { 
-  Building2, 
-  DollarSign, 
-  TrendingUp, 
-  Users, 
+import { supabase } from '../../lib/supabase'
+import {
+  Building2,
+  DollarSign,
+  TrendingUp,
   Banknote,
   PieChart,
   AlertTriangle,
@@ -14,18 +13,46 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Target,
-  Calendar
+  Calendar,
+  CreditCard
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
-interface ProjectWithInvestments extends Project {
-  total_investment: number
-  total_debt: number
-  equity_percentage: number
-  expected_roi: number
-  investors: Investor[]
-  bank_credits: BankCredit[]
-  project_investments: ProjectInvestment[]
+interface Project {
+  id: string
+  name: string
+  location: string
+  budget: number
+  status: string
+  investor: string
+  start_date: string
+  end_date: string
+}
+
+interface Company {
+  id: string
+  name: string
+  oib: string
+  is_bank: boolean
+}
+
+interface BankCredit {
+  id: string
+  credit_name: string
+  company_id: string
+  project_id: string | null
+  amount: number
+  used_amount: number
+  repaid_amount: number
+  outstanding_balance: number
+  interest_rate: number
+  start_date: string
+  maturity_date: string | null
+  usage_expiration_date: string | null
+  status: string
+  credit_type: string
+  company?: Company
+  project?: Project
 }
 
 interface FinancialSummary {
@@ -34,17 +61,16 @@ interface FinancialSummary {
   total_equity: number
   debt_to_equity_ratio: number
   weighted_avg_interest: number
-  total_monthly_payments: number
   upcoming_maturities: number
-  investment_utilization: number
-  available_investment_amount: number
   total_credit_lines: number
   available_credit: number
+  total_used_credit: number
+  total_repaid_credit: number
 }
 
 interface RecentActivity {
   id: string
-  type: 'equity' | 'credit' | 'maturity'
+  type: 'credit' | 'maturity' | 'usage_expiring'
   title: string
   description: string
   date: string
@@ -53,9 +79,9 @@ interface RecentActivity {
 
 const InvestmentDashboard: React.FC = () => {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState<ProjectWithInvestments[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-  const [investors, setInvestors] = useState<Investor[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [bankCredits, setBankCredits] = useState<BankCredit[]>([])
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary>({
     total_portfolio_value: 0,
@@ -63,12 +89,11 @@ const InvestmentDashboard: React.FC = () => {
     total_equity: 0,
     debt_to_equity_ratio: 0,
     weighted_avg_interest: 0,
-    total_monthly_payments: 0,
     upcoming_maturities: 0,
-    investment_utilization: 0,
-    available_investment_amount: 0,
     total_credit_lines: 0,
-    available_credit: 0
+    available_credit: 0,
+    total_used_credit: 0,
+    total_repaid_credit: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -79,202 +104,108 @@ const InvestmentDashboard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch projects with investment data
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('start_date', { ascending: false })
-
-      if (projectsError) throw projectsError
-
-      // Fetch banks
-      const { data: banksData, error: banksError } = await supabase
-        .from('banks')
-        .select('*')
-        .order('name')
-
-      if (banksError) throw banksError
-
-      // Fetch investors
-      const { data: investorsData, error: investorsError } = await supabase
-        .from('investors')
-        .select('*')
-        .order('name')
-
-      if (investorsError) throw investorsError
-
-      // Fetch project investments
-      const { data: projectInvestmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select(`
+      const [
+        { data: projectsData },
+        { data: companiesData },
+        { data: creditsData }
+      ] = await Promise.all([
+        supabase.from('projects').select('*').order('start_date', { ascending: false }),
+        supabase.from('accounting_companies').select('*').order('name'),
+        supabase.from('bank_credits').select(`
           *,
-          investors(*),
-          banks(*)
-        `)
+          company:accounting_companies(id, name, oib, is_bank),
+          project:projects(id, name, location, budget, status)
+        `).order('created_at', { ascending: false })
+      ])
 
-      if (investmentsError) throw investmentsError
+      const projects = projectsData || []
+      const companies = companiesData || []
+      const credits = creditsData || []
 
-      // Fetch bank credits
-      const { data: bankCreditsData, error: creditsError } = await supabase
-        .from('bank_credits')
-        .select(`
-          *,
-          banks(*),
-          projects(*)
-        `)
+      const banks = companies.filter(c => c.is_bank === true)
 
-      if (creditsError) throw creditsError
+      const total_portfolio_value = projects.reduce((sum, p) => sum + Number(p.budget), 0)
+      const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
+      const total_used_credit = credits.reduce((sum, c) => sum + Number(c.used_amount || 0), 0)
+      const total_repaid_credit = credits.reduce((sum, c) => sum + Number(c.repaid_amount || 0), 0)
+      const total_outstanding_debt = credits.reduce((sum, c) => sum + Number(c.outstanding_balance || 0), 0)
+      const available_credit = total_credit_lines - total_used_credit
 
-      // Fetch wire payments to calculate utilized amounts
-      const { data: wirePaymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
-        .select('amount, paid_by_bank_id, paid_by_investor_id')
-
-      if (paymentsError) throw paymentsError
-
-      // Process projects with investment details
-      const projectsWithInvestments = (projectsData || []).map(project => {
-        const projectInvestments = (projectInvestmentsData || []).filter(inv => inv.project_id === project.id)
-        const projectCredits = (bankCreditsData || []).filter(credit => credit.project_id === project.id)
-
-        const total_investment = projectInvestments.reduce((sum, inv) => sum + inv.amount, 0)
-        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.amount, 0)
-        const equity_percentage = project.budget > 0 ? (total_investment / project.budget) * 100 : 0
-        const expected_roi = projectInvestments.length > 0 
-          ? projectInvestments.reduce((sum, inv) => sum + inv.expected_return, 0) / projectInvestments.length 
-          : 0
-
-        const uniqueInvestors = projectInvestments
-          .filter(inv => inv.investors)
-          .map(inv => inv.investors)
-          .filter((investor, index, self) => 
-            index === self.findIndex(i => i.id === investor.id)
-          )
-
-        return {
-          ...project,
-          total_investment,
-          total_debt,
-          equity_percentage,
-          expected_roi,
-          investors: uniqueInvestors,
-          bank_credits: projectCredits,
-          project_investments: projectInvestments
-        }
-      })
-
-      // Calculate bank credit utilization
-      const bankUtilization = new Map<string, number>()
-      ;(wirePaymentsData || []).forEach(payment => {
-        if (payment.paid_by_bank_id) {
-          const current = bankUtilization.get(payment.paid_by_bank_id) || 0
-          bankUtilization.set(payment.paid_by_bank_id, current + Number(payment.amount))
-        }
-      })
-
-      // Calculate total credit lines and available credit
-      const totalCreditLines = (bankCreditsData || []).reduce((sum, credit) => sum + Number(credit.amount), 0)
-      const totalUtilizedCredit = Array.from(bankUtilization.values()).reduce((sum, val) => sum + val, 0)
-      const availableCreditFromBanks = totalCreditLines - totalUtilizedCredit
-
-      // Calculate financial summary
-      const total_portfolio_value = projectsWithInvestments.reduce((sum, p) => sum + p.budget, 0)
-      const total_outstanding_debt = (bankCreditsData || []).reduce((sum, credit) => sum + credit.outstanding_balance, 0)
-      const total_equity = projectsWithInvestments.reduce((sum, p) => sum + p.total_investment, 0)
-      const debt_to_equity_ratio = total_equity > 0 ? total_outstanding_debt / total_equity : 0
-      const total_monthly_payments = (bankCreditsData || []).reduce((sum, credit) => sum + credit.monthly_payment, 0)
-
-      const weighted_avg_interest = (bankCreditsData || []).length > 0
-        ? (bankCreditsData || []).reduce((sum, credit) => sum + credit.interest_rate, 0) / (bankCreditsData || []).length
+      const weighted_avg_interest = credits.length > 0
+        ? credits.reduce((sum, c) => sum + Number(c.interest_rate || 0), 0) / credits.length
         : 0
 
-      const upcoming_maturities = (bankCreditsData || []).filter(credit =>
-        credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90
+      const upcoming_maturities = credits.filter(c =>
+        c.maturity_date && differenceInDays(new Date(c.maturity_date), new Date()) <= 90 && differenceInDays(new Date(c.maturity_date), new Date()) > 0
       ).length
 
-      // Calculate total investments (equity + debt)
-      const total_bank_credits = (bankCreditsData || []).reduce((sum, credit) => sum + credit.amount, 0)
-      const total_investments = total_equity + total_bank_credits
+      const upcoming_usage_expirations = credits.filter(c =>
+        c.usage_expiration_date && differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90 && differenceInDays(new Date(c.usage_expiration_date), new Date()) > 0
+      ).length
 
-      // Calculate total spent (wire payments)
-      const total_spent = (wirePaymentsData || []).reduce((sum, payment) => sum + payment.amount, 0)
-
-      // Calculate investment utilization
-      const investment_utilization = total_investments > 0 ? (total_spent / total_investments) * 100 : 0
-
-      // Calculate available investment amount
-      const available_investment_amount = total_investments - total_spent
-
-      // Build recent activities from real data
       const activities: RecentActivity[] = []
 
-      // Add recent equity investments
-      ;(projectInvestmentsData || [])
+      credits
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 3)
-        .forEach(investment => {
-          const project = projectsData?.find(p => p.id === investment.project_id)
-          activities.push({
-            id: investment.id,
-            type: 'equity',
-            title: 'New equity investment secured',
-            description: `${investment.investors?.name || 'Investor'} invested €${(investment.amount / 1000000).toFixed(1)}M in ${project?.name || 'project'}`,
-            date: investment.investment_date,
-            amount: investment.amount
-          })
-        })
-
-      // Add recent bank credits
-      ;(bankCreditsData || [])
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 2)
         .forEach(credit => {
-          const project = projectsData?.find(p => p.id === credit.project_id)
           activities.push({
             id: credit.id,
             type: 'credit',
             title: 'Credit facility approved',
-            description: `${credit.banks?.name || 'Bank'} approved €${(credit.amount / 1000000).toFixed(1)}M ${credit.credit_type.replace('_', ' ')} for ${project?.name || 'project'}`,
+            description: `${credit.company?.name || 'Company'} - €${(Number(credit.amount) / 1000000).toFixed(1)}M ${credit.credit_type.replace('_', ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
             date: credit.start_date,
-            amount: credit.amount
+            amount: Number(credit.amount)
           })
         })
 
-      // Add upcoming maturities
-      ;(bankCreditsData || [])
-        .filter(credit => credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90 && differenceInDays(new Date(credit.maturity_date), new Date()) > 0)
+      credits
+        .filter(c => c.maturity_date && differenceInDays(new Date(c.maturity_date), new Date()) <= 90 && differenceInDays(new Date(c.maturity_date), new Date()) > 0)
         .sort((a, b) => new Date(a.maturity_date!).getTime() - new Date(b.maturity_date!).getTime())
-        .slice(0, 2)
+        .slice(0, 3)
         .forEach(credit => {
           const daysUntil = differenceInDays(new Date(credit.maturity_date!), new Date())
           activities.push({
             id: credit.id + '_maturity',
             type: 'maturity',
             title: 'Upcoming loan maturity',
-            description: `${credit.banks?.name || 'Bank'} loan matures in ${daysUntil} days`,
+            description: `${credit.credit_name || credit.company?.name || 'Credit'} matures in ${daysUntil} days`,
             date: credit.maturity_date!
           })
         })
 
-      // Sort all activities by date
+      credits
+        .filter(c => c.usage_expiration_date && differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90 && differenceInDays(new Date(c.usage_expiration_date), new Date()) > 0)
+        .sort((a, b) => new Date(a.usage_expiration_date!).getTime() - new Date(b.usage_expiration_date!).getTime())
+        .slice(0, 2)
+        .forEach(credit => {
+          const daysUntil = differenceInDays(new Date(credit.usage_expiration_date!), new Date())
+          activities.push({
+            id: credit.id + '_usage',
+            type: 'usage_expiring',
+            title: 'Credit usage period expiring',
+            description: `${credit.credit_name || credit.company?.name || 'Credit'} usage expires in ${daysUntil} days`,
+            date: credit.usage_expiration_date!
+          })
+        })
+
       activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-      setProjects(projectsWithInvestments)
-      setBanks(banksData || [])
-      setInvestors(investorsData || [])
+      setProjects(projects)
+      setCompanies(companies)
+      setBankCredits(credits)
       setRecentActivities(activities.slice(0, 5))
       setFinancialSummary({
         total_portfolio_value,
         total_debt: total_outstanding_debt,
-        total_equity,
-        debt_to_equity_ratio,
+        total_equity: 0,
+        debt_to_equity_ratio: 0,
         weighted_avg_interest,
-        total_monthly_payments,
         upcoming_maturities,
-        investment_utilization,
-        available_investment_amount,
-        total_credit_lines: totalCreditLines,
-        available_credit: availableCreditFromBanks
+        total_credit_lines,
+        available_credit,
+        total_used_credit,
+        total_repaid_credit
       })
     } catch (error) {
       console.error('Error fetching investment data:', error)
@@ -283,22 +214,25 @@ const InvestmentDashboard: React.FC = () => {
     }
   }
 
-  const getProjectRiskLevel = (project: ProjectWithInvestments) => {
-    const debtRatio = project.budget > 0 ? (project.total_debt / project.budget) * 100 : 0
-    const timeOverrun = project.end_date ? differenceInDays(new Date(), new Date(project.end_date)) : 0
-    
-    if (debtRatio > 70 || timeOverrun > 30) return { level: 'High', color: 'text-red-600', bg: 'bg-red-50' }
-    if (debtRatio > 50 || timeOverrun > 0) return { level: 'Medium', color: 'text-orange-600', bg: 'bg-orange-50' }
-    return { level: 'Low', color: 'text-green-600', bg: 'bg-green-50' }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
-  if (loading) {
-    return <div className="text-center py-12">Loading investment dashboard...</div>
-  }
+  const banks = companies.filter(c => c.is_bank === true)
 
   return (
     <div className="space-y-6">
-      {/* Financial Overview Cards */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Investment Dashboard</h1>
+          <p className="text-gray-600 mt-1">Overview of funding, credits, and financial metrics</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center">
@@ -320,7 +254,7 @@ const InvestmentDashboard: React.FC = () => {
               <ArrowDownRight className="w-6 h-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Outstanding Debt</p>
+              <p className="text-sm text-gray-600">Outstanding Debt</p>
               <p className="text-2xl font-bold text-gray-900">
                 €{(financialSummary.total_debt / 1000000).toFixed(1)}M
               </p>
@@ -331,12 +265,12 @@ const InvestmentDashboard: React.FC = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <ArrowUpRight className="w-6 h-6 text-green-600" />
+              <TrendingUp className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Total Equity</p>
+              <p className="text-sm text-gray-600">Available Credit</p>
               <p className="text-2xl font-bold text-gray-900">
-                €{(financialSummary.total_equity / 1000000).toFixed(1)}M
+                €{(financialSummary.available_credit / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -348,21 +282,47 @@ const InvestmentDashboard: React.FC = () => {
               <PieChart className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Debt/Equity Ratio</p>
+              <p className="text-sm text-gray-600">Credit Utilization</p>
               <p className="text-2xl font-bold text-gray-900">
-                {financialSummary.debt_to_equity_ratio.toFixed(2)}
+                {financialSummary.total_credit_lines > 0
+                  ? ((financialSummary.total_used_credit / financialSummary.total_credit_lines) * 100).toFixed(1)
+                  : '0'}%
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Financing Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Credit Overview</h3>
             <Banknote className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Credit Lines:</span>
+              <span className="font-medium">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Used Amount:</span>
+              <span className="font-medium text-blue-600">€{(financialSummary.total_used_credit / 1000000).toFixed(1)}M</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Repaid Amount:</span>
+              <span className="font-medium text-green-600">€{(financialSummary.total_repaid_credit / 1000000).toFixed(1)}M</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Avg. Interest Rate:</span>
+              <span className="font-medium">{financialSummary.weighted_avg_interest.toFixed(2)}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Banking Partners</h3>
+            <CreditCard className="w-5 h-5 text-green-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -370,12 +330,12 @@ const InvestmentDashboard: React.FC = () => {
               <span className="font-medium">{banks.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Avg. Interest Rate:</span>
-              <span className="font-medium">{financialSummary.weighted_avg_interest.toFixed(2)}%</span>
+              <span className="text-gray-600">Active Credits:</span>
+              <span className="font-medium">{bankCredits.filter(c => c.status === 'active').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Monthly Payments:</span>
-              <span className="font-medium">€{financialSummary.total_monthly_payments.toLocaleString()}</span>
+              <span className="text-gray-600">Total Companies:</span>
+              <span className="font-medium">{companies.length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Upcoming Maturities:</span>
@@ -388,167 +348,180 @@ const InvestmentDashboard: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Investment Partners</h3>
-            <Users className="w-5 h-5 text-green-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Critical Alerts</h3>
+            <AlertTriangle className="w-5 h-5 text-orange-600" />
           </div>
           <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active Investors:</span>
-              <span className="font-medium">{investors.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Invested:</span>
-              <span className="font-medium">€{(financialSummary.total_equity / 1000000).toFixed(1)}M</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Avg. Expected Return:</span>
-              <span className="font-medium">
-                {investors.length > 0 
-                  ? (investors.reduce((sum, inv) => sum + inv.expected_return, 0) / investors.length).toFixed(1)
-                  : '0'
-                }%
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Portfolio Diversity:</span>
-              <span className="font-medium">
-                {new Set(investors.map(inv => inv.type)).size} types
-              </span>
-            </div>
-          </div>
-        </div>
+            {financialSummary.upcoming_maturities > 0 && (
+              <div className="flex items-center p-2 bg-orange-50 border border-orange-200 rounded">
+                <Clock className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
+                <span className="text-sm text-orange-800">
+                  {financialSummary.upcoming_maturities} credit(s) maturing soon
+                </span>
+              </div>
+            )}
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Risk Assessment</h3>
-            <Target className="w-5 h-5 text-orange-600" />
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">High Risk Projects:</span>
-              <span className="font-medium text-red-600">
-                {projects.filter(p => getProjectRiskLevel(p).level === 'High').length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Leverage Ratio:</span>
-              <span className={`font-medium ${
-                financialSummary.debt_to_equity_ratio > 2 ? 'text-red-600' :
-                financialSummary.debt_to_equity_ratio > 1 ? 'text-orange-600' : 'text-green-600'
-              }`}>
-                {financialSummary.debt_to_equity_ratio.toFixed(2)}x
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Investment Utilization:</span>
-              <span className="font-medium">
-                {financialSummary.investment_utilization.toFixed(1)}%
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Available Investment Amount:</span>
-              <span className="font-medium text-green-600">
-                €{(financialSummary.available_investment_amount / 1000000).toFixed(1)}M
-              </span>
-            </div>
+            {bankCredits.filter(c => c.usage_expiration_date && differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90 && differenceInDays(new Date(c.usage_expiration_date), new Date()) > 0).length > 0 && (
+              <div className="flex items-center p-2 bg-yellow-50 border border-yellow-200 rounded">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0" />
+                <span className="text-sm text-yellow-800">
+                  {bankCredits.filter(c => c.usage_expiration_date && differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90).length} usage period(s) expiring
+                </span>
+              </div>
+            )}
+
+            {financialSummary.upcoming_maturities === 0 &&
+             bankCredits.filter(c => c.usage_expiration_date && differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90).length === 0 && (
+              <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
+                <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                <span className="text-sm text-green-800">No critical issues</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Projects Investment Overview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Project Investment Portfolio</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Active Credits & Expiration Dates</h2>
             <button
-              onClick={() => navigate('/investment-projects')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              onClick={() => navigate('/accounting-credits')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              View All Projects
+              View All Credits
             </button>
           </div>
         </div>
         <div className="p-6">
-          {projects.length === 0 ? (
+          {bankCredits.length === 0 ? (
             <div className="text-center py-12">
-              <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
-              <p className="text-gray-600">No investment projects available.</p>
+              <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Credits Found</h3>
+              <p className="text-gray-600">No bank credits available.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {projects.slice(0, 5).map((project) => {
-                const riskLevel = getProjectRiskLevel(project)
-                const fundingRatio = project.budget > 0 ? ((project.total_investment + project.total_debt) / project.budget) * 100 : 0
-                
+              {bankCredits.map((credit) => {
+                const utilizationPercent = credit.amount > 0 ? (Number(credit.used_amount || 0) / Number(credit.amount)) * 100 : 0
+                const maturityDays = credit.maturity_date ? differenceInDays(new Date(credit.maturity_date), new Date()) : null
+                const usageDays = credit.usage_expiration_date ? differenceInDays(new Date(credit.usage_expiration_date), new Date()) : null
+                const maturityWarning = maturityDays !== null && maturityDays <= 90 && maturityDays > 0
+                const usageWarning = usageDays !== null && usageDays <= 90 && usageDays > 0
+
                 return (
-                  <div key={project.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200">
+                  <div key={credit.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {project.status}
-                          </span>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${riskLevel.bg} ${riskLevel.color}`}>
-                            {riskLevel.level} Risk
-                          </span>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`}
+                          </h3>
+                          {credit.project && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                              {credit.project.name}
+                            </span>
+                          )}
+                          {maturityWarning && (
+                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
+                              Maturing Soon
+                            </span>
+                          )}
+                          {usageWarning && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                              Usage Expiring
+                            </span>
+                          )}
                         </div>
-                        <p className="text-gray-600 mb-2">{project.location}</p>
-                        <p className="text-sm text-gray-500">Investor: {project.investor || 'Multiple'}</p>
+                        <p className="text-gray-600">{credit.company?.name || 'Unknown Company'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">Total Budget</p>
+                        <p className="text-lg font-bold text-gray-900">€{Number(credit.amount).toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">Credit Limit</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                       <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-xs text-blue-700">Equity Investment</p>
-                        <p className="text-lg font-bold text-blue-900">€{project.total_investment.toLocaleString()}</p>
-                        <p className="text-xs text-blue-600">{project.equity_percentage.toFixed(1)}% of budget</p>
+                        <p className="text-xs text-blue-700">Used</p>
+                        <p className="text-lg font-bold text-blue-900">€{Number(credit.used_amount || 0).toLocaleString()}</p>
                       </div>
-                      
-                      <div className="bg-red-50 p-3 rounded-lg">
-                        <p className="text-xs text-red-700">Debt Financing</p>
-                        <p className="text-lg font-bold text-red-900">€{project.total_debt.toLocaleString()}</p>
-                        <p className="text-xs text-red-600">{project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% of budget</p>
-                      </div>
-                      
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-xs text-green-700">Expected ROI</p>
-                        <p className="text-lg font-bold text-green-900">{project.expected_roi.toFixed(1)}%</p>
-                        <p className="text-xs text-green-600">Weighted average</p>
-                      </div>
-                      
+
                       <div className="bg-purple-50 p-3 rounded-lg">
-                        <p className="text-xs text-purple-700">Funding Status</p>
-                        <p className="text-lg font-bold text-purple-900">{fundingRatio.toFixed(1)}%</p>
-                        <p className="text-xs text-purple-600">
-                          {fundingRatio >= 100 ? 'Fully funded' : 'Needs funding'}
+                        <p className="text-xs text-purple-700">Repaid</p>
+                        <p className="text-lg font-bold text-purple-900">€{Number(credit.repaid_amount || 0).toLocaleString()}</p>
+                      </div>
+
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <p className="text-xs text-green-700">Available</p>
+                        <p className="text-lg font-bold text-green-900">
+                          €{(Number(credit.amount) - Number(credit.used_amount || 0)).toLocaleString()}
                         </p>
                       </div>
+
+                      <div className="bg-red-50 p-3 rounded-lg">
+                        <p className="text-xs text-red-700">Outstanding</p>
+                        <p className="text-lg font-bold text-red-900">€{Number(credit.outstanding_balance || 0).toLocaleString()}</p>
+                      </div>
+
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <p className="text-xs text-orange-700">Interest Rate</p>
+                        <p className="text-lg font-bold text-orange-900">{Number(credit.interest_rate || 0).toFixed(2)}%</p>
+                      </div>
                     </div>
 
-                    {/* Funding Progress Bar */}
-                    <div className="mt-4">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm text-gray-600">Funding Progress</span>
-                        <span className="text-sm font-medium">{fundingRatio.toFixed(1)}%</span>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="text-gray-600 flex items-center space-x-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>Start Date:</span>
+                        </span>
+                        <p className="font-medium text-gray-900">{format(new Date(credit.start_date), 'MMM dd, yyyy')}</p>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            fundingRatio >= 100 ? 'bg-green-600' : 
-                            fundingRatio >= 80 ? 'bg-blue-600' : 'bg-orange-600'
+                      {credit.maturity_date && (
+                        <div>
+                          <span className="text-gray-600 flex items-center space-x-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Maturity Date:</span>
+                          </span>
+                          <p className={`font-medium ${maturityWarning ? 'text-orange-600' : 'text-gray-900'}`}>
+                            {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
+                            {maturityDays !== null && maturityDays > 0 && (
+                              <span className="text-xs ml-1">({maturityDays}d)</span>
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {credit.usage_expiration_date && (
+                        <div>
+                          <span className="text-gray-600 flex items-center space-x-1">
+                            <Clock className="w-3 h-3" />
+                            <span>Usage Expires:</span>
+                          </span>
+                          <p className={`font-medium ${usageWarning ? 'text-yellow-600' : 'text-gray-900'}`}>
+                            {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
+                            {usageDays !== null && usageDays > 0 && (
+                              <span className="text-xs ml-1">({usageDays}d)</span>
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-gray-600">Utilization</span>
+                        <span className="font-semibold text-gray-900">{utilizationPercent.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full transition-all ${
+                            utilizationPercent >= 90 ? 'bg-red-500' :
+                            utilizationPercent >= 70 ? 'bg-orange-500' :
+                            'bg-blue-500'
                           }`}
-                          style={{ width: `${Math.min(100, fundingRatio)}%` }}
-                        ></div>
+                          style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -559,139 +532,31 @@ const InvestmentDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Banking Relationships</h3>
-            <Banknote className="w-5 h-5 text-blue-600" />
-          </div>
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active Banks:</span>
-              <span className="font-medium">{banks.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Credit Lines:</span>
-              <span className="font-medium">
-                €{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Available Credit:</span>
-              <span className="font-medium text-green-600">
-                €{(financialSummary.available_credit / 1000000).toFixed(1)}M
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/banks')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            Manage Banks
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Investment Partners</h3>
-            <Users className="w-5 h-5 text-green-600" />
-          </div>
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Active Investors:</span>
-              <span className="font-medium">{investors.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Committed:</span>
-              <span className="font-medium">
-                €{(investors.reduce((sum, inv) => sum + inv.total_invested, 0) / 1000000).toFixed(1)}M
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Institutional:</span>
-              <span className="font-medium">
-                {investors.filter(inv => inv.type === 'institutional').length}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/investors')}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            Manage Investors
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Critical Alerts</h3>
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-          </div>
-          <div className="space-y-3">
-            {financialSummary.upcoming_maturities > 0 && (
-              <div className="flex items-center p-2 bg-orange-50 border border-orange-200 rounded">
-                <Clock className="w-4 h-4 text-orange-600 mr-2" />
-                <span className="text-sm text-orange-800">
-                  {financialSummary.upcoming_maturities} credit(s) maturing soon
-                </span>
-              </div>
-            )}
-            
-            {financialSummary.debt_to_equity_ratio > 2 && (
-              <div className="flex items-center p-2 bg-red-50 border border-red-200 rounded">
-                <AlertTriangle className="w-4 h-4 text-red-600 mr-2" />
-                <span className="text-sm text-red-800">High leverage ratio</span>
-              </div>
-            )}
-            
-            {projects.filter(p => getProjectRiskLevel(p).level === 'High').length > 0 && (
-              <div className="flex items-center p-2 bg-red-50 border border-red-200 rounded">
-                <AlertTriangle className="w-4 h-4 text-red-600 mr-2" />
-                <span className="text-sm text-red-800">
-                  {projects.filter(p => getProjectRiskLevel(p).level === 'High').length} high-risk project(s)
-                </span>
-              </div>
-            )}
-
-            {financialSummary.upcoming_maturities === 0 && 
-             financialSummary.debt_to_equity_ratio <= 2 && 
-             projects.filter(p => getProjectRiskLevel(p).level === 'High').length === 0 && (
-              <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
-                <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
-                <span className="text-sm text-green-800">No critical issues</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Investment Activity</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
         </div>
         <div className="p-6">
           {recentActivities.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No recent investment activity</p>
+              <p>No recent activity</p>
             </div>
           ) : (
             <div className="space-y-4">
               {recentActivities.map((activity) => {
                 const isMaturity = activity.type === 'maturity'
-                const isCredit = activity.type === 'credit'
-                const bgColor = activity.type === 'equity' ? 'bg-green-50 border-green-200' :
-                                activity.type === 'credit' ? 'bg-blue-50 border-blue-200' :
+                const isUsageExpiring = activity.type === 'usage_expiring'
+                const bgColor = activity.type === 'credit' ? 'bg-blue-50 border-blue-200' :
+                                activity.type === 'usage_expiring' ? 'bg-yellow-50 border-yellow-200' :
                                 'bg-orange-50 border-orange-200'
-                const iconBg = activity.type === 'equity' ? 'bg-green-100' :
-                               activity.type === 'credit' ? 'bg-blue-100' :
+                const iconBg = activity.type === 'credit' ? 'bg-blue-100' :
+                               activity.type === 'usage_expiring' ? 'bg-yellow-100' :
                                'bg-orange-100'
-                const iconColor = activity.type === 'equity' ? 'text-green-600' :
-                                  activity.type === 'credit' ? 'text-blue-600' :
+                const iconColor = activity.type === 'credit' ? 'text-blue-600' :
+                                  activity.type === 'usage_expiring' ? 'text-yellow-600' :
                                   'text-orange-600'
-                const Icon = activity.type === 'equity' ? ArrowUpRight :
-                            activity.type === 'credit' ? Banknote :
+                const Icon = activity.type === 'credit' ? Banknote :
+                            activity.type === 'usage_expiring' ? Clock :
                             Calendar
 
                 return (
@@ -704,7 +569,7 @@ const InvestmentDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600">{activity.description}</p>
                     </div>
                     <span className="text-sm text-gray-500">
-                      {isMaturity ? 'Due Soon' : format(new Date(activity.date), 'MMM dd')}
+                      {isMaturity || isUsageExpiring ? format(new Date(activity.date), 'MMM dd, yyyy') : format(new Date(activity.date), 'MMM dd')}
                     </span>
                   </div>
                 )
