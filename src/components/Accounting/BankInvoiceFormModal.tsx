@@ -161,17 +161,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       const { error } = await supabase
         .from('accounting_invoices')
         .insert([invoiceData])
-
-      if (error) throw error
-
-      alert('Račun uspješno kreiran')
-      onSuccess()
-    } catch (error: any) {
-      console.error('Error creating invoice:', error)
-      alert('Greška pri kreiranju računa: ' + error.message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const { vatAmount, total } = calculateTotal()
