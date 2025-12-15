@@ -273,7 +273,12 @@ const DirectorDashboard: React.FC = () => {
     try {
       const { data: sales } = await supabase.from('sales').select('sale_price, apartments(garage_id, repository_id)')
       const { data: invoices } = await supabase.from('accounting_invoices').select('paid_amount')
-      const { data: apartmentPayments } = await supabase.from('apartment_payments').select('amount, payment_date')
+      const { data: accountingPayments } = await supabase.from('accounting_payments').select('amount, payment_date, invoice_id')
+      const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('id, invoice_category')
+      const apartmentPayments = accountingPayments?.filter(p => {
+        const invoice = accountingInvoices?.find(inv => inv.id === p.invoice_id)
+        return invoice?.invoice_category === 'APARTMENT'
+      }) || []
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
       const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
 
@@ -428,17 +433,17 @@ const DirectorDashboard: React.FC = () => {
         .select('id, contract_amount, budget_realized, status')
 
       const { data: subcontractors } = await supabase
-        .from('subcontractors_master')
+        .from('subcontractors')
         .select('id, name')
 
       const { data: milestones } = await supabase
         .from('subcontractor_milestones')
-        .select('id, deadline, status, contract_id')
+        .select('id, due_date, status, contract_id')
 
       const { data: invoices } = await supabase
         .from('accounting_invoices')
         .select('total_amount, paid_amount, invoice_category, contract_id')
-        .eq('invoice_category', 'subcontractor')
+        .eq('invoice_category', 'SUBCONTRACTOR')
 
       const totalSubcontractors = subcontractors?.length || 0
       const completedContracts = contracts?.filter(c => c.status === 'completed').length || 0
@@ -450,12 +455,12 @@ const DirectorDashboard: React.FC = () => {
 
       const today = new Date()
       const overdueTasks = milestones?.filter(m =>
-        m.deadline && new Date(m.deadline) < today && m.status !== 'completed'
+        m.due_date && new Date(m.due_date) < today && m.status !== 'completed'
       ).length || 0
 
       const criticalDeadlines = milestones?.filter(m => {
-        if (!m.deadline || m.status === 'completed') return false
-        const daysUntil = differenceInDays(new Date(m.deadline), today)
+        if (!m.due_date || m.status === 'completed') return false
+        const daysUntil = differenceInDays(new Date(m.due_date), today)
         return daysUntil >= 0 && daysUntil <= 7
       }).length || 0
 
@@ -534,26 +539,26 @@ const DirectorDashboard: React.FC = () => {
     try {
       const { data: milestones } = await supabase
         .from('subcontractor_milestones')
-        .select('name, deadline, status, contracts(job_description)')
+        .select('milestone_name, due_date, status, contracts(job_description)')
 
       const today = new Date()
 
       milestones?.forEach(milestone => {
-        if (milestone.deadline && milestone.status !== 'completed') {
-          const daysUntil = differenceInDays(new Date(milestone.deadline), today)
+        if (milestone.due_date && milestone.status !== 'completed') {
+          const daysUntil = differenceInDays(new Date(milestone.due_date), today)
           if (daysUntil < 0) {
             newAlerts.push({
               type: 'critical',
               title: 'Overdue Milestone',
-              message: `${milestone.name || 'Milestone'} is ${Math.abs(daysUntil)} days overdue`,
-              date: milestone.deadline
+              message: `${milestone.milestone_name || 'Milestone'} is ${Math.abs(daysUntil)} days overdue`,
+              date: milestone.due_date
             })
           } else if (daysUntil <= 3) {
             newAlerts.push({
               type: 'warning',
               title: 'Urgent Deadline',
-              message: `${milestone.name || 'Milestone'} due in ${daysUntil} days`,
-              date: milestone.deadline
+              message: `${milestone.milestone_name || 'Milestone'} due in ${daysUntil} days`,
+              date: milestone.due_date
             })
           }
         }
