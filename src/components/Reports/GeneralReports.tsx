@@ -224,9 +224,18 @@ const GeneralReports: React.FC = () => {
     const officeSuppliersArray = officeSuppliers || []
     const bankCreditsArray = bankCredits || []
 
-    const apartmentPaymentsArray = accountingPaymentsArray.filter(p => {
+    const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
       const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-      return invoice?.invoice_category === 'APARTMENT'
+      return invoice?.invoice_type === 'INCOMING_INVESTMENT' ||
+             invoice?.invoice_type === 'OUTGOING_SALES' ||
+             invoice?.invoice_type === 'OUTGOING_OFFICE'
+    })
+
+    const outflowPaymentsArray = accountingPaymentsArray.filter(p => {
+      const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
+      return invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
+             invoice?.invoice_type === 'INCOMING_OFFICE' ||
+             invoice?.invoice_type === 'OUTGOING_SUPPLIER'
     })
 
     // Fetch garages and repositories for calculating total revenue
@@ -305,19 +314,19 @@ const GeneralReports: React.FC = () => {
       const monthStart = startOfMonth(month)
       const monthEnd = endOfMonth(month)
 
-      const monthInflow = apartmentPaymentsArray
+      const monthInflow = inflowPaymentsArray
         .filter(p => {
           const date = new Date(p.payment_date)
           return date >= monthStart && date <= monthEnd
         })
         .reduce((sum, p) => sum + p.amount, 0)
 
-      const monthOutflow = accountingPaymentsArray
+      const monthOutflow = outflowPaymentsArray
         .filter(p => {
           const date = new Date(p.payment_date)
           return date >= monthStart && date <= monthEnd
         })
-        .reduce((sum, p) => sum + (p.base_amount || 0), 0)
+        .reduce((sum, p) => sum + p.amount, 0)
 
       return {
         month: format(month, 'MMM yyyy'),
