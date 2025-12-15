@@ -191,7 +191,6 @@ const GeneralReports: React.FC = () => {
     const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*')
-    const { data: apartmentPayments } = await supabase.from('apartment_payments').select('*')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
     const { data: projectPhases } = await supabase.from('project_phases').select('*')
     const { data: workLogs } = await supabase.from('work_logs').select('*')
@@ -202,7 +201,6 @@ const GeneralReports: React.FC = () => {
     const { data: accountingPayments } = await supabase.from('accounting_payments').select('*')
     const { data: accountingCompanies } = await supabase.from('accounting_companies').select('*')
     const { data: companyBankAccounts } = await supabase.from('company_bank_accounts').select('*')
-    const { data: companyCredits } = await supabase.from('company_credits').select('*')
     const { data: ticCostStructures } = await supabase.from('tic_cost_structures').select('*')
     const { data: officeSuppliers } = await supabase.from('office_suppliers').select('*')
     const { data: bankCredits } = await supabase.from('bank_credits').select('*')
@@ -212,7 +210,6 @@ const GeneralReports: React.FC = () => {
     const salesArray = sales || []
     const customersArray = customers || []
     const contractsArray = contracts || []
-    const apartmentPaymentsArray = apartmentPayments || []
     const subcontractorsArray = subcontractors || []
     const projectPhasesArray = projectPhases || []
     const workLogsArray = workLogs || []
@@ -223,10 +220,14 @@ const GeneralReports: React.FC = () => {
     const accountingPaymentsArray = accountingPayments || []
     const accountingCompaniesArray = accountingCompanies || []
     const companyBankAccountsArray = companyBankAccounts || []
-    const companyCreditsArray = companyCredits || []
     const ticCostStructuresArray = ticCostStructures || []
     const officeSuppliersArray = officeSuppliers || []
     const bankCreditsArray = bankCredits || []
+
+    const apartmentPaymentsArray = accountingPaymentsArray.filter(p => {
+      const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
+      return invoice?.invoice_category === 'APARTMENT'
+    })
 
     // Fetch garages and repositories for calculating total revenue
     const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -436,19 +437,19 @@ const GeneralReports: React.FC = () => {
     const companiesOverBudget = ticCostStructuresArray.filter(tic => (tic.actual_spent || 0) > (tic.budgeted_amount || 0)).length
 
     const totalOfficeSuppliers = officeSuppliersArray.length
-    const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'office')
+    const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'OFFICE')
     const totalOfficeInvoices = officeInvoices.length
-    const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
     const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
 
-    const totalCredits = companyCreditsArray.length
-    const totalCreditValue = companyCreditsArray.reduce((sum, cr) => sum + (cr.credit_amount || 0), 0)
-    const creditsAvailable = companyCreditsArray.reduce((sum, cr) => sum + (cr.available_balance || 0), 0)
-    const creditsUsed = totalCreditValue - creditsAvailable
+    const totalCredits = bankCreditsArray.length
+    const totalCreditValue = bankCreditsArray.reduce((sum, cr) => sum + (cr.amount || 0), 0)
+    const creditsUsed = bankCreditsArray.reduce((sum, cr) => sum + (cr.used_amount || 0), 0)
+    const creditsAvailable = bankCreditsArray.reduce((sum, cr) => sum + ((cr.amount || 0) - (cr.used_amount || 0)), 0)
     const cesijaPayments = accountingPaymentsArray.filter(p => p.cesija_credit_id).length
     const cesijaValue = accountingPaymentsArray
       .filter(p => p.cesija_credit_id)
-      .reduce((sum, p) => sum + (p.cesija_amount || 0), 0)
+      .reduce((sum, p) => sum + (p.amount || 0), 0)
 
     const totalBankAccounts = companyBankAccountsArray.length
     const totalBalance = companyBankAccountsArray.reduce((sum, acc) => sum + (acc.current_balance || 0), 0)
