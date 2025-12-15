@@ -204,14 +204,6 @@ function AppContent() {
           }
         />
         <Route
-          path="/supervision-reports"
-          element={
-            <ProtectedRoute>
-              <SupervisionReports />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/work-logs"
           element={
             <ProtectedRoute>
