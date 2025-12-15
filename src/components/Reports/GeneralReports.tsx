@@ -226,16 +226,16 @@ const GeneralReports: React.FC = () => {
 
     const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
       const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-      return invoice?.invoice_type === 'INCOMING_INVESTMENT' ||
-             invoice?.invoice_type === 'OUTGOING_SALES' ||
-             invoice?.invoice_type === 'OUTGOING_OFFICE'
+      return invoice?.invoice_type === 'OUTGOING_SALES' ||
+             invoice?.invoice_type === 'OUTGOING_OFFICE' ||
+             invoice?.invoice_type === 'OUTGOING_SUPPLIER' ||
+             invoice?.invoice_type === 'INCOMING_INVESTMENT'
     })
 
     const outflowPaymentsArray = accountingPaymentsArray.filter(p => {
       const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
       return invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
-             invoice?.invoice_type === 'INCOMING_OFFICE' ||
-             invoice?.invoice_type === 'OUTGOING_SUPPLIER'
+             invoice?.invoice_type === 'INCOMING_OFFICE'
     })
 
     // Fetch garages and repositories for calculating total revenue
