@@ -202,10 +202,8 @@ const AccountingCalendar: React.FC = () => {
 
       await fetchBudgets()
       setShowBudgetModal(false)
-      alert('Budžeti uspješno spremljeni!')
     } catch (error) {
       console.error('Error saving budgets:', error)
-      alert('Greška pri spremanju budžeta')
     }
   }
 
