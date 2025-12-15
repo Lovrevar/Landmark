@@ -103,6 +103,44 @@ interface ComprehensiveReport {
     completed_phases: number
     work_logs_7days: number
   }
+  accounting_overview: {
+    total_invoices: number
+    total_invoice_value: number
+    paid_invoices: number
+    paid_value: number
+    pending_invoices: number
+    pending_value: number
+    overdue_invoices: number
+    overdue_value: number
+    payment_completion_rate: number
+  }
+  tic_cost_management: {
+    total_companies: number
+    total_tic_budget: number
+    total_tic_spent: number
+    tic_utilization: number
+    companies_over_budget: number
+  }
+  office_expenses: {
+    total_office_suppliers: number
+    total_office_invoices: number
+    total_office_spent: number
+    avg_office_invoice: number
+  }
+  company_credits: {
+    total_credits: number
+    total_credit_value: number
+    credits_available: number
+    credits_used: number
+    cesija_payments: number
+    cesija_value: number
+  }
+  bank_accounts: {
+    total_accounts: number
+    total_balance: number
+    positive_balance_accounts: number
+    negative_balance_accounts: number
+  }
   cash_flow: Array<{
     month: string
     inflow: number
@@ -153,32 +191,42 @@ const GeneralReports: React.FC = () => {
     const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*')
-    const { data: wirePayments } = await supabase.from('subcontractor_payments').select('*')
-    const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
     const { data: apartmentPayments } = await supabase.from('apartment_payments').select('*')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
     const { data: projectPhases } = await supabase.from('project_phases').select('*')
     const { data: workLogs } = await supabase.from('work_logs').select('*')
     const { data: investors } = await supabase.from('investors').select('*')
-    const { data: banks } = await supabase.from('banks').select('*')
-    const { data: bankCredits } = await supabase.from('bank_credits').select('*')
     const { data: projectInvestments } = await supabase.from('project_investments').select('*')
+
+    const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('*')
+    const { data: accountingPayments } = await supabase.from('accounting_payments').select('*')
+    const { data: accountingCompanies } = await supabase.from('accounting_companies').select('*')
+    const { data: companyBankAccounts } = await supabase.from('company_bank_accounts').select('*')
+    const { data: companyCredits } = await supabase.from('company_credits').select('*')
+    const { data: ticCostStructures } = await supabase.from('tic_cost_structures').select('*')
+    const { data: officeSuppliers } = await supabase.from('office_suppliers').select('*')
+    const { data: bankCredits } = await supabase.from('bank_credits').select('*')
 
     const projectsArray = projects || []
     const apartmentsArray = apartments || []
     const salesArray = sales || []
     const customersArray = customers || []
     const contractsArray = contracts || []
-    const wirePaymentsArray = wirePayments || []
-    const subcontractorMilestonesArray = subcontractorMilestones || []
     const apartmentPaymentsArray = apartmentPayments || []
     const subcontractorsArray = subcontractors || []
     const projectPhasesArray = projectPhases || []
     const workLogsArray = workLogs || []
     const investorsArray = investors || []
-    const banksArray = banks || []
-    const bankCreditsArray = bankCredits || []
     const projectInvestmentsArray = projectInvestments || []
+
+    const accountingInvoicesArray = accountingInvoices || []
+    const accountingPaymentsArray = accountingPayments || []
+    const accountingCompaniesArray = accountingCompanies || []
+    const companyBankAccountsArray = companyBankAccounts || []
+    const companyCreditsArray = companyCredits || []
+    const ticCostStructuresArray = ticCostStructures || []
+    const officeSuppliersArray = officeSuppliers || []
+    const bankCreditsArray = bankCredits || []
 
     // Fetch garages and repositories for calculating total revenue
     const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -201,7 +249,6 @@ const GeneralReports: React.FC = () => {
       ? projectsArray
       : projectsArray.filter(p => p.id === selectedProject)
 
-    // Calculate total revenue including linked garages and storages
     const totalRevenue = salesArray.reduce((sum, s) => {
       let saleTotal = s.sale_price
       if (s.apartments?.garage_id) {
@@ -212,7 +259,8 @@ const GeneralReports: React.FC = () => {
       }
       return sum + saleTotal
     }, 0)
-    const totalExpenses = wirePaymentsArray.reduce((sum, p) => sum + p.amount, 0)
+
+    const totalExpenses = accountingPaymentsArray.reduce((sum, p) => sum + (p.base_amount || 0), 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -235,9 +283,9 @@ const GeneralReports: React.FC = () => {
     const conversionRate = customersArray.length > 0 ? (buyers / customersArray.length) * 100 : 0
 
     const avgInterestRate = bankCreditsArray.length > 0
-      ? bankCreditsArray.reduce((sum, bc) => sum + bc.interest_rate, 0) / bankCreditsArray.length
+      ? bankCreditsArray.reduce((sum, bc) => sum + (bc.interest_rate || 0), 0) / bankCreditsArray.length
       : 0
-    const monthlyDebtService = bankCreditsArray.reduce((sum, bc) => sum + bc.monthly_payment, 0)
+    const monthlyDebtService = bankCreditsArray.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
 
     const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
     const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
@@ -263,12 +311,12 @@ const GeneralReports: React.FC = () => {
         })
         .reduce((sum, p) => sum + p.amount, 0)
 
-      const monthOutflow = wirePaymentsArray
+      const monthOutflow = accountingPaymentsArray
         .filter(p => {
-          const date = new Date(p.created_at)
+          const date = new Date(p.payment_date)
           return date >= monthStart && date <= monthEnd
         })
-        .reduce((sum, p) => sum + p.amount, 0)
+        .reduce((sum, p) => sum + (p.base_amount || 0), 0)
 
       return {
         month: format(month, 'MMM yyyy'),
@@ -290,23 +338,18 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
-        // Calculate expenses from direct contract payments
         const contractIds = projectContracts.map(c => c.id)
-        const projectPayments = contractIds.length > 0
-          ? wirePaymentsArray.filter(p => p.contract_id && contractIds.includes(p.contract_id))
-          : []
-        const contractExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
 
-        // Add expenses from milestone payments
-        const projectMilestoneIds = subcontractorMilestonesArray
-          .filter(m => m.project_id === project.id)
-          .map(m => m.id)
-        const milestonePayments = projectMilestoneIds.length > 0
-          ? wirePaymentsArray.filter(p => p.milestone_id && projectMilestoneIds.includes(p.milestone_id))
-          : []
-        const milestoneExpenses = milestonePayments.reduce((sum, p) => sum + p.amount, 0)
+        const projectInvoices = accountingInvoicesArray.filter(inv =>
+          inv.project_id === project.id ||
+          (inv.contract_id && contractIds.includes(inv.contract_id))
+        )
 
-        const projectExpenses = contractExpenses + milestoneExpenses
+        const projectPayments = accountingPaymentsArray.filter(pay =>
+          projectInvoices.some(inv => inv.id === pay.invoice_id)
+        )
+
+        const projectExpenses = projectPayments.reduce((sum, p) => sum + (p.base_amount || 0), 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
@@ -370,6 +413,48 @@ const GeneralReports: React.FC = () => {
     recommendations.push('Continue monitoring project budgets and timeline adherence')
     recommendations.push('Maintain strong relationships with financing partners')
 
+    const totalInvoices = accountingInvoicesArray.length
+    const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const paidInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'paid').length
+    const paidValue = accountingInvoicesArray
+      .filter(inv => inv.payment_status === 'paid')
+      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const pendingInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'pending').length
+    const pendingValue = accountingInvoicesArray
+      .filter(inv => inv.payment_status === 'pending')
+      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const overdueInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'overdue').length
+    const overdueValue = accountingInvoicesArray
+      .filter(inv => inv.payment_status === 'overdue')
+      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const paymentCompletionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0
+
+    const totalCompanies = accountingCompaniesArray.length
+    const totalTicBudget = ticCostStructuresArray.reduce((sum, tic) => sum + (tic.budgeted_amount || 0), 0)
+    const totalTicSpent = ticCostStructuresArray.reduce((sum, tic) => sum + (tic.actual_spent || 0), 0)
+    const ticUtilization = totalTicBudget > 0 ? (totalTicSpent / totalTicBudget) * 100 : 0
+    const companiesOverBudget = ticCostStructuresArray.filter(tic => (tic.actual_spent || 0) > (tic.budgeted_amount || 0)).length
+
+    const totalOfficeSuppliers = officeSuppliersArray.length
+    const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'office')
+    const totalOfficeInvoices = officeInvoices.length
+    const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+    const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
+
+    const totalCredits = companyCreditsArray.length
+    const totalCreditValue = companyCreditsArray.reduce((sum, cr) => sum + (cr.credit_amount || 0), 0)
+    const creditsAvailable = companyCreditsArray.reduce((sum, cr) => sum + (cr.available_balance || 0), 0)
+    const creditsUsed = totalCreditValue - creditsAvailable
+    const cesijaPayments = accountingPaymentsArray.filter(p => p.cesija_credit_id).length
+    const cesijaValue = accountingPaymentsArray
+      .filter(p => p.cesija_credit_id)
+      .reduce((sum, p) => sum + (p.cesija_amount || 0), 0)
+
+    const totalBankAccounts = companyBankAccountsArray.length
+    const totalBalance = companyBankAccountsArray.reduce((sum, acc) => sum + (acc.current_balance || 0), 0)
+    const positiveBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) > 0).length
+    const negativeBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) < 0).length
+
     return {
       executive_summary: {
         total_projects: projectsArray.length,
@@ -428,6 +513,44 @@ const GeneralReports: React.FC = () => {
         total_phases: projectPhasesArray.length,
         completed_phases: completedPhases,
         work_logs_7days: recentWorkLogs
+      },
+      accounting_overview: {
+        total_invoices: totalInvoices,
+        total_invoice_value: totalInvoiceValue,
+        paid_invoices: paidInvoices,
+        paid_value: paidValue,
+        pending_invoices: pendingInvoices,
+        pending_value: pendingValue,
+        overdue_invoices: overdueInvoices,
+        overdue_value: overdueValue,
+        payment_completion_rate: paymentCompletionRate
+      },
+      tic_cost_management: {
+        total_companies: totalCompanies,
+        total_tic_budget: totalTicBudget,
+        total_tic_spent: totalTicSpent,
+        tic_utilization: ticUtilization,
+        companies_over_budget: companiesOverBudget
+      },
+      office_expenses: {
+        total_office_suppliers: totalOfficeSuppliers,
+        total_office_invoices: totalOfficeInvoices,
+        total_office_spent: totalOfficeSpent,
+        avg_office_invoice: avgOfficeInvoice
+      },
+      company_credits: {
+        total_credits: totalCredits,
+        total_credit_value: totalCreditValue,
+        credits_available: creditsAvailable,
+        credits_used: creditsUsed,
+        cesija_payments: cesijaPayments,
+        cesija_value: cesijaValue
+      },
+      bank_accounts: {
+        total_accounts: totalBankAccounts,
+        total_balance: totalBalance,
+        positive_balance_accounts: positiveBalanceAccounts,
+        negative_balance_accounts: negativeBalanceAccounts
       },
       cash_flow: cashFlow,
       projects: projectDetails,
@@ -656,6 +779,163 @@ const GeneralReports: React.FC = () => {
         pdf.text(row[2], margin + 105, y)
         pdf.setFont('helvetica', 'normal')
         pdf.text(row[3], margin + 145, y)
+      })
+
+      yPosition += 60
+
+      pdf.addPage()
+      yPosition = margin
+
+      checkPageBreak(60)
+      pdf.setFillColor(224, 242, 254)
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 60, 'F')
+
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(6, 182, 212)
+      pdf.text('ACCOUNTING OVERVIEW', margin + 5, yPosition + 10)
+
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
+      const accountingData = [
+        ['Total Invoices:', report.accounting_overview.total_invoices.toString(), 'Paid Invoices:', report.accounting_overview.paid_invoices.toString()],
+        ['Total Invoice Value:', '€' + (report.accounting_overview.total_invoice_value / 1000000).toFixed(2) + 'M', 'Paid Value:', '€' + (report.accounting_overview.paid_value / 1000000).toFixed(2) + 'M'],
+        ['Pending Invoices:', report.accounting_overview.pending_invoices.toString(), 'Overdue Invoices:', report.accounting_overview.overdue_invoices.toString()],
+        ['Pending Value:', '€' + (report.accounting_overview.pending_value / 1000000).toFixed(2) + 'M', 'Overdue Value:', '€' + (report.accounting_overview.overdue_value / 1000000).toFixed(2) + 'M'],
+        ['Payment Completion Rate:', report.accounting_overview.payment_completion_rate.toFixed(1) + '%', '', '']
+      ]
+
+      accountingData.forEach((row, index) => {
+        const y = yPosition + 18 + (index * 6)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(row[0], margin + 5, y)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(row[1], margin + 55, y)
+        if (row[2]) {
+          pdf.setFont('helvetica', 'bold')
+          pdf.text(row[2], margin + 105, y)
+          pdf.setFont('helvetica', 'normal')
+          pdf.text(row[3], margin + 145, y)
+        }
+      })
+
+      yPosition += 70
+
+      checkPageBreak(100)
+      pdf.setFillColor(209, 250, 229)
+      pdf.rect(margin, yPosition, (pageWidth - 2 * margin - 5) / 2, 45, 'F')
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(16, 185, 129)
+      pdf.text('TIC COST MANAGEMENT', margin + 5, yPosition + 10)
+
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
+      const ticData = [
+        ['Total Companies:', report.tic_cost_management.total_companies.toString()],
+        ['TIC Budget:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
+        ['TIC Spent:', '€' + report.tic_cost_management.total_tic_spent.toLocaleString()],
+        ['TIC Utilization:', report.tic_cost_management.tic_utilization.toFixed(1) + '%'],
+        ['Over Budget:', report.tic_cost_management.companies_over_budget.toString()]
+      ]
+
+      ticData.forEach((row, index) => {
+        const y = yPosition + 16 + (index * 5)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(row[0], margin + 5, y)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(row[1], margin + 35, y)
+      })
+
+      pdf.setFillColor(254, 243, 199)
+      pdf.rect(margin + (pageWidth - 2 * margin + 5) / 2, yPosition, (pageWidth - 2 * margin - 5) / 2, 45, 'F')
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(245, 158, 11)
+      pdf.text('OFFICE EXPENSES', margin + (pageWidth - 2 * margin + 5) / 2 + 5, yPosition + 10)
+
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
+      const officeData = [
+        ['Office Suppliers:', report.office_expenses.total_office_suppliers.toString()],
+        ['Office Invoices:', report.office_expenses.total_office_invoices.toString()],
+        ['Total Spent:', '€' + report.office_expenses.total_office_spent.toLocaleString()],
+        ['Avg Invoice:', '€' + report.office_expenses.avg_office_invoice.toLocaleString()]
+      ]
+
+      officeData.forEach((row, index) => {
+        const y = yPosition + 16 + (index * 5)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(row[0], margin + (pageWidth - 2 * margin + 5) / 2 + 5, y)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(row[1], margin + (pageWidth - 2 * margin + 5) / 2 + 35, y)
+      })
+
+      yPosition += 55
+
+      checkPageBreak(100)
+      pdf.setFillColor(254, 205, 211)
+      pdf.rect(margin, yPosition, (pageWidth - 2 * margin - 5) / 2, 50, 'F')
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(225, 29, 72)
+      pdf.text('COMPANY CREDITS (CESIJA)', margin + 5, yPosition + 10)
+
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
+      const creditsData = [
+        ['Total Credits:', report.company_credits.total_credits.toString()],
+        ['Credit Value:', '€' + report.company_credits.total_credit_value.toLocaleString()],
+        ['Available:', '€' + report.company_credits.credits_available.toLocaleString()],
+        ['Used:', '€' + report.company_credits.credits_used.toLocaleString()],
+        ['Cesija Payments:', report.company_credits.cesija_payments.toString()],
+        ['Cesija Value:', '€' + report.company_credits.cesija_value.toLocaleString()]
+      ]
+
+      creditsData.forEach((row, index) => {
+        const y = yPosition + 16 + (index * 5)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(row[0], margin + 5, y)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(row[1], margin + 35, y)
+      })
+
+      pdf.setFillColor(241, 245, 249)
+      pdf.rect(margin + (pageWidth - 2 * margin + 5) / 2, yPosition, (pageWidth - 2 * margin - 5) / 2, 50, 'F')
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(71, 85, 105)
+      pdf.text('BANK ACCOUNTS', margin + (pageWidth - 2 * margin + 5) / 2 + 5, yPosition + 10)
+
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
+      const bankData = [
+        ['Total Accounts:', report.bank_accounts.total_accounts.toString()],
+        ['Total Balance:', '€' + report.bank_accounts.total_balance.toLocaleString()],
+        ['Positive Balance:', report.bank_accounts.positive_balance_accounts.toString()],
+        ['Negative Balance:', report.bank_accounts.negative_balance_accounts.toString()]
+      ]
+
+      bankData.forEach((row, index) => {
+        const y = yPosition + 16 + (index * 5)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(row[0], margin + (pageWidth - 2 * margin + 5) / 2 + 5, y)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(row[1], margin + (pageWidth - 2 * margin + 5) / 2 + 35, y)
       })
 
       yPosition += 60
@@ -1080,6 +1360,157 @@ const GeneralReports: React.FC = () => {
             <div className="flex justify-between">
               <span className="font-bold text-gray-700">Work Logs (7 days):</span>
               <span className="font-bold text-gray-900">{report.construction_status.work_logs_7days}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl shadow-sm border border-cyan-200 p-6">
+        <div className="flex items-center mb-4">
+          <FileText className="w-6 h-6 text-cyan-600 mr-2" />
+          <h2 className="text-2xl font-bold text-cyan-900">ACCOUNTING OVERVIEW</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <p className="font-bold text-gray-700">Total Invoices:</p>
+            <p className="text-xl font-bold text-gray-900">{report.accounting_overview.total_invoices}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Total Invoice Value:</p>
+            <p className="text-xl font-bold text-gray-900">€{(report.accounting_overview.total_invoice_value / 1000000).toFixed(2)}M</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Paid Invoices:</p>
+            <p className="text-xl font-bold text-green-600">{report.accounting_overview.paid_invoices} (€{(report.accounting_overview.paid_value / 1000000).toFixed(2)}M)</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Pending Invoices:</p>
+            <p className="text-xl font-bold text-yellow-600">{report.accounting_overview.pending_invoices} (€{(report.accounting_overview.pending_value / 1000000).toFixed(2)}M)</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Overdue Invoices:</p>
+            <p className="text-xl font-bold text-red-600">{report.accounting_overview.overdue_invoices} (€{(report.accounting_overview.overdue_value / 1000000).toFixed(2)}M)</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Payment Completion Rate:</p>
+            <p className="text-xl font-bold text-gray-900">{report.accounting_overview.payment_completion_rate.toFixed(1)}%</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6">
+          <div className="flex items-center mb-4">
+            <PieChart className="w-6 h-6 text-emerald-600 mr-2" />
+            <h2 className="text-xl font-bold text-emerald-900">TIC COST MANAGEMENT</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Companies:</span>
+              <span className="font-bold text-gray-900">{report.tic_cost_management.total_companies}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total TIC Budget:</span>
+              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_budget.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total TIC Spent:</span>
+              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_spent.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">TIC Utilization:</span>
+              <span className="font-bold text-gray-900">{report.tic_cost_management.tic_utilization.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Companies Over Budget:</span>
+              <span className="font-bold text-red-600">{report.tic_cost_management.companies_over_budget}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm border border-amber-200 p-6">
+          <div className="flex items-center mb-4">
+            <Building2 className="w-6 h-6 text-amber-600 mr-2" />
+            <h2 className="text-xl font-bold text-amber-900">OFFICE EXPENSES</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Office Suppliers:</span>
+              <span className="font-bold text-gray-900">{report.office_expenses.total_office_suppliers}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Office Invoices:</span>
+              <span className="font-bold text-gray-900">{report.office_expenses.total_office_invoices}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Office Spent:</span>
+              <span className="font-bold text-gray-900">€{report.office_expenses.total_office_spent.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Avg Office Invoice:</span>
+              <span className="font-bold text-gray-900">€{report.office_expenses.avg_office_invoice.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl shadow-sm border border-rose-200 p-6">
+          <div className="flex items-center mb-4">
+            <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
+            <h2 className="text-xl font-bold text-rose-900">COMPANY CREDITS (CESIJA)</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Credits:</span>
+              <span className="font-bold text-gray-900">{report.company_credits.total_credits}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Credit Value:</span>
+              <span className="font-bold text-gray-900">€{report.company_credits.total_credit_value.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Credits Available:</span>
+              <span className="font-bold text-green-600">€{report.company_credits.credits_available.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Credits Used:</span>
+              <span className="font-bold text-gray-900">€{report.company_credits.credits_used.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Cesija Payments:</span>
+              <span className="font-bold text-gray-900">{report.company_credits.cesija_payments}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Cesija Value:</span>
+              <span className="font-bold text-gray-900">€{report.company_credits.cesija_value.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center mb-4">
+            <Wallet className="w-6 h-6 text-slate-600 mr-2" />
+            <h2 className="text-xl font-bold text-slate-900">BANK ACCOUNTS</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Bank Accounts:</span>
+              <span className="font-bold text-gray-900">{report.bank_accounts.total_accounts}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Balance:</span>
+              <span className={`font-bold ${report.bank_accounts.total_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{report.bank_accounts.total_balance.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Positive Balance Accounts:</span>
+              <span className="font-bold text-green-600">{report.bank_accounts.positive_balance_accounts}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Negative Balance Accounts:</span>
+              <span className="font-bold text-red-600">{report.bank_accounts.negative_balance_accounts}</span>
             </div>
           </div>
         </div>
