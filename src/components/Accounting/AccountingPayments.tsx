@@ -6,7 +6,7 @@ import { format } from 'date-fns'
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -16,6 +16,7 @@ interface Invoice {
   subcontractors?: { name: string }
   customers?: { name: string; surname: string }
   office_suppliers?: { name: string }
+  bank_company?: { name: string }
 }
 
 interface CompanyBankAccount {
@@ -170,7 +171,8 @@ const AccountingPayments: React.FC = () => {
               companies:company_id (name),
               subcontractors:supplier_id (name),
               customers:customer_id (name, surname),
-              office_suppliers:office_supplier_id (name)
+              office_suppliers:office_supplier_id (name),
+              bank_company:bank_id (name)
             )
           `)
           .order('payment_date', { ascending: false }),
@@ -188,7 +190,8 @@ const AccountingPayments: React.FC = () => {
             companies:company_id (name),
             subcontractors:supplier_id (name),
             customers:customer_id (name, surname),
-            office_suppliers:office_supplier_id (name)
+            office_suppliers:office_supplier_id (name),
+            bank_company:bank_id (name)
           `)
           .neq('status', 'PAID')
           .order('invoice_number'),
@@ -630,16 +633,17 @@ const AccountingPayments: React.FC = () => {
                       {visibleColumns.invoice_type && (
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className={`text-xs font-semibold ${
-                            invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                            invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK'
                             ? 'text-red-600' : 'text-green-600'}`}>
-                            {invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                            {invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK'
                             ? 'RASHOD' : 'PRIHOD'}
                           </span>
                         </td>
                       )}
                       {visibleColumns.company_supplier && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {invoice.office_suppliers?.name ||
+                          {invoice.bank_company?.name ||
+                           invoice.office_suppliers?.name ||
                            invoice.subcontractors?.name ||
                            (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '') ||
                            invoice.companies?.name ||

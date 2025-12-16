@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, Check
 interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'
   supplier_id: string | null
   customer_id: string | null
   office_supplier_id: string | null
@@ -22,6 +22,7 @@ interface Invoice {
   supplier?: { name: string }
   customer?: { name: string }
   office_supplier?: { name: string }
+  bank_company?: { name: string }
 }
 
 interface MonthlyBudget {
@@ -58,7 +59,8 @@ const AccountingCalendar: React.FC = () => {
           company:accounting_companies!accounting_invoices_company_id_fkey(name),
           supplier:subcontractors(name),
           customer:customers(name),
-          office_supplier:office_suppliers(name)
+          office_supplier:office_suppliers(name),
+          bank_company:bank_id(name)
         `)
         .not('due_date', 'is', null)
         .order('due_date', { ascending: true })
@@ -578,14 +580,20 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel()}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || 'N/A'}
+                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.base_amount.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.vat_amount.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">€{invoice.total_amount.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-sm font-semibold text-green-600">€{invoice.paid_amount.toLocaleString()}</td>
+                      <td className={`px-4 py-3 text-right text-sm font-semibold ${
+                        invoice.invoice_type.startsWith('OUTGOING') || invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      }`}>
+                        €{invoice.paid_amount.toLocaleString()}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
