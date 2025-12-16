@@ -80,7 +80,7 @@ interface Milestone {
 
 interface Invoice {
   id: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'
   invoice_category?: string
   company_id: string
   company_bank_account_id: string | null
@@ -141,7 +141,7 @@ const AccountingInvoices: React.FC = () => {
   const pageSize = 100
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE'>('ALL')
+  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
@@ -154,7 +154,7 @@ const AccountingInvoices: React.FC = () => {
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
   const [formData, setFormData] = useState({
-    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE',
+    invoice_type: 'INCOMING_SUPPLIER' as 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK',
     company_id: '',
     supplier_id: '',
     office_supplier_id: '',
@@ -698,7 +698,10 @@ const AccountingInvoices: React.FC = () => {
   }
 
   const getTypeColor = (type: string) => {
-    return type.startsWith('INCOMING') ? 'text-red-600' : 'text-green-600'
+    if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'OUTGOING_BANK' || type === 'OUTGOING_SUPPLIER') {
+      return 'text-red-600'
+    }
+    return 'text-green-600'
   }
 
   const getTypeLabel = (type: string) => {
@@ -706,9 +709,11 @@ const AccountingInvoices: React.FC = () => {
       case 'INCOMING_SUPPLIER': return 'ULAZNI (DOB)'
       case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
       case 'INCOMING_OFFICE': return 'ULAZNI (URED)'
+      case 'INCOMING_BANK': return 'ULAZNI (BANKA)'
       case 'OUTGOING_OFFICE': return 'IZLAZNI (URED)'
       case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
       case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'
+      case 'OUTGOING_BANK': return 'IZLAZNI (BANKA)'
       default: return type
     }
   }
@@ -947,7 +952,7 @@ const AccountingInvoices: React.FC = () => {
                     .filter(i => i.invoice_type === 'OUTGOING_SALES')
                     .reduce((sum, i) => sum + i.paid_amount, 0) -
                   invoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
                     .reduce((sum, i) => sum + i.paid_amount, 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
@@ -966,7 +971,7 @@ const AccountingInvoices: React.FC = () => {
                     .filter(i => i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE')
                     .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0) -
                   invoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE')
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE' || i.invoice_type === 'OUTGOING_BANK')
                     .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
@@ -998,9 +1003,11 @@ const AccountingInvoices: React.FC = () => {
             <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
             <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
             <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
+            <option value="INCOMING_BANK">Ulazni (Banka)</option>
             <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
             <option value="OUTGOING_OFFICE">Izlazni (Ured)</option>
             <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
+            <option value="OUTGOING_BANK">Izlazni (Banka)</option>
           </select>
 
           <select
@@ -1227,7 +1234,7 @@ const AccountingInvoices: React.FC = () => {
                   .filter(i => i.invoice_type === 'OUTGOING_SALES')
                   .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                 filteredInvoices
-                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
                   .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) >= 0
                   ? 'text-green-600'
                   : 'text-red-600'
@@ -1237,7 +1244,7 @@ const AccountingInvoices: React.FC = () => {
                     .filter(i => i.invoice_type === 'OUTGOING_SALES')
                     .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                   filteredInvoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER')
+                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
                     .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>

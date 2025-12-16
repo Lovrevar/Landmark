@@ -522,7 +522,7 @@ const AccountingPayments: React.FC = () => {
               €{payments
                 .filter(p => {
                   const invoice = p.accounting_invoices
-                  return invoice && (invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE')
+                  return invoice && (invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK')
                 })
                 .reduce((sum, p) => sum + p.amount, 0)
                 .toLocaleString()}

@@ -123,13 +123,15 @@ const AccountingCalendar: React.FC = () => {
     const incomingInvoices = monthInvoices.filter(inv =>
       inv.invoice_type === 'INCOMING_SUPPLIER' ||
       inv.invoice_type === 'INCOMING_INVESTMENT' ||
-      inv.invoice_type === 'INCOMING_OFFICE'
+      inv.invoice_type === 'INCOMING_OFFICE' ||
+      inv.invoice_type === 'OUTGOING_BANK'
     )
 
     const outgoingInvoices = monthInvoices.filter(inv =>
       inv.invoice_type === 'OUTGOING_SUPPLIER' ||
       inv.invoice_type === 'OUTGOING_SALES' ||
-      inv.invoice_type === 'OUTGOING_OFFICE'
+      inv.invoice_type === 'OUTGOING_OFFICE' ||
+      inv.invoice_type === 'INCOMING_BANK'
     )
 
     const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
