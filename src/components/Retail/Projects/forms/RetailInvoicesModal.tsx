@@ -78,7 +78,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
           issue_date,
           due_date,
           description,
-          accounting_companies!inner(name),
+          accounting_companies!accounting_invoices_company_id_fkey(name),
           retail_suppliers(name),
           retail_customers(name)
         `)

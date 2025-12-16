@@ -55,7 +55,7 @@ const AccountingCalendar: React.FC = () => {
         .from('accounting_invoices')
         .select(`
           *,
-          company:accounting_companies(name),
+          company:accounting_companies!accounting_invoices_company_id_fkey(name),
           supplier:subcontractors(name),
           customer:customers(name),
           office_supplier:office_suppliers(name)

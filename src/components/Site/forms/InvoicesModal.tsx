@@ -83,7 +83,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
           description,
           company_id,
           contract_id,
-          accounting_companies(name),
+          accounting_companies!accounting_invoices_company_id_fkey(name),
           contracts(id)
         `)
         .eq('contract_id', contractId)
