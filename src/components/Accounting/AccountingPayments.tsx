@@ -31,8 +31,6 @@ interface CompanyCredit {
   credit_name: string
   amount: number
   outstanding_balance: number
-  used_amount: number
-  repaid_amount: number
 }
 
 interface Company {
@@ -831,7 +829,7 @@ const AccountingPayments: React.FC = () => {
                               return selectedInvoice && credit.company_id === selectedInvoice.company_id
                             })
                             .map(credit => {
-                              const available = credit.amount - credit.used_amount
+                              const available = credit.amount - credit.outstanding_balance
                               return (
                                 <option key={credit.id} value={credit.id}>
                                   {credit.credit_name} (Dostupno: €{available.toLocaleString()})
