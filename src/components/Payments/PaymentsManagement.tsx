@@ -68,6 +68,14 @@ const PaymentsManagement: React.FC = () => {
           cesija_company:accounting_companies!accounting_payments_cesija_company_id_fkey(
             id,
             name
+          ),
+          credit:bank_credits(
+            id,
+            credit_name,
+            company:accounting_companies(
+              id,
+              name
+            )
           )
         `)
         .eq('invoice.invoice_type', 'INCOMING_SUPPLIER')
@@ -127,6 +135,8 @@ const PaymentsManagement: React.FC = () => {
         let paidByCompanyName = '-'
         if (payment.is_cesija && payment.cesija_company) {
           paidByCompanyName = payment.cesija_company.name
+        } else if (payment.credit?.company) {
+          paidByCompanyName = payment.credit.company.name
         } else if (payment.company_bank_account?.company) {
           paidByCompanyName = payment.company_bank_account.company.name
         }
