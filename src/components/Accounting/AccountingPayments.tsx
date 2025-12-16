@@ -90,6 +90,7 @@ const AccountingPayments: React.FC = () => {
     return saved ? JSON.parse(saved) : {
       payment_date: true,
       invoice_number: true,
+      my_company: true,
       invoice_type: true,
       company_supplier: true,
       amount: true,
@@ -134,6 +135,7 @@ const AccountingPayments: React.FC = () => {
   const columnLabels = {
     payment_date: 'Datum plaćanja',
     invoice_number: 'Broj računa',
+    my_company: 'Moja Firma',
     invoice_type: 'Tip računa',
     company_supplier: 'Firma/Dobavljač',
     amount: 'Iznos',
@@ -585,6 +587,7 @@ const AccountingPayments: React.FC = () => {
               <tr>
                 {visibleColumns.payment_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum plaćanja</th>}
                 {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>}
+                {visibleColumns.my_company && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moja Firma</th>}
                 {visibleColumns.invoice_type && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>}
                 {visibleColumns.company_supplier && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma/Dobavljač</th>}
                 {visibleColumns.amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Iznos</th>}
@@ -617,6 +620,11 @@ const AccountingPayments: React.FC = () => {
                       {visibleColumns.invoice_number && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {invoice.invoice_number}
+                        </td>
+                      )}
+                      {visibleColumns.my_company && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {invoice.companies?.name || '-'}
                         </td>
                       )}
                       {visibleColumns.invoice_type && (
