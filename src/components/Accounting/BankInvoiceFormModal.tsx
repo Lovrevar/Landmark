@@ -204,8 +204,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
-                <option value="INCOMING_BANK">Ulazni (Otplata kredita)</option>
-                <option value="OUTGOING_BANK">Izlazni (Primitak od banke)</option>
+                <option value="INCOMING_BANK">Ulazni</option>
+                <option value="OUTGOING_BANK">Izlazni</option>
               </select>
             </div>
 
