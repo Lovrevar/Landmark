@@ -1160,8 +1160,8 @@ const BanksManagement: React.FC = () => {
                   <div className="space-y-3">
                     {selectedBank.credits.map((credit) => {
                       const isMaturing = credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90
-                      const paymentRatio = credit.amount > 0 ? ((credit.amount - credit.outstanding_balance) / credit.amount) * 100 : 0
-                      
+                      const paymentRatio = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
+
                       return (
                         <div key={credit.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start justify-between mb-3">
@@ -1201,14 +1201,14 @@ const BanksManagement: React.FC = () => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                             <div>
                               <p className="text-xs text-gray-500">Used Amount</p>
-                              <p className="text-sm font-medium text-blue-600">€{((credit as any).used_amount || 0).toLocaleString()}</p>
+                              <p className="text-sm font-medium text-blue-600">€{credit.used_amount.toLocaleString()}</p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {credit.amount > 0 ? (((credit as any).used_amount || 0) / credit.amount * 100).toFixed(1) : 0}% drawn
+                                {credit.amount > 0 ? (credit.used_amount / credit.amount * 100).toFixed(1) : 0}% drawn
                               </p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Repaid to Bank</p>
-                              <p className="text-sm font-medium text-green-600">€{((credit as any).repaid_amount || 0).toLocaleString()}</p>
+                              <p className="text-sm font-medium text-green-600">€{credit.repaid_amount.toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Outstanding Debt</p>
@@ -1217,7 +1217,7 @@ const BanksManagement: React.FC = () => {
                             <div>
                               <p className="text-xs text-gray-500">Available to Use</p>
                               <p className="text-sm font-medium text-gray-900">
-                                €{(credit.amount - ((credit as any).used_amount || 0)).toLocaleString()}
+                                €{(credit.amount - credit.used_amount).toLocaleString()}
                               </p>
                             </div>
                           </div>

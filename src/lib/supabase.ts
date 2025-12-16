@@ -315,6 +315,8 @@ export type BankCredit = {
   start_date: string
   maturity_date: string | null
   outstanding_balance: number
+  used_amount: number
+  repaid_amount: number
   monthly_payment: number
   status: 'active' | 'paid' | 'defaulted'
   purpose: string
