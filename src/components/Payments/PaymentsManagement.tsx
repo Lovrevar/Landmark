@@ -57,10 +57,10 @@ const PaymentsManagement: React.FC = () => {
             total_amount,
             status
           ),
-          company_bank_account:company_bank_accounts(
+          company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(
             id,
             bank_name,
-            company:accounting_companies!company_bank_accounts_company_id_fkey(
+            company:accounting_companies(
               id,
               name
             )
