@@ -69,7 +69,7 @@ const PaymentsManagement: React.FC = () => {
             id,
             name
           ),
-          credit:bank_credits(
+          credit:bank_credits!accounting_payments_credit_id_fkey(
             id,
             credit_name,
             company:accounting_companies(
