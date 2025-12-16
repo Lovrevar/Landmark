@@ -949,10 +949,10 @@ const AccountingInvoices: React.FC = () => {
               <p className="text-2xl font-bold text-green-600">
                 €{(
                   invoices
-                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .filter(i => i.invoice_type.startsWith('OUTGOING'))
                     .reduce((sum, i) => sum + i.paid_amount, 0) -
                   invoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
+                    .filter(i => i.invoice_type.startsWith('INCOMING'))
                     .reduce((sum, i) => sum + i.paid_amount, 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
@@ -1231,20 +1231,20 @@ const AccountingInvoices: React.FC = () => {
               <span className="text-gray-600">Neto dobit: </span>
               <span className={`font-semibold ${
                 filteredInvoices
-                  .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                  .filter(i => i.invoice_type.startsWith('OUTGOING'))
                   .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                 filteredInvoices
-                  .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
+                  .filter(i => i.invoice_type.startsWith('INCOMING'))
                   .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) >= 0
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}>
                 €{(
                   filteredInvoices
-                    .filter(i => i.invoice_type === 'OUTGOING_SALES')
+                    .filter(i => i.invoice_type.startsWith('OUTGOING'))
                     .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
                   filteredInvoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'OUTGOING_BANK')
+                    .filter(i => i.invoice_type.startsWith('INCOMING'))
                     .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
                 ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
