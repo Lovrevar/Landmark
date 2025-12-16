@@ -162,6 +162,10 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         .from('accounting_invoices')
         .insert([invoiceData])
 
+      if (error) throw error
+
+      onSuccess()
+      onClose()
     } catch (error: any) {
       console.error('Error creating invoice:', error)
       alert('Greška pri kreiranju računa: ' + error.message)
