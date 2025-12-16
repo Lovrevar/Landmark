@@ -4,13 +4,20 @@ import { useAuth } from '../../contexts/AuthContext'
 import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface PaymentWithDetails extends WirePayment {
+interface PaymentWithDetails {
+  id: string
+  amount: number
+  payment_date: string
+  created_at: string
+  notes?: string
+  company_bank_account_id?: string
+  cesija_company_id?: string
+  is_cesija?: boolean
   contract?: Contract
   subcontractor_name?: string
   project_name?: string
   phase_name?: string
-  investor?: { id: string; name: string; type?: string } | null
-  bank?: { id: string; name: string } | null
+  paid_by_company_name?: string
 }
 
 const PaymentsManagement: React.FC = () => {
@@ -49,6 +56,18 @@ const PaymentsManagement: React.FC = () => {
             milestone_id,
             total_amount,
             status
+          ),
+          company_bank_account:company_bank_accounts(
+            id,
+            bank_name,
+            company:accounting_companies!company_bank_accounts_company_id_fkey(
+              id,
+              name
+            )
+          ),
+          cesija_company:accounting_companies!accounting_payments_cesija_company_id_fkey(
+            id,
+            name
           )
         `)
         .eq('invoice.invoice_type', 'INCOMING_SUPPLIER')
@@ -86,7 +105,7 @@ const PaymentsManagement: React.FC = () => {
       if (projectsError) throw projectsError
 
       // Enrich payments with names
-      const enrichedPayments = (paymentsData || []).map(payment => {
+      const enrichedPayments = (paymentsData || []).map((payment: any) => {
         const invoice = payment.invoice
         if (!invoice) return null
 
@@ -104,9 +123,23 @@ const PaymentsManagement: React.FC = () => {
 
         const phaseName = contract?.project_phases?.phase_name || null
 
+        // Determine paid by company name
+        let paidByCompanyName = '-'
+        if (payment.is_cesija && payment.cesija_company) {
+          paidByCompanyName = payment.cesija_company.name
+        } else if (payment.company_bank_account?.company) {
+          paidByCompanyName = payment.company_bank_account.company.name
+        }
+
         return {
-          ...payment,
-          subcontractor_id: invoice.supplier_id,
+          id: payment.id,
+          amount: parseFloat(payment.amount),
+          payment_date: payment.payment_date,
+          created_at: payment.created_at,
+          notes: payment.description,
+          company_bank_account_id: payment.company_bank_account_id,
+          cesija_company_id: payment.cesija_company_id,
+          is_cesija: payment.is_cesija,
           subcontractor_name: subcontractor?.name || 'Unknown',
           project_name: project?.name || 'No Project',
           phase_name: phaseName,
@@ -116,8 +149,7 @@ const PaymentsManagement: React.FC = () => {
             subcontractor_id: contract.subcontractor_id,
             phase_id: contract.phase_id
           } as any : null,
-          investor: null,
-          bank: null
+          paid_by_company_name: paidByCompanyName
         }
       }).filter(Boolean) as PaymentWithDetails[]
 
@@ -169,18 +201,12 @@ const PaymentsManagement: React.FC = () => {
   const exportToCSV = () => {
     const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
     const rows = filteredPayments.map(p => {
-      let paidBy = '-'
-      if (p.paid_by_type === 'investor' && p.investor) {
-        paidBy = `${p.investor.name} (Investor)`
-      } else if (p.paid_by_type === 'bank' && p.bank) {
-        paidBy = `${p.bank.name} (Bank)`
-      }
       return [
         format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
         p.subcontractor_name,
         p.project_name,
         p.phase_name || '',
-        paidBy,
+        p.paid_by_company_name || '-',
         p.amount.toString(),
         p.notes || ''
       ]
@@ -347,22 +373,13 @@ const PaymentsManagement: React.FC = () => {
                       {payment.phase_name || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {payment.paid_by_type && (payment.paid_by_investor_id || payment.paid_by_bank_id) ? (
-                        payment.paid_by_type === 'investor' ? (
-                          <div className="flex items-center space-x-2">
-                            <User className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm text-blue-600 font-medium">
-                              {payment.investor?.name || 'Investor'}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">
-                              {payment.bank?.name || 'Bank'}
-                            </span>
-                          </div>
-                        )
+                      {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
+                        <div className="flex items-center space-x-2">
+                          <Building2 className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm text-gray-900 font-medium">
+                            {payment.paid_by_company_name}
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-sm text-gray-400">-</span>
                       )}
