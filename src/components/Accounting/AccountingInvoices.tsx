@@ -698,7 +698,7 @@ const AccountingInvoices: React.FC = () => {
   }
 
   const getTypeColor = (type: string) => {
-    if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'OUTGOING_BANK' || type === 'OUTGOING_SUPPLIER') {
+    if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK') {
       return 'text-red-600'
     }
     return 'text-green-600'
