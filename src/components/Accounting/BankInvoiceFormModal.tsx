@@ -34,7 +34,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
 
   const [formData, setFormData] = useState({
-    invoice_type: 'OUTGOING_BANK' as 'INCOMING_BANK' | 'OUTGOING_BANK',
+    invoice_type: 'BANK' as 'INCOMING_BANK' | 'OUTGOING_BANK',
     company_id: '',
     bank_id: '',
     bank_credit_id: '',
