@@ -26,6 +26,8 @@ interface CompanyCredit {
   credit_name: string
   amount: number
   outstanding_balance: number
+  used_amount: number
+  repaid_amount: number
 }
 
 interface Supplier {
@@ -1808,7 +1810,7 @@ const AccountingInvoices: React.FC = () => {
                           {companyCredits
                             .filter(credit => credit.company_id === payingInvoice.company_id)
                             .map(credit => {
-                              const available = credit.amount - credit.outstanding_balance
+                              const available = credit.amount - credit.used_amount
                               return (
                                 <option key={credit.id} value={credit.id}>
                                   {credit.credit_name} (Dostupno: €{available.toLocaleString()})
@@ -1939,7 +1941,7 @@ const AccountingInvoices: React.FC = () => {
                               {companyCredits
                                 .filter(credit => credit.company_id === paymentFormData.cesija_company_id)
                                 .map(credit => {
-                                  const available = credit.amount - credit.outstanding_balance
+                                  const available = credit.amount - credit.used_amount
                                   return (
                                     <option key={credit.id} value={credit.id}>
                                       {credit.credit_name} (Dostupno: €{available.toLocaleString()})
