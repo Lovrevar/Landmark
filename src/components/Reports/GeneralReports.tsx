@@ -424,19 +424,33 @@ const GeneralReports: React.FC = () => {
     recommendations.push('Maintain strong relationships with financing partners')
 
     const totalInvoices = accountingInvoicesArray.length
-    const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
-    const paidInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'paid').length
+    const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+    const paidInvoices = accountingInvoicesArray.filter(inv => inv.status === 'PAID').length
     const paidValue = accountingInvoicesArray
-      .filter(inv => inv.payment_status === 'paid')
-      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
-    const pendingInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'pending').length
+      .filter(inv => inv.status === 'PAID')
+      .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+
+    const pendingInvoices = accountingInvoicesArray.filter(inv =>
+      inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID'
+    ).length
     const pendingValue = accountingInvoicesArray
-      .filter(inv => inv.payment_status === 'pending')
-      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
-    const overdueInvoices = accountingInvoicesArray.filter(inv => inv.payment_status === 'overdue').length
+      .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID')
+      .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
+
+    const today = new Date()
+    const overdueInvoices = accountingInvoicesArray.filter(inv =>
+      (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
+      inv.due_date &&
+      new Date(inv.due_date) < today
+    ).length
     const overdueValue = accountingInvoicesArray
-      .filter(inv => inv.payment_status === 'overdue')
-      .reduce((sum, inv) => sum + (inv.total_base_amount || 0), 0)
+      .filter(inv =>
+        (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
+        inv.due_date &&
+        new Date(inv.due_date) < today
+      )
+      .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
+
     const paymentCompletionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0
 
     const totalCompanies = accountingCompaniesArray.length
