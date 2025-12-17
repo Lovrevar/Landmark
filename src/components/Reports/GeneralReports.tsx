@@ -1467,7 +1467,7 @@ const GeneralReports: React.FC = () => {
         <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl shadow-sm border border-rose-200 p-6">
           <div className="flex items-center mb-4">
             <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
-            <h2 className="text-xl font-bold text-rose-900">COMPANY CREDITS (CESIJA)</h2>
+            <h2 className="text-xl font-bold text-rose-900">COMPANY CREDITS</h2>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
