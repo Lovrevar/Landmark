@@ -897,7 +897,7 @@ const GeneralReports: React.FC = () => {
       pdf.setFontSize(12)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(225, 29, 72)
-      pdf.text('COMPANY CREDITS (CESIJA)', margin + 5, yPosition + 10)
+      pdf.text('COMPANY CREDITS', margin + 5, yPosition + 10)
 
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
