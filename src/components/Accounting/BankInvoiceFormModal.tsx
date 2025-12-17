@@ -260,7 +260,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 <option value="">Bez kredita</option>
                 {credits.map((credit) => (
                   <option key={credit.id} value={credit.id}>
-                    {credit.credit_name} (Preostalo: €{credit.outstanding_balance.toLocaleString()})
+                    {credit.credit_name}
                   </option>
                 ))}
               </select>
