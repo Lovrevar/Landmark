@@ -541,7 +541,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Incoming</p>
+                <p className="text-sm text-gray-600">Total Outgoing</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalIncoming.toLocaleString('en-US')}
                 </p>
@@ -571,7 +571,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingDown className="w-6 h-6 text-red-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Outgoing</p>
+                <p className="text-sm text-gray-600">Total Incoming</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalOutgoing.toLocaleString('en-US')}
                 </p>
