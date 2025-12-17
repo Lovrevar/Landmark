@@ -47,6 +47,7 @@ interface Invoice {
   retail_supplier?: { name: string }
   retail_customer?: { name: string }
   company?: { name: string }
+  bank?: { name: string }
   is_cesija_payment?: boolean
   cesija_company_id?: string
   cesija_company_name?: string
@@ -143,6 +144,10 @@ const AccountingCompanies: React.FC = () => {
   }
 
   const getInvoiceEntityName = (invoice: Invoice) => {
+    if (invoice.invoice_type === 'INCOMING_BANK' || invoice.invoice_type === 'OUTGOING_BANK') {
+      return invoice.bank?.name || 'N/A'
+    }
+
     if (invoice.invoice_category === 'RETAIL') {
       if (invoice.invoice_type === 'INCOMING_SUPPLIER') {
         return invoice.retail_supplier?.name || 'N/A'
@@ -349,7 +354,8 @@ const AccountingCompanies: React.FC = () => {
             office_supplier:office_supplier_id (name),
             retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
             retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name),
-            company:company_id (name)
+            company:company_id (name),
+            bank:bank_id (name)
           `)
           .eq('company_id', company.id)
           .order('issue_date', { ascending: false })
@@ -408,7 +414,8 @@ const AccountingCompanies: React.FC = () => {
             office_supplier:office_supplier_id (name),
             retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey (name),
             retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey (name),
-            company:company_id (name)
+            company:company_id (name),
+            bank:bank_id (name)
           `)
           .in('id', cesijaPaidInvoiceIds)
           .order('issue_date', { ascending: false })
@@ -1037,7 +1044,9 @@ const AccountingCompanies: React.FC = () => {
                               )}
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
-                              {invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
+                              {invoice.invoice_type === 'INCOMING_BANK' || invoice.invoice_type === 'OUTGOING_BANK'
+                                ? `Banka: ${getInvoiceEntityName(invoice)}`
+                                : invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_OFFICE'
                                 ? `Office dobavljač: ${getInvoiceEntityName(invoice)}`
                                 : isIncomeInvoice(invoice.invoice_type)
                                 ? `Kupac: ${getInvoiceEntityName(invoice)}`
