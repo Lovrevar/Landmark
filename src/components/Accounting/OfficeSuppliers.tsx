@@ -60,19 +60,15 @@ const OfficeSuppliers: React.FC = () => {
 
           const invoices = invoicesData || []
           const total_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
-          const paid_amount = invoices.reduce((sum, inv) => {
-            const paidBase = inv.paid_amount > 0
-              ? (parseFloat(inv.base_amount || 0) / parseFloat(inv.total_amount || 1)) * inv.paid_amount
-              : 0
-            return sum + paidBase
-          }, 0)
+          const total_amount_with_vat = invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
+          const paid_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
 
           return {
             ...supplier,
             total_invoices: invoices.length,
             total_amount,
             paid_amount,
-            remaining_amount: total_amount - paid_amount
+            remaining_amount: total_amount_with_vat - paid_amount
           }
         })
       )
