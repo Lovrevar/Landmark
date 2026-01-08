@@ -222,7 +222,7 @@ const AccountingBanks: React.FC = () => {
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg">
                     <p className="text-xs text-red-700 mb-1">Dug banci</p>
-                    <p className="text-lg font-bold text-red-900">€{bank.total_outstanding.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-red-900">€{bank.total_outstanding.toLocaleString('hr-HR')}</p>
                   </div>
                 </div>
 
