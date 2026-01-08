@@ -72,7 +72,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                   <Home className="w-4 h-4 mr-2 text-blue-600" />
                   <span className="text-sm text-gray-900">Apartment {apartment.number}</span>
                 </div>
-                <span className="text-sm font-medium text-gray-700">€{apartment.price.toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-700">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
               {linkedGarage && (
                 <div className="flex items-center justify-between">
@@ -80,7 +80,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
                     <span className="text-sm text-gray-900">Garage {linkedGarage.number}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
               {linkedStorage && (
@@ -89,12 +89,12 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     <Package className="w-4 h-4 mr-2 text-gray-600" />
                     <span className="text-sm text-gray-900">Storage {linkedStorage.number}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
               <div className="pt-2 mt-2 border-t border-gray-300 flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-900">Total Package:</span>
-                <span className="text-base font-bold text-green-600">€{totalPackagePrice.toLocaleString()}</span>
+                <span className="text-base font-bold text-green-600">€{totalPackagePrice.toLocaleString('hr-HR')}</span>
               </div>
             </div>
           </div>
