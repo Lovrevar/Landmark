@@ -65,7 +65,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Setup Project Phases</h3>
               <p className="text-gray-600 mt-1">
-                Distribute €{project.budget.toLocaleString()} budget across construction phases
+                Distribute €{project.budget.toLocaleString('hr-HR')} budget across construction phases
               </p>
             </div>
             <button
@@ -162,7 +162,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Total Project Budget</p>
-                <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
+                <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Allocated</p>
@@ -173,7 +173,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                     ? 'text-orange-600'
                     : 'text-blue-600'
                 }`}>
-                  €{totalAllocated.toLocaleString()}
+                  €{totalAllocated.toLocaleString('hr-HR')}
                 </p>
               </div>
               <div>
@@ -188,8 +188,8 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                   {difference === 0
                     ? 'Matched'
                     : difference > 0
-                    ? `€${difference.toLocaleString()} under`
-                    : `€${Math.abs(difference).toLocaleString()} over`
+                    ? `€${difference.toLocaleString('hr-HR')} under`
+                    : `€${Math.abs(difference).toLocaleString('hr-HR')} over`
                   }
                 </p>
               </div>
