@@ -1652,7 +1652,7 @@ const AccountingInvoices: React.FC = () => {
                       <option value="">Odaberi stan</option>
                       {getCustomerApartmentsByProject(formData.customer_id, formData.project_id).map(apt => (
                         <option key={apt.id} value={apt.id}>
-                          {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{apt.price.toLocaleString()})
+                          {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{apt.price.toLocaleString('hr-HR')})
                         </option>
                       ))}
                     </select>
