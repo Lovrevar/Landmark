@@ -184,13 +184,13 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
               <div>
                 <span className="text-blue-700">Avg. Price:</span>
                 <span className="font-medium text-blue-900 ml-2">
-                  €{Math.round(preview.avgPrice).toLocaleString()}
+                  €{Math.round(preview.avgPrice).toLocaleString('hr-HR')}
                 </span>
               </div>
               <div>
                 <span className="text-blue-700">Total Value:</span>
                 <span className="font-medium text-blue-900 ml-2">
-                  €{Math.round(preview.totalValue).toLocaleString()}
+                  €{Math.round(preview.totalValue).toLocaleString('hr-HR')}
                 </span>
               </div>
             </div>
