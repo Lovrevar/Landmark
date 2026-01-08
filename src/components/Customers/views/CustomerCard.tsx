@@ -161,15 +161,15 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
               <div className="mt-3 pt-3 border-t border-green-300 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium text-green-800">Total Paid:</span>
-                  <span className="font-bold text-green-700">€{totalPaid.toLocaleString()}</span>
+                  <span className="font-bold text-green-700">€{totalPaid.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="font-medium text-green-800">Remaining:</span>
-                  <span className="font-bold text-red-600">€{remaining.toLocaleString()}</span>
+                  <span className="font-bold text-red-600">€{remaining.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-xs pt-1 border-t border-green-200">
                   <span className="font-semibold text-green-900">Total Value:</span>
-                  <span className="font-bold text-green-900">€{totalPrice.toLocaleString()}</span>
+                  <span className="font-bold text-green-900">€{totalPrice.toLocaleString('hr-HR')}</span>
                 </div>
               </div>
             )
