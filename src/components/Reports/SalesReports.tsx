@@ -402,13 +402,13 @@ const SalesReports: React.FC = () => {
           ['Location', projectReport.project.location],
           ['Status', projectReport.project.status],
           ['Start Date', format(new Date(projectReport.project.start_date), 'MMMM dd, yyyy')],
-          ['Budget', `$${projectReport.project.budget.toLocaleString()}`],
+          ['Budget', `$${projectReport.project.budget.toLocaleString('hr-HR')}`],
           ['Total Units', projectReport.total_units.toString()],
           ['Units Sold', `${projectReport.sold_units} (${projectReport.sales_rate.toFixed(1)}%)`],
           ['Available Units', projectReport.available_units.toString()],
           ['Reserved Units', projectReport.reserved_units.toString()],
-          ['Total Revenue', `$${projectReport.total_revenue.toLocaleString()}`],
-          ['Average Price', `$${projectReport.average_price.toLocaleString()}`]
+          ['Total Revenue', `$${projectReport.total_revenue.toLocaleString('hr-HR')}`],
+          ['Average Price', `$${projectReport.average_price.toLocaleString('hr-HR')}`]
         ]
 
         overviewData.forEach(([label, value], index) => {
