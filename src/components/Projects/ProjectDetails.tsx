@@ -340,7 +340,7 @@ const ProjectDetails: React.FC = () => {
                 {project.status}
               </span>
               <span className="text-sm text-gray-500">
-                Budget: €{project.budget.toLocaleString()}
+                Budget: €{project.budget.toLocaleString('hr-HR')}
               </span>
               <span className="text-sm text-gray-500">
                 Investor: {project.investors}
@@ -443,15 +443,15 @@ const ProjectDetails: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Budget:</span>
-                    <span className="font-medium">€{project.budget.toLocaleString()}</span>
+                    <span className="font-medium">€{project.budget.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Spent:</span>
-                    <span className="font-medium">€{project.total_spent.toLocaleString()}</span>
+                    <span className="font-medium">€{project.total_spent.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Revenue:</span>
-                    <span className="font-medium text-green-600">€{project.total_revenue.toLocaleString()}</span>
+                    <span className="font-medium text-green-600">€{project.total_revenue.toLocaleString('hr-HR')}</span>
                   </div>
                 </div>
               </div>
@@ -718,7 +718,7 @@ const ProjectDetails: React.FC = () => {
                               Contact: {sub.contact}
                             </span>
                             <span className="text-sm text-gray-600">
-                              Cost: €{sub.cost.toLocaleString()}
+                              Cost: €{sub.cost.toLocaleString('hr-HR')}
                             </span>
                             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                               Due: {format(new Date(sub.deadline), 'MMM dd, yyyy')}
@@ -777,7 +777,7 @@ const ProjectDetails: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Price:</span>
-                        <span className="text-sm font-medium">€{apartment.price.toLocaleString()}</span>
+                        <span className="text-sm font-medium">€{apartment.price.toLocaleString('hr-HR')}</span>
                       </div>
                       {apartment.buyer_name && (
                         <div className="flex justify-between">
