@@ -61,6 +61,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   const [projects, setProjects] = useState<RetailProject[]>([])
   const [contracts, setContracts] = useState<RetailContract[]>([])
   const [milestones, setMilestones] = useState<RetailMilestone[]>([])
+  const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -77,6 +78,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     due_date: '',
     base_amount: '',
     vat_rate: '25',
+    category: '',
     notes: ''
   })
 
@@ -117,9 +119,10 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   const loadInitialData = async () => {
     try {
-      const [companiesRes, projectsRes] = await Promise.all([
+      const [companiesRes, projectsRes, categoriesRes] = await Promise.all([
         supabase.from('accounting_companies').select('id, name').order('name'),
-        supabase.from('retail_projects').select('id, name, plot_number').order('name')
+        supabase.from('retail_projects').select('id, name, plot_number').order('name'),
+        supabase.from('invoice_categories').select('id, name').eq('is_active', true).order('sort_order')
       ])
 
       if (companiesRes.error) throw companiesRes.error
@@ -127,6 +130,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
       setCompanies(companiesRes.data || [])
       setProjects(projectsRes.data || [])
+      if (!categoriesRes.error) {
+        setInvoiceCategories(categoriesRes.data || [])
+      }
     } catch (err) {
       console.error('Error loading initial data:', err)
       setError('Greška pri učitavanju podataka')
@@ -251,7 +257,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         paid_amount: 0,
         remaining_amount: totalAmount,
         status: 'UNPAID',
-        category: 'RETAIL',
+        category: formData.category || 'RETAIL',
         description: formData.notes || null
       }
 
@@ -523,6 +529,23 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                 <option value="0">0%</option>
                 <option value="13">13%</option>
                 <option value="25">25%</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kategorija *
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Odaberi kategoriju</option>
+                {invoiceCategories.map(cat => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
               </select>
             </div>
 

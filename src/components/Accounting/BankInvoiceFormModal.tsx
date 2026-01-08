@@ -32,6 +32,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const [banks, setBanks] = useState<BankCompany[]>([])
   const [credits, setCredits] = useState<BankCredit[]>([])
   const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
+  const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
 
   const [formData, setFormData] = useState({
     invoice_type: 'INCOMING_BANK' as 'INCOMING_BANK' | 'OUTGOING_BANK',
@@ -50,7 +51,24 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   useEffect(() => {
     fetchBanks()
     fetchMyCompanies()
+    fetchInvoiceCategories()
   }, [])
+
+  const fetchInvoiceCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('invoice_categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('sort_order')
+
+      if (!error) {
+        setInvoiceCategories(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching invoice categories:', error)
+    }
+  }
 
   useEffect(() => {
     if (formData.bank_id) {
@@ -366,15 +384,19 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kategorija
+                Kategorija *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="npr. Kredit, Kamata, Naknada"
-              />
+                required
+              >
+                <option value="">Odaberi kategoriju</option>
+                {invoiceCategories.map(cat => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
