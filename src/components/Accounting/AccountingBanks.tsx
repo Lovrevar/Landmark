@@ -292,7 +292,7 @@ const AccountingBanks: React.FC = () => {
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Dug:</span>
-                                <span className="font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</span>
+                                <span className="font-medium text-red-600">€{credit.outstanding_balance.toLocaleString('hr-HR')}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Kamata:</span>
