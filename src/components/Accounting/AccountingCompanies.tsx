@@ -979,7 +979,7 @@ const AccountingCompanies: React.FC = () => {
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Iskorišteno:</span>
-                              <span className="font-medium text-orange-600">€{usedAmount.toLocaleString()}</span>
+                              <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Dostupno:</span>
