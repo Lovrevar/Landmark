@@ -216,7 +216,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
             <p className="text-2xl font-bold text-red-900">{stats.totalOverdue}</p>
-            <p className="text-xs text-red-600 mt-1">€{stats.totalOverdueAmount.toLocaleString()}</p>
+            <p className="text-xs text-red-600 mt-1">€{stats.totalOverdueAmount.toLocaleString('hr-HR')}</p>
           </div>
 
           <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
@@ -251,7 +251,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
               <h3 className="text-sm font-medium text-green-700">Total Due</h3>
               <DollarSign className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-green-900">€{stats.totalAmountDue.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-900">€{stats.totalAmountDue.toLocaleString('hr-HR')}</p>
             <p className="text-xs text-green-600 mt-1">All pending</p>
           </div>
         </div>
@@ -366,7 +366,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                           <div>
                             <p className="text-xs text-gray-600">Amount Due</p>
                             <p className="text-sm font-bold text-gray-900">
-                              €{Number(notification.amount).toLocaleString()}
+                              €{Number(notification.amount).toLocaleString('hr-HR')}
                             </p>
                           </div>
 
@@ -467,7 +467,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600">Contract Value</p>
-                                <p className="text-sm font-medium text-gray-900">€{notification.contract_value?.toLocaleString()}</p>
+                                <p className="text-sm font-medium text-gray-900">€{notification.contract_value?.toLocaleString('hr-HR')}</p>
                               </div>
                             </>
                           )}
