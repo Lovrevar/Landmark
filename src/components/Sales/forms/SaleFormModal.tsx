@@ -259,21 +259,21 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Sale Price:</span>
-                <span className="font-medium text-gray-900 ml-2">€{formData.sale_price.toLocaleString()}</span>
+                <span className="font-medium text-gray-900 ml-2">€{formData.sale_price.toLocaleString('hr-HR')}</span>
               </div>
               <div>
                 <span className="text-gray-600">Down Payment:</span>
-                <span className="font-medium text-gray-900 ml-2">€{formData.down_payment.toLocaleString()}</span>
+                <span className="font-medium text-gray-900 ml-2">€{formData.down_payment.toLocaleString('hr-HR')}</span>
               </div>
               <div>
                 <span className="text-gray-600">Remaining:</span>
                 <span className="font-medium text-gray-900 ml-2">
-                  €{(formData.sale_price - formData.down_payment).toLocaleString()}
+                  €{(formData.sale_price - formData.down_payment).toLocaleString('hr-HR')}
                 </span>
               </div>
               <div>
                 <span className="text-gray-600">Monthly Payment:</span>
-                <span className="font-medium text-gray-900 ml-2">€{formData.monthly_payment.toLocaleString()}</span>
+                <span className="font-medium text-gray-900 ml-2">€{formData.monthly_payment.toLocaleString('hr-HR')}</span>
               </div>
             </div>
           </div>
