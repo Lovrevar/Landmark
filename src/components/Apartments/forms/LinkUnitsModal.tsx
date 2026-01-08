@@ -139,7 +139,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                       >
                         <div className="font-medium text-gray-900">Garage {garage.number}</div>
                         <div className="text-sm text-gray-600">Floor {garage.floor} • {garage.size_m2}m²</div>
-                        <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString()}</div>
+                        <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
                       </button>
                     ))}
                   </div>
@@ -163,7 +163,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                       >
                         <div className="font-medium text-gray-900">Storage {storage.number}</div>
                         <div className="text-sm text-gray-600">Floor {storage.floor} • {storage.size_m2}m²</div>
-                        <div className="text-sm font-medium text-gray-600">€{storage.price.toLocaleString()}</div>
+                        <div className="text-sm font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</div>
                       </button>
                     ))}
                   </div>
