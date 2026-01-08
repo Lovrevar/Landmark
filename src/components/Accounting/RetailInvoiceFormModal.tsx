@@ -257,7 +257,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         paid_amount: 0,
         remaining_amount: totalAmount,
         status: 'UNPAID',
-        category: formData.category || 'RETAIL',
+        category: formData.category,
         description: formData.notes || null
       }
 
