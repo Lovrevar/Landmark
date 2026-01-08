@@ -70,7 +70,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Price:</span>
-                <span className="font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
+                <span className="font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
             </div>
           </div>
