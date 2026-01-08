@@ -888,7 +888,7 @@ const AccountingCompanies: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-blue-700">Početno stanje</p>
-                  <p className="text-2xl font-bold text-blue-900">€{selectedCompany.initial_balance.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-900">€{selectedCompany.initial_balance.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-green-700">Izdano računa</p>
