@@ -179,12 +179,12 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <div className="mt-2 space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Paid:</span>
-                <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString()}</span>
+                <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Remaining:</span>
                 <span className="font-medium text-orange-600">
-                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString()}
+                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
                 </span>
               </div>
             </div>
