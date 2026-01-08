@@ -586,9 +586,9 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.base_amount.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.vat_amount.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">€{invoice.total_amount.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
                       <td className={`px-4 py-3 text-right text-sm font-semibold ${
                         invoice.invoice_type.startsWith('OUTGOING') || invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
                           ? 'text-red-600'
