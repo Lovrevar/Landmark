@@ -135,6 +135,7 @@ const AccountingInvoices: React.FC = () => {
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [customerSales, setCustomerSales] = useState<any[]>([])
   const [customerApartments, setCustomerApartments] = useState<any[]>([])
+  const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -273,7 +274,8 @@ const AccountingInvoices: React.FC = () => {
         banksResult,
         projectsResult,
         contractsResult,
-        salesResult
+        salesResult,
+        invoiceCategoriesResult
       ] = await Promise.all([
         supabase
           .from('accounting_invoices')
@@ -371,7 +373,13 @@ const AccountingInvoices: React.FC = () => {
               projects:project_id (name),
               buildings:building_id (name)
             )
-          `)
+          `),
+
+        supabase
+          .from('invoice_categories')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('sort_order')
       ])
 
       if (invoicesResult.error) throw invoicesResult.error
@@ -442,6 +450,10 @@ const AccountingInvoices: React.FC = () => {
         apartment_id: sale.apartment_id
       }))
       setCustomerApartments(aptList)
+
+      if (!invoiceCategoriesResult.error) {
+        setInvoiceCategories(invoiceCategoriesResult.data || [])
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -1536,37 +1548,17 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Kategorija *
                   </label>
-                  {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') ? (
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Odaberi kategoriju</option>
-                      <option value="Plaće">Plaće</option>
-                      <option value="Lizing automobila">Lizing automobila</option>
-                      <option value="Najam ureda">Najam ureda</option>
-                      <option value="Struja">Struja</option>
-                      <option value="Voda">Voda</option>
-                      <option value="Internet">Internet</option>
-                      <option value="Telefon">Telefon</option>
-                      <option value="Održavanje">Održavanje</option>
-                      <option value="Osiguranje">Osiguranje</option>
-                      <option value="Računovodstvo">Računovodstvo</option>
-                      <option value="Pravne usluge">Pravne usluge</option>
-                      <option value="Ostalo">Ostalo</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                      placeholder="npr. Materijal, Usluge, Opći troškovi..."
-                    />
-                  )}
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Odaberi kategoriju</option>
+                    {invoiceCategories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {!isOfficeInvoice && (
