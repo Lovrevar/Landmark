@@ -366,7 +366,7 @@ const RetailCustomers: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                   <span className="text-gray-600">Ukupno:</span>
-                  <span className="font-bold text-gray-900">€{customer.total_spent?.toLocaleString() || 0}</span>
+                  <span className="font-bold text-gray-900">€{customer.total_spent?.toLocaleString('hr-HR') || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Plaćeno:</span>
