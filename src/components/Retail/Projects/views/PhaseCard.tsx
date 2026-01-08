@@ -225,13 +225,13 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {contract.building_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Površina objekta:</span>
-                        <span className="font-medium text-blue-600">{contract.building_surface_m2.toLocaleString()} m²</span>
+                        <span className="font-medium text-blue-600">{contract.building_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.total_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Površina ukupno:</span>
-                        <span className="font-medium text-blue-600">{contract.total_surface_m2.toLocaleString()} m²</span>
+                        <span className="font-medium text-blue-600">{contract.total_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.price_per_m2 && phase.phase_type === 'sales' && (
