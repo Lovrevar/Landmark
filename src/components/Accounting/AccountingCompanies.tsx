@@ -690,7 +690,7 @@ const AccountingCompanies: React.FC = () => {
                 <div className="pt-2 border-t border-gray-200">
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Neplaćeno (prihod):</span>
-                    <span className="text-orange-600">€{company.total_income_unpaid.toLocaleString()}</span>
+                    <span className="text-orange-600">€{company.total_income_unpaid.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Neplaćeno (rashod):</span>
