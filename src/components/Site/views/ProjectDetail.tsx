@@ -154,7 +154,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Credit Limit:</span>
-                      <span className="font-semibold text-gray-900">€{credit.amount.toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Used:</span>
