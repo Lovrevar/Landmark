@@ -302,7 +302,7 @@ const AccountingCustomers: React.FC = () => {
                       <span className="text-sm font-medium text-blue-600">{customer.total_apartments}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900">€{customer.property_price.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">€{customer.property_price.toLocaleString('hr-HR')}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-green-600">€{customer.total_paid.toLocaleString()}</span>
