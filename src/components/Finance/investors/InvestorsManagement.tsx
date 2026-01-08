@@ -1030,7 +1030,7 @@ const InvestorsManagement: React.FC = () => {
                       <span className="text-purple-700">Avg. Investment:</span>
                       <span className="font-medium text-purple-900">
                         €{selectedInvestor.investments.length > 0 
-                          ? (selectedInvestor.total_committed / selectedInvestor.investments.length).toLocaleString()
+                          ? (selectedInvestor.total_committed / selectedInvestor.investments.length).toLocaleString('hr-HR')
                           : '0'
                         }
                       </span>
@@ -1094,10 +1094,10 @@ const InvestorsManagement: React.FC = () => {
                               <p className="text-sm text-gray-600 mb-2">{investment.terms}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString()}</p>
+                              <p className="text-lg font-bold text-gray-900">€{investment.amount.toLocaleString('hr-HR')}</p>
                               <p className="text-sm text-gray-600">{investment.expected_return}% IRR</p>
                               {investment.mortgages_insurance > 0 && (
-                                <p className="text-xs text-orange-600">+€{investment.mortgages_insurance.toLocaleString()} mortgages</p>
+                                <p className="text-xs text-orange-600">+€{investment.mortgages_insurance.toLocaleString('hr-HR')} mortgages</p>
                               )}
                               <p className="text-xs text-blue-600">
                                 {((1 + investment.expected_return / 100) * 100).toFixed(0)}% money multiple
@@ -1132,7 +1132,7 @@ const InvestorsManagement: React.FC = () => {
                               {investment.mortgages_insurance > 0 && (
                                 <div className="mb-2">
                                   <p className="text-xs text-gray-500">Mortgages (Insurance)</p>
-                                  <p className="text-sm font-medium text-orange-600">€{investment.mortgages_insurance.toLocaleString()}</p>
+                                  <p className="text-sm font-medium text-orange-600">€{investment.mortgages_insurance.toLocaleString('hr-HR')}</p>
                                 </div>
                               )}
                               {investment.notes && (
