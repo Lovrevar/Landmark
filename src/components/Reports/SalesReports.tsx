@@ -464,7 +464,7 @@ const SalesReports: React.FC = () => {
           
           pdf.text(`Unit ${apt.number} (Floor ${apt.floor}):`, margin + 5, y)
           pdf.text(`${apt.size_m2}m²`, margin + 50, y)
-          pdf.text(`$${apt.price.toLocaleString()}`, margin + 80, y)
+          pdf.text(`$${apt.price.toLocaleString('hr-HR')}`, margin + 80, y)
           
           pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])
           pdf.setFont('helvetica', 'bold')
