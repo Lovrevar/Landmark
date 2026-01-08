@@ -440,7 +440,7 @@ const SalesReports: React.FC = () => {
           const y = yPosition + (index * 6)
           pdf.text(`${month.month}:`, margin + 5, y)
           pdf.text(`${month.units_sold} units sold`, margin + 40, y)
-          pdf.text(`$${month.revenue.toLocaleString()} revenue`, margin + 80, y)
+          pdf.text(`$${month.revenue.toLocaleString('hr-HR')} revenue`, margin + 80, y)
         })
 
         yPosition += (projectReport.monthly_sales.length * 6) + 15
