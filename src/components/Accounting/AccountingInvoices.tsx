@@ -1681,7 +1681,7 @@ const AccountingInvoices: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">PDV ({formData.vat_rate}%):</span>
-                    <span className="font-medium">€{(formData.base_amount * (formData.vat_rate / 100)).toLocaleString()}</span>
+                    <span className="font-medium">€{(formData.base_amount * (formData.vat_rate / 100)).toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between text-base font-bold border-t border-gray-300 pt-2">
                     <span>Ukupno:</span>
