@@ -512,8 +512,8 @@ const SalesReports: React.FC = () => {
           ['Buyers', `${customerReport.buyers} (${customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}%)`],
           ['Interested Customers', customerReport.interested.toString()],
           ['Leads', customerReport.leads.toString()],
-          ['Total Revenue', `$${customerReport.total_revenue.toLocaleString()}`],
-          ['Average Purchase', `$${customerReport.average_purchase.toLocaleString()}`],
+          ['Total Revenue', `$${customerReport.total_revenue.toLocaleString('hr-HR')}`],
+          ['Average Purchase', `$${customerReport.average_purchase.toLocaleString('hr-HR')}`],
           ['Conversion Rate', `${customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}%`]
         ]
 
@@ -689,7 +689,7 @@ const SalesReports: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Budget:</span>
-                    <span className="font-medium">${projectReport.project.budget.toLocaleString()}</span>
+                    <span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Investor:</span>
@@ -707,11 +707,11 @@ const SalesReports: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Revenue:</span>
-                    <span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString()}</span>
+                    <span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Average Price:</span>
-                    <span className="font-medium">${projectReport.average_price.toLocaleString()}</span>
+                    <span className="font-medium">${projectReport.average_price.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Units Sold:</span>
@@ -865,9 +865,9 @@ const SalesReports: React.FC = () => {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{month.units_sold}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">${month.revenue.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">€{month.revenue.toLocaleString('hr-HR')}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        ${month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString() : '0'}
+                        €{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}
                       </td>
                     </tr>
                   ))}
@@ -884,8 +884,8 @@ const SalesReports: React.FC = () => {
                 <h3 className="font-semibold text-blue-900 mb-3">Performance Highlights</h3>
                 <ul className="space-y-2 text-blue-800">
                   <li>• {projectReport.sales_rate > 70 ? 'Excellent' : projectReport.sales_rate > 50 ? 'Good' : 'Needs Improvement'} sales performance at {projectReport.sales_rate.toFixed(1)}%</li>
-                  <li>• Generated ${projectReport.total_revenue.toLocaleString()} in total revenue</li>
-                  <li>• Average unit price of ${projectReport.average_price.toLocaleString()}</li>
+                  <li>• Generated €{projectReport.total_revenue.toLocaleString('hr-HR')} in total revenue</li>
+                  <li>• Average unit price of €{projectReport.average_price.toLocaleString('hr-HR')}</li>
                   <li>• {projectReport.available_units} units still available for sale</li>
                 </ul>
               </div>
