@@ -279,7 +279,7 @@ const RetailSales: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupni prihod</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString('hr-HR')}</p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
           </div>
@@ -289,7 +289,7 @@ const RetailSales: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Plaćeno</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_paid.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-green-600">€{totalStats.total_paid.toLocaleString('hr-HR')}</p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
           </div>
@@ -299,7 +299,7 @@ const RetailSales: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Za naplatu</p>
-              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString('hr-HR')}</p>
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
           </div>
@@ -390,11 +390,11 @@ const RetailSales: React.FC = () => {
                       <div className="text-xs text-gray-500">€{sale.sale_price_per_m2}/m²</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString()}</div>
+                      <div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
-                      <div className="text-xs text-gray-500">Preostalo: €{sale.remaining_amount.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">Preostalo: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div>
@@ -616,15 +616,15 @@ const RetailSales: React.FC = () => {
               <div className="mb-4 bg-gray-50 p-4 rounded-lg">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-gray-600">Ukupno:</span>
-                  <span className="font-semibold">€{selectedSale.total_sale_price.toLocaleString()}</span>
+                  <span className="font-semibold">€{selectedSale.total_sale_price.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-gray-600">Plaćeno:</span>
-                  <span className="font-semibold text-green-600">€{selectedSale.paid_amount.toLocaleString()}</span>
+                  <span className="font-semibold text-green-600">€{selectedSale.paid_amount.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="text-sm text-gray-600">Preostalo:</span>
-                  <span className="font-bold text-orange-600">€{selectedSale.remaining_amount.toLocaleString()}</span>
+                  <span className="font-bold text-orange-600">€{selectedSale.remaining_amount.toLocaleString('hr-HR')}</span>
                 </div>
               </div>
 
