@@ -42,7 +42,7 @@ const BanksManagement: React.FC = () => {
     bank_id: '',
     company_id: '',
     project_id: '',
-    credit_type: 'construction_loan' as const,
+    credit_type: 'construction_loan_senior' as const,
     amount: 0,
     interest_rate: 0,
     start_date: '',
