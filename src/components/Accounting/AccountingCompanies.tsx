@@ -650,7 +650,7 @@ const AccountingCompanies: React.FC = () => {
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Trenutno stanje</p>
                   <p className={`text-xl font-bold ${company.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{company.current_balance.toLocaleString()}
+                    €{company.current_balance.toLocaleString('hr-HR')}
                   </p>
                 </div>
 
