@@ -467,7 +467,7 @@ const ApartmentManagement: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Price:</span>
-                    <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
                   </div>
 
                   {(linkedGarage || linkedStorage) && (
@@ -479,7 +479,7 @@ const ApartmentManagement: React.FC = () => {
                             <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                             Garage {linkedGarage.number}
                           </span>
-                          <span className="font-medium text-orange-600">€{linkedGarage.price.toLocaleString()}</span>
+                          <span className="font-medium text-orange-600">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
                         </div>
                       )}
                       {linkedStorage && (
@@ -488,12 +488,12 @@ const ApartmentManagement: React.FC = () => {
                             <Package className="w-3 h-3 mr-1 text-gray-600" />
                             Storage {linkedStorage.number}
                           </span>
-                          <span className="font-medium text-gray-600">€{linkedStorage.price.toLocaleString()}</span>
+                          <span className="font-medium text-gray-600">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
                         </div>
                       )}
                       <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
                         <span className="text-xs font-semibold text-gray-700">Total Value:</span>
-                        <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
                   )}
