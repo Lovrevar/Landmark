@@ -594,7 +594,7 @@ const AccountingCompanies: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Dobit/Gubitak</p>
               <p className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{totalProfit.toLocaleString()}
+                €{totalProfit.toLocaleString('hr-HR')}
               </p>
             </div>
             {totalProfit >= 0 ? (
