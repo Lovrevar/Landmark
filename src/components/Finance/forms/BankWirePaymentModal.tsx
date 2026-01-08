@@ -62,11 +62,11 @@ export const BankWirePaymentModal: React.FC<BankWirePaymentModalProps> = ({
               </div>
               <div>
                 <p className="text-blue-700">Outstanding Balance</p>
-                <p className="font-medium text-blue-900">€{credit.outstanding_balance.toLocaleString()}</p>
+                <p className="font-medium text-blue-900">€{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-blue-700">Scheduled Payment</p>
-                <p className="font-medium text-blue-900">€{credit.monthly_payment.toLocaleString()}</p>
+                <p className="font-medium text-blue-900">€{credit.monthly_payment.toLocaleString('hr-HR')}</p>
               </div>
             </div>
           </div>
