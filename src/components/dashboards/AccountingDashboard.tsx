@@ -656,7 +656,7 @@ const AccountingDashboard: React.FC = () => {
                         €{Math.abs(company.netBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                       <p className="text-xs text-gray-500">
-                        In: €{company.totalIncoming.toLocaleString()} | Out: €{company.totalOutgoing.toLocaleString()}
+                        In: €{company.totalIncoming.toLocaleString('hr-HR')} | Out: €{company.totalOutgoing.toLocaleString()}
                       </p>
                     </div>
                   </div>
