@@ -499,7 +499,7 @@ const AccountingCalendar: React.FC = () => {
                 <div className="flex justify-between text-sm">
                   <span className="font-medium text-blue-900">Ukupan godišnji budžet:</span>
                   <span className="font-bold text-blue-900 text-lg">
-                    €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString()}
+                    €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString('hr-HR')}
                   </span>
                 </div>
               </div>
