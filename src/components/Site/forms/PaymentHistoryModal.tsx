@@ -73,16 +73,16 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-600">Contract Amount</p>
-                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString()}</p>
+                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Paid</p>
-                <p className="text-lg font-bold text-teal-600">€{subcontractor.budget_realized.toLocaleString()}</p>
+                <p className="text-lg font-bold text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Remaining</p>
                 <p className="text-lg font-bold text-orange-600">
-                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString()}
+                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString()}</span>
+                          <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString('hr-HR')}</span>
                           {payment.payment_date && (
                             <span className="text-sm text-gray-600">
                               {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
