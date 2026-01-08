@@ -243,16 +243,16 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Contract Amount:</span>
-              <span className="text-sm font-medium text-gray-900">€{contractValue.toLocaleString()}</span>
+              <span className="text-sm font-medium text-gray-900">€{contractValue.toLocaleString('hr-HR')}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Already Paid:</span>
-              <span className="text-sm font-medium text-teal-600">€{alreadyPaid.toLocaleString()}</span>
+              <span className="text-sm font-medium text-teal-600">€{alreadyPaid.toLocaleString('hr-HR')}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-gray-200">
               <span className="text-sm font-medium text-gray-700">Remaining:</span>
               <span className="text-sm font-bold text-orange-600">
-                €{remaining.toLocaleString()}
+                €{remaining.toLocaleString('hr-HR')}
               </span>
             </div>
           </div>
