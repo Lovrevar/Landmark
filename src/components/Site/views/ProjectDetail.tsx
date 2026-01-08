@@ -251,7 +251,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
           )}
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-600">€{project.total_subcontractor_cost.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-600">€{project.total_subcontractor_cost.toLocaleString('hr-HR')}</div>
             <div className="text-sm text-gray-600">Contract Total</div>
           </div>
           {canManagePayments && (
