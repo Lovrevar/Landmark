@@ -81,7 +81,7 @@ export const NotificationPaymentModal: React.FC<NotificationPaymentModalProps> =
               </div>
               <div>
                 <p className="text-blue-700">Scheduled Amount</p>
-                <p className="font-medium text-blue-900">€{Number(notification.amount).toLocaleString()}</p>
+                <p className="font-medium text-blue-900">€{Number(notification.amount).toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-blue-700">Payment Number</p>
@@ -119,7 +119,7 @@ export const NotificationPaymentModal: React.FC<NotificationPaymentModalProps> =
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Suggested amount: €{Number(notification.amount).toLocaleString()}
+                Suggested amount: €{Number(notification.amount).toLocaleString('hr-HR')}
               </p>
             </div>
 
