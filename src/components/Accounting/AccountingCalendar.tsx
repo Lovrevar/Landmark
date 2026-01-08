@@ -293,7 +293,7 @@ const AccountingCalendar: React.FC = () => {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Ulazni računi:</span>
-          <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString()}</span>
+          <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
