@@ -64,7 +64,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                 >
                   <div className="font-medium text-gray-900">Garage {garage.number}</div>
                   <div className="text-sm text-gray-600">Floor {garage.floor} • {garage.size_m2}m²</div>
-                  <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString()}</div>
+                  <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableGarages.length === 0 && (
@@ -94,7 +94,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                 >
                   <div className="font-medium text-gray-900">Repository {repository.number}</div>
                   <div className="text-sm text-gray-600">Floor {repository.floor} • {repository.size_m2}m²</div>
-                  <div className="text-sm font-medium text-gray-600">€{repository.price.toLocaleString()}</div>
+                  <div className="text-sm font-medium text-gray-600">€{repository.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableRepositories.length === 0 && (
