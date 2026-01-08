@@ -291,7 +291,7 @@ const RetailCustomers: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupni prihod</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString('hr-HR')}</p>
             </div>
             <Users className="w-8 h-8 text-green-600" />
           </div>
@@ -301,7 +301,7 @@ const RetailCustomers: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Preostalo</p>
-              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString('hr-HR')}</p>
             </div>
             <Users className="w-8 h-8 text-orange-600" />
           </div>
