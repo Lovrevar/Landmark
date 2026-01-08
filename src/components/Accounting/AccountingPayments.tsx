@@ -452,7 +452,7 @@ const AccountingPayments: React.FC = () => {
           <div className="flex flex-col">
             <p className="text-xs text-gray-600 mb-1">Ukupan iznos</p>
             <p className="text-xl font-bold text-gray-900">
-              €{payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              €{payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
@@ -470,7 +470,7 @@ const AccountingPayments: React.FC = () => {
                   return paymentMonth === currentMonth && paymentYear === currentYear
                 })
                 .reduce((sum, p) => sum + p.amount, 0)
-                .toLocaleString()}
+                .toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
@@ -525,7 +525,7 @@ const AccountingPayments: React.FC = () => {
                   return invoice && (invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK')
                 })
                 .reduce((sum, p) => sum + p.amount, 0)
-                .toLocaleString()}
+                .toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
@@ -540,7 +540,7 @@ const AccountingPayments: React.FC = () => {
                   return invoice && (invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES' || invoice.invoice_type === 'OUTGOING_OFFICE')
                 })
                 .reduce((sum, p) => sum + p.amount, 0)
-                .toLocaleString()}
+                .toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
@@ -652,7 +652,7 @@ const AccountingPayments: React.FC = () => {
                       )}
                       {visibleColumns.amount && (
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                          €{payment.amount.toLocaleString()}
+                          €{payment.amount.toLocaleString('hr-HR')}
                         </td>
                       )}
                       {visibleColumns.payment_method && (
@@ -712,7 +712,7 @@ const AccountingPayments: React.FC = () => {
             <div>
               <span className="text-gray-600">Ukupan iznos filtriranih: </span>
               <span className="font-semibold text-green-600">
-                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
               </span>
             </div>
           </div>
@@ -763,7 +763,7 @@ const AccountingPayments: React.FC = () => {
                         {invoice.invoice_type === 'EXPENSE'
                           ? ` ${invoice.subcontractors?.name}`
                           : invoice.customers ? ` ${invoice.customers.name} ${invoice.customers.surname}` : ''} -
-                        Preostalo: €{invoice.remaining_amount.toLocaleString()}
+                        Preostalo: €{invoice.remaining_amount.toLocaleString('hr-HR')}
                       </option>
                     ))}
                   </select>
@@ -810,7 +810,7 @@ const AccountingPayments: React.FC = () => {
                             })
                             .map(account => (
                               <option key={account.id} value={account.id}>
-                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
+                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
                               </option>
                             ))}
                         </select>
@@ -846,7 +846,7 @@ const AccountingPayments: React.FC = () => {
                               const available = credit.amount - credit.used_amount
                               return (
                                 <option key={credit.id} value={credit.id}>
-                                  {credit.credit_name} (Dostupno: €{available.toLocaleString()})
+                                  {credit.credit_name} (Dostupno: €{available.toLocaleString('hr-HR')})
                                 </option>
                               )
                             })}
@@ -930,7 +930,7 @@ const AccountingPayments: React.FC = () => {
                             .filter(acc => acc.company_id === formData.cesija_company_id)
                             .map(account => (
                               <option key={account.id} value={account.id}>
-                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString()})
+                                {account.bank_name} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
                               </option>
                             ))}
                         </select>
