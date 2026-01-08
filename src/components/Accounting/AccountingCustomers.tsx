@@ -357,17 +357,17 @@ const AccountingCustomers: React.FC = () => {
 
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <p className="text-sm font-medium text-gray-700">Cijena nekretnine</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">€{selectedCustomer.property_price.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">€{selectedCustomer.property_price.toLocaleString('hr-HR')}</p>
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                   <p className="text-sm font-medium text-green-700">Plaćeno</p>
-                  <p className="text-2xl font-bold text-green-900 mt-1">€{selectedCustomer.total_paid.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-900 mt-1">€{selectedCustomer.total_paid.toLocaleString('hr-HR')}</p>
                 </div>
 
                 <div className="bg-red-50 rounded-lg p-4 border border-red-200">
                   <p className="text-sm font-medium text-red-700">Dužno</p>
-                  <p className="text-2xl font-bold text-red-900 mt-1">€{(selectedCustomer.property_price - selectedCustomer.total_paid).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-red-900 mt-1">€{(selectedCustomer.property_price - selectedCustomer.total_paid).toLocaleString('hr-HR')}</p>
                 </div>
               </div>
 
@@ -427,15 +427,15 @@ const AccountingCustomers: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300">
                           <div>
                             <p className="text-xs text-gray-600">Ukupno</p>
-                            <p className="font-semibold text-gray-900">€{invoice.total_amount.toLocaleString()}</p>
+                            <p className="font-semibold text-gray-900">€{invoice.total_amount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Plaćeno</p>
-                            <p className="font-semibold text-green-600">€{invoice.paid_amount.toLocaleString()}</p>
+                            <p className="font-semibold text-green-600">€{invoice.paid_amount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Preostalo</p>
-                            <p className="font-semibold text-red-600">€{invoice.remaining_amount.toLocaleString()}</p>
+                            <p className="font-semibold text-red-600">€{invoice.remaining_amount.toLocaleString('hr-HR')}</p>
                           </div>
                         </div>
                       </div>
