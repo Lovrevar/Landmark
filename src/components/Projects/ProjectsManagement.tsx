@@ -244,16 +244,16 @@ const ProjectsManagement: React.FC = () => {
                   <div className="space-y-3 mb-4">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Budget</span>
-                      <span className="font-semibold text-gray-900">€{project.budget.toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Spent</span>
-                      <span className="font-semibold text-blue-600">€{project.stats.total_spent.toLocaleString()}</span>
+                      <span className="font-semibold text-blue-600">€{project.stats.total_spent.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Remaining</span>
                       <span className="font-semibold text-green-600">
-                        €{(project.budget - project.stats.total_spent).toLocaleString()}
+                        €{(project.budget - project.stats.total_spent).toLocaleString('hr-HR')}
                       </span>
                     </div>
                   </div>
