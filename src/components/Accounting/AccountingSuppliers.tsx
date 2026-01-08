@@ -330,7 +330,7 @@ const AccountingSuppliers: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Ukupno plaćeno</p>
               <p className="text-2xl font-bold text-green-600">
-                €{suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString()}
+                €{suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
@@ -342,7 +342,7 @@ const AccountingSuppliers: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Ukupno dugovi</p>
               <p className="text-2xl font-bold text-orange-600">
-                €{suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString()}
+                €{suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}
               </p>
             </div>
             <TrendingUp className="w-8 h-8 text-orange-600" />
@@ -402,15 +402,15 @@ const AccountingSuppliers: React.FC = () => {
                     <div className="flex items-center space-x-6 mt-2 text-sm">
                       <div>
                         <span className="text-gray-600">Vrijednost: </span>
-                        <span className="font-semibold text-gray-900">€{supplier.total_contract_value.toLocaleString()}</span>
+                        <span className="font-semibold text-gray-900">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Plaćeno: </span>
-                        <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString()}</span>
+                        <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Dugovi: </span>
-                        <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString()}</span>
+                        <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
                   </div>
@@ -553,15 +553,15 @@ const AccountingSuppliers: React.FC = () => {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Vrijednost</p>
-                  <p className="text-2xl font-bold text-gray-900">€{selectedSupplier.total_contract_value.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">€{selectedSupplier.total_contract_value.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-green-700">Plaćeno</p>
-                  <p className="text-2xl font-bold text-green-900">€{selectedSupplier.total_paid.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-900">€{selectedSupplier.total_paid.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
                   <p className="text-sm text-orange-700">Dugovi</p>
-                  <p className="text-2xl font-bold text-orange-900">€{selectedSupplier.total_remaining.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-orange-900">€{selectedSupplier.total_remaining.toLocaleString('hr-HR')}</p>
                 </div>
               </div>
 
@@ -594,16 +594,16 @@ const AccountingSuppliers: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                           <div>
                             <p className="text-xs text-gray-500">Ugovor</p>
-                            <p className="text-sm font-medium">€{parseFloat(contract.contract_amount).toLocaleString()}</p>
+                            <p className="text-sm font-medium">€{parseFloat(contract.contract_amount).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-600">€{parseFloat(contract.budget_realized).toLocaleString()}</p>
+                            <p className="text-sm font-medium text-green-600">€{parseFloat(contract.budget_realized).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Preostalo</p>
                             <p className="text-sm font-medium text-orange-600">
-                              €{(parseFloat(contract.contract_amount) - parseFloat(contract.budget_realized)).toLocaleString()}
+                              €{(parseFloat(contract.contract_amount) - parseFloat(contract.budget_realized)).toLocaleString('hr-HR')}
                             </p>
                           </div>
                         </div>
@@ -641,11 +641,11 @@ const AccountingSuppliers: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                           <div>
                             <p className="text-xs text-gray-500">Ukupno (bez PDV)</p>
-                            <p className="text-sm font-medium">€{parseFloat(invoice.base_amount || 0).toLocaleString()}</p>
+                            <p className="text-sm font-medium">€{parseFloat(invoice.base_amount || 0).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-600">€{parseFloat(invoice.base_amount || 0).toLocaleString()}</p>
+                            <p className="text-sm font-medium text-green-600">€{parseFloat(invoice.base_amount || 0).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Preostalo</p>
