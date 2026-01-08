@@ -175,8 +175,8 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
               Računi - {contract.contract_number}
             </h2>
             <p className="text-gray-600 mt-1">
-              Iznos ugovora: €{contract.contract_amount.toLocaleString()} |
-              Plaćeno: €{contract.budget_realized.toLocaleString()}
+              Iznos ugovora: €{contract.contract_amount.toLocaleString('hr-HR')} |
+              Plaćeno: €{contract.budget_realized.toLocaleString('hr-HR')}
             </p>
           </div>
           <button
