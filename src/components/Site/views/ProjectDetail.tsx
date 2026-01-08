@@ -100,11 +100,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
             <p className="text-gray-600 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 mt-1">
-              Budget: €{project.budget.toLocaleString()}
+              Budget: €{project.budget.toLocaleString('hr-HR')}
               {project.has_phases && (
                 <>
                   <span className="ml-2">
-                    • Allocated: €{project.total_budget_allocated.toLocaleString()}
+                    • Allocated: €{project.total_budget_allocated.toLocaleString('hr-HR')}
                   </span>
                 </>
               )}
