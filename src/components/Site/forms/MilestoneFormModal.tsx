@@ -117,7 +117,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
                 {projectName} • {phaseName} • {subcontractorName}
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                Contract: €{contractCost.toLocaleString()} • Available: {remainingPercentage.toFixed(2)}%
+                Contract: €{contractCost.toLocaleString('hr-HR')} • Available: {remainingPercentage.toFixed(2)}%
               </p>
             </div>
             <button
@@ -194,7 +194,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
                   €{calculateAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.percentage}% of €{contractCost.toLocaleString()}
+                  {formData.percentage}% of €{contractCost.toLocaleString('hr-HR')}
                 </p>
               </div>
             </div>
