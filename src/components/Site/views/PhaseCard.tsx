@@ -191,7 +191,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Paid:</span>
-                      <span className="font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString()}</span>
+                      <span className="font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
                     </div>
                     {remainingToPay > 0 && (
                       <div className="flex items-center justify-between">
