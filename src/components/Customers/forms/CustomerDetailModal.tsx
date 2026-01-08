@@ -102,7 +102,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                         <div key={projectName} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-300">
                             <h4 className="font-semibold text-gray-900 text-base">{projectName}</h4>
-                            <span className="text-sm font-bold text-blue-700">€{projectTotal.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-blue-700">€{projectTotal.toLocaleString('hr-HR')}</span>
                           </div>
 
                           <div className="space-y-3">
@@ -132,7 +132,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-bold text-green-700">€{totalPackage.toLocaleString()}</p>
+                                      <p className="font-bold text-green-700">€{totalPackage.toLocaleString('hr-HR')}</p>
                                       <p className="text-xs text-gray-500">{format(new Date(unit.sale_date), 'MMM dd, yyyy')}</p>
                                     </div>
                                   </div>
@@ -145,7 +145,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                             <Warehouse className="w-3 h-3 mr-1" />
                                             Garage {unit.garage.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.garage.price.toLocaleString()}</span>
+                                          <span className="font-semibold">€{unit.garage.price.toLocaleString('hr-HR')}</span>
                                         </div>
                                       )}
                                       {unit.repository && (
@@ -154,7 +154,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                             <Package className="w-3 h-3 mr-1" />
                                             Repository {unit.repository.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.repository.price.toLocaleString()}</span>
+                                          <span className="font-semibold">€{unit.repository.price.toLocaleString('hr-HR')}</span>
                                         </div>
                                       )}
                                     </div>
@@ -163,11 +163,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                   <div className="mt-2 pt-2 border-t border-gray-200 grid grid-cols-2 gap-2 text-xs">
                                     <div>
                                       <p className="text-gray-600">Paid</p>
-                                      <p className="font-semibold text-green-700">€{(unit.total_paid || 0).toLocaleString()}</p>
+                                      <p className="font-semibold text-green-700">€{(unit.total_paid || 0).toLocaleString('hr-HR')}</p>
                                     </div>
                                     <div>
                                       <p className="text-gray-600">Remaining</p>
-                                      <p className="font-semibold text-red-600">€{(totalPackage - (unit.total_paid || 0)).toLocaleString()}</p>
+                                      <p className="font-semibold text-red-600">€{(totalPackage - (unit.total_paid || 0)).toLocaleString('hr-HR')}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -178,11 +178,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                           <div className="mt-3 pt-3 border-t border-gray-300 space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="font-medium text-gray-700">Project Total Paid:</span>
-                              <span className="font-bold text-green-700">€{projectPaid.toLocaleString()}</span>
+                              <span className="font-bold text-green-700">€{projectPaid.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="font-medium text-gray-700">Project Remaining:</span>
-                              <span className="font-bold text-red-600">€{projectRemaining.toLocaleString()}</span>
+                              <span className="font-bold text-red-600">€{projectRemaining.toLocaleString('hr-HR')}</span>
                             </div>
                           </div>
                         </div>
@@ -206,15 +206,15 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="font-medium text-blue-800">Total Paid:</span>
-                              <span className="font-bold text-green-700">€{grandPaid.toLocaleString()}</span>
+                              <span className="font-bold text-green-700">€{grandPaid.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="font-medium text-blue-800">Total Remaining:</span>
-                              <span className="font-bold text-red-600">€{grandRemaining.toLocaleString()}</span>
+                              <span className="font-bold text-red-600">€{grandRemaining.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between pt-2 border-t border-blue-300">
                               <span className="font-bold text-blue-900">Grand Total:</span>
-                              <span className="font-bold text-blue-900 text-lg">€{grandTotal.toLocaleString()}</span>
+                              <span className="font-bold text-blue-900 text-lg">€{grandTotal.toLocaleString('hr-HR')}</span>
                             </div>
                           </div>
                         </div>
