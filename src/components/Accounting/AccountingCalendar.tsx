@@ -316,7 +316,7 @@ const AccountingCalendar: React.FC = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700 font-medium">Razlika od budžeta:</span>
                   <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.abs(difference).toLocaleString()} {difference >= 0 ? '(Ispod budžeta - dobro)' : '(Preko budžeta - loše)'}
+                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? '(Ispod budžeta - dobro)' : '(Preko budžeta - loše)'}
                   </span>
                 </div>
               </>
