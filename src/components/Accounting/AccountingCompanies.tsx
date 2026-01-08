@@ -660,7 +660,7 @@ const AccountingCompanies: React.FC = () => {
                       <ArrowUpCircle className="w-4 h-4 text-green-600 mr-1" />
                       <p className="text-xs text-green-700">Izdano</p>
                     </div>
-                    <p className="text-sm font-bold text-green-900">€{company.total_income_paid.toLocaleString()}</p>
+                    <p className="text-sm font-bold text-green-900">€{company.total_income_paid.toLocaleString('hr-HR')}</p>
                     <p className="text-xs text-gray-600">{company.total_income_invoices} računa</p>
                   </div>
 
