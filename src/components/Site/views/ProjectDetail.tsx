@@ -162,7 +162,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Available:</span>
-                      <span className="font-semibold text-green-600">€{available.toLocaleString()}</span>
+                      <span className="font-semibold text-green-600">€{available.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Interest Rate:</span>
