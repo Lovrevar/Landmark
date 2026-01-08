@@ -246,17 +246,17 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Price per m²:</span>
-                  <span className="text-sm font-medium text-blue-600">€{unit.price_per_m2?.toLocaleString() || '0'}/m²</span>
+                  <span className="text-sm font-medium text-blue-600">€{unit.price_per_m2?.toLocaleString('hr-HR') || '0'}/m²</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? 'Apartment Price:' : 'Total Price:'}</span>
-                  <span className="text-sm font-bold text-green-600">€{unit.price.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-green-600">€{unit.price.toLocaleString('hr-HR')}</span>
                 </div>
 
                 {activeUnitType === 'apartment' && hasLinkedUnits && (
                   <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-sm font-semibold text-gray-900">Total Package:</span>
-                    <span className="text-base font-bold text-blue-700">€{totalPackagePrice.toLocaleString()}</span>
+                    <span className="text-base font-bold text-blue-700">€{totalPackagePrice.toLocaleString('hr-HR')}</span>
                   </div>
                 )}
 
@@ -272,7 +272,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Down Payment:</span>
-                      <span className="text-sm font-medium">€{unit.sale_info.down_payment.toLocaleString()}</span>
+                      <span className="text-sm font-medium">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
                     </div>
                     {unit.sale_info.monthly_payment > 0 && (
                       <div className="flex justify-between">
@@ -284,7 +284,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-500">Payment Progress</span>
                         <span className="text-xs font-medium">
-                          €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString()}
+                          €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString('hr-HR')}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -312,7 +312,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-orange-600">Price:</span>
-                      <span className="text-xs font-bold text-orange-700">€{garagePrice.toLocaleString()}</span>
+                      <span className="text-xs font-bold text-orange-700">€{garagePrice.toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
                 )}
@@ -330,7 +330,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-600">Price:</span>
-                      <span className="text-xs font-bold text-gray-700">€{repositoryPrice.toLocaleString()}</span>
+                      <span className="text-xs font-bold text-gray-700">€{repositoryPrice.toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
                 )}
