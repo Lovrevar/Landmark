@@ -162,7 +162,7 @@ const AccountingBanks: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupan dug</p>
-              <p className="text-2xl font-bold text-red-600">€{totalOutstandingAcrossAllBanks.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-red-600">€{totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}</p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
           </div>
