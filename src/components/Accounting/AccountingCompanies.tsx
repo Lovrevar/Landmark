@@ -909,7 +909,7 @@ const AccountingCompanies: React.FC = () => {
                     {selectedCompany.profit >= 0 ? 'Dobit' : 'Gubitak'}
                   </p>
                   <p className={`text-2xl font-bold ${selectedCompany.profit >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                    €{Math.abs(selectedCompany.profit).toLocaleString()}
+                    €{Math.abs(selectedCompany.profit).toLocaleString('hr-HR')}
                   </p>
                 </div>
               </div>
