@@ -63,7 +63,7 @@ export const InvestorWirePaymentModal: React.FC<InvestorWirePaymentModalProps> =
               </div>
               <div>
                 <p className="text-blue-700">Investment Amount</p>
-                <p className="font-medium text-blue-900">€{investment.amount.toLocaleString()}</p>
+                <p className="font-medium text-blue-900">€{investment.amount.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-blue-700">Expected Return</p>
