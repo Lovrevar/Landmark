@@ -316,9 +316,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-gray-600">Budget</span>
               <DollarSign className="w-5 h-5 text-gray-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
             <p className="text-xs text-gray-500 mt-1">
-              Spent: €{totalSpent.toLocaleString()}
+              Spent: €{totalSpent.toLocaleString('hr-HR')}
             </p>
           </div>
 
@@ -417,16 +417,16 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <span className="text-sm text-blue-700">Total Investment</span>
                     <p className="text-2xl font-bold text-blue-900 mt-1">
-                      €{investments.reduce((sum, inv) => sum + Number(inv.amount), 0).toLocaleString()}
+                      €{investments.reduce((sum, inv) => sum + Number(inv.amount), 0).toLocaleString('hr-HR')}
                     </p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-4 border border-red-200">
                     <span className="text-sm text-red-700">Total Expenses</span>
-                    <p className="text-2xl font-bold text-red-900 mt-1">€{totalSpent.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-red-900 mt-1">€{totalSpent.toLocaleString('hr-HR')}</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                     <span className="text-sm text-green-700">Revenue from Sales</span>
-                    <p className="text-2xl font-bold text-green-900 mt-1">€{totalRevenue.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-green-900 mt-1">€{totalRevenue.toLocaleString('hr-HR')}</p>
                   </div>
                 </div>
               </div>
@@ -475,10 +475,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         <div className="text-right">
                           <p className="text-sm text-gray-600">Budget</p>
                           <p className="text-lg font-semibold text-gray-900">
-                            €{phase.budget_allocated.toLocaleString()}
+                            €{phase.budget_allocated.toLocaleString('hr-HR')}
                           </p>
                           <p className="text-sm text-blue-600">
-                            Used: €{phase.budget_used.toLocaleString()}
+                            Used: €{phase.budget_used.toLocaleString('hr-HR')}
                           </p>
                         </div>
                       </div>
@@ -499,10 +499,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm font-semibold text-gray-900">
-                                    €{contract.contract_amount.toLocaleString()}
+                                    €{contract.contract_amount.toLocaleString('hr-HR')}
                                   </p>
                                   <p className="text-xs text-gray-600">
-                                    Realized: €{contract.budget_realized.toLocaleString()}
+                                    Realized: €{contract.budget_realized.toLocaleString('hr-HR')}
                                   </p>
                                 </div>
                               </div>
@@ -561,7 +561,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">{apt.floor}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">{apt.size_m2}</td>
                         <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">
-                          €{apt.price.toLocaleString()}
+                          €{apt.price.toLocaleString('hr-HR')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -622,19 +622,19 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-600">Contract Amount</p>
                           <p className="text-lg font-semibold text-gray-900 mt-1">
-                            €{contract.contract_amount.toLocaleString()}
+                            €{contract.contract_amount.toLocaleString('hr-HR')}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Budget Realized</p>
                           <p className="text-lg font-semibold text-blue-600 mt-1">
-                            €{contract.budget_realized.toLocaleString()}
+                            €{contract.budget_realized.toLocaleString('hr-HR')}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Remaining</p>
                           <p className="text-lg font-semibold text-green-600 mt-1">
-                            €{(contract.contract_amount - contract.budget_realized).toLocaleString()}
+                            €{(contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
                           </p>
                         </div>
                         <div>
@@ -670,7 +670,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                             Type: {investment.investment_type} • {format(parseISO(investment.investment_date), 'MMM dd, yyyy')}
                           </p>
                         </div>
-                        <p className="text-2xl font-bold text-blue-600">€{investment.amount.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-blue-600">€{investment.amount.toLocaleString('hr-HR')}</p>
                       </div>
                     </div>
                   ))}
