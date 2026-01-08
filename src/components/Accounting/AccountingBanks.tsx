@@ -214,7 +214,7 @@ const AccountingBanks: React.FC = () => {
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-xs text-green-700 mb-1">Dostupno</p>
-                    <p className="text-lg font-bold text-green-900">€{availableCredit.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-green-900">€{availableCredit.toLocaleString('hr-HR')}</p>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-xs text-green-700 mb-1">Vraćeno</p>
