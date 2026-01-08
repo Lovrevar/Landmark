@@ -594,7 +594,7 @@ const AccountingCalendar: React.FC = () => {
                           ? 'text-red-600'
                           : 'text-green-600'
                       }`}>
-                        €{invoice.paid_amount.toLocaleString()}
+                        €{invoice.paid_amount.toLocaleString('hr-HR')}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
