@@ -1070,7 +1070,7 @@ const AccountingCompanies: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-700">€{invoice.paid_amount.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-green-700">€{invoice.paid_amount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Preostalo</p>
