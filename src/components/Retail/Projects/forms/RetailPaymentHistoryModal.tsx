@@ -194,16 +194,16 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-600">Iznos ugovora</p>
-                <p className="text-lg font-bold text-gray-900">€{contract.contract_amount.toLocaleString()}</p>
+                <p className="text-lg font-bold text-gray-900">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Ukupno plaćeno</p>
-                <p className="text-lg font-bold text-teal-600">€{contract.budget_realized.toLocaleString()}</p>
+                <p className="text-lg font-bold text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Preostalo</p>
                 <p className="text-lg font-bold text-orange-600">
-                  €{Math.max(0, contract.contract_amount - contract.budget_realized).toLocaleString()}
+                  €{Math.max(0, contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
                 </p>
               </div>
             </div>
