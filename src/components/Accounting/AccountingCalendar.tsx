@@ -311,7 +311,7 @@ const AccountingCalendar: React.FC = () => {
                 <div className="border-t border-gray-300 my-2"></div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Planirani budžet (Rashodi):</span>
-                  <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString()}</span>
+                  <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700 font-medium">Razlika od budžeta:</span>
