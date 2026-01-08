@@ -523,7 +523,7 @@ const ApartmentManagement: React.FC = () => {
                           ></div>
                         </div>
                         <div className="text-xs text-gray-600 mt-1 font-medium">
-                          €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString()}
+                          €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString('hr-HR')}
                         </div>
                       </div>
                     </>
