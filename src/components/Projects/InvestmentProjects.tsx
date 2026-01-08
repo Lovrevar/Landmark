@@ -269,7 +269,7 @@ const InvestmentProjects: React.FC = () => {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
                 <p className="text-sm text-gray-600">Total Budget</p>
                 <button
                   onClick={() => setSelectedProject(project)}
@@ -288,7 +288,7 @@ const InvestmentProjects: React.FC = () => {
                   <span className="text-sm text-green-700">Equity Investment</span>
                   <ArrowUpRight className="w-4 h-4 text-green-600" />
                 </div>
-                <p className="text-lg font-bold text-green-900">€{project.total_investment.toLocaleString()}</p>
+                <p className="text-lg font-bold text-green-900">€{project.total_investment.toLocaleString('hr-HR')}</p>
                 <p className="text-xs text-green-600">
                   {project.budget > 0 ? ((project.total_investment / project.budget) * 100).toFixed(1) : '0'}% of budget
                 </p>
@@ -299,7 +299,7 @@ const InvestmentProjects: React.FC = () => {
                   <span className="text-sm text-red-700">Debt Financing</span>
                   <ArrowDownRight className="w-4 h-4 text-red-600" />
                 </div>
-                <p className="text-lg font-bold text-red-900">€{project.total_debt.toLocaleString()}</p>
+                <p className="text-lg font-bold text-red-900">€{project.total_debt.toLocaleString('hr-HR')}</p>
                 <p className="text-xs text-red-600">
                   {project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% of budget
                 </p>
@@ -414,7 +414,7 @@ const InvestmentProjects: React.FC = () => {
                       {selectedProject.risk_level} Risk
                     </span>
                     <span className="text-sm text-gray-500">
-                      Budget: €{selectedProject.budget.toLocaleString()}
+                      Budget: €{selectedProject.budget.toLocaleString('hr-HR')}
                     </span>
                   </div>
                 </div>
@@ -466,7 +466,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-blue-700">Total Budget</span>
                     <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
-                  <p className="text-xl font-bold text-blue-900">€{selectedProject.budget.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-blue-900">€{selectedProject.budget.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-blue-600">Project value</p>
                 </div>
 
@@ -475,7 +475,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-green-700">Equity Investment</span>
                     <ArrowUpRight className="w-4 h-4 text-green-600" />
                   </div>
-                  <p className="text-xl font-bold text-green-900">€{selectedProject.total_investment.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-green-900">€{selectedProject.total_investment.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-green-600">
                     {selectedProject.budget > 0 ? ((selectedProject.total_investment / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
                   </p>
@@ -486,7 +486,7 @@ const InvestmentProjects: React.FC = () => {
                     <span className="text-sm text-red-700">Debt Financing</span>
                     <ArrowDownRight className="w-4 h-4 text-red-600" />
                   </div>
-                  <p className="text-xl font-bold text-red-900">€{selectedProject.total_debt.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-red-900">€{selectedProject.total_debt.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-red-600">
                     {selectedProject.budget > 0 ? ((selectedProject.total_debt / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
                   </p>
@@ -528,7 +528,7 @@ const InvestmentProjects: React.FC = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-green-600">€{investment.amount.toLocaleString()}</p>
+                                <p className="font-bold text-green-600">€{investment.amount.toLocaleString('hr-HR')}</p>
                                 <p className="text-xs text-green-600">{investment.expected_return}Expected Return</p>
                               </div>
                             </div>
@@ -563,17 +563,17 @@ const InvestmentProjects: React.FC = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-red-600">€{credit.amount.toLocaleString()}</p>
+                                <p className="font-bold text-red-600">€{credit.amount.toLocaleString('hr-HR')}</p>
                                 <p className="text-xs text-gray-500">Credit Amount</p>
                               </div>
                             </div>
                             <div className="flex justify-between items-center mb-1">
                               <p className="text-xs text-gray-600">Outstanding Balance:</p>
-                              <p className="text-xs font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
+                              <p className="text-xs font-medium text-red-600">€{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
                             </div>
                             <div className="flex justify-between items-center mb-2">
                               <p className="text-xs text-gray-600">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment:</p>
-                              <p className="text-xs font-medium text-gray-900">€{credit.monthly_payment.toLocaleString()}</p>
+                              <p className="text-xs font-medium text-gray-900">€{credit.monthly_payment.toLocaleString('hr-HR')}</p>
                             </div>
                             <p className="text-xs text-gray-600">
                               {credit.maturity_date
@@ -764,15 +764,15 @@ const InvestmentProjects: React.FC = () => {
                             <div className="grid grid-cols-4 gap-4 mb-4">
                               <div className="bg-blue-50 p-3 rounded-lg">
                                 <p className="text-xs text-blue-700 mb-1">Total Committed</p>
-                                <p className="text-lg font-bold text-blue-900">€{source.totalAmount.toLocaleString()}</p>
+                                <p className="text-lg font-bold text-blue-900">€{source.totalAmount.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className="bg-red-50 p-3 rounded-lg">
                                 <p className="text-xs text-red-700 mb-1">Spent</p>
-                                <p className="text-lg font-bold text-red-900">€{source.spentAmount.toLocaleString()}</p>
+                                <p className="text-lg font-bold text-red-900">€{source.spentAmount.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className="bg-green-50 p-3 rounded-lg">
                                 <p className="text-xs text-green-700 mb-1">Available</p>
-                                <p className="text-lg font-bold text-green-900">€{source.availableAmount.toLocaleString()}</p>
+                                <p className="text-lg font-bold text-green-900">€{source.availableAmount.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className="bg-gray-50 p-3 rounded-lg">
                                 <p className="text-xs text-gray-700 mb-1">Utilization</p>
@@ -791,7 +791,7 @@ const InvestmentProjects: React.FC = () => {
                               <div className="flex justify-between mb-1">
                                 <span className="text-xs text-gray-600">Funding Utilization</span>
                                 <span className="text-xs font-medium text-gray-900">
-                                  €{source.spentAmount.toLocaleString()} / €{source.totalAmount.toLocaleString()}
+                                  €{source.spentAmount.toLocaleString('hr-HR')} / €{source.totalAmount.toLocaleString('hr-HR')}
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -841,19 +841,19 @@ const InvestmentProjects: React.FC = () => {
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-700 mb-1">Total Committed</p>
                         <p className="text-2xl font-bold text-blue-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.totalAmount, 0).toLocaleString()}
+                          €{fundingUtilization.reduce((sum, s) => sum + s.totalAmount, 0).toLocaleString('hr-HR')}
                         </p>
                       </div>
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <p className="text-sm text-red-700 mb-1">Total Spent</p>
                         <p className="text-2xl font-bold text-red-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.spentAmount, 0).toLocaleString()}
+                          €{fundingUtilization.reduce((sum, s) => sum + s.spentAmount, 0).toLocaleString('hr-HR')}
                         </p>
                       </div>
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                         <p className="text-sm text-green-700 mb-1">Total Available</p>
                         <p className="text-2xl font-bold text-green-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.availableAmount, 0).toLocaleString()}
+                          €{fundingUtilization.reduce((sum, s) => sum + s.availableAmount, 0).toLocaleString('hr-HR')}
                         </p>
                       </div>
                     </div>
