@@ -184,18 +184,18 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-gray-300">
                   <span className="text-gray-700">Current Total Value:</span>
-                  <span className="font-semibold">€{totalCurrentValue.toLocaleString()}</span>
+                  <span className="font-semibold">€{totalCurrentValue.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-700">New Total Value:</span>
-                  <span className="font-semibold">€{totalNewValue.toLocaleString()}</span>
+                  <span className="font-semibold">€{totalNewValue.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                   <span className="font-bold text-gray-900">Total Value Change:</span>
                   <span className={`font-bold text-lg ${
                     totalValueChange >= 0 ? 'text-green-700' : 'text-red-700'
                   }`}>
-                    {totalValueChange >= 0 ? '+' : ''}€{totalValueChange.toLocaleString()}
+                    {totalValueChange >= 0 ? '+' : ''}€{totalValueChange.toLocaleString('hr-HR')}
                   </span>
                 </div>
               </div>
