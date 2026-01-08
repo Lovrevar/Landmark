@@ -104,7 +104,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             <p className={`text-lg font-bold ${
               (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-900' : 'text-green-900'
             }`}>
-              €{(phase.budget_allocated - totalContractCost).toLocaleString()}
+              €{(phase.budget_allocated - totalContractCost).toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
