@@ -311,7 +311,7 @@ const CompanyCredits: React.FC = () => {
                     <DollarSign className="w-4 h-4" />
                     <span className="text-sm">Repaid</span>
                   </div>
-                  <p className="text-xl font-bold text-purple-900">€{(credit.repaid_amount || 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold text-purple-900">€{(credit.repaid_amount || 0).toLocaleString('hr-HR')}</p>
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
