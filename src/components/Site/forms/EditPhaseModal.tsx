@@ -54,7 +54,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Edit Phase</h3>
               <p className="text-gray-600 mt-1">
-                Phase {phase.phase_number} • Budget Used: €{phase.budget_used.toLocaleString()}
+                Phase {phase.phase_number} • Budget Used: €{phase.budget_used.toLocaleString('hr-HR')}
               </p>
             </div>
             <button
@@ -92,12 +92,12 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
               />
               {formData.budget_allocated < phase.budget_used && (
                 <p className="text-xs text-red-600 mt-1">
-                  Warning: Budget is less than already allocated amount (€{phase.budget_used.toLocaleString()})
+                  Warning: Budget is less than already allocated amount (€{phase.budget_used.toLocaleString('hr-HR')})
                 </p>
               )}
               {formData.budget_allocated >= phase.budget_used && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Available after update: €{(formData.budget_allocated - phase.budget_used).toLocaleString()}
+                  Available after update: €{(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}
                 </p>
               )}
             </div>
@@ -143,10 +143,10 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
               }`}>
                 <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
                   <span className="font-medium">Note:</span> After this update, total phase budgets
-                  ({' €' + newTotalAllocated.toLocaleString()}) will be {' '}
+                  ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) will be {' '}
                   {projectBudgetDiff > 0
-                    ? `€${Math.abs(projectBudgetDiff).toLocaleString()} over`
-                    : `€${Math.abs(projectBudgetDiff).toLocaleString()} under`
+                    ? `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} over`
+                    : `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} under`
                   } the project budget.
                 </p>
               </div>
