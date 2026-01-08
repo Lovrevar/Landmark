@@ -186,15 +186,15 @@ const SubcontractorManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                     <span className="text-gray-600">Total Value:</span>
-                    <span className="font-bold text-gray-900">€{sub.total_contract_value.toLocaleString()}</span>
+                    <span className="font-bold text-gray-900">€{sub.total_contract_value.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Total Paid:</span>
-                    <span className="font-medium text-teal-600">€{sub.total_paid.toLocaleString()}</span>
+                    <span className="font-medium text-teal-600">€{sub.total_paid.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Remaining:</span>
-                    <span className="font-medium text-orange-600">€{sub.total_remaining.toLocaleString()}</span>
+                    <span className="font-medium text-orange-600">€{sub.total_remaining.toLocaleString('hr-HR')}</span>
                   </div>
                 </div>
 
@@ -244,15 +244,15 @@ const SubcontractorManagement: React.FC = () => {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-700">Contract Value</p>
-                  <p className="text-2xl font-bold text-gray-900">€{selectedSubcontractor.total_contract_value.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">€{selectedSubcontractor.total_contract_value.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-teal-50 p-4 rounded-lg">
                   <p className="text-sm text-teal-700">Total Paid</p>
-                  <p className="text-2xl font-bold text-teal-900">€{selectedSubcontractor.total_paid.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-teal-900">€{selectedSubcontractor.total_paid.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
                   <p className="text-sm text-orange-700">Remaining</p>
-                  <p className="text-2xl font-bold text-orange-900">€{selectedSubcontractor.total_remaining.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-orange-900">€{selectedSubcontractor.total_remaining.toLocaleString('hr-HR')}</p>
                 </div>
               </div>
 
@@ -286,15 +286,15 @@ const SubcontractorManagement: React.FC = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
                         <div>
                           <p className="text-gray-600">Contract:</p>
-                          <p className="font-medium text-gray-900">€{contract.cost.toLocaleString()}</p>
+                          <p className="font-medium text-gray-900">€{contract.cost.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Paid:</p>
-                          <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString()}</p>
+                          <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Remaining:</p>
-                          <p className="font-medium text-orange-600">€{remaining.toLocaleString()}</p>
+                          <p className="font-medium text-orange-600">€{remaining.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Deadline:</p>
