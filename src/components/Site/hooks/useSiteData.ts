@@ -128,7 +128,7 @@ export const useSiteData = () => {
     if (projectBudgetDiff !== 0) {
       const message = projectBudgetDiff > 0
         ? `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will exceed project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString()}) will be less than project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
+        : `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will be less than project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
 
       if (!confirm(message)) {
         return false
