@@ -236,7 +236,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Total Amount</h3>
             <DollarSign className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString('hr-HR')}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -253,7 +253,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
             <TrendingUp className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString('hr-HR')}</p>
         </div>
       </div>
 
@@ -366,11 +366,11 @@ const RetailSalesPaymentsManagement: React.FC = () => {
                       {payment.project_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                      €{payment.invoice_total_amount.toLocaleString()}
+                      €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
-                        €{Number(payment.amount).toLocaleString()}
+                        €{Number(payment.amount).toLocaleString('hr-HR')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -397,7 +397,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <div className="text-sm text-blue-900">
               <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
               <span className="font-semibold">
-                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString()}
+                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}
               </span>
             </div>
           </div>
