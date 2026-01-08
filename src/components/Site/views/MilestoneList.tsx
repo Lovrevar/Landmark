@@ -144,7 +144,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               {projectName} • {phaseName} • {subcontractorName}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Contract: €{contractCost.toLocaleString()}
+              Contract: €{contractCost.toLocaleString('hr-HR')}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -170,7 +170,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-xs text-gray-600">Total Allocated</p>
               <p className="text-lg font-bold text-gray-900">{stats.total_percentage.toFixed(2)}%</p>
-              <p className="text-xs text-gray-500">€{stats.total_amount.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">€{stats.total_amount.toLocaleString('hr-HR')}</p>
             </div>
             <div className={`p-3 rounded-lg ${stats.remaining_percentage === 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
               <p className={`text-xs ${stats.remaining_percentage === 0 ? 'text-green-600' : 'text-orange-600'}`}>
