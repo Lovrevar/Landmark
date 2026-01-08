@@ -1212,7 +1212,7 @@ const BanksManagement: React.FC = () => {
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Outstanding Debt</p>
-                              <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString()}</p>
+                              <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Available to Use</p>
