@@ -73,8 +73,8 @@ export const useSiteData = () => {
 
     if (budgetDifference !== 0) {
       const message = budgetDifference > 0
-        ? `Total allocated budget (€${totalAllocated.toLocaleString()}) exceeds project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget (€${totalAllocated.toLocaleString()}) is less than project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by $${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
 
       if (!confirm(message)) {
         return false
@@ -110,7 +110,7 @@ export const useSiteData = () => {
 
     if (updates.budget_allocated < phase.budget_used) {
       if (!confirm(
-        `Warning: New budget ($${updates.budget_allocated.toLocaleString()}) is less than already allocated amount (€${phase.budget_used.toLocaleString()}).\n\n` +
+        `Warning: New budget ($${updates.budget_allocated.toLocaleString('hr-HR')}) is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')}).\n\n` +
         `This means you're reducing the budget below what's already committed to subcontractors.\n\n` +
         `Do you want to proceed anyway?`
       )) {
