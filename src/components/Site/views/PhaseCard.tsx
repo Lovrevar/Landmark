@@ -87,7 +87,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
             <p className="text-sm text-teal-700">Paid Out</p>
-            <p className="text-lg font-bold text-teal-900">€{totalBudgetRealized.toLocaleString()}</p>
+            <p className="text-lg font-bold text-teal-900">€{totalBudgetRealized.toLocaleString('hr-HR')}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
             <p className="text-sm text-orange-700">Unpaid Contracts</p>
