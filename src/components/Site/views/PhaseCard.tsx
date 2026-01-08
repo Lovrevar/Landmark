@@ -187,7 +187,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Contract:</span>
-                      <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString()}</span>
+                      <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Paid:</span>
@@ -196,7 +196,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {remainingToPay > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Remaining:</span>
-                        <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString()}</span>
+                        <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200">
