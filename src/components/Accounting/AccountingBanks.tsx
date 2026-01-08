@@ -132,7 +132,7 @@ const AccountingBanks: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupan kredit limit</p>
-              <p className="text-2xl font-bold text-gray-900">€{totalCreditAcrossAllBanks.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">€{totalCreditAcrossAllBanks.toLocaleString('hr-HR')}</p>
             </div>
             <CreditCard className="w-8 h-8 text-blue-600" />
           </div>
