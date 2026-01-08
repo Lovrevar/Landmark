@@ -206,7 +206,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         subVariance < 0 ? 'text-green-600' :
                         'text-gray-900'
                       }`}>
-                        {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString()}
+                        {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
                       </span>
                     </div>
                   </div>
