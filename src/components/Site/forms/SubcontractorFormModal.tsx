@@ -143,7 +143,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Add Subcontractor</h3>
               <p className="text-gray-600 mt-1">
-                {phase.phase_name} • Available Budget: €{availableBudget.toLocaleString()}
+                {phase.phase_name} • Available Budget: €{availableBudget.toLocaleString('hr-HR')}
               </p>
             </div>
             <button
