@@ -436,7 +436,7 @@ const InvestmentDashboard: React.FC = () => {
                         <p className="text-gray-600">{credit.company?.name || 'Unknown Company'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">€{Number(credit.amount).toLocaleString()}</p>
+                        <p className="text-lg font-bold text-gray-900">€{Number(credit.amount).toLocaleString('hr-HR')}</p>
                         <p className="text-sm text-gray-600">Credit Limit</p>
                       </div>
                     </div>
@@ -444,24 +444,24 @@ const InvestmentDashboard: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-xs text-blue-700">Used</p>
-                        <p className="text-lg font-bold text-blue-900">€{Number(credit.used_amount || 0).toLocaleString()}</p>
+                        <p className="text-lg font-bold text-blue-900">€{Number(credit.used_amount || 0).toLocaleString('hr-HR')}</p>
                       </div>
 
                       <div className="bg-purple-50 p-3 rounded-lg">
                         <p className="text-xs text-purple-700">Repaid</p>
-                        <p className="text-lg font-bold text-purple-900">€{Number(credit.repaid_amount || 0).toLocaleString()}</p>
+                        <p className="text-lg font-bold text-purple-900">€{Number(credit.repaid_amount || 0).toLocaleString('hr-HR')}</p>
                       </div>
 
                       <div className="bg-green-50 p-3 rounded-lg">
                         <p className="text-xs text-green-700">Available</p>
                         <p className="text-lg font-bold text-green-900">
-                          €{(Number(credit.amount) - Number(credit.used_amount || 0)).toLocaleString()}
+                          €{(Number(credit.amount) - Number(credit.used_amount || 0)).toLocaleString('hr-HR')}
                         </p>
                       </div>
 
                       <div className="bg-red-50 p-3 rounded-lg">
                         <p className="text-xs text-red-700">Outstanding</p>
-                        <p className="text-lg font-bold text-red-900">€{Number(credit.outstanding_balance || 0).toLocaleString()}</p>
+                        <p className="text-lg font-bold text-red-900">€{Number(credit.outstanding_balance || 0).toLocaleString('hr-HR')}</p>
                       </div>
 
                       <div className="bg-orange-50 p-3 rounded-lg">
