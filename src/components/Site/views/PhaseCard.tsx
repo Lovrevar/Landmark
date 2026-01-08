@@ -126,7 +126,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
           {budgetUtilization > 100 && (
             <p className="text-xs text-red-600 mt-1">
-              Over budget by €{(totalBudgetRealized - phase.budget_allocated).toLocaleString()}
+              Over budget by €{(totalBudgetRealized - phase.budget_allocated).toLocaleString('hr-HR')}
             </p>
           )}
         </div>
