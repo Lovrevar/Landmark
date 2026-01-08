@@ -968,7 +968,7 @@ const InvestorsManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-green-700">Total Committed:</span>
-                      <span className="font-medium text-green-900">€{selectedInvestor.total_committed.toLocaleString()}</span>
+                      <span className="font-medium text-green-900">€{selectedInvestor.total_committed.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-green-700">Active Investments:</span>
