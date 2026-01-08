@@ -446,7 +446,7 @@ const FundingOverview: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Total Committed</h3>
             <DollarSign className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">€{totalStats.committed.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">€{totalStats.committed.toLocaleString('hr-HR')}</p>
           <p className="text-xs text-gray-500 mt-1">From all sources</p>
         </div>
 
@@ -455,7 +455,7 @@ const FundingOverview: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Total Spent</h3>
             <ArrowDownRight className="w-5 h-5 text-red-600" />
           </div>
-          <p className="text-2xl font-bold text-red-600">€{totalStats.spent.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-red-600">€{totalStats.spent.toLocaleString('hr-HR')}</p>
           <p className="text-xs text-gray-500 mt-1">
             {totalStats.committed > 0 ? ((totalStats.spent / totalStats.committed) * 100).toFixed(1) : '0'}% utilized
           </p>
@@ -466,7 +466,7 @@ const FundingOverview: React.FC = () => {
             <h3 className="text-sm font-medium text-gray-600">Available Funds</h3>
             <ArrowUpRight className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-green-600">€{totalStats.available.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-600">€{totalStats.available.toLocaleString('hr-HR')}</p>
           <p className="text-xs text-gray-500 mt-1">Ready to use</p>
         </div>
 
@@ -525,15 +525,15 @@ const FundingOverview: React.FC = () => {
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-xs text-blue-700">Committed</p>
-                    <p className="text-lg font-bold text-blue-900">€{projectSummary.totalCommitted.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-blue-900">€{projectSummary.totalCommitted.toLocaleString('hr-HR')}</p>
                   </div>
                   <div className="bg-red-50 p-3 rounded-lg">
                     <p className="text-xs text-red-700">Spent</p>
-                    <p className="text-lg font-bold text-red-900">€{projectSummary.totalSpent.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-red-900">€{projectSummary.totalSpent.toLocaleString('hr-HR')}</p>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg">
                     <p className="text-xs text-green-700">Available</p>
-                    <p className="text-lg font-bold text-green-900">€{projectSummary.totalAvailable.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-green-900">€{projectSummary.totalAvailable.toLocaleString('hr-HR')}</p>
                   </div>
                 </div>
 
@@ -605,15 +605,15 @@ const FundingOverview: React.FC = () => {
                         <div className="grid grid-cols-4 gap-4 mb-3">
                           <div>
                             <p className="text-xs text-gray-600">Total Amount</p>
-                            <p className="text-sm font-bold text-gray-900">€{source.totalAmount.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-gray-900">€{source.totalAmount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Spent</p>
-                            <p className="text-sm font-bold text-red-600">€{source.spentAmount.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-red-600">€{source.spentAmount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Available</p>
-                            <p className="text-sm font-bold text-green-600">€{source.availableAmount.toLocaleString()}</p>
+                            <p className="text-sm font-bold text-green-600">€{source.availableAmount.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600">Utilized</p>
@@ -716,16 +716,16 @@ const FundingOverview: React.FC = () => {
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-blue-700 mb-1">Total Committed</p>
-                  <p className="text-2xl font-bold text-blue-900">€{selectedSource.totalAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-900">€{selectedSource.totalAmount.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-red-50 p-4 rounded-lg">
                   <p className="text-sm text-red-700 mb-1">Total Spent</p>
-                  <p className="text-2xl font-bold text-red-900">€{selectedSource.spentAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-red-900">€{selectedSource.spentAmount.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-red-600 mt-1">{transactions.length} transactions</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-green-700 mb-1">Available</p>
-                  <p className="text-2xl font-bold text-green-900">€{selectedSource.availableAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-900">€{selectedSource.availableAmount.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-green-600 mt-1">
                     {selectedSource.totalAmount > 0 ? ((selectedSource.availableAmount / selectedSource.totalAmount) * 100).toFixed(1) : '0'}% remaining
                   </p>
@@ -762,7 +762,7 @@ const FundingOverview: React.FC = () => {
                           <td className="px-4 py-3 text-sm text-gray-600">{transaction.contract}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{transaction.milestone || '-'}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-semibold text-red-600">
-                            €{transaction.amount.toLocaleString()}
+                            €{transaction.amount.toLocaleString('hr-HR')}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                             {transaction.notes || '-'}
