@@ -142,7 +142,7 @@ const AccountingBanks: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupno iskorišteno</p>
-              <p className="text-2xl font-bold text-blue-600">€{totalUsedAcrossAllBanks.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-blue-600">€{totalUsedAcrossAllBanks.toLocaleString('hr-HR')}</p>
             </div>
             <TrendingDown className="w-8 h-8 text-blue-600" />
           </div>
