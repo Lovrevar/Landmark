@@ -114,11 +114,11 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             <div className="mt-4 grid grid-cols-3 gap-4">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-600 mb-1">Contract Amount</p>
-                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString()}</p>
+                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</p>
               </div>
               <div className="bg-teal-50 p-3 rounded-lg">
                 <p className="text-xs text-teal-700 mb-1">Paid Amount</p>
-                <p className="text-lg font-bold text-teal-900">€{subcontractor.budget_realized.toLocaleString()}</p>
+                <p className="text-lg font-bold text-teal-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
               </div>
               <div className={`p-3 rounded-lg ${
                 subcontractor.budget_realized > subcontractor.cost ? 'bg-red-50' :
@@ -137,7 +137,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 }`}>
                   {subcontractor.budget_realized > subcontractor.cost ? '-' :
                    subcontractor.budget_realized < subcontractor.cost ? '+' : ''}
-                  €{Math.abs(subcontractor.budget_realized - subcontractor.cost).toLocaleString()}
+                  €{Math.abs(subcontractor.budget_realized - subcontractor.cost).toLocaleString('hr-HR')}
                 </p>
               </div>
             </div>
