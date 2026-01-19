@@ -98,7 +98,7 @@ const SupervisionDashboard: React.FC = () => {
         .from('contracts')
         .select(`
           *,
-          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, progress, completed_at),
+          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, completed_at),
           phase:project_phases!contracts_phase_id_fkey(
             project_id,
             project:projects!project_phases_project_id_fkey(name)
@@ -108,23 +108,29 @@ const SupervisionDashboard: React.FC = () => {
         .order('end_date', { ascending: true })
 
       // Map to subcontractor format
-      const allSubcontractors = contractsData?.map((c: any) => ({
-        id: c.id,
-        subcontractor_id: c.subcontractor.id,
-        name: c.subcontractor.name,
-        deadline: c.end_date,
-        progress: c.subcontractor.progress || 0,
-        cost: parseFloat(c.contract_amount || 0),
-        budget_realized: parseFloat(c.budget_realized || 0),
-        phase_id: c.phase_id,
-        completed_at: c.subcontractor.completed_at,
-        project_phases: {
-          project_id: c.phase?.project_id,
-          projects: {
-            name: c.phase?.project?.name
+      const allSubcontractors = contractsData?.map((c: any) => {
+        const cost = parseFloat(c.contract_amount || 0)
+        const budgetRealized = parseFloat(c.budget_realized || 0)
+        const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
+
+        return {
+          id: c.id,
+          subcontractor_id: c.subcontractor.id,
+          name: c.subcontractor.name,
+          deadline: c.end_date,
+          progress,
+          cost,
+          budget_realized: budgetRealized,
+          phase_id: c.phase_id,
+          completed_at: c.subcontractor.completed_at,
+          project_phases: {
+            project_id: c.phase?.project_id,
+            projects: {
+              name: c.phase?.project?.name
+            }
           }
         }
-      })) || []
+      }) || []
 
       if (subError) throw subError
 

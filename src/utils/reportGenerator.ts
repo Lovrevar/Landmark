@@ -499,7 +499,10 @@ export const generateProjectDetailReport = async (project: any) => {
     recommendations.push('• Address overdue tasks immediately')
   }
   
-  if (project.subcontractors?.some((s: Subcontractor) => new Date(s.deadline) < new Date() && s.progress < 100)) {
+  if (project.subcontractors?.some((s: Subcontractor) => {
+    const progress = s.cost > 0 ? Math.min(100, (s.budget_realized / s.cost) * 100) : 0
+    return new Date(s.deadline) < new Date() && progress < 100
+  })) {
     recommendations.push('• Follow up with overdue subcontractors')
   }
   

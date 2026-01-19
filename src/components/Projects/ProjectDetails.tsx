@@ -73,7 +73,7 @@ const ProjectDetails: React.FC = () => {
         .from('contracts')
         .select(`
           *,
-          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact, progress),
+          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
           phase:project_phases!contracts_phase_id_fkey(phase_name)
         `)
         .eq('project_id', id)
@@ -81,18 +81,24 @@ const ProjectDetails: React.FC = () => {
         .order('end_date', { ascending: true })
 
       // Map contracts to subcontractor format for backwards compatibility
-      const subcontractorsData = contractsData?.map((c: any) => ({
-        id: c.id,
-        subcontractor_id: c.subcontractor.id,
-        name: c.subcontractor.name,
-        contact: c.subcontractor.contact,
-        job_description: c.job_description,
-        deadline: c.end_date,
-        cost: parseFloat(c.contract_amount || 0),
-        budget_realized: parseFloat(c.budget_realized || 0),
-        progress: c.subcontractor.progress || 0,
-        phase_name: c.phase?.phase_name
-      })) || []
+      const subcontractorsData = contractsData?.map((c: any) => {
+        const cost = parseFloat(c.contract_amount || 0)
+        const budgetRealized = parseFloat(c.budget_realized || 0)
+        const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
+
+        return {
+          id: c.id,
+          subcontractor_id: c.subcontractor.id,
+          name: c.subcontractor.name,
+          contact: c.subcontractor.contact,
+          job_description: c.job_description,
+          deadline: c.end_date,
+          cost,
+          budget_realized: budgetRealized,
+          progress,
+          phase_name: c.phase?.phase_name
+        }
+      }) || []
 
       if (subError) throw subError
 

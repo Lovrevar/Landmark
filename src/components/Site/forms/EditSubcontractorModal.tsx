@@ -152,28 +152,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Work Progress: {subcontractor.progress || 0}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={subcontractor.progress || 0}
-              onChange={(e) => onChange({ ...subcontractor, progress: parseInt(e.target.value) })}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Not Started</span>
-              <span>In Progress</span>
-              <span>Completed</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Progress indicates work completion status, independent of payment
-            </p>
-          </div>
-
           <div className="p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
             <div className="mt-2 space-y-1 text-sm">
@@ -187,7 +165,30 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
                 </span>
               </div>
+              <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
+                <span className="text-gray-600">Progress:</span>
+                <span className="font-medium text-gray-900">
+                  {subcontractor.cost > 0
+                    ? Math.min(100, ((subcontractor.budget_realized / subcontractor.cost) * 100)).toFixed(1)
+                    : 0}%
+                </span>
+              </div>
             </div>
+            <div className="mt-3">
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${subcontractor.cost > 0
+                      ? Math.min(100, (subcontractor.budget_realized / subcontractor.cost) * 100)
+                      : 0}%`
+                  }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-blue-600 mt-2">
+              Progress is automatically calculated based on payments
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

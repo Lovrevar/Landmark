@@ -41,7 +41,6 @@ export const fetchSubcontractorsWithPhases = async () => {
         id,
         name,
         contact,
-        progress,
         financed_by_type,
         financed_by_investor_id,
         financed_by_bank_id,
@@ -63,27 +62,33 @@ export const fetchSubcontractorsWithPhases = async () => {
     throw contractError
   }
 
-  const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => ({
-    id: contract.id,
-    subcontractor_id: contract.subcontractor.id,
-    name: contract.subcontractor.name,
-    contact: contract.subcontractor.contact,
-    job_description: contract.job_description,
-    deadline: contract.end_date,
-    cost: parseFloat(contract.contract_amount || 0),
-    budget_realized: parseFloat(contract.budget_realized || 0),
-    phase_id: contract.phase_id,
-    progress: contract.subcontractor.progress || 0,
-    financed_by_type: contract.subcontractor.financed_by_type,
-    financed_by_investor_id: contract.subcontractor.financed_by_investor_id,
-    financed_by_bank_id: contract.subcontractor.financed_by_bank_id,
-    completed_at: contract.subcontractor.completed_at,
-    contract_id: contract.id,
-    contract_title: contract.contract_number,
-    company_name: contract.subcontractor.name,
-    created_at: contract.subcontractor.created_at,
-    project_phases: contract.phase
-  }))
+  const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => {
+    const cost = parseFloat(contract.contract_amount || 0)
+    const budgetRealized = parseFloat(contract.budget_realized || 0)
+    const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
+
+    return {
+      id: contract.id,
+      subcontractor_id: contract.subcontractor.id,
+      name: contract.subcontractor.name,
+      contact: contract.subcontractor.contact,
+      job_description: contract.job_description,
+      deadline: contract.end_date,
+      cost,
+      budget_realized: budgetRealized,
+      phase_id: contract.phase_id,
+      progress,
+      financed_by_type: contract.subcontractor.financed_by_type,
+      financed_by_investor_id: contract.subcontractor.financed_by_investor_id,
+      financed_by_bank_id: contract.subcontractor.financed_by_bank_id,
+      completed_at: contract.subcontractor.completed_at,
+      contract_id: contract.id,
+      contract_title: contract.contract_number,
+      company_name: contract.subcontractor.name,
+      created_at: contract.subcontractor.created_at,
+      project_phases: contract.phase
+    }
+  })
 
   return subcontractorsWithPhaseData
 }
@@ -305,17 +310,10 @@ export const updateSubcontractor = async (
 
   if (contractUpdateError) throw contractUpdateError
 
-  // Update subcontractor fields (name, contact, progress) in subcontractors table
+  // Update subcontractor fields (name, contact) in subcontractors table
   const subcontractorUpdateData: any = {
     name: updates.name,
-    contact: updates.contact,
-    progress: updates.progress
-  }
-
-  if (updates.progress === 100) {
-    subcontractorUpdateData.completed_at = new Date().toISOString()
-  } else if (updates.progress < 100) {
-    subcontractorUpdateData.completed_at = null
+    contact: updates.contact
   }
 
   const { error: subError } = await supabase
