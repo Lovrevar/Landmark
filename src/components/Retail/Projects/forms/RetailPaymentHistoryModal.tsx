@@ -67,17 +67,10 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
 
     setLoading(true)
     try {
-      console.log('=== RETAIL PAYMENTS DEBUG ===')
-      console.log('Contract ID:', contract.id)
-      console.log('Contract Number:', contract.contract_number)
-
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
         .select('id, invoice_number, invoice_category, retail_contract_id')
         .eq('retail_contract_id', contract.id)
-
-      console.log('Invoices Query Result:', { invoicesData, invoicesError })
-
       if (invoicesError) {
         console.error('Invoices Error:', invoicesError)
         throw invoicesError
