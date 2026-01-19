@@ -227,13 +227,6 @@ const SiteManagement: React.FC = () => {
     ? projects.filter(p => getAccessibleProjectIds(user).includes(p.id))
     : projects
 
-  console.log('SiteManagement - Debug:', {
-    userRole: user?.role,
-    isSupervision: isSupervisionRole(user),
-    totalProjects: projects.length,
-    filteredProjects: filteredProjects.length,
-    projectNames: filteredProjects.map(p => p.name)
-  })
 
   const userCanManagePayments = canManagePayments(user)
 
