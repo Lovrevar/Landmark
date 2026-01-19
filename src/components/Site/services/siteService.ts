@@ -138,31 +138,36 @@ export const recalculatePhaseBudget = async (phaseId: string) => {
 }
 
 export const recalculateAllPhaseBudgets = async () => {
-  const { data: phases, error: phasesError } = await supabase
+  const { data: contractSums, error: contractError } = await supabase
+    .from('contracts')
+    .select('phase_id, contract_amount')
+    .eq('status', 'active')
+
+  if (contractError) throw contractError
+
+  const budgetByPhase = new Map<string, number>()
+
+  for (const contract of contractSums || []) {
+    if (!contract.phase_id) continue
+    const currentSum = budgetByPhase.get(contract.phase_id) || 0
+    budgetByPhase.set(contract.phase_id, currentSum + parseFloat(contract.contract_amount || '0'))
+  }
+
+  const { data: allPhases, error: phasesError } = await supabase
     .from('project_phases')
     .select('id')
 
   if (phasesError) throw phasesError
 
-  for (const phase of phases || []) {
-    const { data: phaseContracts, error: subError } = await supabase
-      .from('contracts')
-      .select('contract_amount')
-      .eq('phase_id', phase.id)
-      .eq('status', 'active')
-
-    if (subError) {
-      console.error(`Error fetching contracts for phase ${phase.id}:`, subError)
-      continue
-    }
-
-    const budgetUsed = (phaseContracts || []).reduce((sum, contract) => sum + parseFloat(contract.contract_amount || 0), 0)
-
-    await supabase
+  const updatePromises = (allPhases || []).map(phase => {
+    const budgetUsed = budgetByPhase.get(phase.id) || 0
+    return supabase
       .from('project_phases')
       .update({ budget_used: budgetUsed })
       .eq('id', phase.id)
-  }
+  })
+
+  await Promise.all(updatePromises)
 }
 
 export const createPhases = async (projectId: string, phases: PhaseFormInput[]) => {

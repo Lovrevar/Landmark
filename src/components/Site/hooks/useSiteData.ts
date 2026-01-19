@@ -451,11 +451,7 @@ export const useSiteData = () => {
   }
 
   useEffect(() => {
-    const initializeData = async () => {
-      await recalculateAllPhaseBudgets()
-      await fetchProjects()
-    }
-    initializeData()
+    fetchProjects()
   }, [])
 
   return {
