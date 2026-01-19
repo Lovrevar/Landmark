@@ -50,67 +50,70 @@ const SubcontractorManagement: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch all active contracts with subcontractor, phase, and project info
-      const { data: contractsData, error } = await supabase
+      // Fetch all subcontractors
+      const { data: subcontractorsData, error: subError } = await supabase
+        .from('subcontractors')
+        .select('*')
+        .order('name')
+
+      if (subError) throw subError
+
+      // Fetch all contracts with phase and project info
+      const { data: contractsData, error: contractsError } = await supabase
         .from('contracts')
         .select(`
           *,
-          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact, progress),
           phase:project_phases!contracts_phase_id_fkey(
             phase_name,
             project:projects!project_phases_project_id_fkey(name)
           )
         `)
-        .eq('status', 'active')
-        .order('subcontractor(name)')
+        .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (contractsError) throw contractsError
 
-      // Group contracts by subcontractor name and contact
+      // Group contracts by subcontractor
       const grouped = new Map<string, SubcontractorSummary>()
 
-      contractsData?.forEach((contractData: any) => {
-        const sub = contractData.subcontractor
-        const phase = contractData.phase
-        const key = `${sub.name}|${sub.contact}`
+      subcontractorsData?.forEach((sub: any) => {
+        const key = sub.id
+        const subContracts = contractsData?.filter(c => c.subcontractor_id === sub.id) || []
 
-        const contract: SubcontractorContract = {
-          id: contractData.id,
-          project_name: phase?.project?.name || 'Unknown Project',
-          phase_name: phase?.phase_name || null,
-          job_description: contractData.job_description || '',
-          cost: parseFloat(contractData.contract_amount || 0),
-          budget_realized: parseFloat(contractData.budget_realized || 0),
-          progress: sub.progress || 0,
-          deadline: contractData.end_date || '',
-          created_at: contractData.created_at
-        }
+        const contracts: SubcontractorContract[] = subContracts.map((contractData: any) => {
+          const phase = contractData.phase
+          const cost = parseFloat(contractData.contract_amount || 0)
+          const budgetRealized = parseFloat(contractData.budget_realized || 0)
+          const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
 
-        if (grouped.has(key)) {
-          const existing = grouped.get(key)!
-          existing.total_contracts++
-          existing.total_contract_value += contract.cost
-          existing.total_paid += contract.budget_realized
-          existing.total_remaining += (contract.cost - contract.budget_realized)
-          if (contract.progress < 100) {
-            existing.active_contracts++
-          } else {
-            existing.completed_contracts++
+          return {
+            id: contractData.id,
+            project_name: phase?.project?.name || 'Unknown Project',
+            phase_name: phase?.phase_name || null,
+            job_description: contractData.job_description || '',
+            cost,
+            budget_realized: budgetRealized,
+            progress: Math.min(100, progress),
+            deadline: contractData.end_date || '',
+            created_at: contractData.created_at
           }
-          existing.contracts.push(contract)
-        } else {
-          grouped.set(key, {
-            name: sub.name,
-            contact: sub.contact,
-            total_contracts: 1,
-            total_contract_value: contract.cost,
-            total_paid: contract.budget_realized,
-            total_remaining: contract.cost - contract.budget_realized,
-            active_contracts: contract.progress < 100 ? 1 : 0,
-            completed_contracts: contract.progress >= 100 ? 1 : 0,
-            contracts: [contract]
-          })
-        }
+        })
+
+        const totalContractValue = contracts.reduce((sum, c) => sum + c.cost, 0)
+        const totalPaid = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
+        const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
+        const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length
+
+        grouped.set(key, {
+          name: sub.name,
+          contact: sub.contact,
+          total_contracts: contracts.length,
+          total_contract_value: totalContractValue,
+          total_paid: totalPaid,
+          total_remaining: totalContractValue - totalPaid,
+          active_contracts: activeContracts,
+          completed_contracts: completedContracts,
+          contracts
+        })
       })
 
       setSubcontractors(grouped)
