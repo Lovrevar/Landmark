@@ -377,7 +377,7 @@ const AccountingCompanies: React.FC = () => {
           accounting_invoices!inner(company_id)
         `)
         .eq('is_cesija', true)
-        .or(`cesija_credit_id.in.(${creditIds.length > 0 ? creditIds.join(',') : 'null'}),cesija_bank_account_id.in.(${bankAccountIds.length > 0 ? bankAccountIds.join(',') : 'null'})`)
+        .or(`cesija_company_id.eq.${company.id},cesija_credit_id.in.(${creditIds.length > 0 ? creditIds.join(',') : 'null'}),cesija_bank_account_id.in.(${bankAccountIds.length > 0 ? bankAccountIds.join(',') : 'null'})`)
 
       const ownInvoiceIds = (invoicesResult.data || []).map(inv => inv.id)
       const { data: paymentsWhereOthersPayUs } = await supabase
