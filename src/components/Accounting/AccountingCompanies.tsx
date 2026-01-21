@@ -172,19 +172,27 @@ const AccountingCompanies: React.FC = () => {
     }
   }
 
-  const handleOpenAddModal = (company?: CompanyStats) => {
+  const handleOpenAddModal = async (company?: CompanyStats) => {
     if (company) {
       setEditingCompany(company.id)
-      const bankAccountsForEdit = company.bank_accounts.map(acc => ({
+
+      const { data: bankAccountsData } = await supabase
+        .from('company_bank_accounts')
+        .select('*')
+        .eq('company_id', company.id)
+        .order('created_at')
+
+      const bankAccountsForEdit = (bankAccountsData || []).map(acc => ({
         id: acc.id,
         bank_name: acc.bank_name,
         initial_balance: acc.initial_balance
       }))
+
       setFormData({
         name: company.name,
         oib: company.oib,
-        accountCount: bankAccountsForEdit.length,
-        bankAccounts: bankAccountsForEdit
+        accountCount: bankAccountsForEdit.length || 1,
+        bankAccounts: bankAccountsForEdit.length > 0 ? bankAccountsForEdit : [{ bank_name: '', initial_balance: 0 }]
       })
     } else {
       setEditingCompany(null)
@@ -234,22 +242,34 @@ const AccountingCompanies: React.FC = () => {
 
             if (updateError) throw updateError
 
-            const { data: paymentsSum } = await supabase
+            const { data: directPayments } = await supabase
               .from('accounting_payments')
               .select('amount, invoice:accounting_invoices!inner(invoice_type)')
-              .eq('invoice.company_bank_account_id', account.id)
+              .eq('company_bank_account_id', account.id)
+
+            const { data: cesijaPayments } = await supabase
+              .from('accounting_payments')
+              .select('amount')
+              .eq('cesija_bank_account_id', account.id)
+              .eq('is_cesija', true)
 
             let totalChange = 0
-            if (paymentsSum && paymentsSum.length > 0) {
-              totalChange = paymentsSum.reduce((sum, payment: any) => {
+
+            if (directPayments && directPayments.length > 0) {
+              totalChange += directPayments.reduce((sum, payment: any) => {
                 const invoiceType = payment.invoice?.invoice_type
-                if (invoiceType && ['INCOMING_INVESTMENT', 'OUTGOING_SALES'].includes(invoiceType)) {
+                if (invoiceType && ['INCOMING_INVESTMENT', 'OUTGOING_SALES', 'OUTGOING_BANK'].includes(invoiceType)) {
                   return sum + payment.amount
-                } else if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_OFFICE'].includes(invoiceType)) {
+                } else if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_OFFICE', 'INCOMING_BANK', 'OUTGOING_RETAIL_DEVELOPMENT', 'OUTGOING_RETAIL_CONSTRUCTION'].includes(invoiceType)) {
                   return sum - payment.amount
                 }
                 return sum
               }, 0)
+            }
+
+            if (cesijaPayments && cesijaPayments.length > 0) {
+              const cesijaTotal = cesijaPayments.reduce((sum, payment: any) => sum + payment.amount, 0)
+              totalChange -= cesijaTotal
             }
 
             const { error: balanceError } = await supabase
