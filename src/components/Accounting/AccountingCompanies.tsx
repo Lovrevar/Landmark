@@ -369,6 +369,15 @@ const AccountingCompanies: React.FC = () => {
 
       let cesijaPaidInvoices: any[] = []
 
+      // Build OR filter dynamically based on what exists
+      const orConditions = [`cesija_company_id.eq.${company.id}`]
+      if (creditIds.length > 0) {
+        orConditions.push(`cesija_credit_id.in.(${creditIds.join(',')})`)
+      }
+      if (bankAccountIds.length > 0) {
+        orConditions.push(`cesija_bank_account_id.in.(${bankAccountIds.join(',')})`)
+      }
+
       const { data: paymentsWhereWePayOthers } = await supabase
         .from('accounting_payments')
         .select(`
@@ -377,7 +386,7 @@ const AccountingCompanies: React.FC = () => {
           accounting_invoices!inner(company_id)
         `)
         .eq('is_cesija', true)
-        .or(`cesija_company_id.eq.${company.id},cesija_credit_id.in.(${creditIds.length > 0 ? creditIds.join(',') : 'null'}),cesija_bank_account_id.in.(${bankAccountIds.length > 0 ? bankAccountIds.join(',') : 'null'})`)
+        .or(orConditions.join(','))
 
       const ownInvoiceIds = (invoicesResult.data || []).map(inv => inv.id)
       const { data: paymentsWhereOthersPayUs } = await supabase
