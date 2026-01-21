@@ -100,6 +100,15 @@ interface Invoice {
   base_amount: number
   vat_rate: number
   vat_amount: number
+  base_amount_1: number
+  vat_rate_1: number
+  vat_amount_1: number
+  base_amount_2: number
+  vat_rate_2: number
+  vat_amount_2: number
+  base_amount_3: number
+  vat_rate_3: number
+  vat_amount_3: number
   total_amount: number
   category: string
   project_id: string | null
@@ -170,6 +179,9 @@ const AccountingInvoices: React.FC = () => {
     due_date: '',
     base_amount: 0,
     vat_rate: 25,
+    base_amount_1: 0,
+    base_amount_2: 0,
+    base_amount_3: 0,
     category: '',
     project_id: '',
     description: ''
@@ -488,6 +500,9 @@ const AccountingInvoices: React.FC = () => {
         due_date: invoice.due_date,
         base_amount: invoice.base_amount,
         vat_rate: invoice.vat_rate,
+        base_amount_1: invoice.base_amount_1 || 0,
+        base_amount_2: invoice.base_amount_2 || 0,
+        base_amount_3: invoice.base_amount_3 || 0,
         category: invoice.category,
         project_id: invoice.project_id || '',
         description: invoice.description
@@ -511,6 +526,9 @@ const AccountingInvoices: React.FC = () => {
         due_date: '',
         base_amount: 0,
         vat_rate: 25,
+        base_amount_1: 0,
+        base_amount_2: 0,
+        base_amount_3: 0,
         category: '',
         project_id: '',
         description: ''
@@ -572,8 +590,9 @@ const AccountingInvoices: React.FC = () => {
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
-        base_amount: formData.base_amount,
-        vat_rate: formData.vat_rate,
+        base_amount_1: formData.base_amount_1 || 0,
+        base_amount_2: formData.base_amount_2 || 0,
+        base_amount_3: formData.base_amount_3 || 0,
         category: formData.category,
         project_id: formData.project_id || null,
         description: formData.description,
@@ -1136,13 +1155,41 @@ const AccountingInvoices: React.FC = () => {
                       </td>
                     )}
                     {visibleColumns.base_amount && (
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        €{invoice.base_amount.toLocaleString('hr-HR')}
+                      <td className="px-4 py-4 text-sm text-gray-900">
+                        {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0) ? (
+                          <div className="space-y-0.5">
+                            {invoice.base_amount_1 > 0 && (
+                              <div className="text-xs">25%: €{invoice.base_amount_1.toLocaleString('hr-HR')}</div>
+                            )}
+                            {invoice.base_amount_2 > 0 && (
+                              <div className="text-xs">13%: €{invoice.base_amount_2.toLocaleString('hr-HR')}</div>
+                            )}
+                            {invoice.base_amount_3 > 0 && (
+                              <div className="text-xs">0%: €{invoice.base_amount_3.toLocaleString('hr-HR')}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>€{invoice.base_amount.toLocaleString('hr-HR')}</div>
+                        )}
                       </td>
                     )}
                     {visibleColumns.vat && (
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {invoice.vat_rate}% (€{invoice.vat_amount.toLocaleString('hr-HR')})
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0) ? (
+                          <div className="space-y-0.5">
+                            {invoice.base_amount_1 > 0 && invoice.vat_amount_1 > 0 && (
+                              <div className="text-xs">25%: €{invoice.vat_amount_1.toLocaleString('hr-HR')}</div>
+                            )}
+                            {invoice.base_amount_2 > 0 && invoice.vat_amount_2 > 0 && (
+                              <div className="text-xs">13%: €{invoice.vat_amount_2.toLocaleString('hr-HR')}</div>
+                            )}
+                            {invoice.base_amount_3 > 0 && (
+                              <div className="text-xs">0%: €0.00</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>{invoice.vat_rate}% (€{invoice.vat_amount.toLocaleString('hr-HR')})</div>
+                        )}
                       </td>
                     )}
                     {visibleColumns.total_amount && (
@@ -1516,32 +1563,47 @@ const AccountingInvoices: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Osnovica (bez PDV-a) *
+                    Osnovica PDV 25%
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.base_amount}
-                    onChange={(e) => setFormData({ ...formData, base_amount: parseFloat(e.target.value) })}
+                    min="0"
+                    value={formData.base_amount_1 || ''}
+                    onChange={(e) => setFormData({ ...formData, base_amount_1: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
+                    placeholder="0.00"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    PDV stopa *
+                    Osnovica PDV 13%
                   </label>
-                  <select
-                    value={formData.vat_rate}
-                    onChange={(e) => setFormData({ ...formData, vat_rate: parseFloat(e.target.value) })}
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.base_amount_2 || ''}
+                    onChange={(e) => setFormData({ ...formData, base_amount_2: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="0">0%</option>
-                    <option value="13">13%</option>
-                    <option value="25">25%</option>
-                  </select>
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Osnovica PDV 0%
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.base_amount_3 || ''}
+                    onChange={(e) => setFormData({ ...formData, base_amount_3: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
                 </div>
 
                 <div>
@@ -1673,19 +1735,68 @@ const AccountingInvoices: React.FC = () => {
                 />
               </div>
 
-              {formData.base_amount > 0 && (
+              {(formData.base_amount_1 > 0 || formData.base_amount_2 > 0 || formData.base_amount_3 > 0) && (
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Osnovica:</span>
-                    <span className="font-medium">€{formData.base_amount.toLocaleString('hr-HR')}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">PDV ({formData.vat_rate}%):</span>
-                    <span className="font-medium">€{(formData.base_amount * (formData.vat_rate / 100)).toLocaleString('hr-HR')}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-bold border-t border-gray-300 pt-2">
-                    <span>Ukupno:</span>
-                    <span>€{(formData.base_amount * (1 + formData.vat_rate / 100)).toLocaleString('hr-HR')}</span>
+                  <div className="text-sm font-medium text-gray-700 mb-2">Pregled računa:</div>
+
+                  {formData.base_amount_1 > 0 && (
+                    <div className="space-y-1 pb-2 border-b border-gray-200">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Osnovica (PDV 25%):</span>
+                        <span className="font-medium">€{formData.base_amount_1.toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">PDV 25%:</span>
+                        <span className="font-medium">€{(formData.base_amount_1 * 0.25).toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span>€{(formData.base_amount_1 * 1.25).toLocaleString('hr-HR')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.base_amount_2 > 0 && (
+                    <div className="space-y-1 pb-2 border-b border-gray-200">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Osnovica (PDV 13%):</span>
+                        <span className="font-medium">€{formData.base_amount_2.toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">PDV 13%:</span>
+                        <span className="font-medium">€{(formData.base_amount_2 * 0.13).toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span>€{(formData.base_amount_2 * 1.13).toLocaleString('hr-HR')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.base_amount_3 > 0 && (
+                    <div className="space-y-1 pb-2 border-b border-gray-200">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Osnovica (PDV 0%):</span>
+                        <span className="font-medium">€{formData.base_amount_3.toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">PDV 0%:</span>
+                        <span className="font-medium">€0.00</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span>€{formData.base_amount_3.toLocaleString('hr-HR')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-base font-bold pt-2">
+                    <span>UKUPNO:</span>
+                    <span>€{(
+                      (formData.base_amount_1 * 1.25) +
+                      (formData.base_amount_2 * 1.13) +
+                      formData.base_amount_3
+                    ).toLocaleString('hr-HR')}</span>
                   </div>
                 </div>
               )}

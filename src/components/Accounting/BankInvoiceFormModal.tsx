@@ -44,6 +44,9 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     due_date: new Date().toISOString().split('T')[0],
     base_amount: '',
     vat_rate: '0',
+    base_amount_1: 0,
+    base_amount_2: 0,
+    base_amount_3: 0,
     category: '',
     description: ''
   })
@@ -136,25 +139,44 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   }
 
   const calculateTotal = () => {
-    const base = parseFloat(formData.base_amount) || 0
-    const vatRate = parseFloat(formData.vat_rate) || 0
-    const vatAmount = base * (vatRate / 100)
-    const total = base + vatAmount
-    return { vatAmount, total }
+    const base1 = formData.base_amount_1 || 0
+    const base2 = formData.base_amount_2 || 0
+    const base3 = formData.base_amount_3 || 0
+
+    const vat1 = base1 * 0.25
+    const vat2 = base2 * 0.13
+    const vat3 = 0
+
+    const total = (base1 + vat1) + (base2 + vat2) + base3
+
+    return {
+      vat1,
+      vat2,
+      vat3,
+      subtotal1: base1 + vat1,
+      subtotal2: base2 + vat2,
+      subtotal3: base3,
+      total
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.company_id || !formData.bank_id || !formData.invoice_number || !formData.base_amount) {
+    if (!formData.company_id || !formData.bank_id || !formData.invoice_number) {
       alert('Molimo popunite sva obavezna polja')
+      return
+    }
+
+    if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0) {
+      alert('Molimo unesite barem jednu osnovicu')
       return
     }
 
     setLoading(true)
 
     try {
-      const { vatAmount, total } = calculateTotal()
+      const { total } = calculateTotal()
 
       const invoiceData = {
         invoice_type: formData.invoice_type,
@@ -165,15 +187,11 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         invoice_number: formData.invoice_number,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
-        base_amount: parseFloat(formData.base_amount),
-        vat_rate: parseFloat(formData.vat_rate),
-        vat_amount: vatAmount,
-        total_amount: total,
+        base_amount_1: formData.base_amount_1 || 0,
+        base_amount_2: formData.base_amount_2 || 0,
+        base_amount_3: formData.base_amount_3 || 0,
         category: formData.category,
-        description: formData.description,
-        status: 'UNPAID',
-        paid_amount: 0,
-        remaining_amount: total
+        description: formData.description
       }
 
       const { error } = await supabase
@@ -192,7 +210,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     }
   }
 
-  const { vatAmount, total } = calculateTotal()
+  const calc = calculateTotal()
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -329,58 +347,110 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Osnovica (€) *
+                Osnovica PDV 25% (€)
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={formData.base_amount}
-                onChange={(e) => setFormData({ ...formData, base_amount: e.target.value })}
+                min="0"
+                value={formData.base_amount_1 || ''}
+                onChange={(e) => setFormData({ ...formData, base_amount_1: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0.00"
-                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                PDV stopa (%) *
+                Osnovica PDV 13% (€)
               </label>
-              <select
-                value={formData.vat_rate}
-                onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.base_amount_2 || ''}
+                onChange={(e) => setFormData({ ...formData, base_amount_2: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
-              >
-                <option value="0">0%</option>
-                <option value="13">13%</option>
-                <option value="25">25%</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                PDV iznos (€)
-              </label>
-              <input
-                type="text"
-                value={`€${vatAmount.toFixed(2)}`}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                disabled
+                placeholder="0.00"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ukupno (€)
+                Osnovica PDV 0% (€)
               </label>
               <input
-                type="text"
-                value={`€${total.toFixed(2)}`}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-bold"
-                disabled
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.base_amount_3 || ''}
+                onChange={(e) => setFormData({ ...formData, base_amount_3: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="0.00"
               />
             </div>
+
+            {(formData.base_amount_1 > 0 || formData.base_amount_2 > 0 || formData.base_amount_3 > 0) && (
+              <div className="col-span-2 bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="text-sm font-medium text-gray-700 mb-2">Pregled računa:</div>
+
+                {formData.base_amount_1 > 0 && (
+                  <div className="space-y-1 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Osnovica (PDV 25%):</span>
+                      <span className="font-medium">€{formData.base_amount_1.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PDV 25%:</span>
+                      <span className="font-medium">€{calc.vat1.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>€{calc.subtotal1.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {formData.base_amount_2 > 0 && (
+                  <div className="space-y-1 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Osnovica (PDV 13%):</span>
+                      <span className="font-medium">€{formData.base_amount_2.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PDV 13%:</span>
+                      <span className="font-medium">€{calc.vat2.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>€{calc.subtotal2.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {formData.base_amount_3 > 0 && (
+                  <div className="space-y-1 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Osnovica (PDV 0%):</span>
+                      <span className="font-medium">€{formData.base_amount_3.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PDV 0%:</span>
+                      <span className="font-medium">€0.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>€{calc.subtotal3.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-base font-bold pt-2">
+                  <span>UKUPNO:</span>
+                  <span>€{calc.total.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
