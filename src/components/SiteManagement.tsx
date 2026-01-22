@@ -77,14 +77,17 @@ const SiteManagement: React.FC = () => {
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
 
-    const hasExistingPhases = selectedProject.phases && selectedProject.phases.length > 0
-    const success = hasExistingPhases
-      ? await updateProjectPhases(selectedProject.id, phases, selectedProject.budget)
-      : await createProjectPhases(selectedProject.id, phases, selectedProject.budget)
-
-    if (success) {
-      setShowPhaseSetup(false)
-      setIsPhaseSetupEditMode(false)
+    if (isPhaseSetupEditMode) {
+      const success = await updateProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      if (success) {
+        setShowPhaseSetup(false)
+        setIsPhaseSetupEditMode(false)
+      }
+    } else {
+      const success = await createProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      if (success) {
+        setShowPhaseSetup(false)
+      }
     }
   }
 

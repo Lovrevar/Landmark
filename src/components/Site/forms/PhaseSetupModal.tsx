@@ -19,12 +19,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 }) => {
   const [phaseCount, setPhaseCount] = useState(4)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (visible) {
       initializePhases()
-      setIsSubmitting(false)
     }
   }, [visible])
 
@@ -82,16 +80,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 
   const totalAllocated = phases.reduce((sum, p) => sum + p.budget_allocated, 0)
   const difference = project.budget - totalAllocated
-
-  const handleSubmit = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    try {
-      await onSubmit(phases)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -251,11 +239,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => onSubmit(phases)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              {isSubmitting ? 'Processing...' : (editMode ? 'Update Phases' : 'Create Phases')}
+              {editMode ? 'Update Phases' : 'Create Phases'}
             </button>
           </div>
         </div>
