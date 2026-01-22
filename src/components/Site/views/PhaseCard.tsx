@@ -33,8 +33,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onDeleteSubcontractor,
   onManageMilestones
 }) => {
-  const totalBudgetRealized = phaseSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
-  const totalContractCost = phaseSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
+  const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
+  const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
+
+  const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + sub.cost, 0)
+  const totalPaidWithContract = subcontractorsWithContract.reduce((sum, sub) => sum + sub.budget_realized, 0)
+  const totalPaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + sub.budget_realized, 0)
+  const totalBudgetRealized = totalPaidWithContract + totalPaidWithoutContract
+
   const costVariance = totalBudgetRealized - totalContractCost
   const budgetUtilization = phase.budget_allocated > 0 ? (totalBudgetRealized / phase.budget_allocated) * 100 : 0
 
@@ -92,19 +98,19 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           <div className="bg-orange-50 p-3 rounded-lg">
             <p className="text-sm text-orange-700">Unpaid Contracts</p>
             <p className="text-lg font-bold text-orange-900">
-              €{(totalContractCost - totalBudgetRealized).toLocaleString('hr-HR')}
+              €{Math.max(0, totalContractCost - totalPaidWithContract).toLocaleString('hr-HR')}
             </p>
           </div>
           <div className={`p-3 rounded-lg ${
-            (phase.budget_allocated - totalContractCost) < 0 ? 'bg-red-50' : 'bg-green-50'
+            (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'bg-red-50' : 'bg-green-50'
           }`}>
             <p className={`text-sm ${
-              (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-700' : 'text-green-700'
+              (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'text-red-700' : 'text-green-700'
             }`}>Available Budget</p>
             <p className={`text-lg font-bold ${
-              (phase.budget_allocated - totalContractCost) < 0 ? 'text-red-900' : 'text-green-900'
+              (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'text-red-900' : 'text-green-900'
             }`}>
-              €{(phase.budget_allocated - totalContractCost).toLocaleString('hr-HR')}
+              €{(phase.budget_allocated - totalContractCost - totalPaidWithoutContract).toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
