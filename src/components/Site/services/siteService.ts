@@ -51,6 +51,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .eq('status', 'active')
+  
   if (contractError) {
     console.error('Error fetching subcontractors with phases:', contractError)
     throw contractError
