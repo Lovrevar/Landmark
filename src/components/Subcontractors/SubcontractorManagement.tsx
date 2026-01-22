@@ -263,8 +263,8 @@ const SubcontractorManagement: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">All Contracts</h3>
               <div className="space-y-4">
                 {selectedSubcontractor.contracts.map((contract) => {
-                  const isOverdue = new Date(contract.deadline) < new Date() && contract.progress < 100
-                  const daysUntilDeadline = differenceInDays(new Date(contract.deadline), new Date())
+                  const isOverdue = contract.deadline ? new Date(contract.deadline) < new Date() && contract.progress < 100 : false
+                  const daysUntilDeadline = contract.deadline ? differenceInDays(new Date(contract.deadline), new Date()) : 0
                   const remaining = contract.cost - contract.budget_realized
 
                   return (
@@ -299,12 +299,14 @@ const SubcontractorManagement: React.FC = () => {
                           <p className="text-gray-600">Remaining:</p>
                           <p className="font-medium text-orange-600">€{remaining.toLocaleString('hr-HR')}</p>
                         </div>
-                        <div>
-                          <p className="text-gray-600">Deadline:</p>
-                          <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                            {format(new Date(contract.deadline), 'MMM dd, yyyy')}
-                          </p>
-                        </div>
+                        {contract.deadline && (
+                          <div>
+                            <p className="text-gray-600">Deadline:</p>
+                            <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                              {format(new Date(contract.deadline), 'MMM dd, yyyy')}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {isOverdue && (

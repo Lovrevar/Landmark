@@ -147,8 +147,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseSubcontractors.map((subcontractor) => {
-              const isOverdue = new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost
-              const daysUntilDeadline = differenceInDays(new Date(subcontractor.deadline), new Date())
+              const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost : false
+              const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
               const subVariance = subcontractor.budget_realized - subcontractor.cost
               const isPaid = subcontractor.budget_realized >= subcontractor.cost
               const remainingToPay = Math.max(0, subcontractor.cost - subcontractor.budget_realized)
