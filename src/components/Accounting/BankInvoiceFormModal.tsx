@@ -47,6 +47,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     base_amount_1: 0,
     base_amount_2: 0,
     base_amount_3: 0,
+    base_amount_4: 0,
     category: '',
     description: ''
   })
@@ -142,20 +143,24 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     const base1 = formData.base_amount_1 || 0
     const base2 = formData.base_amount_2 || 0
     const base3 = formData.base_amount_3 || 0
+    const base4 = formData.base_amount_4 || 0
 
     const vat1 = base1 * 0.25
     const vat2 = base2 * 0.13
     const vat3 = 0
+    const vat4 = base4 * 0.05
 
-    const total = (base1 + vat1) + (base2 + vat2) + base3
+    const total = (base1 + vat1) + (base2 + vat2) + base3 + (base4 + vat4)
 
     return {
       vat1,
       vat2,
       vat3,
+      vat4,
       subtotal1: base1 + vat1,
       subtotal2: base2 + vat2,
       subtotal3: base3,
+      subtotal4: base4 + vat4,
       total
     }
   }
@@ -168,7 +173,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       return
     }
 
-    if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0) {
+    if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
       alert('Molimo unesite barem jednu osnovicu')
       return
     }
@@ -190,6 +195,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         base_amount_1: formData.base_amount_1 || 0,
         base_amount_2: formData.base_amount_2 || 0,
         base_amount_3: formData.base_amount_3 || 0,
+        base_amount_4: formData.base_amount_4 || 0,
         category: formData.category,
         description: formData.description
       }
@@ -377,6 +383,21 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Osnovica PDV 5% (€)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.base_amount_4 || ''}
+                onChange={(e) => setFormData({ ...formData, base_amount_4: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Osnovica PDV 0% (€)
               </label>
               <input
@@ -390,7 +411,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               />
             </div>
 
-            {(formData.base_amount_1 > 0 || formData.base_amount_2 > 0 || formData.base_amount_3 > 0) && (
+            {(formData.base_amount_1 > 0 || formData.base_amount_2 > 0 || formData.base_amount_3 > 0 || formData.base_amount_4 > 0) && (
               <div className="col-span-2 bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">Pregled računa:</div>
 
@@ -424,6 +445,23 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-gray-600">Subtotal:</span>
                       <span>€{calc.subtotal2.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {formData.base_amount_4 > 0 && (
+                  <div className="space-y-1 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Osnovica (PDV 5%):</span>
+                      <span className="font-medium">€{formData.base_amount_4.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PDV 5%:</span>
+                      <span className="font-medium">€{calc.vat4.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>€{calc.subtotal4.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
