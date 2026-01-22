@@ -191,6 +191,65 @@ export const createPhases = async (projectId: string, phases: PhaseFormInput[]) 
   if (error) throw error
 }
 
+export const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
+  const existingPhasesData = await supabase
+    .from('project_phases')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('phase_number')
+
+  if (existingPhasesData.error) throw existingPhasesData.error
+
+  const existingPhases = existingPhasesData.data || []
+  const existingPhaseIds = new Set(existingPhases.map(p => p.id))
+  const updatedPhaseIds = new Set(phases.filter(p => p.id).map(p => p.id))
+
+  const phasesToDelete = existingPhases.filter(p => !updatedPhaseIds.has(p.id))
+  if (phasesToDelete.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('project_phases')
+      .delete()
+      .in('id', phasesToDelete.map(p => p.id))
+
+    if (deleteError) throw deleteError
+  }
+
+  for (let i = 0; i < phases.length; i++) {
+    const phase = phases[i]
+    const phaseNumber = i + 1
+
+    if (phase.id && existingPhaseIds.has(phase.id)) {
+      const { error: updateError } = await supabase
+        .from('project_phases')
+        .update({
+          phase_number: phaseNumber,
+          phase_name: phase.phase_name,
+          budget_allocated: phase.budget_allocated,
+          start_date: phase.start_date || null,
+          end_date: phase.end_date || null
+        })
+        .eq('id', phase.id)
+
+      if (updateError) throw updateError
+    } else {
+      const { error: insertError } = await supabase
+        .from('project_phases')
+        .insert({
+          project_id: projectId,
+          phase_number: phaseNumber,
+          phase_name: phase.phase_name,
+          budget_allocated: phase.budget_allocated,
+          budget_used: 0,
+          start_date: phase.start_date || null,
+          end_date: phase.end_date || null,
+          status: 'planning'
+        })
+
+      if (insertError) throw insertError
+    }
+  }
+}
+
 export const updatePhase = async (
   phaseId: string,
   updates: {

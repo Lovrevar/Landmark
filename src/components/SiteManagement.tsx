@@ -24,6 +24,7 @@ const SiteManagement: React.FC = () => {
     existingSubcontractors,
     fetchProjects,
     createProjectPhases,
+    updateProjectPhases,
     updatePhase,
     deletePhase,
     addSubcontractorToPhase,
@@ -77,28 +78,10 @@ const SiteManagement: React.FC = () => {
     if (!selectedProject) return
 
     if (isPhaseSetupEditMode) {
-      try {
-        for (const phase of phases) {
-          if (phase.id) {
-            const existingPhase = selectedProject.phases.find(p => p.id === phase.id)
-            if (existingPhase) {
-              await updatePhase(existingPhase, {
-                phase_name: phase.phase_name,
-                budget_allocated: phase.budget_allocated,
-                start_date: phase.start_date || '',
-                end_date: phase.end_date || '',
-                status: existingPhase.status
-              }, selectedProject)
-            }
-          } else {
-            const newPhases = [phase]
-            await createProjectPhases(selectedProject.id, newPhases, selectedProject.budget)
-          }
-        }
+      const success = await updateProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      if (success) {
         setShowPhaseSetup(false)
         setIsPhaseSetupEditMode(false)
-      } catch (error) {
-        console.error('Error updating phases:', error)
       }
     } else {
       const success = await createProjectPhases(selectedProject.id, phases, selectedProject.budget)

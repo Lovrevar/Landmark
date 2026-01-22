@@ -179,6 +179,31 @@ export const useSiteData = () => {
     }
   }
 
+  const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[], projectBudget: number) => {
+    const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
+    const budgetDifference = totalAllocated - projectBudget
+
+    if (budgetDifference !== 0) {
+      const message = budgetDifference > 0
+        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
+
+      if (!confirm(message)) {
+        return false
+      }
+    }
+
+    try {
+      await siteService.updateProjectPhases(projectId, phases)
+      await fetchProjects()
+      return true
+    } catch (error) {
+      console.error('Error updating phases:', error)
+      alert('Error updating project phases.')
+      return false
+    }
+  }
+
   const addSubcontractorToPhase = async (
     phase: ProjectPhase,
     data: {
@@ -474,6 +499,7 @@ export const useSiteData = () => {
     fetchProjects,
     recalculateAllPhaseBudgets,
     createProjectPhases,
+    updateProjectPhases,
     updatePhase,
     deletePhase,
     addSubcontractorToPhase,
