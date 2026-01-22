@@ -87,20 +87,29 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{subcontractor.name}</h3>
-              <p className="text-sm text-gray-600 mt-1">{subcontractor.contact}</p>
-              <div className="flex items-center space-x-3 mt-2">
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                  subcontractor.budget_realized > subcontractor.cost ? 'bg-red-100 text-red-800' :
-                  subcontractor.budget_realized === subcontractor.cost ? 'bg-green-100 text-green-800' :
-                  subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {subcontractor.budget_realized > subcontractor.cost ? 'Over Budget' :
-                   subcontractor.budget_realized === subcontractor.cost ? 'Fully Paid' :
-                   subcontractor.budget_realized > 0 ? 'Partial Payment' : 'Unpaid'}
-                </span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-gray-900">{subcontractor.name}</h3>
+                {subcontractor.has_contract === false && (
+                  <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                    BEZ UGOVORA
+                  </span>
+                )}
               </div>
+              <p className="text-sm text-gray-600 mt-1">{subcontractor.contact}</p>
+              {subcontractor.has_contract !== false && (
+                <div className="flex items-center space-x-3 mt-2">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    subcontractor.budget_realized > subcontractor.cost ? 'bg-red-100 text-red-800' :
+                    subcontractor.budget_realized === subcontractor.cost ? 'bg-green-100 text-green-800' :
+                    subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {subcontractor.budget_realized > subcontractor.cost ? 'Over Budget' :
+                     subcontractor.budget_realized === subcontractor.cost ? 'Fully Paid' :
+                     subcontractor.budget_realized > 0 ? 'Partial Payment' : 'Unpaid'}
+                  </span>
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -111,36 +120,46 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           </div>
           <div className="mt-4">
             <p className="text-gray-700">{subcontractor.job_description}</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">Contract Amount</p>
-                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</p>
-              </div>
-              <div className="bg-teal-50 p-3 rounded-lg">
-                <p className="text-xs text-teal-700 mb-1">Paid Amount</p>
-                <p className="text-lg font-bold text-teal-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
-              </div>
-              <div className={`p-3 rounded-lg ${
-                subcontractor.budget_realized > subcontractor.cost ? 'bg-red-50' :
-                subcontractor.budget_realized < subcontractor.cost ? 'bg-green-50' :
-                'bg-gray-50'
-              }`}>
-                <p className={`text-xs mb-1 ${
-                  subcontractor.budget_realized > subcontractor.cost ? 'text-red-700' :
-                  subcontractor.budget_realized < subcontractor.cost ? 'text-green-700' :
-                  'text-gray-600'
-                }`}>Gain/Loss</p>
-                <p className={`text-lg font-bold ${
-                  subcontractor.budget_realized > subcontractor.cost ? 'text-red-900' :
-                  subcontractor.budget_realized < subcontractor.cost ? 'text-green-900' :
-                  'text-gray-900'
+            {subcontractor.has_contract !== false ? (
+              <div className="mt-4 grid grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Contract Amount</p>
+                  <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</p>
+                </div>
+                <div className="bg-teal-50 p-3 rounded-lg">
+                  <p className="text-xs text-teal-700 mb-1">Paid Amount</p>
+                  <p className="text-lg font-bold text-teal-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${
+                  subcontractor.budget_realized > subcontractor.cost ? 'bg-red-50' :
+                  subcontractor.budget_realized < subcontractor.cost ? 'bg-green-50' :
+                  'bg-gray-50'
                 }`}>
-                  {subcontractor.budget_realized > subcontractor.cost ? '-' :
-                   subcontractor.budget_realized < subcontractor.cost ? '+' : ''}
-                  €{Math.abs(subcontractor.budget_realized - subcontractor.cost).toLocaleString('hr-HR')}
-                </p>
+                  <p className={`text-xs mb-1 ${
+                    subcontractor.budget_realized > subcontractor.cost ? 'text-red-700' :
+                    subcontractor.budget_realized < subcontractor.cost ? 'text-green-700' :
+                    'text-gray-600'
+                  }`}>Gain/Loss</p>
+                  <p className={`text-lg font-bold ${
+                    subcontractor.budget_realized > subcontractor.cost ? 'text-red-900' :
+                    subcontractor.budget_realized < subcontractor.cost ? 'text-green-900' :
+                    'text-gray-900'
+                  }`}>
+                    {subcontractor.budget_realized > subcontractor.cost ? '-' :
+                     subcontractor.budget_realized < subcontractor.cost ? '+' : ''}
+                    €{Math.abs(subcontractor.budget_realized - subcontractor.cost).toLocaleString('hr-HR')}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mt-4">
+                <div className="bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
+                  <p className="text-sm text-teal-700 mb-1">Plaćeno ukupno</p>
+                  <p className="text-2xl font-bold text-teal-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
+                  <p className="text-xs text-teal-600 mt-2">Subkontraktor nema formalan ugovor - troškovi se prate kroz račune u Accounting modulu</p>
+                </div>
+              </div>
+            )}
             {funderName && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center">

@@ -162,53 +162,73 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">{subcontractor.name}</h4>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">{subcontractor.name}</h4>
+                        {subcontractor.has_contract === false && (
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                            BEZ UGOVORA
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
                       <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                      subVariance > 0 ? 'bg-red-100 text-red-800' :
-                      isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
-                      subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {subVariance > 0 ? 'Over Budget' :
-                       isPaid && subVariance === 0 ? 'Paid' :
-                       subcontractor.budget_realized > 0 ? 'Partial' : 'Unpaid'}
-                    </span>
+                    {subcontractor.has_contract !== false && (
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                        subVariance > 0 ? 'bg-red-100 text-red-800' :
+                        isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
+                        subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {subVariance > 0 ? 'Over Budget' :
+                         isPaid && subVariance === 0 ? 'Paid' :
+                         subcontractor.budget_realized > 0 ? 'Partial' : 'Unpaid'}
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Deadline:</span>
-                      <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                        {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Contract:</span>
-                      <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Paid:</span>
-                      <span className="font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
-                    </div>
-                    {remainingToPay > 0 && (
+                    {subcontractor.deadline && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Remaining:</span>
-                        <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
+                        <span className="text-gray-600">Deadline:</span>
+                        <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                          {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
+                        </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-gray-600 font-medium">Gain/Loss:</span>
-                      <span className={`font-bold ${
-                        subVariance > 0 ? 'text-red-600' :
-                        subVariance < 0 ? 'text-green-600' :
-                        'text-gray-900'
-                      }`}>
-                        {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
-                      </span>
-                    </div>
+                    {subcontractor.has_contract !== false ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Contract:</span>
+                          <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Paid:</span>
+                          <span className="font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+                        </div>
+                        {remainingToPay > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Remaining:</span>
+                            <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                          <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                          <span className={`font-bold ${
+                            subVariance > 0 ? 'text-red-600' :
+                            subVariance < 0 ? 'text-green-600' :
+                            'text-gray-900'
+                          }`}>
+                            {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                        <span className="font-bold text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -20,6 +20,7 @@ export interface SubcontractorWithPhase extends Subcontractor {
   phase_id?: string
   contract_id?: string
   subcontractor_id?: string
+  has_contract?: boolean
 }
 
 export interface SubcontractorWithMilestones extends Subcontractor {
@@ -58,6 +59,7 @@ export interface SubcontractorFormData {
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
   financed_by_bank_id?: string | null
+  has_contract?: boolean
 }
 
 export interface MilestoneFormData {

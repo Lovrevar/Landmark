@@ -189,16 +189,19 @@ export const useSiteData = () => {
       job_description: string
       deadline: string
       cost: number
+      has_contract?: boolean
     }
   ) => {
     try {
+      const hasContract = data.has_contract !== false
+
       if (data.useExisting) {
         if (!data.existing_subcontractor_id) {
           alert('Please select a subcontractor')
           return false
         }
 
-        if (data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
           alert('Contract cost exceeds available phase budget')
           return false
         }
@@ -214,22 +217,25 @@ export const useSiteData = () => {
           phase_id: phase.id,
           subcontractor_id: data.existing_subcontractor_id,
           job_description: data.job_description,
-          contract_amount: data.cost,
+          contract_amount: hasContract ? data.cost : 0,
           budget_realized: 0,
-          end_date: data.deadline,
-          status: 'active'
+          end_date: data.deadline || null,
+          status: 'active',
+          has_contract: hasContract
         })
 
-        await siteService.updatePhase(phase.id, {
-          budget_used: phase.budget_used + data.cost
-        })
+        if (hasContract) {
+          await siteService.updatePhase(phase.id, {
+            budget_used: phase.budget_used + data.cost
+          })
+        }
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           alert('Please fill in required fields')
           return false
         }
 
-        if (data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
           alert('Contract cost exceeds available phase budget')
           return false
         }
@@ -250,11 +256,18 @@ export const useSiteData = () => {
           phase_id: phase.id,
           subcontractor_id: newSubcontractor.id,
           job_description: data.job_description,
-          contract_amount: data.cost,
+          contract_amount: hasContract ? data.cost : 0,
           budget_realized: 0,
-          end_date: data.deadline,
-          status: 'active'
+          end_date: data.deadline || null,
+          status: 'active',
+          has_contract: hasContract
         })
+
+        if (hasContract) {
+          await siteService.updatePhase(phase.id, {
+            budget_used: phase.budget_used + data.cost
+          })
+        }
       }
 
       await siteService.recalculatePhaseBudget(phase.id)
