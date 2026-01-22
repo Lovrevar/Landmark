@@ -7,13 +7,15 @@ interface PhaseSetupModalProps {
   onClose: () => void
   project: ProjectWithPhases
   onSubmit: (phases: PhaseFormInput[]) => void
+  editMode?: boolean
 }
 
 export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   visible,
   onClose,
   project,
-  onSubmit
+  onSubmit,
+  editMode = false
 }) => {
   const [phaseCount, setPhaseCount] = useState(4)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
@@ -22,25 +24,45 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
     if (visible) {
       initializePhases()
     }
-  }, [visible, phaseCount])
+  }, [visible])
+
+  useEffect(() => {
+    if (visible && !editMode) {
+      initializePhases()
+    }
+  }, [phaseCount])
 
   const initializePhases = () => {
-    const defaultPhases = [
-      { phase_name: 'Foundation Phase', budget_allocated: 0, start_date: '', end_date: '' },
-      { phase_name: 'Structural Phase', budget_allocated: 0, start_date: '', end_date: '' },
-      { phase_name: 'Systems Installation', budget_allocated: 0, start_date: '', end_date: '' },
-      { phase_name: 'Finishing Phase', budget_allocated: 0, start_date: '', end_date: '' }
-    ]
-    setPhases(defaultPhases.slice(0, phaseCount))
+    if (editMode && project.phases && project.phases.length > 0) {
+      const existingPhases = project.phases
+        .sort((a, b) => a.phase_number - b.phase_number)
+        .map(phase => ({
+          id: phase.id,
+          phase_name: phase.phase_name,
+          budget_allocated: phase.budget_allocated,
+          start_date: phase.start_date || '',
+          end_date: phase.end_date || ''
+        }))
+      setPhases(existingPhases)
+      setPhaseCount(existingPhases.length)
+    } else {
+      const defaultPhases = [
+        { phase_name: 'Foundation Phase', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Structural Phase', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Systems Installation', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Finishing Phase', budget_allocated: 0, start_date: '', end_date: '' }
+      ]
+      setPhases(defaultPhases.slice(0, phaseCount))
+    }
   }
 
   const updatePhaseCount = (count: number) => {
     setPhaseCount(count)
-    const newPhases = []
-    for (let i = 0; i < count; i++) {
-      if (phases[i]) {
-        newPhases.push(phases[i])
-      } else {
+    const currentCount = phases.length
+
+    if (count > currentCount) {
+      const newPhases = [...phases]
+      for (let i = currentCount; i < count; i++) {
         newPhases.push({
           phase_name: `Phase ${i + 1}`,
           budget_allocated: 0,
@@ -48,8 +70,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           end_date: ''
         })
       }
+      setPhases(newPhases)
+    } else if (count < currentCount) {
+      setPhases(phases.slice(0, count))
     }
-    setPhases(newPhases)
   }
 
   if (!visible) return null
@@ -63,7 +87,9 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">Setup Project Phases</h3>
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editMode ? 'Edit Project Phases' : 'Setup Project Phases'}
+              </h3>
               <p className="text-gray-600 mt-1">
                 Distribute €{project.budget.toLocaleString('hr-HR')} budget across construction phases
               </p>
@@ -216,7 +242,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
               onClick={() => onSubmit(phases)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              Create Phases
+              {editMode ? 'Update Phases' : 'Create Phases'}
             </button>
           </div>
         </div>

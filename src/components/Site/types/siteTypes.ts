@@ -34,6 +34,7 @@ export interface MilestoneWithCalculatedAmount extends SubcontractorMilestone {
 }
 
 export interface PhaseFormInput {
+  id?: string
   phase_name: string
   budget_allocated: number
   start_date: string

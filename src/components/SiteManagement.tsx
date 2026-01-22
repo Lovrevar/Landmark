@@ -48,6 +48,7 @@ const SiteManagement: React.FC = () => {
     }
   }, [projects])
   const [showPhaseSetup, setShowPhaseSetup] = useState(false)
+  const [isPhaseSetupEditMode, setIsPhaseSetupEditMode] = useState(false)
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null)
   const [showSubcontractorForm, setShowSubcontractorForm] = useState(false)
@@ -74,9 +75,36 @@ const SiteManagement: React.FC = () => {
 
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
-    const success = await createProjectPhases(selectedProject.id, phases, selectedProject.budget)
-    if (success) {
-      setShowPhaseSetup(false)
+
+    if (isPhaseSetupEditMode) {
+      try {
+        for (const phase of phases) {
+          if (phase.id) {
+            const existingPhase = selectedProject.phases.find(p => p.id === phase.id)
+            if (existingPhase) {
+              await updatePhase(existingPhase, {
+                phase_name: phase.phase_name,
+                budget_allocated: phase.budget_allocated,
+                start_date: phase.start_date || '',
+                end_date: phase.end_date || '',
+                status: existingPhase.status
+              }, selectedProject)
+            }
+          } else {
+            const newPhases = [phase]
+            await createProjectPhases(selectedProject.id, newPhases, selectedProject.budget)
+          }
+        }
+        setShowPhaseSetup(false)
+        setIsPhaseSetupEditMode(false)
+      } catch (error) {
+        console.error('Error updating phases:', error)
+      }
+    } else {
+      const success = await createProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      if (success) {
+        setShowPhaseSetup(false)
+      }
     }
   }
 
@@ -236,7 +264,14 @@ const SiteManagement: React.FC = () => {
         <ProjectDetail
           project={selectedProject}
           onBack={() => setSelectedProject(null)}
-          onOpenPhaseSetup={() => setShowPhaseSetup(true)}
+          onOpenPhaseSetup={() => {
+            setShowPhaseSetup(true)
+            setIsPhaseSetupEditMode(false)
+          }}
+          onEditPhaseSetup={() => {
+            setShowPhaseSetup(true)
+            setIsPhaseSetupEditMode(true)
+          }}
           onEditPhase={openEditPhaseModal}
           onDeletePhase={handleDeletePhase}
           onAddSubcontractor={(phase) => {
@@ -257,9 +292,13 @@ const SiteManagement: React.FC = () => {
 
         <PhaseSetupModal
           visible={showPhaseSetup}
-          onClose={() => setShowPhaseSetup(false)}
+          onClose={() => {
+            setShowPhaseSetup(false)
+            setIsPhaseSetupEditMode(false)
+          }}
           project={selectedProject}
           onSubmit={handleCreatePhases}
+          editMode={isPhaseSetupEditMode}
         />
 
         <EditPhaseModal

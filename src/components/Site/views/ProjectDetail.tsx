@@ -25,6 +25,7 @@ interface ProjectDetailProps {
   project: ProjectWithPhases
   onBack: () => void
   onOpenPhaseSetup: () => void
+  onEditPhaseSetup?: () => void
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void
@@ -41,6 +42,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   project,
   onBack,
   onOpenPhaseSetup,
+  onEditPhaseSetup,
   onEditPhase,
   onDeletePhase,
   onAddSubcontractor,
@@ -118,7 +120,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             }`}>
               {project.status}
             </span>
-            {!project.has_phases && (
+            {!project.has_phases ? (
               <button
                 onClick={onOpenPhaseSetup}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -126,6 +128,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <Settings className="w-4 h-4 mr-2" />
                 Setup Phases
               </button>
+            ) : (
+              onEditPhaseSetup && (
+                <button
+                  onClick={onEditPhaseSetup}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Phases
+                </button>
+              )
             )}
           </div>
         </div>
