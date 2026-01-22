@@ -13,6 +13,7 @@ interface SubcontractorContract {
   progress: number
   deadline: string
   created_at: string
+  has_contract: boolean
 }
 
 interface SubcontractorSummary {
@@ -84,6 +85,7 @@ const SubcontractorManagement: React.FC = () => {
           const cost = parseFloat(contractData.contract_amount || 0)
           const budgetRealized = parseFloat(contractData.budget_realized || 0)
           const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
+          const hasContract = contractData.has_contract !== false
 
           return {
             id: contractData.id,
@@ -94,12 +96,15 @@ const SubcontractorManagement: React.FC = () => {
             budget_realized: budgetRealized,
             progress: Math.min(100, progress),
             deadline: contractData.end_date || '',
-            created_at: contractData.created_at
+            created_at: contractData.created_at,
+            has_contract: hasContract
           }
         })
 
-        const totalContractValue = contracts.reduce((sum, c) => sum + c.cost, 0)
+        const contractsWithAgreement = contracts.filter(c => c.has_contract && c.cost > 0)
+        const totalContractValue = contractsWithAgreement.reduce((sum, c) => sum + c.cost, 0)
         const totalPaid = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
+        const totalPaidWithContract = contractsWithAgreement.reduce((sum, c) => sum + c.budget_realized, 0)
         const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
         const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length
 
@@ -109,7 +114,7 @@ const SubcontractorManagement: React.FC = () => {
           total_contracts: contracts.length,
           total_contract_value: totalContractValue,
           total_paid: totalPaid,
-          total_remaining: totalContractValue - totalPaid,
+          total_remaining: totalContractValue - totalPaidWithContract,
           active_contracts: activeContracts,
           completed_contracts: completedContracts,
           contracts
@@ -266,48 +271,75 @@ const SubcontractorManagement: React.FC = () => {
                   const isOverdue = contract.deadline ? new Date(contract.deadline) < new Date() && contract.progress < 100 : false
                   const daysUntilDeadline = contract.deadline ? differenceInDays(new Date(contract.deadline), new Date()) : 0
                   const remaining = contract.cost - contract.budget_realized
+                  const hasValidContract = contract.has_contract && contract.cost > 0
 
                   return (
                     <div key={contract.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{contract.project_name}</h4>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-gray-900">{contract.project_name}</h4>
+                            {!hasValidContract && (
+                              <span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                                BEZ UGOVORA
+                              </span>
+                            )}
+                          </div>
                           {contract.phase_name && (
                             <p className="text-sm text-gray-600">{contract.phase_name}</p>
                           )}
                           <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          contract.progress >= 100 ? 'bg-green-100 text-green-800' :
-                          contract.progress > 0 ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {contract.progress}% Complete
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
-                        <div>
-                          <p className="text-gray-600">Contract:</p>
-                          <p className="font-medium text-gray-900">€{contract.cost.toLocaleString('hr-HR')}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Paid:</p>
-                          <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Remaining:</p>
-                          <p className="font-medium text-orange-600">€{remaining.toLocaleString('hr-HR')}</p>
-                        </div>
-                        {contract.deadline && (
-                          <div>
-                            <p className="text-gray-600">Deadline:</p>
-                            <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                              {format(new Date(contract.deadline), 'MMM dd, yyyy')}
-                            </p>
-                          </div>
+                        {hasValidContract && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            contract.progress >= 100 ? 'bg-green-100 text-green-800' :
+                            contract.progress > 0 ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {contract.progress}% Complete
+                          </span>
                         )}
                       </div>
+
+                      {hasValidContract ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                          <div>
+                            <p className="text-gray-600">Contract:</p>
+                            <p className="font-medium text-gray-900">€{contract.cost.toLocaleString('hr-HR')}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Paid:</p>
+                            <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Remaining:</p>
+                            <p className="font-medium text-orange-600">€{remaining.toLocaleString('hr-HR')}</p>
+                          </div>
+                          {contract.deadline && (
+                            <div>
+                              <p className="text-gray-600">Deadline:</p>
+                              <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                                {format(new Date(contract.deadline), 'MMM dd, yyyy')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                          <div>
+                            <p className="text-gray-600">Paid:</p>
+                            <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                          </div>
+                          {contract.deadline && (
+                            <div>
+                              <p className="text-gray-600">Deadline:</p>
+                              <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                                {format(new Date(contract.deadline), 'MMM dd, yyyy')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {isOverdue && (
                         <div className="mt-2 p-2 bg-red-50 rounded text-sm text-red-700">

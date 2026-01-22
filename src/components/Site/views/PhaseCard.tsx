@@ -147,14 +147,16 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseSubcontractors.map((subcontractor) => {
+              const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
               const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost : false
               const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
-              const subVariance = subcontractor.budget_realized - subcontractor.cost
-              const isPaid = subcontractor.budget_realized >= subcontractor.cost
-              const remainingToPay = Math.max(0, subcontractor.cost - subcontractor.budget_realized)
+              const subVariance = hasValidContract ? subcontractor.budget_realized - subcontractor.cost : 0
+              const isPaid = hasValidContract && subcontractor.budget_realized >= subcontractor.cost
+              const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - subcontractor.budget_realized) : 0
 
               return (
                 <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                  !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
                   subVariance > 0 ? 'border-red-200 bg-red-50' :
                   isPaid && subVariance === 0 ? 'border-green-200 bg-green-50' :
                   subcontractor.budget_realized > 0 ? 'border-blue-200 bg-blue-50' :
@@ -173,7 +175,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
                       <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
                     </div>
-                    {subcontractor.has_contract !== false && (
+                    {hasValidContract && (
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                         subVariance > 0 ? 'bg-red-100 text-red-800' :
                         isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
@@ -196,7 +198,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </span>
                       </div>
                     )}
-                    {subcontractor.has_contract !== false ? (
+                    {hasValidContract ? (
                       <>
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Contract:</span>
