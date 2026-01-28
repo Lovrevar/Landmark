@@ -16,6 +16,7 @@ import BanksManagement from './components/Finance/banks/BanksManagement'
 import InvestmentProjects from './components/Projects/InvestmentProjects'
 import InvestorsManagement from './components/Finance/investors/InvestorsManagement'
 import PaymentsManagement from './components/Payments/PaymentsManagement'
+import InvoicesManagement from './components/Payments/InvoicesManagement'
 import ApartmentManagement from './components/ApartmentManagement'
 import SalesPaymentsManagement from './components/Payments/SalesPaymentsManagement'
 import RetailSalesPaymentsManagement from './components/Payments/RetailSalesPaymentsManagement'
@@ -183,6 +184,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <PaymentsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <InvoicesManagement />
             </ProtectedRoute>
           }
         />

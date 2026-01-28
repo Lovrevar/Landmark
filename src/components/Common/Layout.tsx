@@ -43,7 +43,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (user?.role === 'Supervision') {
       return [
         { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' }
+        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
+        { name: 'Payments', icon: DollarSign, path: '/payments' },
+        { name: 'Invoices', icon: FileText, path: '/invoices' }
       ]
     }
 
@@ -58,7 +60,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Site Management', icon: Building2, path: '/site-management' },
         { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
         { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' }
+        { name: 'Payments', icon: DollarSign, path: '/payments' },
+        { name: 'Invoices', icon: FileText, path: '/invoices' }
       ],
       Sales: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
