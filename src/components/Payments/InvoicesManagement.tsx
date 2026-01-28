@@ -30,6 +30,7 @@ const InvoicesManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
+  const [filterApproved, setFilterApproved] = useState<'all' | 'approved' | 'not_approved'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const [stats, setStats] = useState({
     totalInvoices: 0,
@@ -148,7 +149,12 @@ const InvoicesManagement: React.FC = () => {
       (filterStatus === 'recent' && new Date(invoice.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && invoice.total_amount > 10000)
 
-    return matchesSearch && matchesDateRange && matchesFilter
+    const matchesApproved =
+      filterApproved === 'all' ||
+      (filterApproved === 'approved' && invoice.approved) ||
+      (filterApproved === 'not_approved' && !invoice.approved)
+
+    return matchesSearch && matchesDateRange && matchesFilter && matchesApproved
   })
 
   const exportToCSV = () => {
@@ -250,7 +256,7 @@ const InvoicesManagement: React.FC = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -273,6 +279,18 @@ const InvoicesManagement: React.FC = () => {
               <option value="all">All Invoices</option>
               <option value="recent">Recent (7 days)</option>
               <option value="large">Large (&gt; €10k)</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={filterApproved}
+              onChange={(e) => setFilterApproved(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="approved">Approved</option>
+              <option value="not_approved">Not Approved</option>
             </select>
           </div>
 
@@ -316,7 +334,7 @@ const InvoicesManagement: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="w-5 h-5"></div>
+                  Approved
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
