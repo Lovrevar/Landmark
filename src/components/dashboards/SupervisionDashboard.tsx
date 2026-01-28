@@ -104,7 +104,7 @@ const SupervisionDashboard: React.FC = () => {
             project:projects!project_phases_project_id_fkey(name)
           )
         `)
-        .eq('status', 'active')
+        .in('status', ['draft', 'active'])
         .order('end_date', { ascending: true })
 
       // Map to subcontractor format

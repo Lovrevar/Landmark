@@ -50,7 +50,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       ),
       phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
-    .eq('status', 'active')
+    .in('status', ['draft', 'active'])
   
   if (contractError) {
     console.error('Error fetching subcontractors with phases:', contractError)
@@ -117,7 +117,7 @@ export const recalculatePhaseBudget = async (phaseId: string) => {
     .from('contracts')
     .select('contract_amount')
     .eq('phase_id', phaseId)
-    .eq('status', 'active')
+    .in('status', ['draft', 'active'])
 
   if (subError) throw subError
 
@@ -137,7 +137,7 @@ export const recalculateAllPhaseBudgets = async () => {
   const { data: contractSums, error: contractError } = await supabase
     .from('contracts')
     .select('phase_id, contract_amount')
-    .eq('status', 'active')
+    .in('status', ['draft', 'active'])
 
   if (contractError) throw contractError
 

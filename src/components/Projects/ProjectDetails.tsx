@@ -77,7 +77,7 @@ const ProjectDetails: React.FC = () => {
           phase:project_phases!contracts_phase_id_fkey(phase_name)
         `)
         .eq('project_id', id)
-        .eq('status', 'active')
+        .in('status', ['draft', 'active'])
         .order('end_date', { ascending: true })
 
       // Map contracts to subcontractor format for backwards compatibility
