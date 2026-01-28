@@ -17,7 +17,6 @@ interface InvoiceWithDetails {
   status: string
   created_at: string
   supplier_name?: string
-  customer_name?: string
   company_name?: string
   project_name?: string
   phase_name?: string
@@ -54,15 +53,6 @@ const InvoicesManagement: React.FC = () => {
             id,
             name
           ),
-          customer:customers!accounting_invoices_customer_id_fkey(
-            id,
-            name,
-            surname
-          ),
-          retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey(
-            id,
-            name
-          ),
           company:accounting_companies!accounting_invoices_company_id_fkey(
             id,
             name
@@ -77,7 +67,8 @@ const InvoicesManagement: React.FC = () => {
             phase_id
           )
         `)
-        .in('invoice_category', ['SUBCONTRACTOR', 'RETAIL_SUPPLIER', 'SUPERVISION'])
+        .in('invoice_category', ['SUBCONTRACTOR', 'SUPERVISION'])
+        .not('project_id', 'is', null)
         .order('issue_date', { ascending: false })
 
       if (invoicesError) throw invoicesError
@@ -88,14 +79,6 @@ const InvoicesManagement: React.FC = () => {
 
       const enrichedInvoices = (invoicesData || []).map((invoice: any) => {
         const supplierName = invoice.supplier?.name || '-'
-
-        let customerName = '-'
-        if (invoice.customer) {
-          customerName = `${invoice.customer.name} ${invoice.customer.surname}`
-        } else if (invoice.retail_customer) {
-          customerName = invoice.retail_customer.name
-        }
-
         const companyName = invoice.company?.name || '-'
         const projectName = invoice.project?.name || '-'
 
@@ -115,7 +98,6 @@ const InvoicesManagement: React.FC = () => {
           status: invoice.status,
           created_at: invoice.created_at,
           supplier_name: supplierName,
-          customer_name: customerName,
           company_name: companyName,
           project_name: projectName,
           phase_name: phaseName,
@@ -154,7 +136,6 @@ const InvoicesManagement: React.FC = () => {
     const matchesSearch =
       invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.contract_number?.toLowerCase().includes(searchTerm.toLowerCase())
 
@@ -171,13 +152,12 @@ const InvoicesManagement: React.FC = () => {
   })
 
   const exportToCSV = () => {
-    const headers = ['Invoice #', 'Date', 'Supplier/Customer', 'Project', 'Phase', 'Company', 'Amount', 'Status']
+    const headers = ['Invoice #', 'Date', 'Supplier', 'Project', 'Phase', 'Company', 'Amount', 'Status']
     const rows = filteredInvoices.map(i => {
-      const entity = i.invoice_type === 'INCOMING_SUPPLIER' ? i.supplier_name : i.customer_name
       return [
         i.invoice_number,
         format(new Date(i.issue_date), 'yyyy-MM-dd'),
-        entity,
+        i.supplier_name,
         i.project_name,
         i.phase_name,
         i.company_name,
@@ -216,8 +196,8 @@ const InvoicesManagement: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoices Management</h1>
-        <p className="text-gray-600">Track and manage all invoices across all projects</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Invoices</h1>
+        <p className="text-gray-600">Track and manage supplier and supervision invoices for all projects</p>
       </div>
 
       {/* Stats Cards */}
@@ -328,7 +308,7 @@ const InvoicesManagement: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier/Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
@@ -368,9 +348,7 @@ const InvoicesManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'INCOMING_BANK_INVOICE'
-                          ? invoice.supplier_name
-                          : invoice.customer_name}
+                        {invoice.supplier_name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
