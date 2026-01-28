@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, AlertCircle } from 'lucide-react'
 import { Subcontractor } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
+
+interface Phase {
+  id: string
+  phase_name: string
+  project_id: string
+}
 
 interface EditSubcontractorModalProps {
   visible: boolean
@@ -19,10 +26,14 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 }) => {
   const [baseAmount, setBaseAmount] = useState(0)
   const [vatRate, setVatRate] = useState(0)
+  const [phases, setPhases] = useState<Phase[]>([])
+  const [selectedPhaseId, setSelectedPhaseId] = useState('')
+  const [hasContract, setHasContract] = useState(true)
+  const [loadingPhases, setLoadingPhases] = useState(false)
 
   useEffect(() => {
     if (visible && subcontractor) {
-      const possibleVatRates = [0, 13, 25]
+      const possibleVatRates = [0, 5, 13, 25]
       let foundVat = 0
       let foundBase = subcontractor.cost
 
@@ -40,8 +51,44 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       setBaseAmount(foundBase)
       setVatRate(foundVat)
+      setHasContract((subcontractor as any).has_contract !== false)
+      setSelectedPhaseId((subcontractor as any).phase_id || '')
+
+      loadPhases()
     }
   }, [visible, subcontractor])
+
+  const loadPhases = async () => {
+    if (!subcontractor) return
+
+    const contractId = (subcontractor as any).contract_id || subcontractor.id
+
+    try {
+      setLoadingPhases(true)
+
+      const { data: contractData, error: contractError } = await supabase
+        .from('contracts')
+        .select('project_id')
+        .eq('id', contractId)
+        .single()
+
+      if (contractError) throw contractError
+
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select('id, phase_name, project_id')
+        .eq('project_id', contractData.project_id)
+        .order('phase_number')
+
+      if (phasesError) throw phasesError
+
+      setPhases(phasesData || [])
+    } catch (error) {
+      console.error('Error loading phases:', error)
+    } finally {
+      setLoadingPhases(false)
+    }
+  }
 
   useEffect(() => {
     if (subcontractor) {
@@ -90,67 +137,126 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Job Description *</label>
-            <textarea
-              value={subcontractor.job_description}
-              onChange={(e) => onChange({ ...subcontractor, job_description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+          <div className="border-t border-gray-200 pt-4 mt-2">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Projekt & Faza</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Faza</label>
+                <select
+                  value={selectedPhaseId}
+                  onChange={(e) => setSelectedPhaseId(e.target.value)}
+                  disabled={loadingPhases}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Odaberite fazu</option>
+                  {phases.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.phase_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status ugovora</label>
+                <div className="flex items-center h-10">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasContract}
+                      onChange={(e) => setHasContract(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {hasContract ? 'Sa ugovorom' : 'Bez ugovora'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {!hasContract && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start space-x-2">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <strong>Bez ugovora:</strong> Dobavljač će biti označen kao bez formalnog ugovora.
+                  Budžet se prati samo kroz fakture.
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="border-t border-gray-200 pt-4 mt-2">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalji posla</h3>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Osnovica (€) *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={baseAmount}
-                onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Job Description *</label>
+              <textarea
+                value={subcontractor.job_description}
+                onChange={(e) => onChange({ ...subcontractor, job_description: e.target.value })}
+                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">PDV *</label>
-              <select
-                value={vatRate}
-                onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="0">0%</option>
-                <option value="13">13%</option>
-                <option value="25">25%</option>
-              </select>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
-              <input
-                type="number"
-                value={subcontractor.cost.toFixed(2)}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Automatski izračunato: Osnovica + PDV
-              </p>
-            </div>
+          {hasContract && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Osnovica (€) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={baseAmount}
+                    onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Deadline *</label>
-              <input
-                type="date"
-                value={subcontractor.deadline}
-                onChange={(e) => onChange({ ...subcontractor, deadline: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">PDV *</label>
+                  <select
+                    value={vatRate}
+                    onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="13">13%</option>
+                    <option value="25">25%</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
+                  <input
+                    type="number"
+                    value={subcontractor.cost.toFixed(2)}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Automatski izračunato: Osnovica + PDV
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Deadline *</label>
+                  <input
+                    type="date"
+                    value={subcontractor.deadline}
+                    onChange={(e) => onChange({ ...subcontractor, deadline: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
@@ -199,7 +305,16 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={onSubmit}
+              onClick={() => {
+                const updatedSubcontractor = {
+                  ...subcontractor,
+                  phase_id: selectedPhaseId,
+                  has_contract: hasContract
+                } as any
+
+                onChange(updatedSubcontractor)
+                onSubmit()
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               Save Changes

@@ -311,18 +311,17 @@ export const useSiteData = () => {
 
   const updateSubcontractor = async (subcontractor: Subcontractor) => {
     try {
+      const subData = subcontractor as any
       await siteService.updateSubcontractor(subcontractor.id, {
         name: subcontractor.name,
         contact: subcontractor.contact,
         job_description: subcontractor.job_description,
         deadline: subcontractor.deadline,
         cost: subcontractor.cost,
-        progress: subcontractor.progress || 0
+        progress: subcontractor.progress || 0,
+        phase_id: subData.phase_id,
+        has_contract: subData.has_contract
       })
-
-      if (subcontractor.phase_id) {
-        await siteService.recalculatePhaseBudget(subcontractor.phase_id)
-      }
 
       await fetchProjects()
       return true

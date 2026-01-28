@@ -347,25 +347,39 @@ export const updateSubcontractor = async (
     deadline: string
     cost: number
     progress: number
+    phase_id?: string
+    has_contract?: boolean
   }
 ) => {
   // First, get the contract to find the subcontractor
   const { data: contract, error: contractError } = await supabase
     .from('contracts')
-    .select('subcontractor_id')
+    .select('subcontractor_id, phase_id')
     .eq('id', contractId)
     .single()
 
   if (contractError) throw contractError
 
   // Update contract-specific fields in contracts table
+  const contractUpdateData: any = {
+    job_description: updates.job_description,
+    end_date: updates.deadline,
+    contract_amount: updates.cost
+  }
+
+  // Add phase_id if provided
+  if (updates.phase_id !== undefined) {
+    contractUpdateData.phase_id = updates.phase_id
+  }
+
+  // Add has_contract if provided
+  if (updates.has_contract !== undefined) {
+    contractUpdateData.has_contract = updates.has_contract
+  }
+
   const { error: contractUpdateError } = await supabase
     .from('contracts')
-    .update({
-      job_description: updates.job_description,
-      end_date: updates.deadline,
-      contract_amount: updates.cost
-    })
+    .update(contractUpdateData)
     .eq('id', contractId)
 
   if (contractUpdateError) throw contractUpdateError
@@ -382,6 +396,14 @@ export const updateSubcontractor = async (
     .eq('id', contract.subcontractor_id)
 
   if (subError) throw subError
+
+  // If phase was changed, recalculate budgets for both old and new phases
+  if (updates.phase_id && updates.phase_id !== contract.phase_id) {
+    if (contract.phase_id) {
+      await recalculatePhaseBudget(contract.phase_id)
+    }
+    await recalculatePhaseBudget(updates.phase_id)
+  }
 }
 
 export const deleteSubcontractor = async (contractId: string) => {
