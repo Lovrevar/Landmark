@@ -30,6 +30,10 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
   const [loadingPhases, setLoadingPhases] = useState(false)
+  const [name, setName] = useState('')
+  const [contact, setContact] = useState('')
+  const [jobDescription, setJobDescription] = useState('')
+  const [deadline, setDeadline] = useState('')
 
   useEffect(() => {
     if (visible && subcontractor) {
@@ -53,6 +57,10 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setVatRate(foundVat)
       setHasContract((subcontractor as any).has_contract !== false)
       setSelectedPhaseId((subcontractor as any).phase_id || '')
+      setName(subcontractor.name)
+      setContact(subcontractor.contact)
+      setJobDescription(subcontractor.job_description)
+      setDeadline(subcontractor.deadline)
 
       loadPhases()
     }
@@ -90,13 +98,10 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
     }
   }
 
-  useEffect(() => {
-    if (subcontractor) {
-      const vatAmount = baseAmount * (vatRate / 100)
-      const totalCost = baseAmount + vatAmount
-      onChange({ ...subcontractor, cost: totalCost })
-    }
-  }, [baseAmount, vatRate])
+  const calculateTotalCost = () => {
+    const vatAmount = baseAmount * (vatRate / 100)
+    return baseAmount + vatAmount
+  }
 
   if (!visible || !subcontractor) return null
 
@@ -120,8 +125,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
             <input
               type="text"
-              value={subcontractor.name}
-              onChange={(e) => onChange({ ...subcontractor, name: e.target.value })}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -130,8 +135,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">Contact *</label>
             <input
               type="text"
-              value={subcontractor.contact}
-              onChange={(e) => onChange({ ...subcontractor, contact: e.target.value })}
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Phone or email"
             />
@@ -193,8 +198,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Job Description *</label>
               <textarea
-                value={subcontractor.job_description}
-                onChange={(e) => onChange({ ...subcontractor, job_description: e.target.value })}
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -236,7 +241,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
                   <input
                     type="number"
-                    value={subcontractor.cost.toFixed(2)}
+                    value={calculateTotalCost().toFixed(2)}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
                   />
@@ -249,8 +254,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Deadline *</label>
                   <input
                     type="date"
-                    value={subcontractor.deadline}
-                    onChange={(e) => onChange({ ...subcontractor, deadline: e.target.value })}
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -258,44 +263,46 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </>
           )}
 
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
-            <div className="mt-2 space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Paid:</span>
-                <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+          {hasContract && (
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
+              <div className="mt-2 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Paid:</span>
+                  <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Remaining:</span>
+                  <span className="font-medium text-orange-600">
+                    €{Math.max(0, calculateTotalCost() - subcontractor.budget_realized).toLocaleString('hr-HR')}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
+                  <span className="text-gray-600">Progress:</span>
+                  <span className="font-medium text-gray-900">
+                    {calculateTotalCost() > 0
+                      ? Math.min(100, ((subcontractor.budget_realized / calculateTotalCost()) * 100)).toFixed(1)
+                      : 0}%
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Remaining:</span>
-                <span className="font-medium text-orange-600">
-                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
-                </span>
+              <div className="mt-3">
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${calculateTotalCost() > 0
+                        ? Math.min(100, (subcontractor.budget_realized / calculateTotalCost()) * 100)
+                        : 0}%`
+                    }}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
-                <span className="text-gray-600">Progress:</span>
-                <span className="font-medium text-gray-900">
-                  {subcontractor.cost > 0
-                    ? Math.min(100, ((subcontractor.budget_realized / subcontractor.cost) * 100)).toFixed(1)
-                    : 0}%
-                </span>
-              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Progress is automatically calculated based on payments
+              </p>
             </div>
-            <div className="mt-3">
-              <div className="w-full bg-blue-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${subcontractor.cost > 0
-                      ? Math.min(100, (subcontractor.budget_realized / subcontractor.cost) * 100)
-                      : 0}%`
-                  }}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-blue-600 mt-2">
-              Progress is automatically calculated based on payments
-            </p>
-          </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4">
             <button
@@ -306,8 +313,18 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </button>
             <button
               onClick={() => {
+                if (!selectedPhaseId) {
+                  alert('Molimo odaberite fazu')
+                  return
+                }
+
                 const updatedSubcontractor = {
                   ...subcontractor,
+                  name,
+                  contact,
+                  job_description: jobDescription,
+                  deadline,
+                  cost: calculateTotalCost(),
                   phase_id: selectedPhaseId,
                   has_contract: hasContract
                 } as any
