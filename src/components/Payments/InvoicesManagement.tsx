@@ -16,12 +16,12 @@ interface InvoiceWithDetails {
   vat_amount: number
   status: string
   created_at: string
+  approved: boolean
   supplier_name?: string
   company_name?: string
   project_name?: string
   phase_name?: string
   contract_number?: string
-  acknowledged?: boolean
 }
 
 const InvoicesManagement: React.FC = () => {
@@ -97,12 +97,12 @@ const InvoicesManagement: React.FC = () => {
           vat_amount: parseFloat(invoice.vat_amount),
           status: invoice.status,
           created_at: invoice.created_at,
+          approved: invoice.approved || false,
           supplier_name: supplierName,
           company_name: companyName,
           project_name: projectName,
           phase_name: phaseName,
-          contract_number: invoice.contract?.contract_number || '-',
-          acknowledged: false
+          contract_number: invoice.contract?.contract_number || '-'
         }
       })
 
@@ -175,14 +175,26 @@ const InvoicesManagement: React.FC = () => {
     a.click()
   }
 
-  const handleAcknowledge = (invoiceId: string) => {
-    setInvoices(prev =>
-      prev.map(inv =>
-        inv.id === invoiceId
-          ? { ...inv, acknowledged: !inv.acknowledged }
-          : inv
+  const handleApprove = async (invoiceId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('accounting_invoices')
+        .update({ approved: !currentStatus })
+        .eq('id', invoiceId)
+
+      if (error) throw error
+
+      setInvoices(prev =>
+        prev.map(inv =>
+          inv.id === invoiceId
+            ? { ...inv, approved: !currentStatus }
+            : inv
+        )
       )
-    )
+    } catch (error) {
+      console.error('Error updating invoice approval:', error)
+      alert('Failed to update invoice approval status')
+    }
   }
 
   if (loading) {
@@ -330,10 +342,11 @@ const InvoicesManagement: React.FC = () => {
                   <tr key={invoice.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => handleAcknowledge(invoice.id)}
+                        onClick={() => handleApprove(invoice.id, invoice.approved)}
                         className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title={invoice.approved ? "Approved" : "Click to approve"}
                       >
-                        {invoice.acknowledged ? (
+                        {invoice.approved ? (
                           <CheckSquare className="w-5 h-5" />
                         ) : (
                           <Square className="w-5 h-5" />
