@@ -1129,7 +1129,11 @@ const AccountingInvoices: React.FC = () => {
                     {visibleColumns.approved && (
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-center w-5 h-5">
-                          {invoice.approved && <Check className="w-5 h-5 text-green-600" />}
+                          {invoice.approved ? (
+                            <Check className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <X className="w-5 h-5 text-red-600" />
+                          )}
                         </div>
                       </td>
                     )}
