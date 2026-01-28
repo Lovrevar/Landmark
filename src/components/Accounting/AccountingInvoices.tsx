@@ -119,6 +119,7 @@ interface Invoice {
   status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'
   paid_amount: number
   remaining_amount: number
+  approved: boolean
   created_at: string
   companies?: { name: string }
   subcontractors?: { name: string }
@@ -209,6 +210,7 @@ const AccountingInvoices: React.FC = () => {
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const saved = localStorage.getItem('accountingInvoicesColumns')
     return saved ? JSON.parse(saved) : {
+      approved: true,
       type: true,
       invoice_number: true,
       company: true,
@@ -258,6 +260,7 @@ const AccountingInvoices: React.FC = () => {
   }
 
   const columnLabels = {
+    approved: 'Odobreno',
     type: 'Tip',
     invoice_number: 'Broj računa',
     company: 'Firma',
@@ -1092,6 +1095,7 @@ const AccountingInvoices: React.FC = () => {
           <table className="w-full min-w-max">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
+                {visibleColumns.approved && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Odobreno</th>}
                 {visibleColumns.type && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>}
                 {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>}
                 {visibleColumns.company && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma</th>}
@@ -1122,6 +1126,13 @@ const AccountingInvoices: React.FC = () => {
                     key={invoice.id}
                     className={`hover:bg-gray-50 ${isOverdue(invoice.due_date, invoice.status) ? 'bg-red-50' : ''}`}
                   >
+                    {visibleColumns.approved && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-center w-5 h-5">
+                          {invoice.approved && <Check className="w-5 h-5 text-green-600" />}
+                        </div>
+                      </td>
+                    )}
                     {visibleColumns.type && (
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
