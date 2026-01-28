@@ -81,6 +81,17 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     }
   }, [visible, projectId])
 
+  useEffect(() => {
+    if (visible) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [visible])
+
   const loadFunders = async () => {
     try {
       setLoadingFunders(true)
@@ -143,8 +154,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900">Add Subcontractor</h3>
@@ -161,7 +172,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <label className="flex items-center cursor-pointer">
               <input
@@ -496,7 +507,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
             </div>
           )}
 
-          <div className="flex justify-end space-x-3 mt-6">
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex-shrink-0">
+          <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
