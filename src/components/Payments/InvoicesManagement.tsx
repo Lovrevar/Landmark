@@ -9,7 +9,7 @@ interface InvoiceWithDetails {
   invoice_number: string
   invoice_type: string
   invoice_category: string
-  invoice_date: string
+  issue_date: string
   due_date: string
   total_amount: number
   base_amount: number
@@ -56,8 +56,12 @@ const InvoicesManagement: React.FC = () => {
           ),
           customer:customers!accounting_invoices_customer_id_fkey(
             id,
-            first_name,
-            last_name
+            name,
+            surname
+          ),
+          retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey(
+            id,
+            name
           ),
           company:accounting_companies!accounting_invoices_company_id_fkey(
             id,
@@ -74,7 +78,7 @@ const InvoicesManagement: React.FC = () => {
           )
         `)
         .in('invoice_category', ['SUBCONTRACTOR', 'RETAIL_SUPPLIER', 'SUPERVISION'])
-        .order('invoice_date', { ascending: false })
+        .order('issue_date', { ascending: false })
 
       if (invoicesError) throw invoicesError
 
@@ -84,9 +88,14 @@ const InvoicesManagement: React.FC = () => {
 
       const enrichedInvoices = (invoicesData || []).map((invoice: any) => {
         const supplierName = invoice.supplier?.name || '-'
-        const customerName = invoice.customer
-          ? `${invoice.customer.first_name} ${invoice.customer.last_name}`
-          : '-'
+
+        let customerName = '-'
+        if (invoice.customer) {
+          customerName = `${invoice.customer.name} ${invoice.customer.surname}`
+        } else if (invoice.retail_customer) {
+          customerName = invoice.retail_customer.name
+        }
+
         const companyName = invoice.company?.name || '-'
         const projectName = invoice.project?.name || '-'
 
@@ -98,7 +107,7 @@ const InvoicesManagement: React.FC = () => {
           invoice_number: invoice.invoice_number,
           invoice_type: invoice.invoice_type,
           invoice_category: invoice.invoice_category,
-          invoice_date: invoice.invoice_date,
+          issue_date: invoice.issue_date,
           due_date: invoice.due_date,
           total_amount: parseFloat(invoice.total_amount),
           base_amount: parseFloat(invoice.base_amount),
@@ -150,8 +159,8 @@ const InvoicesManagement: React.FC = () => {
       invoice.contract_number?.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDateRange =
-      (!dateRange.start || new Date(invoice.invoice_date) >= new Date(dateRange.start)) &&
-      (!dateRange.end || new Date(invoice.invoice_date) <= new Date(dateRange.end))
+      (!dateRange.start || new Date(invoice.issue_date) >= new Date(dateRange.start)) &&
+      (!dateRange.end || new Date(invoice.issue_date) <= new Date(dateRange.end))
 
     const matchesFilter =
       filterStatus === 'all' ||
@@ -167,7 +176,7 @@ const InvoicesManagement: React.FC = () => {
       const entity = i.invoice_type === 'INCOMING_SUPPLIER' ? i.supplier_name : i.customer_name
       return [
         i.invoice_number,
-        format(new Date(i.invoice_date), 'yyyy-MM-dd'),
+        format(new Date(i.issue_date), 'yyyy-MM-dd'),
         entity,
         i.project_name,
         i.phase_name,
@@ -355,7 +364,7 @@ const InvoicesManagement: React.FC = () => {
                       <div className="text-sm font-medium text-gray-900">{invoice.invoice_number}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(invoice.invoice_date), 'MMM dd, yyyy')}
+                      {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
