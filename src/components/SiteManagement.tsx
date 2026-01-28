@@ -128,9 +128,8 @@ const SiteManagement: React.FC = () => {
     }
   }
 
-  const handleUpdateSubcontractor = async () => {
-    if (!editingSubcontractor) return
-    const success = await updateSubcontractor(editingSubcontractor)
+  const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor) => {
+    const success = await updateSubcontractor(updatedSubcontractor)
     if (success) {
       setShowEditModal(false)
       setEditingSubcontractor(null)

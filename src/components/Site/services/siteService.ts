@@ -351,6 +351,8 @@ export const updateSubcontractor = async (
     has_contract?: boolean
   }
 ) => {
+  console.log('updateSubcontractor service called with:', { contractId, updates })
+
   // First, get the contract to find the subcontractor
   const { data: contract, error: contractError } = await supabase
     .from('contracts')
@@ -358,7 +360,12 @@ export const updateSubcontractor = async (
     .eq('id', contractId)
     .single()
 
-  if (contractError) throw contractError
+  if (contractError) {
+    console.error('Error fetching contract:', contractError)
+    throw contractError
+  }
+
+  console.log('Current contract data:', contract)
 
   // Update contract-specific fields in contracts table
   const contractUpdateData: any = {
@@ -377,12 +384,19 @@ export const updateSubcontractor = async (
     contractUpdateData.has_contract = updates.has_contract
   }
 
+  console.log('Updating contract with data:', contractUpdateData)
+
   const { error: contractUpdateError } = await supabase
     .from('contracts')
     .update(contractUpdateData)
     .eq('id', contractId)
 
-  if (contractUpdateError) throw contractUpdateError
+  if (contractUpdateError) {
+    console.error('Error updating contract:', contractUpdateError)
+    throw contractUpdateError
+  }
+
+  console.log('Contract updated successfully')
 
   // Update subcontractor fields (name, contact) in subcontractors table
   const subcontractorUpdateData: any = {
@@ -390,12 +404,19 @@ export const updateSubcontractor = async (
     contact: updates.contact
   }
 
+  console.log('Updating subcontractor with data:', subcontractorUpdateData)
+
   const { error: subError } = await supabase
     .from('subcontractors')
     .update(subcontractorUpdateData)
     .eq('id', contract.subcontractor_id)
 
-  if (subError) throw subError
+  if (subError) {
+    console.error('Error updating subcontractor:', subError)
+    throw subError
+  }
+
+  console.log('Subcontractor updated successfully')
 
   // If phase was changed, recalculate budgets for both old and new phases
   if (updates.phase_id && updates.phase_id !== contract.phase_id) {

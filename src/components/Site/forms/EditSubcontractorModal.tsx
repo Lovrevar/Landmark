@@ -14,7 +14,7 @@ interface EditSubcontractorModalProps {
   onClose: () => void
   subcontractor: Subcontractor | null
   onChange: (updated: Subcontractor) => void
-  onSubmit: () => void
+  onSubmit: (updated: Subcontractor) => void
 }
 
 export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
@@ -329,8 +329,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   has_contract: hasContract
                 } as any
 
-                onChange(updatedSubcontractor)
-                onSubmit()
+                onSubmit(updatedSubcontractor)
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >

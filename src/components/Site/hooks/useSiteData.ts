@@ -312,6 +312,17 @@ export const useSiteData = () => {
   const updateSubcontractor = async (subcontractor: Subcontractor) => {
     try {
       const subData = subcontractor as any
+      console.log('Updating subcontractor with data:', {
+        id: subcontractor.id,
+        name: subcontractor.name,
+        contact: subcontractor.contact,
+        job_description: subcontractor.job_description,
+        deadline: subcontractor.deadline,
+        cost: subcontractor.cost,
+        phase_id: subData.phase_id,
+        has_contract: subData.has_contract
+      })
+
       await siteService.updateSubcontractor(subcontractor.id, {
         name: subcontractor.name,
         contact: subcontractor.contact,
@@ -323,6 +334,7 @@ export const useSiteData = () => {
         has_contract: subData.has_contract
       })
 
+      console.log('Subcontractor updated successfully')
       await fetchProjects()
       return true
     } catch (error) {
