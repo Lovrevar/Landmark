@@ -62,8 +62,14 @@ const AccountingSuppliers: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    contact: ''
+    contact: '',
+    project_id: '',
+    phase_id: ''
   })
+
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([])
+  const [phases, setPhases] = useState<{ id: string; phase_name: string }[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -140,23 +146,69 @@ const AccountingSuppliers: React.FC = () => {
     }
   }
 
+  const loadProjects = async () => {
+    try {
+      setLoadingProjects(true)
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+      setProjects(data || [])
+    } catch (error) {
+      console.error('Error loading projects:', error)
+    } finally {
+      setLoadingProjects(false)
+    }
+  }
+
+  const loadPhases = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('project_phases')
+        .select('id, phase_name')
+        .eq('project_id', projectId)
+        .order('phase_number')
+
+      if (error) throw error
+      setPhases(data || [])
+    } catch (error) {
+      console.error('Error loading phases:', error)
+      setPhases([])
+    }
+  }
+
   const handleOpenAddModal = (supplier?: SupplierSummary) => {
     if (supplier) {
       setEditingSupplier(supplier.id)
       setFormData({
         name: supplier.name,
-        contact: supplier.contact
+        contact: supplier.contact,
+        project_id: '',
+        phase_id: ''
       })
     } else {
       setEditingSupplier(null)
       setFormData({
         name: '',
-        contact: ''
+        contact: '',
+        project_id: '',
+        phase_id: ''
       })
+      loadProjects()
     }
     document.body.style.overflow = 'hidden'
     setShowAddModal(true)
   }
+
+  useEffect(() => {
+    if (formData.project_id) {
+      loadPhases(formData.project_id)
+    } else {
+      setPhases([])
+    }
+  }, [formData.project_id])
 
   const handleCloseAddModal = () => {
     document.body.style.overflow = 'unset'
@@ -179,14 +231,40 @@ const AccountingSuppliers: React.FC = () => {
 
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { data: newSupplier, error: supplierError } = await supabase
           .from('subcontractors')
           .insert([{
             name: formData.name,
             contact: formData.contact
           }])
+          .select()
+          .single()
 
-        if (error) throw error
+        if (supplierError) throw supplierError
+
+        if (formData.project_id && formData.phase_id && newSupplier) {
+          const { count } = await supabase
+            .from('contracts')
+            .select('*', { count: 'exact', head: true })
+            .eq('project_id', formData.project_id)
+
+          const contractNumber = `CONTRACT-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(3, '0')}`
+
+          const { error: contractError } = await supabase
+            .from('contracts')
+            .insert([{
+              contract_number: contractNumber,
+              project_id: formData.project_id,
+              phase_id: formData.phase_id,
+              subcontractor_id: newSupplier.id,
+              job_description: '',
+              contract_amount: 0,
+              has_contract: false,
+              status: 'draft'
+            }])
+
+          if (contractError) throw contractError
+        }
       }
 
       await fetchData()
@@ -501,10 +579,67 @@ const AccountingSuppliers: React.FC = () => {
                   />
                 </div>
 
+                {!editingSupplier && (
+                  <>
+                    <div className="border-t border-gray-200 pt-4 mt-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Poveži sa projektom (opcionalno)</h3>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Projekti
+                          </label>
+                          <select
+                            value={formData.project_id}
+                            onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={loadingProjects}
+                          >
+                            <option value="">Odaberite projekt</option>
+                            {projects.map((project) => (
+                              <option key={project.id} value={project.id}>
+                                {project.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {formData.project_id && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Faza
+                            </label>
+                            <select
+                              value={formData.phase_id}
+                              onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Odaberite fazu</option>
+                              {phases.map((phase) => (
+                                <option key={phase.id} value={phase.id}>
+                                  {phase.phase_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
                     <strong>Napomena:</strong> Nakon dodavanja dobavljača, možete kreirati račune za njih u sekciji "Računi".
-                    Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
+                    {!editingSupplier && formData.project_id && formData.phase_id ? (
+                      <span className="block mt-2">
+                        Dobavljač će biti automatski zakačen na odabrani projekt i fazu kao "bez ugovora". Možete vidjeti dobavljača u "Site Management" modulu za taj projekt.
+                      </span>
+                    ) : !editingSupplier ? (
+                      <span className="block mt-2">
+                        Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
+                      </span>
+                    ) : null}
                   </p>
                 </div>
               </div>
