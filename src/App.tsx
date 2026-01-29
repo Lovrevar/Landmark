@@ -33,6 +33,7 @@ import AccountingBanks from './components/Accounting/AccountingBanks'
 import CompanyCredits from './components/Accounting/CompanyCredits'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
 import AccountingCalendar from './components/Accounting/AccountingCalendar'
+import AccountingLoans from './components/Accounting/AccountingLoans'
 import RetailLandPlots from './components/Retail/RetailLandPlots'
 import RetailCustomers from './components/Retail/RetailCustomers'
 import RetailSales from './components/Retail/RetailSales'
@@ -320,6 +321,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounting-loans"
+          element={
+            <ProtectedRoute>
+              <AccountingLoans />
             </ProtectedRoute>
           }
         />
