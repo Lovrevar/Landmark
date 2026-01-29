@@ -29,7 +29,7 @@ interface BankAccount {
   company_id: string
   bank_name: string
   account_number: string | null
-  balance: number
+  current_balance: number
 }
 
 const AccountingLoans: React.FC = () => {
@@ -73,7 +73,7 @@ const AccountingLoans: React.FC = () => {
           .order('name'),
         supabase
           .from('company_bank_accounts')
-          .select('id, company_id, bank_name, account_number, balance')
+          .select('id, company_id, bank_name, account_number, current_balance')
           .order('bank_name')
       ])
 
@@ -354,7 +354,7 @@ const AccountingLoans: React.FC = () => {
                       <option value="">Odaberite račun</option>
                       {getFromCompanyAccounts().map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
+                          {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
                         </option>
                       ))}
                     </select>
@@ -403,7 +403,7 @@ const AccountingLoans: React.FC = () => {
                       <option value="">Odaberite račun</option>
                       {getToCompanyAccounts().map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
+                          {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
                         </option>
                       ))}
                     </select>
