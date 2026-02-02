@@ -261,7 +261,8 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         base_amount_3: formData.base_amount_3 || 0,
         base_amount_4: formData.base_amount_4 || 0,
         category: formData.category,
-        description: formData.notes || null
+        description: formData.notes || null,
+        approved: false
       }
 
       if (formData.entity_type === 'supplier') {

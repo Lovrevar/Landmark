@@ -199,7 +199,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         base_amount_3: formData.base_amount_3 || 0,
         base_amount_4: formData.base_amount_4 || 0,
         category: formData.category,
-        description: formData.description
+        description: formData.description,
+        approved: true
       }
 
       const { error } = await supabase

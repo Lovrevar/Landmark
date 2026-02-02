@@ -585,6 +585,14 @@ const AccountingInvoices: React.FC = () => {
         invoice_category = 'CUSTOMER'
       }
 
+      // Determine approved status based on invoice type
+      let approved = false
+      if (formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') {
+        approved = true // Office invoices are auto-approved
+      } else if (formData.invoice_type === 'INCOMING_INVESTMENT' && bank_id) {
+        approved = true // Bank invoices are auto-approved
+      }
+
       const invoiceData = {
         invoice_type: formData.invoice_type,
         invoice_category,
@@ -608,6 +616,7 @@ const AccountingInvoices: React.FC = () => {
         category: formData.category,
         project_id: formData.project_id || null,
         description: formData.description,
+        approved,
         created_by: user?.id
       }
 
