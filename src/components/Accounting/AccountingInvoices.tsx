@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
 import DateInput from '../Common/DateInput'
+import CurrencyInput, { formatCurrency } from '../Common/CurrencyInput'
 
 interface Company {
   id: string
@@ -962,7 +963,7 @@ const AccountingInvoices: React.FC = () => {
                 €{invoices
                   .filter(i => i.status === 'UNPAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  .toLocaleString('hr-HR')}
+                  }
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
@@ -977,7 +978,7 @@ const AccountingInvoices: React.FC = () => {
                 €{invoices
                   .filter(i => i.status === 'PARTIALLY_PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  .toLocaleString('hr-HR')}
+                  }
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-yellow-600" />
@@ -1182,20 +1183,20 @@ const AccountingInvoices: React.FC = () => {
                         {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                           <div className="space-y-0.5">
                             {invoice.base_amount_1 > 0 && (
-                              <div className="text-xs">25%: €{invoice.base_amount_1.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">25%: €{formatCurrency(invoice.base_amount_1)}</div>
                             )}
                             {invoice.base_amount_2 > 0 && (
-                              <div className="text-xs">13%: €{invoice.base_amount_2.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">13%: €{formatCurrency(invoice.base_amount_2)}</div>
                             )}
                             {invoice.base_amount_4 > 0 && (
-                              <div className="text-xs">5%: €{invoice.base_amount_4.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">5%: €{formatCurrency(invoice.base_amount_4)}</div>
                             )}
                             {invoice.base_amount_3 > 0 && (
-                              <div className="text-xs">0%: €{invoice.base_amount_3.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">0%: €{formatCurrency(invoice.base_amount_3)}</div>
                             )}
                           </div>
                         ) : (
-                          <div>€{invoice.base_amount.toLocaleString('hr-HR')}</div>
+                          <div>€{formatCurrency(invoice.base_amount)}</div>
                         )}
                       </td>
                     )}
@@ -1204,36 +1205,36 @@ const AccountingInvoices: React.FC = () => {
                         {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                           <div className="space-y-0.5">
                             {invoice.base_amount_1 > 0 && invoice.vat_amount_1 > 0 && (
-                              <div className="text-xs">25%: €{invoice.vat_amount_1.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">25%: €{formatCurrency(invoice.vat_amount_1)}</div>
                             )}
                             {invoice.base_amount_2 > 0 && invoice.vat_amount_2 > 0 && (
-                              <div className="text-xs">13%: €{invoice.vat_amount_2.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">13%: €{formatCurrency(invoice.vat_amount_2)}</div>
                             )}
                             {invoice.base_amount_4 > 0 && invoice.vat_amount_4 > 0 && (
-                              <div className="text-xs">5%: €{invoice.vat_amount_4.toLocaleString('hr-HR')}</div>
+                              <div className="text-xs">5%: €{formatCurrency(invoice.vat_amount_4)}</div>
                             )}
                             {invoice.base_amount_3 > 0 && (
                               <div className="text-xs">0%: €0.00</div>
                             )}
                           </div>
                         ) : (
-                          <div>{invoice.vat_rate}% (€{invoice.vat_amount.toLocaleString('hr-HR')})</div>
+                          <div>{invoice.vat_rate}% (€{formatCurrency(invoice.vat_amount)})</div>
                         )}
                       </td>
                     )}
                     {visibleColumns.total_amount && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        €{invoice.total_amount.toLocaleString('hr-HR')}
+                        €{formatCurrency(invoice.total_amount)}
                       </td>
                     )}
                     {visibleColumns.paid_amount && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600">
-                        €{invoice.paid_amount.toLocaleString('hr-HR')}
+                        €{formatCurrency(invoice.paid_amount)}
                       </td>
                     )}
                     {visibleColumns.remaining_amount && (
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                        €{invoice.remaining_amount.toLocaleString('hr-HR')}
+                        €{formatCurrency(invoice.remaining_amount)}
                       </td>
                     )}
                     {visibleColumns.status && (
@@ -1312,7 +1313,7 @@ const AccountingInvoices: React.FC = () => {
                 €{filteredInvoices
                   .filter(i => i.status !== 'PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  .toLocaleString('hr-HR')}
+                  }
               </span>
             </div>
             <div>
@@ -1592,14 +1593,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 25%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_1 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_1: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                  <CurrencyInput
+                    value={formData.base_amount_1}
+                    onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
+                    placeholder="0,00"
+                    min={0}
                   />
                 </div>
 
@@ -1607,14 +1605,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 13%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_2 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_2: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                  <CurrencyInput
+                    value={formData.base_amount_2}
+                    onChange={(value) => setFormData({ ...formData, base_amount_2: value })}
+                    placeholder="0,00"
+                    min={0}
                   />
                 </div>
 
@@ -1622,14 +1617,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 5%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_4 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_4: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                  <CurrencyInput
+                    value={formData.base_amount_4}
+                    onChange={(value) => setFormData({ ...formData, base_amount_4: value })}
+                    placeholder="0,00"
+                    min={0}
                   />
                 </div>
 
@@ -1637,14 +1629,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 0%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_3 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_3: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                  <CurrencyInput
+                    value={formData.base_amount_3}
+                    onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
+                    placeholder="0,00"
+                    min={0}
                   />
                 </div>
 
@@ -1756,7 +1745,7 @@ const AccountingInvoices: React.FC = () => {
                       <option value="">Odaberi stan</option>
                       {getCustomerApartmentsByProject(formData.customer_id, formData.project_id).map(apt => (
                         <option key={apt.id} value={apt.id}>
-                          {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{apt.price.toLocaleString('hr-HR')})
+                          {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{formatCurrency(apt.price)})
                         </option>
                       ))}
                     </select>
@@ -1785,15 +1774,15 @@ const AccountingInvoices: React.FC = () => {
                     <div className="space-y-1 pb-2 border-b border-gray-200">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Osnovica (PDV 25%):</span>
-                        <span className="font-medium">€{formData.base_amount_1.toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">PDV 25%:</span>
-                        <span className="font-medium">€{(formData.base_amount_1 * 0.25).toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_1 * 0.25)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span>€{(formData.base_amount_1 * 1.25).toLocaleString('hr-HR')}</span>
+                        <span>€{formatCurrency(formData.base_amount_1 * 1.25)}</span>
                       </div>
                     </div>
                   )}
@@ -1802,15 +1791,15 @@ const AccountingInvoices: React.FC = () => {
                     <div className="space-y-1 pb-2 border-b border-gray-200">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Osnovica (PDV 13%):</span>
-                        <span className="font-medium">€{formData.base_amount_2.toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">PDV 13%:</span>
-                        <span className="font-medium">€{(formData.base_amount_2 * 0.13).toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_2 * 0.13)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span>€{(formData.base_amount_2 * 1.13).toLocaleString('hr-HR')}</span>
+                        <span>€{formatCurrency(formData.base_amount_2 * 1.13)}</span>
                       </div>
                     </div>
                   )}
@@ -1819,15 +1808,15 @@ const AccountingInvoices: React.FC = () => {
                     <div className="space-y-1 pb-2 border-b border-gray-200">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Osnovica (PDV 5%):</span>
-                        <span className="font-medium">€{formData.base_amount_4.toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">PDV 5%:</span>
-                        <span className="font-medium">€{(formData.base_amount_4 * 0.05).toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_4 * 0.05)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span>€{(formData.base_amount_4 * 1.05).toLocaleString('hr-HR')}</span>
+                        <span>€{formatCurrency(formData.base_amount_4 * 1.05)}</span>
                       </div>
                     </div>
                   )}
@@ -1836,7 +1825,7 @@ const AccountingInvoices: React.FC = () => {
                     <div className="space-y-1 pb-2 border-b border-gray-200">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Osnovica (PDV 0%):</span>
-                        <span className="font-medium">€{formData.base_amount_3.toLocaleString('hr-HR')}</span>
+                        <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">PDV 0%:</span>
@@ -1844,7 +1833,7 @@ const AccountingInvoices: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span>€{formData.base_amount_3.toLocaleString('hr-HR')}</span>
+                        <span>€{formatCurrency(formData.base_amount_3)}</span>
                       </div>
                     </div>
                   )}
@@ -1856,7 +1845,7 @@ const AccountingInvoices: React.FC = () => {
                       (formData.base_amount_2 * 1.13) +
                       (formData.base_amount_4 * 1.05) +
                       formData.base_amount_3
-                    ).toLocaleString('hr-HR')}</span>
+                    )}</span>
                   </div>
                 </div>
               )}
@@ -1902,15 +1891,15 @@ const AccountingInvoices: React.FC = () => {
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Ukupan iznos:</span>
-                  <span className="font-medium">€{payingInvoice.total_amount.toLocaleString('hr-HR')}</span>
+                  <span className="font-medium">€{formatCurrency(payingInvoice.total_amount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Plaćeno:</span>
-                  <span className="font-medium text-green-600">€{payingInvoice.paid_amount.toLocaleString('hr-HR')}</span>
+                  <span className="font-medium text-green-600">€{formatCurrency(payingInvoice.paid_amount)}</span>
                 </div>
                 <div className="flex justify-between text-base border-t border-gray-300 pt-2">
                   <span className="font-semibold text-gray-900">Preostalo za plaćanje:</span>
-                  <span className="font-bold text-red-600">€{payingInvoice.remaining_amount.toLocaleString('hr-HR')}</span>
+                  <span className="font-bold text-red-600">€{formatCurrency(payingInvoice.remaining_amount)}</span>
                 </div>
               </div>
 
@@ -1953,7 +1942,7 @@ const AccountingInvoices: React.FC = () => {
                             .filter(acc => acc.company_id === payingInvoice.company_id)
                             .map(account => (
                               <option key={account.id} value={account.id}>
-                                {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                                {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{formatCurrency(account.current_balance)})
                               </option>
                             ))}
                         </select>
@@ -1983,7 +1972,7 @@ const AccountingInvoices: React.FC = () => {
                               const available = credit.amount - credit.used_amount
                               return (
                                 <option key={credit.id} value={credit.id}>
-                                  {credit.credit_name} (Dostupno: €{available.toLocaleString('hr-HR')})
+                                  {credit.credit_name} (Dostupno: €{formatCurrency(available)})
                                 </option>
                               )
                             })}
@@ -2084,7 +2073,7 @@ const AccountingInvoices: React.FC = () => {
                                 .filter(acc => acc.company_id === paymentFormData.cesija_company_id)
                                 .map(account => (
                                   <option key={account.id} value={account.id}>
-                                    {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                                    {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{formatCurrency(account.current_balance)})
                                   </option>
                                 ))}
                             </select>
@@ -2114,7 +2103,7 @@ const AccountingInvoices: React.FC = () => {
                                   const available = credit.amount - credit.used_amount
                                   return (
                                     <option key={credit.id} value={credit.id}>
-                                      {credit.credit_name} (Dostupno: €{available.toLocaleString('hr-HR')})
+                                      {credit.credit_name} (Dostupno: €{formatCurrency(available)})
                                     </option>
                                   )
                                 })}
@@ -2147,18 +2136,14 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Iznos plaćanja *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    max={payingInvoice.remaining_amount}
+                  <CurrencyInput
                     value={paymentFormData.amount}
-                    onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
+                    onChange={(value) => setPaymentFormData({ ...paymentFormData, amount: value })}
+                    placeholder="0,00"
+                    min={0.01}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Max iznos: €{payingInvoice.remaining_amount.toLocaleString('hr-HR')}
+                    Max iznos: €{formatCurrency(payingInvoice.remaining_amount)}
                   </p>
                 </div>
 
@@ -2211,7 +2196,7 @@ const AccountingInvoices: React.FC = () => {
                   <p className="text-sm text-blue-800 font-medium">
                     {paymentFormData.amount === payingInvoice.remaining_amount
                       ? 'Račun će biti označen kao PLAĆEN'
-                      : `Preostalo nakon plaćanja: €${(payingInvoice.remaining_amount - paymentFormData.amount).toLocaleString('hr-HR')}`}
+                      : `Preostalo nakon plaćanja: €${formatCurrency(payingInvoice.remaining_amount - paymentFormData.amount)}`}
                   </p>
                   {paymentFormData.amount < payingInvoice.remaining_amount && (
                     <p className="text-xs text-blue-700">
