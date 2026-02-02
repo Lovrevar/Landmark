@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart } from 'lucide-react'
+import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
@@ -168,6 +168,7 @@ const AccountingInvoices: React.FC = () => {
   const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
   const [showBankInvoiceModal, setShowBankInvoiceModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null)
 
@@ -675,6 +676,16 @@ const AccountingInvoices: React.FC = () => {
     document.body.style.overflow = 'unset'
     setShowPaymentModal(false)
     setPayingInvoice(null)
+  }
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setViewingInvoice(invoice)
+    document.body.style.overflow = 'hidden'
+  }
+
+  const handleCloseViewModal = () => {
+    setViewingInvoice(null)
+    document.body.style.overflow = 'unset'
   }
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
@@ -1264,6 +1275,13 @@ const AccountingInvoices: React.FC = () => {
                     )}
                     <td className="px-4 py-4 whitespace-nowrap text-sm sticky right-0 bg-white">
                       <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleViewInvoice(invoice)}
+                          title="Pregled"
+                          className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors duration-200"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         {invoice.status !== 'PAID' && (
                           <button
                             onClick={() => handleOpenPaymentModal(invoice)}
@@ -2266,6 +2284,265 @@ const AccountingInvoices: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {viewingInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Detalji računa</h2>
+              <button
+                onClick={handleCloseViewModal}
+                className="p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Osnovni podaci</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-500">Broj računa:</span>
+                      <p className="text-sm font-medium text-gray-900">{viewingInvoice.invoice_number}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Tip računa:</span>
+                      <p className={`text-sm font-semibold ${getTypeColor(viewingInvoice.invoice_type)}`}>
+                        {getTypeLabel(viewingInvoice.invoice_type)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Status:</span>
+                      <p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(viewingInvoice.status)}`}>
+                          {viewingInvoice.status === 'UNPAID' ? 'Neplaćeno' :
+                           viewingInvoice.status === 'PARTIALLY_PAID' ? 'Djelomično plaćeno' : 'Plaćeno'}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Odobren:</span>
+                      <p className="flex items-center gap-2">
+                        {viewingInvoice.approved ? (
+                          <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                            <Check className="w-4 h-4" /> Da
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-600 text-sm font-medium">
+                            <X className="w-4 h-4" /> Ne
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Datumi</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-500">Datum izdavanja:</span>
+                      <p className="text-sm font-medium text-gray-900">
+                        {format(new Date(viewingInvoice.issue_date), 'dd.MM.yyyy')}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Datum dospijeća:</span>
+                      <p className={`text-sm font-medium ${isOverdue(viewingInvoice.due_date, viewingInvoice.status) ? 'text-red-600' : 'text-gray-900'}`}>
+                        {format(new Date(viewingInvoice.due_date), 'dd.MM.yyyy')}
+                        {isOverdue(viewingInvoice.due_date, viewingInvoice.status) && (
+                          <span className="ml-2 text-xs">(Zakašnjelo)</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Datum kreiranja:</span>
+                      <p className="text-sm font-medium text-gray-900">
+                        {format(new Date(viewingInvoice.created_at), 'dd.MM.yyyy HH:mm')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-600 mb-2">Subjekti</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm text-gray-500">Kompanija:</span>
+                    <p className="text-sm font-medium text-gray-900">{viewingInvoice.companies?.name || '-'}</p>
+                  </div>
+                  {(viewingInvoice.subcontractors || viewingInvoice.customers || viewingInvoice.investors ||
+                    viewingInvoice.banks || viewingInvoice.office_suppliers || viewingInvoice.retail_suppliers ||
+                    viewingInvoice.retail_customers) && (
+                    <div>
+                      <span className="text-sm text-gray-500">
+                        {viewingInvoice.invoice_type.includes('SUPPLIER') ? 'Dobavljač' :
+                         viewingInvoice.invoice_type.includes('SALES') ? 'Kupac' :
+                         viewingInvoice.invoice_type.includes('INVESTMENT') ? 'Investitor' :
+                         viewingInvoice.invoice_type.includes('BANK') ? 'Banka' :
+                         viewingInvoice.invoice_type.includes('OFFICE') ? 'Office dobavljač' : 'Partner'}:
+                      </span>
+                      <p className="text-sm font-medium text-gray-900">
+                        {getSupplierCustomerName(viewingInvoice) || '-'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {(viewingInvoice.projects || viewingInvoice.contracts) && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Projekti i ugovori</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingInvoice.projects && (
+                      <div>
+                        <span className="text-sm text-gray-500">Projekt:</span>
+                        <p className="text-sm font-medium text-gray-900">{viewingInvoice.projects.name}</p>
+                      </div>
+                    )}
+                    {viewingInvoice.contracts && (
+                      <div>
+                        <span className="text-sm text-gray-500">Ugovor:</span>
+                        <p className="text-sm font-medium text-gray-900">
+                          {viewingInvoice.contracts.contract_number}
+                          {viewingInvoice.contracts.job_description && (
+                            <span className="block text-xs text-gray-600 mt-1">
+                              {viewingInvoice.contracts.job_description}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(viewingInvoice.reference_number || viewingInvoice.iban) && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Platni detalji</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingInvoice.reference_number && (
+                      <div>
+                        <span className="text-sm text-gray-500">Poziv na broj:</span>
+                        <p className="text-sm font-medium text-gray-900">{viewingInvoice.reference_number}</p>
+                      </div>
+                    )}
+                    {viewingInvoice.iban && (
+                      <div>
+                        <span className="text-sm text-gray-500">IBAN:</span>
+                        <p className="text-sm font-medium text-gray-900">{viewingInvoice.iban}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-600 mb-2">Financijski podaci</h3>
+                <div className="space-y-3">
+                  {(viewingInvoice.base_amount_1 > 0 || viewingInvoice.base_amount_2 > 0 ||
+                    viewingInvoice.base_amount_3 > 0 || viewingInvoice.base_amount_4 > 0) ? (
+                    <div>
+                      <span className="text-sm text-gray-500 mb-2 block">Osnovica po stopama PDV-a:</span>
+                      <div className="bg-gray-50 p-3 rounded space-y-2">
+                        {viewingInvoice.base_amount_1 > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-700">25% PDV:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">Osnovica: €{formatCurrency(viewingInvoice.base_amount_1)}</p>
+                              <p className="text-xs text-gray-600">PDV: €{formatCurrency(viewingInvoice.vat_amount_1)}</p>
+                            </div>
+                          </div>
+                        )}
+                        {viewingInvoice.base_amount_2 > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-700">13% PDV:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">Osnovica: €{formatCurrency(viewingInvoice.base_amount_2)}</p>
+                              <p className="text-xs text-gray-600">PDV: €{formatCurrency(viewingInvoice.vat_amount_2)}</p>
+                            </div>
+                          </div>
+                        )}
+                        {viewingInvoice.base_amount_4 > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-700">5% PDV:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">Osnovica: €{formatCurrency(viewingInvoice.base_amount_4)}</p>
+                              <p className="text-xs text-gray-600">PDV: €{formatCurrency(viewingInvoice.vat_amount_4)}</p>
+                            </div>
+                          </div>
+                        )}
+                        {viewingInvoice.base_amount_3 > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-700">0% PDV:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">Osnovica: €{formatCurrency(viewingInvoice.base_amount_3)}</p>
+                              <p className="text-xs text-gray-600">PDV: €0.00</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Osnovica:</span>
+                      <p className="text-sm font-medium text-gray-900">€{formatCurrency(viewingInvoice.base_amount)}</p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Ukupan PDV:</span>
+                    <p className="text-sm font-medium text-gray-900">€{formatCurrency(viewingInvoice.vat_amount)}</p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-base font-semibold text-gray-700">Ukupan iznos:</span>
+                    <p className="text-lg font-bold text-gray-900">€{formatCurrency(viewingInvoice.total_amount)}</p>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-green-50 p-2 rounded">
+                    <span className="text-sm text-green-700">Plaćeni iznos:</span>
+                    <p className="text-sm font-semibold text-green-700">€{formatCurrency(viewingInvoice.paid_amount)}</p>
+                  </div>
+
+                  {viewingInvoice.remaining_amount > 0 && (
+                    <div className="flex justify-between items-center bg-red-50 p-2 rounded">
+                      <span className="text-sm text-red-700">Preostali iznos:</span>
+                      <p className="text-sm font-semibold text-red-700">€{formatCurrency(viewingInvoice.remaining_amount)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {viewingInvoice.category && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Kategorija</h3>
+                  <p className="text-sm font-medium text-gray-900">{viewingInvoice.category}</p>
+                </div>
+              )}
+
+              {viewingInvoice.description && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Opis</h3>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewingInvoice.description}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
+              <button
+                onClick={handleCloseViewModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+              >
+                Zatvori
+              </button>
+            </div>
           </div>
         </div>
       )}
