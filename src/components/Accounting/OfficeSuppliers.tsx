@@ -629,16 +629,16 @@ const OfficeSuppliers: React.FC = () => {
                             {invoice.description || '-'}
                           </td>
                           <td className="px-4 py-3 text-sm text-right text-gray-900">
-                            €{parseFloat(invoice.base_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €{parseFloat(invoice.base_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                            €{parseFloat(invoice.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €{parseFloat(invoice.total_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-sm text-right text-green-600">
-                            €{parseFloat(invoice.paid_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €{parseFloat(invoice.paid_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-sm text-right text-orange-600">
-                            €{parseFloat(invoice.remaining_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            €{parseFloat(invoice.remaining_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
