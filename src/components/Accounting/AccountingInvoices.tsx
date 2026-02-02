@@ -1211,16 +1211,16 @@ const AccountingInvoices: React.FC = () => {
                         {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                           <div className="space-y-0.5">
                             {invoice.base_amount_1 > 0 && (
-                              <div className="text-xs">25%: €{formatCurrency(invoice.base_amount_1)}</div>
+                              <div className="text-xs">€{formatCurrency(invoice.base_amount_1)}</div>
                             )}
                             {invoice.base_amount_2 > 0 && (
-                              <div className="text-xs">13%: €{formatCurrency(invoice.base_amount_2)}</div>
+                              <div className="text-xs">€{formatCurrency(invoice.base_amount_2)}</div>
                             )}
                             {invoice.base_amount_4 > 0 && (
-                              <div className="text-xs">5%: €{formatCurrency(invoice.base_amount_4)}</div>
+                              <div className="text-xs">€{formatCurrency(invoice.base_amount_4)}</div>
                             )}
                             {invoice.base_amount_3 > 0 && (
-                              <div className="text-xs">0%: €{formatCurrency(invoice.base_amount_3)}</div>
+                              <div className="text-xs">€{formatCurrency(invoice.base_amount_3)}</div>
                             )}
                           </div>
                         ) : (
