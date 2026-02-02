@@ -1310,7 +1310,7 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <span className="text-gray-600">Ukupno neplaćeno: </span>
               <span className="font-semibold text-red-600">
-                €{filteredInvoicese
+                €{filteredInvoices
                   .filter(i => i.status !== 'PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
                   }
