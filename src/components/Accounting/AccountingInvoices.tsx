@@ -509,6 +509,8 @@ const AccountingInvoices: React.FC = () => {
         contract_id: invoice.contract_id || '',
         milestone_id: invoice.milestone_id || '',
         invoice_number: invoice.invoice_number,
+        reference_number: invoice.reference_number || '',
+        iban: invoice.iban || '',
         issue_date: invoice.issue_date,
         due_date: invoice.due_date,
         base_amount: invoice.base_amount,
