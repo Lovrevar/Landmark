@@ -1844,7 +1844,7 @@ const AccountingInvoices: React.FC = () => {
                       (formData.base_amount_1 * 1.25) +
                       (formData.base_amount_2 * 1.13) +
                       (formData.base_amount_4 * 1.05) +
-                      formData.base_amount_3
+                      formData.base_amount_2
                     )}</span>
                   </div>
                 </div>
