@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { CreditCard, Plus, Calendar, Percent, DollarSign, Clock, Edit, Trash2, X } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import DateInput from '../Common/DateInput'
 
 interface Company {
   id: string
@@ -455,10 +456,9 @@ const CompanyCredits: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, start_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -466,10 +466,9 @@ const CompanyCredits: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, end_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />

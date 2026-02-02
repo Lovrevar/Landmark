@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Building2, CreditCard, DollarSign, TrendingUp, TrendingDown, Plus, X, Edit2, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
+import DateInput from '../Common/DateInput'
 
 interface BankCredit {
   id: string
@@ -860,29 +861,26 @@ const AccountingBanks: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={newCredit.start_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, start_date: e.target.value })}
+                    onChange={(value) => setNewCredit({ ...newCredit, start_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Maturity Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={newCredit.maturity_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, maturity_date: e.target.value })}
+                    onChange={(value) => setNewCredit({ ...newCredit, maturity_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Usage Expiration Date</label>
-                  <input
-                    type="date"
-                    value={newCredit.usage_expiration_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, usage_expiration_date: e.target.value })}
+                  <DateInput
+                    value={newCredit.usage_expiration_date || ''}
+                    onChange={(value) => setNewCredit({ ...newCredit, usage_expiration_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>

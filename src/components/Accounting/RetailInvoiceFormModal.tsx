@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { X } from 'lucide-react'
+import DateInput from '../Common/DateInput'
 
 interface Company {
   id: string
@@ -498,10 +499,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Datum izdavanja *
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.issue_date}
-                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, issue_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -511,10 +511,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Datum dospijeća *
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, due_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />

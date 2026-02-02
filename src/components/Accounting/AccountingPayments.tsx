@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { CreditCard, Plus, Search, Filter, Edit, Trash2, X, Columns, Check, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
+import DateInput from '../Common/DateInput'
 
 interface Invoice {
   id: string
@@ -948,10 +949,9 @@ const AccountingPayments: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Datum plaćanja *
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.payment_date}
-                    onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, payment_date: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
