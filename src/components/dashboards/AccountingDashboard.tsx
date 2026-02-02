@@ -103,7 +103,7 @@ const AccountingDashboard: React.FC = () => {
       // Fetch all invoices with VAT
       const { data: invoices, error } = await supabase
         .from('accounting_invoices')
-        .select('invoice_type, vat_amount, issue_date')
+        .select('invoice_type, vat_amount_1, vat_amount_2, vat_amount_3, vat_amount_4, issue_date')
 
       if (error) throw error
 
@@ -114,19 +114,29 @@ const AccountingDashboard: React.FC = () => {
       const incomingInvoices = invoices?.filter(inv =>
         inv.invoice_type.startsWith('INCOMING') &&
         inv.invoice_type !== 'INCOMING_INVESTOR' &&
-        inv.invoice_type !== 'INCOMING_BANK_CREDIT'
+        inv.invoice_type !== 'INCOMING_BANK_CREDIT' &&
+        inv.invoice_type !== 'INCOMING_BANK_DRAWN'
       ) || []
 
-      const totalVATCollected = outgoingInvoices.reduce((sum, inv) => sum + parseFloat(inv.vat_amount || 0), 0)
-      const totalVATPaid = incomingInvoices.reduce((sum, inv) => sum + parseFloat(inv.vat_amount || 0), 0)
+      const calculateTotalVAT = (invoice: any) => {
+        return (
+          parseFloat(invoice.vat_amount_1 || 0) +
+          parseFloat(invoice.vat_amount_2 || 0) +
+          parseFloat(invoice.vat_amount_3 || 0) +
+          parseFloat(invoice.vat_amount_4 || 0)
+        )
+      }
+
+      const totalVATCollected = outgoingInvoices.reduce((sum, inv) => sum + calculateTotalVAT(inv), 0)
+      const totalVATPaid = incomingInvoices.reduce((sum, inv) => sum + calculateTotalVAT(inv), 0)
 
       const currentMonthVATCollected = outgoingInvoices
         .filter(inv => inv.issue_date >= currentMonthStart && inv.issue_date <= currentMonthEnd)
-        .reduce((sum, inv) => sum + parseFloat(inv.vat_amount || 0), 0)
+        .reduce((sum, inv) => sum + calculateTotalVAT(inv), 0)
 
       const currentMonthVATPaid = incomingInvoices
         .filter(inv => inv.issue_date >= currentMonthStart && inv.issue_date <= currentMonthEnd)
-        .reduce((sum, inv) => sum + parseFloat(inv.vat_amount || 0), 0)
+        .reduce((sum, inv) => sum + calculateTotalVAT(inv), 0)
 
       setVatStats({
         totalVATCollected,
@@ -163,6 +173,7 @@ const AccountingDashboard: React.FC = () => {
         const invoiceType = (p.accounting_invoices as any).invoice_type
         return invoiceType.startsWith('OUTGOING') ||
                invoiceType === 'INCOMING_BANK_CREDIT' ||
+               invoiceType === 'INCOMING_BANK_DRAWN' ||
                invoiceType === 'INCOMING_INVESTOR'
       }) || []
 
@@ -170,6 +181,7 @@ const AccountingDashboard: React.FC = () => {
         const invoiceType = (p.accounting_invoices as any).invoice_type
         return invoiceType.startsWith('INCOMING') &&
                invoiceType !== 'INCOMING_BANK_CREDIT' &&
+               invoiceType !== 'INCOMING_BANK_DRAWN' &&
                invoiceType !== 'INCOMING_INVESTOR'
       }) || []
 
@@ -266,10 +278,12 @@ const AccountingDashboard: React.FC = () => {
 
         if (invoiceType.startsWith('OUTGOING') ||
             invoiceType === 'INCOMING_BANK_CREDIT' ||
+            invoiceType === 'INCOMING_BANK_DRAWN' ||
             invoiceType === 'INCOMING_INVESTOR') {
           stats.incoming += amount
         } else if (invoiceType.startsWith('INCOMING') &&
                    invoiceType !== 'INCOMING_BANK_CREDIT' &&
+                   invoiceType !== 'INCOMING_BANK_DRAWN' &&
                    invoiceType !== 'INCOMING_INVESTOR') {
           stats.outgoing += amount
         }
@@ -330,11 +344,15 @@ const AccountingDashboard: React.FC = () => {
         const data = monthlyMap.get(month)!
         const amount = parseFloat(payment.amount)
 
-        if (invoiceType === 'OUTGOING_SALES' ||
+        if (invoiceType.startsWith('OUTGOING') ||
             invoiceType === 'INCOMING_BANK_CREDIT' ||
+            invoiceType === 'INCOMING_BANK_DRAWN' ||
             invoiceType === 'INCOMING_INVESTOR') {
           data.incoming += amount
-        } else {
+        } else if (invoiceType.startsWith('INCOMING') &&
+                   invoiceType !== 'INCOMING_BANK_CREDIT' &&
+                   invoiceType !== 'INCOMING_BANK_DRAWN' &&
+                   invoiceType !== 'INCOMING_INVESTOR') {
           data.outgoing += amount
         }
       }
@@ -541,7 +559,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Outgoing</p>
+                <p className="text-sm text-gray-600">Total Incoming</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalIncoming.toLocaleString('en-US')}
                 </p>
@@ -571,7 +589,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingDown className="w-6 h-6 text-red-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Incoming</p>
+                <p className="text-sm text-gray-600">Total Outgoing</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalOutgoing.toLocaleString('en-US')}
                 </p>

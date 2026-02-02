@@ -20,7 +20,7 @@ const Dashboard: React.FC = () => {
         return <SupervisionDashboard key={currentProfile} />
       case 'Funding':
         return <InvestmentDashboard key={currentProfile} />
-      case 'Cashflow':
+      case 'Accounting':
         return <AccountingDashboard key={currentProfile} />
       case 'Retail':
         return <RetailDashboard key={currentProfile} />
