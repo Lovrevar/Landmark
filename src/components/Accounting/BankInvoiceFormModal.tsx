@@ -395,7 +395,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 Osnovica PDV 0% (€)
               </label>
               <CurrencyInput
-                value={formData.base_amount_3}
+                value={formData.base_amount_2}
                 onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                 placeholder="0,00"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
