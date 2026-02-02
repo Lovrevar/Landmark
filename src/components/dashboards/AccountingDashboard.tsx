@@ -99,11 +99,14 @@ const AccountingDashboard: React.FC = () => {
     try {
       const currentMonthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd')
       const currentMonthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+      const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
 
-      // Fetch all invoices with VAT
+      // Fetch only PAID invoices with VAT
       const { data: invoices, error } = await supabase
         .from('accounting_invoices')
-        .select('invoice_type, vat_amount_1, vat_amount_2, vat_amount_3, vat_amount_4, issue_date')
+        .select('invoice_type, vat_amount_1, vat_amount_2, vat_amount_3, vat_amount_4, issue_date, status')
+        .eq('status', 'PAID')
+        .gte('issue_date', yearStart)
 
       if (error) throw error
 
@@ -156,8 +159,9 @@ const AccountingDashboard: React.FC = () => {
       const currentMonthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd')
       const previousMonthStart = format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
       const previousMonthEnd = format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
+      const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
 
-      // Fetch all payments
+      // Fetch payments for current year
       const { data: payments, error } = await supabase
         .from('accounting_payments')
         .select(`
@@ -166,6 +170,7 @@ const AccountingDashboard: React.FC = () => {
           invoice_id,
           accounting_invoices!inner(invoice_type)
         `)
+        .gte('payment_date', yearStart)
 
       if (error) throw error
 
@@ -220,6 +225,8 @@ const AccountingDashboard: React.FC = () => {
 
   const fetchTopCompanies = async () => {
     try {
+      const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
+
       const { data: companies, error } = await supabase
         .from('accounting_companies')
         .select('id, name')
@@ -243,9 +250,11 @@ const AccountingDashboard: React.FC = () => {
           .from('accounting_payments')
           .select(`
             amount,
+            payment_date,
             accounting_invoices!inner(invoice_type, company_id)
           `)
-          .in('accounting_invoices.company_id', companyIds),
+          .in('accounting_invoices.company_id', companyIds)
+          .gte('payment_date', yearStart),
 
         Promise.all(
           companyIds.map(id =>
@@ -440,7 +449,7 @@ const AccountingDashboard: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-1">PDV Collected (Total)</p>
+            <p className="text-sm text-gray-600 mb-1">PDV Collected ({new Date().getFullYear()})</p>
             <p className="text-2xl font-bold text-green-600">
               €{vatStats.totalVATCollected.toLocaleString('en-US')}
             </p>
@@ -449,7 +458,7 @@ const AccountingDashboard: React.FC = () => {
             </p>
           </div>
           <div className="bg-white rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-1">PDV Paid (Total)</p>
+            <p className="text-sm text-gray-600 mb-1">PDV Paid ({new Date().getFullYear()})</p>
             <p className="text-2xl font-bold text-red-600">
               €{vatStats.totalVATPaid.toLocaleString('en-US')}
             </p>
@@ -559,7 +568,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Incoming</p>
+                <p className="text-sm text-gray-600">Total Incoming ({new Date().getFullYear()})</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalIncoming.toLocaleString('en-US')}
                 </p>
@@ -589,7 +598,7 @@ const AccountingDashboard: React.FC = () => {
                 <TrendingDown className="w-6 h-6 text-red-600" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Outgoing</p>
+                <p className="text-sm text-gray-600">Total Outgoing ({new Date().getFullYear()})</p>
                 <p className="text-2xl font-bold text-gray-900">
                   €{cashFlowStats.totalOutgoing.toLocaleString('en-US')}
                 </p>
@@ -619,7 +628,7 @@ const AccountingDashboard: React.FC = () => {
                 <DollarSign className={`w-6 h-6 ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Net Cash Flow</p>
+                <p className="text-sm text-gray-600">Net Cash Flow ({new Date().getFullYear()})</p>
                 <p className={`text-2xl font-bold ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                   €{Math.abs(cashFlowStats.netCashFlow).toLocaleString('en-US')}
                 </p>
@@ -645,7 +654,7 @@ const AccountingDashboard: React.FC = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center">
               <Building2 className="w-5 h-5 text-gray-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Top 5 Companies by Net Balance</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Top 5 Companies by Net Balance ({new Date().getFullYear()})</h2>
             </div>
           </div>
           <div className="p-6">
