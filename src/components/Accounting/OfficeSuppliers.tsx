@@ -307,7 +307,7 @@ const OfficeSuppliers: React.FC = () => {
               <div className="space-y-2 mb-4">
                 {supplier.tax_id && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">PIB:</span>
+                    <span className="text-gray-600">OIB:</span>
                     <span className="font-medium text-gray-900">{supplier.tax_id}</span>
                   </div>
                 )}
