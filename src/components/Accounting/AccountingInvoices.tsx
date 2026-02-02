@@ -1630,7 +1630,7 @@ const AccountingInvoices: React.FC = () => {
                     Osnovica PDV 0%
                   </label>
                   <CurrencyInput
-                    value={formData.base_amount_3}
+                    value={formData.base_amount_2}
                     onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                     placeholder="0,00"
                     min={0}
@@ -1821,7 +1821,7 @@ const AccountingInvoices: React.FC = () => {
                     </div>
                   )}
 
-                  {formData.base_amount_3 > 0 && (
+                  {formData.base_amount_2 > 0 && (
                     <div className="space-y-1 pb-2 border-b border-gray-200">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Osnovica (PDV 0%):</span>
@@ -1833,7 +1833,7 @@ const AccountingInvoices: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span>€{formatCurrency(formData.base_amount_3)}</span>
+                        <span>€{formatCurrency(formData.base_amount_2)}</span>
                       </div>
                     </div>
                   )}
