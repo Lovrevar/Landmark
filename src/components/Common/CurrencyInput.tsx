@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface CurrencyInputProps {
   value: number | null | undefined
@@ -22,10 +22,18 @@ export default function CurrencyInput({
   disabled = false,
   min
 }: CurrencyInputProps) {
-  const format = (val: number | null | undefined): string => {
-    if (val === null || val === undefined || val === 0) return ''
-    return hrFormatter.format(val)
-  }
+  const [displayValue, setDisplayValue] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
+
+  useEffect(() => {
+    if (!isFocused) {
+      if (value === null || value === undefined || value === 0) {
+        setDisplayValue('')
+      } else {
+        setDisplayValue(hrFormatter.format(value))
+      }
+    }
+  }, [value, isFocused])
 
   const parse = (val: string): number => {
     if (!val) return 0
@@ -39,12 +47,37 @@ export default function CurrencyInput({
     return num
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    setDisplayValue(inputValue)
+    onChange(parse(inputValue))
+  }
+
+  const handleFocus = () => {
+    setIsFocused(true)
+    if (value !== null && value !== undefined && value !== 0) {
+      const rawValue = value.toString().replace('.', ',')
+      setDisplayValue(rawValue)
+    }
+  }
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    if (value !== null && value !== undefined && value !== 0) {
+      setDisplayValue(hrFormatter.format(value))
+    } else {
+      setDisplayValue('')
+    }
+  }
+
   return (
     <input
       type="text"
       inputMode="decimal"
-      value={format(value)}
-      onChange={(e) => onChange(parse(e.target.value))}
+      value={displayValue}
+      onChange={handleChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       placeholder={placeholder}
       className={className}
       disabled={disabled}
