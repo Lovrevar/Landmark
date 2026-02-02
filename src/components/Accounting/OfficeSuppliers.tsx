@@ -376,11 +376,11 @@ const OfficeSuppliers: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Plaćeno:</span>
-                  <span className="font-medium text-green-600">€{supplier.paid_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-green-600">€{supplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Preostalo:</span>
-                  <span className="font-medium text-orange-600">€{supplier.remaining_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-orange-600">€{supplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
