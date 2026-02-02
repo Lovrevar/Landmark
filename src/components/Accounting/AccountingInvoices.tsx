@@ -1840,7 +1840,7 @@ const AccountingInvoices: React.FC = () => {
 
                   <div className="flex justify-between text-base font-bold pt-2">
                     <span>UKUPNO:</span>
-                    <span>€{(
+                    <span>€{formatCurrency(
                       (formData.base_amount_1 * 1.25) +
                       (formData.base_amount_2 * 1.13) +
                       (formData.base_amount_4 * 1.05) +

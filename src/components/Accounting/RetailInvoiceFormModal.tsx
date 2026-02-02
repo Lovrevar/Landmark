@@ -593,15 +593,15 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                   <div className="space-y-1 pb-2 border-b border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Osnovica (PDV 25%):</span>
-                      <span className="font-medium">€{formData.base_amount_1.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">PDV 25%:</span>
-                      <span className="font-medium">€{calc.vat1.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(calc.vat1)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span>€{calc.subtotal1.toFixed(2)}</span>
+                      <span>€{formatCurrency(calc.subtotal1)}</span>
                     </div>
                   </div>
                 )}
@@ -610,15 +610,15 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                   <div className="space-y-1 pb-2 border-b border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Osnovica (PDV 13%):</span>
-                      <span className="font-medium">€{formData.base_amount_2.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">PDV 13%:</span>
-                      <span className="font-medium">€{calc.vat2.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(calc.vat2)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span>€{calc.subtotal2.toFixed(2)}</span>
+                      <span>€{formatCurrency(calc.subtotal2)}</span>
                     </div>
                   </div>
                 )}
@@ -627,15 +627,15 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                   <div className="space-y-1 pb-2 border-b border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Osnovica (PDV 5%):</span>
-                      <span className="font-medium">€{formData.base_amount_4.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">PDV 5%:</span>
-                      <span className="font-medium">€{calc.vat4.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(calc.vat4)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span>€{calc.subtotal4.toFixed(2)}</span>
+                      <span>€{formatCurrency(calc.subtotal4)}</span>
                     </div>
                   </div>
                 )}
@@ -644,7 +644,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                   <div className="space-y-1 pb-2 border-b border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Osnovica (PDV 0%):</span>
-                      <span className="font-medium">€{formData.base_amount_3.toFixed(2)}</span>
+                      <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">PDV 0%:</span>
@@ -652,14 +652,14 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                     </div>
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span>€{calc.subtotal3.toFixed(2)}</span>
+                      <span>€{formatCurrency(calc.subtotal3)}</span>
                     </div>
                   </div>
                 )}
 
                 <div className="flex justify-between text-base font-bold pt-2">
                   <span>UKUPNO:</span>
-                  <span>€{calc.totalAmount.toFixed(2)}</span>
+                  <span>€{formatCurrency(calc.totalAmount)}</span>
                 </div>
               </div>
             )}
@@ -670,7 +670,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               </label>
               <input
                 type="text"
-                value={calc.totalAmount.toFixed(2)}
+                value={calc.totalAmount}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-semibold"
                 disabled
                 readOnly
