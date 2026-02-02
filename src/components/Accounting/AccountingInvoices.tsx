@@ -1535,7 +1535,7 @@ const AccountingInvoices: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Firma (koja izdaje račun) *
+                    Firma*
                   </label>
                   <select
                     value={formData.company_id}
