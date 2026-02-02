@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { CreditCard, Plus, Search, Filter, Edit, Trash2, X, Columns, Check, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../Common/DateInput'
+import CurrencyInput from '../Common/CurrencyInput'
 
 interface Invoice {
   id: string
@@ -961,11 +962,9 @@ const AccountingPayments: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Iznos *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
+                  <CurrencyInput
                     value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                    onChange={(value) => setFormData({ ...formData, amount: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />

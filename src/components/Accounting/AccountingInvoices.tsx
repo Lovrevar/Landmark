@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
 import DateInput from '../Common/DateInput'
+import CurrencyInput from '../Common/CurrencyInput'
 
 interface Company {
   id: string
@@ -1592,14 +1593,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 25%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_1 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_1: parseFloat(e.target.value) || 0 })}
+                  <CurrencyInput
+                    value={formData.base_amount_1}
+                    onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -1607,14 +1605,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 13%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_2 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_2: parseFloat(e.target.value) || 0 })}
+                  <CurrencyInput
+                    value={formData.base_amount_2}
+                    onChange={(value) => setFormData({ ...formData, base_amount_2: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -1622,14 +1617,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 5%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_4 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_4: parseFloat(e.target.value) || 0 })}
+                  <CurrencyInput
+                    value={formData.base_amount_4}
+                    onChange={(value) => setFormData({ ...formData, base_amount_4: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -1637,14 +1629,11 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Osnovica PDV 0%
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_amount_3 || ''}
-                    onChange={(e) => setFormData({ ...formData, base_amount_3: parseFloat(e.target.value) || 0 })}
+                  <CurrencyInput
+                    value={formData.base_amount_3}
+                    onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -2147,15 +2136,13 @@ const AccountingInvoices: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Iznos plaćanja *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    max={payingInvoice.remaining_amount}
+                  <CurrencyInput
                     value={paymentFormData.amount}
-                    onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: parseFloat(e.target.value) })}
+                    onChange={(value) => setPaymentFormData({ ...paymentFormData, amount: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    min={0.01}
+                    max={payingInvoice.remaining_amount}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Max iznos: €{payingInvoice.remaining_amount.toLocaleString('hr-HR')}

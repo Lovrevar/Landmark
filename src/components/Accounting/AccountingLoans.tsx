@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { TrendingUp, Plus, Search, Trash2, X, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../Common/DateInput'
+import CurrencyInput from '../Common/CurrencyInput'
 
 interface CompanyLoan {
   id: string
@@ -432,15 +433,12 @@ const AccountingLoans: React.FC = () => {
                     Iznos <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">€</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium pointer-events-none">€</span>
+                    <CurrencyInput
+                      value={parseFloat(formData.amount) || 0}
+                      onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
                       className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
+                      placeholder="0,00"
                       required
                     />
                   </div>

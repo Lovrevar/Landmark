@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { X } from 'lucide-react'
 import DateInput from '../Common/DateInput'
+import CurrencyInput from '../Common/CurrencyInput'
 
 interface Company {
   id: string
@@ -523,14 +524,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Osnovica PDV 25% (€)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.base_amount_1 || ''}
-                onChange={(e) => setFormData({ ...formData, base_amount_1: parseFloat(e.target.value) || 0 })}
+              <CurrencyInput
+                value={formData.base_amount_1}
+                onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 
@@ -538,14 +536,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Osnovica PDV 13% (€)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.base_amount_2 || ''}
-                onChange={(e) => setFormData({ ...formData, base_amount_2: parseFloat(e.target.value) || 0 })}
+              <CurrencyInput
+                value={formData.base_amount_2}
+                onChange={(value) => setFormData({ ...formData, base_amount_2: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 
@@ -553,14 +548,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Osnovica PDV 5% (€)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.base_amount_4 || ''}
-                onChange={(e) => setFormData({ ...formData, base_amount_4: parseFloat(e.target.value) || 0 })}
+              <CurrencyInput
+                value={formData.base_amount_4}
+                onChange={(value) => setFormData({ ...formData, base_amount_4: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 
@@ -568,14 +560,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Osnovica PDV 0% (€)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.base_amount_3 || ''}
-                onChange={(e) => setFormData({ ...formData, base_amount_3: parseFloat(e.target.value) || 0 })}
+              <CurrencyInput
+                value={formData.base_amount_3}
+                onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 
