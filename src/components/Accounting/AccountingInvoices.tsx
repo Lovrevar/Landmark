@@ -1671,7 +1671,7 @@ const AccountingInvoices: React.FC = () => {
                     Osnovica PDV 0%
                   </label>
                   <CurrencyInput
-                    value={formData.base_amount_2}
+                    value={formData.base_amount_3}
                     onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                     placeholder="0,00"
                     min={0}
