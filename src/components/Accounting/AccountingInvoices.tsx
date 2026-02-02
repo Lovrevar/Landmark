@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
 import DateInput from '../Common/DateInput'
-import CurrencyInput, { formatCurrency } from '../Common/CurrencyInput'
+import CurrencyInput, { formatCurrency, formatCurrencyFlexible } from '../Common/CurrencyInput'
 
 interface Company {
   id: string
@@ -960,10 +960,10 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
-                €{invoices
+                €{formatCurrencyFlexible(invoices
                   .filter(i => i.status === 'UNPAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  }
+                  )}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
@@ -975,10 +975,10 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Djelomično plaćeno</p>
               <p className="text-2xl font-bold text-yellow-600">
-                €{invoices
+                €{formatCurrencyFlexible(invoices
                   .filter(i => i.status === 'PARTIALLY_PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  }
+                  )}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-yellow-600" />

@@ -89,3 +89,8 @@ export function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) return '0,00'
   return hrFormatter.format(value)
 }
+
+export function formatCurrencyFlexible(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '0'
+  return value.toLocaleString('hr-HR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
