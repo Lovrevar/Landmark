@@ -458,7 +458,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                   </div>
                 )}
 
-                {formData.base_amount_3 > 0 && (
+                {formData.base_amount_2 > 0 && (
                   <div className="space-y-1 pb-2 border-b border-gray-200">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Osnovica (PDV 0%):</span>
