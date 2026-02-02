@@ -547,8 +547,8 @@ const OfficeSuppliers: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900">Računi - {selectedSupplier.name}</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   Ukupno: {supplierInvoices.length} računa |
-                  Plaćeno: €{selectedSupplier.paid_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} |
-                  Preostalo: €{selectedSupplier.remaining_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Plaćeno: €{selectedSupplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} |
+                  Preostalo: €{selectedSupplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <button
