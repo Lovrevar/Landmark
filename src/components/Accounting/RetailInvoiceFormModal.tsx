@@ -663,19 +663,6 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                 </div>
               </div>
             )}
-
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ukupno (€)
-              </label>
-              <input
-                type="text"
-                value={calc.totalAmount}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-semibold"
-                disabled
-                readOnly
-              />
-            </div>
           </div>
 
           <div>
