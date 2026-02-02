@@ -42,6 +42,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     bank_id: '',
     bank_credit_id: '',
     invoice_number: '',
+    reference_number: '',
+    iban: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: new Date().toISOString().split('T')[0],
     base_amount: '',
@@ -192,6 +194,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         bank_id: formData.bank_id,
         bank_credit_id: formData.bank_credit_id || null,
         invoice_number: formData.invoice_number,
+        reference_number: formData.reference_number || null,
+        iban: formData.iban || null,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
         base_amount_1: formData.base_amount_1 || 0,
@@ -325,6 +329,32 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="npr. INV-2024-001"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Poziv na broj
+              </label>
+              <input
+                type="text"
+                value={formData.reference_number}
+                onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="HR12-3456-7890"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                IBAN
+              </label>
+              <input
+                type="text"
+                value={formData.iban}
+                onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="HR1234567890123456789"
               />
             </div>
 

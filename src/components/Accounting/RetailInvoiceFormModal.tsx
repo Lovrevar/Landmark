@@ -76,6 +76,8 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     retail_contract_id: '',
     retail_milestone_id: '',
     invoice_number: '',
+    reference_number: '',
+    iban: '',
     issue_date: '',
     due_date: '',
     base_amount: '',
@@ -254,6 +256,8 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         retail_contract_id: formData.retail_contract_id,
         retail_milestone_id: formData.retail_milestone_id || null,
         invoice_number: formData.invoice_number,
+        reference_number: formData.reference_number || null,
+        iban: formData.iban || null,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
         base_amount_1: formData.base_amount_1 || 0,
@@ -494,6 +498,32 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="npr. INV-2025-001"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Poziv na broj
+              </label>
+              <input
+                type="text"
+                value={formData.reference_number}
+                onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="HR12-3456-7890"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                IBAN
+              </label>
+              <input
+                type="text"
+                value={formData.iban}
+                onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="HR1234567890123456789"
               />
             </div>
 

@@ -97,6 +97,8 @@ interface Invoice {
   milestone_id: string | null
   office_supplier_id: string | null
   invoice_number: string
+  reference_number?: string | null
+  iban?: string | null
   issue_date: string
   due_date: string
   base_amount: number
@@ -181,6 +183,8 @@ const AccountingInvoices: React.FC = () => {
     contract_id: '',
     milestone_id: '',
     invoice_number: '',
+    reference_number: '',
+    iban: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: '',
     base_amount: 0,
@@ -607,6 +611,8 @@ const AccountingInvoices: React.FC = () => {
         contract_id: formData.contract_id || null,
         milestone_id: formData.milestone_id || null,
         invoice_number: formData.invoice_number,
+        reference_number: formData.reference_number || null,
+        iban: formData.iban || null,
         issue_date: formData.issue_date,
         due_date: formData.due_date,
         base_amount_1: formData.base_amount_1 || 0,
@@ -1571,6 +1577,32 @@ const AccountingInvoices: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Poziv na broj
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.reference_number}
+                    onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="HR12-3456-7890"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    IBAN
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.iban}
+                    onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="HR1234567890123456789"
                   />
                 </div>
 
