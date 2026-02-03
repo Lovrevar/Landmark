@@ -42,6 +42,7 @@ const BanksManagement: React.FC = () => {
     bank_id: '',
     company_id: '',
     project_id: '',
+    credit_name: '',
     credit_type: 'construction_loan_senior' as const,
     amount: 0,
     interest_rate: 0,
@@ -220,8 +221,8 @@ const BanksManagement: React.FC = () => {
       return
     }
 
-    if (!newCredit.bank_id || !newCredit.amount || !newCredit.start_date) {
-      alert('Please fill in required fields')
+    if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
+      alert('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
       return
     }
 
@@ -315,6 +316,7 @@ const BanksManagement: React.FC = () => {
       bank_id: '',
       company_id: '',
       project_id: '',
+      credit_name: '',
       credit_type: 'construction_loan_senior',
       amount: 0,
       interest_rate: 0,
@@ -340,6 +342,7 @@ const BanksManagement: React.FC = () => {
       bank_id: credit.bank_id,
       company_id: (credit as any).company_id || '',
       project_id: credit.project_id || '',
+      credit_name: credit.credit_name || '',
       credit_type: `${credit.credit_type}_${credit.credit_seniority}`,
       amount: credit.amount,
       interest_rate: credit.interest_rate,
@@ -380,7 +383,7 @@ const BanksManagement: React.FC = () => {
   const handleUpdateCredit = async () => {
     if (!editingCredit) return
 
-    if (!newCredit.bank_id || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
+    if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
       alert('Please fill in all required fields')
       return
     }
@@ -429,6 +432,7 @@ const BanksManagement: React.FC = () => {
         .update({
           bank_id: newCredit.bank_id,
           project_id: newCredit.project_id || null,
+          credit_name: newCredit.credit_name,
           credit_type: actualCreditType,
           credit_seniority: seniority,
           amount: newCredit.amount,
@@ -862,6 +866,17 @@ const BanksManagement: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Name *</label>
+                  <input
+                    type="text"
+                    value={newCredit.credit_name}
+                    onChange={(e) => setNewCredit({ ...newCredit, credit_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Kozara Construction Loan 2024"
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
