@@ -76,7 +76,7 @@ const SubcontractorManagement: React.FC = () => {
       // Fetch all accounting invoices for subcontractors
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
-        .select('supplier_id, contract_id, remaining_amount, base_amount')
+        .select('id, supplier_id, contract_id, remaining_amount, base_amount, paid_amount')
         .eq('invoice_category', 'supervision')
         .not('supplier_id', 'is', null)
 
@@ -113,11 +113,15 @@ const SubcontractorManagement: React.FC = () => {
         const contractsWithAgreement = contracts.filter(c => c.has_contract && c.cost > 0)
         const totalContractValue = contractsWithAgreement.reduce((sum, c) => sum + c.cost, 0)
 
-        // Total Paid = budget_realized (actual payments made)
-        const totalPaid = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
+        // Get invoices for this subcontractor
+        const subInvoices = invoicesData?.filter(inv => inv.supplier_id === sub.id) || []
+
+        // Total Paid = sum of paid_amount from invoices (actual payments made)
+        const totalPaid = subInvoices.reduce((sum, inv) => {
+          return sum + parseFloat(inv.paid_amount?.toString() || '0')
+        }, 0)
 
         // Calculate remaining from invoices (unpaid amounts)
-        const subInvoices = invoicesData?.filter(inv => inv.supplier_id === sub.id) || []
         const totalRemaining = subInvoices.reduce((sum, inv) => {
           return sum + parseFloat(inv.remaining_amount?.toString() || '0')
         }, 0)
