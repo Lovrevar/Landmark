@@ -38,10 +38,13 @@ interface BankCredit {
 interface BankWithCredits {
   id: string
   name: string
-  oib: string
-  is_bank: boolean
-  bank_id: string
+  contact_person?: string
+  contact_email?: string
+  contact_phone?: string
   total_credit_limit: number
+  outstanding_debt: number
+  available_funds: number
+  interest_rate: number
   total_used: number
   total_repaid: number
   total_outstanding: number
@@ -121,11 +124,10 @@ const AccountingBanks: React.FC = () => {
 
       if (companiesError) throw companiesError
 
-      // Fetch all banks (companies marked as banks)
+      // Fetch all banks from banks table
       const { data: banksData, error: banksError } = await supabase
-        .from('accounting_companies')
-        .select('id, name, oib, is_bank, bank_id')
-        .eq('is_bank', true)
+        .from('banks')
+        .select('*')
         .order('name')
 
       if (banksError) throw banksError
@@ -134,8 +136,6 @@ const AccountingBanks: React.FC = () => {
       const banksWithCredits: BankWithCredits[] = []
 
       for (const bank of banksData || []) {
-        if (!bank.bank_id) continue
-
         const { data: creditsData, error: creditsError } = await supabase
           .from('bank_credits')
           .select(`
@@ -145,7 +145,7 @@ const AccountingBanks: React.FC = () => {
             projects(id, name),
             accounting_companies(name)
           `)
-          .eq('bank_id', bank.bank_id)
+          .eq('bank_id', bank.id)
           .order('start_date', { ascending: false })
 
         if (creditsError) throw creditsError
@@ -538,7 +538,12 @@ const AccountingBanks: React.FC = () => {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">{bank.name}</h2>
-                      <p className="text-sm text-gray-600">OIB: {bank.oib}</p>
+                      {bank.contact_person && (
+                        <p className="text-sm text-gray-600">{bank.contact_person}</p>
+                      )}
+                      {bank.contact_email && (
+                        <p className="text-xs text-gray-500">{bank.contact_email}</p>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -751,7 +756,7 @@ const AccountingBanks: React.FC = () => {
                   >
                     <option value="">Select bank</option>
                     {banks.map(bank => (
-                      <option key={bank.bank_id} value={bank.bank_id}>
+                      <option key={bank.id} value={bank.id}>
                         {bank.name}
                       </option>
                     ))}

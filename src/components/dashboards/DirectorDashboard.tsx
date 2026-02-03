@@ -482,7 +482,7 @@ const DirectorDashboard: React.FC = () => {
   const fetchFundingData = async () => {
     try {
       const { data: investors } = await supabase.from('investors').select('*')
-      const { data: companies } = await supabase.from('accounting_companies').select('*').eq('is_bank', true)
+      const { data: companies } = await supabase.from('banks').select('*')
       const { data: bankCredits } = await supabase
         .from('bank_credits')
         .select('amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date')

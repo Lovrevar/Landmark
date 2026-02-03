@@ -200,6 +200,7 @@ const GeneralReports: React.FC = () => {
     const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('*')
     const { data: accountingPayments } = await supabase.from('accounting_payments').select('*')
     const { data: accountingCompanies } = await supabase.from('accounting_companies').select('*')
+    const { data: banks } = await supabase.from('banks').select('*')
     const { data: companyBankAccounts } = await supabase.from('company_bank_accounts').select('*')
     const { data: ticCostStructures } = await supabase.from('tic_cost_structures').select('*')
     const { data: officeSuppliers } = await supabase.from('office_suppliers').select('*')
@@ -219,6 +220,7 @@ const GeneralReports: React.FC = () => {
     const accountingInvoicesArray = accountingInvoices || []
     const accountingPaymentsArray = accountingPayments || []
     const accountingCompaniesArray = accountingCompanies || []
+    const banksArray = banks || []
     const companyBankAccountsArray = companyBankAccounts || []
     const ticCostStructuresArray = ticCostStructures || []
     const officeSuppliersArray = officeSuppliers || []
@@ -520,7 +522,7 @@ const GeneralReports: React.FC = () => {
         total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
         available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.available_balance || 0) - (bc.drawn_amount || 0)), 0),
         active_investors: investorsArray.length,
-        active_banks: accountingCompaniesArray.filter(c => c.is_bank).length,
+        active_banks: banksArray.length,
         bank_credits: bankCreditsArray.length,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService

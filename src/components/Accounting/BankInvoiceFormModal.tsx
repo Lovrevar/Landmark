@@ -12,8 +12,8 @@ interface BankInvoiceFormModalProps {
 interface BankCompany {
   id: string
   name: string
-  oib: string
-  bank_id: string | null
+  contact_person?: string
+  contact_email?: string
 }
 
 interface BankCredit {
@@ -90,9 +90,8 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const fetchBanks = async () => {
     try {
       const { data, error } = await supabase
-        .from('accounting_companies')
-        .select('id, name, oib, bank_id')
-        .eq('is_bank', true)
+        .from('banks')
+        .select('id, name, contact_person, contact_email')
         .order('name')
 
       if (error) throw error
@@ -103,18 +102,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     }
   }
 
-  const fetchCredits = async (bankCompanyId: string) => {
+  const fetchCredits = async (bankId: string) => {
     try {
-      const selectedBank = banks.find(b => b.id === bankCompanyId)
-      if (!selectedBank || !selectedBank.bank_id) {
-        setCredits([])
-        return
-      }
-
       const { data, error } = await supabase
         .from('bank_credits')
         .select('id, company_id, credit_name, amount, outstanding_balance')
-        .eq('bank_id', selectedBank.bank_id)
+        .eq('bank_id', bankId)
         .order('credit_name')
 
       if (error) throw error
@@ -130,7 +123,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       const { data, error } = await supabase
         .from('accounting_companies')
         .select('id, name')
-        .eq('is_bank', false)
         .order('name')
 
       if (error) throw error

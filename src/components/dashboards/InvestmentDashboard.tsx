@@ -33,7 +33,13 @@ interface Company {
   id: string
   name: string
   oib: string
-  is_bank: boolean
+}
+
+interface Bank {
+  id: string
+  name: string
+  contact_person?: string
+  contact_email?: string
 }
 
 interface BankCredit {
@@ -81,6 +87,7 @@ const InvestmentDashboard: React.FC = () => {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
+  const [banks, setBanks] = useState<Bank[]>([])
   const [bankCredits, setBankCredits] = useState<BankCredit[]>([])
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary>({
@@ -107,22 +114,23 @@ const InvestmentDashboard: React.FC = () => {
       const [
         { data: projectsData },
         { data: companiesData },
+        { data: banksData },
         { data: creditsData }
       ] = await Promise.all([
         supabase.from('projects').select('*').order('start_date', { ascending: false }),
         supabase.from('accounting_companies').select('*').order('name'),
+        supabase.from('banks').select('*').order('name'),
         supabase.from('bank_credits').select(`
           *,
-          company:accounting_companies(id, name, oib, is_bank),
+          company:accounting_companies(id, name, oib),
           project:projects(id, name, location, budget, status)
         `).order('created_at', { ascending: false })
       ])
 
       const projects = projectsData || []
       const companies = companiesData || []
+      const banks = banksData || []
       const credits = creditsData || []
-
-      const banks = companies.filter(c => c.is_bank === true)
 
       const total_portfolio_value = projects.reduce((sum, p) => sum + Number(p.budget), 0)
       const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
@@ -193,6 +201,7 @@ const InvestmentDashboard: React.FC = () => {
 
       setProjects(projects)
       setCompanies(companies)
+      setBanks(banks)
       setBankCredits(credits)
       setRecentActivities(activities.slice(0, 5))
       setFinancialSummary({
@@ -221,8 +230,6 @@ const InvestmentDashboard: React.FC = () => {
       </div>
     )
   }
-
-  const banks = companies.filter(c => c.is_bank === true)
 
   return (
     <div className="space-y-6">
