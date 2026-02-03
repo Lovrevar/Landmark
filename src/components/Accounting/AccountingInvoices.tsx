@@ -1007,7 +1007,7 @@ const AccountingInvoices: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Ukupno računa</p>
+              <p className="text-sm text-gray-600">Prikazano računa</p>
               <p className="text-2xl font-bold text-gray-900">{filteredInvoices.length}</p>
             </div>
             <FileText className="w-8 h-8 text-blue-600" />
