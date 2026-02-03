@@ -107,10 +107,13 @@ const SubcontractorManagement: React.FC = () => {
           }
         })
 
-        const contractsWithAgreement = contracts.filter(c => c.has_contract && c.cost > 0)
-        const totalContractValue = contractsWithAgreement.reduce((sum, c) => sum + c.cost, 0)
-        const totalPaid = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
-        const totalPaidWithContract = contractsWithAgreement.reduce((sum, c) => sum + c.budget_realized, 0)
+        const allContractIds = subContracts.map(c => c.id)
+        const allInvoicesForSub = invoicesData?.filter(inv => allContractIds.includes(inv.contract_id)) || []
+
+        const totalPaid = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+        const totalRemaining = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
+        const totalValue = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
+
         const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
         const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length
 
@@ -118,9 +121,9 @@ const SubcontractorManagement: React.FC = () => {
           name: sub.name,
           contact: sub.contact,
           total_contracts: contracts.length,
-          total_contract_value: totalContractValue,
+          total_contract_value: totalValue,
           total_paid: totalPaid,
-          total_remaining: totalContractValue - totalPaidWithContract,
+          total_remaining: totalRemaining,
           active_contracts: activeContracts,
           completed_contracts: completedContracts,
           contracts
