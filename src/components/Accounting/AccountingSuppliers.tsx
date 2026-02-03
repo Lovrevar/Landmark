@@ -289,12 +289,29 @@ const AccountingSuppliers: React.FC = () => {
         if (supplierError) throw supplierError
 
         if (formData.project_id && formData.phase_id && newSupplier) {
-          const { count } = await supabase
+          const { data: existingContracts } = await supabase
             .from('contracts')
-            .select('*', { count: 'exact', head: true })
+            .select('contract_number')
             .eq('project_id', formData.project_id)
+            .not('contract_number', 'is', null)
 
-          const contractNumber = `CONTRACT-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(3, '0')}`
+          const year = new Date().getFullYear()
+          const prefix = `CONTRACT-${year}-`
+
+          let maxNumber = 0
+          if (existingContracts && existingContracts.length > 0) {
+            existingContracts.forEach(contract => {
+              if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
+                const numPart = contract.contract_number.replace(prefix, '')
+                const num = parseInt(numPart, 10)
+                if (!isNaN(num) && num > maxNumber) {
+                  maxNumber = num
+                }
+              }
+            })
+          }
+
+          const contractNumber = `${prefix}${String(maxNumber + 1).padStart(3, '0')}`
 
           const { error: contractError } = await supabase
             .from('contracts')
