@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { TrendingUp, AlertCircle, DollarSign, Users } from 'lucide-react'
+import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet } from 'lucide-react'
 
 interface DebtSummary {
   supplier_id: string
@@ -181,6 +181,148 @@ const DebtStatus: React.FC = () => {
     }
   }
 
+  const getSupplierTypeText = (type: string) => {
+    switch (type) {
+      case 'retail_supplier':
+        return 'Retail'
+      case 'office_supplier':
+        return 'Office'
+      default:
+        return 'Site'
+    }
+  }
+
+  const exportToExcel = () => {
+    const headers = ['Firma', 'Tip', 'Računi', 'Neisplaćeno (€)', 'Isplaćeno (€)', 'Ukupno (€)']
+
+    const rows = sortedData.map(debt => [
+      debt.supplier_name,
+      getSupplierTypeText(debt.supplier_type),
+      debt.invoice_count.toString(),
+      debt.total_unpaid.toFixed(2),
+      debt.total_paid.toFixed(2),
+      (debt.total_unpaid + debt.total_paid).toFixed(2)
+    ])
+
+    rows.push([
+      'UKUPNO',
+      '',
+      '',
+      totalUnpaid.toFixed(2),
+      totalPaid.toFixed(2),
+      (totalUnpaid + totalPaid).toFixed(2)
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `stanje_duga_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const exportToPDF = async () => {
+    const jsPDF = (await import('jspdf')).default
+    const doc = new jsPDF()
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.text('Stanje duga', 14, 20)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Izvještaj generiran: ${new Date().toLocaleDateString('hr-HR')}`, 14, 28)
+
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Sažetak:', 14, 38)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Ukupno dobavljača: ${totalSuppliers}`, 14, 45)
+    doc.text(`Dobavljači s dugom: ${suppliersWithDebt}`, 14, 51)
+    doc.text(`Ukupno neisplaćeno: €${totalUnpaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, 57)
+    doc.text(`Ukupno isplaćeno: €${totalPaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, 63)
+
+    let yPosition = 75
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.text('Popis dobavljača:', 14, yPosition)
+    yPosition += 8
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Firma', 14, yPosition)
+    doc.text('Tip', 80, yPosition)
+    doc.text('Računi', 105, yPosition)
+    doc.text('Neisplaćeno', 130, yPosition, { align: 'right' })
+    doc.text('Isplaćeno', 165, yPosition, { align: 'right' })
+    doc.text('Ukupno', 195, yPosition, { align: 'right' })
+    yPosition += 6
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+
+    sortedData.forEach((debt, index) => {
+      if (yPosition > 270) {
+        doc.addPage()
+        yPosition = 20
+
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(9)
+        doc.text('Firma', 14, yPosition)
+        doc.text('Tip', 80, yPosition)
+        doc.text('Računi', 105, yPosition)
+        doc.text('Neisplaćeno', 130, yPosition, { align: 'right' })
+        doc.text('Isplaćeno', 165, yPosition, { align: 'right' })
+        doc.text('Ukupno', 195, yPosition, { align: 'right' })
+        yPosition += 6
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+      }
+
+      const firmName = debt.supplier_name.length > 35 ? debt.supplier_name.substring(0, 32) + '...' : debt.supplier_name
+      doc.text(firmName, 14, yPosition)
+      doc.text(getSupplierTypeText(debt.supplier_type), 80, yPosition)
+      doc.text(debt.invoice_count.toString(), 105, yPosition)
+      doc.text(`€${debt.total_unpaid.toFixed(2)}`, 130, yPosition, { align: 'right' })
+      doc.text(`€${debt.total_paid.toFixed(2)}`, 165, yPosition, { align: 'right' })
+      doc.text(`€${(debt.total_unpaid + debt.total_paid).toFixed(2)}`, 195, yPosition, { align: 'right' })
+
+      yPosition += 6
+    })
+
+    if (yPosition > 265) {
+      doc.addPage()
+      yPosition = 20
+    }
+
+    yPosition += 5
+    doc.setDrawColor(0, 0, 0)
+    doc.line(14, yPosition, 195, yPosition)
+    yPosition += 6
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('UKUPNO:', 14, yPosition)
+    doc.text(`€${totalUnpaid.toFixed(2)}`, 130, yPosition, { align: 'right' })
+    doc.text(`€${totalPaid.toFixed(2)}`, 165, yPosition, { align: 'right' })
+    doc.text(`€${(totalUnpaid + totalPaid).toFixed(2)}`, 195, yPosition, { align: 'right' })
+
+    doc.save(`stanje_duga_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -194,9 +336,27 @@ const DebtStatus: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Stanje duga</h1>
-        <p className="text-sm text-gray-600 mt-1">Pregled svih neisplaćenih obveza prema dobavljačima</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Stanje duga</h1>
+          <p className="text-sm text-gray-600 mt-1">Pregled svih neisplaćenih obveza prema dobavljačima</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={exportToExcel}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Export Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
