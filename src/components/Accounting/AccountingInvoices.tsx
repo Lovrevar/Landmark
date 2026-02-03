@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart, Eye } from 'lucide-react'
+import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart, Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
@@ -162,6 +162,8 @@ const AccountingInvoices: React.FC = () => {
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
+  const [sortField, setSortField] = useState<'due_date' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
@@ -744,20 +746,41 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch =
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.subcontractors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '').toLowerCase().includes(searchTerm.toLowerCase())
+  const handleSort = (field: 'due_date') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
 
-    const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
-    const matchesStatus = filterStatus === 'ALL' || invoice.status === filterStatus
-    const matchesCompany = filterCompany === 'ALL' || invoice.company_id === filterCompany
+  const filteredInvoices = invoices
+    .filter(invoice => {
+      const matchesSearch =
+        invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.subcontractors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '').toLowerCase().includes(searchTerm.toLowerCase())
 
-    return matchesSearch && matchesType && matchesStatus && matchesCompany
-  })
+      const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
+      const matchesStatus = filterStatus === 'ALL' || invoice.status === filterStatus
+      const matchesCompany = filterCompany === 'ALL' || invoice.company_id === filterCompany
+
+      return matchesSearch && matchesType && matchesStatus && matchesCompany
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0
+
+      if (sortField === 'due_date') {
+        const dateA = new Date(a.due_date).getTime()
+        const dateB = new Date(b.due_date).getTime()
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
+      }
+
+      return 0
+    })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1110,6 +1133,8 @@ const AccountingInvoices: React.FC = () => {
                 setFilterType('ALL')
                 setFilterStatus('ALL')
                 setFilterCompany('ALL')
+                setSortField(null)
+                setSortDirection('asc')
               }}
               className="flex items-center justify-center px-4 py-2 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
@@ -1132,7 +1157,25 @@ const AccountingInvoices: React.FC = () => {
                 {visibleColumns.supplier_customer && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dobavljač/Kupac</th>}
                 {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategorija</th>}
                 {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum izdavanja</th>}
-                {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dospijeće</th>}
+                {visibleColumns.due_date && (
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort('due_date')}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Dospijeće</span>
+                      {sortField === 'due_date' ? (
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="w-4 h-4" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-40" />
+                      )}
+                    </div>
+                  </th>
+                )}
                 {visibleColumns.base_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Osnovica</th>}
                 {visibleColumns.vat && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PDV</th>}
                 {visibleColumns.total_amount && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ukupno</th>}
