@@ -107,10 +107,19 @@ const SupervisionDashboard: React.FC = () => {
         .in('status', ['draft', 'active'])
         .order('end_date', { ascending: true })
 
-      // Map to subcontractor format
+      if (subError) throw subError
+
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select('contract_id, base_amount, paid_amount, remaining_amount')
+        .eq('invoice_category', 'SUBCONTRACTOR')
+
+      if (invoicesError) throw invoicesError
+
       const allSubcontractors = contractsData?.map((c: any) => {
         const cost = parseFloat(c.contract_amount || 0)
-        const budgetRealized = parseFloat(c.budget_realized || 0)
+        const contractInvoices = invoicesData?.filter(inv => inv.contract_id === c.id) || []
+        const budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
         const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
 
         return {
@@ -131,8 +140,6 @@ const SupervisionDashboard: React.FC = () => {
           }
         }
       }) || []
-
-      if (subError) throw subError
 
       const logsWithNames = (workLogs || []).map(log => ({
         ...log,

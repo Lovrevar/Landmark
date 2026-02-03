@@ -51,7 +51,6 @@ const SubcontractorManagement: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch all subcontractors
       const { data: subcontractorsData, error: subError } = await supabase
         .from('subcontractors')
         .select('*')
@@ -59,7 +58,6 @@ const SubcontractorManagement: React.FC = () => {
 
       if (subError) throw subError
 
-      // Fetch all contracts with phase and project info
       const { data: contractsData, error: contractsError } = await supabase
         .from('contracts')
         .select(`
@@ -73,7 +71,13 @@ const SubcontractorManagement: React.FC = () => {
 
       if (contractsError) throw contractsError
 
-      // Group contracts by subcontractor
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select('contract_id, base_amount, paid_amount, remaining_amount')
+        .eq('invoice_category', 'SUBCONTRACTOR')
+
+      if (invoicesError) throw invoicesError
+
       const grouped = new Map<string, SubcontractorSummary>()
 
       subcontractorsData?.forEach((sub: any) => {
@@ -83,9 +87,11 @@ const SubcontractorManagement: React.FC = () => {
         const contracts: SubcontractorContract[] = subContracts.map((contractData: any) => {
           const phase = contractData.phase
           const cost = parseFloat(contractData.contract_amount || 0)
-          const budgetRealized = parseFloat(contractData.budget_realized || 0)
-          const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
           const hasContract = contractData.has_contract !== false
+
+          const contractInvoices = invoicesData?.filter(inv => inv.contract_id === contractData.id) || []
+          const budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+          const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
 
           return {
             id: contractData.id,
