@@ -73,6 +73,15 @@ const SubcontractorManagement: React.FC = () => {
 
       if (contractsError) throw contractsError
 
+      // Fetch all accounting invoices for subcontractors
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('accounting_invoices')
+        .select('supplier_id, contract_id, remaining_amount, base_amount')
+        .eq('invoice_category', 'supervision')
+        .not('supplier_id', 'is', null)
+
+      if (invoicesError) throw invoicesError
+
       // Group contracts by subcontractor
       const grouped = new Map<string, SubcontractorSummary>()
 
@@ -103,8 +112,16 @@ const SubcontractorManagement: React.FC = () => {
 
         const contractsWithAgreement = contracts.filter(c => c.has_contract && c.cost > 0)
         const totalContractValue = contractsWithAgreement.reduce((sum, c) => sum + c.cost, 0)
+
+        // Total Paid = budget_realized (actual payments made)
         const totalPaid = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
-        const totalPaidWithContract = contractsWithAgreement.reduce((sum, c) => sum + c.budget_realized, 0)
+
+        // Calculate remaining from invoices (unpaid amounts)
+        const subInvoices = invoicesData?.filter(inv => inv.supplier_id === sub.id) || []
+        const totalRemaining = subInvoices.reduce((sum, inv) => {
+          return sum + parseFloat(inv.remaining_amount?.toString() || '0')
+        }, 0)
+
         const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
         const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length
 
@@ -114,7 +131,7 @@ const SubcontractorManagement: React.FC = () => {
           total_contracts: contracts.length,
           total_contract_value: totalContractValue,
           total_paid: totalPaid,
-          total_remaining: totalContractValue - totalPaidWithContract,
+          total_remaining: totalRemaining,
           active_contracts: activeContracts,
           completed_contracts: completedContracts,
           contracts
@@ -157,8 +174,9 @@ const SubcontractorManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {subcontractorsList.map((sub) => {
-            const paymentPercentage = sub.total_contract_value > 0
-              ? (sub.total_paid / sub.total_contract_value) * 100
+            const totalAmount = sub.total_paid + sub.total_remaining
+            const paymentPercentage = totalAmount > 0
+              ? (sub.total_paid / totalAmount) * 100
               : 0
 
             return (
