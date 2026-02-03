@@ -296,14 +296,15 @@ const AccountingSuppliers: React.FC = () => {
             .not('contract_number', 'is', null)
 
           const year = new Date().getFullYear()
-          const prefix = `CONTRACT-${year}-`
+          const timestamp = Date.now().toString().slice(-6)
+          const prefix = `CNT-${year}-`
 
           let maxNumber = 0
           if (existingContracts && existingContracts.length > 0) {
             existingContracts.forEach(contract => {
               if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
-                const numPart = contract.contract_number.replace(prefix, '')
-                const num = parseInt(numPart, 10)
+                const parts = contract.contract_number.replace(prefix, '').split('-')
+                const num = parseInt(parts[0], 10)
                 if (!isNaN(num) && num > maxNumber) {
                   maxNumber = num
                 }
@@ -311,7 +312,7 @@ const AccountingSuppliers: React.FC = () => {
             })
           }
 
-          const contractNumber = `${prefix}${String(maxNumber + 1).padStart(3, '0')}`
+          const contractNumber = `${prefix}${String(maxNumber + 1).padStart(4, '0')}-${timestamp}`
 
           const { error: contractError } = await supabase
             .from('contracts')
@@ -332,9 +333,16 @@ const AccountingSuppliers: React.FC = () => {
 
       await fetchData()
       handleCloseAddModal()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving supplier:', error)
-      alert('Greška prilikom spremanja dobavljača')
+
+      if (error?.code === '23505' && error?.message?.includes('contract_number')) {
+        alert('Greška: Dupliran broj ugovora. Molimo pokušajte ponovo.')
+      } else if (error?.message) {
+        alert(`Greška: ${error.message}`)
+      } else {
+        alert('Greška prilikom spremanja dobavljača')
+      }
     }
   }
 
