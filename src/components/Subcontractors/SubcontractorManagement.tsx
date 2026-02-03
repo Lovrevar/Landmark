@@ -110,9 +110,25 @@ const SubcontractorManagement: React.FC = () => {
         const allContractIds = subContracts.map(c => c.id)
         const allInvoicesForSub = invoicesData?.filter(inv => allContractIds.includes(inv.contract_id)) || []
 
-        const totalPaid = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
-        const totalRemaining = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
-        const totalValue = allInvoicesForSub.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
+        let totalPaid = 0
+        let totalRemaining = 0
+        let totalValue = 0
+
+        subContracts.forEach((contractData: any) => {
+          const contractInvoices = allInvoicesForSub.filter(inv => inv.contract_id === contractData.id)
+
+          if (contractInvoices.length > 0) {
+            totalValue += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
+            totalPaid += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+            totalRemaining += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
+          } else if (contractData.has_contract && parseFloat(contractData.contract_amount || 0) > 0) {
+            const contractAmount = parseFloat(contractData.contract_amount || 0)
+            const budgetRealized = parseFloat(contractData.budget_realized || 0)
+            totalValue += contractAmount
+            totalPaid += budgetRealized
+            totalRemaining += (contractAmount - budgetRealized)
+          }
+        })
 
         const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
         const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length

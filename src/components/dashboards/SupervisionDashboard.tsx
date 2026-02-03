@@ -119,7 +119,14 @@ const SupervisionDashboard: React.FC = () => {
       const allSubcontractors = contractsData?.map((c: any) => {
         const cost = parseFloat(c.contract_amount || 0)
         const contractInvoices = invoicesData?.filter(inv => inv.contract_id === c.id) || []
-        const budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+
+        let budgetRealized = 0
+        if (contractInvoices.length > 0) {
+          budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+        } else if (c.has_contract && cost > 0) {
+          budgetRealized = parseFloat(c.budget_realized || 0)
+        }
+
         const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
 
         return {
