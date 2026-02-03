@@ -37,12 +37,19 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
 
   const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + sub.cost, 0)
-  const totalPaidWithContract = subcontractorsWithContract.reduce((sum, sub) => sum + sub.budget_realized, 0)
-  const totalPaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + sub.budget_realized, 0)
-  const totalBudgetRealized = totalPaidWithContract + totalPaidWithoutContract
 
-  const costVariance = totalBudgetRealized - totalContractCost
-  const budgetUtilization = phase.budget_allocated > 0 ? (totalBudgetRealized / phase.budget_allocated) * 100 : 0
+  const totalPaidWithContract = subcontractorsWithContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
+  const totalPaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
+  const totalPaidOut = totalPaidWithContract + totalPaidWithoutContract
+
+  const totalUnpaidWithContract = subcontractorsWithContract.reduce((sum, sub) => {
+    const paid = sub.invoice_total_paid || 0
+    return sum + Math.max(0, sub.cost - paid)
+  }, 0)
+  const totalUnpaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_owed || 0), 0)
+  const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
+
+  const budgetUtilization = phase.budget_allocated > 0 ? (totalPaidOut / phase.budget_allocated) * 100 : 0
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -93,31 +100,31 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
             <p className="text-sm text-teal-700">Paid Out</p>
-            <p className="text-lg font-bold text-teal-900">€{totalBudgetRealized.toLocaleString('hr-HR')}</p>
+            <p className="text-lg font-bold text-teal-900">€{totalPaidOut.toLocaleString('hr-HR')}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
             <p className="text-sm text-orange-700">Unpaid Contracts</p>
             <p className="text-lg font-bold text-orange-900">
-              €{Math.max(0, totalContractCost - totalPaidWithContract).toLocaleString('hr-HR')}
+              €{totalUnpaid.toLocaleString('hr-HR')}
             </p>
           </div>
           <div className={`p-3 rounded-lg ${
-            (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'bg-red-50' : 'bg-green-50'
+            (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'bg-red-50' : 'bg-green-50'
           }`}>
             <p className={`text-sm ${
-              (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'text-red-700' : 'text-green-700'
+              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-700' : 'text-green-700'
             }`}>Available Budget</p>
             <p className={`text-lg font-bold ${
-              (phase.budget_allocated - totalContractCost - totalPaidWithoutContract) < 0 ? 'text-red-900' : 'text-green-900'
+              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-900' : 'text-green-900'
             }`}>
-              €{(phase.budget_allocated - totalContractCost - totalPaidWithoutContract).toLocaleString('hr-HR')}
+              €{(phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract).toLocaleString('hr-HR')}
             </p>
           </div>
         </div>
 
         <div className="mt-4">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">Budget Utilization (Realized vs Allocated)</span>
+            <span className="text-sm text-gray-600">Budget Utilization (Paid vs Allocated)</span>
             <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -132,7 +139,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
           {budgetUtilization > 100 && (
             <p className="text-xs text-red-600 mt-1">
-              Over budget by €{(totalBudgetRealized - phase.budget_allocated).toLocaleString('hr-HR')}
+              Over budget by €{(totalPaidOut - phase.budget_allocated).toLocaleString('hr-HR')}
             </p>
           )}
         </div>
@@ -154,18 +161,19 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseSubcontractors.map((subcontractor) => {
               const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
-              const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && subcontractor.budget_realized < subcontractor.cost : false
+              const actualPaid = subcontractor.invoice_total_paid || 0
+              const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
               const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
-              const subVariance = hasValidContract ? subcontractor.budget_realized - subcontractor.cost : 0
-              const isPaid = hasValidContract && subcontractor.budget_realized >= subcontractor.cost
-              const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - subcontractor.budget_realized) : 0
+              const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
+              const isPaid = hasValidContract && actualPaid >= subcontractor.cost
+              const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0
 
               return (
                 <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
                   !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
                   subVariance > 0 ? 'border-red-200 bg-red-50' :
                   isPaid && subVariance === 0 ? 'border-green-200 bg-green-50' :
-                  subcontractor.budget_realized > 0 ? 'border-blue-200 bg-blue-50' :
+                  actualPaid > 0 ? 'border-blue-200 bg-blue-50' :
                   'border-gray-200 bg-gray-50'
                 }`}>
                   <div className="flex items-start justify-between mb-3">
@@ -185,12 +193,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                         subVariance > 0 ? 'bg-red-100 text-red-800' :
                         isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
-                        subcontractor.budget_realized > 0 ? 'bg-blue-100 text-blue-800' :
+                        actualPaid > 0 ? 'bg-blue-100 text-blue-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {subVariance > 0 ? 'Over Budget' :
                          isPaid && subVariance === 0 ? 'Paid' :
-                         subcontractor.budget_realized > 0 ? 'Partial' : 'Unpaid'}
+                         actualPaid > 0 ? 'Partial' : 'Unpaid'}
                       </span>
                     )}
                   </div>
@@ -212,7 +220,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Paid:</span>
-                          <span className="font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+                          <span className="font-medium text-teal-600">€{actualPaid.toLocaleString('hr-HR')}</span>
                         </div>
                         {remainingToPay > 0 && (
                           <div className="flex items-center justify-between">

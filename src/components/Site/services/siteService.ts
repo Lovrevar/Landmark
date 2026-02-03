@@ -773,8 +773,8 @@ export const fetchProjectFunders = async (projectId: string) => {
   }
 }
 
-export const fetchSubcontractorInvoiceStats = async (subcontractorId: string) => {
-  const { data: invoicesData, error: invoicesError } = await supabase
+export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, contractId?: string) => {
+  let query = supabase
     .from('accounting_invoices')
     .select(`
       id,
@@ -782,7 +782,14 @@ export const fetchSubcontractorInvoiceStats = async (subcontractorId: string) =>
       status,
       paid_amount
     `)
-    .eq('supplier_id', subcontractorId)
+
+  if (contractId) {
+    query = query.eq('contract_id', contractId)
+  } else {
+    query = query.eq('supplier_id', subcontractorId)
+  }
+
+  const { data: invoicesData, error: invoicesError } = await query
 
   if (invoicesError) {
     console.error('Error fetching invoice stats:', invoicesError)

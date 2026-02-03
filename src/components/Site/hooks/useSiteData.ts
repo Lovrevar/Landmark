@@ -18,18 +18,21 @@ export const useSiteData = () => {
 
       setExistingSubcontractors(allSubcontractorsData)
 
-      const uniqueSubcontractorIds = new Set(
-        subcontractorsWithPhaseData.map(sub => sub.subcontractor_id).filter(Boolean)
-      )
-
-      const invoiceStatsPromises = Array.from(uniqueSubcontractorIds).map(async (subId) => {
-        const stats = await siteService.fetchSubcontractorInvoiceStats(subId)
-        return { subcontractorId: subId, ...stats }
+      const invoiceStatsPromises = subcontractorsWithPhaseData.map(async (sub) => {
+        const hasContract = sub.has_contract !== false && sub.cost > 0
+        const stats = await siteService.fetchSubcontractorInvoiceStats(
+          sub.subcontractor_id,
+          hasContract ? sub.contract_id : undefined
+        )
+        return {
+          contractId: sub.id,
+          ...stats
+        }
       })
 
       const invoiceStatsResults = await Promise.all(invoiceStatsPromises)
       const invoiceStatsMap = new Map(
-        invoiceStatsResults.map(stat => [stat.subcontractorId, stat])
+        invoiceStatsResults.map(stat => [stat.contractId, stat])
       )
 
       const projectsWithPhases = projectsData.map(project => {
@@ -37,7 +40,7 @@ export const useSiteData = () => {
         const projectSubcontractors = subcontractorsWithPhaseData.filter(sub => {
           return projectPhases.some(phase => phase.id === sub.phase_id)
         }).map(sub => {
-          const stats = invoiceStatsMap.get(sub.subcontractor_id)
+          const stats = invoiceStatsMap.get(sub.id)
           return {
             ...sub,
             invoice_total_paid: stats?.totalPaid || 0,
@@ -45,19 +48,19 @@ export const useSiteData = () => {
           }
         })
 
-        const total_budget_realized = projectSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
+        const total_paid_out = projectSubcontractors.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
         const total_subcontractor_cost = projectSubcontractors.reduce((sum, sub) => sum + sub.cost, 0)
         const completion_percentage = total_subcontractor_cost > 0
-          ? Math.round((total_budget_realized / total_subcontractor_cost) * 100)
+          ? Math.round((total_paid_out / total_subcontractor_cost) * 100)
           : 0
 
-        const overdue_subcontractors = projectSubcontractors.filter(sub =>
-          new Date(sub.deadline) < new Date() && sub.budget_realized < sub.cost
-        ).length
+        const overdue_subcontractors = projectSubcontractors.filter(sub => {
+          const actualPaid = sub.invoice_total_paid || 0
+          return new Date(sub.deadline) < new Date() && actualPaid < sub.cost
+        }).length
 
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-        const total_paid_out = projectSubcontractors.reduce((sum, sub) => sum + (sub.budget_realized || 0), 0)
 
         return {
           ...project,
