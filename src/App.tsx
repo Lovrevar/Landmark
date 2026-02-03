@@ -34,6 +34,7 @@ import CompanyCredits from './components/Accounting/CompanyCredits'
 import AccountingCustomers from './components/Accounting/AccountingCustomers'
 import AccountingCalendar from './components/Accounting/AccountingCalendar'
 import AccountingLoans from './components/Accounting/AccountingLoans'
+import DebtStatus from './components/Accounting/DebtStatus'
 import RetailLandPlots from './components/Retail/RetailLandPlots'
 import RetailCustomers from './components/Retail/RetailCustomers'
 import RetailSales from './components/Retail/RetailSales'
@@ -329,6 +330,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AccountingLoans />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/debt-status"
+          element={
+            <ProtectedRoute>
+              <DebtStatus />
             </ProtectedRoute>
           }
         />
