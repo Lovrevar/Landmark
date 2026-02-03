@@ -88,58 +88,96 @@ const AccountingSuppliers: React.FC = () => {
 
       if (suppliersError) throw suppliersError
 
-      const suppliersWithStats = await Promise.all(
-        (suppliersData || []).map(async (supplier) => {
-          const { count: contractsCount } = await supabase
-            .from('contracts')
-            .select('*', { count: 'exact', head: true })
-            .eq('subcontractor_id', supplier.id)
-            .in('status', ['draft', 'active'])
+      const supplierIds = (suppliersData || []).map(s => s.id)
 
-          const { data: contractsSumData } = await supabase
-            .from('contracts')
-            .select('contract_amount')
-            .eq('subcontractor_id', supplier.id)
-            .in('status', ['draft', 'active'])
+      const [
+        { data: contractsData },
+        { data: invoicesData },
+        { data: paymentsData }
+      ] = await Promise.all([
+        supabase
+          .from('contracts')
+          .select('subcontractor_id, contract_amount')
+          .in('subcontractor_id', supplierIds)
+          .in('status', ['draft', 'active']),
+        supabase
+          .from('accounting_invoices')
+          .select('id, supplier_id, remaining_amount, status')
+          .in('supplier_id', supplierIds),
+        supabase
+          .from('accounting_payments')
+          .select('invoice_id, amount')
+      ])
 
-          const { data: invoicesStatsData } = await supabase
-            .from('accounting_invoices')
-            .select('id, base_amount, status')
-            .eq('supplier_id', supplier.id)
+      const paymentsMap = new Map<string, number>()
+      ;(paymentsData || []).forEach(payment => {
+        const current = paymentsMap.get(payment.invoice_id) || 0
+        paymentsMap.set(payment.invoice_id, current + parseFloat(payment.amount?.toString() || '0'))
+      })
 
-          const totalContractValue = (contractsSumData || []).reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
+      const supplierStatsMap = new Map<string, {
+        contractCount: number
+        contractValue: number
+        totalPaid: number
+        totalRemaining: number
+        invoiceCount: number
+      }>()
 
-          const invoices = invoicesStatsData || []
-          const invoiceIds = invoices.map(inv => inv.id)
-
-          const { data: paymentsData } = await supabase
-            .from('accounting_payments')
-            .select('amount')
-            .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
-
-          const totalPaidFromPayments = (paymentsData || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
-
-          const totalRemainingFromInvoices = invoices
-            .filter(i => i.status !== 'PAID')
-            .reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
-
-          return {
-            id: supplier.id,
-            name: supplier.name,
-            contact: supplier.contact,
-            total_contracts: contractsCount || 0,
-            total_contract_value: totalContractValue,
-            total_paid: totalPaidFromPayments,
-            total_paid_neto: totalPaidFromPayments,
-            total_paid_pdv: 0,
-            total_paid_total: totalPaidFromPayments,
-            total_remaining: totalRemainingFromInvoices,
-            total_invoices: invoices.length,
-            contracts: [],
-            invoices: []
-          }
+      supplierIds.forEach(id => {
+        supplierStatsMap.set(id, {
+          contractCount: 0,
+          contractValue: 0,
+          totalPaid: 0,
+          totalRemaining: 0,
+          invoiceCount: 0
         })
-      )
+      })
+
+      ;(contractsData || []).forEach(contract => {
+        const stats = supplierStatsMap.get(contract.subcontractor_id)
+        if (stats) {
+          stats.contractCount++
+          stats.contractValue += parseFloat(contract.contract_amount?.toString() || '0')
+        }
+      })
+
+      ;(invoicesData || []).forEach(invoice => {
+        const stats = supplierStatsMap.get(invoice.supplier_id)
+        if (stats) {
+          stats.invoiceCount++
+          const paidAmount = paymentsMap.get(invoice.id) || 0
+          stats.totalPaid += paidAmount
+          if (invoice.status !== 'PAID') {
+            stats.totalRemaining += parseFloat(invoice.remaining_amount?.toString() || '0')
+          }
+        }
+      })
+
+      const suppliersWithStats = (suppliersData || []).map(supplier => {
+        const stats = supplierStatsMap.get(supplier.id) || {
+          contractCount: 0,
+          contractValue: 0,
+          totalPaid: 0,
+          totalRemaining: 0,
+          invoiceCount: 0
+        }
+
+        return {
+          id: supplier.id,
+          name: supplier.name,
+          contact: supplier.contact,
+          total_contracts: stats.contractCount,
+          total_contract_value: stats.contractValue,
+          total_paid: stats.totalPaid,
+          total_paid_neto: stats.totalPaid,
+          total_paid_pdv: 0,
+          total_paid_total: stats.totalPaid,
+          total_remaining: stats.totalRemaining,
+          total_invoices: stats.invoiceCount,
+          contracts: [],
+          invoices: []
+        }
+      })
 
       setSuppliers(suppliersWithStats)
     } catch (error) {
