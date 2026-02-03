@@ -68,6 +68,8 @@ const AccountingPayments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMethod, setFilterMethod] = useState<'ALL' | 'WIRE' | 'CASH' | 'CHECK' | 'CARD'>('ALL')
   const [filterInvoiceType, setFilterInvoiceType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
@@ -366,7 +368,11 @@ const AccountingPayments: React.FC = () => {
                                (filterInvoiceType === 'EXPENSE' && isExpense) ||
                                (filterInvoiceType === 'INCOME' && isIncome)
 
-    return matchesSearch && matchesMethod && matchesInvoiceType
+    const paymentDate = new Date(payment.payment_date)
+    const matchesDateFrom = !dateFrom || paymentDate >= new Date(dateFrom)
+    const matchesDateTo = !dateTo || paymentDate <= new Date(dateTo)
+
+    return matchesSearch && matchesMethod && matchesInvoiceType && matchesDateFrom && matchesDateTo
   })
 
   const getPaymentMethodLabel = (method: string) => {
@@ -548,7 +554,7 @@ const AccountingPayments: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -581,6 +587,41 @@ const AccountingPayments: React.FC = () => {
             <option value="EXPENSE">Ulazni</option>
             <option value="INCOME">Izlazni</option>
           </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-600 mb-1">Datum OD</label>
+            <DateInput
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-600 mb-1">Datum DO</label>
+            <DateInput
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex items-end">
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => {
+                  setDateFrom('')
+                  setDateTo('')
+                }}
+                className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Resetuj datume
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
