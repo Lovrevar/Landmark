@@ -219,6 +219,11 @@ const AccountingSuppliers: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!editingSupplier && formData.project_id && !formData.phase_id) {
+      alert('Molimo odaberite fazu za odabrani projekt')
+      return
+    }
+
     try {
       if (editingSupplier) {
         const { error } = await supabase
@@ -607,12 +612,13 @@ const AccountingSuppliers: React.FC = () => {
                         {formData.project_id && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Faza
+                              Faza *
                             </label>
                             <select
                               value={formData.phase_id}
                               onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
                             >
                               <option value="">Odaberite fazu</option>
                               {phases.map((phase) => (
