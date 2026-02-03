@@ -17,6 +17,12 @@ const DebtStatus: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'unpaid' | 'paid'>('unpaid')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
+  const formatEuropeanNumber = (num: number): string => {
+    const parts = num.toFixed(2).split('.')
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return `${integerPart},${parts[1]}`
+  }
+
   useEffect(() => {
     fetchDebtData()
   }, [])
@@ -199,18 +205,18 @@ const DebtStatus: React.FC = () => {
       debt.supplier_name,
       getSupplierTypeText(debt.supplier_type),
       debt.invoice_count.toString(),
-      debt.total_unpaid.toFixed(2),
-      debt.total_paid.toFixed(2),
-      (debt.total_unpaid + debt.total_paid).toFixed(2)
+      formatEuropeanNumber(debt.total_unpaid),
+      formatEuropeanNumber(debt.total_paid),
+      formatEuropeanNumber(debt.total_unpaid + debt.total_paid)
     ])
 
     rows.push([
       'UKUPNO',
       '',
       '',
-      totalUnpaid.toFixed(2),
-      totalPaid.toFixed(2),
-      (totalUnpaid + totalPaid).toFixed(2)
+      formatEuropeanNumber(totalUnpaid),
+      formatEuropeanNumber(totalPaid),
+      formatEuropeanNumber(totalUnpaid + totalPaid)
     ])
 
     const htmlContent = `
@@ -303,9 +309,9 @@ const DebtStatus: React.FC = () => {
     yPosition += 6
     doc.text(`Dobavljaci s dugom: ${suppliersWithDebt}`, 20, yPosition)
     yPosition += 6
-    doc.text(`Ukupno neisplaceno: EUR ${totalUnpaid.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, yPosition)
+    doc.text(`Ukupno neisplaceno: EUR ${formatEuropeanNumber(totalUnpaid)}`, 20, yPosition)
     yPosition += 6
-    doc.text(`Ukupno isplaceno: EUR ${totalPaid.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, yPosition)
+    doc.text(`Ukupno isplaceno: EUR ${formatEuropeanNumber(totalPaid)}`, 20, yPosition)
 
     yPosition = 65
 
@@ -399,13 +405,13 @@ const DebtStatus: React.FC = () => {
       doc.text(debt.invoice_count.toString(), xPos + colWidths[2] - 2, yPosition + 5.5, { align: 'right' })
 
       xPos += colWidths[2]
-      doc.text(`${debt.total_unpaid.toFixed(2)}`, xPos + colWidths[3] - 2, yPosition + 5.5, { align: 'right' })
+      doc.text(formatEuropeanNumber(debt.total_unpaid), xPos + colWidths[3] - 2, yPosition + 5.5, { align: 'right' })
 
       xPos += colWidths[3]
-      doc.text(`${debt.total_paid.toFixed(2)}`, xPos + colWidths[4] - 2, yPosition + 5.5, { align: 'right' })
+      doc.text(formatEuropeanNumber(debt.total_paid), xPos + colWidths[4] - 2, yPosition + 5.5, { align: 'right' })
 
       xPos += colWidths[4]
-      doc.text(`${(debt.total_unpaid + debt.total_paid).toFixed(2)}`, xPos + colWidths[5] - 2, yPosition + 5.5, { align: 'right' })
+      doc.text(formatEuropeanNumber(debt.total_unpaid + debt.total_paid), xPos + colWidths[5] - 2, yPosition + 5.5, { align: 'right' })
 
       yPosition += rowHeight
       isEvenRow = !isEvenRow
@@ -431,13 +437,13 @@ const DebtStatus: React.FC = () => {
     doc.text('UKUPNO', tableStartX + 2, yPosition + 5.5)
 
     let totalXPos = tableStartX + colWidths[0] + colWidths[1] + colWidths[2]
-    doc.text(`${totalUnpaid.toFixed(2)}`, totalXPos + colWidths[3] - 2, yPosition + 5.5, { align: 'right' })
+    doc.text(formatEuropeanNumber(totalUnpaid), totalXPos + colWidths[3] - 2, yPosition + 5.5, { align: 'right' })
 
     totalXPos += colWidths[3]
-    doc.text(`${totalPaid.toFixed(2)}`, totalXPos + colWidths[4] - 2, yPosition + 5.5, { align: 'right' })
+    doc.text(formatEuropeanNumber(totalPaid), totalXPos + colWidths[4] - 2, yPosition + 5.5, { align: 'right' })
 
     totalXPos += colWidths[4]
-    doc.text(`${(totalUnpaid + totalPaid).toFixed(2)}`, totalXPos + colWidths[5] - 2, yPosition + 5.5, { align: 'right' })
+    doc.text(formatEuropeanNumber(totalUnpaid + totalPaid), totalXPos + colWidths[5] - 2, yPosition + 5.5, { align: 'right' })
 
     doc.save(`stanje_duga_${new Date().toISOString().split('T')[0]}.pdf`)
   }
@@ -503,7 +509,7 @@ const DebtStatus: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupno neisplaćeno</p>
-              <p className="text-2xl font-bold text-red-600">€{totalUnpaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-red-600">€{formatEuropeanNumber(totalUnpaid)}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-red-600" />
           </div>
@@ -513,7 +519,7 @@ const DebtStatus: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupno isplaćeno</p>
-              <p className="text-2xl font-bold text-green-600">€{totalPaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold text-green-600">€{formatEuropeanNumber(totalPaid)}</p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
           </div>
@@ -593,17 +599,17 @@ const DebtStatus: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className={`text-sm font-semibold ${debt.total_unpaid > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                        €{debt.total_unpaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        €{formatEuropeanNumber(debt.total_unpaid)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-semibold text-green-600">
-                        €{debt.total_paid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        €{formatEuropeanNumber(debt.total_paid)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-semibold text-gray-900">
-                        €{(debt.total_unpaid + debt.total_paid).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        €{formatEuropeanNumber(debt.total_unpaid + debt.total_paid)}
                       </div>
                     </td>
                   </tr>
@@ -613,13 +619,13 @@ const DebtStatus: React.FC = () => {
                     UKUPNO
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600">
-                    €{totalUnpaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    €{formatEuropeanNumber(totalUnpaid)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-600">
-                    €{totalPaid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    €{formatEuropeanNumber(totalPaid)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                    €{(totalUnpaid + totalPaid).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    €{formatEuropeanNumber(totalUnpaid + totalPaid)}
                   </td>
                 </tr>
               </tbody>
