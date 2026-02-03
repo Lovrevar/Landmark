@@ -160,7 +160,7 @@ const AccountingInvoices: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID'>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [sortField, setSortField] = useState<'due_date' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -772,8 +772,10 @@ const AccountingInvoices: React.FC = () => {
 
       const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
       const matchesStatus = filterStatus === 'ALL' ||
-        (filterStatus === 'UNPAID' && (invoice.status === 'UNPAID' || invoice.status === 'PARTIALLY_PAID')) ||
-        (filterStatus === 'PAID' && invoice.status === 'PAID')
+        (filterStatus === 'UNPAID' && invoice.status === 'UNPAID') ||
+        (filterStatus === 'PAID' && invoice.status === 'PAID') ||
+        (filterStatus === 'PARTIALLY_PAID' && invoice.status === 'PARTIALLY_PAID') ||
+        (filterStatus === 'UNPAID_AND_PARTIAL' && (invoice.status === 'UNPAID' || invoice.status === 'PARTIALLY_PAID'))
       const matchesCompany = filterCompany === 'ALL' || invoice.company_id === filterCompany
 
       return matchesSearch && matchesType && matchesStatus && matchesCompany
@@ -1103,8 +1105,10 @@ const AccountingInvoices: React.FC = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="ALL">Svi statusi</option>
-            <option value="UNPAID">Neplaćeno</option>
             <option value="PAID">Plaćeno</option>
+            <option value="UNPAID">Neplaćeno</option>
+            <option value="PARTIALLY_PAID">Djelomično plaćeno</option>
+            <option value="UNPAID_AND_PARTIAL">Neplaćeno + Djelomično</option>
           </select>
 
           <select
