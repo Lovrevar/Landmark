@@ -50,8 +50,8 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         { phase_name: 'Priprema i razvoj', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Izgradnja i uređenje', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Opremanje', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Kontrola', budget_allocated: 0, start_date: '', end_date: '' }
-        { phase_name: 'Financiranje i nadzor', budget_allocated: 0, start_date: '', end_date: '' }
+        { phase_name: 'Kontrola', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Financiranje i nadzor', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Nepredviđeni troškovi', budget_allocated: 0, start_date: '', end_date: '' }
       ]
       setPhases(defaultPhases.slice(0, phaseCount))
