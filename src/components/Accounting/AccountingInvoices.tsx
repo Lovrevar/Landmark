@@ -156,12 +156,9 @@ const AccountingInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-  const [totalAmount, setTotalAmount] = useState(0)
   const pageSize = 100
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortField, setSortField] = useState<'issue_date' | 'due_date'>('issue_date')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
@@ -239,7 +236,7 @@ const AccountingInvoices: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-  }, [currentPage, sortField, sortDirection])
+  }, [currentPage])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -293,7 +290,6 @@ const AccountingInvoices: React.FC = () => {
       const [
         invoicesResult,
         invoiceCountResult,
-        invoiceTotalResult,
         companiesResult,
         bankAccountsResult,
         creditsResult,
@@ -322,16 +318,12 @@ const AccountingInvoices: React.FC = () => {
             retail_suppliers:retail_supplier_id (name),
             retail_customers:retail_customer_id (name)
           `)
-          .order(sortField, { ascending: sortDirection === 'asc' })
+          .order('issue_date', { ascending: false })
           .range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
 
         supabase
           .from('accounting_invoices')
           .select('*', { count: 'exact', head: true }),
-
-        supabase
-          .from('accounting_invoices')
-          .select('total_amount'),
 
         supabase
           .from('accounting_companies')
@@ -420,11 +412,6 @@ const AccountingInvoices: React.FC = () => {
       setInvoices(invoicesResult.data || [])
 
       setTotalCount(invoiceCountResult.count || 0)
-
-      const total = (invoiceTotalResult.data || []).reduce((sum, invoice) => {
-        return sum + (parseFloat(invoice.total_amount?.toString() || '0'))
-      }, 0)
-      setTotalAmount(total)
 
       if (companiesResult.error) {
         console.error('Error loading companies:', companiesResult.error)
@@ -990,7 +977,7 @@ const AccountingInvoices: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ukupno računa</p>
-              <p className="text-2xl font-bold text-gray-900">€{formatCurrency(totalAmount)}</p>
+              <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
             </div>
             <FileText className="w-8 h-8 text-blue-600" />
           </div>
@@ -1114,24 +1101,6 @@ const AccountingInvoices: React.FC = () => {
             {companies.map(company => (
               <option key={company.id} value={company.id}>{company.name}</option>
             ))}
-          </select>
-
-          <select
-            value={sortField}
-            onChange={(e) => setSortField(e.target.value as 'issue_date' | 'due_date')}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="issue_date">Sortiraj po datumu izdavanja</option>
-            <option value="due_date">Sortiraj po datumu dospijeca</option>
-          </select>
-
-          <select
-            value={sortDirection}
-            onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="desc">Noviji prvi</option>
-            <option value="asc">Stariji prvi</option>
           </select>
 
           {(searchTerm || filterType !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL') && (
