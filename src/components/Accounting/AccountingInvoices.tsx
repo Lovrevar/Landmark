@@ -762,7 +762,13 @@ const AccountingInvoices: React.FC = () => {
         invoice.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (invoice.subcontractors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '').toLowerCase().includes(searchTerm.toLowerCase())
+        (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.office_suppliers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.retail_suppliers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.retail_customers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.investors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.banks?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.companies?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
       const matchesStatus = filterStatus === 'ALL' || invoice.status === filterStatus
