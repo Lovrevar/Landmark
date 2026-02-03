@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Users, Search, DollarSign, TrendingUp, TrendingDown, FileText, Eye, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
-import { formatCurrencyFlexible } from '../Common/CurrencyInput'
 
 interface Customer {
   id: string
@@ -224,7 +223,7 @@ const AccountingCustomers: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-red-700">Dužno</p>
-              <p className="text-2xl font-bold text-red-900 mt-1">€{totalStats.formatCurrencyFlexible(totalStats.total_debt)}</p>
+              <p className="text-2xl font-bold text-red-900 mt-1">€{totalStats.total_debt.toLocaleString('hr-HR')}</p>
             </div>
             <TrendingDown className="w-8 h-8 text-red-600" />
           </div>
