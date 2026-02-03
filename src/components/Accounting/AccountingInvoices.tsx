@@ -2604,7 +2604,7 @@ const AccountingInvoices: React.FC = () => {
             fetchData()
           }}
         />
-      )}
+      )}a
 
       {showBankInvoiceModal && (
         <BankInvoiceFormModal
