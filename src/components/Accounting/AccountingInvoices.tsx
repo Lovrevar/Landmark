@@ -160,7 +160,7 @@ const AccountingInvoices: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'>('ALL')
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [sortField, setSortField] = useState<'due_date' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -771,7 +771,9 @@ const AccountingInvoices: React.FC = () => {
         (invoice.companies?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
-      const matchesStatus = filterStatus === 'ALL' || invoice.status === filterStatus
+      const matchesStatus = filterStatus === 'ALL' ||
+        (filterStatus === 'UNPAID' && (invoice.status === 'UNPAID' || invoice.status === 'PARTIALLY_PAID')) ||
+        (filterStatus === 'PAID' && invoice.status === 'PAID')
       const matchesCompany = filterCompany === 'ALL' || invoice.company_id === filterCompany
 
       return matchesSearch && matchesType && matchesStatus && matchesCompany
@@ -1001,7 +1003,7 @@ const AccountingInvoices: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -1018,27 +1020,12 @@ const AccountingInvoices: React.FC = () => {
               <p className="text-sm text-gray-600">Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
                 €{formatCurrencyFlexible(invoices
-                  .filter(i => i.status === 'UNPAID')
+                  .filter(i => i.status === 'UNPAID' || i.status === 'PARTIALLY_PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
                   )}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Djelomično plaćeno</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                €{formatCurrencyFlexible(invoices
-                  .filter(i => i.status === 'PARTIALLY_PAID')
-                  .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  )}
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-yellow-600" />
           </div>
         </div>
 
@@ -1117,7 +1104,6 @@ const AccountingInvoices: React.FC = () => {
           >
             <option value="ALL">Svi statusi</option>
             <option value="UNPAID">Neplaćeno</option>
-            <option value="PARTIALLY_PAID">Djelomično plaćeno</option>
             <option value="PAID">Plaćeno</option>
           </select>
 
