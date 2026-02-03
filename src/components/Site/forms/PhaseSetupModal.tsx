@@ -47,10 +47,12 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       setPhaseCount(existingPhases.length)
     } else {
       const defaultPhases = [
-        { phase_name: 'Foundation Phase', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Structural Phase', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Systems Installation', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Finishing Phase', budget_allocated: 0, start_date: '', end_date: '' }
+        { phase_name: 'Priprema i razvoj', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Izgradnja i uređenje', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Opremanje', budget_allocated: 0, start_date: '', end_date: '' },
+        { phase_name: 'Kontrola', budget_allocated: 0, start_date: '', end_date: '' }
+        { phase_name: 'Financiranje i nadzor', budget_allocated: 0, start_date: '', end_date: '' }
+        { phase_name: 'Nepredviđeni troškovi', budget_allocated: 0, start_date: '', end_date: '' }
       ]
       setPhases(defaultPhases.slice(0, phaseCount))
     }
