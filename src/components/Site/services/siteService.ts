@@ -482,6 +482,33 @@ export const getContractCount = async () => {
   return count || 0
 }
 
+export const generateUniqueContractNumber = async (projectId: string) => {
+  const { data: existingContracts } = await supabase
+    .from('contracts')
+    .select('contract_number')
+    .eq('project_id', projectId)
+    .not('contract_number', 'is', null)
+
+  const year = new Date().getFullYear()
+  const timestamp = Date.now().toString().slice(-6)
+  const prefix = `CNT-${year}-`
+
+  let maxNumber = 0
+  if (existingContracts && existingContracts.length > 0) {
+    existingContracts.forEach(contract => {
+      if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
+        const parts = contract.contract_number.replace(prefix, '').split('-')
+        const num = parseInt(parts[0], 10)
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num
+        }
+      }
+    })
+  }
+
+  return `${prefix}${String(maxNumber + 1).padStart(4, '0')}-${timestamp}`
+}
+
 // DEPRECATED: contract_id column removed from subcontractors table
 // Relationship is maintained through contracts.subcontractor_id
 

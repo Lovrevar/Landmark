@@ -256,9 +256,7 @@ export const useSiteData = () => {
         }
 
         const phaseData = await siteService.getPhaseInfo(phase.id)
-        const timestamp = Date.now().toString().slice(-6)
-        const contractCount = await siteService.getContractCount()
-        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
+        const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
 
         const newContract = await siteService.createContract({
           contract_number: contractNumber,
@@ -290,9 +288,7 @@ export const useSiteData = () => {
         }
 
         const phaseData = await siteService.getPhaseInfo(phase.id)
-        const timestamp = Date.now().toString().slice(-6)
-        const contractCount = await siteService.getContractCount()
-        const contractNumber = `CNT-${new Date().getFullYear()}-${String(contractCount + 1).padStart(4, '0')}-${timestamp}`
+        const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
 
         const newSubcontractor = await siteService.createSubcontractorWithReturn({
           name: data.name,
