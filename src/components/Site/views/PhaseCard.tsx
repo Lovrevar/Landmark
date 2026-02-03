@@ -232,10 +232,16 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
-                        <span className="font-bold text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
-                      </div>
+                      <>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                          <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                          <span className="font-bold text-green-600">€{(subcontractor.invoice_total_paid || 0).toLocaleString('hr-HR')}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600 font-medium">Ukupno dugovi:</span>
+                          <span className="font-bold text-orange-600">€{(subcontractor.invoice_total_owed || 0).toLocaleString('hr-HR')}</span>
+                        </div>
+                      </>
                     )}
                   </div>
 

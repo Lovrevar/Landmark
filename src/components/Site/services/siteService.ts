@@ -772,3 +772,39 @@ export const fetchProjectFunders = async (projectId: string) => {
     banks: uniqueBanks
   }
 }
+
+export const fetchSubcontractorInvoiceStats = async (subcontractorId: string) => {
+  const { data: invoicesData, error: invoicesError } = await supabase
+    .from('accounting_invoices')
+    .select(`
+      id,
+      base_amount,
+      status,
+      paid_amount
+    `)
+    .eq('supplier_id', subcontractorId)
+
+  if (invoicesError) {
+    console.error('Error fetching invoice stats:', invoicesError)
+    return { totalPaid: 0, totalOwed: 0 }
+  }
+
+  const invoices = invoicesData || []
+
+  const totalPaid = invoices.reduce((sum, inv) => {
+    return sum + parseFloat(inv.paid_amount?.toString() || '0')
+  }, 0)
+
+  const totalOwed = invoices
+    .filter(inv => inv.status !== 'PAID')
+    .reduce((sum, inv) => {
+      const baseAmount = parseFloat(inv.base_amount?.toString() || '0')
+      const paidAmount = parseFloat(inv.paid_amount?.toString() || '0')
+      return sum + (baseAmount - paidAmount)
+    }, 0)
+
+  return {
+    totalPaid,
+    totalOwed
+  }
+}

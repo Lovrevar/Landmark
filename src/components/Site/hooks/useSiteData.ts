@@ -18,10 +18,31 @@ export const useSiteData = () => {
 
       setExistingSubcontractors(allSubcontractorsData)
 
+      const uniqueSubcontractorIds = new Set(
+        subcontractorsWithPhaseData.map(sub => sub.subcontractor_id).filter(Boolean)
+      )
+
+      const invoiceStatsPromises = Array.from(uniqueSubcontractorIds).map(async (subId) => {
+        const stats = await siteService.fetchSubcontractorInvoiceStats(subId)
+        return { subcontractorId: subId, ...stats }
+      })
+
+      const invoiceStatsResults = await Promise.all(invoiceStatsPromises)
+      const invoiceStatsMap = new Map(
+        invoiceStatsResults.map(stat => [stat.subcontractorId, stat])
+      )
+
       const projectsWithPhases = projectsData.map(project => {
         const projectPhases = phasesData.filter(phase => phase.project_id === project.id)
         const projectSubcontractors = subcontractorsWithPhaseData.filter(sub => {
           return projectPhases.some(phase => phase.id === sub.phase_id)
+        }).map(sub => {
+          const stats = invoiceStatsMap.get(sub.subcontractor_id)
+          return {
+            ...sub,
+            invoice_total_paid: stats?.totalPaid || 0,
+            invoice_total_owed: stats?.totalOwed || 0
+          }
         })
 
         const total_budget_realized = projectSubcontractors.reduce((sum, sub) => sum + sub.budget_realized, 0)
