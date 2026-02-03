@@ -14,6 +14,7 @@ interface Contract {
   status: string
   projects?: { name: string }
   phases?: { phase_name: string }
+  actual_paid?: number
 }
 
 interface Invoice {
@@ -26,6 +27,7 @@ interface Invoice {
   remaining_amount: number
   status: string
   issue_date: string
+  actual_paid?: number
 }
 
 interface Payment {
@@ -102,23 +104,24 @@ const AccountingSuppliers: React.FC = () => {
 
           const { data: invoicesStatsData } = await supabase
             .from('accounting_invoices')
-            .select('base_amount, total_amount, paid_amount, remaining_amount')
+            .select('id, base_amount, status')
             .eq('supplier_id', supplier.id)
 
           const totalContractValue = (contractsSumData || []).reduce((sum, c) => sum + parseFloat(c.contract_amount || 0), 0)
 
           const invoices = invoicesStatsData || []
-          const totalPaidNeto = invoices.reduce((sum, i) => {
-            return sum + parseFloat(i.paid_amount || 0) * (parseFloat(i.base_amount || 0) / parseFloat(i.total_amount || 1))
-          }, 0)
+          const invoiceIds = invoices.map(inv => inv.id)
 
-          const totalPaidTotal = invoices.reduce((sum, i) => sum + parseFloat(i.paid_amount || 0), 0)
-          const totalPaidFromInvoices = invoices.reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
-          const totalRemainingFromInvoices = invoices.reduce((sum, i) => {
-            const baseAmount = parseFloat(i.base_amount || 0)
-            const paidBase = i.paid_amount > 0 ? (parseFloat(i.base_amount || 0) / parseFloat(i.total_amount || 1)) * i.paid_amount : 0
-            return sum + (baseAmount - paidBase)
-          }, 0)
+          const { data: paymentsData } = await supabase
+            .from('accounting_payments')
+            .select('amount')
+            .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
+
+          const totalPaidFromPayments = (paymentsData || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+          const totalRemainingFromInvoices = invoices
+            .filter(i => i.status !== 'PAID')
+            .reduce((sum, i) => sum + parseFloat(i.base_amount || 0), 0)
 
           return {
             id: supplier.id,
@@ -126,11 +129,11 @@ const AccountingSuppliers: React.FC = () => {
             contact: supplier.contact,
             total_contracts: contractsCount || 0,
             total_contract_value: totalContractValue,
-            total_paid: totalPaidFromInvoices,
-            total_paid_neto: totalPaidNeto,
-            total_paid_pdv: totalPaidTotal - totalPaidNeto,
-            total_paid_total: totalPaidTotal,
-            total_remaining: (totalContractValue - totalPaidFromInvoices) + totalRemainingFromInvoices,
+            total_paid: totalPaidFromPayments,
+            total_paid_neto: totalPaidFromPayments,
+            total_paid_pdv: 0,
+            total_paid_total: totalPaidFromPayments,
+            total_remaining: totalRemainingFromInvoices,
             total_invoices: invoices.length,
             contracts: [],
             invoices: []
@@ -328,14 +331,45 @@ const AccountingSuppliers: React.FC = () => {
           paid_amount,
           remaining_amount,
           status,
-          issue_date
+          issue_date,
+          contract_id
         `)
         .eq('supplier_id', supplier.id)
 
+      const invoiceIds = (invoicesData || []).map(inv => inv.id)
+      const { data: paymentsData } = await supabase
+        .from('accounting_payments')
+        .select('invoice_id, amount')
+        .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
+
+      const paymentsMap = new Map<string, number>()
+      ;(paymentsData || []).forEach(payment => {
+        const current = paymentsMap.get(payment.invoice_id) || 0
+        paymentsMap.set(payment.invoice_id, current + parseFloat(payment.amount?.toString() || '0'))
+      })
+
+      const invoicesWithPayments = (invoicesData || []).map(inv => ({
+        ...inv,
+        actual_paid: paymentsMap.get(inv.id) || 0
+      }))
+
+      const contractPaymentsMap = new Map<string, number>()
+      invoicesWithPayments.forEach(inv => {
+        if (inv.contract_id) {
+          const current = contractPaymentsMap.get(inv.contract_id) || 0
+          contractPaymentsMap.set(inv.contract_id, current + (inv.actual_paid || 0))
+        }
+      })
+
+      const contractsWithPayments = (contractsData || []).map(contract => ({
+        ...contract,
+        actual_paid: contractPaymentsMap.get(contract.id) || 0
+      }))
+
       const supplierWithDetails = {
         ...supplier,
-        contracts: contractsData || [],
-        invoices: invoicesData || []
+        contracts: contractsWithPayments,
+        invoices: invoicesWithPayments
       }
 
       setSelectedSupplier(supplierWithDetails)
@@ -739,12 +773,12 @@ const AccountingSuppliers: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-600">€{parseFloat(contract.budget_realized).toLocaleString('hr-HR')}</p>
+                            <p className="text-sm font-medium text-green-600">€{(contract.actual_paid || 0).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Preostalo</p>
                             <p className="text-sm font-medium text-orange-600">
-                              €{(parseFloat(contract.contract_amount) - parseFloat(contract.budget_realized)).toLocaleString('hr-HR')}
+                              €{(parseFloat(contract.contract_amount) - (contract.actual_paid || 0)).toLocaleString('hr-HR')}
                             </p>
                           </div>
                         </div>
@@ -786,11 +820,13 @@ const AccountingSuppliers: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Plaćeno</p>
-                            <p className="text-sm font-medium text-green-600">€{parseFloat(invoice.base_amount || 0).toLocaleString('hr-HR')}</p>
+                            <p className="text-sm font-medium text-green-600">€{(invoice.actual_paid || 0).toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Preostalo</p>
-                            <p className="text-sm font-medium text-orange-600">€0</p>
+                            <p className="text-sm font-medium text-orange-600">
+                              €{Math.max(0, parseFloat(invoice.base_amount || 0) - (invoice.actual_paid || 0)).toLocaleString('hr-HR')}
+                            </p>
                           </div>
                         </div>
                       </div>
