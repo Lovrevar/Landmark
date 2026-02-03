@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Plus, Search, DollarSign, FileText, Briefcase, Phone, Mail, Edit, Trash2, X, Eye, TrendingUp } from 'lucide-react'
+import { Users, Plus, Search, DollarSign, FileText, Briefcase, Phone, Mail, Edit, Trash2, X, Eye, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Contract {
   id: string
@@ -57,10 +57,13 @@ const AccountingSuppliers: React.FC = () => {
   const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
   const [editingSupplier, setEditingSupplier] = useState<string | null>(null)
+
+  const itemsPerPage = 50
 
   const [formData, setFormData] = useState({
     name: '',
@@ -455,6 +458,15 @@ const AccountingSuppliers: React.FC = () => {
     supplier.contact.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedSuppliers = filteredSuppliers.slice(startIndex, endIndex)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -543,21 +555,21 @@ const AccountingSuppliers: React.FC = () => {
         </div>
       </div>
 
-      {searchTerm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {filteredSuppliers.length === 0 ? (
-            <div className="p-12 text-center">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Nema rezultata pretrage
-              </h3>
-              <p className="text-gray-600">
-                Pokušajte s drugim pojmom
-              </p>
-            </div>
-          ) : (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {filteredSuppliers.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
+            </h3>
+            <p className="text-gray-600">
+              {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača koristeći gumb iznad'}
+            </p>
+          </div>
+        ) : (
+          <>
             <div className="divide-y divide-gray-200">
-              {filteredSuppliers.map((supplier) => (
+              {paginatedSuppliers.map((supplier) => (
                 <div
                   key={supplier.id}
                   className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between"
@@ -620,21 +632,97 @@ const AccountingSuppliers: React.FC = () => {
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      )}
 
-      {!searchTerm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Pretražite dobavljače
-          </h3>
-          <p className="text-gray-600">
-            Unesite ime ili kontakt dobavljača u tražilicu iznad
-          </p>
-        </div>
-      )}
+            {totalPages > 1 && (
+              <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Prethodna
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sljedeća
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Prikazano <span className="font-medium">{startIndex + 1}</span> do <span className="font-medium">{Math.min(endIndex, filteredSuppliers.length)}</span> od{' '}
+                      <span className="font-medium">{filteredSuppliers.length}</span> rezultata
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          if (totalPages <= 7) return true
+                          if (page === 1 || page === totalPages) return true
+                          if (page >= currentPage - 1 && page <= currentPage + 1) return true
+                          return false
+                        })
+                        .map((page, index, array) => {
+                          if (index > 0 && page - array[index - 1] > 1) {
+                            return (
+                              <React.Fragment key={`dots-${page}`}>
+                                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                  ...
+                                </span>
+                                <button
+                                  onClick={() => setCurrentPage(page)}
+                                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                    currentPage === page
+                                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              </React.Fragment>
+                            )
+                          }
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                currentPage === page
+                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          )
+                        })}
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
