@@ -10,6 +10,8 @@ interface SubcontractorContract {
   job_description: string
   cost: number
   budget_realized: number
+  actual_paid: number
+  actual_remaining: number
   progress: number
   deadline: string
   created_at: string
@@ -93,8 +95,18 @@ const SubcontractorManagement: React.FC = () => {
           const phase = contractData.phase
           const cost = parseFloat(contractData.contract_amount || 0)
           const budgetRealized = parseFloat(contractData.budget_realized || 0)
-          const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
           const hasContract = contractData.has_contract !== false
+
+          // Get invoices for this contract
+          const contractInvoices = invoicesData?.filter(inv => inv.contract_id === contractData.id) || []
+          const actualPaid = contractInvoices.reduce((sum, inv) => {
+            return sum + parseFloat(inv.paid_amount?.toString() || '0')
+          }, 0)
+          const actualRemaining = contractInvoices.reduce((sum, inv) => {
+            return sum + parseFloat(inv.remaining_amount?.toString() || '0')
+          }, 0)
+
+          const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
 
           return {
             id: contractData.id,
@@ -103,6 +115,8 @@ const SubcontractorManagement: React.FC = () => {
             job_description: contractData.job_description || '',
             cost,
             budget_realized: budgetRealized,
+            actual_paid: actualPaid,
+            actual_remaining: actualRemaining,
             progress: Math.min(100, progress),
             deadline: contractData.end_date || '',
             created_at: contractData.created_at,
@@ -292,7 +306,6 @@ const SubcontractorManagement: React.FC = () => {
                 {selectedSubcontractor.contracts.map((contract) => {
                   const isOverdue = contract.deadline ? new Date(contract.deadline) < new Date() && contract.progress < 100 : false
                   const daysUntilDeadline = contract.deadline ? differenceInDays(new Date(contract.deadline), new Date()) : 0
-                  const remaining = contract.cost - contract.budget_realized
                   const hasValidContract = contract.has_contract && contract.cost > 0
 
                   return (
@@ -331,11 +344,11 @@ const SubcontractorManagement: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-gray-600">Paid:</p>
-                            <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                            <p className="font-medium text-teal-600">€{contract.actual_paid.toLocaleString('hr-HR')}</p>
                           </div>
                           <div>
                             <p className="text-gray-600">Remaining:</p>
-                            <p className="font-medium text-orange-600">€{remaining.toLocaleString('hr-HR')}</p>
+                            <p className="font-medium text-orange-600">€{contract.actual_remaining.toLocaleString('hr-HR')}</p>
                           </div>
                           {contract.deadline && (
                             <div>
@@ -350,7 +363,11 @@ const SubcontractorManagement: React.FC = () => {
                         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                           <div>
                             <p className="text-gray-600">Paid:</p>
-                            <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                            <p className="font-medium text-teal-600">€{contract.actual_paid.toLocaleString('hr-HR')}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Remaining:</p>
+                            <p className="font-medium text-orange-600">€{contract.actual_remaining.toLocaleString('hr-HR')}</p>
                           </div>
                           {contract.deadline && (
                             <div>
