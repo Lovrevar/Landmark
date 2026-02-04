@@ -156,6 +156,7 @@ const AccountingInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0)
   const pageSize = 100
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -292,6 +293,7 @@ const AccountingInvoices: React.FC = () => {
       const [
         invoicesResult,
         invoiceCountResult,
+        totalUnpaidResult,
         companiesResult,
         bankAccountsResult,
         creditsResult,
@@ -326,6 +328,11 @@ const AccountingInvoices: React.FC = () => {
         supabase
           .from('accounting_invoices')
           .select('*', { count: 'exact', head: true }),
+
+        supabase
+          .from('accounting_invoices')
+          .select('remaining_amount')
+          .in('status', ['UNPAID', 'PARTIALLY_PAID']),
 
         supabase
           .from('accounting_companies')
@@ -414,6 +421,11 @@ const AccountingInvoices: React.FC = () => {
       setInvoices(invoicesResult.data || [])
 
       setTotalCount(invoiceCountResult.count || 0)
+
+      if (totalUnpaidResult.data) {
+        const totalUnpaid = totalUnpaidResult.data.reduce((sum, invoice) => sum + (invoice.remaining_amount || 0), 0)
+        setTotalUnpaidAmount(totalUnpaid)
+      }
 
       if (companiesResult.error) {
         console.error('Error loading companies:', companiesResult.error)
@@ -1037,11 +1049,7 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Ukupno Neplaćeno</p>
               <p className="text-2xl font-bold text-orange-600">
-                €{invoices
-                  .filter(i => i.status === 'UNPAID' || i.status === 'PARTIALLY_PAID')
-                  .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  .toFixed(2)
-                }
+                €{totalUnpaidAmount.toFixed(2)}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
