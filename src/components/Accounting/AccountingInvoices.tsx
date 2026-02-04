@@ -157,6 +157,7 @@ const AccountingInvoices: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [filteredTotalCount, setFilteredTotalCount] = useState(0)
+  const [filteredUnpaidAmount, setFilteredUnpaidAmount] = useState(0)
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0)
   const pageSize = 100
 
@@ -252,12 +253,6 @@ const AccountingInvoices: React.FC = () => {
   }, [currentPage, filterType, filterStatus, filterCompany, debouncedSearchTerm])
 
   useEffect(() => {
-    if (!loading) {
-      fetchFilteredCount()
-    }
-  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, loading])
-
-  useEffect(() => {
     setCurrentPage(1)
   }, [filterType, filterStatus, filterCompany, debouncedSearchTerm])
 
@@ -312,8 +307,7 @@ const AccountingInvoices: React.FC = () => {
 
       const [
         invoicesResult,
-        invoiceCountResult,
-        totalUnpaidResult,
+        statisticsResult,
         companiesResult,
         bankAccountsResult,
         creditsResult,
@@ -336,17 +330,12 @@ const AccountingInvoices: React.FC = () => {
           p_limit: pageSize
         }),
 
-        supabase.rpc('count_invoices_with_search', {
+        supabase.rpc('get_invoice_statistics', {
           p_invoice_type: filterType,
           p_status: filterStatus,
           p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
           p_search_term: debouncedSearchTerm || null
         }),
-
-        supabase
-          .from('accounting_invoices')
-          .select('remaining_amount')
-          .in('status', ['UNPAID', 'PARTIALLY_PAID']),
 
         supabase
           .from('accounting_companies')
@@ -447,11 +436,16 @@ const AccountingInvoices: React.FC = () => {
       }))
       setInvoices(transformedInvoices)
 
-      setTotalCount(invoiceCountResult.data || 0)
-
-      if (totalUnpaidResult.data) {
-        const totalUnpaid = totalUnpaidResult.data.reduce((sum, invoice) => sum + (invoice.remaining_amount || 0), 0)
-        setTotalUnpaidAmount(totalUnpaid)
+      if (statisticsResult.error) throw statisticsResult.error
+      if (statisticsResult.data && statisticsResult.data.length > 0) {
+        const stats = statisticsResult.data[0]
+        setFilteredTotalCount(Number(stats.filtered_count) || 0)
+        setFilteredUnpaidAmount(Number(stats.filtered_unpaid_sum) || 0)
+        setTotalUnpaidAmount(Number(stats.total_unpaid_sum) || 0)
+      } else {
+        setFilteredTotalCount(0)
+        setFilteredUnpaidAmount(0)
+        setTotalUnpaidAmount(0)
       }
 
       if (companiesResult.error) {
@@ -526,22 +520,6 @@ const AccountingInvoices: React.FC = () => {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchFilteredCount = async () => {
-    try {
-      const { data, error } = await supabase.rpc('count_invoices_with_search', {
-        p_invoice_type: filterType,
-        p_status: filterStatus,
-        p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
-        p_search_term: debouncedSearchTerm || null
-      })
-
-      if (error) throw error
-      setFilteredTotalCount(data || 0)
-    } catch (error) {
-      console.error('Error fetching filtered count:', error)
     }
   }
 
@@ -1051,14 +1029,10 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Prikazano Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
-                 €{new Intl.NumberFormat('hr-HR', {
+                €{new Intl.NumberFormat('hr-HR', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                    }).format(
-                      filteredInvoices
-                      .filter(i => i.status !== 'PAID')
-                      .reduce((sum, i) => sum + i.remaining_amount, 0)
-        )}
+                }).format(filteredUnpaidAmount)}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
