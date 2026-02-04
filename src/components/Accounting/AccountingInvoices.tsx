@@ -240,13 +240,17 @@ const AccountingInvoices: React.FC = () => {
 
   useEffect(() => {
     fetchData()
-  }, [currentPage])
+  }, [currentPage, filterType, filterStatus, filterCompany, searchTerm])
 
   useEffect(() => {
     if (!loading) {
       fetchFilteredCount()
     }
   }, [filterType, filterStatus, filterCompany, searchTerm, loading])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterType, filterStatus, filterCompany, searchTerm])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -314,27 +318,21 @@ const AccountingInvoices: React.FC = () => {
         salesResult,
         invoiceCategoriesResult
       ] = await Promise.all([
-        supabase
-          .from('accounting_invoices')
-          .select(`
-            *,
-            companies:company_id (name),
-            subcontractors:supplier_id (name),
-            customers:customer_id (name, surname),
-            investors:investor_id (name),
-            banks:bank_id (name),
-            projects:project_id (name),
-            contracts:contract_id (contract_number, job_description),
-            office_suppliers:office_supplier_id (name),
-            retail_suppliers:retail_supplier_id (name),
-            retail_customers:retail_customer_id (name)
-          `)
-          .order('issue_date', { ascending: false })
-          .range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
+        supabase.rpc('get_filtered_invoices', {
+          p_invoice_type: filterType,
+          p_status: filterStatus,
+          p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
+          p_search_term: searchTerm || null,
+          p_offset: (currentPage - 1) * pageSize,
+          p_limit: pageSize
+        }),
 
-        supabase
-          .from('accounting_invoices')
-          .select('*', { count: 'exact', head: true }),
+        supabase.rpc('count_invoices_with_search', {
+          p_invoice_type: filterType,
+          p_status: filterStatus,
+          p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
+          p_search_term: searchTerm || null
+        }),
 
         supabase
           .from('accounting_invoices')
@@ -425,9 +423,22 @@ const AccountingInvoices: React.FC = () => {
       ])
 
       if (invoicesResult.error) throw invoicesResult.error
-      setInvoices(invoicesResult.data || [])
+      const transformedInvoices = (invoicesResult.data || []).map((inv: any) => ({
+        ...inv,
+        companies: inv.company_name ? { name: inv.company_name } : null,
+        subcontractors: inv.supplier_name ? { name: inv.supplier_name } : null,
+        customers: inv.customer_name ? { name: inv.customer_name, surname: inv.customer_surname || '' } : null,
+        investors: inv.investor_name ? { name: inv.investor_name } : null,
+        banks: inv.bank_name ? { name: inv.bank_name } : null,
+        projects: inv.project_name ? { name: inv.project_name } : null,
+        contracts: inv.contract_number ? { contract_number: inv.contract_number, job_description: inv.contract_job_description || '' } : null,
+        office_suppliers: inv.office_supplier_name ? { name: inv.office_supplier_name } : null,
+        retail_suppliers: inv.retail_supplier_name ? { name: inv.retail_supplier_name } : null,
+        retail_customers: inv.retail_customer_name ? { name: inv.retail_customer_name } : null
+      }))
+      setInvoices(transformedInvoices)
 
-      setTotalCount(invoiceCountResult.count || 0)
+      setTotalCount(invoiceCountResult.data || 0)
 
       if (totalUnpaidResult.data) {
         const totalUnpaid = totalUnpaidResult.data.reduce((sum, invoice) => sum + (invoice.remaining_amount || 0), 0)
@@ -790,42 +801,17 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
-  const filteredInvoices = invoices
-    .filter(invoice => {
-      const matchesSearch =
-        invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.subcontractors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.office_suppliers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.retail_suppliers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.retail_customers?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.investors?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.banks?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.companies?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredInvoices = [...invoices].sort((a, b) => {
+    if (!sortField) return 0
 
-      const matchesType = filterType === 'ALL' || invoice.invoice_type === filterType
-      const matchesStatus = filterStatus === 'ALL' ||
-        (filterStatus === 'UNPAID' && invoice.status === 'UNPAID') ||
-        (filterStatus === 'PAID' && invoice.status === 'PAID') ||
-        (filterStatus === 'PARTIALLY_PAID' && invoice.status === 'PARTIALLY_PAID') ||
-        (filterStatus === 'UNPAID_AND_PARTIAL' && (invoice.status === 'UNPAID' || invoice.status === 'PARTIALLY_PAID'))
-      const matchesCompany = filterCompany === 'ALL' || invoice.company_id === filterCompany
+    if (sortField === 'due_date') {
+      const dateA = new Date(a.due_date).getTime()
+      const dateB = new Date(b.due_date).getTime()
+      return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
+    }
 
-      return matchesSearch && matchesType && matchesStatus && matchesCompany
-    })
-    .sort((a, b) => {
-      if (!sortField) return 0
-
-      if (sortField === 'due_date') {
-        const dateA = new Date(a.due_date).getTime()
-        const dateB = new Date(b.due_date).getTime()
-        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
-      }
-
-      return 0
-    })
+    return 0
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
