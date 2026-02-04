@@ -1055,7 +1055,8 @@ const AccountingInvoices: React.FC = () => {
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
           </div>
-        
+        </div>
+      </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
