@@ -1055,7 +1055,7 @@ const AccountingInvoices: React.FC = () => {
                 €{new Intl.NumberFormat('hr-HR', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                    }).format(totalUnpaidAmount.toFixed(2)}}
+                    }).format(totalUnpaidAmount.toFixed(2)}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
