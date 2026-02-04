@@ -534,7 +534,7 @@ const AccountingInvoices: React.FC = () => {
       }
 
       if (searchTerm) {
-        query = query.or(`invoice_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+        query = query.or(`invoice_number.ilike.*${searchTerm}*,category.ilike.*${searchTerm}*,description.ilike.*${searchTerm}*`)
       }
 
       const { count, error } = await query
