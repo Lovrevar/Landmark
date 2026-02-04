@@ -301,14 +301,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        {/*<Route
+        <Route
           path="/company-credits"
           element={
             <ProtectedRoute>
               <CompanyCredits />
             </ProtectedRoute>
           }
-        />*/}
+        />
         <Route
           path="/accounting-customers"
           element={
