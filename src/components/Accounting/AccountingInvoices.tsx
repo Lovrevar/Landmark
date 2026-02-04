@@ -1446,28 +1446,6 @@ const AccountingInvoices: React.FC = () => {
                   }
               </span>
             </div>
-            <div>
-              <span className="text-gray-600">Neto dobit: </span>
-              <span className={`font-semibold ${
-                filteredInvoices
-                  .filter(i => i.invoice_type.startsWith('OUTGOING'))
-                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
-                filteredInvoices
-                  .filter(i => i.invoice_type.startsWith('INCOMING'))
-                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) >= 0
-                  ? 'text-green-600'
-                  : 'text-red-600'
-              }`}>
-                €{(
-                  filteredInvoices
-                    .filter(i => i.invoice_type.startsWith('OUTGOING'))
-                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
-                  filteredInvoices
-                    .filter(i => i.invoice_type.startsWith('INCOMING'))
-                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
-                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-            </div>
           </div>
         </div>
       </div>
