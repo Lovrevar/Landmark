@@ -1021,10 +1021,10 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
-                €{formatCurrencyFlexible(invoices
-                  .filter(i => i.status === 'UNPAID' || i.status === 'PARTIALLY_PAID')
+                €{filteredInvoices
+                  .filter(i => i.status !== 'PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  )}
+                  }
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-red-600" />
