@@ -239,18 +239,14 @@ const AccountingInvoices: React.FC = () => {
   })
 
   useEffect(() => {
-    if (currentPage === 1) {
-      fetchData()
-      fetchFilteredCount()
-    } else {
-      setCurrentPage(1)
-    }
-  }, [filterType, filterStatus, filterCompany, searchTerm])
+    fetchData()
+  }, [currentPage])
 
   useEffect(() => {
-    fetchData()
-    fetchFilteredCount()
-  }, [currentPage])
+    if (!loading) {
+      fetchFilteredCount()
+    }
+  }, [filterType, filterStatus, filterCompany, searchTerm, loading])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -301,19 +297,6 @@ const AccountingInvoices: React.FC = () => {
     try {
       setLoading(true)
 
-      const filteredInvoicesResult = await supabase.rpc('get_filtered_invoices', {
-        p_invoice_type: filterType,
-        p_status: filterStatus,
-        p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
-        p_search_term: searchTerm || null,
-        p_offset: (currentPage - 1) * pageSize,
-        p_limit: pageSize
-      })
-
-      if (filteredInvoicesResult.error) throw filteredInvoicesResult.error
-
-      const filteredInvoiceIds = (filteredInvoicesResult.data || []).map(inv => inv.id)
-
       const [
         invoicesResult,
         invoiceCountResult,
@@ -331,25 +314,23 @@ const AccountingInvoices: React.FC = () => {
         salesResult,
         invoiceCategoriesResult
       ] = await Promise.all([
-        filteredInvoiceIds.length > 0
-          ? supabase
-              .from('accounting_invoices')
-              .select(`
-                *,
-                companies:company_id (name),
-                subcontractors:supplier_id (name),
-                customers:customer_id (name, surname),
-                investors:investor_id (name),
-                banks:bank_id (name),
-                projects:project_id (name),
-                contracts:contract_id (contract_number, job_description),
-                office_suppliers:office_supplier_id (name),
-                retail_suppliers:retail_supplier_id (name),
-                retail_customers:retail_customer_id (name)
-              `)
-              .in('id', filteredInvoiceIds)
-              .order('issue_date', { ascending: false })
-          : Promise.resolve({ data: [], error: null }),
+        supabase
+          .from('accounting_invoices')
+          .select(`
+            *,
+            companies:company_id (name),
+            subcontractors:supplier_id (name),
+            customers:customer_id (name, surname),
+            investors:investor_id (name),
+            banks:bank_id (name),
+            projects:project_id (name),
+            contracts:contract_id (contract_number, job_description),
+            office_suppliers:office_supplier_id (name),
+            retail_suppliers:retail_supplier_id (name),
+            retail_customers:retail_customer_id (name)
+          `)
+          .order('issue_date', { ascending: false })
+          .range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
 
         supabase
           .from('accounting_invoices')
