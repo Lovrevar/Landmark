@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { FileText, Plus, Search, Filter, Edit, Trash2, DollarSign, X, Columns, Check, ShoppingCart, Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
@@ -160,9 +160,7 @@ const AccountingInvoices: React.FC = () => {
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0)
   const pageSize = 100
 
-  const [searchInput, setSearchInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
@@ -253,20 +251,6 @@ const AccountingInvoices: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1)
   }, [filterType, filterStatus, filterCompany, searchTerm])
-
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchTerm(searchInput)
-    }, 400)
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current)
-      }
-    }
-  }, [searchInput])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -1114,8 +1098,8 @@ const AccountingInvoices: React.FC = () => {
             <input
               type="text"
               placeholder="Pretraži..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -1159,10 +1143,9 @@ const AccountingInvoices: React.FC = () => {
             ))}
           </select>
 
-          {(searchInput || filterType !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL') && (
+          {(searchTerm || filterType !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL') && (
             <button
               onClick={() => {
-                setSearchInput('')
                 setSearchTerm('')
                 setFilterType('ALL')
                 setFilterStatus('ALL')
