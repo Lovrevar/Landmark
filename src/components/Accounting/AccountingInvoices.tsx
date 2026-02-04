@@ -534,7 +534,7 @@ const AccountingInvoices: React.FC = () => {
       }
 
       if (searchTerm) {
-        query = query.or(`invoice_number.ilike.*${searchTerm}*,category.ilike.*${searchTerm}*,description.ilike.*${searchTerm}*`)
+        query = query.or(`invoice_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
       }
 
       const { count, error } = await query
@@ -1434,6 +1434,39 @@ const AccountingInvoices: React.FC = () => {
               >
                 Sljedeća
               </button>
+            </div>
+          </div>
+          <div className="flex items-center space-x-6 text-sm">
+            <div>
+              <span className="text-gray-600">Ukupno neplaćeno: </span>
+              <span className="font-semibold text-red-600">
+                €{filteredInvoices
+                  .filter(i => i.status !== 'PAID')
+                  .reduce((sum, i) => sum + i.remaining_amount, 0)
+                  }
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-600">Neto dobit: </span>
+              <span className={`font-semibold ${
+                filteredInvoices
+                  .filter(i => i.invoice_type.startsWith('OUTGOING'))
+                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
+                filteredInvoices
+                  .filter(i => i.invoice_type.startsWith('INCOMING'))
+                  .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) >= 0
+                  ? 'text-green-600'
+                  : 'text-red-600'
+              }`}>
+                €{(
+                  filteredInvoices
+                    .filter(i => i.invoice_type.startsWith('OUTGOING'))
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0) -
+                  filteredInvoices
+                    .filter(i => i.invoice_type.startsWith('INCOMING'))
+                    .reduce((sum, i) => sum + (i.paid_amount * i.base_amount / i.total_amount), 0)
+                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
             </div>
           </div>
         </div>
