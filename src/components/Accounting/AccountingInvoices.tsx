@@ -156,6 +156,7 @@ const AccountingInvoices: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [filteredTotalCount, setFilteredTotalCount] = useState(0)
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0)
   const pageSize = 100
 
@@ -240,6 +241,12 @@ const AccountingInvoices: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [currentPage])
+
+  useEffect(() => {
+    if (!loading) {
+      fetchFilteredCount()
+    }
+  }, [filterType, filterStatus, filterCompany, searchTerm, loading])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -499,6 +506,43 @@ const AccountingInvoices: React.FC = () => {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchFilteredCount = async () => {
+    try {
+      let query = supabase
+        .from('accounting_invoices')
+        .select('*', { count: 'exact', head: true })
+
+      if (filterType !== 'ALL') {
+        query = query.eq('invoice_type', filterType)
+      }
+
+      if (filterStatus === 'UNPAID') {
+        query = query.eq('status', 'UNPAID')
+      } else if (filterStatus === 'PAID') {
+        query = query.eq('status', 'PAID')
+      } else if (filterStatus === 'PARTIALLY_PAID') {
+        query = query.eq('status', 'PARTIALLY_PAID')
+      } else if (filterStatus === 'UNPAID_AND_PARTIAL') {
+        query = query.in('status', ['UNPAID', 'PARTIALLY_PAID'])
+      }
+
+      if (filterCompany !== 'ALL') {
+        query = query.eq('company_id', filterCompany)
+      }
+
+      if (searchTerm) {
+        query = query.or(`invoice_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+      }
+
+      const { count, error } = await query
+
+      if (error) throw error
+      setFilteredTotalCount(count || 0)
+    } catch (error) {
+      console.error('Error fetching filtered count:', error)
     }
   }
 
@@ -1022,7 +1066,7 @@ const AccountingInvoices: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Prikazano računa</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredInvoices.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredTotalCount}</p>
             </div>
             <FileText className="w-8 h-8 text-blue-600" />
           </div>
