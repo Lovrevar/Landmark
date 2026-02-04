@@ -1057,26 +1057,6 @@ const AccountingInvoices: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">PDV za platiti</p>
-              <p className="text-2xl font-bold text-blue-600">
-                €{(
-                  invoices
-                    .filter(i => i.invoice_type === 'OUTGOING_SALES' || i.invoice_type === 'OUTGOING_OFFICE')
-                    .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0) -
-                  invoices
-                    .filter(i => i.invoice_type === 'INCOMING_SUPPLIER' || i.invoice_type === 'INCOMING_OFFICE' || i.invoice_type === 'INCOMING_BANK')
-                    .reduce((sum, i) => sum + (i.paid_amount * i.vat_amount / i.total_amount), 0)
-                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-      </div>
-
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="relative">
