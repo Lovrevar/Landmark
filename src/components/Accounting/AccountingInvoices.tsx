@@ -161,6 +161,7 @@ const AccountingInvoices: React.FC = () => {
   const pageSize = 100
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
@@ -239,18 +240,26 @@ const AccountingInvoices: React.FC = () => {
   })
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
     fetchData()
-  }, [currentPage, filterType, filterStatus, filterCompany, searchTerm])
+  }, [currentPage, filterType, filterStatus, filterCompany, debouncedSearchTerm])
 
   useEffect(() => {
     if (!loading) {
       fetchFilteredCount()
     }
-  }, [filterType, filterStatus, filterCompany, searchTerm, loading])
+  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, loading])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterType, filterStatus, filterCompany, searchTerm])
+  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -322,7 +331,7 @@ const AccountingInvoices: React.FC = () => {
           p_invoice_type: filterType,
           p_status: filterStatus,
           p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
-          p_search_term: searchTerm || null,
+          p_search_term: debouncedSearchTerm || null,
           p_offset: (currentPage - 1) * pageSize,
           p_limit: pageSize
         }),
@@ -331,7 +340,7 @@ const AccountingInvoices: React.FC = () => {
           p_invoice_type: filterType,
           p_status: filterStatus,
           p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
-          p_search_term: searchTerm || null
+          p_search_term: debouncedSearchTerm || null
         }),
 
         supabase
@@ -526,7 +535,7 @@ const AccountingInvoices: React.FC = () => {
         p_invoice_type: filterType,
         p_status: filterStatus,
         p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
-        p_search_term: searchTerm || null
+        p_search_term: debouncedSearchTerm || null
       })
 
       if (error) throw error
