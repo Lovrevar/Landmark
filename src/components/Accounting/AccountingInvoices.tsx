@@ -1019,7 +1019,7 @@ const AccountingInvoices: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Odabrani Neplaćeni</p>
+              <p className="text-sm text-gray-600">Prikazano Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
                 €{filteredInvoices
                   .filter(i => i.status !== 'PAID')
