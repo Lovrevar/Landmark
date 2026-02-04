@@ -1052,10 +1052,10 @@ const AccountingInvoices: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Ukupno Neplaćeno</p>
               <p className="text-2xl font-bold text-orange-600">
-                €{new Intl.NumberFormat('hr-HR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                    }).format(totalUnpaidAmount.toFixed(2)}
+                {new Intl.NumberFormat('hr-HR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(totalUnpaidAmount)}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
