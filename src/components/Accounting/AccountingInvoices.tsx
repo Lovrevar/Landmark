@@ -439,10 +439,13 @@ const AccountingInvoices: React.FC = () => {
       if (statisticsResult.error) throw statisticsResult.error
       if (statisticsResult.data && statisticsResult.data.length > 0) {
         const stats = statisticsResult.data[0]
-        setFilteredTotalCount(Number(stats.filtered_count) || 0)
+        const count = Number(stats.filtered_count) || 0
+        setTotalCount(count)
+        setFilteredTotalCount(count)
         setFilteredUnpaidAmount(Number(stats.filtered_unpaid_sum) || 0)
         setTotalUnpaidAmount(Number(stats.total_unpaid_sum) || 0)
       } else {
+        setTotalCount(0)
         setFilteredTotalCount(0)
         setFilteredUnpaidAmount(0)
         setTotalUnpaidAmount(0)
