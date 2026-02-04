@@ -246,7 +246,7 @@ const AccountingInvoices: React.FC = () => {
     if (!loading) {
       fetchFilteredCount()
     }
-  }, [filterType, filterStatus, filterCompany, searchTerm, loading])
+  }, [filterType, filterStatus, filterCompany, searchTerm, loading, invoices])
 
   useEffect(() => {
     localStorage.setItem('accountingInvoicesColumns', JSON.stringify(visibleColumns))
@@ -511,6 +511,11 @@ const AccountingInvoices: React.FC = () => {
 
   const fetchFilteredCount = async () => {
     try {
+      if (searchTerm) {
+        setFilteredTotalCount(filteredInvoices.length)
+        return
+      }
+
       let query = supabase
         .from('accounting_invoices')
         .select('*', { count: 'exact', head: true })
@@ -531,10 +536,6 @@ const AccountingInvoices: React.FC = () => {
 
       if (filterCompany !== 'ALL') {
         query = query.eq('company_id', filterCompany)
-      }
-
-      if (searchTerm) {
-        query = query.or(`invoice_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
       }
 
       const { count, error } = await query
