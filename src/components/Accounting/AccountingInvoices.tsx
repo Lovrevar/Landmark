@@ -1035,19 +1035,16 @@ const AccountingInvoices: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Bruto Dobit</p>
-              <p className="text-2xl font-bold text-green-600">
-                €{(
-                  invoices
-                    .filter(i => i.invoice_type.startsWith('OUTGOING'))
-                    .reduce((sum, i) => sum + i.paid_amount, 0) -
-                  invoices
-                    .filter(i => i.invoice_type.startsWith('INCOMING'))
-                    .reduce((sum, i) => sum + i.paid_amount, 0)
-                ).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              <p className="text-sm text-gray-600">Ukupno Neplaćeno</p>
+              <p className="text-2xl font-bold text-orange-600">
+                €{invoices
+                  .filter(i => i.status === 'UNPAID' || i.status === 'PARTIALLY_PAID')
+                  .reduce((sum, i) => sum + i.remaining_amount, 0)
+                  .toFixed(2)
+                }
               </p>
             </div>
-            <DollarSign className="w-8 h-8 text-green-600" />
+            <DollarSign className="w-8 h-8 text-orange-600" />
           </div>
         </div>
 
