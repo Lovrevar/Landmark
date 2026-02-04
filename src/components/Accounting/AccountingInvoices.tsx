@@ -1030,22 +1030,7 @@ const AccountingInvoices: React.FC = () => {
             <DollarSign className="w-8 h-8 text-red-600" />
           </div>
         </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Test</p>
-              <p className="text-2xl font-bold text-red-600">
-                €{invoices
-                  .filter(i => i.status !== 'PAID')
-                  .reduce((sum, i) => sum + i.remaining_amount, 0)
-                  }
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
-
+        
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
