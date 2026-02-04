@@ -511,36 +511,15 @@ const AccountingInvoices: React.FC = () => {
 
   const fetchFilteredCount = async () => {
     try {
-      let query = supabase
-        .from('accounting_invoices')
-        .select('*', { count: 'exact', head: true })
-
-      if (filterType !== 'ALL') {
-        query = query.eq('invoice_type', filterType)
-      }
-
-      if (filterStatus === 'UNPAID') {
-        query = query.eq('status', 'UNPAID')
-      } else if (filterStatus === 'PAID') {
-        query = query.eq('status', 'PAID')
-      } else if (filterStatus === 'PARTIALLY_PAID') {
-        query = query.eq('status', 'PARTIALLY_PAID')
-      } else if (filterStatus === 'UNPAID_AND_PARTIAL') {
-        query = query.in('status', ['UNPAID', 'PARTIALLY_PAID'])
-      }
-
-      if (filterCompany !== 'ALL') {
-        query = query.eq('company_id', filterCompany)
-      }
-
-      if (searchTerm) {
-        query = query.or(`invoice_number.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-      }
-
-      const { count, error } = await query
+      const { data, error } = await supabase.rpc('count_invoices_with_search', {
+        p_invoice_type: filterType,
+        p_status: filterStatus,
+        p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
+        p_search_term: searchTerm || null
+      })
 
       if (error) throw error
-      setFilteredTotalCount(count || 0)
+      setFilteredTotalCount(data || 0)
     } catch (error) {
       console.error('Error fetching filtered count:', error)
     }
