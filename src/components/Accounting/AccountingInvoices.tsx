@@ -1024,6 +1024,7 @@ const AccountingInvoices: React.FC = () => {
                 €{filteredInvoices
                   .filter(i => i.status !== 'PAID')
                   .reduce((sum, i) => sum + i.remaining_amount, 0)
+                  .toFixed(2)
                   }
               </p>
             </div>
