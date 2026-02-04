@@ -89,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Office Dobavljači', icon: Building2, path: '/office-suppliers' },
         { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
         { name: 'Banke', icon: Building2, path: '/accounting-banks' },
-        { name: 'Krediti', icon: CreditCard, path: '/company-credits' },
+        /*{ name: 'Krediti', icon: CreditCard, path: '/company-credits' },*/
         { name: 'Kupci', icon: Users, path: '/accounting-customers' },
         { name: 'Pozajmice', icon: TrendingUp, path: '/accounting-loans' },
         { name: 'Stanje duga', icon: AlertCircle, path: '/debt-status' }
