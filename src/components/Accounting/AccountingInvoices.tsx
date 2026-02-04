@@ -1034,12 +1034,12 @@ const AccountingInvoices: React.FC = () => {
               <p className="text-sm text-gray-600">Prikazano Neplaćeno</p>
               <p className="text-2xl font-bold text-red-600">
                  {new Intl.NumberFormat('hr-HR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(
-          filteredInvoices
-            .filter(i => i.status !== 'PAID')
-            .reduce((sum, i) => sum + i.remaining_amount, 0)
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                    }).format(
+                      filteredInvoices
+                      .filter(i => i.status !== 'PAID')
+                      .reduce((sum, i) => sum + i.remaining_amount, 0)
         )}
               </p>
             </div>
