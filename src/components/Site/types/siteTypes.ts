@@ -2,7 +2,7 @@ import { Project, Subcontractor, ProjectPhase, WirePayment, SubcontractorMilesto
 
 export interface ProjectWithPhases extends Project {
   phases: ProjectPhase[]
-  subcontractors: SubcontractorWithPhase[]
+  subcontractors: Subcontractor[]
   completion_percentage: number
   total_subcontractor_cost: number
   overdue_subcontractors: number
@@ -23,7 +23,6 @@ export interface SubcontractorWithPhase extends Subcontractor {
   has_contract?: boolean
   invoice_total_paid?: number
   invoice_total_owed?: number
-  contract_type_id?: number
 }
 
 export interface SubcontractorWithMilestones extends Subcontractor {

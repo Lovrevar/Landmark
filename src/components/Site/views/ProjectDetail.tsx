@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Building2, Settings, CreditCard, DollarSign, Percent } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases, ContractType } from '../types/siteTypes'
+import { ProjectWithPhases } from '../types/siteTypes'
 import { PhaseCard } from './PhaseCard'
-import { ContractTypeCard } from './ContractTypeCard'
 import { supabase } from '../../../lib/supabase'
 
 interface Company {
@@ -57,12 +56,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 }) => {
   const [credits, setCredits] = useState<Credit[]>([])
   const [loadingCredits, setLoadingCredits] = useState(false)
-  const [contractTypes, setContractTypes] = useState<ContractType[]>([])
-  const [loadingContractTypes, setLoadingContractTypes] = useState(false)
 
   useEffect(() => {
     fetchProjectCredits()
-    fetchContractTypes()
   }, [project.id])
 
   const fetchProjectCredits = async () => {
@@ -88,24 +84,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       console.error('Error fetching project credits:', error)
     } finally {
       setLoadingCredits(false)
-    }
-  }
-
-  const fetchContractTypes = async () => {
-    try {
-      setLoadingContractTypes(true)
-      const { data, error } = await supabase
-        .from('contract_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('id')
-
-      if (error) throw error
-      setContractTypes(data || [])
-    } catch (error) {
-      console.error('Error fetching contract types:', error)
-    } finally {
-      setLoadingContractTypes(false)
     }
   }
 
@@ -227,37 +205,32 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-      {project.has_phases && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Phases</h2>
-          <div className="space-y-6">
-            {project.phases.map((phase) => {
-              const phaseSubcontractors = project.subcontractors.filter(sub => sub.phase_id === phase.id)
+      {project.has_phases ? (
+        <div className="space-y-6">
+          {project.phases.map((phase) => {
+            const phaseSubcontractors = project.subcontractors.filter(sub => sub.phase_id === phase.id)
 
-              return (
-                <PhaseCard
-                  key={phase.id}
-                  phase={phase}
-                  project={project}
-                  phaseSubcontractors={phaseSubcontractors}
-                  onEditPhase={onEditPhase}
-                  onDeletePhase={onDeletePhase}
-                  onAddSubcontractor={onAddSubcontractor}
-                  onOpenPaymentHistory={onOpenPaymentHistory}
-                  onOpenInvoices={onOpenInvoices}
-                  onEditSubcontractor={onEditSubcontractor}
-                  onOpenSubDetails={onOpenSubDetails}
-                  onDeleteSubcontractor={onDeleteSubcontractor}
-                  onManageMilestones={onManageMilestones}
-                />
-              )
-            })}
-          </div>
+            return (
+              <PhaseCard
+                key={phase.id}
+                phase={phase}
+                project={project}
+                phaseSubcontractors={phaseSubcontractors}
+                onEditPhase={onEditPhase}
+                onDeletePhase={onDeletePhase}
+                onAddSubcontractor={onAddSubcontractor}
+                onOpenPaymentHistory={onOpenPaymentHistory}
+                onOpenInvoices={onOpenInvoices}
+                onEditSubcontractor={onEditSubcontractor}
+                onOpenSubDetails={onOpenSubDetails}
+                onDeleteSubcontractor={onDeleteSubcontractor}
+                onManageMilestones={onManageMilestones}
+              />
+            )
+          })}
         </div>
-      )}
-
-      {!project.has_phases && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="text-center py-12">
             <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Project Phases Not Set Up</h3>
@@ -270,35 +243,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             >
               Setup Project Phases
             </button>
-          </div>
-        </div>
-      )}
-
-      {contractTypes.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Subcontractors by Contract Type</h2>
-          <div className="space-y-6">
-            {contractTypes.map((contractType) => {
-              const typeSubcontractors = project.subcontractors.filter(
-                sub => sub.contract_type_id === contractType.id
-              )
-
-              return (
-                <ContractTypeCard
-                  key={contractType.id}
-                  contractType={contractType}
-                  project={project}
-                  typeSubcontractors={typeSubcontractors}
-                  onAddSubcontractor={onAddSubcontractor}
-                  onOpenPaymentHistory={onOpenPaymentHistory}
-                  onOpenInvoices={onOpenInvoices}
-                  onEditSubcontractor={onEditSubcontractor}
-                  onOpenSubDetails={onOpenSubDetails}
-                  onDeleteSubcontractor={onDeleteSubcontractor}
-                  onManageMilestones={onManageMilestones}
-                />
-              )
-            })}
           </div>
         </div>
       )}

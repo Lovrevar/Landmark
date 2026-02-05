@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases, SubcontractorWithPhase } from '../types/siteTypes'
+import { ProjectWithPhases } from '../types/siteTypes'
 
 interface PhaseCardProps {
   phase: ProjectPhase
   project: ProjectWithPhases
-  phaseSubcontractors: SubcontractorWithPhase[]
+  phaseSubcontractors: Subcontractor[]
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase) => void

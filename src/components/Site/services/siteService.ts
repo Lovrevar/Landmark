@@ -38,7 +38,6 @@ export const fetchSubcontractorsWithPhases = async () => {
       project_id,
       status,
       has_contract,
-      contract_type_id,
       subcontractor:subcontractors!contracts_subcontractor_id_fkey(
         id,
         name,
@@ -52,7 +51,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .in('status', ['draft', 'active'])
-
+  
   if (contractError) {
     console.error('Error fetching subcontractors with phases:', contractError)
     throw contractError
@@ -83,8 +82,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       company_name: contract.subcontractor.name,
       created_at: contract.subcontractor.created_at,
       project_phases: contract.phase,
-      has_contract: contract.has_contract !== false,
-      contract_type_id: contract.contract_type_id
+      has_contract: contract.has_contract !== false
     }
   })
 
