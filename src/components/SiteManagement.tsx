@@ -120,6 +120,7 @@ const SiteManagement: React.FC = () => {
       job_description: data.job_description,
       deadline: data.deadline,
       cost: data.cost,
+      contract_type_id: data.contract_type_id,
       budget_realized: data.budget_realized
     })
     if (success) {

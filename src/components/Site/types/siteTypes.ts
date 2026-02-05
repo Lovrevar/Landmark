@@ -59,10 +59,18 @@ export interface SubcontractorFormData {
   deadline: string
   cost: number
   phase_id: string
+  contract_type_id: number
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_investor_id?: string | null
   financed_by_bank_id?: string | null
   has_contract?: boolean
+}
+
+export interface ContractType {
+  id: number
+  name: string
+  description: string | null
+  is_active: boolean
 }
 
 export interface MilestoneFormData {

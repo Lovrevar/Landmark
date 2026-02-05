@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { X, Building2, User } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { SubcontractorFormData } from '../types/siteTypes'
+import { SubcontractorFormData, ContractType } from '../types/siteTypes'
 import { fetchProjectFunders } from '../services/siteService'
+import { supabase } from '../../../lib/supabase'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -39,6 +40,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     deadline: '',
     cost: 0,
     phase_id: '',
+    contract_type_id: 0,
     financed_by_type: null,
     financed_by_investor_id: null,
     financed_by_bank_id: null,
@@ -46,7 +48,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   })
   const [investors, setInvestors] = useState<Funder[]>([])
   const [banks, setBanks] = useState<Funder[]>([])
+  const [contractTypes, setContractTypes] = useState<ContractType[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
+  const [loadingContractTypes, setLoadingContractTypes] = useState(false)
 
   const calculateTotalCost = (base: number, vat: number) => {
     const vatAmount = base * (vat / 100)
@@ -78,6 +82,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   useEffect(() => {
     if (visible && projectId) {
       loadFunders()
+      loadContractTypes()
     }
   }, [visible, projectId])
 
@@ -102,6 +107,24 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       console.error('Error loading funders:', error)
     } finally {
       setLoadingFunders(false)
+    }
+  }
+
+  const loadContractTypes = async () => {
+    try {
+      setLoadingContractTypes(true)
+      const { data, error } = await supabase
+        .from('contract_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('id')
+
+      if (error) throw error
+      setContractTypes(data || [])
+    } catch (error) {
+      console.error('Error loading contract types:', error)
+    } finally {
+      setLoadingContractTypes(false)
     }
   }
 
@@ -187,6 +210,28 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               {hasContract
                 ? 'Subkontraktor ima formalan ugovor sa osnovicom i PDV-om'
                 : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tip ugovora *
+            </label>
+            <select
+              value={formData.contract_type_id}
+              onChange={(e) => setFormData({ ...formData, contract_type_id: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              disabled={loadingContractTypes}
+            >
+              {contractTypes.map(type => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Odaberite tip ugovora za ovu fazu
             </p>
           </div>
 

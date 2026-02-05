@@ -238,6 +238,7 @@ export const useSiteData = () => {
       job_description: string
       deadline: string
       cost: number
+      contract_type_id?: number
       has_contract?: boolean
     }
   ) => {
@@ -268,6 +269,7 @@ export const useSiteData = () => {
           budget_realized: 0,
           end_date: data.deadline || null,
           status: 'active',
+          contract_type_id: data.contract_type_id || 0,
           has_contract: hasContract
         })
 
@@ -305,6 +307,7 @@ export const useSiteData = () => {
           budget_realized: 0,
           end_date: data.deadline || null,
           status: 'active',
+          contract_type_id: data.contract_type_id || 0,
           has_contract: hasContract
         })
 

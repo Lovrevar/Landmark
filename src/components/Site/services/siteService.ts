@@ -461,6 +461,7 @@ export const createContract = async (data: {
   budget_realized: number
   end_date: string | null
   status: string
+  contract_type_id?: number
   has_contract?: boolean
 }) => {
   const { data: newContract, error } = await supabase
