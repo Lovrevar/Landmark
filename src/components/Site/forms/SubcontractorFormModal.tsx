@@ -215,7 +215,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tip ugovora *
+              Kategorija ugovora *
             </label>
             <select
               value={formData.contract_type_id}
