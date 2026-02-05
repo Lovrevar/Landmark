@@ -227,7 +227,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tip ugovora *
+                Kategorija ugovora *
               </label>
               <select
                 value={contractTypeId}
