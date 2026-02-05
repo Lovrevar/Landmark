@@ -38,6 +38,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       project_id,
       status,
       has_contract,
+      contract_type_id,
       subcontractor:subcontractors!contracts_subcontractor_id_fkey(
         id,
         name,
@@ -48,10 +49,15 @@ export const fetchSubcontractorsWithPhases = async () => {
         completed_at,
         created_at
       ),
-      phase:project_phases!contracts_phase_id_fkey(phase_name)
+      phase:project_phases!contracts_phase_id_fkey(phase_name),
+      contract_type:contract_types!contracts_contract_type_id_fkey(
+        id,
+        name,
+        description
+      )
     `)
     .in('status', ['draft', 'active'])
-  
+
   if (contractError) {
     console.error('Error fetching subcontractors with phases:', contractError)
     throw contractError
@@ -82,7 +88,9 @@ export const fetchSubcontractorsWithPhases = async () => {
       company_name: contract.subcontractor.name,
       created_at: contract.subcontractor.created_at,
       project_phases: contract.phase,
-      has_contract: contract.has_contract !== false
+      has_contract: contract.has_contract !== false,
+      contract_type_id: contract.contract_type_id,
+      contract_type_name: contract.contract_type?.name || null
     }
   })
 
@@ -848,4 +856,16 @@ export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, co
     totalPaid,
     totalOwed
   }
+}
+
+export const fetchContractTypes = async () => {
+  const { data, error } = await supabase
+    .from('contract_types')
+    .select('*')
+    .eq('is_active', true)
+    .order('name', { ascending: true })
+
+  if (error) throw error
+
+  return data || []
 }

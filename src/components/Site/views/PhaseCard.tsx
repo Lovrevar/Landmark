@@ -34,6 +34,34 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onManageMilestones
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [expandedContractTypes, setExpandedContractTypes] = useState<Set<string>>(new Set())
+
+  const toggleContractType = (typeKey: string) => {
+    setExpandedContractTypes(prev => {
+      const next = new Set(prev)
+      if (next.has(typeKey)) {
+        next.delete(typeKey)
+      } else {
+        next.add(typeKey)
+      }
+      return next
+    })
+  }
+
+  const groupedSubcontractors = phaseSubcontractors.reduce((groups, sub) => {
+    const typeKey = sub.contract_type_name || 'Uncategorized'
+    if (!groups[typeKey]) {
+      groups[typeKey] = []
+    }
+    groups[typeKey].push(sub)
+    return groups
+  }, {} as Record<string, typeof phaseSubcontractors>)
+
+  const sortedContractTypeKeys = Object.keys(groupedSubcontractors).sort((a, b) => {
+    if (a === 'Uncategorized') return 1
+    if (b === 'Uncategorized') return -1
+    return a.localeCompare(b)
+  })
 
   const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
   const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
@@ -169,8 +197,43 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {phaseSubcontractors.map((subcontractor) => {
+          <div className="space-y-4">
+            {sortedContractTypeKeys.map((contractTypeName) => {
+              const subcontractors = groupedSubcontractors[contractTypeName]
+              const isTypeExpanded = expandedContractTypes.has(contractTypeName)
+              const totalCost = subcontractors.reduce((sum, sub) => sum + (sub.cost || 0), 0)
+              const totalPaid = subcontractors.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
+
+              return (
+                <div key={contractTypeName} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleContractType(contractTypeName)}
+                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-3">
+                      {isTypeExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-600" />
+                      )}
+                      <span className="font-semibold text-gray-900">{contractTypeName}</span>
+                      <span className="text-sm text-gray-600">({subcontractors.length})</span>
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Cost: </span>
+                        <span className="font-semibold text-gray-900">€{totalCost.toLocaleString('hr-HR')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Paid: </span>
+                        <span className="font-semibold text-teal-600">€{totalPaid.toLocaleString('hr-HR')}</span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {isTypeExpanded && (
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {subcontractors.map((subcontractor) => {
               const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
               const actualPaid = subcontractor.invoice_total_paid || 0
               const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
@@ -311,6 +374,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       </button>
                     </div>
                   </div>
+                </div>
+              )
+            })}
+                    </div>
+                  )}
                 </div>
               )
             })}
