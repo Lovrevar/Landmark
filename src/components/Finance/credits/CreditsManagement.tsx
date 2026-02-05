@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, DollarSign, AlertCircle } from 'lucide-react'
+import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, DollarSign, AlertCircle, Plus, Edit2, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface BankCredit {
@@ -34,17 +34,56 @@ interface BankCredit {
   }
 }
 
+interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  description: string | null
+  created_at: string
+  project?: {
+    id: string
+    name: string
+  }
+}
+
+interface Project {
+  id: string
+  name: string
+}
+
 const CreditsManagement: React.FC = () => {
   const [credits, setCredits] = useState<BankCredit[]>([])
+  const [allocations, setAllocations] = useState<Map<string, CreditAllocation[]>>(new Map())
   const [expandedCredits, setExpandedCredits] = useState<Set<string>>(new Set())
+  const [expandedAllocations, setExpandedAllocations] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [showAllocationModal, setShowAllocationModal] = useState(false)
+  const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+
+  const [allocationForm, setAllocationForm] = useState({
+    project_id: '',
+    allocated_amount: 0,
+    description: ''
+  })
 
   useEffect(() => {
-    fetchCredits()
+    fetchData()
   }, [])
 
-  const fetchCredits = async () => {
+  const fetchData = async () => {
     setLoading(true)
+    try {
+      await Promise.all([fetchCredits(), fetchProjects()])
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCredits = async () => {
     try {
       const { data, error } = await supabase
         .from('bank_credits')
@@ -59,10 +98,52 @@ const CreditsManagement: React.FC = () => {
       if (error) throw error
 
       setCredits(data || [])
+
+      if (data) {
+        for (const credit of data) {
+          await fetchAllocationsForCredit(credit.id)
+        }
+      }
     } catch (error) {
       console.error('Error fetching credits:', error)
-    } finally {
-      setLoading(false)
+    }
+  }
+
+  const fetchAllocationsForCredit = async (creditId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('credit_allocations')
+        .select(`
+          *,
+          project:projects(id, name)
+        `)
+        .eq('credit_id', creditId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      setAllocations(prev => {
+        const next = new Map(prev)
+        next.set(creditId, data || [])
+        return next
+      })
+    } catch (error) {
+      console.error('Error fetching allocations:', error)
+    }
+  }
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      setProjects(data || [])
+    } catch (error) {
+      console.error('Error fetching projects:', error)
     }
   }
 
@@ -76,6 +157,72 @@ const CreditsManagement: React.FC = () => {
       }
       return next
     })
+  }
+
+  const toggleAllocation = (allocationKey: string) => {
+    setExpandedAllocations(prev => {
+      const next = new Set(prev)
+      if (next.has(allocationKey)) {
+        next.delete(allocationKey)
+      } else {
+        next.add(allocationKey)
+      }
+      return next
+    })
+  }
+
+  const openAllocationModal = (credit: BankCredit) => {
+    setSelectedCredit(credit)
+    setAllocationForm({
+      project_id: '',
+      allocated_amount: 0,
+      description: ''
+    })
+    setShowAllocationModal(true)
+  }
+
+  const handleCreateAllocation = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedCredit) return
+
+    try {
+      const { error } = await supabase
+        .from('credit_allocations')
+        .insert({
+          credit_id: selectedCredit.id,
+          project_id: allocationForm.project_id || null,
+          allocated_amount: allocationForm.allocated_amount,
+          description: allocationForm.description
+        })
+
+      if (error) throw error
+
+      await fetchAllocationsForCredit(selectedCredit.id)
+      setShowAllocationModal(false)
+      alert('Allocation created successfully')
+    } catch (error) {
+      console.error('Error creating allocation:', error)
+      alert('Error creating allocation')
+    }
+  }
+
+  const handleDeleteAllocation = async (allocationId: string, creditId: string) => {
+    if (!confirm('Are you sure you want to delete this allocation?')) return
+
+    try {
+      const { error } = await supabase
+        .from('credit_allocations')
+        .delete()
+        .eq('id', allocationId)
+
+      if (error) throw error
+
+      await fetchAllocationsForCredit(creditId)
+      alert('Allocation deleted successfully')
+    } catch (error) {
+      console.error('Error deleting allocation:', error)
+      alert('Error deleting allocation')
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -106,7 +253,7 @@ const CreditsManagement: React.FC = () => {
           <CreditCard className="w-8 h-8 mr-3 text-blue-600" />
           Krediti
         </h1>
-        <p className="text-gray-600 mt-2">Pregled svih bankovnih kredita</p>
+        <p className="text-gray-600 mt-2">Pregled svih bankovnih kredita i njihovih namjena</p>
       </div>
 
       {credits.length === 0 ? (
@@ -118,8 +265,12 @@ const CreditsManagement: React.FC = () => {
         <div className="space-y-4">
           {credits.map((credit) => {
             const isExpanded = expandedCredits.has(credit.id)
+            const creditAllocations = allocations.get(credit.id) || []
+            const totalAllocated = creditAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
             const availableAmount = credit.amount - credit.used_amount
+            const unallocatedAmount = credit.amount - totalAllocated
             const utilizationPercentage = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
+            const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
             const netUsed = credit.used_amount - credit.repaid_amount
 
             return (
@@ -150,20 +301,32 @@ const CreditsManagement: React.FC = () => {
                         <p className="text-gray-600 mt-1">
                           {credit.bank?.name || 'Unknown Bank'}
                           {credit.company && ` • ${credit.company.name}`}
-                          {credit.project && ` • ${credit.project.name}`}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
-                      <p className="text-sm text-gray-600">Credit Amount</p>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
+                        <p className="text-sm text-gray-600">Credit Amount</p>
+                      </div>
+                      <button
+                        onClick={() => openAllocationModal(credit)}
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Namjena kredita
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-sm text-blue-700">Credit Amount</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded-lg">
+                      <p className="text-sm text-purple-700">Allocated</p>
+                      <p className="text-lg font-bold text-purple-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
                       <p className="text-sm text-orange-700">Paid Out</p>
@@ -175,32 +338,32 @@ const CreditsManagement: React.FC = () => {
                         €{netUsed.toLocaleString('hr-HR')}
                       </p>
                     </div>
-                    <div className={`p-3 rounded-lg ${availableAmount <= 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                      <p className={`text-sm ${availableAmount <= 0 ? 'text-red-700' : 'text-green-700'}`}>Available</p>
-                      <p className={`text-lg font-bold ${availableAmount <= 0 ? 'text-red-900' : 'text-green-900'}`}>
-                        €{availableAmount.toLocaleString('hr-HR')}
+                    <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>Unallocated</p>
+                      <p className={`text-lg font-bold ${unallocatedAmount < 0 ? 'text-red-900' : 'text-green-900'}`}>
+                        €{unallocatedAmount.toLocaleString('hr-HR')}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-4">
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-600">Utilization</span>
-                      <span className="text-sm font-medium">{utilizationPercentage.toFixed(1)}%</span>
+                      <span className="text-sm text-gray-600">Allocation Progress</span>
+                      <span className="text-sm font-medium">{allocationPercentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
                         className={`h-3 rounded-full transition-all duration-300 ${
-                          utilizationPercentage > 100 ? 'bg-red-600' :
-                          utilizationPercentage > 80 ? 'bg-orange-600' :
-                          'bg-blue-600'
+                          allocationPercentage > 100 ? 'bg-red-600' :
+                          allocationPercentage > 80 ? 'bg-orange-600' :
+                          'bg-purple-600'
                         }`}
-                        style={{ width: `${Math.min(100, utilizationPercentage)}%` }}
+                        style={{ width: `${Math.min(100, allocationPercentage)}%` }}
                       ></div>
                     </div>
-                    {utilizationPercentage > 100 && (
+                    {allocationPercentage > 100 && (
                       <p className="text-xs text-red-600 mt-1">
-                        Over limit by €{(credit.used_amount - credit.amount).toLocaleString('hr-HR')}
+                        Over-allocated by €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
                       </p>
                     )}
                   </div>
@@ -208,7 +371,7 @@ const CreditsManagement: React.FC = () => {
 
                 {isExpanded && (
                   <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                       <div className="space-y-4">
                         <h4 className="font-semibold text-gray-900 flex items-center">
                           <Building2 className="w-5 h-5 mr-2" />
@@ -264,6 +427,57 @@ const CreditsManagement: React.FC = () => {
                       </div>
                     </div>
 
+                    {creditAllocations.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="font-semibold text-gray-900 mb-4">Namjene kredita ({creditAllocations.length})</h4>
+                        <div className="space-y-3">
+                          {creditAllocations.map((allocation) => {
+                            const allocationKey = `${credit.id}-${allocation.id}`
+                            const isAllocExpanded = expandedAllocations.has(allocationKey)
+
+                            return (
+                              <div key={allocation.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                                <button
+                                  onClick={() => toggleAllocation(allocationKey)}
+                                  className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    {isAllocExpanded ? (
+                                      <ChevronUp className="w-4 h-4 text-gray-600" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                                    )}
+                                    <span className="font-semibold text-gray-900">
+                                      {allocation.project?.name || 'OPEX (Bez projekta)'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-4">
+                                    <span className="text-sm font-semibold text-purple-600">
+                                      €{allocation.allocated_amount.toLocaleString('hr-HR')}
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteAllocation(allocation.id, credit.id)
+                                      }}
+                                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </button>
+                                {isAllocExpanded && allocation.description && (
+                                  <div className="px-4 py-3 bg-white">
+                                    <p className="text-sm text-gray-600">{allocation.description}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
                         <h4 className="font-semibold text-gray-900 mb-2">Purpose</h4>
@@ -275,6 +489,96 @@ const CreditsManagement: React.FC = () => {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {showAllocationModal && selectedCredit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Nova namjena kredita</h3>
+              <button
+                onClick={() => setShowAllocationModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAllocation} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Credit: {selectedCredit.credit_name}
+                  </label>
+                  <p className="text-sm text-gray-500">
+                    Unallocated: €{(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project <span className="text-gray-400">(ostavi prazno za OPEX)</span>
+                  </label>
+                  <select
+                    value={allocationForm.project_id}
+                    onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">OPEX (Bez projekta)</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Allocated Amount (€) *
+                  </label>
+                  <input
+                    type="number"
+                    value={allocationForm.allocated_amount}
+                    onChange={(e) => setAllocationForm({ ...allocationForm, allocated_amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={allocationForm.description}
+                    onChange={(e) => setAllocationForm({ ...allocationForm, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAllocationModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Create Allocation
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

@@ -10,15 +10,20 @@ interface Company {
   name: string
 }
 
-interface Credit {
+interface CreditAllocation {
   id: string
-  credit_name: string
-  amount: number
-  used_amount: number
-  repaid_amount: number
-  outstanding_balance: number
-  interest_rate: number
-  company: Company
+  allocated_amount: number
+  description: string | null
+  bank_credit: {
+    id: string
+    credit_name: string
+    amount: number
+    used_amount: number
+    repaid_amount: number
+    outstanding_balance: number
+    interest_rate: number
+    company: Company
+  }
 }
 
 interface ProjectDetailProps {
@@ -54,34 +59,39 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onManageMilestones,
   canManagePayments = true
 }) => {
-  const [credits, setCredits] = useState<Credit[]>([])
+  const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [loadingCredits, setLoadingCredits] = useState(false)
 
   useEffect(() => {
-    fetchProjectCredits()
+    fetchProjectCreditAllocations()
   }, [project.id])
 
-  const fetchProjectCredits = async () => {
+  const fetchProjectCreditAllocations = async () => {
     try {
       setLoadingCredits(true)
       const { data, error } = await supabase
-        .from('bank_credits')
+        .from('credit_allocations')
         .select(`
           id,
-          credit_name,
-          amount,
-          used_amount,
-          repaid_amount,
-          outstanding_balance,
-          interest_rate,
-          company:accounting_companies(id, name)
+          allocated_amount,
+          description,
+          bank_credit:bank_credits!credit_allocations_credit_id_fkey(
+            id,
+            credit_name,
+            amount,
+            used_amount,
+            repaid_amount,
+            outstanding_balance,
+            interest_rate,
+            company:accounting_companies(id, name)
+          )
         `)
         .eq('project_id', project.id)
 
       if (error) throw error
-      setCredits(data || [])
+      setCreditAllocations(data || [])
     } catch (error) {
-      console.error('Error fetching project credits:', error)
+      console.error('Error fetching project credit allocations:', error)
     } finally {
       setLoadingCredits(false)
     }
@@ -144,57 +154,63 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* Project Credits Section */}
-      {credits.length > 0 && (
+      {creditAllocations.length > 0 && (
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
           <div className="flex items-center mb-4">
             <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Bank Credits for This Project</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Alocirani krediti za ovaj projekt</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {credits.map((credit) => {
-              const usedAmount = credit.used_amount || 0
-              const available = credit.amount - usedAmount
-              const utilizationPercent = credit.amount > 0
-                ? (usedAmount / credit.amount) * 100
+            {creditAllocations.map((allocation) => {
+              const credit = allocation.bank_credit
+              const allocatedAmount = allocation.allocated_amount
+              const usedPercentage = credit.amount > 0
+                ? (credit.used_amount / credit.amount) * 100
                 : 0
 
               return (
-                <div key={credit.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                <div key={allocation.id} className="bg-white rounded-lg p-4 border border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-1">{credit.credit_name}</h3>
                   <p className="text-xs text-gray-600 mb-3">{credit.company.name}</p>
 
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Credit Limit:</span>
+                      <span className="text-gray-600">Alocirano:</span>
+                      <span className="font-bold text-purple-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Ukupan kredit:</span>
                       <span className="font-semibold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Used:</span>
-                      <span className="font-semibold text-blue-600">€{usedAmount.toLocaleString('hr-HR')}</span>
+                      <span className="text-gray-600">Iskorišteno:</span>
+                      <span className="font-semibold text-blue-600">€{credit.used_amount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Available:</span>
-                      <span className="font-semibold text-green-600">€{available.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Interest Rate:</span>
+                      <span className="text-gray-600">Kamatna stopa:</span>
                       <span className="font-semibold text-orange-600">{credit.interest_rate}%</span>
                     </div>
                   </div>
 
+                  {allocation.description && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600">{allocation.description}</p>
+                    </div>
+                  )}
+
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-500">Utilization</span>
-                      <span className="font-semibold text-gray-700">{utilizationPercent.toFixed(1)}%</span>
+                      <span className="text-gray-500">Iskorištenost kredita</span>
+                      <span className="font-semibold text-gray-700">{usedPercentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all ${
-                          utilizationPercent >= 90 ? 'bg-red-500' :
-                          utilizationPercent >= 70 ? 'bg-orange-500' :
+                          usedPercentage >= 90 ? 'bg-red-500' :
+                          usedPercentage >= 70 ? 'bg-orange-500' :
                           'bg-blue-500'
                         }`}
-                        style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                        style={{ width: `${Math.min(usedPercentage, 100)}%` }}
                       />
                     </div>
                   </div>
