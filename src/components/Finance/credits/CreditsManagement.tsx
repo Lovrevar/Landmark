@@ -39,6 +39,7 @@ interface CreditAllocation {
   credit_id: string
   project_id: string | null
   allocated_amount: number
+  used_amount: number
   description: string | null
   created_at: string
   project?: {
@@ -452,9 +453,17 @@ const CreditsManagement: React.FC = () => {
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-4">
-                                    <span className="text-sm font-semibold text-purple-600">
-                                      €{allocation.allocated_amount.toLocaleString('hr-HR')}
-                                    </span>
+                                    <div className="text-right">
+                                      <div className="text-sm text-gray-600">
+                                        Alocirano: <span className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        Iskorišteno: €{allocation.used_amount.toLocaleString('hr-HR')} |
+                                        Dostupno: <span className={allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+                                          €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                                        </span>
+                                      </div>
+                                    </div>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
@@ -466,9 +475,27 @@ const CreditsManagement: React.FC = () => {
                                     </button>
                                   </div>
                                 </button>
-                                {isAllocExpanded && allocation.description && (
-                                  <div className="px-4 py-3 bg-white">
-                                    <p className="text-sm text-gray-600">{allocation.description}</p>
+                                {isAllocExpanded && (
+                                  <div className="px-4 py-3 bg-white border-t border-gray-200">
+                                    {allocation.description && (
+                                      <p className="text-sm text-gray-600 mb-3">{allocation.description}</p>
+                                    )}
+                                    <div className="grid grid-cols-3 gap-3 text-sm">
+                                      <div>
+                                        <p className="text-gray-600">Alocirano</p>
+                                        <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-gray-600">Iskorišteno</p>
+                                        <p className="font-semibold text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-gray-600">Dostupno</p>
+                                        <p className={`font-semibold ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                          €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>

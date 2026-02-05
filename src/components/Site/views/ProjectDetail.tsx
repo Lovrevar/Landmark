@@ -13,6 +13,7 @@ interface Company {
 interface CreditAllocation {
   id: string
   allocated_amount: number
+  used_amount: number
   description: string | null
   bank_credit: {
     id: string
@@ -74,6 +75,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         .select(`
           id,
           allocated_amount,
+          used_amount,
           description,
           bank_credit:bank_credits!credit_allocations_credit_id_fkey(
             id,
@@ -164,8 +166,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             {creditAllocations.map((allocation) => {
               const credit = allocation.bank_credit
               const allocatedAmount = allocation.allocated_amount
-              const usedPercentage = credit.amount > 0
-                ? (credit.used_amount / credit.amount) * 100
+              const usedAmount = allocation.used_amount
+              const availableAmount = allocatedAmount - usedAmount
+              const allocationUsedPercentage = allocatedAmount > 0
+                ? (usedAmount / allocatedAmount) * 100
                 : 0
 
               return (
@@ -179,16 +183,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <span className="font-bold text-purple-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Ukupan kredit:</span>
-                      <span className="font-semibold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
+                      <span className="text-gray-600">Iskorišteno:</span>
+                      <span className="font-semibold text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Iskorišteno:</span>
-                      <span className="font-semibold text-blue-600">€{credit.used_amount.toLocaleString('hr-HR')}</span>
+                      <span className="text-gray-600">Dostupno:</span>
+                      <span className={`font-semibold ${availableAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        €{availableAmount.toLocaleString('hr-HR')}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Kamatna stopa:</span>
-                      <span className="font-semibold text-orange-600">{credit.interest_rate}%</span>
+                      <span className="font-semibold text-blue-600">{credit.interest_rate}%</span>
                     </div>
                   </div>
 
@@ -200,17 +206,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-500">Iskorištenost kredita</span>
-                      <span className="font-semibold text-gray-700">{usedPercentage.toFixed(1)}%</span>
+                      <span className="text-gray-500">Iskorištenost alokacije</span>
+                      <span className="font-semibold text-gray-700">{allocationUsedPercentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all ${
-                          usedPercentage >= 90 ? 'bg-red-500' :
-                          usedPercentage >= 70 ? 'bg-orange-500' :
-                          'bg-blue-500'
+                          allocationUsedPercentage >= 100 ? 'bg-red-500' :
+                          allocationUsedPercentage >= 80 ? 'bg-orange-500' :
+                          'bg-purple-500'
                         }`}
-                        style={{ width: `${Math.min(usedPercentage, 100)}%` }}
+                        style={{ width: `${Math.min(allocationUsedPercentage, 100)}%` }}
                       />
                     </div>
                   </div>

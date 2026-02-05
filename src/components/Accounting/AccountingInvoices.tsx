@@ -32,6 +32,19 @@ interface CompanyCredit {
   repaid_amount: number
 }
 
+interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  project?: {
+    id: string
+    name: string
+  }
+}
+
 interface Supplier {
   id: string
   name: string
@@ -142,6 +155,7 @@ const AccountingInvoices: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
+  const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [officeSuppliers, setOfficeSuppliers] = useState<OfficeSupplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -209,10 +223,12 @@ const AccountingInvoices: React.FC = () => {
     payment_source_type: 'bank_account' as 'bank_account' | 'credit',
     company_bank_account_id: '',
     credit_id: '',
+    credit_allocation_id: '',
     is_cesija: false,
     cesija_company_id: '',
     cesija_bank_account_id: '',
     cesija_credit_id: '',
+    cesija_credit_allocation_id: '',
     payment_date: new Date().toISOString().split('T')[0],
     amount: 0,
     payment_method: 'WIRE' as 'WIRE' | 'CASH' | 'CHECK' | 'CARD',
@@ -690,22 +706,49 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
+  const fetchCreditAllocations = async (creditId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('credit_allocations')
+        .select(`
+          id,
+          credit_id,
+          project_id,
+          allocated_amount,
+          used_amount,
+          description,
+          project:projects(id, name)
+        `)
+        .eq('credit_id', creditId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setCreditAllocations(data || [])
+    } catch (error) {
+      console.error('Error fetching credit allocations:', error)
+      setCreditAllocations([])
+    }
+  }
+
   const handleOpenPaymentModal = (invoice: Invoice) => {
     setPayingInvoice(invoice)
     setPaymentFormData({
       payment_source_type: 'bank_account',
       company_bank_account_id: '',
       credit_id: '',
+      credit_allocation_id: '',
       is_cesija: false,
       cesija_company_id: '',
       cesija_bank_account_id: '',
       cesija_credit_id: '',
+      cesija_credit_allocation_id: '',
       payment_date: new Date().toISOString().split('T')[0],
       amount: invoice.remaining_amount,
       payment_method: 'WIRE',
       reference_number: '',
       description: ''
     })
+    setCreditAllocations([])
     document.body.style.overflow = 'hidden'
     setShowPaymentModal(true)
   }
@@ -739,10 +782,12 @@ const AccountingInvoices: React.FC = () => {
         payment_source_type: paymentFormData.payment_source_type,
         company_bank_account_id: paymentFormData.is_cesija ? null : (paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.company_bank_account_id || null) : null),
         credit_id: paymentFormData.is_cesija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_id || null) : null),
+        credit_allocation_id: paymentFormData.is_cesija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_allocation_id || null) : null),
         is_cesija: paymentFormData.is_cesija,
         cesija_company_id: paymentFormData.is_cesija ? (paymentFormData.cesija_company_id || null) : null,
         cesija_bank_account_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.cesija_bank_account_id || null) : null,
         cesija_credit_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_id || null) : null,
+        cesija_credit_allocation_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_allocation_id || null) : null,
         payment_date: paymentFormData.payment_date,
         amount: paymentFormData.amount,
         payment_method: paymentFormData.payment_method,
@@ -2016,7 +2061,15 @@ const AccountingInvoices: React.FC = () => {
                         </label>
                         <select
                           value={paymentFormData.credit_id}
-                          onChange={(e) => setPaymentFormData({ ...paymentFormData, credit_id: e.target.value })}
+                          onChange={(e) => {
+                            const newCreditId = e.target.value
+                            setPaymentFormData({ ...paymentFormData, credit_id: newCreditId, credit_allocation_id: '' })
+                            if (newCreditId) {
+                              fetchCreditAllocations(newCreditId)
+                            } else {
+                              setCreditAllocations([])
+                            }
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         >
@@ -2035,6 +2088,35 @@ const AccountingInvoices: React.FC = () => {
                         {companyCredits.filter(credit => credit.company_id === payingInvoice.company_id).length === 0 && (
                           <p className="text-xs text-red-600 mt-1">
                             Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {paymentFormData.payment_source_type === 'credit' && paymentFormData.credit_id && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Projekt *
+                        </label>
+                        <select
+                          value={paymentFormData.credit_allocation_id}
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, credit_allocation_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Odaberi projekt</option>
+                          {creditAllocations.map(allocation => {
+                            const available = allocation.allocated_amount - allocation.used_amount
+                            return (
+                              <option key={allocation.id} value={allocation.id}>
+                                {allocation.project?.name || 'OPEX (Bez projekta)'} (Dostupno: €{formatCurrency(available)})
+                              </option>
+                            )
+                          })}
+                        </select>
+                        {creditAllocations.length === 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.
                           </p>
                         )}
                       </div>
@@ -2147,7 +2229,15 @@ const AccountingInvoices: React.FC = () => {
                             </label>
                             <select
                               value={paymentFormData.cesija_credit_id}
-                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cesija_credit_id: e.target.value })}
+                              onChange={(e) => {
+                                const newCreditId = e.target.value
+                                setPaymentFormData({ ...paymentFormData, cesija_credit_id: newCreditId, cesija_credit_allocation_id: '' })
+                                if (newCreditId) {
+                                  fetchCreditAllocations(newCreditId)
+                                } else {
+                                  setCreditAllocations([])
+                                }
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               required
                             >
@@ -2166,6 +2256,35 @@ const AccountingInvoices: React.FC = () => {
                             {paymentFormData.cesija_company_id && companyCredits.filter(credit => credit.company_id === paymentFormData.cesija_company_id).length === 0 && (
                               <p className="text-xs text-red-600 mt-1">
                                 Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {paymentFormData.payment_source_type === 'credit' && paymentFormData.cesija_credit_id && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Projekt (cesija) *
+                            </label>
+                            <select
+                              value={paymentFormData.cesija_credit_allocation_id}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cesija_credit_allocation_id: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">Odaberi projekt</option>
+                              {creditAllocations.map(allocation => {
+                                const available = allocation.allocated_amount - allocation.used_amount
+                                return (
+                                  <option key={allocation.id} value={allocation.id}>
+                                    {allocation.project?.name || 'OPEX (Bez projekta)'} (Dostupno: €{formatCurrency(available)})
+                                  </option>
+                                )
+                              })}
+                            </select>
+                            {creditAllocations.length === 0 && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.
                               </p>
                             )}
                           </div>
