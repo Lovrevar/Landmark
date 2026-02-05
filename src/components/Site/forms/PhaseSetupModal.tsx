@@ -47,6 +47,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       setPhaseCount(existingPhases.length)
     } else {
       const defaultPhases = [
+        { phase_name: 'Zemljište', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Priprema i razvoj', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Izgradnja i uređenje', budget_allocated: 0, start_date: '', end_date: '' },
         { phase_name: 'Opremanje', budget_allocated: 0, start_date: '', end_date: '' },
