@@ -19,11 +19,34 @@ import {
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 
+interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  created_at: string
+  credit?: {
+    id: string
+    credit_name: string
+    credit_type: string
+    interest_rate: number
+    start_date: string
+    maturity_date: string
+    usage_expiration_date: string | null
+    outstanding_balance: number
+    monthly_payment: number
+    repayment_type: string
+    bank?: Bank
+  }
+}
+
 interface ProjectWithFinancials extends Project {
   total_investment: number
   total_debt: number
   equity_investments: ProjectInvestment[]
-  debt_financing: BankCredit[]
+  debt_allocations: CreditAllocation[]
   investors: Investor[]
   banks: Bank[]
   funding_ratio: number
@@ -76,23 +99,35 @@ const InvestmentProjects: React.FC = () => {
 
       if (investmentsError) throw investmentsError
 
-      // Fetch bank credits with bank details
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('bank_credits')
+      // Fetch credit allocations with bank credit and bank details
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
         .select(`
           *,
-          banks(*)
+          credit:bank_credits(
+            id,
+            credit_name,
+            credit_type,
+            interest_rate,
+            start_date,
+            maturity_date,
+            usage_expiration_date,
+            outstanding_balance,
+            monthly_payment,
+            repayment_type,
+            bank:banks(*)
+          )
         `)
 
-      if (creditsError) throw creditsError
+      if (allocationsError) throw allocationsError
 
       // Process projects with financial data
       const projectsWithFinancials = (projectsData || []).map(project => {
         const projectInvestments = (investmentsData || []).filter(inv => inv.project_id === project.id)
-        const projectCredits = (creditsData || []).filter(credit => credit.project_id === project.id)
+        const projectAllocations = (allocationsData || []).filter(alloc => alloc.project_id === project.id)
 
         const total_investment = projectInvestments.reduce((sum, inv) => sum + inv.amount, 0)
-        const total_debt = projectCredits.reduce((sum, credit) => sum + credit.amount, 0)
+        const total_debt = projectAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
         const funding_ratio = project.budget > 0 ? ((total_investment + total_debt) / project.budget) * 100 : 0
         const debt_to_equity = total_investment > 0 ? total_debt / total_investment : 0
         const expected_roi = projectInvestments.length > 0 
@@ -107,10 +142,10 @@ const InvestmentProjects: React.FC = () => {
             index === self.findIndex(i => i.id === investor.id)
           )
 
-        const uniqueBanks = projectCredits
-          .filter(credit => credit.banks)
-          .map(credit => credit.banks)
-          .filter((bank, index, self) => 
+        const uniqueBanks = projectAllocations
+          .filter(alloc => alloc.credit?.bank)
+          .map(alloc => alloc.credit.bank)
+          .filter((bank, index, self) =>
             index === self.findIndex(b => b.id === bank.id)
           )
 
@@ -127,7 +162,7 @@ const InvestmentProjects: React.FC = () => {
           total_investment,
           total_debt,
           equity_investments: projectInvestments,
-          debt_financing: projectCredits,
+          debt_allocations: projectAllocations,
           investors: uniqueInvestors,
           banks: uniqueBanks,
           funding_ratio,
@@ -169,12 +204,24 @@ const InvestmentProjects: React.FC = () => {
 
       if (investmentsError) throw investmentsError
 
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('bank_credits')
-        .select('*, banks(*)')
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
+        .select(`
+          *,
+          credit:bank_credits(
+            id,
+            credit_name,
+            credit_type,
+            interest_rate,
+            start_date,
+            maturity_date,
+            usage_expiration_date,
+            bank:banks(*)
+          )
+        `)
         .eq('project_id', projectId)
 
-      if (creditsError) throw creditsError
+      if (allocationsError) throw allocationsError
 
       const { data: wirePaymentsData, error: paymentsError } = await supabase
         .from('subcontractor_payments')
@@ -203,22 +250,18 @@ const InvestmentProjects: React.FC = () => {
         })
       })
 
-      creditsData?.forEach(credit => {
-        if (!credit.bank_id) return
-
-        const spent = (wirePaymentsData || [])
-          .filter(p => p.paid_by_bank_id === credit.bank_id)
-          .reduce((sum, p) => sum + Number(p.amount), 0)
+      allocationsData?.forEach(allocation => {
+        if (!allocation.credit?.bank) return
 
         utilization.push({
-          id: credit.bank_id,
+          id: allocation.id,
           type: 'bank',
-          name: credit.banks?.name || 'Unknown',
-          totalAmount: credit.amount,
-          spentAmount: spent,
-          availableAmount: credit.amount - spent,
-          usageExpirationDate: credit.usage_expiration_date,
-          investmentDate: credit.start_date
+          name: `${allocation.credit.bank.name} - ${allocation.credit.credit_name}`,
+          totalAmount: allocation.allocated_amount,
+          spentAmount: allocation.used_amount,
+          availableAmount: allocation.allocated_amount - allocation.used_amount,
+          usageExpirationDate: allocation.credit.usage_expiration_date,
+          investmentDate: allocation.credit.start_date
         })
       })
 
@@ -547,40 +590,46 @@ const InvestmentProjects: React.FC = () => {
                       <Banknote className="w-4 h-4 mr-2" />
                       Debt Financing
                     </h5>
-                    {selectedProject.debt_financing.length === 0 ? (
+                    {selectedProject.debt_allocations.length === 0 ? (
                       <p className="text-sm text-red-700">No debt financing</p>
                     ) : (
                       <div className="space-y-3">
-                        {selectedProject.debt_financing.map((credit) => (
-                          <div key={credit.id} className="bg-white p-3 rounded border border-red-200">
+                        {selectedProject.debt_allocations.map((allocation) => (
+                          <div key={allocation.id} className="bg-white p-3 rounded border border-red-200">
                             <div className="flex justify-between items-start mb-2">
                               <div>
                                 <p className="font-medium text-gray-900">
-                                  {credit.banks?.name || 'Unknown Bank'}
+                                  {allocation.credit?.bank?.name || 'Unknown Bank'}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {credit.credit_type.replace('_', ' ')} • {credit.interest_rate}% APR
+                                  {allocation.credit?.credit_name} • {allocation.credit?.credit_type.replace(/_/g, ' ')} • {allocation.credit?.interest_rate}% APR
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-red-600">€{credit.amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-xs text-gray-500">Credit Amount</p>
+                                <p className="font-bold text-red-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                <p className="text-xs text-gray-500">Allocated to Project</p>
                               </div>
                             </div>
                             <div className="flex justify-between items-center mb-1">
-                              <p className="text-xs text-gray-600">Outstanding Balance:</p>
-                              <p className="text-xs font-medium text-red-600">€{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
+                              <p className="text-xs text-gray-600">Used Amount:</p>
+                              <p className="text-xs font-medium text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
                             </div>
                             <div className="flex justify-between items-center mb-2">
-                              <p className="text-xs text-gray-600">{credit.repayment_type === 'yearly' ? 'Annual' : 'Monthly'} Payment:</p>
-                              <p className="text-xs font-medium text-gray-900">€{credit.monthly_payment.toLocaleString('hr-HR')}</p>
+                              <p className="text-xs text-gray-600">Available:</p>
+                              <p className={`text-xs font-medium ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                              </p>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              {credit.maturity_date
-                                ? `Matures: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`
-                                : 'No maturity date'
-                              }
-                            </p>
+                            {allocation.description && (
+                              <p className="text-xs text-gray-600 mt-2 italic">
+                                {allocation.description}
+                              </p>
+                            )}
+                            {allocation.credit?.maturity_date && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                Credit Matures: {format(new Date(allocation.credit.maturity_date), 'MMM dd, yyyy')}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
