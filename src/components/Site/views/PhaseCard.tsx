@@ -34,6 +34,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onManageMilestones
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [withContractExpanded, setWithContractExpanded] = useState(true)
+  const [withoutContractExpanded, setWithoutContractExpanded] = useState(true)
 
   const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
   const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
@@ -169,8 +171,38 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {phaseSubcontractors.map((subcontractor) => {
+          <div className="space-y-6">
+            {subcontractorsWithContract.length > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <button
+                  onClick={() => setWithContractExpanded(!withContractExpanded)}
+                  className="w-full flex items-center justify-between mb-4"
+                >
+                  <div className="flex items-center space-x-3">
+                    {withContractExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
+                    <h4 className="text-lg font-semibold text-gray-900">With Contract</h4>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                      {subcontractorsWithContract.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="text-right">
+                      <p className="text-gray-600">Total Contract</p>
+                      <p className="font-bold text-gray-900">€{totalContractCost.toLocaleString('hr-HR')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-gray-600">Paid</p>
+                      <p className="font-bold text-teal-600">€{totalPaidWithContract.toLocaleString('hr-HR')}</p>
+                    </div>
+                  </div>
+                </button>
+                {withContractExpanded && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subcontractorsWithContract.map((subcontractor) => {
               const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
               const actualPaid = subcontractor.invoice_total_paid || 0
               const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
@@ -314,6 +346,189 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 </div>
               )
             })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {subcontractorsWithoutContract.length > 0 && (
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <button
+                  onClick={() => setWithoutContractExpanded(!withoutContractExpanded)}
+                  className="w-full flex items-center justify-between mb-4"
+                >
+                  <div className="flex items-center space-x-3">
+                    {withoutContractExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-yellow-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-yellow-600" />
+                    )}
+                    <h4 className="text-lg font-semibold text-gray-900">Without Contract (Pay-as-you-go)</h4>
+                    <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs font-semibold rounded-full">
+                      {subcontractorsWithoutContract.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="text-right">
+                      <p className="text-gray-600">Total Paid</p>
+                      <p className="font-bold text-teal-600">€{totalPaidWithoutContract.toLocaleString('hr-HR')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-gray-600">Total Owed</p>
+                      <p className="font-bold text-orange-600">€{(subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_owed || 0), 0)).toLocaleString('hr-HR')}</p>
+                    </div>
+                  </div>
+                </button>
+                {withoutContractExpanded && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {subcontractorsWithoutContract.map((subcontractor) => {
+                      const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
+                      const actualPaid = subcontractor.invoice_total_paid || 0
+                      const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
+                      const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
+                      const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
+                      const isPaid = hasValidContract && actualPaid >= subcontractor.cost
+                      const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0
+
+                      return (
+                        <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                          !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
+                          subVariance > 0 ? 'border-red-200 bg-red-50' :
+                          isPaid && subVariance === 0 ? 'border-green-200 bg-green-50' :
+                          actualPaid > 0 ? 'border-blue-200 bg-blue-50' :
+                          'border-gray-200 bg-gray-50'
+                        }`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-gray-900">{subcontractor.name}</h4>
+                                {subcontractor.has_contract === false && (
+                                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                                    BEZ UGOVORA
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
+                              <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
+                            </div>
+                            {hasValidContract && (
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                                subVariance > 0 ? 'bg-red-100 text-red-800' :
+                                isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
+                                actualPaid > 0 ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {subVariance > 0 ? 'Over Budget' :
+                                 isPaid && subVariance === 0 ? 'Paid' :
+                                 actualPaid > 0 ? 'Partial' : 'Unpaid'}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 text-xs mb-3">
+                            {subcontractor.deadline && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600">Deadline:</span>
+                                <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                                  {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
+                                </span>
+                              </div>
+                            )}
+                            {hasValidContract ? (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600">Contract:</span>
+                                  <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600">Paid:</span>
+                                  <span className="font-medium text-teal-600">€{actualPaid.toLocaleString('hr-HR')}</span>
+                                </div>
+                                {remainingToPay > 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600">Remaining:</span>
+                                    <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                                  <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                                  <span className={`font-bold ${
+                                    subVariance > 0 ? 'text-red-600' :
+                                    subVariance < 0 ? 'text-green-600' :
+                                    'text-gray-900'
+                                  }`}>
+                                    {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                                  <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                                  <span className="font-bold text-green-600">€{(subcontractor.invoice_total_paid || 0).toLocaleString('hr-HR')}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 font-medium">Ukupno dugovi:</span>
+                                  <span className="font-bold text-orange-600">€{(subcontractor.invoice_total_owed || 0).toLocaleString('hr-HR')}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            {onOpenPaymentHistory && (
+                              <button
+                                onClick={() => onOpenPaymentHistory(subcontractor)}
+                                className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
+                              >
+                                View Payments
+                              </button>
+                            )}
+                            {onOpenInvoices && (
+                              <button
+                                onClick={() => onOpenInvoices(subcontractor)}
+                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center"
+                              >
+                                View Invoices
+                              </button>
+                            )}
+                            <div className="grid grid-cols-4 gap-2">
+                              <button
+                                onClick={() => onEditSubcontractor(subcontractor)}
+                                className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => onOpenSubDetails(subcontractor)}
+                                className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
+                              >
+                                Details
+                              </button>
+                              {onManageMilestones && (
+                                <button
+                                  onClick={() => onManageMilestones(subcontractor, phase, project)}
+                                  className="px-2 py-1 bg-amber-600 text-white rounded-md text-xs font-medium hover:bg-amber-700 transition-colors duration-200 flex items-center justify-center"
+                                  title="Manage payment milestones"
+                                >
+                                  <Calendar className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => onDeleteSubcontractor(subcontractor.id)}
+                                className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         </div>
