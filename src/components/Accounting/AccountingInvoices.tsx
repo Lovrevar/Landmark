@@ -70,6 +70,11 @@ interface Project {
   name: string
 }
 
+interface Refund {
+  id: number
+  name: string
+}
+
 interface Contract {
   id: string
   contract_number: string
@@ -132,6 +137,7 @@ interface Invoice {
   total_amount: number
   category: string
   project_id: string | null
+  refund_id: number | null
   description: string
   status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'
   paid_amount: number
@@ -156,6 +162,7 @@ const AccountingInvoices: React.FC = () => {
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
+  const [refunds, setRefunds] = useState<Refund[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [officeSuppliers, setOfficeSuppliers] = useState<OfficeSupplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -216,6 +223,7 @@ const AccountingInvoices: React.FC = () => {
     base_amount_4: 0,
     category: '',
     project_id: '',
+    refund_id: '',
     description: ''
   })
 
@@ -335,7 +343,8 @@ const AccountingInvoices: React.FC = () => {
         projectsResult,
         contractsResult,
         salesResult,
-        invoiceCategoriesResult
+        invoiceCategoriesResult,
+        refundsResult
       ] = await Promise.all([
         supabase.rpc('get_filtered_invoices', {
           p_invoice_type: filterType,
@@ -433,7 +442,12 @@ const AccountingInvoices: React.FC = () => {
           .from('invoice_categories')
           .select('id, name')
           .eq('is_active', true)
-          .order('sort_order')
+          .order('sort_order'),
+
+        supabase
+          .from('accounting_invoices_refund')
+          .select('id, name')
+          .order('name')
       ])
 
       if (invoicesResult.error) throw invoicesResult.error
@@ -535,6 +549,10 @@ const AccountingInvoices: React.FC = () => {
         setInvoiceCategories(invoiceCategoriesResult.data || [])
       }
 
+      if (!refundsResult.error) {
+        setRefunds(refundsResult.data || [])
+      }
+
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -576,6 +594,7 @@ const AccountingInvoices: React.FC = () => {
         base_amount_4: invoice.base_amount_4 || 0,
         category: invoice.category,
         project_id: invoice.project_id || '',
+        refund_id: invoice.refund_id ? String(invoice.refund_id) : '',
         description: invoice.description
       })
     } else {
@@ -593,6 +612,8 @@ const AccountingInvoices: React.FC = () => {
         contract_id: '',
         milestone_id: '',
         invoice_number: '',
+        reference_number: '',
+        iban: '',
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
         base_amount: 0,
@@ -603,6 +624,7 @@ const AccountingInvoices: React.FC = () => {
         base_amount_4: 0,
         category: '',
         project_id: '',
+        refund_id: '',
         description: ''
       })
     }
@@ -678,6 +700,7 @@ const AccountingInvoices: React.FC = () => {
         base_amount_4: formData.base_amount_4 || 0,
         category: formData.category,
         project_id: formData.project_id || null,
+        refund_id: formData.refund_id ? parseInt(formData.refund_id) : null,
         description: formData.description,
         approved,
         created_by: user?.id
@@ -1026,6 +1049,7 @@ const AccountingInvoices: React.FC = () => {
                 contract_id: '',
                 milestone_id: '',
                 project_id: '',
+                refund_id: '',
                 category: ''
               })
               setEditingInvoice(null)
@@ -1504,6 +1528,24 @@ const AccountingInvoices: React.FC = () => {
                   </div>
                 )}
 
+                {formData.invoice_type === 'INCOMING_SUPPLIER' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Refundacija (opcionalno)
+                    </label>
+                    <select
+                      value={formData.refund_id}
+                      onChange={(e) => setFormData({ ...formData, refund_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Bez refundacije</option>
+                      {refunds.map(refund => (
+                        <option key={refund.id} value={refund.id}>{refund.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1518,6 +1560,24 @@ const AccountingInvoices: React.FC = () => {
                       <option value="">Odaberi office dobavljača</option>
                       {officeSuppliers.map(supplier => (
                         <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {formData.invoice_type === 'INCOMING_OFFICE' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Refundacija (opcionalno)
+                    </label>
+                    <select
+                      value={formData.refund_id}
+                      onChange={(e) => setFormData({ ...formData, refund_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Bez refundacije</option>
+                      {refunds.map(refund => (
+                        <option key={refund.id} value={refund.id}>{refund.name}</option>
                       ))}
                     </select>
                   </div>
