@@ -793,21 +793,6 @@ const AccountingBanks: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
-                  <select
-                    value={newCredit.project_id}
-                    onChange={(e) => setNewCredit({ ...newCredit, project_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select project (optional)</option>
-                    {projects.map(project => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Credit Type</label>
                   <select
                     value={newCredit.credit_type}
