@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, AlertCircle } from 'lucide-react'
 import { Subcontractor } from '../../../lib/supabase'
 import { supabase } from '../../../lib/supabase'
+import { ContractType } from '../types/siteTypes'
 
 interface Phase {
   id: string
@@ -30,6 +31,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
   const [loadingPhases, setLoadingPhases] = useState(false)
+  const [contractTypes, setContractTypes] = useState<ContractType[]>([])
+  const [contractTypeId, setContractTypeId] = useState(0)
+  const [loadingContractTypes, setLoadingContractTypes] = useState(false)
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   const [jobDescription, setJobDescription] = useState('')
@@ -63,6 +67,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setDeadline(subcontractor.deadline)
 
       loadPhases()
+      loadContractTypes()
+      loadContractTypeId()
     }
   }, [visible, subcontractor])
 
@@ -95,6 +101,44 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       console.error('Error loading phases:', error)
     } finally {
       setLoadingPhases(false)
+    }
+  }
+
+  const loadContractTypes = async () => {
+    try {
+      setLoadingContractTypes(true)
+      const { data, error } = await supabase
+        .from('contract_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('id')
+
+      if (error) throw error
+      setContractTypes(data || [])
+    } catch (error) {
+      console.error('Error loading contract types:', error)
+    } finally {
+      setLoadingContractTypes(false)
+    }
+  }
+
+  const loadContractTypeId = async () => {
+    if (!subcontractor) return
+
+    const contractId = (subcontractor as any).contract_id || subcontractor.id
+
+    try {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('contract_type_id')
+        .eq('id', contractId)
+        .single()
+
+      if (error) throw error
+      setContractTypeId(data?.contract_type_id || 0)
+    } catch (error) {
+      console.error('Error loading contract type:', error)
+      setContractTypeId(0)
     }
   }
 
@@ -179,6 +223,28 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   </label>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tip ugovora *
+              </label>
+              <select
+                value={contractTypeId}
+                onChange={(e) => setContractTypeId(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                disabled={loadingContractTypes}
+              >
+                {contractTypes.map(type => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Odaberite tip ugovora za ovu fazu
+              </p>
             </div>
 
             {!hasContract && (
@@ -326,6 +392,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   deadline,
                   cost: calculateTotalCost(),
                   phase_id: selectedPhaseId,
+                  contract_type_id: contractTypeId,
                   has_contract: hasContract
                 } as any
 
