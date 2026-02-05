@@ -1203,7 +1203,8 @@ const BanksManagement: React.FC = () => {
                               {(credit as any).accounting_companies && (
                                 <p className="text-xs text-gray-500 mb-1">Company: {(credit as any).accounting_companies.name}</p>
                               )}
-
+                              
+                            </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                               <p className="text-sm text-gray-600">{credit.interest_rate}% APR</p>
