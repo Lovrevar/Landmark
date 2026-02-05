@@ -2,7 +2,7 @@ import { Project, Subcontractor, ProjectPhase, WirePayment, SubcontractorMilesto
 
 export interface ProjectWithPhases extends Project {
   phases: ProjectPhase[]
-  subcontractors: Subcontractor[]
+  subcontractors: SubcontractorWithPhase[]
   completion_percentage: number
   total_subcontractor_cost: number
   overdue_subcontractors: number

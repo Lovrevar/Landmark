@@ -280,7 +280,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           <div className="space-y-6">
             {contractTypes.map((contractType) => {
               const typeSubcontractors = project.subcontractors.filter(
-                sub => (sub as any).contract_type_id === contractType.id
+                sub => sub.contract_type_id === contractType.id
               )
 
               return (

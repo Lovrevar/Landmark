@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 import { Plus, Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases, ContractType } from '../types/siteTypes'
+import { ProjectWithPhases, ContractType, SubcontractorWithPhase } from '../types/siteTypes'
 
 interface ContractTypeCardProps {
   contractType: ContractType
   project: ProjectWithPhases
-  typeSubcontractors: Subcontractor[]
+  typeSubcontractors: SubcontractorWithPhase[]
   onAddSubcontractor: (phase: ProjectPhase) => void
   onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
   onOpenInvoices?: (subcontractor: Subcontractor) => void
