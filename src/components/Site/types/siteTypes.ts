@@ -23,6 +23,7 @@ export interface SubcontractorWithPhase extends Subcontractor {
   has_contract?: boolean
   invoice_total_paid?: number
   invoice_total_owed?: number
+  contract_type_id?: number
 }
 
 export interface SubcontractorWithMilestones extends Subcontractor {
