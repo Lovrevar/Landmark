@@ -276,6 +276,8 @@ const BanksManagement: React.FC = () => {
         .from('bank_credits')
         .insert({
           ...newCredit,
+          company_id: newCredit.company_id || null,
+          project_id: newCredit.project_id || null,
           credit_type: actualCreditType,
           credit_seniority: seniority,
           outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
@@ -431,6 +433,7 @@ const BanksManagement: React.FC = () => {
         .from('bank_credits')
         .update({
           bank_id: newCredit.bank_id,
+          company_id: newCredit.company_id || null,
           project_id: newCredit.project_id || null,
           credit_name: newCredit.credit_name,
           credit_type: actualCreditType,
