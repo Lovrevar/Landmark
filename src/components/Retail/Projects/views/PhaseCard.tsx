@@ -1,5 +1,5 @@
-import React from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Calendar } from 'lucide-react'
+import React, { useState } from 'react'
+import { Building2, Plus, Edit2, Trash2, DollarSign, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../../types/retail'
 
@@ -30,6 +30,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onViewInvoices,
   onManageMilestones
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const totalContractCost = phaseContracts.reduce((sum, contract) => sum + contract.contract_amount, 0)
   const totalBudgetRealized = phaseContracts.reduce((sum, contract) => sum + contract.budget_realized, 0)
   const unpaidContracts = totalContractCost - totalBudgetRealized
@@ -63,10 +65,23 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="text-4xl">{getPhaseIcon(phase.phase_type)}</div>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
+              title={isExpanded ? "Collapse phase" : "Expand phase"}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-6 h-6 text-blue-600" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-blue-600" />
+              )}
+            </button>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
-              <p className="text-gray-600">Phase {phase.phase_order}</p>
+              <h3 className="text-xl font-semibold text-gray-900">
+                <span className="mr-2">{getPhaseIcon(phase.phase_type)}</span>
+                {phase.phase_name}
+              </h3>
+              <p className="text-gray-600">Phase {phase.phase_order} • {phaseContracts.length} contract{phaseContracts.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -152,8 +167,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         )}
       </div>
 
-      <div className="p-6">
-        {phaseContracts.length === 0 ? (
+      {isExpanded && (
+        <div className="p-6">
+          {phaseContracts.length === 0 ? (
           <div className="text-center py-8">
             <DollarSign className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-500">No contracts in this phase yet</p>
@@ -316,7 +332,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             })}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

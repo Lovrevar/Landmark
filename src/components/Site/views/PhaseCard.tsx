@@ -1,5 +1,5 @@
-import React from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar } from 'lucide-react'
+import React, { useState } from 'react'
+import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from '../types/siteTypes'
@@ -33,6 +33,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onDeleteSubcontractor,
   onManageMilestones
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
   const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
 
@@ -56,12 +58,20 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-blue-600" />
-            </div>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
+              title={isExpanded ? "Collapse phase" : "Expand phase"}
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-6 h-6 text-blue-600" />
+              ) : (
+                <ChevronDown className="w-6 h-6 text-blue-600" />
+              )}
+            </button>
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
-              <p className="text-gray-600">Phase {phase.phase_number}</p>
+              <p className="text-gray-600">Phase {phase.phase_number} • {phaseSubcontractors.length} subcontractor{phaseSubcontractors.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -145,8 +155,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         </div>
       </div>
 
-      <div className="p-6">
-        {phaseSubcontractors.length === 0 ? (
+      {isExpanded && (
+        <div className="p-6">
+          {phaseSubcontractors.length === 0 ? (
           <div className="text-center py-8">
             <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-500">No subcontractors assigned to this phase yet</p>
@@ -305,7 +316,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             })}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
