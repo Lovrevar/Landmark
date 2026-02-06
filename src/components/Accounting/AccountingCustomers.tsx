@@ -1,183 +1,20 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import React from 'react'
 import { Users, Search, DollarSign, TrendingUp, TrendingDown, FileText, Eye, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
-
-interface Customer {
-  id: string
-  name: string
-  surname: string
-  email: string | null
-  phone: string | null
-  created_at: string
-}
-
-interface Invoice {
-  id: string
-  invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES'
-  total_amount: number
-  paid_amount: number
-  remaining_amount: number
-  status: string
-  issue_date: string
-  company?: { name: string }
-}
-
-interface Property {
-  apartment_price: number
-  garage_price: number | null
-  repository_price: number | null
-  total_property_price: number
-}
-
-interface CustomerStats {
-  id: string
-  name: string
-  surname: string
-  full_name: string
-  email: string | null
-  phone: string | null
-  total_invoices: number
-  total_amount: number
-  total_paid: number
-  total_unpaid: number
-  property_price: number
-  total_apartments: number
-  invoices: Invoice[]
-}
+import { useAccountingCustomers } from './hooks/useAccountingCustomers'
 
 const AccountingCustomers: React.FC = () => {
-  const [customers, setCustomers] = useState<CustomerStats[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerStats | null>(null)
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name')
-
-      if (customersError) throw customersError
-
-      const customersWithStats = await Promise.all(
-        (customersData || []).map(async (customer) => {
-          const { data: invoicesData } = await supabase
-            .from('accounting_invoices')
-            .select(`
-              id,
-              invoice_number,
-              invoice_type,
-              total_amount,
-              paid_amount,
-              remaining_amount,
-              status,
-              issue_date,
-              company:company_id (name)
-            `)
-            .eq('customer_id', customer.id)
-            .order('issue_date', { ascending: false })
-
-          const invoices = invoicesData || []
-
-          const totalAmount = invoices.reduce((sum, i) => sum + i.total_amount, 0)
-          const totalPaid = invoices.reduce((sum, i) => sum + i.paid_amount, 0)
-          const totalUnpaid = invoices.reduce((sum, i) => sum + i.remaining_amount, 0)
-
-          const { data: propertyData } = await supabase
-            .from('sales')
-            .select(`
-              apartment_id,
-              apartments!inner (
-                price,
-                garage_id,
-                repository_id,
-                garages (price),
-                repositories (price)
-              )
-            `)
-            .eq('customer_id', customer.id)
-
-          let propertyPrice = 0
-          let totalApartments = 0
-          if (propertyData && propertyData.length > 0) {
-            totalApartments = propertyData.length
-            propertyData.forEach((sale) => {
-              if (sale.apartments) {
-                const apt = sale.apartments
-                propertyPrice += Number(apt.price || 0)
-                if (apt.garages) {
-                  propertyPrice += Number(apt.garages.price || 0)
-                }
-                if (apt.repositories) {
-                  propertyPrice += Number(apt.repositories.price || 0)
-                }
-              }
-            })
-          }
-
-          return {
-            id: customer.id,
-            name: customer.name,
-            surname: customer.surname,
-            full_name: `${customer.name} ${customer.surname}`.trim(),
-            email: customer.email,
-            phone: customer.phone,
-            total_invoices: invoices.length,
-            total_amount: totalAmount,
-            total_paid: totalPaid,
-            total_unpaid: totalUnpaid,
-            property_price: propertyPrice,
-            total_apartments: totalApartments,
-            invoices: invoices
-          }
-        })
-      )
-
-      setCustomers(customersWithStats)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const isIncomeInvoice = (invoiceType: string) => {
-    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES'
-  }
-
-  const handleOpenDetails = (customer: CustomerStats) => {
-    setSelectedCustomer(customer)
-    document.body.style.overflow = 'hidden'
-    setShowDetailsModal(true)
-  }
-
-  const handleCloseDetails = () => {
-    document.body.style.overflow = 'unset'
-    setShowDetailsModal(false)
-    setSelectedCustomer(null)
-  }
-
-  const filteredCustomers = customers.filter(c =>
-    c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone?.includes(searchTerm)
-  )
-
-  const totalStats = {
-    total_invoices: customers.reduce((sum, c) => sum + c.total_invoices, 0),
-    total_property_value: customers.reduce((sum, c) => sum + c.property_price, 0),
-    total_paid: customers.reduce((sum, c) => sum + c.total_paid, 0),
-    total_debt: customers.reduce((sum, c) => sum + (c.property_price - c.total_paid), 0)
-  }
+  const {
+    loading,
+    searchTerm,
+    setSearchTerm,
+    showDetailsModal,
+    selectedCustomer,
+    isIncomeInvoice,
+    handleOpenDetails,
+    handleCloseDetails,
+    filteredCustomers,
+    totalStats
+  } = useAccountingCustomers()
 
   return (
     <div className="space-y-6">

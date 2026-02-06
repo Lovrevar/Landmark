@@ -1,204 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { CreditCard, Plus, Calendar, Percent, DollarSign, Clock, Edit, Trash2, X } from 'lucide-react'
+import React from 'react'
+import { CreditCard, Plus, Calendar, Percent, DollarSign, Clock, Edit, Trash2 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import DateInput from '../Common/DateInput'
-
-interface Company {
-  id: string
-  name: string
-  oib: string
-}
-
-interface Project {
-  id: string
-  name: string
-}
-
-interface Credit {
-  id: string
-  company_id: string
-  project_id: string | null
-  credit_name: string
-  start_date: string
-  maturity_date: string
-  grace_period: number
-  interest_rate: number
-  amount: number
-  used_amount: number
-  repaid_amount: number
-  outstanding_balance: number
-  created_at: string
-}
-
-interface CreditWithCompany extends Credit {
-  company: Company
-  project?: Project
-}
+import { useCredits } from './hooks/useCredits'
+import CreditFormModal from './forms/CreditFormModal'
+import type { Credit } from './types/creditTypes'
 
 const CompanyCredits: React.FC = () => {
-  const [credits, setCredits] = useState<CreditWithCompany[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editingCredit, setEditingCredit] = useState<Credit | null>(null)
-
-  const [formData, setFormData] = useState({
-    company_id: '',
-    project_id: '',
-    credit_name: '',
-    start_date: '',
-    end_date: '',
-    grace_period_months: 0,
-    interest_rate: 0,
-    initial_amount: 0
-  })
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    if (showModal) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showModal])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-
-      const [{ data: companiesData }, { data: projectsData }, { data: creditsData }] = await Promise.all([
-        supabase.from('accounting_companies').select('*').order('name'),
-        supabase.from('projects').select('id, name').order('name'),
-        supabase.from('bank_credits').select(`
-          *,
-          used_amount,
-          repaid_amount,
-          company:accounting_companies(id, name, oib),
-          project:projects(id, name)
-        `).order('created_at', { ascending: false })
-      ])
-
-      setCompanies(companiesData || [])
-      setProjects(projectsData || [])
-      setCredits(creditsData || [])
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const resetForm = () => {
-    setFormData({
-      company_id: '',
-      project_id: '',
-      credit_name: '',
-      start_date: '',
-      end_date: '',
-      grace_period_months: 0,
-      interest_rate: 0,
-      initial_amount: 0
-    })
-    setEditingCredit(null)
-  }
-
-  const handleOpenModal = (credit?: Credit) => {
-    if (credit) {
-      setEditingCredit(credit)
-      setFormData({
-        company_id: credit.company_id,
-        project_id: credit.project_id || '',
-        credit_name: credit.credit_name,
-        start_date: credit.start_date,
-        end_date: credit.maturity_date,
-        grace_period_months: Math.round(credit.grace_period / 30),
-        interest_rate: credit.interest_rate,
-        initial_amount: credit.amount
-      })
-    } else {
-      resetForm()
-    }
-    setShowModal(true)
-  }
-
-  const handleCloseModal = () => {
-    setShowModal(false)
-    resetForm()
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      if (editingCredit) {
-        const { error } = await supabase
-          .from('bank_credits')
-          .update({
-            company_id: formData.company_id,
-            project_id: formData.project_id || null,
-            credit_name: formData.credit_name,
-            start_date: formData.start_date,
-            maturity_date: formData.end_date,
-            grace_period: formData.grace_period_months * 30,
-            interest_rate: formData.interest_rate,
-            amount: formData.initial_amount
-          })
-          .eq('id', editingCredit.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('bank_credits')
-          .insert([{
-            company_id: formData.company_id,
-            project_id: formData.project_id || null,
-            credit_name: formData.credit_name,
-            start_date: formData.start_date,
-            maturity_date: formData.end_date,
-            grace_period: formData.grace_period_months * 30,
-            interest_rate: formData.interest_rate,
-            amount: formData.initial_amount,
-            outstanding_balance: 0,
-            credit_type: 'line_of_credit',
-            status: 'active',
-            purpose: formData.credit_name
-          }])
-
-        if (error) throw error
-      }
-
-      await fetchData()
-      handleCloseModal()
-    } catch (error) {
-      console.error('Error saving credit:', error)
-      alert('Error saving credit')
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this credit?')) return
-
-    try {
-      const { error } = await supabase
-        .from('bank_credits')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      await fetchData()
-    } catch (error) {
-      console.error('Error deleting credit:', error)
-      alert('Error deleting credit')
-    }
-  }
+  const {
+    credits,
+    companies,
+    projects,
+    loading,
+    showModal,
+    editingCredit,
+    formData,
+    setFormData,
+    handleOpenModal,
+    handleCloseModal,
+    handleSubmit,
+    handleDelete
+  } = useCredits()
 
   const getUtilizationPercentage = (credit: Credit) => {
     if (credit.amount === 0) return 0
@@ -392,148 +213,16 @@ const CompanyCredits: React.FC = () => {
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {editingCredit ? 'Edit Credit' : 'Add New Credit'}
-                </h3>
-                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                <select
-                  value={formData.company_id}
-                  onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name} ({company.oib})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
-                <select
-                  value={formData.project_id}
-                  onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">No Project (General Credit)</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Link credit to a specific project for tracking expenses</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Credit Name</label>
-                <input
-                  type="text"
-                  value={formData.credit_name}
-                  onChange={(e) => setFormData({ ...formData, credit_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Bank Loan 2024"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <DateInput
-                    value={formData.start_date}
-                    onChange={(value) => setFormData({ ...formData, start_date: value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <DateInput
-                    value={formData.end_date}
-                    onChange={(value) => setFormData({ ...formData, end_date: value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Grace Period (months)</label>
-                  <input
-                    type="number"
-                    value={formData.grace_period_months}
-                    onChange={(e) => setFormData({ ...formData, grace_period_months: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.interest_rate}
-                    onChange={(e) => setFormData({ ...formData, interest_rate: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Credit Limit (€)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.initial_amount}
-                  onChange={(e) => setFormData({ ...formData, initial_amount: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {editingCredit ? 'Update Credit' : 'Add Credit'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreditFormModal
+        showModal={showModal}
+        editingCredit={editingCredit}
+        formData={formData}
+        setFormData={setFormData}
+        companies={companies}
+        projects={projects}
+        onSubmit={handleSubmit}
+        onClose={handleCloseModal}
+      />
     </div>
   )
 }

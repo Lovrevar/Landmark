@@ -2,42 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { X, DollarSign } from 'lucide-react'
 import DateInput from '../Common/DateInput'
-import CurrencyInput, { formatCurrency } from '../Common/CurrencyInput'
-
-interface BankInvoiceFormModalProps {
-  onClose: () => void
-  onSuccess: () => void
-}
-
-interface BankCompany {
-  id: string
-  name: string
-  contact_person?: string
-  contact_email?: string
-}
-
-interface BankCredit {
-  id: string
-  company_id: string
-  credit_name: string
-  amount: number
-  outstanding_balance: number
-}
-
-interface MyCompany {
-  id: string
-  name: string
-}
+import CurrencyInput from '../Common/CurrencyInput'
+import { useBankInvoiceData } from './hooks/useBankInvoiceData'
+import InvoicePreview from './components/InvoicePreview'
+import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from './types/bankInvoiceTypes'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false)
-  const [banks, setBanks] = useState<BankCompany[]>([])
-  const [credits, setCredits] = useState<BankCredit[]>([])
-  const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
-  const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
-
-  const [formData, setFormData] = useState({
-    invoice_type: 'INCOMING_BANK' as 'INCOMING_BANK' | 'OUTGOING_BANK',
+  const [formData, setFormData] = useState<BankInvoiceFormData>({
+    invoice_type: 'INCOMING_BANK',
     company_id: '',
     bank_id: '',
     bank_credit_id: '',
@@ -56,86 +29,25 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     description: ''
   })
 
+  const { banks, credits, myCompanies, invoiceCategories, fetchMyCompanies } = useBankInvoiceData(formData.bank_id)
+
   useEffect(() => {
-    fetchBanks()
-    fetchMyCompanies()
-    fetchInvoiceCategories()
+    const initializeCompany = async () => {
+      const companies = await fetchMyCompanies()
+      if (companies && companies.length > 0) {
+        setFormData(prev => ({ ...prev, company_id: companies[0].id }))
+      }
+    }
+    initializeCompany()
   }, [])
 
-  const fetchInvoiceCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('invoice_categories')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('sort_order')
-
-      if (!error) {
-        setInvoiceCategories(data || [])
-      }
-    } catch (error) {
-      console.error('Error fetching invoice categories:', error)
-    }
-  }
-
   useEffect(() => {
-    if (formData.bank_id) {
-      fetchCredits(formData.bank_id)
-    } else {
-      setCredits([])
+    if (!formData.bank_id) {
       setFormData(prev => ({ ...prev, bank_credit_id: '' }))
     }
   }, [formData.bank_id])
 
-  const fetchBanks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('banks')
-        .select('id, name, contact_person, contact_email')
-        .order('name')
-
-      if (error) throw error
-      setBanks(data || [])
-    } catch (error) {
-      console.error('Error fetching banks:', error)
-      alert('Greška pri učitavanju banaka')
-    }
-  }
-
-  const fetchCredits = async (bankId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('bank_credits')
-        .select('id, company_id, credit_name, amount, outstanding_balance')
-        .eq('bank_id', bankId)
-        .order('credit_name')
-
-      if (error) throw error
-      setCredits(data || [])
-    } catch (error) {
-      console.error('Error fetching credits:', error)
-      setCredits([])
-    }
-  }
-
-  const fetchMyCompanies = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('accounting_companies')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-      setMyCompanies(data || [])
-      if (data && data.length > 0) {
-        setFormData(prev => ({ ...prev, company_id: data[0].id }))
-      }
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-    }
-  }
-
-  const calculateTotal = () => {
+  const calculateTotal = (): CalculatedTotals => {
     const base1 = formData.base_amount_1 || 0
     const base2 = formData.base_amount_2 || 0
     const base3 = formData.base_amount_3 || 0
@@ -418,7 +330,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 Osnovica PDV 0% (€)
               </label>
               <CurrencyInput
-                value={formData.base_amount_2}
+                value={formData.base_amount_3}
                 onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                 placeholder="0,00"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -426,84 +338,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               />
             </div>
 
-            {(formData.base_amount_1 > 0 || formData.base_amount_2 > 0 || formData.base_amount_3 > 0 || formData.base_amount_4 > 0) && (
-              <div className="col-span-2 bg-gray-50 rounded-lg p-4 space-y-2">
-                <div className="text-sm font-medium text-gray-700 mb-2">Pregled računa:</div>
-
-                {formData.base_amount_1 > 0 && (
-                  <div className="space-y-1 pb-2 border-b border-gray-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Osnovica (PDV 25%):</span>
-                      <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">PDV 25%:</span>
-                      <span className="font-medium">€{formatCurrency(calc.vat1)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span>€{formatCurrency(calc.subtotal1)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {formData.base_amount_2 > 0 && (
-                  <div className="space-y-1 pb-2 border-b border-gray-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Osnovica (PDV 13%):</span>
-                      <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">PDV 13%:</span>
-                      <span className="font-medium">€{formatCurrency(calc.vat2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span>€{formatCurrency(calc.subtotal2)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {formData.base_amount_4 > 0 && (
-                  <div className="space-y-1 pb-2 border-b border-gray-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Osnovica (PDV 5%):</span>
-                      <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">PDV 5%:</span>
-                      <span className="font-medium">€{formatCurrency(calc.vat4)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span>€{formatCurrency(calc.subtotal4)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {formData.base_amount_2 > 0 && (
-                  <div className="space-y-1 pb-2 border-b border-gray-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Osnovica (PDV 0%):</span>
-                      <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">PDV 0%:</span>
-                      <span className="font-medium">€0.00</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span>€{formatCurrency(calc.subtotal3)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-base font-bold pt-2">
-                  <span>UKUPNO:</span>
-                  <span>€{formatCurrency(calc.total)}</span>
-                </div>
-              </div>
-            )}
+            <InvoicePreview formData={formData} calc={calc} />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

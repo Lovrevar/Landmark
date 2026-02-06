@@ -1,224 +1,31 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { Building2, Plus, Search, Edit, Trash2, X, Mail, Phone, MapPin, FileText, Eye, Calendar } from 'lucide-react'
+import React from 'react'
+import { Building2, Plus, Search, Edit, Trash2, X, Mail, Phone, MapPin, FileText, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
-
-interface OfficeSupplier {
-  id: string
-  name: string
-  contact: string | null
-  email: string | null
-  address: string | null
-  tax_id: string | null
-  vat_id: string | null
-  created_at: string
-}
-
-interface OfficeSupplierWithStats extends OfficeSupplier {
-  total_invoices: number
-  total_amount: number
-  paid_amount: number
-  remaining_amount: number
-}
-
-interface Invoice {
-  id: string
-  invoice_number: string
-  issue_date: string
-  due_date: string
-  base_amount: string
-  total_amount: string
-  paid_amount: string
-  remaining_amount: string
-  status: string
-  description: string | null
-}
+import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
+import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 
 const OfficeSuppliers: React.FC = () => {
-  const [suppliers, setSuppliers] = useState<OfficeSupplierWithStats[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [editingSupplier, setEditingSupplier] = useState<OfficeSupplier | null>(null)
-  const [showInvoicesModal, setShowInvoicesModal] = useState(false)
-  const [selectedSupplier, setSelectedSupplier] = useState<OfficeSupplierWithStats | null>(null)
-  const [supplierInvoices, setSupplierInvoices] = useState<Invoice[]>([])
-  const [loadingInvoices, setLoadingInvoices] = useState(false)
-
-  const [formData, setFormData] = useState({
-    name: '',
-    contact: '',
-    email: '',
-    address: '',
-    tax_id: '',
-    vat_id: ''
-  })
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-
-      const { data: suppliersData, error: suppliersError } = await supabase
-        .from('office_suppliers')
-        .select('*')
-        .order('name')
-
-      if (suppliersError) throw suppliersError
-
-      const suppliersWithStats = await Promise.all(
-        (suppliersData || []).map(async (supplier) => {
-          const { data: invoicesData } = await supabase
-            .from('accounting_invoices')
-            .select('base_amount, total_amount, paid_amount, remaining_amount')
-            .eq('office_supplier_id', supplier.id)
-
-          const invoices = invoicesData || []
-          const total_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
-          const total_amount_with_vat = invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
-          const paid_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
-
-          return {
-            ...supplier,
-            total_invoices: invoices.length,
-            total_amount,
-            paid_amount,
-            remaining_amount: total_amount_with_vat - paid_amount
-          }
-        })
-      )
-
-      setSuppliers(suppliersWithStats)
-    } catch (error) {
-      console.error('Error fetching office suppliers:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOpenModal = (supplier?: OfficeSupplier) => {
-    if (supplier) {
-      setEditingSupplier(supplier)
-      setFormData({
-        name: supplier.name,
-        contact: supplier.contact || '',
-        email: supplier.email || '',
-        address: supplier.address || '',
-        tax_id: supplier.tax_id || '',
-        vat_id: supplier.vat_id || ''
-      })
-    } else {
-      setEditingSupplier(null)
-      setFormData({
-        name: '',
-        contact: '',
-        email: '',
-        address: '',
-        tax_id: '',
-        vat_id: ''
-      })
-    }
-    document.body.style.overflow = 'hidden'
-    setShowModal(true)
-  }
-
-  const handleCloseModal = () => {
-    document.body.style.overflow = 'unset'
-    setShowModal(false)
-    setEditingSupplier(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      const supplierData = {
-        name: formData.name,
-        contact: formData.contact || null,
-        email: formData.email || null,
-        address: formData.address || null,
-        tax_id: formData.tax_id || null,
-        vat_id: formData.vat_id || null
-      }
-
-      if (editingSupplier) {
-        const { error } = await supabase
-          .from('office_suppliers')
-          .update(supplierData)
-          .eq('id', editingSupplier.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('office_suppliers')
-          .insert([supplierData])
-
-        if (error) throw error
-      }
-
-      await fetchData()
-      handleCloseModal()
-    } catch (error) {
-      console.error('Error saving office supplier:', error)
-      alert('Greška prilikom spremanja dobavljača')
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane račune.')) return
-
-    try {
-      const { error } = await supabase
-        .from('office_suppliers')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      await fetchData()
-    } catch (error) {
-      console.error('Error deleting office supplier:', error)
-      alert('Greška prilikom brisanja dobavljača')
-    }
-  }
-
-  const handleViewInvoices = async (supplier: OfficeSupplierWithStats) => {
-    setSelectedSupplier(supplier)
-    setShowInvoicesModal(true)
-    setLoadingInvoices(true)
-    document.body.style.overflow = 'hidden'
-
-    try {
-      const { data, error } = await supabase
-        .from('accounting_invoices')
-        .select('*')
-        .eq('office_supplier_id', supplier.id)
-        .order('issue_date', { ascending: false })
-
-      if (error) throw error
-      setSupplierInvoices(data || [])
-    } catch (error) {
-      console.error('Error fetching supplier invoices:', error)
-      alert('Greška prilikom učitavanja računa')
-    } finally {
-      setLoadingInvoices(false)
-    }
-  }
-
-  const handleCloseInvoicesModal = () => {
-    document.body.style.overflow = 'unset'
-    setShowInvoicesModal(false)
-    setSelectedSupplier(null)
-    setSupplierInvoices([])
-  }
-
-  const filteredSuppliers = suppliers.filter(supplier =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (supplier.contact || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (supplier.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const {
+    suppliers,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    showModal,
+    editingSupplier,
+    showInvoicesModal,
+    selectedSupplier,
+    supplierInvoices,
+    loadingInvoices,
+    formData,
+    setFormData,
+    filteredSuppliers,
+    handleOpenModal,
+    handleCloseModal,
+    handleSubmit,
+    handleDelete,
+    handleViewInvoices,
+    handleCloseInvoicesModal
+  } = useOfficeSuppliers()
 
   if (loading) {
     return (
@@ -411,133 +218,14 @@ const OfficeSuppliers: React.FC = () => {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingSupplier ? 'Uredi office dobavljača' : 'Novi office dobavljač'}
-              </h2>
-              <button
-                onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Naziv dobavljača *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    placeholder="npr. HR Servis d.o.o."
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kontakt (telefon)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.contact}
-                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="+385 99 123 4567"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="info@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Adresa
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ulica 123, Zagreb"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      OIB
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.tax_id}
-                      onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="12345678901"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      PDV ID
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.vat_id}
-                      onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="HR12345678901"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Napomena:</strong> Office dobavljači se koriste za uredske troškove kao što su plaće,
-                    lizinzi automobila, najam ureda, režije i slično. Ne prikazuju se u projektnim računima.
-                  </p>
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                >
-                  Odustani
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {editingSupplier ? 'Spremi promjene' : 'Dodaj dobavljača'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <OfficeSupplierFormModal
+        showModal={showModal}
+        editingSupplier={editingSupplier}
+        formData={formData}
+        setFormData={setFormData}
+        handleCloseModal={handleCloseModal}
+        handleSubmit={handleSubmit}
+      />
 
       {showInvoicesModal && selectedSupplier && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

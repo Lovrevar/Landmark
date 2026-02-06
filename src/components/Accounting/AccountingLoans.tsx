@@ -1,166 +1,26 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import React from 'react'
 import { TrendingUp, Plus, Search, Trash2, X, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../Common/DateInput'
-
-interface CompanyLoan {
-  id: string
-  from_company_id: string
-  from_bank_account_id: string
-  to_company_id: string
-  to_bank_account_id: string
-  amount: number
-  loan_date: string
-  created_at: string
-  from_company: { name: string }
-  to_company: { name: string }
-  from_bank_account: { bank_name: string; account_number: string | null }
-  to_bank_account: { bank_name: string; account_number: string | null }
-}
-
-interface Company {
-  id: string
-  name: string
-  oib: string
-}
-
-interface BankAccount {
-  id: string
-  company_id: string
-  bank_name: string
-  account_number: string | null
-  current_balance: number
-}
+import { useLoans } from './hooks/useLoans'
 
 const AccountingLoans: React.FC = () => {
-  const [loans, setLoans] = useState<CompanyLoan[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showAddModal, setShowAddModal] = useState(false)
-
-  const [formData, setFormData] = useState({
-    from_company_id: '',
-    from_bank_account_id: '',
-    to_company_id: '',
-    to_bank_account_id: '',
-    amount: '',
-    loan_date: format(new Date(), 'yyyy-MM-dd')
-  })
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const [loansRes, companiesRes, accountsRes] = await Promise.all([
-        supabase
-          .from('company_loans')
-          .select(`
-            *,
-            from_company:accounting_companies!from_company_id(name),
-            to_company:accounting_companies!to_company_id(name),
-            from_bank_account:company_bank_accounts!from_bank_account_id(bank_name, account_number),
-            to_bank_account:company_bank_accounts!to_bank_account_id(bank_name, account_number)
-          `)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('accounting_companies')
-          .select('id, name, oib')
-          .order('name'),
-        supabase
-          .from('company_bank_accounts')
-          .select('id, company_id, bank_name, account_number, current_balance')
-          .order('bank_name')
-      ])
-
-      if (loansRes.data) setLoans(loansRes.data as any)
-      if (companiesRes.data) setCompanies(companiesRes.data)
-      if (accountsRes.data) setBankAccounts(accountsRes.data)
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddLoan = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formData.from_company_id || !formData.from_bank_account_id ||
-        !formData.to_company_id || !formData.to_bank_account_id ||
-        !formData.amount) {
-      alert('Molimo popunite sva obavezna polja')
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('company_loans')
-        .insert({
-          from_company_id: formData.from_company_id,
-          from_bank_account_id: formData.from_bank_account_id,
-          to_company_id: formData.to_company_id,
-          to_bank_account_id: formData.to_bank_account_id,
-          amount: parseFloat(formData.amount),
-          loan_date: formData.loan_date || null
-        })
-
-      if (error) throw error
-
-      await fetchData()
-      setShowAddModal(false)
-      resetForm()
-    } catch (error) {
-      console.error('Error creating loan:', error)
-      alert('Greška pri kreiranju pozajmice')
-    }
-  }
-
-  const handleDeleteLoan = async (loanId: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu pozajmicu?')) return
-
-    try {
-      const { error } = await supabase
-        .from('company_loans')
-        .delete()
-        .eq('id', loanId)
-
-      if (error) throw error
-      await fetchData()
-    } catch (error) {
-      console.error('Error deleting loan:', error)
-      alert('Greška pri brisanju pozajmice')
-    }
-  }
-
-  const resetForm = () => {
-    setFormData({
-      from_company_id: '',
-      from_bank_account_id: '',
-      to_company_id: '',
-      to_bank_account_id: '',
-      amount: '',
-      loan_date: format(new Date(), 'yyyy-MM-dd')
-    })
-  }
-
-  const getFromCompanyAccounts = () => {
-    return bankAccounts.filter(acc => acc.company_id === formData.from_company_id)
-  }
-
-  const getToCompanyAccounts = () => {
-    return bankAccounts.filter(acc => acc.company_id === formData.to_company_id)
-  }
-
-  const filteredLoans = loans.filter(loan =>
-    loan.from_company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    loan.to_company.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const {
+    companies,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    showAddModal,
+    setShowAddModal,
+    formData,
+    setFormData,
+    handleAddLoan,
+    handleDeleteLoan,
+    resetForm,
+    getFromCompanyAccounts,
+    getToCompanyAccounts,
+    filteredLoans
+  } = useLoans()
 
   if (loading) {
     return (
