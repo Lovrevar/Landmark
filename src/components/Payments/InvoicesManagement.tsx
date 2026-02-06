@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { FileText, Calendar, Search, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../ui'
+import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface InvoiceWithDetails {
@@ -204,221 +205,137 @@ const InvoicesManagement: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading invoices...</div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading invoices..." />
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Invoices</h1>
-        <p className="text-gray-600">Track and manage supplier and supervision invoices for all projects</p>
-      </div>
+      <PageHeader
+        title="Project Invoices"
+        description="Track and manage supplier and supervision invoices for all projects"
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Invoices</h3>
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalInvoices}</p>
-        </div>
+      <StatGrid columns={4} className="mb-8">
+        <StatCard label="Total Invoices" value={stats.totalInvoices} icon={FileText} color="blue" />
+        <StatCard label="Total Amount" value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
+        <StatCard label="This Month" value={stats.invoicesThisMonth} subtitle="invoices" icon={Calendar} />
+        <StatCard label="Month Amount" value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
+      </StatGrid>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Amount</h3>
-            <FileText className="w-5 h-5 text-green-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString('hr-HR')}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">This Month</h3>
-            <Calendar className="w-5 h-5 text-purple-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.invoicesThisMonth}</p>
-          <p className="text-xs text-gray-500 mt-1">invoices</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
-            <TrendingUp className="w-5 h-5 text-teal-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString('hr-HR')}</p>
-        </div>
-      </div>
-
-      {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search invoices..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <SearchInput
+              placeholder="Search invoices..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+            />
           </div>
 
-          <div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Invoices</option>
-              <option value="recent">Recent (7 days)</option>
-              <option value="large">Large (&gt; €10k)</option>
-            </select>
-          </div>
+          <Select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+          >
+            <option value="all">All Invoices</option>
+            <option value="recent">Recent (7 days)</option>
+            <option value="large">Large (&gt; €10k)</option>
+          </Select>
 
-          <div>
-            <select
-              value={filterApproved}
-              onChange={(e) => setFilterApproved(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="approved">Approved</option>
-              <option value="not_approved">Not Approved</option>
-            </select>
-          </div>
+          <Select
+            value={filterApproved}
+            onChange={(e) => setFilterApproved(e.target.value as any)}
+          >
+            <option value="all">All Status</option>
+            <option value="approved">Approved</option>
+            <option value="not_approved">Not Approved</option>
+          </Select>
 
-          <div>
-            <button
-              onClick={exportToCSV}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </button>
-          </div>
+          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
+            Export CSV
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
+          <FormField label="Start Date">
+            <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
+          </FormField>
+          <FormField label="End Date">
+            <Input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
-      {/* Invoices Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Approved
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredInvoices.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium mb-1">No invoices found</p>
-                    <p className="text-sm">Try adjusting your search or filters</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleApprove(invoice.id, invoice.approved)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        title={invoice.approved ? "Approved" : "Click to approve"}
-                      >
-                        {invoice.approved ? (
-                          <CheckSquare className="w-5 h-5" />
-                        ) : (
-                          <Square className="w-5 h-5" />
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{invoice.invoice_number}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {invoice.supplier_name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.project_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.phase_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <Building2 className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-gray-900 font-medium">
-                          {invoice.company_name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-semibold text-gray-900">
-                        €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        invoice.status === 'PAID'
-                          ? 'bg-green-100 text-green-800'
-                          : invoice.status === 'PARTIALLY_PAID'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {filteredInvoices.length === 0 ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="No invoices found"
+          description="Try adjusting your search or filters"
+        />
+      ) : (
+        <Table>
+          <Table.Head>
+            <Table.Tr>
+              <Table.Th>Approved</Table.Th>
+              <Table.Th>Invoice #</Table.Th>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Supplier</Table.Th>
+              <Table.Th>Project</Table.Th>
+              <Table.Th>Phase</Table.Th>
+              <Table.Th>Company</Table.Th>
+              <Table.Th align="right">Amount</Table.Th>
+              <Table.Th>Status</Table.Th>
+            </Table.Tr>
+          </Table.Head>
+          <Table.Body>
+            {filteredInvoices.map((invoice) => (
+              <Table.Tr key={invoice.id}>
+                <Table.Td>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    icon={invoice.approved ? CheckSquare : Square}
+                    onClick={() => handleApprove(invoice.id, invoice.approved)}
+                    title={invoice.approved ? "Approved" : "Click to approve"}
+                    className="text-blue-600 hover:text-blue-800"
+                  />
+                </Table.Td>
+                <Table.Td className="font-medium">{invoice.invoice_number}</Table.Td>
+                <Table.Td>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</Table.Td>
+                <Table.Td className="font-medium">{invoice.supplier_name}</Table.Td>
+                <Table.Td>{invoice.project_name}</Table.Td>
+                <Table.Td className="text-gray-500">{invoice.phase_name}</Table.Td>
+                <Table.Td>
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">{invoice.company_name}</span>
+                  </div>
+                </Table.Td>
+                <Table.Td align="right" className="font-semibold">
+                  €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                </Table.Td>
+                <Table.Td>
+                  <Badge variant={
+                    invoice.status === 'PAID' ? 'green'
+                      : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
+                      : 'red'
+                  }>
+                    {invoice.status}
+                  </Badge>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
     </div>
   )
 }

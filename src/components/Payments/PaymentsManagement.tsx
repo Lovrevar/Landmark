@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase, WirePayment, Contract } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../ui'
 import { format } from 'date-fns'
 
 interface PaymentWithDetails {
@@ -240,40 +240,11 @@ const PaymentsManagement: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader title="Payments Management" description="Track and manage all payments across all projects" />
 
-      {/* Stats Cards */}
       <StatGrid columns={4}>
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalPayments}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Total Amount</h3>
-            <DollarSign className="w-5 h-5 text-green-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.totalAmount.toLocaleString('hr-HR')}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">This Month</h3>
-            <Calendar className="w-5 h-5 text-purple-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.paymentsThisMonth}</p>
-          <p className="text-xs text-gray-500 mt-1">payments</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600">Month Amount</h3>
-            <TrendingUp className="w-5 h-5 text-teal-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString('hr-HR')}</p>
-        </div>
+        <StatCard label="Total Payments" value={stats.totalPayments} icon={FileText} color="blue" />
+        <StatCard label="Total Amount" value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
+        <StatCard label="This Month" value={stats.paymentsThisMonth} subtitle="payments" icon={Calendar} />
+        <StatCard label="Month Amount" value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
 
       {/* Filters and Search */}
@@ -288,117 +259,84 @@ const PaymentsManagement: React.FC = () => {
             />
           </div>
 
-          <div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Payments</option>
-              <option value="recent">Recent (7 days)</option>
-              <option value="large">Large (&gt; €10k)</option>
-            </select>
-          </div>
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+            <option value="all">All Payments</option>
+            <option value="recent">Recent (7 days)</option>
+            <option value="large">Large (&gt; €10k)</option>
+          </Select>
 
-          <div>
-            <button
-              onClick={exportToCSV}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </button>
-          </div>
+          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
+            Export CSV
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
+          <FormField label="Start Date">
+            <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
+          </FormField>
+          <FormField label="End Date">
+            <Input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
-      {/* Payments Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPayments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium mb-1">No payments found</p>
-                    <p className="text-sm">Try adjusting your search or filters</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.subcontractor_name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.project_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.phase_name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
-                        <div className="flex items-center space-x-2">
-                          <Building2 className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm text-gray-900 font-medium">
-                            {payment.paid_by_company_name}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-semibold text-green-600">
-                        €{payment.amount.toLocaleString('hr-HR')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {payment.notes || '-'}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {filteredPayments.length === 0 ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="No payments found"
+          description="Try adjusting your search or filters"
+        />
+      ) : (
+        <Table>
+          <Table.Head>
+            <Table.Tr>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Subcontractor</Table.Th>
+              <Table.Th>Project</Table.Th>
+              <Table.Th>Phase</Table.Th>
+              <Table.Th>Paid By</Table.Th>
+              <Table.Th align="right">Amount</Table.Th>
+              <Table.Th>Notes</Table.Th>
+            </Table.Tr>
+          </Table.Head>
+          <Table.Body>
+            {filteredPayments.map((payment) => (
+              <Table.Tr key={payment.id}>
+                <Table.Td>
+                  {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
+                </Table.Td>
+                <Table.Td className="font-medium">{payment.subcontractor_name}</Table.Td>
+                <Table.Td>{payment.project_name}</Table.Td>
+                <Table.Td className="text-gray-500">{payment.phase_name || '-'}</Table.Td>
+                <Table.Td>
+                  {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="w-4 h-4 text-blue-600" />
+                      <span className="font-medium">{payment.paid_by_company_name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </Table.Td>
+                <Table.Td align="right" className="font-semibold text-green-600">
+                  €{payment.amount.toLocaleString('hr-HR')}
+                </Table.Td>
+                <Table.Td className="text-gray-500 max-w-xs truncate">
+                  {payment.notes || '-'}
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
 
       {/* Summary */}
       {filteredPayments.length > 0 && (
