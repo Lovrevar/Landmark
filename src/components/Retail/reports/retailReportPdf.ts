@@ -51,6 +51,44 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     y += 5.5
   }
 
+  const printProjectsTable = () => {
+    const colWidths = [contentWidth * 0.22, contentWidth * 0.13, contentWidth * 0.13, contentWidth * 0.13, contentWidth * 0.13, contentWidth * 0.13, contentWidth * 0.13]
+    const headers = ['Projekt', 'Zemljiste', 'Razvoj', 'Gradnja', 'Prihod', 'Profit', 'ROI']
+
+    checkPage(8)
+    pdf.setFillColor(240, 240, 240)
+    pdf.rect(margin, y - 4, contentWidth, 7, 'F')
+    pdf.setFontSize(8)
+    pdf.setFont('helvetica', 'bold')
+
+    let xPos = margin + 2
+    headers.forEach((h, i) => {
+      pdf.text(h, xPos, y)
+      xPos += colWidths[i]
+    })
+    y += 6
+
+    pdf.setFont('helvetica', 'normal')
+    data.projects.forEach(proj => {
+      checkPage(7)
+      xPos = margin + 2
+      const vals = [
+        proj.name.substring(0, 18),
+        fmt(proj.land_cost),
+        fmt(proj.development.budget_realized),
+        fmt(proj.construction.budget_realized),
+        fmt(proj.total_revenue),
+        `${proj.profit >= 0 ? '+' : ''}${fmt(proj.profit)}`,
+        `${proj.roi.toFixed(1)}%`
+      ]
+      vals.forEach((v, i) => {
+        pdf.text(v, xPos, y)
+        xPos += colWidths[i]
+      })
+      y += 5.5
+    })
+  }
+
   // Header
   pdf.setFillColor(37, 99, 235)
   pdf.rect(0, 0, pageWidth, 32, 'F')
@@ -101,8 +139,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
 
   // Projects
   sectionTitle('Projekti - Pregled')
-  printProjectsTable(pdf, data, margin, contentWidth, y, checkPage)
-  y = getCurrentY()
+  printProjectsTable()
 
   // Customers
   sectionTitle('Kupci')
@@ -148,56 +185,4 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   }
 
   pdf.save(`retail-izvjestaj-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
-
-  let _currentY = y
-  function getCurrentY() { return _currentY }
-
-  function printProjectsTable(
-    doc: typeof pdf,
-    reportData: typeof data,
-    m: number,
-    cw: number,
-    startY: number,
-    check: (n: number) => void
-  ) {
-    let ty = startY
-
-    const colWidths = [cw * 0.22, cw * 0.13, cw * 0.13, cw * 0.13, cw * 0.13, cw * 0.13, cw * 0.13]
-    const headers = ['Projekt', 'Zemljiste', 'Razvoj', 'Gradnja', 'Prihod', 'Profit', 'ROI']
-
-    check(8)
-    doc.setFillColor(240, 240, 240)
-    doc.rect(m, ty - 4, cw, 7, 'F')
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'bold')
-
-    let xPos = m + 2
-    headers.forEach((h, i) => {
-      doc.text(h, xPos, ty)
-      xPos += colWidths[i]
-    })
-    ty += 6
-
-    doc.setFont('helvetica', 'normal')
-    reportData.projects.forEach(proj => {
-      check(7)
-      xPos = m + 2
-      const vals = [
-        proj.name.substring(0, 18),
-        fmt(proj.land_cost),
-        fmt(proj.development.budget_realized),
-        fmt(proj.construction.budget_realized),
-        fmt(proj.total_revenue),
-        `${proj.profit >= 0 ? '+' : ''}${fmt(proj.profit)}`,
-        `${proj.roi.toFixed(1)}%`
-      ]
-      vals.forEach((v, i) => {
-        doc.text(v, xPos, ty)
-        xPos += colWidths[i]
-      })
-      ty += 5.5
-    })
-
-    _currentY = ty
-  }
 }
