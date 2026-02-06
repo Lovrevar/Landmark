@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Plus, RefreshCw } from 'lucide-react'
 import { ProjectsGrid } from './views/ProjectsGrid'
 import { ProjectDetail } from './views/ProjectDetail'
 import { ProjectFormModal } from './forms/ProjectFormModal'
 import { useRetailProjects } from './hooks/useRetailProjects'
 import type { RetailProjectWithPhases } from '../../../types/retail'
-import { LoadingSpinner, PageHeader } from '../../ui'
+import { LoadingSpinner, PageHeader, Button } from '../../ui'
 
 const RetailProjects: React.FC = () => {
   const { projects, loading, refetch } = useRetailProjects()
@@ -56,21 +56,20 @@ const RetailProjects: React.FC = () => {
         className="mb-6"
         actions={
           <>
-            <button
+            <Button
+              variant="ghost"
+              icon={RefreshCw}
               onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50"
+              loading={isRefreshing}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               Osvježi
-            </button>
-            <button
+            </Button>
+            <Button
+              icon={Plus}
               onClick={() => setShowProjectModal(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              <Plus className="w-4 h-4 mr-2" />
               Dodaj projekt
-            </button>
+            </Button>
           </>
         }
       />
