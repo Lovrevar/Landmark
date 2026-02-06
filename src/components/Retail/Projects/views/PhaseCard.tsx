@@ -34,7 +34,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   const totalContractCost = phaseContracts.reduce((sum, contract) => sum + contract.contract_amount, 0)
   const totalBudgetRealized = phaseContracts.reduce((sum, contract) => sum + contract.budget_realized, 0)
-  const unpaidContracts = totalContractCost - totalBudgetRealized
+  const unpaidContracts = phaseContracts.reduce((sum, contract) => sum + (contract.invoiced_remaining || 0), 0)
   const availableBudget = phase.budget_allocated - totalContractCost
   const budgetUtilization = phase.budget_allocated > 0 ? (totalBudgetRealized / phase.budget_allocated) * 100 : 0
 

@@ -126,6 +126,7 @@ export interface RetailContract {
   notes: string | null
   created_at: string
   updated_at: string
+  invoiced_remaining?: number
   supplier?: RetailSupplier
   customer?: RetailCustomer
 }

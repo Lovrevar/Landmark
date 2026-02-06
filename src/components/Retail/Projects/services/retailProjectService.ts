@@ -286,7 +286,28 @@ export const retailProjectService = {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data || []
+
+    const contracts = data || []
+    if (contracts.length === 0) return contracts
+
+    const contractIds = contracts.map(c => c.id)
+    const { data: invoices } = await supabase
+      .from('accounting_invoices')
+      .select('retail_contract_id, remaining_amount, status')
+      .in('retail_contract_id', contractIds)
+
+    const remainingMap = new Map<string, number>()
+    ;(invoices || []).forEach(inv => {
+      if (inv.status !== 'PAID') {
+        const current = remainingMap.get(inv.retail_contract_id) || 0
+        remainingMap.set(inv.retail_contract_id, current + parseFloat(inv.remaining_amount?.toString() || '0'))
+      }
+    })
+
+    return contracts.map(c => ({
+      ...c,
+      invoiced_remaining: remainingMap.get(c.id) || 0
+    }))
   },
 
   async fetchContractWithMilestones(contractId: string): Promise<RetailContractWithMilestones | null> {
