@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
-import { LoadingSpinner } from '../ui'
+import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../ui'
 import { useCalendar } from './hooks/useCalendar'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
@@ -84,47 +84,12 @@ const AccountingCalendar: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-blue-600 font-medium">Ukupno računa</p>
-              <p className="text-2xl font-bold text-blue-900">{monthStats.total}</p>
-            </div>
-            <CalendarIcon className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-green-600 font-medium">Plaćeno</p>
-              <p className="text-2xl font-bold text-green-900">{monthStats.paid}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-yellow-600 font-medium">Neplaćeno</p>
-              <p className="text-2xl font-bold text-yellow-900">{monthStats.unpaid}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-red-600 font-medium">Overdue</p>
-              <p className="text-2xl font-bold text-red-900">{monthStats.overdue}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-      </div>
+      <StatGrid columns={2}>
+        <StatCard label="Ukupno računa" value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
+        <StatCard label="Plaćeno" value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />
+        <StatCard label="Neplaćeno" value={monthStats.unpaid} icon={Clock} color="yellow" size="sm" />
+        <StatCard label="Overdue" value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
+      </StatGrid>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
         <div className="flex justify-between text-sm">
@@ -177,25 +142,11 @@ const AccountingCalendar: React.FC = () => {
             {monthNames[month]} {year}
           </h3>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleOpenBudgetModal}
-              className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              <DollarSign className="w-4 h-4" />
-              <span>Namjesti Budžet</span>
-            </button>
-            <button
-              onClick={handlePreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
+            <Button variant="success" size="sm" icon={DollarSign} onClick={handleOpenBudgetModal}>
+              Namjesti Budžet
+            </Button>
+            <Button variant="ghost" size="icon-md" icon={ChevronLeft} onClick={handlePreviousMonth} />
+            <Button variant="ghost" size="icon-md" icon={ChevronRight} onClick={handleNextMonth} />
           </div>
         </div>
 
@@ -347,21 +298,12 @@ const AccountingCalendar: React.FC = () => {
                         €{invoice.paid_amount.toLocaleString('hr-HR')}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                            invoice.status === 'PAID'
-                              ? 'bg-green-100 text-green-800'
-                              : invoice.status === 'PARTIALLY_PAID'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                        <Badge
+                          variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'red'}
+                          size="sm"
                         >
-                          {invoice.status === 'PAID'
-                            ? 'Plaćeno'
-                            : invoice.status === 'PARTIALLY_PAID'
-                            ? 'Djelomično'
-                            : 'Neplaćeno'}
-                        </span>
+                          {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                        </Badge>
                       </td>
                     </tr>
                   )

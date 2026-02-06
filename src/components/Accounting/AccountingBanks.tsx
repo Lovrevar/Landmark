@@ -1,6 +1,6 @@
 import React from 'react'
 import { Building2, CreditCard, DollarSign, TrendingUp, TrendingDown, Plus, Edit2, Trash2 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, Button, Badge, StatCard, EmptyState } from '../ui'
 import { useBanks } from './hooks/useBanks'
 import BankCreditFormModal from './forms/BankCreditFormModal'
 
@@ -36,64 +36,21 @@ const AccountingBanks: React.FC = () => {
         title="Banke"
         description="Pregled svih bankovnih kredita"
         actions={
-          <button
-            onClick={() => setShowCreditForm(true)}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
+          <Button variant="success" icon={Plus} onClick={() => setShowCreditForm(true)}>
             Add Credit
-          </button>
+          </Button>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupan kredit limit</p>
-              <p className="text-2xl font-bold text-gray-900">€{totalCreditAcrossAllBanks.toLocaleString('hr-HR')}</p>
-            </div>
-            <CreditCard className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno iskorišteno</p>
-              <p className="text-2xl font-bold text-blue-600">€{totalUsedAcrossAllBanks.toLocaleString('hr-HR')}</p>
-            </div>
-            <TrendingDown className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno vraćeno</p>
-              <p className="text-2xl font-bold text-green-600">€{totalRepaidAcrossAllBanks.toLocaleString('hr-HR')}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupan dug</p>
-              <p className="text-2xl font-bold text-red-600">€{totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}</p>
-            </div>
-            <DollarSign className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
+        <StatCard label="Ukupan kredit limit" value={`€${totalCreditAcrossAllBanks.toLocaleString('hr-HR')}`} icon={CreditCard} />
+        <StatCard label="Ukupno iskorišteno" value={`€${totalUsedAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingDown} color="blue" />
+        <StatCard label="Ukupno vraćeno" value={`€${totalRepaidAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+        <StatCard label="Ukupan dug" value={`€${totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}`} icon={DollarSign} color="red" />
       </StatGrid>
 
       {banks.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Nema banaka</h3>
-          <p className="text-gray-600">Nema dodanih banaka u sustavu</p>
-        </div>
+        <EmptyState icon={Building2} title="Nema banaka" description="Nema dodanih banaka u sustavu" />
       ) : (
         <div className="space-y-6">
           {banks.map((bank) => {
@@ -180,11 +137,9 @@ const AccountingBanks: React.FC = () => {
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1">
                                 <h4 className="font-semibold text-gray-900">{credit.credit_type.replace('_', ' ').toUpperCase()}</h4>
-                                <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full ${
-                                  credit.credit_seniority === 'senior' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                                }`}>
+                                <Badge variant={credit.credit_seniority === 'senior' ? 'blue' : 'orange'} size="sm" className="mt-1">
                                   {credit.credit_seniority?.toUpperCase() || 'SENIOR'}
-                                </span>
+                                </Badge>
                                 {credit.project && (
                                   <p className="text-xs text-blue-600 mt-1">
                                     Projekat: {credit.project.name}
@@ -195,9 +150,7 @@ const AccountingBanks: React.FC = () => {
                                 )}
                               </div>
                               {isExpired && (
-                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
-                                  ISTEKAO
-                                </span>
+                                <Badge variant="red" size="sm">ISTEKAO</Badge>
                               )}
                             </div>
 
@@ -241,19 +194,10 @@ const AccountingBanks: React.FC = () => {
                             <p className="text-xs text-gray-500 mb-3 text-right">{creditUtilization.toFixed(1)}%</p>
 
                             <div className="pt-3 border-t border-gray-200 flex gap-2">
-                              <button
-                                onClick={() => handleEditCredit(credit)}
-                                className="flex-1 items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                              >
-                                <Edit2 className="w-4 h-4 inline mr-2" />
+                              <Button variant="primary" icon={Edit2} className="flex-1" onClick={() => handleEditCredit(credit)}>
                                 Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCredit(credit.id)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              </Button>
+                              <Button variant="danger" icon={Trash2} onClick={() => handleDeleteCredit(credit.id)} />
                             </div>
                           </div>
                         )

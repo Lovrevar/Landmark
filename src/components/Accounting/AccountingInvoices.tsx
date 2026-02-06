@@ -1,5 +1,5 @@
 import React from 'react'
-import { LoadingSpinner } from '../ui'
+import { LoadingSpinner, PageHeader } from '../ui'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
 import { useInvoices } from './hooks/useInvoices'
@@ -154,27 +154,27 @@ const AccountingInvoices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Računi</h1>
-          <p className="text-sm text-gray-600 mt-1">Upravljanje ulaznim i izlaznim računima</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ColumnMenuDropdown
-            showColumnMenu={showColumnMenu}
-            visibleColumns={visibleColumns}
-            columnLabels={columnLabels}
-            onToggleMenu={() => setShowColumnMenu(!showColumnMenu)}
-            onToggleColumn={toggleColumn}
-          />
-          <InvoiceActionButtons
-            onNewOfficeInvoice={handleNewOfficeInvoice}
-            onNewRetailInvoice={() => setShowRetailInvoiceModal(true)}
-            onNewBankInvoice={() => setShowBankInvoiceModal(true)}
-            onNewInvoice={() => handleOpenModal()}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Računi"
+        description="Upravljanje ulaznim i izlaznim računima"
+        actions={
+          <div className="flex items-center gap-2">
+            <ColumnMenuDropdown
+              showColumnMenu={showColumnMenu}
+              visibleColumns={visibleColumns}
+              columnLabels={columnLabels}
+              onToggleMenu={() => setShowColumnMenu(!showColumnMenu)}
+              onToggleColumn={toggleColumn}
+            />
+            <InvoiceActionButtons
+              onNewOfficeInvoice={handleNewOfficeInvoice}
+              onNewRetailInvoice={() => setShowRetailInvoiceModal(true)}
+              onNewBankInvoice={() => setShowBankInvoiceModal(true)}
+              onNewInvoice={() => handleOpenModal()}
+            />
+          </div>
+        }
+      />
 
       <InvoiceStats
         filteredTotalCount={filteredTotalCount}

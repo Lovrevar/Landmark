@@ -3,7 +3,7 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './hooks/useCompanies'
 import CompanyFormModal from './forms/CompanyFormModal'
 import CompanyDetailsModal from './views/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Card } from '../ui'
 
 const AccountingCompanies: React.FC = () => {
   const {
@@ -43,66 +43,17 @@ const AccountingCompanies: React.FC = () => {
         title="Moje firme"
         description="Financijski pregled svih firmi pod Landmarkom"
         actions={
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5 mr-2" />
+          <Button variant="primary" icon={Plus} onClick={() => handleOpenAddModal()}>
             Dodaj novu firmu
-          </button>
+          </Button>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno firmi</p>
-              <p className="text-2xl font-bold text-gray-900">{companies.length}</p>
-            </div>
-            <Building2 className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno stanje</p>
-              <p className={`text-2xl font-bold ${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{totalBalance.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <DollarSign className={`w-8 h-8 ${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupan promet</p>
-              <p className="text-2xl font-bold text-blue-600">
-                €{totalRevenue.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Dobit/Gubitak</p>
-              <p className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{totalProfit.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            {totalProfit >= 0 ? (
-              <TrendingUp className="w-8 h-8 text-green-600" />
-            ) : (
-              <TrendingDown className="w-8 h-8 text-red-600" />
-            )}
-          </div>
-        </div>
+        <StatCard label="Ukupno firmi" value={companies.length} icon={Building2} />
+        <StatCard label="Ukupno stanje" value={`€${totalBalance.toLocaleString('hr-HR')}`} icon={DollarSign} color={totalBalance >= 0 ? 'green' : 'red'} />
+        <StatCard label="Ukupan promet" value={`€${totalRevenue.toLocaleString('hr-HR')}`} icon={TrendingUp} color="blue" />
+        <StatCard label="Dobit/Gubitak" value={`€${totalProfit.toLocaleString('hr-HR')}`} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -115,15 +66,11 @@ const AccountingCompanies: React.FC = () => {
       </div>
 
       {filteredCompanies.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? 'Nema rezultata pretrage' : 'Nema firmi'}
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvu firmu klikom na gumb iznad'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title={searchTerm ? 'Nema rezultata pretrage' : 'Nema firmi'}
+          description={searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvu firmu klikom na gumb iznad'}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCompanies.map((company) => (
@@ -195,27 +142,11 @@ const AccountingCompanies: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleViewDetails(company)}
-                  className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  <Eye className="w-4 h-4 mr-1" />
+                <Button variant="primary" size="sm" icon={Eye} className="flex-1" onClick={() => handleViewDetails(company)}>
                   Detalji
-                </button>
-                <button
-                  onClick={() => handleOpenAddModal(company)}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Uredi"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(company.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Obriši"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
+                <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title="Uredi" />
+                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title="Obriši" />
               </div>
             </div>
           ))}

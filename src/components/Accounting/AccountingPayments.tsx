@@ -1,6 +1,6 @@
 import React from 'react'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput } from '../ui'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../ui'
 import DateInput from '../Common/DateInput'
 import { usePayments } from './hooks/usePayments'
 import AccountingPaymentFormModal from './forms/AccountingPaymentFormModal'
@@ -54,13 +54,9 @@ const AccountingPayments: React.FC = () => {
         actions={
           <>
             <div className="relative column-menu-container">
-              <button
-                onClick={() => setShowColumnMenu(!showColumnMenu)}
-                className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                <Columns className="w-5 h-5 mr-2" />
+              <Button variant="secondary" icon={Columns} onClick={() => setShowColumnMenu(!showColumnMenu)}>
                 Polja
-              </button>
+              </Button>
               {showColumnMenu && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200">
@@ -79,13 +75,9 @@ const AccountingPayments: React.FC = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => handleOpenModal()}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5 mr-2" />
+            <Button variant="primary" icon={Plus} onClick={() => handleOpenModal()}>
               Novo plaćanje
-            </button>
+            </Button>
           </>
         }
       />
@@ -101,27 +93,25 @@ const AccountingPayments: React.FC = () => {
             placeholder="Pretraži po broju računa, referenci..."
           />
 
-          <select
+          <Select
             value={filterMethod}
             onChange={(e) => setFilterMethod(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="ALL">Svi načini plaćanja</option>
             <option value="WIRE">Virman</option>
             <option value="CASH">Gotovina</option>
             <option value="CHECK">Ček</option>
             <option value="CARD">Kartica</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={filterInvoiceType}
             onChange={(e) => setFilterInvoiceType(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="ALL">Svi tipovi računa</option>
             <option value="EXPENSE">Ulazni</option>
             <option value="INCOME">Izlazni</option>
-          </select>
+          </Select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -145,13 +135,9 @@ const AccountingPayments: React.FC = () => {
 
           <div className="flex items-end">
             {(dateFrom || dateTo) && (
-              <button
-                onClick={resetDateFilters}
-                className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-              >
-                <X className="w-4 h-4 mr-2" />
+              <Button variant="ghost" icon={X} onClick={resetDateFilters}>
                 Resetuj datume
-              </button>
+              </Button>
             )}
           </div>
         </div>
