@@ -17,7 +17,7 @@ import {
   Home
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
-import { LoadingSpinner } from '../ui'
+import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
 
 interface ProjectData {
   id: string
@@ -1151,12 +1151,7 @@ const GeneralReports: React.FC = () => {
   }
 
   if (!report) {
-    return (
-      <div className="text-center py-12">
-        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No data available for report generation</p>
-      </div>
-    )
+    return <EmptyState icon={FileText} title="No data available for report generation" />
   }
 
   return (
@@ -1168,14 +1163,14 @@ const GeneralReports: React.FC = () => {
             <p className="text-xl font-light mb-1">Comprehensive Executive Report</p>
             <p className="text-sm opacity-90">Generated: {format(new Date(), 'MMMM dd, yyyy HH:mm')}</p>
           </div>
-          <button
+          <Button
+            icon={Download}
             onClick={generatePDF}
-            disabled={generatingPDF}
-            className="flex items-center px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 font-semibold shadow-lg disabled:opacity-50"
+            loading={generatingPDF}
+            className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg font-semibold"
           >
-            <Download className="w-5 h-5 mr-2" />
-            {generatingPDF ? 'Generating...' : 'Export PDF'}
-          </button>
+            Export PDF
+          </Button>
         </div>
       </div>
 
@@ -1204,8 +1199,8 @@ const GeneralReports: React.FC = () => {
             <p className="text-3xl font-bold text-green-600">€{(report.kpis.total_revenue / 1000000).toFixed(1)}M</p>
             <p className="text-sm text-gray-600 mt-2">Total Revenue</p>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl text-center border border-purple-200">
-            <p className="text-3xl font-bold text-purple-600">€{(report.kpis.net_profit / 1000000).toFixed(1)}M</p>
+          <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl text-center border border-teal-200">
+            <p className="text-3xl font-bold text-teal-600">€{(report.kpis.net_profit / 1000000).toFixed(1)}M</p>
             <p className="text-sm text-gray-600 mt-2">Net Profit</p>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl text-center border border-orange-200">
@@ -1220,8 +1215,8 @@ const GeneralReports: React.FC = () => {
             <p className="text-3xl font-bold text-pink-600">{report.kpis.debt_equity_ratio.toFixed(2)}</p>
             <p className="text-sm text-gray-600 mt-2">D/E Ratio</p>
           </div>
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl text-center border border-indigo-200">
-            <p className="text-3xl font-bold text-indigo-600">{report.kpis.active_projects}</p>
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-xl text-center border border-slate-200">
+            <p className="text-3xl font-bold text-slate-600">{report.kpis.active_projects}</p>
             <p className="text-sm text-gray-600 mt-2">Active Projects</p>
           </div>
           <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl text-center border border-yellow-200">
@@ -1281,10 +1276,10 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-sm border border-teal-200 p-6">
           <div className="flex items-center mb-4">
-            <Wallet className="w-6 h-6 text-purple-600 mr-2" />
-            <h2 className="text-xl font-bold text-purple-900">FUNDING & FINANCIAL STRUCTURE</h2>
+            <Wallet className="w-6 h-6 text-teal-600 mr-2" />
+            <h2 className="text-xl font-bold text-teal-900">FUNDING & FINANCIAL STRUCTURE</h2>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
@@ -1536,30 +1531,28 @@ const GeneralReports: React.FC = () => {
           <BarChart3 className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900">CASH FLOW ANALYSIS</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-3 text-left font-bold text-gray-700">Month</th>
-                <th className="px-4 py-3 text-left font-bold text-gray-700">Inflow</th>
-                <th className="px-4 py-3 text-left font-bold text-gray-700">Outflow</th>
-                <th className="px-4 py-3 text-left font-bold text-gray-700">Net Cash Flow</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {report.cash_flow.map((month, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{month.month}</td>
-                  <td className="px-4 py-3 text-gray-900">€{(month.inflow / 1000).toFixed(0)}K</td>
-                  <td className="px-4 py-3 text-gray-900">€{(month.outflow / 1000).toFixed(0)}K</td>
-                  <td className={`px-4 py-3 font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{(month.net / 1000).toFixed(0)}K
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <Table.Head>
+            <Table.Tr>
+              <Table.Th>Month</Table.Th>
+              <Table.Th>Inflow</Table.Th>
+              <Table.Th>Outflow</Table.Th>
+              <Table.Th>Net Cash Flow</Table.Th>
+            </Table.Tr>
+          </Table.Head>
+          <Table.Body>
+            {report.cash_flow.map((month, index) => (
+              <Table.Tr key={index}>
+                <Table.Td className="font-medium text-gray-900">{month.month}</Table.Td>
+                <Table.Td>€{(month.inflow / 1000).toFixed(0)}K</Table.Td>
+                <Table.Td>€{(month.outflow / 1000).toFixed(0)}K</Table.Td>
+                <Table.Td className={`font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  €{(month.net / 1000).toFixed(0)}K
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Body>
+        </Table>
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="font-bold text-gray-900">6-Month Totals:</p>
           <p className="text-sm text-gray-700">
@@ -1582,13 +1575,13 @@ const GeneralReports: React.FC = () => {
                     <p className="text-sm text-gray-600">{project.location}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      project.risk_level === 'High' ? 'bg-red-100 text-red-800' :
-                      project.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                    <Badge variant={
+                      project.risk_level === 'High' ? 'red'
+                        : project.risk_level === 'Medium' ? 'yellow'
+                        : 'green'
+                    }>
                       Risk: {project.risk_level}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
