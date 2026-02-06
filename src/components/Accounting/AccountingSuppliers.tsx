@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Plus, Search, DollarSign, FileText, Briefcase, Phone, Mail, Edit, Trash2, X, Eye, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, Plus, Search, DollarSign, FileText, Briefcase, Phone, Mail, Edit, Trash2, X, Eye, TrendingUp, ChevronLeft, ChevronRight, Store } from 'lucide-react'
+import RetailSupplierModal from './RetailSupplierModal'
 
 interface Contract {
   id: string
@@ -62,6 +63,7 @@ const AccountingSuppliers: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
   const [editingSupplier, setEditingSupplier] = useState<string | null>(null)
+  const [showRetailModal, setShowRetailModal] = useState(false)
 
   const itemsPerPage = 50
 
@@ -485,13 +487,22 @@ const AccountingSuppliers: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Dobavljači</h1>
           <p className="text-sm text-gray-600 mt-1">Pregled svih dobavljača, ugovora i plaćanja</p>
         </div>
-        <button
-          onClick={() => handleOpenAddModal()}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Novi dobavljač
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleOpenAddModal()}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Novi dobavljač
+          </button>
+          <button
+            onClick={() => setShowRetailModal(true)}
+            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap"
+          >
+            <Store className="w-5 h-5 mr-2" />
+            Novi Retail Dobavljač
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -997,6 +1008,16 @@ const AccountingSuppliers: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showRetailModal && (
+        <RetailSupplierModal
+          onClose={() => setShowRetailModal(false)}
+          onSuccess={() => {
+            setShowRetailModal(false)
+            fetchData()
+          }}
+        />
       )}
     </div>
   )
