@@ -1,8 +1,8 @@
 import React from 'react'
-import { X } from 'lucide-react'
 import DateInput from '../../Common/DateInput'
 import CurrencyInput, { formatCurrency } from '../../Common/CurrencyInput'
 import { CesijaPaymentFields } from './CesijaPaymentFields'
+import { Modal, Button, Input, Select, Textarea, FormField } from '../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../types/invoiceTypes'
 
 interface PaymentFormModalProps {
@@ -35,22 +35,14 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   if (!show || !payingInvoice) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col">
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
-          <h2 className="text-xl font-bold text-gray-900">
-            Plati račun: {payingInvoice.invoice_number}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={show} onClose={onClose} size="sm">
+      <Modal.Header
+        title={`Plati račun: ${payingInvoice.invoice_number}`}
+        onClose={onClose}
+      />
 
-        <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
-          <div className="p-6 space-y-4">
+      <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
+        <div className="p-6 space-y-4">
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Ukupan iznos:</span>
@@ -69,11 +61,8 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!paymentFormData.is_cesija && (
               <>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Izvor plaćanja *
-                  </label>
-                  <select
+                <FormField label="Izvor plaćanja" required className="md:col-span-2">
+                  <Select
                     value={paymentFormData.payment_source_type}
                     onChange={(e) => onFormChange({
                       ...paymentFormData,
@@ -81,23 +70,25 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                       company_bank_account_id: '',
                       credit_id: ''
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
                     <option value="bank_account">Bankovni račun</option>
                     <option value="credit">Kredit</option>
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
 
                 {paymentFormData.payment_source_type === 'bank_account' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bankovni račun *
-                    </label>
-                    <select
+                  <FormField
+                    label="Bankovni račun"
+                    required
+                    className="md:col-span-2"
+                    error={companyBankAccounts.filter(acc => acc.company_id === payingInvoice.company_id).length === 0
+                      ? 'Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.'
+                      : undefined}
+                  >
+                    <Select
                       value={paymentFormData.company_bank_account_id}
                       onChange={(e) => onFormChange({ ...paymentFormData, company_bank_account_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
                       <option value="">Odaberi bankovni račun</option>
@@ -108,28 +99,26 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                             {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{formatCurrency(account.current_balance)})
                           </option>
                         ))}
-                    </select>
-                    {companyBankAccounts.filter(acc => acc.company_id === payingInvoice.company_id).length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                      </p>
-                    )}
-                  </div>
+                    </Select>
+                  </FormField>
                 )}
 
                 {paymentFormData.payment_source_type === 'credit' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kredit *
-                    </label>
-                    <select
+                  <FormField
+                    label="Kredit"
+                    required
+                    className="md:col-span-2"
+                    error={companyCredits.filter(credit => credit.company_id === payingInvoice.company_id).length === 0
+                      ? 'Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                      : undefined}
+                  >
+                    <Select
                       value={paymentFormData.credit_id}
                       onChange={(e) => {
                         const newCreditId = e.target.value
                         onFormChange({ ...paymentFormData, credit_id: newCreditId, credit_allocation_id: '' })
                         onCreditChange(newCreditId)
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
                       <option value="">Odaberi kredit</option>
@@ -143,24 +132,22 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                             </option>
                           )
                         })}
-                    </select>
-                    {companyCredits.filter(credit => credit.company_id === payingInvoice.company_id).length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
-                      </p>
-                    )}
-                  </div>
+                    </Select>
+                  </FormField>
                 )}
 
                 {paymentFormData.payment_source_type === 'credit' && paymentFormData.credit_id && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Projekt *
-                    </label>
-                    <select
+                  <FormField
+                    label="Projekt"
+                    required
+                    className="md:col-span-2"
+                    error={creditAllocations.length === 0
+                      ? 'Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.'
+                      : undefined}
+                  >
+                    <Select
                       value={paymentFormData.credit_allocation_id}
                       onChange={(e) => onFormChange({ ...paymentFormData, credit_allocation_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
                       <option value="">Odaberi projekt</option>
@@ -172,13 +159,8 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                           </option>
                         )
                       })}
-                    </select>
-                    {creditAllocations.length === 0 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.
-                      </p>
-                    )}
-                  </div>
+                    </Select>
+                  </FormField>
                 )}
               </>
             )}
@@ -216,76 +198,55 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               onCreditChange={onCreditChange}
             />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum plaćanja *
-              </label>
+            <FormField label="Datum plaćanja" required>
               <DateInput
                 value={paymentFormData.payment_date}
                 onChange={(value) => onFormChange({ ...paymentFormData, payment_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Iznos plaćanja *
-              </label>
+            <FormField label="Iznos plaćanja" required helperText={`Max iznos: €${formatCurrency(payingInvoice.remaining_amount)}`}>
               <CurrencyInput
                 value={paymentFormData.amount}
                 onChange={(value) => onFormChange({ ...paymentFormData, amount: value })}
                 placeholder="0,00"
                 min={0.01}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Max iznos: €{formatCurrency(payingInvoice.remaining_amount)}
-              </p>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Način plaćanja *
-              </label>
-              <select
+            <FormField label="Način plaćanja" required>
+              <Select
                 value={paymentFormData.payment_method}
                 onChange={(e) => onFormChange({ ...paymentFormData, payment_method: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="WIRE">Virman</option>
                 <option value="CASH">Gotovina</option>
                 <option value="CHECK">Ček</option>
                 <option value="CARD">Kartica</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Referenca (opcionalno)
-              </label>
-              <input
+            <FormField label="Referenca (opcionalno)">
+              <Input
                 type="text"
                 value={paymentFormData.reference_number}
                 onChange={(e) => onFormChange({ ...paymentFormData, reference_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Poziv na broj..."
               />
-            </div>
+            </FormField>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Opis (opcionalno)
-            </label>
-            <textarea
+          <FormField label="Opis (opcionalno)">
+            <Textarea
               value={paymentFormData.description}
               onChange={(e) => onFormChange({ ...paymentFormData, description: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Dodatne napomene..."
             />
-          </div>
+          </FormField>
 
           {paymentFormData.amount > 0 && paymentFormData.amount <= payingInvoice.remaining_amount && (
             <div className="bg-blue-50 rounded-lg p-4 space-y-2">
@@ -301,25 +262,17 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               )}
             </div>
           )}
+        </div>
 
-          </div>
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-            >
-              Odustani
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              Potvrdi plaćanje
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Odustani
+          </Button>
+          <Button variant="success" type="submit">
+            Potvrdi plaćanje
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }
