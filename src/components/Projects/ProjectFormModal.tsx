@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { X, Building2, MapPin, Calendar, DollarSign, Users, AlertTriangle, FileText } from 'lucide-react'
+import { Building2, MapPin, Calendar, DollarSign, Users } from 'lucide-react'
+import { Modal, FormField, Input, Select, Button, Alert } from '../ui'
 
 interface ProjectFormModalProps {
   projectId?: string | null
@@ -152,180 +153,110 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <Building2 className="w-6 h-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">
-              {projectId ? 'Edit Project' : 'New Project'}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header
+        title={projectId ? 'Edit Project' : 'New Project'}
+        onClose={onClose}
+      />
+      <Modal.Body>
+        <form onSubmit={handleSubmit}>
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
+            <Alert variant="error" className="mb-4" onDismiss={() => setError('')}>
+              {error}
+            </Alert>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name *
-              </label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Kozara Residential Complex"
-                  required
-                />
-              </div>
-            </div>
+            <FormField label="Project Name" required className="md:col-span-2">
+              <Input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g., Kozara Residential Complex"
+                required
+              />
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location *
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Zagreb, Croatia"
-                  required
-                />
-              </div>
-            </div>
+            <FormField label="Location" required className="md:col-span-2">
+              <Input
+                type="text"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="e.g., Zagreb, Croatia"
+                required
+              />
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date *
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
+            <FormField label="Start Date" required>
+              <Input
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                required
+              />
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date (Optional)
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+            <FormField label="End Date (Optional)">
+              <Input
+                type="date"
+                value={form.end_date}
+                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+              />
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Budget (€) *
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="number"
-                  value={form.budget}
-                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  required
-                />
-              </div>
-            </div>
+            <FormField label="Budget (EUR)" required>
+              <Input
+                type="number"
+                value={form.budget}
+                onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                required
+              />
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
+            <FormField label="Status">
+              <Select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="Planning">Planning</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
                 <option value="On Hold">On Hold</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Investor (Optional)
-              </label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  value={form.investor}
-                  onChange={(e) => setForm({ ...form, investor: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., ABC Investment Group"
-                />
-              </div>
-            </div>
+            <FormField label="Investor (Optional)" className="md:col-span-2">
+              <Input
+                type="text"
+                value={form.investor}
+                onChange={(e) => setForm({ ...form, investor: e.target.value })}
+                placeholder="e.g., ABC Investment Group"
+              />
+            </FormField>
           </div>
         </form>
-
-        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+      </Modal.Body>
+      <Modal.Footer>
+        <div className="flex justify-between items-center w-full">
           {projectId && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={loading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-300 transition-colors duration-200"
-            >
+            <Button variant="danger" onClick={handleDelete} disabled={loading}>
               Delete Project
-            </button>
+            </Button>
           )}
           <div className={`flex space-x-3 ${!projectId ? 'ml-auto' : ''}`}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
-            >
+            <Button variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
-            >
-              {loading ? 'Saving...' : projectId ? 'Update Project' : 'Create Project'}
-            </button>
+            </Button>
+            <Button onClick={handleSubmit} disabled={loading} loading={loading}>
+              {projectId ? 'Update Project' : 'Create Project'}
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Modal.Footer>
+    </Modal>
   )
 }
 

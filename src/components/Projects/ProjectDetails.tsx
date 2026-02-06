@@ -18,7 +18,7 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface ProjectWithDetails extends Project {
@@ -323,27 +323,23 @@ const ProjectDetails: React.FC = () => {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors duration-200"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+        <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/')} className="mb-4">
           Back to Dashboard
-        </button>
+        </Button>
         
         <PageHeader
           title={project.name}
           description={project.location}
         />
         <div className="flex items-center space-x-4 mt-3">
-          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-            project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-            project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
+          <Badge variant={
+            project.status === 'Completed' ? 'green'
+              : project.status === 'In Progress' ? 'blue'
+              : project.status === 'On Hold' ? 'red'
+              : 'gray'
+          }>
             {project.status}
-          </span>
+          </Badge>
           <span className="text-sm text-gray-500">
             Budget: €{project.budget.toLocaleString('hr-HR')}
           </span>
@@ -354,47 +350,10 @@ const ProjectDetails: React.FC = () => {
       </div>
 
       {/* Stats Overview */}
-      <StatGrid columns={4} className="mb-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">
-                €{(project.total_revenue / 1000000).toFixed(1)}M
-              </p>
-              <p className="text-xs text-gray-500">From sales</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Users className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Subcontractors</p>
-              <p className="text-2xl font-bold text-gray-900">{project.subcontractors.length}</p>
-              <p className="text-xs text-gray-500">Active contracts</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Target className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Milestones</p>
-              <p className="text-2xl font-bold text-gray-900">{milestoneStats.completed}/{milestoneStats.total}</p>
-              <p className="text-xs text-gray-500">{milestoneProgress.toFixed(0)}% complete</p>
-            </div>
-          </div>
-        </div>
+      <StatGrid columns={3} className="mb-6">
+        <StatCard label="Revenue" value={`€${(project.total_revenue / 1000000).toFixed(1)}M`} subtitle="From sales" icon={DollarSign} color="green" />
+        <StatCard label="Subcontractors" value={project.subcontractors.length} subtitle="Active contracts" icon={Users} color="orange" />
+        <StatCard label="Milestones" value={`${milestoneStats.completed}/${milestoneStats.total}`} subtitle={`${milestoneProgress.toFixed(0)}% complete`} icon={Target} />
       </StatGrid>
 
       {/* Tabs */}
@@ -469,7 +428,7 @@ const ProjectDetails: React.FC = () => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-purple-600 h-2 rounded-full"
+                        className="bg-blue-600 h-2 rounded-full"
                         style={{ width: `${milestoneProgress}%` }}
                       ></div>
                     </div>
@@ -490,13 +449,9 @@ const ProjectDetails: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Project Milestones</h2>
-              <button
-                onClick={() => setShowMilestoneForm(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
+              <Button icon={Plus} onClick={() => setShowMilestoneForm(true)}>
                 Add Milestone
-              </button>
+              </Button>
             </div>
 
             {/* Milestone Overview */}
@@ -534,7 +489,7 @@ const ProjectDetails: React.FC = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div 
-                  className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${milestoneProgress}%` }}
                 ></div>
               </div>
@@ -547,26 +502,22 @@ const ProjectDetails: React.FC = () => {
                   {editingMilestone ? 'Edit Milestone' : 'Add New Milestone'}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Milestone Name *</label>
-                    <input
+                  <FormField label="Milestone Name" required className="md:col-span-2">
+                    <Input
                       type="text"
                       value={newMilestone.name}
                       onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., Contracts Signed, Foundation Complete, Building No.1 Finished"
                       required
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Due Date</label>
-                    <input
+                  </FormField>
+                  <FormField label="Target Due Date">
+                    <Input
                       type="date"
                       value={newMilestone.due_date}
                       onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                  </div>
+                  </FormField>
                   <div className="md:col-span-2 flex items-center">
                     <input
                       type="checkbox"
@@ -582,35 +533,28 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 
                 <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={resetMilestoneForm}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                  >
+                  <Button variant="secondary" onClick={resetMilestoneForm}>
                     Cancel
-                  </button>
-                  <button
-                    onClick={editingMilestone ? updateMilestone : addMilestone}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
+                  </Button>
+                  <Button onClick={editingMilestone ? updateMilestone : addMilestone}>
                     {editingMilestone ? 'Update' : 'Add'} Milestone
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* Milestones List */}
             {project.milestones.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Milestones Yet</h3>
-                <p className="text-gray-600 mb-4">Start tracking your project progress by adding milestones</p>
-                <button
-                  onClick={() => setShowMilestoneForm(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  Add First Milestone
-                </button>
-              </div>
+              <EmptyState
+                icon={Target}
+                title="No Milestones Yet"
+                description="Start tracking your project progress by adding milestones"
+                action={
+                  <Button onClick={() => setShowMilestoneForm(true)}>
+                    Add First Milestone
+                  </Button>
+                }
+              />
             ) : (
               <div className="space-y-4">
                 {project.milestones.map((milestone, index) => {
@@ -639,13 +583,11 @@ const ProjectDetails: React.FC = () => {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                milestone.completed ? 'bg-green-100 text-green-800' :
-                                isOverdue ? 'bg-red-100 text-red-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
+                              <Badge variant={
+                                milestone.completed ? 'green' : isOverdue ? 'red' : 'blue'
+                              } size="sm">
                                 {status.status}
-                              </span>
+                              </Badge>
                             </div>
                             
                             <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -666,31 +608,30 @@ const ProjectDetails: React.FC = () => {
                         </div>
                         
                         <div className="flex items-center space-x-2">
-                          <button
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={milestone.completed ? Circle : CheckCircle}
                             onClick={() => toggleMilestoneCompletion(milestone.id, milestone.completed)}
-                            className={`p-2 rounded-lg transition-colors duration-200 ${
-                              milestone.completed 
-                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                                : 'bg-green-100 text-green-600 hover:bg-green-200'
-                            }`}
                             title={milestone.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                          >
-                            {milestone.completed ? <Circle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                          </button>
-                          <button
+                            className={milestone.completed ? 'text-gray-600 hover:bg-gray-200' : 'text-green-600 hover:bg-green-200'}
+                          />
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={Edit2}
                             onClick={() => handleEditMilestone(milestone)}
-                            className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-200"
                             title="Edit milestone"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
+                            className="text-blue-600 hover:bg-blue-200"
+                          />
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={Trash2}
                             onClick={() => deleteMilestone(milestone.id)}
-                            className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
                             title="Delete milestone"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            className="text-red-600 hover:bg-red-200"
+                          />
                         </div>
                       </div>
                     </div>
@@ -705,7 +646,7 @@ const ProjectDetails: React.FC = () => {
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Subcontractors</h2>
             {project.subcontractors.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No subcontractors assigned to this project</p>
+              <EmptyState icon={Users} title="No subcontractors assigned" description="No subcontractors have been assigned to this project" />
             ) : (
               <div className="space-y-4">
                 {project.subcontractors.map((sub) => {
@@ -755,7 +696,7 @@ const ProjectDetails: React.FC = () => {
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Apartments</h2>
             {project.apartments.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No apartments defined for this project</p>
+              <EmptyState icon={Home} title="No apartments defined" description="No apartments have been defined for this project" />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.apartments.map((apartment) => (
@@ -765,13 +706,13 @@ const ProjectDetails: React.FC = () => {
                         <h3 className="font-medium text-gray-900">Unit {apartment.number}</h3>
                         <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
                       </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        apartment.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                        apartment.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
+                      <Badge variant={
+                        apartment.status === 'Sold' ? 'green'
+                          : apartment.status === 'Reserved' ? 'yellow'
+                          : 'blue'
+                      } size="sm">
                         {apartment.status}
-                      </span>
+                      </Badge>
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between">

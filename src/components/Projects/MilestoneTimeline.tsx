@@ -1,6 +1,7 @@
 import React from 'react'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2 } from 'lucide-react'
-import { format, parseISO, isPast, isFuture } from 'date-fns'
+import { Badge, Button, EmptyState } from '../ui'
+import { format, parseISO, isPast } from 'date-fns'
 
 interface Milestone {
   id: string
@@ -69,11 +70,11 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
 
   if (milestones.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">No milestones yet</p>
-        <p className="text-sm text-gray-500 mt-1">Add milestones to track project progress</p>
-      </div>
+      <EmptyState
+        icon={Calendar}
+        title="No milestones yet"
+        description="Add milestones to track project progress"
+      />
     )
   }
 
@@ -101,9 +102,13 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
+                          <Badge variant={
+                            status.label === 'Completed' ? 'green'
+                              : status.label === 'Overdue' ? 'red'
+                              : 'blue'
+                          } size="sm">
                             {status.label}
-                          </span>
+                          </Badge>
                         </div>
 
                         {milestone.due_date && (
@@ -116,31 +121,30 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
 
                       {editable && (
                         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <button
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={milestone.completed ? Circle : CheckCircle}
                             onClick={() => onToggleComplete?.(milestone.id, milestone.completed)}
-                            className={`p-2 rounded-lg transition-colors duration-200 ${
-                              milestone.completed
-                                ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
-                                : 'bg-green-100 text-green-600 hover:bg-green-200'
-                            }`}
                             title={milestone.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                          >
-                            {milestone.completed ? <Circle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                          </button>
-                          <button
+                            className={milestone.completed ? 'text-yellow-600 hover:bg-yellow-200' : 'text-green-600 hover:bg-green-200'}
+                          />
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={Edit2}
                             onClick={() => onEdit?.(milestone)}
-                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors duration-200"
                             title="Edit milestone"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
+                            className="text-blue-600 hover:bg-blue-200"
+                          />
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            icon={Trash2}
                             onClick={() => onDelete?.(milestone.id)}
-                            className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors duration-200"
                             title="Delete milestone"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            className="text-red-600 hover:bg-red-200"
+                          />
                         </div>
                       )}
                     </div>

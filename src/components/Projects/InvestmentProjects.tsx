@@ -4,18 +4,16 @@ import {
   Building2,
   DollarSign,
   Users,
-  Calendar,
   PieChart,
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
   Target,
   Eye,
-  X,
   Banknote,
   UserCheck
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, Modal } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface CreditAllocation {
@@ -64,17 +62,6 @@ const InvestmentProjects: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [])
-
-  useEffect(() => {
-    if (selectedProject) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [selectedProject])
 
   const fetchData = async () => {
     setLoading(true)
@@ -176,15 +163,6 @@ const InvestmentProjects: React.FC = () => {
       console.error('Error fetching investment projects:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'High': return 'bg-red-100 text-red-800'
-      case 'Medium': return 'bg-orange-100 text-orange-800'
-      case 'Low': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -294,16 +272,20 @@ const InvestmentProjects: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h3 className="text-xl font-semibold text-gray-900">{project.name}</h3>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <Badge variant={
+                    project.status === 'Completed' ? 'green'
+                      : project.status === 'In Progress' ? 'blue'
+                      : 'gray'
+                  } size="sm">
                     {project.status}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(project.risk_level)}`}>
+                  </Badge>
+                  <Badge variant={
+                    project.risk_level === 'High' ? 'red'
+                      : project.risk_level === 'Medium' ? 'orange'
+                      : 'green'
+                  } size="sm">
                     {project.risk_level} Risk
-                  </span>
+                  </Badge>
                 </div>
                 <p className="text-gray-600 mb-1">{project.location}</p>
                 <p className="text-sm text-gray-500">
@@ -314,13 +296,9 @@ const InvestmentProjects: React.FC = () => {
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
                 <p className="text-sm text-gray-600">Total Budget</p>
-                <button
-                  onClick={() => setSelectedProject(project)}
-                  className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-sm font-medium transition-colors duration-200"
-                >
-                  <Eye className="w-4 h-4 mr-1 inline" />
+                <Button variant="secondary" size="sm" icon={Eye} onClick={() => setSelectedProject(project)} className="mt-2">
                   View Details
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -357,15 +335,15 @@ const InvestmentProjects: React.FC = () => {
                 <p className="text-xs text-blue-600">Weighted average</p>
               </div>
 
-              <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="bg-teal-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-purple-700">Funding Status</span>
-                  <PieChart className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-teal-700">Funding Status</span>
+                  <PieChart className="w-4 h-4 text-teal-600" />
                 </div>
                 <p className={`text-lg font-bold ${getFundingColor(project.funding_ratio)}`}>
                   {project.funding_ratio.toFixed(1)}%
                 </p>
-                <p className="text-xs text-purple-600">
+                <p className="text-xs text-teal-600">
                   {project.funding_ratio >= 100 ? 'Fully funded' : 'Needs funding'}
                 </p>
               </div>
@@ -438,37 +416,12 @@ const InvestmentProjects: React.FC = () => {
 
       {/* Project Details Modal */}
       {selectedProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">{selectedProject.name}</h3>
-                  <p className="text-gray-600 mt-1">{selectedProject.location}</p>
-                  <div className="flex items-center space-x-3 mt-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedProject.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      selectedProject.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedProject.status}
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(selectedProject.risk_level)}`}>
-                      {selectedProject.risk_level} Risk
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Budget: €{selectedProject.budget.toLocaleString('hr-HR')}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedProject(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
+        <Modal show={true} onClose={() => setSelectedProject(null)} size="xl">
+          <Modal.Header
+            title={selectedProject.name}
+            subtitle={`${selectedProject.location} | Budget: €${selectedProject.budget.toLocaleString('hr-HR')}`}
+            onClose={() => setSelectedProject(null)}
+          />
 
             {/* Tabs */}
             <div className="border-b border-gray-200">
@@ -486,7 +439,7 @@ const InvestmentProjects: React.FC = () => {
                 <button
                   onClick={async () => {
                     setActiveTab('funding')
-                    await fetchFundingUtilization(selectedProject.project.id)
+                    await fetchFundingUtilization(selectedProject.id)
                   }}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                     activeTab === 'funding'
@@ -499,7 +452,7 @@ const InvestmentProjects: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
+          <Modal.Body>
               {activeTab === 'overview' && (
                 <>
               {/* Financial Summary */}
@@ -535,13 +488,13 @@ const InvestmentProjects: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="bg-teal-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-purple-700">Expected ROI</span>
-                    <Target className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm text-teal-700">Expected ROI</span>
+                    <Target className="w-4 h-4 text-teal-600" />
                   </div>
-                  <p className="text-xl font-bold text-purple-900">{selectedProject.expected_roi.toFixed(1)}%</p>
-                  <p className="text-xs text-purple-600">Weighted average</p>
+                  <p className="text-xl font-bold text-teal-900">{selectedProject.expected_roi.toFixed(1)}%</p>
+                  <p className="text-xs text-teal-600">Weighted average</p>
                 </div>
               </StatGrid>
 
@@ -766,10 +719,7 @@ const InvestmentProjects: React.FC = () => {
                   <h4 className="font-semibold text-gray-900 mb-4">Funding Sources Utilization</h4>
 
                   {fundingUtilization.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No funding sources for this project</p>
-                    </div>
+                    <EmptyState icon={DollarSign} title="No funding sources for this project" />
                   ) : (
                     <div className="space-y-4">
                       {fundingUtilization.map((source) => {
@@ -787,16 +737,13 @@ const InvestmentProjects: React.FC = () => {
                                     <Banknote className="w-5 h-5 text-green-600" />
                                   )}
                                   <h5 className="text-lg font-semibold text-gray-900">{source.name}</h5>
-                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                    source.type === 'investor' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                                  }`}>
+                                  <Badge variant={source.type === 'investor' ? 'blue' : 'green'} size="sm">
                                     {source.type.toUpperCase()}
-                                  </span>
+                                  </Badge>
                                   {isExpiringSoon && (
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 flex items-center">
-                                      <AlertTriangle className="w-3 h-3 mr-1" />
+                                    <Badge variant="orange" size="sm">
                                       EXPIRING SOON
-                                    </span>
+                                    </Badge>
                                   )}
                                 </div>
                                 <p className="text-sm text-gray-600">
@@ -909,9 +856,8 @@ const InvestmentProjects: React.FC = () => {
                   )}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+        </Modal>
       )}
     </div>
   )
