@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Plus, Search, Mail } from 'lucide-react'
+import { Plus, Mail } from 'lucide-react'
+import { PageHeader, SearchInput } from './ui'
 import { CustomerCategory } from './Customers/types/customerTypes'
 import { useCustomerData } from './Customers/hooks/useCustomerData'
 import { CategoryTabs } from './Customers/views/CategoryTabs'
@@ -81,28 +82,28 @@ const CustomersManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
-          <p className="text-gray-600 mt-1">Manage your sales pipeline and customer relationships</p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleExportEmails}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <Mail className="w-5 h-5 mr-2" />
-            Email All ({filteredCustomers.filter(c => c.email).length})
-          </button>
-          <button
-            onClick={handleAddCustomer}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Customer
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Customer Management"
+        description="Manage your sales pipeline and customer relationships"
+        actions={
+          <>
+            <button
+              onClick={handleExportEmails}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Mail className="w-5 h-5 mr-2" />
+              Email All ({filteredCustomers.filter(c => c.email).length})
+            </button>
+            <button
+              onClick={handleAddCustomer}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add Customer
+            </button>
+          </>
+        }
+      />
 
       <CategoryTabs
         activeCategory={activeCategory}
@@ -111,16 +112,12 @@ const CustomersManagement: React.FC = () => {
       />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClear={() => setSearchTerm('')}
+          placeholder="Search customers..."
+        />
       </div>
 
       <CustomerGrid

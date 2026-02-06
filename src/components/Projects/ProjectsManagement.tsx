@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase'
 import {
   FolderKanban,
   Plus,
-  Search,
   MapPin,
   Calendar,
   DollarSign,
@@ -16,6 +15,7 @@ import {
   Eye,
   Filter
 } from 'lucide-react'
+import { LoadingSpinner, PageHeader, SearchInput } from '../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import ProjectFormModal from './ProjectFormModal'
 
@@ -160,32 +160,29 @@ const ProjectsManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-1">Manage all your projects and milestones</p>
-        </div>
-        <button
-          onClick={() => setShowNewProjectModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Project</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Projects"
+        description="Manage all your projects and milestones"
+        actions={
+          <button
+            onClick={() => setShowNewProjectModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Project</span>
+          </button>
+        }
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <SearchInput
+            className="flex-1"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            placeholder="Search projects..."
+          />
 
           <div className="flex items-center space-x-2">
             <Filter className="w-5 h-5 text-gray-400" />
@@ -204,10 +201,7 @@ const ProjectsManagement: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600 mt-2">Loading projects...</p>
-          </div>
+          <LoadingSpinner message="Loading projects..." />
         ) : filteredProjects.length === 0 ? (
           <div className="text-center py-12">
             <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />

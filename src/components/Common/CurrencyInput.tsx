@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import Input from '../ui/Input'
 
 interface CurrencyInputProps {
   value: number | null | undefined
@@ -18,7 +19,7 @@ export default function CurrencyInput({
   value,
   onChange,
   placeholder = '0,00',
-  className = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+  className,
   disabled = false,
   min
 }: CurrencyInputProps) {
@@ -71,7 +72,7 @@ export default function CurrencyInput({
   }
 
   return (
-    <input
+    <Input
       type="text"
       inputMode="decimal"
       value={displayValue}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { MapPin, Plus, Search, Edit, Trash2, Eye, X, Calendar, Link } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, Eye, X, Calendar, Link } from 'lucide-react'
 import type { RetailLandPlot, RetailSale } from '../../types/retail'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
 
 interface LandPlotWithSales extends RetailLandPlot {
   sales?: RetailSale[]
@@ -210,33 +211,26 @@ const RetailLandPlots: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavanje...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Učitavanje..." />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Zemljišta</h1>
-          <p className="text-sm text-gray-600 mt-1">Upravljanje zemljištima i česticama</p>
-        </div>
-        <button
-          onClick={() => handleOpenFormModal()}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Novo zemljište
-        </button>
-      </div>
+      <PageHeader
+        title="Zemljišta"
+        description="Upravljanje zemljištima i česticama"
+        actions={
+          <button
+            onClick={() => handleOpenFormModal()}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Novo zemljište
+          </button>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <StatGrid columns={4}>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -276,19 +270,15 @@ const RetailLandPlots: React.FC = () => {
             <Calendar className="w-8 h-8 text-green-600" />
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Pretraži po vlasniku, broju čestice ili lokaciji..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClear={() => setSearchTerm('')}
+          placeholder="Pretraži po vlasniku, broju čestice ili lokaciji..."
+        />
       </div>
 
       {filteredPlots.length === 0 ? (

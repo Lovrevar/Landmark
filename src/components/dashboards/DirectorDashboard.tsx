@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { LoadingSpinner, StatGrid } from '../ui'
 import {
   Building2,
   DollarSign,
@@ -13,18 +14,15 @@ import {
   CheckCircle,
   Clock,
   Target,
-  BarChart3,
   PieChart,
   Activity,
   Wallet,
   CreditCard,
-  FileText,
   HardHat,
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
   Package,
-  ShoppingCart,
   Percent
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, parseISO } from 'date-fns'
@@ -605,14 +603,7 @@ const DirectorDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading comprehensive dashboard...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner size="lg" message="Loading comprehensive dashboard..." />
   }
 
   return (
@@ -682,7 +673,7 @@ const DirectorDashboard: React.FC = () => {
           <DollarSign className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <StatGrid columns={5}>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-600">Total Revenue</p>
@@ -739,9 +730,9 @@ const DirectorDashboard: React.FC = () => {
             </p>
             <p className="text-xs text-gray-500 mt-1">{format(new Date(), 'MMMM')}</p>
           </div>
-        </div>
+        </StatGrid>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <StatGrid columns={3} className="mt-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div className="flex justify-between items-center">
               <div>
@@ -780,7 +771,7 @@ const DirectorDashboard: React.FC = () => {
               <ArrowDownRight className="w-8 h-8 text-orange-400" />
             </div>
           </div>
-        </div>
+        </StatGrid>
       </div>
 
       {/* Sales Performance */}
@@ -819,7 +810,7 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-sm text-gray-600">Sales Rate</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatGrid columns={3}>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Total Sales Revenue</p>
             <p className="text-2xl font-bold text-gray-900">€{(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M</p>
@@ -834,7 +825,7 @@ const DirectorDashboard: React.FC = () => {
               {salesMetrics.monthly_sales_count} units / €{(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K
             </p>
           </div>
-        </div>
+        </StatGrid>
       </div>
 
       {/* Construction & Site Management */}
@@ -873,7 +864,7 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-xs text-gray-500 mt-1">Within 7 days</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatGrid columns={3}>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Total Contract Value</p>
             <p className="text-2xl font-bold text-gray-900">€{(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M</p>
@@ -886,7 +877,7 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-sm text-gray-600 mb-1">Pending Payments</p>
             <p className="text-2xl font-bold text-orange-600">€{(constructionMetrics.pending_payments / 1000000).toFixed(2)}M</p>
           </div>
-        </div>
+        </StatGrid>
       </div>
 
       {/* Funding & Investment */}
@@ -925,7 +916,7 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-sm text-gray-600">Upcoming Maturities</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatGrid columns={4}>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Total Investments</p>
             <p className="text-xl font-bold text-gray-900">€{(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M</p>
@@ -942,7 +933,7 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-sm text-gray-600 mb-1">Monthly Debt Service</p>
             <p className="text-xl font-bold text-orange-600">€{(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K</p>
           </div>
-        </div>
+        </StatGrid>
       </div>
 
       {/* Projects Overview Table */}

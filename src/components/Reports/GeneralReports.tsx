@@ -5,24 +5,19 @@ import {
   Building2,
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Users,
   FileText,
   AlertTriangle,
   Target,
   PieChart,
   Activity,
-  CheckCircle,
-  Clock,
   Wallet,
   CreditCard,
-  Percent,
   BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
   Home
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { LoadingSpinner } from '../ui'
 
 interface ProjectData {
   id: string
@@ -1151,12 +1146,7 @@ const GeneralReports: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Generating comprehensive report...</p>
-        </div>
-      </div>
+      <LoadingSpinner size="lg" message="Generating comprehensive report..." className="min-h-screen" />
     )
   }
 

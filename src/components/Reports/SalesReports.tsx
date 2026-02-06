@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Project, Apartment, Customer, Sale } from '../../lib/supabase'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  DollarSign, 
-  Home, 
-  Users, 
-  Calendar,
+import {
+  TrendingUp,
+  DollarSign,
+  Home,
+  Users,
   Download,
-  FileText,
-  PieChart,
   Activity
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
 
 interface SalesData {
   month: string
@@ -581,21 +578,22 @@ const SalesReports: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sales Reports</h1>
-          <p className="text-gray-600 mt-2">Generate comprehensive sales analytics and reports</p>
-        </div>
-        {(projectReport || customerReport) && (
-          <button
-            onClick={generatePDFReport}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Sales Reports"
+        description="Generate comprehensive sales analytics and reports"
+        actions={
+          (projectReport || customerReport) ? (
+            <button
+              onClick={generatePDFReport}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </button>
+          ) : undefined
+        }
+        className="mb-6"
+      />
 
       {/* Report Configuration */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -653,10 +651,7 @@ const SalesReports: React.FC = () => {
       </div>
 
       {generatingReport && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Generating report...</p>
-        </div>
+        <LoadingSpinner message="Generating report..." />
       )}
 
       {/* Project Report */}
@@ -723,7 +718,7 @@ const SalesReports: React.FC = () => {
           </div>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatGrid columns={4}>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -771,7 +766,7 @@ const SalesReports: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </StatGrid>
 
           {/* Sales Distribution Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -908,7 +903,7 @@ const SalesReports: React.FC = () => {
       {reportType === 'customer' && customerReport && !generatingReport && (
         <div className="space-y-6">
           {/* Customer Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatGrid columns={4}>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -956,7 +951,7 @@ const SalesReports: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </StatGrid>
 
           {/* Customer Distribution */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

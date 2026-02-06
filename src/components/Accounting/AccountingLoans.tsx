@@ -1,8 +1,9 @@
 import React from 'react'
-import { TrendingUp, Plus, Search, Trash2, X, Building2, Calendar } from 'lucide-react'
+import { TrendingUp, Plus, Trash2, X, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../Common/DateInput'
 import { useLoans } from './hooks/useLoans'
+import { PageHeader, LoadingSpinner, SearchInput } from '../ui'
 
 const AccountingLoans: React.FC = () => {
   const {
@@ -23,46 +24,33 @@ const AccountingLoans: React.FC = () => {
   } = useLoans()
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <TrendingUp className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Pozajmice</h1>
-            <p className="text-sm text-gray-600">Evidencija pozajmica između firmi</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nova Pozajmica</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Pozajmice"
+        description="Evidencija pozajmica između firmi"
+        actions={
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Nova Pozajmica</span>
+          </button>
+        }
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Pretraži pozajmice..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            placeholder="Pretraži pozajmice..."
+          />
         </div>
 
         <div className="overflow-x-auto">

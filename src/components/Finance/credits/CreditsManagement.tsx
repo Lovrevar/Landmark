@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, DollarSign, AlertCircle, Plus, Edit2, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
+import { PageHeader, LoadingSpinner, StatGrid } from '../../ui'
 
 interface BankCredit {
   id: string
@@ -240,22 +241,15 @@ const CreditsManagement: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">Loading credits...</div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading credits..." />
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <CreditCard className="w-8 h-8 mr-3 text-blue-600" />
-          Krediti
-        </h1>
-        <p className="text-gray-600 mt-2">Pregled svih bankovnih kredita i njihovih namjena</p>
-      </div>
+      <PageHeader
+        title="Krediti"
+        description="Pregled svih bankovnih kredita i njihovih namjena"
+      />
 
       {credits.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
@@ -320,7 +314,7 @@ const CreditsManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <StatGrid columns={5} className="mt-4">
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-sm text-blue-700">Credit Amount</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
@@ -345,7 +339,7 @@ const CreditsManagement: React.FC = () => {
                         €{unallocatedAmount.toLocaleString('hr-HR')}
                       </p>
                     </div>
-                  </div>
+                  </StatGrid>
 
                   <div className="mt-4">
                     <div className="flex justify-between mb-2">

@@ -1,9 +1,10 @@
 import React from 'react'
-import { Users, Plus, Search, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store } from 'lucide-react'
+import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store } from 'lucide-react'
 import RetailSupplierModal from './RetailSupplierModal'
 import SupplierFormModal from './forms/SupplierFormModal'
 import SupplierDetailsModal from './views/SupplierDetailsModal'
 import { useSuppliers } from './hooks/useSuppliers'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput } from '../ui'
 
 const AccountingSuppliers: React.FC = () => {
   const {
@@ -39,42 +40,35 @@ const AccountingSuppliers: React.FC = () => {
   } = useSuppliers()
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavanje...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Učitavanje..." />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dobavljači</h1>
-          <p className="text-sm text-gray-600 mt-1">Pregled svih dobavljača, ugovora i plaćanja</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Novi dobavljač
-          </button>
-          <button
-            onClick={() => setShowRetailModal(true)}
-            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap"
-          >
-            <Store className="w-5 h-5 mr-2" />
-            Novi Retail Dobavljač
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Dobavljači"
+        description="Pregled svih dobavljača, ugovora i plaćanja"
+        actions={
+          <>
+            <button
+              onClick={() => handleOpenAddModal()}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Novi dobavljač
+            </button>
+            <button
+              onClick={() => setShowRetailModal(true)}
+              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap"
+            >
+              <Store className="w-5 h-5 mr-2" />
+              Novi Retail Dobavljač
+            </button>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <StatGrid columns={4}>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -120,19 +114,15 @@ const AccountingSuppliers: React.FC = () => {
             <TrendingUp className="w-8 h-8 text-orange-600" />
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Pretraži dobavljače..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClear={() => setSearchTerm('')}
+          placeholder="Pretraži dobavljače..."
+        />
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

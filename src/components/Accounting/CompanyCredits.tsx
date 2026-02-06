@@ -4,6 +4,7 @@ import { format, differenceInDays } from 'date-fns'
 import { useCredits } from './hooks/useCredits'
 import CreditFormModal from './forms/CreditFormModal'
 import type { Credit } from './types/creditTypes'
+import { PageHeader, LoadingSpinner } from '../ui'
 
 const CompanyCredits: React.FC = () => {
   const {
@@ -37,28 +38,24 @@ const CompanyCredits: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Company Credits</h2>
-          <p className="text-gray-600 mt-1">Manage company credit lines and loans</p>
-        </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Credit</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Company Credits"
+        description="Manage company credit lines and loans"
+        actions={
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Credit</span>
+          </button>
+        }
+      />
 
       <div className="grid gap-6">
         {credits.map((credit) => {

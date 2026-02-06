@@ -17,6 +17,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
+import { LoadingSpinner, PageHeader } from '../ui'
 import { format } from 'date-fns'
 
 interface WorkLog {
@@ -290,7 +291,7 @@ const WorkLogs: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading work logs...</div>
+    return <LoadingSpinner message="Loading work logs..." />
   }
 
   const getStatusBadge = (status: WorkLog['status']) => {
@@ -306,33 +307,33 @@ const WorkLogs: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Work Logs</h1>
-          <p className="text-gray-600 mt-1">Track subcontractor activities and site observations</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingLog(null)
-            setFormData({
-              project_id: '',
-              phase_id: '',
-              contract_id: '',
-              date: format(new Date(), 'yyyy-MM-dd'),
-              status: 'in_progress',
-              work_description: '',
-              blocker_details: '',
-              notes: '',
-              color: 'blue'
-            })
-            setShowForm(true)
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Work Log
-        </button>
-      </div>
+      <PageHeader
+        title="Work Logs"
+        description="Track subcontractor activities and site observations"
+        actions={
+          <button
+            onClick={() => {
+              setEditingLog(null)
+              setFormData({
+                project_id: '',
+                phase_id: '',
+                contract_id: '',
+                date: format(new Date(), 'yyyy-MM-dd'),
+                status: 'in_progress',
+                work_description: '',
+                blocker_details: '',
+                notes: '',
+                color: 'blue'
+              })
+              setShowForm(true)
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Work Log
+          </button>
+        }
+      />
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

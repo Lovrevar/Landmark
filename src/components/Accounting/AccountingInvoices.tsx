@@ -1,4 +1,5 @@
 import React from 'react'
+import { LoadingSpinner } from '../ui'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
 import { useInvoices } from './hooks/useInvoices'
@@ -148,14 +149,7 @@ const AccountingInvoices: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavanje...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Učitavanje..." />
   }
 
   return (

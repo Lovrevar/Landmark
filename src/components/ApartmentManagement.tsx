@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Search, Filter, DollarSign, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
+import { Home, Filter, DollarSign, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
+import { LoadingSpinner, SearchInput } from './ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './Apartments/types/apartmentTypes'
 import * as apartmentService from './Apartments/services/apartmentService'
 import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
@@ -293,7 +294,7 @@ const ApartmentManagement: React.FC = () => {
   })
 
   if (loading) {
-    return <div className="text-center py-12">Loading apartments...</div>
+    return <LoadingSpinner message="Loading apartments..." />
   }
 
   return (
@@ -328,16 +329,12 @@ const ApartmentManagement: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search apartments..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+              placeholder="Search apartments..."
+            />
           </div>
 
           <div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase, Investor, ProjectInvestment, Project } from '../../../lib/supabase'
 import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { PageHeader, LoadingSpinner } from '../../ui'
 
 interface InvestorWithInvestments extends Investor {
   investments: ProjectInvestment[]
@@ -383,33 +384,33 @@ const InvestorsManagement: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading investors...</div>
+    return <LoadingSpinner message="Loading investors..." />
   }
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Investment Partners</h1>
-          <p className="text-gray-600 mt-2">Manage investor relationships and investment portfolios</p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => setShowInvestorForm(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Investor
-          </button>
-          <button
-            onClick={() => setShowInvestmentForm(true)}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Investment
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Investment Partners"
+        description="Manage investor relationships and investment portfolios"
+        actions={
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowInvestorForm(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Investor
+            </button>
+            <button
+              onClick={() => setShowInvestmentForm(true)}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Investment
+            </button>
+          </div>
+        }
+      />
 
       {/* Investors Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

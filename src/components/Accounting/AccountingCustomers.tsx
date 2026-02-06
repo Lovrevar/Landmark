@@ -1,6 +1,7 @@
 import React from 'react'
-import { Users, Search, DollarSign, TrendingUp, TrendingDown, FileText, Eye, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { useAccountingCustomers } from './hooks/useAccountingCustomers'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput } from '../ui'
 
 const AccountingCustomers: React.FC = () => {
   const {
@@ -18,14 +19,12 @@ const AccountingCustomers: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Kupci</h1>
-          <p className="text-gray-600 mt-1">Pregled svih kupaca i njihovih računa</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Kupci"
+        description="Pregled svih kupaca i njihovih računa"
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <StatGrid columns={4}>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -65,28 +64,21 @@ const AccountingCustomers: React.FC = () => {
             <TrendingDown className="w-8 h-8 text-red-600" />
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Pretraži kupce..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            placeholder="Pretraži kupce..."
+          />
         </div>
 
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="text-gray-600 mt-2">Učitavanje...</p>
-            </div>
+            <LoadingSpinner size="sm" message="Učitavanje..." />
           ) : filteredCustomers.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />

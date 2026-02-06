@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Users, DollarSign, Briefcase, Phone, Mail, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
+import { LoadingSpinner, PageHeader } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface SubcontractorContract {
@@ -155,23 +156,23 @@ const SubcontractorManagement: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading subcontractors...</div>
+    return <LoadingSpinner message="Loading subcontractors..." />
   }
 
   const subcontractorsList = Array.from(subcontractors.values())
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Subcontractors</h1>
-          <p className="text-gray-600 mt-2">Overview of all subcontractors and their contracts</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">Total Subcontractors</p>
-          <p className="text-2xl font-bold text-gray-900">{subcontractorsList.length}</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Subcontractors"
+        description="Overview of all subcontractors and their contracts"
+        actions={
+          <div className="text-right">
+            <p className="text-sm text-gray-600">Total Subcontractors</p>
+            <p className="text-2xl font-bold text-gray-900">{subcontractorsList.length}</p>
+          </div>
+        }
+      />
 
       {subcontractorsList.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">

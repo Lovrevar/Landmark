@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import Input from '../ui/Input'
 
 interface DateInputProps {
   value: string
@@ -89,7 +90,7 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, className, requi
   }
 
   return (
-    <input
+    <Input
       type="text"
       value={displayValue}
       onChange={handleChange}

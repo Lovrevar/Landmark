@@ -3,6 +3,7 @@ import { FileDown, FileSpreadsheet, Save, AlertCircle } from 'lucide-react'
 import { exportToExcel, exportToPDF } from './TICExport'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
+import { LoadingSpinner } from '../../ui'
 
 interface LineItem {
   name: string
@@ -282,9 +283,8 @@ const TICManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavam TIC podatke...</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+          <LoadingSpinner message="Učitavam TIC podatke..." />
         </div>
       ) : !selectedProjectId ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">

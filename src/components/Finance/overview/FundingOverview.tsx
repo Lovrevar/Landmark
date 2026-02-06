@@ -17,6 +17,7 @@ import {
   ArrowDownRight
 } from 'lucide-react'
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
+import { PageHeader, LoadingSpinner, StatGrid } from '../../ui'
 
 interface FundingSource {
   id: string
@@ -422,7 +423,7 @@ const FundingOverview: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading funding data...</div>
+    return <LoadingSpinner message="Loading funding data..." />
   }
 
   const totalStats = projects.reduce((acc, p) => ({
@@ -434,13 +435,13 @@ const FundingOverview: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Funding Overview</h1>
-        <p className="text-gray-600 mt-2">Track funding sources, spending, and availability across all projects</p>
-      </div>
+      <PageHeader
+        title="Funding Overview"
+        description="Track funding sources, spending, and availability across all projects"
+      />
 
       {/* Overall Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <StatGrid columns={4} className="mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Committed</h3>
@@ -478,7 +479,7 @@ const FundingOverview: React.FC = () => {
           <p className="text-2xl font-bold text-orange-600">{totalStats.warnings}</p>
           <p className="text-xs text-gray-500 mt-1">Require attention</p>
         </div>
-      </div>
+      </StatGrid>
 
       {/* Projects List */}
       <div className="space-y-4">

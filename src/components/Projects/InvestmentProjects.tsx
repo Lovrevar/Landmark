@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Project, ProjectInvestment, Investor, Bank, BankCredit } from '../../lib/supabase'
-import { 
-  Building2, 
-  DollarSign, 
-  TrendingUp, 
-  Users, 
+import {
+  Building2,
+  DollarSign,
+  Users,
   Calendar,
   PieChart,
   AlertTriangle,
-  CheckCircle,
   ArrowUpRight,
   ArrowDownRight,
   Target,
@@ -17,6 +15,7 @@ import {
   Banknote,
   UserCheck
 } from 'lucide-react'
+import { LoadingSpinner, PageHeader, StatGrid } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface CreditAllocation {
@@ -272,15 +271,16 @@ const InvestmentProjects: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading investment projects...</div>
+    return <LoadingSpinner message="Loading investment projects..." />
   }
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Investment Projects</h1>
-        <p className="text-gray-600 mt-2">Monitor project financing, investments, and financial performance</p>
-      </div>
+      <PageHeader
+        title="Investment Projects"
+        description="Monitor project financing, investments, and financial performance"
+        className="mb-6"
+      />
 
       {/* Projects Grid */}
       <div className="space-y-6">
@@ -325,7 +325,7 @@ const InvestmentProjects: React.FC = () => {
             </div>
 
             {/* Financial Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <StatGrid columns={4} className="mb-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-green-700">Equity Investment</span>
@@ -369,7 +369,7 @@ const InvestmentProjects: React.FC = () => {
                   {project.funding_ratio >= 100 ? 'Fully funded' : 'Needs funding'}
                 </p>
               </div>
-            </div>
+            </StatGrid>
 
             {/* Funding Progress Bar */}
             <div className="mb-4">
@@ -503,7 +503,7 @@ const InvestmentProjects: React.FC = () => {
               {activeTab === 'overview' && (
                 <>
               {/* Financial Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <StatGrid columns={4} className="mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-blue-700">Total Budget</span>
@@ -543,7 +543,7 @@ const InvestmentProjects: React.FC = () => {
                   <p className="text-xl font-bold text-purple-900">{selectedProject.expected_roi.toFixed(1)}%</p>
                   <p className="text-xs text-purple-600">Weighted average</p>
                 </div>
-              </div>
+              </StatGrid>
 
               {/* Funding Breakdown */}
               <div className="mb-6">
@@ -639,7 +639,7 @@ const InvestmentProjects: React.FC = () => {
               </div>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <StatGrid columns={3} className="mb-6">
                 <div className="bg-white border border-gray-200 p-4 rounded-lg">
                   <h5 className="font-medium text-gray-900 mb-3">Leverage Analysis</h5>
                   <div className="space-y-2">
@@ -726,7 +726,7 @@ const InvestmentProjects: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </StatGrid>
 
               {/* Risk Factors */}
               {selectedProject.risk_level !== 'Low' && (
@@ -886,7 +886,7 @@ const InvestmentProjects: React.FC = () => {
 
                   {/* Summary Stats */}
                   {fundingUtilization.length > 0 && (
-                    <div className="mt-6 grid grid-cols-3 gap-4">
+                    <StatGrid columns={3} className="mt-6">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-700 mb-1">Total Committed</p>
                         <p className="text-2xl font-bold text-blue-900">
@@ -905,7 +905,7 @@ const InvestmentProjects: React.FC = () => {
                           €{fundingUtilization.reduce((sum, s) => sum + s.availableAmount, 0).toLocaleString('hr-HR')}
                         </p>
                       </div>
-                    </div>
+                    </StatGrid>
                   )}
                 </div>
               )}

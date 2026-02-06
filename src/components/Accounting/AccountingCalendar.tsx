@@ -1,5 +1,6 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
+import { LoadingSpinner } from '../ui'
 import { useCalendar } from './hooks/useCalendar'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
@@ -78,11 +79,7 @@ const AccountingCalendar: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (

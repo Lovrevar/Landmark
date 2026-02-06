@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { LoadingSpinner, StatGrid } from '../ui'
 import {
   DollarSign,
   TrendingUp,
   TrendingDown,
   Building2,
-  AlertCircle,
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
@@ -415,14 +415,7 @@ const AccountingDashboard: React.FC = () => {
   )
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading accounting dashboard...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner size="lg" message="Loading accounting dashboard..." />
   }
 
   return (
@@ -447,7 +440,7 @@ const AccountingDashboard: React.FC = () => {
           <PieChart className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-xl font-semibold text-gray-900">PDV Overview</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatGrid columns={4} className="gap-6">
           <div className="bg-white rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">PDV Collected ({new Date().getFullYear()})</p>
             <p className="text-2xl font-bold text-green-600">
@@ -490,7 +483,7 @@ const AccountingDashboard: React.FC = () => {
                 : 'To receive'}
             </p>
           </div>
-        </div>
+        </StatGrid>
       </div>
 
       {/* Monthly Budget Overview */}
@@ -500,7 +493,7 @@ const AccountingDashboard: React.FC = () => {
             <Calendar className="w-6 h-6 text-purple-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900">Mjesečni Budžet - {format(new Date(), 'MMMM yyyy')}</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatGrid columns={4} className="gap-6">
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Planirani budžet</p>
               <p className="text-2xl font-bold text-blue-600">
@@ -555,12 +548,12 @@ const AccountingDashboard: React.FC = () => {
                 {((cashFlowStats.currentMonthOutgoing / parseFloat(monthlyBudget.budget_amount.toString())) * 100).toFixed(1)}% budžeta iskorišteno
               </p>
             </div>
-          </div>
+          </StatGrid>
         </div>
       )}
 
       {/* Cash Flow Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <StatGrid columns={3} className="gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -646,7 +639,7 @@ const AccountingDashboard: React.FC = () => {
             </span>
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       {/* Top Companies */}
       <div className="grid grid-cols-1 gap-6">

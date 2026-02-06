@@ -14,6 +14,7 @@ import { CostAnalysis } from './reports/CostAnalysis'
 import { generateRetailReportPdf } from './reports/retailReportPdf'
 import { fetchRetailReportData } from './reports/retailReportService'
 import type { RetailReportData } from './reports/retailReportTypes'
+import { LoadingSpinner, PageHeader } from '../ui'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
 
@@ -67,14 +68,7 @@ const RetailReports: React.FC = () => {
     }).format(amount)
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Ucitavanje izvjestaja...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Ucitavanje izvjestaja..." />
   }
 
   if (!data) {
@@ -93,32 +87,30 @@ const RetailReports: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Retail izvjestaji</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            {data.portfolio.total_projects} projekata &middot; {data.portfolio.total_customers} kupaca &middot; {data.portfolio.total_suppliers} dobavljaca
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Osvjezi
-          </button>
-          <button
-            onClick={handleExportPdf}
-            disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            {exporting ? 'Generiranje...' : 'PDF izvjestaj'}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Retail izvjestaji"
+        description={`${data.portfolio.total_projects} projekata \u00B7 ${data.portfolio.total_customers} kupaca \u00B7 ${data.portfolio.total_suppliers} dobavljaca`}
+        actions={
+          <>
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Osvjezi
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {exporting ? 'Generiranje...' : 'PDF izvjestaj'}
+            </button>
+          </>
+        }
+      />
 
       <div className="border-b border-gray-200">
         <nav className="flex gap-1" aria-label="Tabs">

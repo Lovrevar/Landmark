@@ -3,6 +3,7 @@ import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet }
 import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
 import { exportToExcel, exportToPDF } from './utils/debtExport'
+import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
 
 const DebtStatus: React.FC = () => {
   const {
@@ -38,42 +39,35 @@ const DebtStatus: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavanje...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Učitavanje..." />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Stanje duga</h1>
-          <p className="text-sm text-gray-600 mt-1">Pregled svih neisplaćenih obveza prema dobavljačima</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleExportExcel}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Export Excel
-          </button>
-          <button
-            onClick={handleExportPDF}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-          >
-            <FileDown className="w-4 h-4 mr-2" />
-            Export PDF
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Stanje duga"
+        description="Pregled svih neisplaćenih obveza prema dobavljačima"
+        actions={
+          <>
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export Excel
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              Export PDF
+            </button>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <StatGrid columns={4}>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -113,7 +107,7 @@ const DebtStatus: React.FC = () => {
             <DollarSign className="w-8 h-8 text-green-600" />
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {debtData.length === 0 ? (

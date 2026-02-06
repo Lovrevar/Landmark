@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { LoadingSpinner } from './ui'
 import { useAuth } from '../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './Site/types/siteTypes'
@@ -231,7 +232,7 @@ const SiteManagement: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading site management...</div>
+    return <LoadingSpinner message="Loading site management..." />
   }
 
   const filteredProjects = isSupervisionRole(user)

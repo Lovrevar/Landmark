@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
+import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
 import { format } from 'date-fns'
 
 interface RetailSalesPaymentWithDetails {
@@ -208,21 +209,14 @@ const RetailSalesPaymentsManagement: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading payments...</div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading payments..." />
   }
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Retail Sales Payments</h1>
-        <p className="text-gray-600">Track all payments from retail customers</p>
-      </div>
+      <PageHeader title="Retail Sales Payments" description="Track all payments from retail customers" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <StatGrid columns={4}>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
@@ -255,7 +249,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           </div>
           <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString('hr-HR')}</p>
         </div>
-      </div>
+      </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

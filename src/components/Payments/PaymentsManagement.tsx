@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, WirePayment, Contract } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { DollarSign, Calendar, FileText, Search, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
+import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
 import { format } from 'date-fns'
 
 interface PaymentWithDetails {
@@ -232,22 +233,15 @@ const PaymentsManagement: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading payments...</div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading payments..." />
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments Management</h1>
-        <p className="text-gray-600">Track and manage all payments across all projects</p>
-      </div>
+      <PageHeader title="Payments Management" description="Track and manage all payments across all projects" />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <StatGrid columns={4}>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-600">Total Payments</h3>
@@ -280,22 +274,18 @@ const PaymentsManagement: React.FC = () => {
           </div>
           <p className="text-2xl font-bold text-gray-900">€{stats.amountThisMonth.toLocaleString('hr-HR')}</p>
         </div>
-      </div>
+      </StatGrid>
 
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search payments..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+              placeholder="Search payments..."
+            />
           </div>
 
           <div>

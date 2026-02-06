@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Building2 } from 'lucide-react'
+import { LoadingSpinner, PageHeader } from './ui'
 import { Apartment } from '../lib/supabase'
 import { useSalesData } from './Sales/hooks/useSalesData'
 import * as salesService from './Sales/services/salesService'
@@ -317,59 +318,60 @@ const SalesProjectsEnhanced: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading sales projects...</div>
+    return <LoadingSpinner message="Loading sales projects..." />
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sales Projects</h1>
-          <p className="text-gray-600 mt-2">
-            {viewMode === 'projects' && 'Select a project to manage buildings and units'}
-            {viewMode === 'buildings' && `Managing buildings for ${selectedProject?.name}`}
-            {viewMode === 'units' && `Managing units in ${selectedBuilding?.name}`}
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          {viewMode === 'buildings' && selectedProject && (
-            <>
-              <button
-                onClick={() => setShowBuildingQuantityForm(true)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Buildings (1-20)
-              </button>
-              <button
-                onClick={() => setShowBuildingForm(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Add Single Building
-              </button>
-            </>
-          )}
-          {viewMode === 'units' && selectedBuilding && (
-            <>
-              <button
-                onClick={() => setShowBulkUnitForm(true)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Bulk Create {getUnitLabel(activeUnitType)}
-              </button>
-              <button
-                onClick={() => setShowUnitForm(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Sales Projects"
+        description={
+          viewMode === 'projects' ? 'Select a project to manage buildings and units' :
+          viewMode === 'buildings' ? `Managing buildings for ${selectedProject?.name}` :
+          `Managing units in ${selectedBuilding?.name}`
+        }
+        className="mb-6"
+        actions={
+          <>
+            {viewMode === 'buildings' && selectedProject && (
+              <>
+                <button
+                  onClick={() => setShowBuildingQuantityForm(true)}
+                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Buildings (1-20)
+                </button>
+                <button
+                  onClick={() => setShowBuildingForm(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Add Single Building
+                </button>
+              </>
+            )}
+            {viewMode === 'units' && selectedBuilding && (
+              <>
+                <button
+                  onClick={() => setShowBulkUnitForm(true)}
+                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                >
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Bulk Create {getUnitLabel(activeUnitType)}
+                </button>
+                <button
+                  onClick={() => setShowUnitForm(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
+                </button>
+              </>
+            )}
+          </>
+        }
+      />
 
       {viewMode === 'projects' && (
         <ProjectsGrid projects={projects} onSelectProject={handleSelectProject} />

@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Project, Subcontractor, Contract, WirePayment, ProjectPhase } from '../../lib/supabase'
 import {
-  BarChart3,
   TrendingUp,
-  DollarSign,
   Users,
-  Calendar,
   Download,
   FileText,
   Activity,
-  AlertCircle,
   ClipboardCheck
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
 
 interface MonthlyData {
   month: string
@@ -508,21 +505,22 @@ const SupervisionReports: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Supervision Reports</h1>
-          <p className="text-gray-600 mt-2">Generate comprehensive supervision and construction reports</p>
-        </div>
-        {projectReport && (
-          <button
-            onClick={generatePDFReport}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Supervision Reports"
+        description="Generate comprehensive supervision and construction reports"
+        actions={
+          projectReport ? (
+            <button
+              onClick={generatePDFReport}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </button>
+          ) : undefined
+        }
+        className="mb-6"
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h2>
@@ -565,10 +563,7 @@ const SupervisionReports: React.FC = () => {
       </div>
 
       {generatingReport && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Generating report...</p>
-        </div>
+        <LoadingSpinner message="Generating report..." />
       )}
 
       {projectReport && !generatingReport && (
@@ -629,7 +624,7 @@ const SupervisionReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <StatGrid columns={5}>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -689,7 +684,7 @@ const SupervisionReports: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </StatGrid>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Contract Status Distribution</h2>

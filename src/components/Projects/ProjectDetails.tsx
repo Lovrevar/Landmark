@@ -2,24 +2,23 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, Project, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { 
-  Building2, 
-  Calendar, 
-  DollarSign, 
-  Users, 
-  CheckSquare, 
+import {
+  Building2,
+  Calendar,
+  DollarSign,
+  Users,
   Home,
   ArrowLeft,
   Plus,
   Edit2,
   Trash2,
-  X,
   Target,
   CheckCircle,
   Circle,
   Clock,
   AlertTriangle
 } from 'lucide-react'
+import { LoadingSpinner, PageHeader, StatGrid } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface ProjectWithDetails extends Project {
@@ -301,7 +300,7 @@ const ProjectDetails: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading project details...</div>
+    return <LoadingSpinner message="Loading project details..." />
   }
 
   if (!project) {
@@ -332,32 +331,30 @@ const ProjectDetails: React.FC = () => {
           Back to Dashboard
         </button>
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-            <p className="text-gray-600 mt-2">{project.location}</p>
-            <div className="flex items-center space-x-4 mt-3">
-              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {project.status}
-              </span>
-              <span className="text-sm text-gray-500">
-                Budget: €{project.budget.toLocaleString('hr-HR')}
-              </span>
-              <span className="text-sm text-gray-500">
-                Investor: {project.investors}
-              </span>
-            </div>
-          </div>
+        <PageHeader
+          title={project.name}
+          description={project.location}
+        />
+        <div className="flex items-center space-x-4 mt-3">
+          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+            project.status === 'Completed' ? 'bg-green-100 text-green-800' :
+            project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+            project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {project.status}
+          </span>
+          <span className="text-sm text-gray-500">
+            Budget: €{project.budget.toLocaleString('hr-HR')}
+          </span>
+          <span className="text-sm text-gray-500">
+            Investor: {project.investors}
+          </span>
         </div>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <StatGrid columns={4} className="mb-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -398,7 +395,7 @@ const ProjectDetails: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </StatGrid>
 
       {/* Tabs */}
       <div className="mb-6">
@@ -503,7 +500,7 @@ const ProjectDetails: React.FC = () => {
             </div>
 
             {/* Milestone Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <StatGrid columns={3} className="mb-6">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-blue-700">Total Milestones</span>
@@ -511,7 +508,7 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <p className="text-2xl font-bold text-blue-900">{milestoneStats.total}</p>
               </div>
-              
+
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-green-700">Completed</span>
@@ -519,7 +516,7 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <p className="text-2xl font-bold text-green-900">{milestoneStats.completed}</p>
               </div>
-              
+
               <div className="bg-red-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-red-700">Overdue</span>
@@ -527,7 +524,7 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <p className="text-2xl font-bold text-red-900">{milestoneStats.overdue}</p>
               </div>
-            </div>
+            </StatGrid>
 
             {/* Overall Progress */}
             <div className="mb-6">
