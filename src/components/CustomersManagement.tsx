@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput } from './ui'
+import { PageHeader, SearchInput, Button } from './ui'
 import { CustomerCategory } from './Customers/types/customerTypes'
 import { useCustomerData } from './Customers/hooks/useCustomerData'
 import { CategoryTabs } from './Customers/views/CategoryTabs'
@@ -87,20 +87,12 @@ const CustomersManagement: React.FC = () => {
         description="Manage your sales pipeline and customer relationships"
         actions={
           <>
-            <button
-              onClick={handleExportEmails}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Mail className="w-5 h-5 mr-2" />
+            <Button variant="success" icon={Mail} onClick={handleExportEmails}>
               Email All ({filteredCustomers.filter(c => c.email).length})
-            </button>
-            <button
-              onClick={handleAddCustomer}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5 mr-2" />
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
               Add Customer
-            </button>
+            </Button>
           </>
         }
       />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { Customer } from '../../../lib/supabase'
 import { CustomerWithApartments, CustomerCategory } from '../types/customerTypes'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../ui'
 
 interface CustomerFormModalProps {
   show: boolean
@@ -82,269 +82,220 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   if (!show) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={show} onClose={onClose} size="xl">
+      <Modal.Header
+        title={editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+        onClose={onClose}
+      />
 
-        <div className="p-6 space-y-6">
+      <Modal.Body>
+        <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-              <input
+            <FormField label="First Name" required>
+              <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-              <input
+            </FormField>
+            <FormField label="Last Name" required>
+              <Input
                 type="text"
                 value={formData.surname}
                 onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-              <input
+            <FormField label="Email" required>
+              <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
-              <input
+            </FormField>
+            <FormField label="Phone" required>
+              <Input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-              <select
+            <FormField label="Status" required>
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="interested">Interested</option>
                 <option value="hot_lead">Hot Lead</option>
                 <option value="negotiating">Negotiating</option>
                 <option value="buyer">Buyer</option>
                 <option value="backed_out">Backed Out</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-              <select
+              </Select>
+            </FormField>
+            <FormField label="Priority">
+              <Select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="hot">Hot</option>
                 <option value="warm">Warm</option>
                 <option value="cold">Cold</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-            <input
+          <FormField label="Address">
+            <Input
               type="text"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </FormField>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account</label>
-              <input
+            <FormField label="Bank Account">
+              <Input
                 type="text"
                 value={formData.bank_account}
                 onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
-              <input
+            </FormField>
+            <FormField label="ID Number">
+              <Input
                 type="text"
                 value={formData.id_number}
                 onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
           </div>
 
           {formData.status === 'backed_out' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Backed Out Reason</label>
-              <textarea
+            <FormField label="Backed Out Reason">
+              <Textarea
                 value={formData.backed_out_reason}
                 onChange={(e) => setFormData({ ...formData, backed_out_reason: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Why did this customer back out?"
               />
-            </div>
+            </FormField>
           )}
 
           {(formData.status === 'interested' || formData.status === 'hot_lead' || formData.status === 'negotiating') && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Preferences</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Budget (€)</label>
-                  <input
+                <FormField label="Min Budget (EUR)">
+                  <Input
                     type="number"
                     value={formData.preferences?.budget_min || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, budget_min: Number(e.target.value) }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Budget (€)</label>
-                  <input
+                </FormField>
+                <FormField label="Max Budget (EUR)">
+                  <Input
                     type="number"
                     value={formData.preferences?.budget_max || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, budget_max: Number(e.target.value) }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Size (m²)</label>
-                  <input
+                </FormField>
+                <FormField label="Min Size (m2)">
+                  <Input
                     type="number"
                     value={formData.preferences?.preferred_size_min || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, preferred_size_min: Number(e.target.value) }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Size (m²)</label>
-                  <input
+                </FormField>
+                <FormField label="Max Size (m2)">
+                  <Input
                     type="number"
                     value={formData.preferences?.preferred_size_max || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, preferred_size_max: Number(e.target.value) }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bedrooms</label>
-                  <input
+                </FormField>
+                <FormField label="Bedrooms">
+                  <Input
                     type="number"
                     value={formData.preferences?.bedrooms || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, bedrooms: Number(e.target.value) }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Floor</label>
-                  <input
+                </FormField>
+                <FormField label="Preferred Floor">
+                  <Input
                     type="text"
                     value={formData.preferences?.preferred_floor || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       preferences: { ...formData.preferences, preferred_floor: e.target.value }
                     })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="e.g., Ground, 1-3"
                   />
-                </div>
+                </FormField>
               </div>
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Location</label>
-                <input
-                  type="text"
-                  value={formData.preferences?.preferred_location || ''}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    preferences: { ...formData.preferences, preferred_location: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <FormField label="Preferred Location">
+                  <Input
+                    type="text"
+                    value={formData.preferences?.preferred_location || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      preferences: { ...formData.preferences, preferred_location: e.target.value }
+                    })}
+                  />
+                </FormField>
               </div>
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preference Notes</label>
-                <textarea
-                  value={formData.preferences?.notes || ''}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    preferences: { ...formData.preferences, notes: e.target.value }
-                  })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Additional notes about customer preferences"
-                />
+                <FormField label="Preference Notes">
+                  <Textarea
+                    value={formData.preferences?.notes || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      preferences: { ...formData.preferences, notes: e.target.value }
+                    })}
+                    rows={3}
+                    placeholder="Additional notes about customer preferences"
+                  />
+                </FormField>
               </div>
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">General Notes</label>
-            <textarea
+          <FormField label="General Notes">
+            <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Any additional notes about this customer"
             />
-          </div>
+          </FormField>
         </div>
+      </Modal.Body>
 
-        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {editingCustomer ? 'Update Customer' : 'Add Customer'}
-          </button>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          {editingCustomer ? 'Update Customer' : 'Add Customer'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

@@ -1,7 +1,8 @@
 import React from 'react'
-import { X, Mail, Phone, MapPin, Clock, Home, Warehouse, Package } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments } from '../types/customerTypes'
+import { Modal } from '../../ui'
 
 interface CustomerDetailModalProps {
   show: boolean
@@ -13,21 +14,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
   if (!show || !customer) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {customer.name} {customer.surname}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={show} onClose={onClose} size="lg">
+      <Modal.Header
+        title={`${customer.name} ${customer.surname}`}
+        onClose={onClose}
+      />
 
-        <div className="p-6 space-y-6">
+      <Modal.Body>
+        <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-start">
               <Mail className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
@@ -292,7 +286,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </Modal.Body>
+    </Modal>
   )
 }

@@ -2,6 +2,7 @@ import React from 'react'
 import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Flame, TrendingUp, AlertCircle, Star } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from '../types/customerTypes'
+import { Button } from '../../ui'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
@@ -53,24 +54,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           )}
         </div>
         <div className="flex space-x-1">
-          <button
-            onClick={() => onViewDetails(customer)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onEdit(customer)}
-            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onDelete(customer.id)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title="View details" />
+          <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title="Edit" />
+          <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title="Delete" />
         </div>
       </div>
 
@@ -209,13 +195,16 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
       )}
 
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
+        fullWidth
+        icon={Calendar}
         onClick={() => onUpdateContact(customer.id)}
-        className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+        className="mt-4"
       >
-        <Calendar className="w-4 h-4 inline mr-2" />
         Update Contact Date
-      </button>
+      </Button>
     </div>
   )
 }

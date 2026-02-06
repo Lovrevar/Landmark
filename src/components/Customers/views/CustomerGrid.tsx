@@ -2,6 +2,7 @@ import React from 'react'
 import { Users } from 'lucide-react'
 import { CustomerWithApartments, CustomerCategory } from '../types/customerTypes'
 import { CustomerCard } from './CustomerCard'
+import { LoadingSpinner, EmptyState } from '../../ui'
 
 interface CustomerGridProps {
   customers: CustomerWithApartments[]
@@ -23,15 +24,15 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   onUpdateContact
 }) => {
   if (loading) {
-    return <div className="text-center py-12">Loading customers...</div>
+    return <LoadingSpinner message="Loading customers..." />
   }
 
   if (customers.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-        <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No customers in this category</p>
-      </div>
+      <EmptyState
+        icon={Users}
+        title="No customers in this category"
+      />
     )
   }
 
