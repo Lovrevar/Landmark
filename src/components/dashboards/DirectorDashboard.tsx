@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { LoadingSpinner, StatGrid } from '../ui'
+import { LoadingSpinner, StatGrid, Button, Badge } from '../ui'
 import {
   Building2,
   DollarSign,
@@ -781,12 +781,9 @@ const DirectorDashboard: React.FC = () => {
             <Home className="w-6 h-6 text-green-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Sales Performance</h2>
           </div>
-          <button
-            onClick={() => navigate('/sales-projects')}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
+          <Button variant="success" onClick={() => navigate('/sales-projects')}>
             View Details
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
@@ -835,12 +832,9 @@ const DirectorDashboard: React.FC = () => {
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Construction & Site Management</h2>
           </div>
-          <button
-            onClick={() => navigate('/site-management')}
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-          >
+          <Button variant="amber" onClick={() => navigate('/site-management')}>
             View Details
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -887,12 +881,9 @@ const DirectorDashboard: React.FC = () => {
             <Banknote className="w-6 h-6 text-purple-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Funding & Investment</h2>
           </div>
-          <button
-            onClick={() => navigate('/funding-overview')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
+          <Button variant="primary" onClick={() => navigate('/funding-overview')}>
             View Details
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -978,14 +969,13 @@ const DirectorDashboard: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                        project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                        project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                        project.status === 'On Hold' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <Badge variant={
+                        project.status === 'Completed' ? 'green' :
+                        project.status === 'In Progress' ? 'blue' :
+                        project.status === 'On Hold' ? 'red' : 'gray'
+                      }>
                         {project.status}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       €{(project.budget / 1000000).toFixed(2)}M

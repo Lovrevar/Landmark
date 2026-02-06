@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { LoadingSpinner } from '../ui'
 import { BarChart3, MapPin, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -125,14 +126,7 @@ const RetailDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavanje...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner size="lg" message="Učitavanje..." />
   }
 
   return (

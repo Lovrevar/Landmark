@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { LoadingSpinner } from '../ui'
 import {
   ClipboardCheck,
   Users,
@@ -220,7 +221,7 @@ const SupervisionDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading supervision dashboard...</div>
+    return <LoadingSpinner size="lg" message="Loading supervision dashboard..." />
   }
 
   const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)

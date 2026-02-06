@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { LoadingSpinner, Button, Badge } from '../ui'
 import {
   Building2,
   DollarSign,
@@ -224,11 +225,7 @@ const InvestmentDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <LoadingSpinner size="lg" message="Loading investment dashboard..." />
   }
 
   return (
@@ -392,12 +389,9 @@ const InvestmentDashboard: React.FC = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Active Credits & Expiration Dates</h2>
-            <button
-              onClick={() => navigate('/accounting-credits')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
+            <Button variant="primary" onClick={() => navigate('/accounting-credits')}>
               View All Credits
-            </button>
+            </Button>
           </div>
         </div>
         <div className="p-6">
@@ -425,19 +419,13 @@ const InvestmentDashboard: React.FC = () => {
                             {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`}
                           </h3>
                           {credit.project && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
-                              {credit.project.name}
-                            </span>
+                            <Badge variant="blue" size="sm">{credit.project.name}</Badge>
                           )}
                           {maturityWarning && (
-                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
-                              Maturing Soon
-                            </span>
+                            <Badge variant="orange" size="sm">Maturing Soon</Badge>
                           )}
                           {usageWarning && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
-                              Usage Expiring
-                            </span>
+                            <Badge variant="yellow" size="sm">Usage Expiring</Badge>
                           )}
                         </div>
                         <p className="text-gray-600">{credit.company?.name || 'Unknown Company'}</p>

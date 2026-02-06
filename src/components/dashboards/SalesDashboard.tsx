@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Apartment, Project, Sale, Customer } from '../../lib/supabase'
+import { LoadingSpinner } from '../ui'
 import {
   Home,
   DollarSign,
@@ -229,7 +230,7 @@ const SalesDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading dashboard...</div>
+    return <LoadingSpinner size="lg" message="Loading sales dashboard..." />
   }
 
   const maxMonthlyRevenue = Math.max(...monthlyTrends.map(t => t.revenue), 1)
