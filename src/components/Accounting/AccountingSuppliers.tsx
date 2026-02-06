@@ -42,6 +42,8 @@ interface SupplierSummary {
   id: string
   name: string
   contact: string
+  source: 'site' | 'retail'
+  supplier_type?: string
   total_contracts: number
   total_contract_value: number
   total_paid: number
@@ -86,33 +88,18 @@ const AccountingSuppliers: React.FC = () => {
     try {
       setLoading(true)
 
-      const { data: suppliersData, error: suppliersError } = await supabase
-        .from('subcontractors')
-        .select('id, name, contact')
-        .order('name')
-
-      if (suppliersError) throw suppliersError
-
-      const supplierIds = (suppliersData || []).map(s => s.id)
-
       const [
-        { data: contractsData },
-        { data: invoicesData },
+        { data: suppliersData, error: suppliersError },
+        { data: retailSuppliersData, error: retailError },
         { data: paymentsData }
       ] = await Promise.all([
-        supabase
-          .from('contracts')
-          .select('subcontractor_id, contract_amount')
-          .in('subcontractor_id', supplierIds)
-          .in('status', ['draft', 'active']),
-        supabase
-          .from('accounting_invoices')
-          .select('id, supplier_id, remaining_amount, status')
-          .in('supplier_id', supplierIds),
-        supabase
-          .from('accounting_payments')
-          .select('invoice_id, amount')
+        supabase.from('subcontractors').select('id, name, contact').order('name'),
+        supabase.from('retail_suppliers').select('id, name, supplier_type, contact_person, contact_phone, contact_email').order('name'),
+        supabase.from('accounting_payments').select('invoice_id, amount')
       ])
+
+      if (suppliersError) throw suppliersError
+      if (retailError) throw retailError
 
       const paymentsMap = new Map<string, number>()
       ;(paymentsData || []).forEach(payment => {
@@ -120,71 +107,88 @@ const AccountingSuppliers: React.FC = () => {
         paymentsMap.set(payment.invoice_id, current + parseFloat(payment.amount?.toString() || '0'))
       })
 
-      const supplierStatsMap = new Map<string, {
-        contractCount: number
-        contractValue: number
-        totalPaid: number
-        totalRemaining: number
-        invoiceCount: number
-      }>()
+      const supplierIds = (suppliersData || []).map(s => s.id)
+      const retailSupplierIds = (retailSuppliersData || []).map(s => s.id)
 
-      supplierIds.forEach(id => {
-        supplierStatsMap.set(id, {
-          contractCount: 0,
-          contractValue: 0,
-          totalPaid: 0,
-          totalRemaining: 0,
-          invoiceCount: 0
-        })
+      const [
+        { data: contractsData },
+        { data: invoicesData },
+        { data: retailContractsData },
+        { data: retailInvoicesData }
+      ] = await Promise.all([
+        supabase.from('contracts').select('subcontractor_id, contract_amount').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
+        supabase.from('accounting_invoices').select('id, supplier_id, remaining_amount, status').in('supplier_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
+        supabase.from('retail_contracts').select('supplier_id, contract_amount').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
+        supabase.from('accounting_invoices').select('id, retail_supplier_id, remaining_amount, status').in('retail_supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000'])
+      ])
+
+      const buildStatsMap = (ids: string[]) => {
+        const map = new Map<string, { contractCount: number; contractValue: number; totalPaid: number; totalRemaining: number; invoiceCount: number }>()
+        ids.forEach(id => map.set(id, { contractCount: 0, contractValue: 0, totalPaid: 0, totalRemaining: 0, invoiceCount: 0 }))
+        return map
+      }
+
+      const siteStats = buildStatsMap(supplierIds)
+      ;(contractsData || []).forEach(c => {
+        const s = siteStats.get(c.subcontractor_id)
+        if (s) { s.contractCount++; s.contractValue += parseFloat(c.contract_amount?.toString() || '0') }
       })
-
-      ;(contractsData || []).forEach(contract => {
-        const stats = supplierStatsMap.get(contract.subcontractor_id)
-        if (stats) {
-          stats.contractCount++
-          stats.contractValue += parseFloat(contract.contract_amount?.toString() || '0')
+      ;(invoicesData || []).forEach(inv => {
+        const s = siteStats.get(inv.supplier_id)
+        if (s) {
+          s.invoiceCount++
+          s.totalPaid += paymentsMap.get(inv.id) || 0
+          if (inv.status !== 'PAID') s.totalRemaining += parseFloat(inv.remaining_amount?.toString() || '0')
         }
       })
 
-      ;(invoicesData || []).forEach(invoice => {
-        const stats = supplierStatsMap.get(invoice.supplier_id)
-        if (stats) {
-          stats.invoiceCount++
-          const paidAmount = paymentsMap.get(invoice.id) || 0
-          stats.totalPaid += paidAmount
-          if (invoice.status !== 'PAID') {
-            stats.totalRemaining += parseFloat(invoice.remaining_amount?.toString() || '0')
+      const retailStats = buildStatsMap(retailSupplierIds)
+      ;(retailContractsData || []).forEach(c => {
+        const s = retailStats.get(c.supplier_id)
+        if (s) { s.contractCount++; s.contractValue += parseFloat(c.contract_amount?.toString() || '0') }
+      })
+      ;(retailInvoicesData || []).forEach(inv => {
+        const s = retailStats.get(inv.retail_supplier_id)
+        if (s) {
+          s.invoiceCount++
+          s.totalPaid += paymentsMap.get(inv.id) || 0
+          if (inv.status !== 'PAID') s.totalRemaining += parseFloat(inv.remaining_amount?.toString() || '0')
+        }
+      })
+
+      const mapToSummary = (
+        data: any[],
+        statsMap: Map<string, any>,
+        source: 'site' | 'retail'
+      ): SupplierSummary[] =>
+        data.map(supplier => {
+          const stats = statsMap.get(supplier.id) || { contractCount: 0, contractValue: 0, totalPaid: 0, totalRemaining: 0, invoiceCount: 0 }
+          const contact = source === 'retail'
+            ? [supplier.contact_person, supplier.contact_phone, supplier.contact_email].filter(Boolean).join(' | ') || '-'
+            : supplier.contact
+          return {
+            id: supplier.id,
+            name: supplier.name,
+            contact,
+            source,
+            supplier_type: source === 'retail' ? supplier.supplier_type : undefined,
+            total_contracts: stats.contractCount,
+            total_contract_value: stats.contractValue,
+            total_paid: stats.totalPaid,
+            total_paid_neto: stats.totalPaid,
+            total_paid_pdv: 0,
+            total_paid_total: stats.totalPaid,
+            total_remaining: stats.totalRemaining,
+            total_invoices: stats.invoiceCount,
+            contracts: [],
+            invoices: []
           }
-        }
-      })
+        })
 
-      const suppliersWithStats = (suppliersData || []).map(supplier => {
-        const stats = supplierStatsMap.get(supplier.id) || {
-          contractCount: 0,
-          contractValue: 0,
-          totalPaid: 0,
-          totalRemaining: 0,
-          invoiceCount: 0
-        }
-
-        return {
-          id: supplier.id,
-          name: supplier.name,
-          contact: supplier.contact,
-          total_contracts: stats.contractCount,
-          total_contract_value: stats.contractValue,
-          total_paid: stats.totalPaid,
-          total_paid_neto: stats.totalPaid,
-          total_paid_pdv: 0,
-          total_paid_total: stats.totalPaid,
-          total_remaining: stats.totalRemaining,
-          total_invoices: stats.invoiceCount,
-          contracts: [],
-          invoices: []
-        }
-      })
-
-      setSuppliers(suppliersWithStats)
+      const siteSuppliers = mapToSummary(suppliersData || [], siteStats, 'site')
+      const retailSuppliers = mapToSummary(retailSuppliersData || [], retailStats, 'retail')
+      const all = [...siteSuppliers, ...retailSuppliers].sort((a, b) => a.name.localeCompare(b.name))
+      setSuppliers(all)
     } catch (error) {
       console.error('Error fetching suppliers:', error)
     } finally {
@@ -351,15 +355,12 @@ const AccountingSuppliers: React.FC = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (supplier: SupplierSummary) => {
     if (!confirm('Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane ugovore i račune.')) return
 
     try {
-      const { error } = await supabase
-        .from('subcontractors')
-        .delete()
-        .eq('id', id)
-
+      const table = supplier.source === 'retail' ? 'retail_suppliers' : 'subcontractors'
+      const { error } = await supabase.from(table).delete().eq('id', supplier.id)
       if (error) throw error
       await fetchData()
     } catch (error) {
@@ -370,77 +371,99 @@ const AccountingSuppliers: React.FC = () => {
 
   const handleViewDetails = async (supplier: SupplierSummary) => {
     try {
-      const { data: contractsData } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          project_id,
-          phase_id,
-          job_description,
-          contract_amount,
-          budget_realized,
-          end_date,
-          status,
-          projects:project_id (name),
-          phases:phase_id (phase_name)
-        `)
-        .eq('subcontractor_id', supplier.id)
-        .in('status', ['draft', 'active'])
+      let contractsWithPayments: Contract[] = []
+      let invoicesWithPayments: Invoice[] = []
 
-      const { data: invoicesData } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          invoice_type,
-          base_amount,
-          total_amount,
-          paid_amount,
-          remaining_amount,
-          status,
-          issue_date,
-          contract_id
-        `)
-        .eq('supplier_id', supplier.id)
+      if (supplier.source === 'retail') {
+        const { data: rContracts } = await supabase
+          .from('retail_contracts')
+          .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, phases:phase_id (phase_name)`)
+          .eq('supplier_id', supplier.id)
+          .in('status', ['Active', 'Completed'])
 
-      const invoiceIds = (invoicesData || []).map(inv => inv.id)
-      const { data: paymentsData } = await supabase
-        .from('accounting_payments')
-        .select('invoice_id, amount')
-        .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
+        const { data: rPhases } = await supabase
+          .from('retail_project_phases')
+          .select('id, phase_name, project_id, retail_projects:project_id (name)')
+          .in('id', (rContracts || []).map(c => c.phase_id).filter(Boolean) as string[])
 
-      const paymentsMap = new Map<string, number>()
-      ;(paymentsData || []).forEach(payment => {
-        const current = paymentsMap.get(payment.invoice_id) || 0
-        paymentsMap.set(payment.invoice_id, current + parseFloat(payment.amount?.toString() || '0'))
-      })
+        const phaseProjectMap = new Map<string, string>()
+        ;(rPhases || []).forEach((p: any) => {
+          phaseProjectMap.set(p.id, p.retail_projects?.name || 'N/A')
+        })
 
-      const invoicesWithPayments = (invoicesData || []).map(inv => ({
-        ...inv,
-        actual_paid: paymentsMap.get(inv.id) || 0
-      }))
+        const { data: rInvoices } = await supabase
+          .from('accounting_invoices')
+          .select('id, invoice_number, invoice_type, base_amount, total_amount, paid_amount, remaining_amount, status, issue_date, retail_contract_id')
+          .eq('retail_supplier_id', supplier.id)
 
-      const contractPaymentsMap = new Map<string, number>()
-      invoicesWithPayments.forEach(inv => {
-        if (inv.contract_id) {
-          const current = contractPaymentsMap.get(inv.contract_id) || 0
-          contractPaymentsMap.set(inv.contract_id, current + (inv.actual_paid || 0))
-        }
-      })
+        const invoiceIds = (rInvoices || []).map(inv => inv.id)
+        const { data: paymentsData } = await supabase
+          .from('accounting_payments').select('invoice_id, amount')
+          .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
 
-      const contractsWithPayments = (contractsData || []).map(contract => ({
-        ...contract,
-        actual_paid: contractPaymentsMap.get(contract.id) || 0
-      }))
+        const paymentsMap = new Map<string, number>()
+        ;(paymentsData || []).forEach(p => {
+          paymentsMap.set(p.invoice_id, (paymentsMap.get(p.invoice_id) || 0) + parseFloat(p.amount?.toString() || '0'))
+        })
 
-      const supplierWithDetails = {
-        ...supplier,
-        contracts: contractsWithPayments,
-        invoices: invoicesWithPayments
+        invoicesWithPayments = (rInvoices || []).map(inv => ({ ...inv, actual_paid: paymentsMap.get(inv.id) || 0 }))
+
+        const contractPayMap = new Map<string, number>()
+        invoicesWithPayments.forEach(inv => {
+          if ((inv as any).retail_contract_id) {
+            contractPayMap.set((inv as any).retail_contract_id, (contractPayMap.get((inv as any).retail_contract_id) || 0) + (inv.actual_paid || 0))
+          }
+        })
+
+        contractsWithPayments = (rContracts || []).map((c: any) => ({
+          id: c.id,
+          contract_number: c.contract_number,
+          project_id: '',
+          phase_id: c.phase_id,
+          job_description: '',
+          contract_amount: c.contract_amount,
+          budget_realized: c.budget_realized,
+          end_date: c.end_date,
+          status: c.status,
+          projects: { name: phaseProjectMap.get(c.phase_id) || 'N/A' },
+          phases: c.phases,
+          actual_paid: contractPayMap.get(c.id) || 0
+        }))
+      } else {
+        const { data: contractsData } = await supabase
+          .from('contracts')
+          .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, projects:project_id (name), phases:phase_id (phase_name)')
+          .eq('subcontractor_id', supplier.id)
+          .in('status', ['draft', 'active'])
+
+        const { data: invoicesData } = await supabase
+          .from('accounting_invoices')
+          .select('id, invoice_number, invoice_type, base_amount, total_amount, paid_amount, remaining_amount, status, issue_date, contract_id')
+          .eq('supplier_id', supplier.id)
+
+        const invoiceIds = (invoicesData || []).map(inv => inv.id)
+        const { data: paymentsData } = await supabase
+          .from('accounting_payments').select('invoice_id, amount')
+          .in('invoice_id', invoiceIds.length > 0 ? invoiceIds : ['00000000-0000-0000-0000-000000000000'])
+
+        const paymentsMap = new Map<string, number>()
+        ;(paymentsData || []).forEach(p => {
+          paymentsMap.set(p.invoice_id, (paymentsMap.get(p.invoice_id) || 0) + parseFloat(p.amount?.toString() || '0'))
+        })
+
+        invoicesWithPayments = (invoicesData || []).map(inv => ({ ...inv, actual_paid: paymentsMap.get(inv.id) || 0 }))
+
+        const contractPayMap = new Map<string, number>()
+        invoicesWithPayments.forEach(inv => {
+          if ((inv as any).contract_id) {
+            contractPayMap.set((inv as any).contract_id, (contractPayMap.get((inv as any).contract_id) || 0) + (inv.actual_paid || 0))
+          }
+        })
+
+        contractsWithPayments = (contractsData || []).map(c => ({ ...c, actual_paid: contractPayMap.get(c.id) || 0 }))
       }
 
-      setSelectedSupplier(supplierWithDetails)
+      setSelectedSupplier({ ...supplier, contracts: contractsWithPayments, invoices: invoicesWithPayments })
       document.body.style.overflow = 'hidden'
       setShowDetailsModal(true)
     } catch (error) {
@@ -587,7 +610,17 @@ const AccountingSuppliers: React.FC = () => {
                   onClick={() => handleViewDetails(supplier)}
                 >
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+                      {supplier.source === 'retail' ? (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full">Retail</span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Site</span>
+                      )}
+                      {supplier.supplier_type && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">{supplier.supplier_type}</span>
+                      )}
+                    </div>
                     <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-1" />
@@ -618,20 +651,22 @@ const AccountingSuppliers: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {supplier.source === 'site' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenAddModal(supplier)
+                        }}
+                        className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Uredi"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleOpenAddModal(supplier)
-                      }}
-                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                      title="Uredi"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(supplier.id)
+                        handleDelete(supplier)
                       }}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                       title="Obriši"
@@ -871,7 +906,14 @@ const AccountingSuppliers: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedSupplier.name}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">{selectedSupplier.name}</h2>
+                  {selectedSupplier.source === 'retail' ? (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full">Retail</span>
+                  ) : (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Site</span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600">{selectedSupplier.contact}</p>
               </div>
               <button
