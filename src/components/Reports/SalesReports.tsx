@@ -9,7 +9,7 @@ import {
   Activity
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
-import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard } from '../ui'
 
 interface SalesData {
   month: string
@@ -573,7 +573,7 @@ const SalesReports: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading reports...</div>
+    return <LoadingSpinner message="Loading reports..." />
   }
 
   return (
@@ -583,13 +583,9 @@ const SalesReports: React.FC = () => {
         description="Generate comprehensive sales analytics and reports"
         actions={
           (projectReport || customerReport) ? (
-            <button
-              onClick={generatePDFReport}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Download className="w-4 h-4 mr-2" />
+            <Button icon={Download} onClick={generatePDFReport}>
               Export Report
-            </button>
+            </Button>
           ) : undefined
         }
         className="mb-6"
@@ -599,25 +595,21 @@ const SalesReports: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-            <select
+          <FormField label="Report Type">
+            <Select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as 'project' | 'customer')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="project">Project Sales Report</option>
               <option value="customer">Customer Report</option>
-            </select>
-          </div>
-          
+            </Select>
+          </FormField>
+
           {reportType === 'project' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
-              <select
+            <FormField label="Project">
+              <Select
                 value={selectedProject}
                 onChange={(e) => setSelectedProject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select a project</option>
                 {projects.map(project => (
@@ -625,28 +617,24 @@ const SalesReports: React.FC = () => {
                     {project.name}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
           )}
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-            <input
+
+          <FormField label="Start Date">
+            <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-            <input
+          </FormField>
+          <FormField label="End Date">
+            <Input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
@@ -661,13 +649,13 @@ const SalesReports: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Project Sales Overview</h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                projectReport.project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                projectReport.project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
+              <Badge variant={
+                projectReport.project.status === 'Completed' ? 'green'
+                  : projectReport.project.status === 'In Progress' ? 'blue'
+                  : 'gray'
+              }>
                 {projectReport.project.status}
-              </span>
+              </Badge>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -719,53 +707,10 @@ const SalesReports: React.FC = () => {
 
           {/* Key Metrics */}
           <StatGrid columns={4}>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Home className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Units</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.total_units}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Units Sold</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.sold_units}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${(projectReport.total_revenue / 1000000).toFixed(1)}M</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Activity className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Sales Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.sales_rate.toFixed(1)}%</p>
-                </div>
-              </div>
-            </div>
+            <StatCard label="Total Units" value={projectReport.total_units} icon={Home} color="blue" />
+            <StatCard label="Units Sold" value={projectReport.sold_units} icon={TrendingUp} color="green" />
+            <StatCard label="Total Revenue" value={`$${(projectReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
+            <StatCard label="Sales Rate" value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
           {/* Sales Distribution Chart */}
@@ -845,30 +790,28 @@ const SalesReports: React.FC = () => {
           {/* Monthly Sales Trend */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Monthly Sales Trend</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Units Sold</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg. Price</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {projectReport.monthly_sales.map((month, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{month.units_sold}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">€{month.revenue.toLocaleString('hr-HR')}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        €{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <Table.Head>
+                <Table.Tr>
+                  <Table.Th>Month</Table.Th>
+                  <Table.Th>Units Sold</Table.Th>
+                  <Table.Th>Revenue</Table.Th>
+                  <Table.Th>Avg. Price</Table.Th>
+                </Table.Tr>
+              </Table.Head>
+              <Table.Body>
+                {projectReport.monthly_sales.map((month, index) => (
+                  <Table.Tr key={index}>
+                    <Table.Td className="font-medium text-gray-900">{month.month}</Table.Td>
+                    <Table.Td>{month.units_sold}</Table.Td>
+                    <Table.Td>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
+                    <Table.Td>
+                      €{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Body>
+            </Table>
           </div>
 
           {/* Summary & Insights */}
@@ -904,53 +847,10 @@ const SalesReports: React.FC = () => {
         <div className="space-y-6">
           {/* Customer Overview */}
           <StatGrid columns={4}>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Customers</p>
-                  <p className="text-2xl font-bold text-gray-900">{customerReport.total_customers}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Buyers</p>
-                  <p className="text-2xl font-bold text-gray-900">{customerReport.buyers}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${(customerReport.total_revenue / 1000000).toFixed(1)}M</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Activity className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Avg. Purchase</p>
-                  <p className="text-2xl font-bold text-gray-900">${customerReport.average_purchase.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
+            <StatCard label="Total Customers" value={customerReport.total_customers} icon={Users} color="blue" />
+            <StatCard label="Buyers" value={customerReport.buyers} icon={TrendingUp} color="green" />
+            <StatCard label="Total Revenue" value={`$${(customerReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
+            <StatCard label="Avg. Purchase" value={`$${customerReport.average_purchase.toLocaleString()}`} icon={Activity} color="orange" />
           </StatGrid>
 
           {/* Customer Distribution */}

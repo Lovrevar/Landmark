@@ -9,7 +9,7 @@ import {
   ClipboardCheck
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
-import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard, EmptyState } from '../ui'
 
 interface MonthlyData {
   month: string
@@ -500,7 +500,7 @@ const SupervisionReports: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading reports...</div>
+    return <LoadingSpinner message="Loading reports..." />
   }
 
   return (
@@ -510,13 +510,9 @@ const SupervisionReports: React.FC = () => {
         description="Generate comprehensive supervision and construction reports"
         actions={
           projectReport ? (
-            <button
-              onClick={generatePDFReport}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Download className="w-4 h-4 mr-2" />
+            <Button icon={Download} onClick={generatePDFReport}>
               Export Report
-            </button>
+            </Button>
           ) : undefined
         }
         className="mb-6"
@@ -525,12 +521,10 @@ const SupervisionReports: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
-            <select
+          <FormField label="Project">
+            <Select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a project</option>
               {projects.map(project => (
@@ -538,27 +532,23 @@ const SupervisionReports: React.FC = () => {
                   {project.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-            <input
+          <FormField label="Start Date">
+            <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-            <input
+          </FormField>
+          <FormField label="End Date">
+            <Input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
@@ -571,13 +561,13 @@ const SupervisionReports: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Project Supervision Overview</h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                projectReport.project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                projectReport.project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
+              <Badge variant={
+                projectReport.project.status === 'Completed' ? 'green'
+                  : projectReport.project.status === 'In Progress' ? 'blue'
+                  : 'gray'
+              }>
                 {projectReport.project.status}
-              </span>
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -625,65 +615,11 @@ const SupervisionReports: React.FC = () => {
           </div>
 
           <StatGrid columns={5}>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Total Contracts</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.total_contracts}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Active Contracts</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.active_contracts}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Users className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Subcontractors</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.total_subcontractors}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Activity className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Phases Done</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.completed_phases}/{projectReport.total_phases}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-teal-100 rounded-lg">
-                  <ClipboardCheck className="w-6 h-6 text-teal-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-600">Work Logs</p>
-                  <p className="text-2xl font-bold text-gray-900">{projectReport.total_work_logs}</p>
-                </div>
-              </div>
-            </div>
+            <StatCard label="Total Contracts" value={projectReport.total_contracts} icon={FileText} color="blue" />
+            <StatCard label="Active Contracts" value={projectReport.active_contracts} icon={TrendingUp} color="green" />
+            <StatCard label="Subcontractors" value={projectReport.total_subcontractors} icon={Users} color="teal" />
+            <StatCard label="Phases Done" value={`${projectReport.completed_phases}/${projectReport.total_phases}`} icon={Activity} color="orange" />
+            <StatCard label="Work Logs" value={projectReport.total_work_logs} icon={ClipboardCheck} color="teal" />
           </StatGrid>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -748,28 +684,26 @@ const SupervisionReports: React.FC = () => {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Monthly Budget Performance</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contracts</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subcontractors Paid</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payments</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {projectReport.monthly_data.map((month, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{month.month}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{month.contracts}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{month.subcontractors_paid}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">€{month.payments.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <Table.Head>
+                <Table.Tr>
+                  <Table.Th>Month</Table.Th>
+                  <Table.Th>Contracts</Table.Th>
+                  <Table.Th>Subcontractors Paid</Table.Th>
+                  <Table.Th>Payments</Table.Th>
+                </Table.Tr>
+              </Table.Head>
+              <Table.Body>
+                {projectReport.monthly_data.map((month, index) => (
+                  <Table.Tr key={index}>
+                    <Table.Td className="font-medium text-gray-900">{month.month}</Table.Td>
+                    <Table.Td>{month.contracts}</Table.Td>
+                    <Table.Td>{month.subcontractors_paid}</Table.Td>
+                    <Table.Td>€{month.payments.toLocaleString()}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Body>
+            </Table>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -778,9 +712,7 @@ const SupervisionReports: React.FC = () => {
               Work Logs ({projectReport.total_work_logs})
             </h2>
             {projectReport.work_logs.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">No work logs recorded during this period</p>
-              </div>
+              <EmptyState icon={ClipboardCheck} title="No work logs recorded during this period" />
             ) : (
               <div className="space-y-3">
                 {projectReport.work_logs.slice(0, 10).map((log) => (
@@ -793,9 +725,7 @@ const SupervisionReports: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <h3 className="font-semibold text-gray-900">{log.subcontractors?.name || 'Unknown'}</h3>
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                            {log.status.replace('_', ' ')}
-                          </span>
+                          <Badge variant="blue" size="sm">{log.status.replace('_', ' ')}</Badge>
                         </div>
                         {log.contracts && (
                           <p className="text-xs text-gray-500 mb-2">
