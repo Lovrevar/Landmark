@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Filter, DollarSign, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
-import { LoadingSpinner, SearchInput } from './ui'
+import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
+import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader } from './ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './Apartments/types/apartmentTypes'
 import * as apartmentService from './Apartments/services/apartmentService'
 import { BulkApartmentModal } from './Apartments/forms/BulkApartmentModal'
@@ -299,32 +299,24 @@ const ApartmentManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Apartments</h1>
-          <p className="text-gray-600 mt-2">Manage all apartments across projects</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <div className="text-right mr-4">
-            <p className="text-sm text-gray-600">Total Apartments</p>
-            <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
+      <PageHeader
+        title="Apartments"
+        description="Manage all apartments across projects"
+        actions={
+          <div className="flex items-center space-x-3">
+            <div className="text-right mr-4">
+              <p className="text-sm text-gray-600">Total Apartments</p>
+              <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
+            </div>
+            <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
+              Bulk Create Apartments
+            </Button>
+            <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
+              Add Single Apartment
+            </Button>
           </div>
-          <button
-            onClick={() => setShowBulkModal(true)}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Bulk Create Apartments
-          </button>
-          <button
-            onClick={() => setShowSingleModal(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <Building2 className="w-4 h-4 mr-2" />
-            Add Single Apartment
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -337,36 +329,30 @@ const ApartmentManagement: React.FC = () => {
             />
           </div>
 
-          <div>
-            <select
-              value={filterProject}
-              onChange={(e) => {
-                setFilterProject(e.target.value)
-                setFilterBuilding('all')
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Projects</option>
-              {projects.map(project => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            value={filterProject}
+            onChange={(e) => {
+              setFilterProject(e.target.value)
+              setFilterBuilding('all')
+            }}
+          >
+            <option value="all">All Projects</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>{project.name}</option>
+            ))}
+          </Select>
 
-          <div>
-            <select
-              value={filterBuilding}
-              onChange={(e) => setFilterBuilding(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Buildings</option>
-              {buildings
-                .filter(b => filterProject === 'all' || b.project_id === filterProject)
-                .map(building => (
-                  <option key={building.id} value={building.id}>{building.name}</option>
-                ))}
-            </select>
-          </div>
+          <Select
+            value={filterBuilding}
+            onChange={(e) => setFilterBuilding(e.target.value)}
+          >
+            <option value="all">All Buildings</option>
+            {buildings
+              .filter(b => filterProject === 'all' || b.project_id === filterProject)
+              .map(building => (
+                <option key={building.id} value={building.id}>{building.name}</option>
+              ))}
+          </Select>
         </div>
 
         <div className="flex gap-2">
@@ -414,11 +400,11 @@ const ApartmentManagement: React.FC = () => {
       </div>
 
       {filteredApartments.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Apartments Found</h3>
-          <p className="text-gray-600">Try adjusting your filters</p>
-        </div>
+        <EmptyState
+          icon={Home}
+          title="No Apartments Found"
+          description="Try adjusting your filters"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredApartments.map((apartment) => {
@@ -528,49 +514,56 @@ const ApartmentManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    fullWidth
                     onClick={() => openPaymentHistory(apartment)}
-                    className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
                   >
                     View Payments
-                  </button>
+                  </Button>
                   {(!linkedGarage || !linkedStorage) && (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      fullWidth
+                      icon={LinkIcon}
                       onClick={() => {
                         setSelectedApartment(apartment)
                         setShowLinkUnitsModal(true)
                       }}
-                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-md text-xs font-medium hover:bg-gray-800 transition-colors duration-200 flex items-center justify-center"
                     >
-                      <LinkIcon className="w-3 h-3 mr-1" />
                       Link Units
-                    </button>
+                    </Button>
                   )}
                   <div className="grid grid-cols-3 gap-2">
-                    <button
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={() => {
                         setSelectedApartment(apartment)
                         setShowEditModal(true)
                       }}
-                      className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
                     >
                       Edit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => {
                         setSelectedApartment(apartment)
                         setShowDetailsModal(true)
                       }}
-                      className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
                     >
                       Details
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleDeleteApartment(apartment.id)}
-                      className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -580,18 +573,18 @@ const ApartmentManagement: React.FC = () => {
       )}
 
       {filteredApartments.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
+        <Alert variant="info">
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center">
-              <Filter className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">Filtered Results</span>
+              <Filter className="w-5 h-5 mr-2" />
+              <span className="font-medium">Filtered Results</span>
             </div>
-            <div className="text-sm text-blue-900">
+            <div>
               Showing <span className="font-semibold">{filteredApartments.length}</span> of{' '}
               <span className="font-semibold">{apartments.length}</span> apartments
             </div>
           </div>
-        </div>
+        </Alert>
       )}
 
       <BulkApartmentModal

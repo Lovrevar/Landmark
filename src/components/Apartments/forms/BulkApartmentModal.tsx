@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { BulkApartmentData } from '../types/apartmentTypes'
+import { Modal, FormField, Select, Input, Button, Alert } from '../../ui'
 
 interface BulkApartmentModalProps {
   visible: boolean
@@ -47,138 +47,108 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">Bulk Create Apartments</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={visible} onClose={onClose} size="lg">
+      <Modal.Header title="Bulk Create Apartments" onClose={onClose} />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
-              <select
-                value={formData.project_id}
-                onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Project</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Project" required>
+                <Select
+                  value={formData.project_id}
+                  onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
+                  required
+                >
+                  <option value="">Select Project</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </Select>
+              </FormField>
+
+              <FormField label="Building" required>
+                <Select
+                  value={formData.building_id}
+                  onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
+                  required
+                  disabled={!formData.project_id}
+                >
+                  <option value="">Select Building</option>
+                  {filteredBuildings.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </Select>
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Building</label>
-              <select
-                value={formData.building_id}
-                onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                disabled={!formData.project_id}
-              >
-                <option value="">Select Building</option>
-                {filteredBuildings.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Starting Number" required>
+                <Input
+                  type="number"
+                  value={formData.start_number}
+                  onChange={(e) => setFormData({ ...formData, start_number: parseInt(e.target.value) })}
+                  required
+                  min="1"
+                />
+              </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Starting Number</label>
-              <input
-                type="number"
-                value={formData.start_number}
-                onChange={(e) => setFormData({ ...formData, start_number: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                min="1"
-              />
+              <FormField label="Quantity" required>
+                <Input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                  required
+                  min="1"
+                  max="50"
+                />
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-              <input
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                min="1"
-                max="50"
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Floor" required>
+                <Input
+                  type="number"
+                  value={formData.floor}
+                  onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
+                  required
+                />
+              </FormField>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-              <input
-                type="number"
-                value={formData.floor}
-                onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+              <FormField label="Size (m2)" required>
+                <Input
+                  type="number"
+                  value={formData.size_m2}
+                  onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
+                  required
+                  step="0.1"
+                />
+              </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Size (m²)</label>
-              <input
-                type="number"
-                value={formData.size_m2}
-                onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                step="0.1"
-              />
+              <FormField label="Price (EUR)" required>
+                <Input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  required
+                  step="0.01"
+                />
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price (€)</label>
-              <input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                step="0.01"
-              />
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
+            <Alert variant="info">
               This will create <strong>{formData.quantity}</strong> apartments starting from{' '}
               <strong>A{formData.start_number}</strong> to{' '}
               <strong>A{formData.start_number + formData.quantity - 1}</strong>
-            </p>
+            </Alert>
           </div>
+        </Modal.Body>
 
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              Create Apartments
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="success">Create Apartments</Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }

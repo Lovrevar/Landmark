@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { ApartmentWithDetails } from '../types/apartmentTypes'
+import { Modal, FormField, Input, Select, Button } from '../../ui'
 
 interface EditApartmentModalProps {
   visible: boolean
@@ -44,104 +44,80 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
   if (!visible || !apartment) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">Edit Apartment</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={visible} onClose={onClose} size="lg">
+      <Modal.Header title="Edit Apartment" onClose={onClose} />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">
-              <strong>Project:</strong> {apartment.project_name}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              <strong>Building:</strong> {apartment.building_name}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Apartment Number</label>
-            <input
-              type="text"
-              value={formData.number}
-              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-              <input
-                type="number"
-                value={formData.floor}
-                onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600">
+                <strong>Project:</strong> {apartment.project_name}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                <strong>Building:</strong> {apartment.building_name}
+              </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Size (m²)</label>
-              <input
-                type="number"
-                value={formData.size_m2}
-                onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            <FormField label="Apartment Number" required>
+              <Input
+                type="text"
+                value={formData.number}
+                onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                 required
-                step="0.1"
               />
+            </FormField>
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Floor" required>
+                <Input
+                  type="number"
+                  value={formData.floor}
+                  onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Size (m2)" required>
+                <Input
+                  type="number"
+                  value={formData.size_m2}
+                  onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
+                  required
+                  step="0.1"
+                />
+              </FormField>
+
+              <FormField label="Price (EUR)" required>
+                <Input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  required
+                  step="0.01"
+                />
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price (€)</label>
-              <input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            <FormField label="Status" required>
+              <Select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 required
-                step="0.01"
-              />
-            </div>
+              >
+                <option value="Available">Available</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Sold">Sold</option>
+              </Select>
+            </FormField>
           </div>
+        </Modal.Body>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="Available">Available</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Sold">Sold</option>
-            </select>
-          </div>
-
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary">Save Changes</Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }

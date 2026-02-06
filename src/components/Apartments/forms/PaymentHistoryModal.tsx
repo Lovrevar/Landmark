@@ -1,7 +1,8 @@
 import React from 'react'
-import { X, Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
+import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types/apartmentTypes'
+import { Modal, Button, EmptyState } from '../../ui'
 
 interface PaymentHistoryModalProps {
   visible: boolean
@@ -49,16 +50,11 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-teal-600 text-white px-6 py-4 flex items-center justify-between rounded-t-xl">
-          <h3 className="text-xl font-semibold">Payment History</h3>
-          <button onClick={onClose} className="text-white hover:text-gray-200">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={visible} onClose={onClose} size="xl">
+      <Modal.Header title="Payment History" onClose={onClose} />
 
-        <div className="p-6 space-y-6">
+      <Modal.Body>
+        <div className="space-y-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-lg font-semibold text-gray-900 mb-2">
               {apartment.project_name} - {apartment.building_name} - Unit {apartment.number}
@@ -127,10 +123,10 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
           <div>
             <h4 className="font-semibold text-gray-900 mb-3">All Payments ({payments.length})</h4>
             {payments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <DollarSign className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No payments recorded yet</p>
-              </div>
+              <EmptyState
+                icon={DollarSign}
+                title="No payments recorded yet"
+              />
             ) : (
               <div className="space-y-3">
                 {payments.map((payment) => {
@@ -163,24 +159,24 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
                       </div>
                     <div className="flex items-center space-x-2">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => onEditPayment(payment)}
-                        className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-200"
                         title="Edit payment"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
+                        icon={Edit2}
+                      />
+                      <Button
+                        variant="danger"
+                        size="icon-sm"
                         onClick={() => {
                           if (confirm('Are you sure you want to delete this payment?')) {
                             onDeletePayment(payment.id, payment.sale_id, payment.amount)
                           }
                         }}
-                        className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
                         title="Delete payment"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        icon={Trash2}
+                      />
                     </div>
                     </div>
                   )
@@ -189,16 +185,12 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             )}
           </div>
 
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-            >
-              Close
-            </button>
-          </div>
         </div>
-      </div>
-    </div>
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>Close</Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

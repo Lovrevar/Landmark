@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X, DollarSign, Home, Warehouse, Package } from 'lucide-react'
+import { DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types/apartmentTypes'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../ui'
 
 interface WirePaymentModalProps {
   visible: boolean
@@ -51,19 +52,12 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full">
-        <div className="bg-green-600 text-white px-6 py-4 flex items-center justify-between rounded-t-xl">
-          <div className="flex items-center">
-            <DollarSign className="w-6 h-6 mr-2" />
-            <h3 className="text-xl font-semibold">Wire Payment</h3>
-          </div>
-          <button onClick={onClose} className="text-white hover:text-gray-200">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={visible} onClose={onClose} size="lg">
+      <Modal.Header title="Wire Payment" onClose={onClose} />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
+          <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm font-semibold text-gray-700 mb-2">Payment for:</p>
             <div className="space-y-2">
@@ -99,73 +93,55 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Amount (€)</label>
-            <input
+          <FormField label="Payment Amount (EUR)" required>
+            <Input
               type="number"
               value={amount}
               onChange={(e) => onAmountChange(parseFloat(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               required
               min="0"
               step="0.01"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Date</label>
-            <input
+          <FormField label="Payment Date" required>
+            <Input
               type="date"
               value={paymentDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               required
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
-            <select
+          <FormField label="Payment Type" required>
+            <Select
               value={paymentType}
               onChange={(e) => onPaymentTypeChange(e.target.value as 'down_payment' | 'installment' | 'final_payment' | 'other')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               required
             >
               <option value="down_payment">Down Payment</option>
               <option value="installment">Installment</option>
               <option value="final_payment">Final Payment</option>
               <option value="other">Other</option>
-            </select>
-          </div>
+            </Select>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-            <textarea
+          <FormField label="Notes (Optional)">
+            <Textarea
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               rows={3}
               placeholder="Add any additional notes..."
             />
+          </FormField>
           </div>
+        </Modal.Body>
 
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              Record Payment
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="success">Record Payment</Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }
