@@ -1,5 +1,6 @@
 import React from 'react'
 import { MapPin, ArrowRight, DollarSign, Layers, Link, Edit2 } from 'lucide-react'
+import { Button, Badge, EmptyState } from '../../../../components/ui'
 import type { RetailProjectWithPhases } from '../../../../types/retail'
 
 interface ProjectsGridProps {
@@ -9,18 +10,18 @@ interface ProjectsGridProps {
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onEditProject }) => {
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
     switch (status) {
       case 'Completed':
-        return 'bg-green-100 text-green-800'
+        return 'green'
       case 'In Progress':
-        return 'bg-blue-100 text-blue-800'
+        return 'blue'
       case 'Planning':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'yellow'
       case 'On Hold':
-        return 'bg-gray-100 text-gray-800'
+        return 'gray'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'gray'
     }
   }
 
@@ -49,9 +50,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                 {project.location}
               </div>
               <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
+                <Badge variant={getStatusBadgeVariant(project.status)}>
                   {project.status}
-                </span>
+                </Badge>
                 {project.land_plot_id && (
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 flex items-center">
                     <Link className="w-3 h-3 mr-1" />
@@ -93,35 +94,38 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           </div>
 
           <div className="flex space-x-2">
-            <button
-              onClick={(e) => {
+            <Button
+              variant="ghost"
+              icon={Edit2}
+              size="sm"
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation()
                 onEditProject(project)
               }}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
             >
-              <Edit2 className="w-4 h-4 mr-2" />
               Uredi
-            </button>
-            <button
-              onClick={(e) => {
+            </Button>
+            <Button
+              size="sm"
+              iconRight={ArrowRight}
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation()
                 onSelectProject(project)
               }}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               Otvori
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </button>
+            </Button>
           </div>
         </div>
       ))}
 
       {projects.length === 0 && (
-        <div className="col-span-full text-center py-12">
-          <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg mb-2">Nema projekata</p>
-          <p className="text-gray-400 text-sm">Kliknite "Dodaj projekt" da kreirate prvi projekt</p>
+        <div className="col-span-full">
+          <EmptyState
+            icon={MapPin}
+            title="Nema projekata"
+            description="Kliknite 'Dodaj projekt' da kreirate prvi projekt"
+          />
         </div>
       )}
     </div>

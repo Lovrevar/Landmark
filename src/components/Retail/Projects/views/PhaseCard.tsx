@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Building2, Plus, Edit2, Trash2, DollarSign, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { Button, Badge, EmptyState } from '../../../../components/ui'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../../types/retail'
 
 interface PhaseCardProps {
@@ -91,29 +92,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 <p className="text-sm text-gray-600">Allocated Budget</p>
               </div>
             )}
-            <button
+            <Button
+              variant="ghost"
+              icon={Edit2}
+              size="icon-md"
               onClick={() => onEditPhase(phase)}
-              className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors"
-              title="Edit phase"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
+            />
+            <Button
+              variant="outline-danger"
+              icon={Trash2}
+              size="icon-md"
               onClick={() => onDeletePhase(phase)}
-              className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors"
-              title="Delete phase"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
+            />
+            <Button
+              variant="success"
+              icon={Plus}
               onClick={() => onAddContract(phase)}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Plus className="w-4 h-4 mr-2" />
               {phase.phase_type === 'development' ? 'Add Supplier' :
                phase.phase_type === 'construction' ? 'Add Contract' :
                'Add Sale'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -170,16 +169,19 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
       {isExpanded && (
         <div className="p-6">
           {phaseContracts.length === 0 ? (
-          <div className="text-center py-8">
-            <DollarSign className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-500">No contracts in this phase yet</p>
-            <button
-              onClick={() => onAddContract(phase)}
-              className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-            >
-              Add First Contract
-            </button>
-          </div>
+          <EmptyState
+            icon={DollarSign}
+            title="No contracts in this phase yet"
+            action={
+              <Button
+                variant="primary"
+                icon={Plus}
+                onClick={() => onAddContract(phase)}
+              >
+                Add First Contract
+              </Button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseContracts.map((contract) => {
@@ -187,6 +189,20 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               const isPaid = contract.budget_realized >= contract.contract_amount
               const isPartial = contract.budget_realized > 0 && contract.budget_realized < contract.contract_amount
               const gainLoss = contract.budget_realized - contract.contract_amount
+
+              const getContractBadgeVariant = (): 'red' | 'green' | 'blue' | 'gray' => {
+                if (gainLoss > 0) return 'red'
+                if (isPaid && gainLoss === 0) return 'green'
+                if (isPartial) return 'blue'
+                return 'gray'
+              }
+
+              const getContractStatusLabel = () => {
+                if (gainLoss > 0) return 'Overpaid'
+                if (isPaid && gainLoss === 0) return 'Paid'
+                if (isPartial) return 'Partial'
+                return 'Unpaid'
+              }
 
               return (
                 <div
@@ -211,16 +227,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       )}
                       <p className="text-xs text-gray-500">{contract.contract_number}</p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                      gainLoss > 0 ? 'bg-red-100 text-red-800' :
-                      isPaid && gainLoss === 0 ? 'bg-green-100 text-green-800' :
-                      isPartial ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {gainLoss > 0 ? 'Overpaid' :
-                       isPaid && gainLoss === 0 ? 'Paid' :
-                       isPartial ? 'Partial' : 'Unpaid'}
-                    </span>
+                    <Badge variant={getContractBadgeVariant()}>
+                      {getContractStatusLabel()}
+                    </Badge>
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
@@ -253,7 +262,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {contract.price_per_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600">Cijena po m²:</span>
-                        <span className="font-medium text-purple-600">
+                        <span className="font-medium text-teal-600">
                           {formatCurrency(contract.price_per_m2)}
                         </span>
                       </div>
@@ -293,38 +302,45 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      className="bg-teal-600 text-white hover:bg-teal-700"
                       onClick={() => onViewPayments(contract)}
-                      className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors"
                     >
                       View Payments
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      className="bg-blue-600 text-white hover:bg-blue-700"
                       onClick={() => onViewInvoices(contract)}
-                      className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 transition-colors"
                     >
                       View Invoices
-                    </button>
+                    </Button>
                     <div className="grid grid-cols-3 gap-2">
-                      <button
+                      <Button
+                        size="sm"
                         onClick={() => onEditContract(contract)}
-                        className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="amber"
+                        size="sm"
                         onClick={() => onManageMilestones(contract, phase, project)}
-                        className="px-2 py-1 bg-amber-600 text-white rounded-md text-xs font-medium hover:bg-amber-700 transition-colors"
-                        title="Milestones"
                       >
                         📊
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={() => onDeleteContract(contract.id)}
-                        className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

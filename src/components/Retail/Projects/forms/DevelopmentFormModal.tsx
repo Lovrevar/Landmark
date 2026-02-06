@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../../../types/retail'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
 
 interface DevelopmentFormModalProps {
   phase: RetailProjectPhase
@@ -96,24 +96,14 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {contract ? 'Uredi dobavljača' : 'Novi dobavljač'}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Faza: {phase.phase_name}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header
+        title={contract ? 'Uredi dobavljača' : 'Novi dobavljač'}
+        subtitle={`Faza: ${phase.phase_name}`}
+        onClose={onClose}
+      />
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -128,96 +118,77 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dobavljač *
-              </label>
-              <select
-                value={formData.supplier_id}
-                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Odaberi dobavljača...</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name} - {supplier.supplier_type}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Ako dobavljač ne postoji, dodajte ga prvo preko "Dobavljači" menija
-              </p>
+              <FormField label="Dobavljač *">
+                <Select
+                  value={formData.supplier_id}
+                  onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                  required
+                >
+                  <option value="">Odaberi dobavljača...</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name} - {supplier.supplier_type}
+                    </option>
+                  ))}
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Ako dobavljač ne postoji, dodajte ga prvo preko "Dobavljači" menija
+                </p>
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Broj ugovora *
-              </label>
-              <input
+            <FormField label="Broj ugovora *">
+              <Input
                 type="text"
                 value={formData.contract_number}
                 onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                className="bg-gray-50"
                 required
                 readOnly={!!contract}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum ugovora *
-              </label>
-              <input
+            <FormField label="Datum ugovora *">
+              <Input
                 type="date"
                 value={formData.contract_date}
                 onChange={(e) => setFormData({ ...formData, contract_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cijena ugovora (€) *
-              </label>
-              <input
+            <FormField label="Cijena ugovora (€) *">
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.contract_amount}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="npr. 50000"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
+            <FormField label="Status">
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="Active">Active</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Opis *
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Opis usluge... (npr. Izrada projektne dokumentacije, Geodetski snimak, itd.)"
-                required
-              />
+              <FormField label="Opis *">
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={4}
+                  placeholder="Opis usluge... (npr. Izrada projektne dokumentacije, Geodetski snimak, itd.)"
+                  required
+                />
+              </FormField>
             </div>
           </div>
 
@@ -228,26 +199,16 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
               </p>
             </div>
           )}
-
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              disabled={loading}
-            >
-              Odustani
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Spremam...' : contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            Odustani
+          </Button>
+          <Button type="submit" loading={loading}>
+            {contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }

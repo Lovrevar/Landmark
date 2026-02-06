@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
+import { Button, Badge, EmptyState, LoadingSpinner } from '../../../../components/ui'
 import type { RetailContractMilestone } from '../../../../types/retail'
 import { MilestoneFormModal } from '../forms/MilestoneFormModal'
 import { retailProjectService } from '../services/retailProjectService'
@@ -128,7 +129,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
-            <X className="w-6 h-6" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
 
@@ -191,37 +192,35 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
           <h3 className="text-lg font-semibold text-gray-900">
             Milestones ({milestones.length})
           </h3>
-          <button
+          <Button
+            icon={Plus}
             onClick={() => {
               setEditingMilestone(null)
               setShowMilestoneModal(true)
             }}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Plus className="w-4 h-4 mr-2" />
             Dodaj milestone
-          </button>
+          </Button>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Učitavam milestones...</p>
-          </div>
+          <LoadingSpinner message="Učitavam milestones..." />
         ) : milestones.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">Nema milestoneova za ovaj ugovor</p>
-            <button
-              onClick={() => {
-                setEditingMilestone(null)
-                setShowMilestoneModal(true)
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Dodaj prvi milestone
-            </button>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="Nema milestoneova za ovaj ugovor"
+            action={
+              <Button
+                icon={Plus}
+                onClick={() => {
+                  setEditingMilestone(null)
+                  setShowMilestoneModal(true)
+                }}
+              >
+                Dodaj prvi milestone
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-4">
             {milestones.map((milestone) => {
@@ -247,13 +246,9 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         <h4 className="text-lg font-semibold text-gray-900">
                           {milestone.milestone_name}
                         </h4>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          isPaid ? 'bg-green-100 text-green-800' :
-                          isPending ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <Badge variant={isPaid ? 'green' : isPending ? 'blue' : 'gray'}>
                           {isPaid ? 'Plaćeno' : isPending ? 'U čekanju' : 'Nije plaćeno'}
-                        </span>
+                        </Badge>
                       </div>
 
                       {milestone.description && (
@@ -306,23 +301,21 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-2 ml-4">
-                      <button
+                      <Button
+                        variant="ghost"
+                        icon={Edit2}
+                        size="icon-md"
                         onClick={() => {
                           setEditingMilestone(milestone)
                           setShowMilestoneModal(true)
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                        title="Uredi"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
+                      />
+                      <Button
+                        variant="outline-danger"
+                        icon={Trash2}
+                        size="icon-md"
                         onClick={() => handleDeleteMilestone(milestone.id)}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                        title="Obriši"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>

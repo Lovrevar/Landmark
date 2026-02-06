@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
 
 interface RetailCustomer {
   id: string
@@ -130,24 +130,14 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {contract ? 'Uredi kupca' : 'Novi kupac'}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Faza: {phase.phase_name}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal show={true} onClose={onClose}>
+      <Modal.Header
+        title={contract ? 'Uredi kupca' : 'Novi kupac'}
+        subtitle={`Faza: ${phase.phase_name}`}
+        onClose={onClose}
+      />
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -161,14 +151,15 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kupac (Najmodavac) *
-              </label>
-              <select
+            <FormField
+              label="Kupac (Najmodavac)"
+              required
+              helperText='Ako kupac ne postoji, dodajte ga prvo preko "Kupci" menija'
+              className="md:col-span-2"
+            >
+              <Select
                 value={formData.customer_id}
                 onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi kupca...</option>
@@ -177,154 +168,112 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                     {customer.name}
                   </option>
                 ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Ako kupac ne postoji, dodajte ga prvo preko "Kupci" menija
-              </p>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Broj ugovora *
-              </label>
-              <input
+            <FormField label="Broj ugovora" required>
+              <Input
                 type="text"
                 value={formData.contract_number}
                 onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                className="bg-gray-50"
                 required
                 readOnly={!!contract}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum ugovora *
-              </label>
-              <input
+            <FormField label="Datum ugovora" required>
+              <Input
                 type="date"
                 value={formData.contract_date}
                 onChange={(e) => setFormData({ ...formData, contract_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cijena ugovora (€) *
-              </label>
-              <input
+            <FormField label="Cijena ugovora (€)" required>
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.contract_amount}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="npr. 500000"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Površina objekta (m²)
-              </label>
-              <input
+            <FormField label="Površina objekta (m²)" helperText="Površina samog objekta/prostora">
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.building_surface_m2}
                 onChange={(e) => setFormData({ ...formData, building_surface_m2: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="npr. 350"
               />
-              <p className="text-xs text-gray-500 mt-1">Površina samog objekta/prostora</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Površina ukupno (m²)
-              </label>
-              <input
+            <FormField label="Površina ukupno (m²)" helperText="Ukupna površina (sa parkingom, skladištem...)">
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.total_surface_m2}
                 onChange={(e) => setFormData({ ...formData, total_surface_m2: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="npr. 500"
               />
-              <p className="text-xs text-gray-500 mt-1">Ukupna površina (sa parkingom, skladištem...)</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cijena po m² (€)
-              </label>
-              <input
+            <FormField
+              label="Cijena po m² (€)"
+              helperText={formData.price_per_m2
+                ? 'Izračunato: Cijena ugovora ÷ Površina ukupno'
+                : 'Unesite cijenu i površinu za automatski izračun'
+              }
+            >
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.price_per_m2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                className="bg-gray-50 font-semibold"
                 placeholder="Automatski izračunato"
                 readOnly
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.price_per_m2
-                  ? 'Izračunato: Cijena ugovora ÷ Površina ukupno'
-                  : 'Unesite cijenu i površinu za automatski izračun'}
-              </p>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
+            <FormField label="Status">
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="Active">Active</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum početka
-              </label>
-              <input
+            <FormField label="Datum početka">
+              <Input
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum završetka
-              </label>
-              <input
+            <FormField label="Datum završetka">
+              <Input
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Napomene
-              </label>
-              <textarea
+            <FormField label="Napomene" className="md:col-span-2">
+              <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Dodatne informacije o ugovoru..."
               />
-            </div>
+            </FormField>
           </div>
 
           {!contract && (
@@ -334,26 +283,26 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               </p>
             </div>
           )}
+        </Modal.Body>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              disabled={loading}
-            >
-              Odustani
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Spremam...' : contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Odustani
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={loading}
+          >
+            {contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }

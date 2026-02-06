@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
+import { Button, Badge, LoadingSpinner, EmptyState } from '../../../../components/ui'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
@@ -179,24 +180,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setMilestoneContext(null)
   }
 
+  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
+    switch (status) {
+      case 'Completed':
+        return 'green'
+      case 'In Progress':
+        return 'blue'
+      case 'Planning':
+        return 'yellow'
+      default:
+        return 'gray'
+    }
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+        <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
           Nazad na projekte
-        </button>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+        </Button>
+        <Button icon={RefreshCw} loading={refreshing} onClick={handleRefresh}>
           Refresh Data
-        </button>
+        </Button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -208,14 +213,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
               {project.location} - Čestica: {project.plot_number}
             </div>
           </div>
-          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-            project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-            project.status === 'Planning' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
+          <Badge variant={getStatusBadgeVariant(project.status)} size="md">
             {project.status}
-          </span>
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -288,16 +288,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       )}
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Učitavam detalje...</p>
-        </div>
+        <LoadingSpinner message="Učitavam detalje..." />
       ) : (
         <div className="space-y-6">
           {project.phases.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <p className="text-gray-500 text-lg mb-2">Nema faza u projektu</p>
-              <p className="text-gray-400 text-sm">Faze će biti automatski kreirane</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+              <EmptyState
+                title="Nema faza u projektu"
+                description="Faze će biti automatski kreirane"
+              />
             </div>
           ) : (
             project.phases

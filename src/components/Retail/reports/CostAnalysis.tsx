@@ -1,5 +1,6 @@
 import React from 'react'
 import { Briefcase, Hammer, Users } from 'lucide-react'
+import { Table, Badge, EmptyState } from '../../ui'
 import type { SupplierReportData, SupplierTypeSummary, RetailReportData } from './retailReportTypes'
 
 interface Props {
@@ -85,7 +86,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
           </div>
 
           {supplier_types.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 text-sm">Nema podataka</div>
+            <EmptyState title="Nema podataka" />
           ) : (
             <div className="space-y-3">
               {supplier_types.map(st => (
@@ -106,39 +107,37 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         </div>
 
         {suppliers.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Nema podataka o dobavljacima</div>
+          <EmptyState title="Nema podataka o dobavljacima" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Dobavljac</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tip</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Ugovora</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Ugovoreno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Placeno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Preostalo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {suppliers.map((supplier) => (
-                  <SupplierRow key={supplier.id} supplier={supplier} formatCurrency={formatCurrency} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table className="rounded-none shadow-none border-0">
+            <Table.Head>
+              <Table.Tr hoverable={false}>
+                <Table.Th>Dobavljac</Table.Th>
+                <Table.Th>Tip</Table.Th>
+                <Table.Th className="text-right">Ugovora</Table.Th>
+                <Table.Th className="text-right">Ugovoreno</Table.Th>
+                <Table.Th className="text-right">Placeno</Table.Th>
+                <Table.Th className="text-right">Preostalo</Table.Th>
+              </Table.Tr>
+            </Table.Head>
+            <Table.Body>
+              {suppliers.map((supplier) => (
+                <SupplierRow key={supplier.id} supplier={supplier} formatCurrency={formatCurrency} />
+              ))}
+            </Table.Body>
+          </Table>
         )}
       </div>
     </div>
   )
 }
 
-const typeColors: Record<string, string> = {
-  'Geodet': 'bg-blue-100 text-blue-700',
-  'Arhitekt': 'bg-green-100 text-green-700',
-  'Projektant': 'bg-amber-100 text-amber-700',
-  'Consultant': 'bg-cyan-100 text-cyan-700',
-  'Other': 'bg-gray-100 text-gray-700'
+const typeBadgeVariants: Record<string, 'blue' | 'green' | 'orange' | 'teal' | 'gray'> = {
+  'Geodet': 'blue',
+  'Arhitekt': 'green',
+  'Projektant': 'orange',
+  'Consultant': 'teal',
+  'Other': 'gray'
 }
 
 function SupplierTypeRow({ data, formatCurrency }: {
@@ -152,9 +151,9 @@ function SupplierTypeRow({ data, formatCurrency }: {
     <div className="p-3 bg-gray-50 rounded-lg">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${typeColors[data.type] || typeColors.Other}`}>
+          <Badge variant={typeBadgeVariants[data.type] || 'gray'} size="sm">
             {data.type}
-          </span>
+          </Badge>
           <span className="text-xs text-gray-500">{data.count} ugovora</span>
         </div>
         <span className="text-sm font-semibold text-gray-900">{formatCurrency(data.total_amount)}</span>
@@ -182,21 +181,21 @@ function SupplierRow({ supplier, formatCurrency }: {
 }) {
   const remaining = supplier.total_amount - supplier.total_paid
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-4 py-3 text-sm font-medium text-gray-900">{supplier.name}</td>
-      <td className="px-4 py-3">
-        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${typeColors[supplier.supplier_type] || typeColors.Other}`}>
+    <Table.Tr className="transition-colors">
+      <Table.Td className="py-3 font-medium">{supplier.name}</Table.Td>
+      <Table.Td className="py-3">
+        <Badge variant={typeBadgeVariants[supplier.supplier_type] || 'gray'} size="sm">
           {supplier.supplier_type}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-right text-sm text-gray-700">{supplier.total_contracts}</td>
-      <td className="px-4 py-3 text-right text-sm text-gray-700">{formatCurrency(supplier.total_amount)}</td>
-      <td className="px-4 py-3 text-right text-sm text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</td>
-      <td className="px-4 py-3 text-right">
+        </Badge>
+      </Table.Td>
+      <Table.Td className="py-3 text-right text-gray-700">{supplier.total_contracts}</Table.Td>
+      <Table.Td className="py-3 text-right text-gray-700">{formatCurrency(supplier.total_amount)}</Table.Td>
+      <Table.Td className="py-3 text-right text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
+      <Table.Td className="py-3 text-right">
         <span className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
           {formatCurrency(remaining)}
         </span>
-      </td>
-    </tr>
+      </Table.Td>
+    </Table.Tr>
   )
 }

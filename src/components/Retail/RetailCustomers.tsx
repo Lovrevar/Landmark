@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Plus, Edit, Trash2, Eye, X, Phone, Mail } from 'lucide-react'
+import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
 import type { RetailCustomer, RetailSale } from '../../types/retail'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard } from '../ui'
 
 interface CustomerWithSales extends RetailCustomer {
   sales?: RetailSale[]
@@ -250,56 +250,17 @@ const RetailCustomers: React.FC = () => {
         title="Kupci"
         description="Upravljanje kupcima zemljišta"
         actions={
-          <button
-            onClick={() => handleOpenFormModal()}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
+          <Button icon={Plus} onClick={() => handleOpenFormModal()}>
             Novi kupac
-          </button>
+          </Button>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno kupaca</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.total_customers}</p>
-            </div>
-            <Users className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupna površina</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.total_area.toLocaleString()} m²</p>
-            </div>
-            <Users className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupni prihod</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString('hr-HR')}</p>
-            </div>
-            <Users className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Preostalo</p>
-              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString('hr-HR')}</p>
-            </div>
-            <Users className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
+        <StatCard label="Ukupno kupaca" value={totalStats.total_customers} icon={Users} color="blue" />
+        <StatCard label="Ukupna površina" value={`${totalStats.total_area.toLocaleString()} m²`} icon={Users} color="green" />
+        <StatCard label="Ukupni prihod" value={`€${totalStats.total_revenue.toLocaleString('hr-HR')}`} icon={Users} color="green" />
+        <StatCard label="Preostalo" value={`€${totalStats.total_remaining.toLocaleString('hr-HR')}`} icon={Users} />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -312,15 +273,11 @@ const RetailCustomers: React.FC = () => {
       </div>
 
       {filteredCustomers.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? 'Nema rezultata pretrage' : 'Nema kupaca'}
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog kupca klikom na gumb iznad'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={searchTerm ? 'Nema rezultata pretrage' : 'Nema kupaca'}
+          description={searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog kupca klikom na gumb iznad'}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCustomers.map((customer) => (
@@ -369,148 +326,49 @@ const RetailCustomers: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-2 pt-3 border-t border-gray-200">
-                <button
-                  onClick={() => handleViewDetails(customer)}
-                  className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  <Eye className="w-4 h-4 mr-1" />
+                <Button icon={Eye} size="sm" onClick={() => handleViewDetails(customer)} className="flex-1">
                   Detalji
-                </button>
-                <button
-                  onClick={() => handleOpenFormModal(customer)}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Uredi"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(customer.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Obriši"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
+                <Button icon={Edit} variant="ghost" size="icon-md" onClick={() => handleOpenFormModal(customer)} title="Uredi" />
+                <Button icon={Trash2} variant="outline-danger" size="icon-md" onClick={() => handleDelete(customer.id)} title="Obriši" />
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {showFormModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingCustomer ? 'Uredi kupca' : 'Novi kupac'}
-              </h2>
-              <button
-                onClick={handleCloseFormModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+      <Modal show={showFormModal} onClose={handleCloseFormModal}>
+        <Modal.Header title={editingCustomer ? 'Uredi kupca' : 'Novi kupac'} onClose={handleCloseFormModal} />
+        <form onSubmit={handleSubmit}>
+          <Modal.Body>
+            <FormField label="Naziv / Ime i prezime *">
+              <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            </FormField>
+            <FormField label="Telefon">
+              <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
+            </FormField>
+            <FormField label="Email">
+              <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} />
+            </FormField>
+            <FormField label="OIB">
+              <Input value={formData.oib} onChange={(e) => setFormData({ ...formData, oib: e.target.value })} />
+            </FormField>
+            <FormField label="Adresa">
+              <Textarea rows={3} value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+            </FormField>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" type="button" onClick={handleCloseFormModal}>Odustani</Button>
+            <Button type="submit">{editingCustomer ? 'Spremi' : 'Dodaj'}</Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Naziv / Ime i prezime *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Telefon
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.contact_email}
-                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    OIB
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.oib}
-                    onChange={(e) => setFormData({ ...formData, oib: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Adresa
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleCloseFormModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Odustani
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingCustomer ? 'Spremi' : 'Dodaj'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showDetailsModal && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">
-                Detalji kupca - {selectedCustomer.name}
-              </h2>
-              <button
-                onClick={handleCloseDetailsModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <Modal show={showDetailsModal && !!selectedCustomer} onClose={handleCloseDetailsModal} size="xl">
+        <Modal.Header title={`Detalji kupca - ${selectedCustomer?.name || ''}`} onClose={handleCloseDetailsModal} />
+        {selectedCustomer && (
+          <>
+            <Modal.Body>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Naziv</p>
@@ -565,15 +423,15 @@ const RetailCustomers: React.FC = () => {
                               Preostalo: €{(sale.remaining_amount || 0).toLocaleString()}
                             </p>
                           </div>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            sale.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                            sale.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <Badge variant={
+                            sale.payment_status === 'paid' ? 'green'
+                              : sale.payment_status === 'partial' ? 'yellow'
+                              : 'gray'
+                          }>
                             {sale.payment_status === 'paid' ? 'Plaćeno' :
                              sale.payment_status === 'partial' ? 'Djelomično' :
                              'Pending'}
-                          </span>
+                          </Badge>
                         </div>
                       </div>
                     ))}
@@ -582,19 +440,13 @@ const RetailCustomers: React.FC = () => {
                   <p className="text-gray-500 text-center py-4">Nema prodaja za ovog kupca</p>
                 )}
               </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-6 py-4 flex justify-end flex-shrink-0">
-              <button
-                onClick={handleCloseDetailsModal}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Zatvori
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleCloseDetailsModal}>Zatvori</Button>
+            </Modal.Footer>
+          </>
+        )}
+      </Modal>
     </div>
   )
 }

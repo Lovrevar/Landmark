@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { ShoppingCart, Plus, Edit, Trash2, DollarSign, X, Calendar } from 'lucide-react'
+import { ShoppingCart, Plus, Edit, Trash2, DollarSign, Calendar } from 'lucide-react'
 import type { RetailSale, RetailLandPlot, RetailCustomer } from '../../types/retail'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from '../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../ui'
 
 interface SaleWithRelations extends RetailSale {
   land_plot?: RetailLandPlot
@@ -248,56 +248,15 @@ const RetailSales: React.FC = () => {
         title="Prodaje"
         description="Upravljanje prodajama i rokovima plaćanja"
         actions={
-          <button
-            onClick={() => handleOpenFormModal()}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nova prodaja
-          </button>
+          <Button icon={Plus} onClick={() => handleOpenFormModal()}>Nova prodaja</Button>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno prodaja</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.total_sales}</p>
-            </div>
-            <ShoppingCart className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupni prihod</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_revenue.toLocaleString('hr-HR')}</p>
-            </div>
-            <DollarSign className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Plaćeno</p>
-              <p className="text-2xl font-bold text-green-600">€{totalStats.total_paid.toLocaleString('hr-HR')}</p>
-            </div>
-            <DollarSign className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Za naplatu</p>
-              <p className="text-2xl font-bold text-orange-600">€{totalStats.total_remaining.toLocaleString('hr-HR')}</p>
-            </div>
-            <DollarSign className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
+        <StatCard label="Ukupno prodaja" value={totalStats.total_sales} icon={ShoppingCart} color="blue" />
+        <StatCard label="Ukupni prihod" value={'€' + totalStats.total_revenue.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
+        <StatCard label="Plaćeno" value={'€' + totalStats.total_paid.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
+        <StatCard label="Za naplatu" value={'€' + totalStats.total_remaining.toLocaleString('hr-HR')} icon={DollarSign} />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -309,350 +268,238 @@ const RetailSales: React.FC = () => {
             placeholder="Pretraži po kupcu, čestici ili ugovoru..."
             className="flex-1"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">Svi statusi</option>
             <option value="pending">Pending</option>
             <option value="partial">Djelomično</option>
             <option value="paid">Plaćeno</option>
             <option value="overdue">Kašnjenje</option>
-          </select>
+          </Select>
         </div>
       </div>
 
       {filteredSales.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm || statusFilter !== 'all' ? 'Nema rezultata pretrage' : 'Nema prodaja'}
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm || statusFilter !== 'all' ? 'Pokušajte s drugim kriterijima' : 'Dodajte prvu prodaju klikom na gumb iznad'}
-          </p>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title={searchTerm || statusFilter !== 'all' ? 'Nema rezultata pretrage' : 'Nema prodaja'}
+          description={searchTerm || statusFilter !== 'all' ? 'Pokušajte s drugim kriterijima' : 'Dodajte prvu prodaju klikom na gumb iznad'}
+        />
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kupac
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Čestica
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Površina
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ukupno
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Plaćeno
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rok
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Akcije
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {sale.customer?.name || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{sale.land_plot?.plot_number || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{sale.sale_area_m2.toLocaleString()} m²</div>
-                      <div className="text-xs text-gray-500">€{sale.sale_price_per_m2}/m²</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
-                      <div className="text-xs text-gray-500">Preostalo: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        sale.payment_status === 'paid'
-                          ? 'bg-green-100 text-green-800'
-                          : sale.payment_status === 'partial'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : sale.payment_status === 'overdue'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {sale.payment_status === 'paid' ? 'Plaćeno' :
-                         sale.payment_status === 'partial' ? 'Djelomično' :
-                         sale.payment_status === 'overdue' ? 'Kašnjenje' : 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        {sale.payment_status !== 'paid' && (
-                          <button
-                            onClick={() => handleOpenPaymentModal(sale)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Dodaj plaćanje"
-                          >
-                            <DollarSign className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleOpenFormModal(sale)}
-                          className="text-gray-600 hover:text-gray-900"
-                          title="Uredi"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(sale.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Obriši"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+        <Table>
+          <Table.Head>
+            <Table.Tr>
+              <Table.Th>Kupac</Table.Th>
+              <Table.Th>Čestica</Table.Th>
+              <Table.Th>Površina</Table.Th>
+              <Table.Th>Ukupno</Table.Th>
+              <Table.Th>Plaćeno</Table.Th>
+              <Table.Th>Rok</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th className="text-right">Akcije</Table.Th>
+            </Table.Tr>
+          </Table.Head>
+          <Table.Body>
+            {filteredSales.map((sale) => (
+              <Table.Tr key={sale.id}>
+                <Table.Td>
+                  <div className="text-sm font-medium text-gray-900">
+                    {sale.customer?.name || 'N/A'}
+                  </div>
+                </Table.Td>
+                <Table.Td>
+                  <div className="text-sm text-gray-900">{sale.land_plot?.plot_number || 'N/A'}</div>
+                </Table.Td>
+                <Table.Td>
+                  <div className="text-sm text-gray-900">{sale.sale_area_m2.toLocaleString()} m²</div>
+                  <div className="text-xs text-gray-500">€{sale.sale_price_per_m2}/m²</div>
+                </Table.Td>
+                <Table.Td>
+                  <div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div>
+                </Table.Td>
+                <Table.Td>
+                  <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">Preostalo: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
+                </Table.Td>
+                <Table.Td>
+                  <div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div>
+                </Table.Td>
+                <Table.Td>
+                  <Badge variant={
+                    sale.payment_status === 'paid'
+                      ? 'green'
+                      : sale.payment_status === 'partial'
+                      ? 'yellow'
+                      : sale.payment_status === 'overdue'
+                      ? 'red'
+                      : 'gray'
+                  }>
+                    {sale.payment_status === 'paid' ? 'Plaćeno' :
+                     sale.payment_status === 'partial' ? 'Djelomično' :
+                     sale.payment_status === 'overdue' ? 'Kašnjenje' : 'Pending'}
+                  </Badge>
+                </Table.Td>
+                <Table.Td className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    {sale.payment_status !== 'paid' && (
+                      <Button
+                        icon={DollarSign}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleOpenPaymentModal(sale)}
+                        title="Dodaj plaćanje"
+                      />
+                    )}
+                    <Button
+                      icon={Edit}
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleOpenFormModal(sale)}
+                      title="Uredi"
+                    />
+                    <Button
+                      icon={Trash2}
+                      variant="outline-danger"
+                      size="icon-sm"
+                      onClick={() => handleDelete(sale.id)}
+                      title="Obriši"
+                    />
+                  </div>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
+
+      <Modal show={showFormModal} onClose={handleCloseFormModal}>
+        <Modal.Header title={editingSale ? 'Uredi prodaju' : 'Nova prodaja'} onClose={handleCloseFormModal} />
+        <form onSubmit={handleSubmit}>
+          <Modal.Body>
+            <FormField label="Čestica" required>
+              <Select
+                required
+                value={formData.land_plot_id}
+                onChange={(e) => setFormData({ ...formData, land_plot_id: e.target.value })}
+              >
+                <option value="">Odaberite česticu</option>
+                {landPlots.map((plot) => (
+                  <option key={plot.id} value={plot.id}>
+                    {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </Select>
+            </FormField>
 
-      {showFormModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingSale ? 'Uredi prodaju' : 'Nova prodaja'}
-              </h2>
-              <button
-                onClick={handleCloseFormModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+            <FormField label="Kupac" required>
+              <Select
+                required
+                value={formData.customer_id}
+                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
               >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+                <option value="">Odaberite kupca</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Čestica *
-                  </label>
-                  <select
-                    required
-                    value={formData.land_plot_id}
-                    onChange={(e) => setFormData({ ...formData, land_plot_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Odaberite česticu</option>
-                    {landPlots.map((plot) => (
-                      <option key={plot.id} value={plot.id}>
-                        {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kupac *
-                  </label>
-                  <select
-                    required
-                    value={formData.customer_id}
-                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Odaberite kupca</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Površina (m²) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.sale_area_m2}
-                      onChange={(e) => setFormData({ ...formData, sale_area_m2: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Cijena po m² (€) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.sale_price_per_m2}
-                      onChange={(e) => setFormData({ ...formData, sale_price_per_m2: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rok plaćanja *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.payment_deadline}
-                    onChange={(e) => setFormData({ ...formData, payment_deadline: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Broj ugovora
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contract_number}
-                    onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Napomene
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleCloseFormModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Odustani
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingSale ? 'Spremi' : 'Dodaj'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showPaymentModal && selectedSale && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">
-                Dodaj plaćanje
-              </h2>
-              <button
-                onClick={handleClosePaymentModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddPayment} className="p-6">
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">Kupac</p>
-                <p className="text-lg font-semibold">{selectedSale.customer?.name}</p>
-              </div>
-
-              <div className="mb-4 bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">Ukupno:</span>
-                  <span className="font-semibold">€{selectedSale.total_sale_price.toLocaleString('hr-HR')}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">Plaćeno:</span>
-                  <span className="font-semibold text-green-600">€{selectedSale.paid_amount.toLocaleString('hr-HR')}</span>
-                </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span className="text-sm text-gray-600">Preostalo:</span>
-                  <span className="font-bold text-orange-600">€{selectedSale.remaining_amount.toLocaleString('hr-HR')}</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Iznos plaćanja (€) *
-                </label>
-                <input
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Površina (m²)" required>
+                <Input
                   type="number"
                   step="0.01"
                   required
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  max={selectedSale.remaining_amount}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={formData.sale_area_m2}
+                  onChange={(e) => setFormData({ ...formData, sale_area_m2: e.target.value })}
                 />
-              </div>
+              </FormField>
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={handleClosePaymentModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Odustani
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Dodaj plaćanje
-                </button>
+              <FormField label="Cijena po m² (€)" required>
+                <Input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.sale_price_per_m2}
+                  onChange={(e) => setFormData({ ...formData, sale_price_per_m2: e.target.value })}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Rok plaćanja" required>
+              <Input
+                type="date"
+                required
+                value={formData.payment_deadline}
+                onChange={(e) => setFormData({ ...formData, payment_deadline: e.target.value })}
+              />
+            </FormField>
+
+            <FormField label="Broj ugovora">
+              <Input
+                type="text"
+                value={formData.contract_number}
+                onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
+              />
+            </FormField>
+
+            <FormField label="Napomene">
+              <Textarea
+                rows={3}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              />
+            </FormField>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" type="button" onClick={handleCloseFormModal}>Odustani</Button>
+            <Button type="submit">{editingSale ? 'Spremi' : 'Dodaj'}</Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
+
+      <Modal show={showPaymentModal && !!selectedSale} onClose={handleClosePaymentModal} size="sm">
+        <Modal.Header title="Dodaj plaćanje" onClose={handleClosePaymentModal} />
+        <form onSubmit={handleAddPayment}>
+          <Modal.Body>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">Kupac</p>
+              <p className="text-lg font-semibold">{selectedSale?.customer?.name}</p>
+            </div>
+
+            <div className="mb-4 bg-gray-50 p-4 rounded-lg">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-600">Ukupno:</span>
+                <span className="font-semibold">€{selectedSale?.total_sale_price.toLocaleString('hr-HR')}</span>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-600">Plaćeno:</span>
+                <span className="font-semibold text-green-600">€{selectedSale?.paid_amount.toLocaleString('hr-HR')}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm text-gray-600">Preostalo:</span>
+                <span className="font-bold text-orange-600">€{selectedSale?.remaining_amount.toLocaleString('hr-HR')}</span>
+              </div>
+            </div>
+
+            <FormField label="Iznos plaćanja (€)" required>
+              <Input
+                type="number"
+                step="0.01"
+                required
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                max={selectedSale?.remaining_amount}
+              />
+            </FormField>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" type="button" onClick={handleClosePaymentModal}>Odustani</Button>
+            <Button variant="success" type="submit">Dodaj plaćanje</Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </div>
   )
 }

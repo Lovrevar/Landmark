@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { X, FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
+import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import type { RetailContract } from '../../../../types/retail'
+import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../../components/ui'
 
 interface Invoice {
   id: string
@@ -117,16 +118,16 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
     switch (status) {
       case 'PAID':
-        return 'bg-green-100 text-green-800'
+        return 'green'
       case 'PARTIALLY_PAID':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'yellow'
       case 'UNPAID':
-        return 'bg-red-100 text-red-800'
+        return 'red'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'gray'
     }
   }
 
@@ -163,160 +164,136 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
     return new Date(dueDate) < new Date()
   }
 
-  if (!isOpen || !contract) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-              <FileText className="w-6 h-6 mr-2 text-blue-600" />
-              Računi - {contract.contract_number}
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Iznos ugovora: €{contract.contract_amount.toLocaleString('hr-HR')} |
-              Plaćeno: €{contract.budget_realized.toLocaleString('hr-HR')}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto flex-1">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : invoices.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">Nema računa za ovaj ugovor</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {invoices.map((invoice) => (
-                <div
-                  key={invoice.id}
-                  className={`bg-white border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
-                    isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                  }`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-medium text-gray-500 uppercase">Broj računa</label>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusColor(invoice.status)}`}>
-                          {getStatusLabel(invoice.status)}
-                        </span>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900">{invoice.invoice_number}</p>
-                      <p className="text-xs text-gray-500 mt-1">{getTypeLabel(invoice.invoice_type)}</p>
+    <Modal show={isOpen && !!contract} onClose={onClose} size="full">
+      <Modal.Header
+        title={`Računi - ${contract?.contract_number || ''}`}
+        subtitle={`Iznos ugovora: €${contract?.contract_amount.toLocaleString('hr-HR')} | Plaćeno: €${contract?.budget_realized.toLocaleString('hr-HR')}`}
+        onClose={onClose}
+      />
+      <Modal.Body>
+        {loading ? (
+          <LoadingSpinner />
+        ) : invoices.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="Nema računa za ovaj ugovor"
+          />
+        ) : (
+          <div className="space-y-4">
+            {invoices.map((invoice) => (
+              <div
+                key={invoice.id}
+                className={`bg-white border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                }`}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-gray-500 uppercase">Broj računa</label>
+                      <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
+                        {getStatusLabel(invoice.status)}
+                      </Badge>
                     </div>
+                    <p className="text-lg font-bold text-gray-900">{invoice.invoice_number}</p>
+                    <p className="text-xs text-gray-500 mt-1">{getTypeLabel(invoice.invoice_type)}</p>
+                  </div>
 
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Firma</label>
-                      <div className="flex items-center mb-2">
-                        <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                        <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
-                      </div>
-                      {invoice.supplier_name && (
-                        <div className="flex items-center">
-                          <User className="w-4 h-4 text-blue-600 mr-2" />
-                          <p className="text-xs text-blue-600">{invoice.supplier_name}</p>
-                        </div>
-                      )}
-                      {invoice.customer_name && (
-                        <div className="flex items-center">
-                          <User className="w-4 h-4 text-green-600 mr-2" />
-                          <p className="text-xs text-green-600">{invoice.customer_name}</p>
-                        </div>
-                      )}
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Firma</label>
+                    <div className="flex items-center mb-2">
+                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                      <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
                     </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Ukupan iznos</label>
+                    {invoice.supplier_name && (
                       <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                        <p className="text-lg font-bold text-gray-900">
-                          €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
-                        </p>
+                        <User className="w-4 h-4 text-blue-600 mr-2" />
+                        <p className="text-xs text-blue-600">{invoice.supplier_name}</p>
                       </div>
-                      {invoice.status !== 'UNPAID' && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Plaćeno: €{invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
-                        </p>
-                      )}
-                      {invoice.remaining_amount > 0 && (
-                        <p className="text-xs text-red-600 mt-1">
-                          Preostalo: €{invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Dospijeće</label>
+                    )}
+                    {invoice.customer_name && (
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        <p className={`text-sm font-medium ${
-                          isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900'
-                        }`}>
-                          {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
-                        </p>
+                        <User className="w-4 h-4 text-green-600 mr-2" />
+                        <p className="text-xs text-green-600">{invoice.customer_name}</p>
                       </div>
-                      {isOverdue(invoice.due_date, invoice.status) && (
-                        <div className="flex items-center mt-1 text-red-600">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          <span className="text-xs font-semibold">KASNI</span>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Izdano: {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Ukupan iznos</label>
+                    <div className="flex items-center">
+                      <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
+                      <p className="text-lg font-bold text-gray-900">
+                        €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
+                    {invoice.status !== 'UNPAID' && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Plaćeno: €{invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
+                    {invoice.remaining_amount > 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Preostalo: €{invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
                   </div>
 
-                  {invoice.description && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <label className="text-xs font-medium text-gray-500 uppercase block mb-1">Opis</label>
-                      <p className="text-sm text-gray-700">{invoice.description}</p>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Dospijeće</label>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                      <p className={`text-sm font-medium ${
+                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900'
+                      }`}>
+                        {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                      </p>
                     </div>
-                  )}
-
-                  <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Osnovica:</span>
-                      <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">PDV:</span>
-                      <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
-                    </div>
+                    {isOverdue(invoice.due_date, invoice.status) && (
+                      <div className="flex items-center mt-1 text-red-600">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        <span className="text-xs font-semibold">KASNI</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Izdano: {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Ukupno računa: <span className="font-semibold">{invoices.length}</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Zatvori
-            </button>
+                {invoice.description && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="text-xs font-medium text-gray-500 uppercase block mb-1">Opis</label>
+                    <p className="text-sm text-gray-700">{invoice.description}</p>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Osnovica:</span>
+                    <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">PDV:</span>
+                    <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <div className="flex justify-between items-center w-full">
+          <div className="text-sm text-gray-600">
+            Ukupno računa: <span className="font-semibold">{invoices.length}</span>
+          </div>
+          <Button variant="secondary" onClick={onClose}>
+            Zatvori
+          </Button>
         </div>
-      </div>
-    </div>
+      </Modal.Footer>
+    </Modal>
   )
 }

@@ -1,5 +1,6 @@
 import React from 'react'
 import { DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { Table, EmptyState } from '../../ui'
 import type { CustomerReportData, InvoiceSummary } from './retailReportTypes'
 
 interface Props {
@@ -55,65 +56,63 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
         </div>
 
         {customers.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Nema podataka o kupcima</div>
+          <EmptyState title="Nema podataka o kupcima" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Kupac</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Ugovora</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Povrsina</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Ugovoreno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Placeno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Neplaceno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Naplata</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {customers.map((customer) => {
-                  const rate = customer.total_amount > 0
-                    ? (customer.total_paid / customer.total_amount) * 100
-                    : 0
-                  return (
-                    <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900 text-sm">{customer.name}</p>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-700">
-                        {customer.total_contracts}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-700">
-                        {customer.total_area_m2.toLocaleString('hr-HR')} m2
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-700">
-                        {formatCurrency(customer.total_amount)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-green-600 font-medium">
-                        {formatCurrency(customer.total_paid)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`text-sm font-medium ${customer.total_remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
-                          {formatCurrency(customer.total_remaining)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className={`h-1.5 rounded-full ${rate >= 100 ? 'bg-green-500' : rate > 50 ? 'bg-blue-500' : 'bg-orange-500'}`}
-                              style={{ width: `${Math.min(100, rate)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-500 w-10 text-right">{rate.toFixed(0)}%</span>
+          <Table className="rounded-none shadow-none border-0">
+            <Table.Head>
+              <Table.Tr hoverable={false}>
+                <Table.Th>Kupac</Table.Th>
+                <Table.Th className="text-right">Ugovora</Table.Th>
+                <Table.Th className="text-right">Povrsina</Table.Th>
+                <Table.Th className="text-right">Ugovoreno</Table.Th>
+                <Table.Th className="text-right">Placeno</Table.Th>
+                <Table.Th className="text-right">Neplaceno</Table.Th>
+                <Table.Th className="text-right">Naplata</Table.Th>
+              </Table.Tr>
+            </Table.Head>
+            <Table.Body>
+              {customers.map((customer) => {
+                const rate = customer.total_amount > 0
+                  ? (customer.total_paid / customer.total_amount) * 100
+                  : 0
+                return (
+                  <Table.Tr key={customer.id} className="transition-colors">
+                    <Table.Td className="py-3">
+                      <p className="font-medium text-gray-900">{customer.name}</p>
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right text-gray-700">
+                      {customer.total_contracts}
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right text-gray-700">
+                      {customer.total_area_m2.toLocaleString('hr-HR')} m2
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right text-gray-700">
+                      {formatCurrency(customer.total_amount)}
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right text-green-600 font-medium">
+                      {formatCurrency(customer.total_paid)}
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right">
+                      <span className={`text-sm font-medium ${customer.total_remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                        {formatCurrency(customer.total_remaining)}
+                      </span>
+                    </Table.Td>
+                    <Table.Td className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${rate >= 100 ? 'bg-green-500' : rate > 50 ? 'bg-blue-500' : 'bg-orange-500'}`}
+                            style={{ width: `${Math.min(100, rate)}%` }}
+                          />
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <span className="text-xs text-gray-500 w-10 text-right">{rate.toFixed(0)}%</span>
+                      </div>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })}
+            </Table.Body>
+          </Table>
         )}
       </div>
     </div>

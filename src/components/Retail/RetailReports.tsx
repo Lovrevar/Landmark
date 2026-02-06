@@ -14,7 +14,7 @@ import { CostAnalysis } from './reports/CostAnalysis'
 import { generateRetailReportPdf } from './reports/retailReportPdf'
 import { fetchRetailReportData } from './reports/retailReportService'
 import type { RetailReportData } from './reports/retailReportTypes'
-import { LoadingSpinner, PageHeader } from '../ui'
+import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
 
@@ -73,15 +73,10 @@ const RetailReports: React.FC = () => {
 
   if (!data) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Greska pri ucitavanju podataka.</p>
-        <button
-          onClick={loadData}
-          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Pokusaj ponovo
-        </button>
-      </div>
+      <EmptyState
+        title="Greska pri ucitavanju podataka."
+        action={<Button onClick={loadData}>Pokusaj ponovo</Button>}
+      />
     )
   }
 
@@ -92,44 +87,17 @@ const RetailReports: React.FC = () => {
         description={`${data.portfolio.total_projects} projekata \u00B7 ${data.portfolio.total_customers} kupaca \u00B7 ${data.portfolio.total_suppliers} dobavljaca`}
         actions={
           <>
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Osvjezi
-            </button>
-            <button
-              onClick={handleExportPdf}
-              disabled={exporting}
-              className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {exporting ? 'Generiranje...' : 'PDF izvjestaj'}
-            </button>
+            <Button variant="secondary" icon={RefreshCw} onClick={loadData} loading={loading}>Osvjezi</Button>
+            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvjestaj</Button>
           </>
         }
       />
 
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-1" aria-label="Tabs">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      <Tabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       <div>
         {activeTab === 'overview' && (

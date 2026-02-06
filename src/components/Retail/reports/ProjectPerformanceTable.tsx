@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
+import { Table, Badge } from '../../ui'
 import type { ProjectReportData } from './retailReportTypes'
 
 interface Props {
@@ -44,8 +45,9 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
   }), { land_cost: 0, dev: 0, constr: 0, revenue: 0, collected: 0, outstanding: 0, costs: 0, profit: 0 })
 
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <th
-      className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:text-gray-900 select-none"
+    <Table.Th
+      sortable
+      className="font-semibold text-gray-600 hover:text-gray-900"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -56,14 +58,14 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
           <ArrowUpDown className="w-3 h-3 opacity-30" />
         )}
       </div>
-    </th>
+    </Table.Th>
   )
 
-  const statusColors: Record<string, string> = {
-    'Planning': 'bg-gray-100 text-gray-700',
-    'In Progress': 'bg-blue-100 text-blue-700',
-    'Completed': 'bg-green-100 text-green-700',
-    'On Hold': 'bg-amber-100 text-amber-700'
+  const statusBadgeVariants: Record<string, 'gray' | 'blue' | 'green' | 'orange'> = {
+    'Planning': 'gray',
+    'In Progress': 'blue',
+    'Completed': 'green',
+    'On Hold': 'orange'
   }
 
   return (
@@ -73,90 +75,88 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
         <p className="text-sm text-gray-500 mt-1">Financijski pregled po projektu</p>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <SortHeader label="Projekt" field="name" />
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-              <SortHeader label="Zemljiste" field="land_cost" />
-              <SortHeader label="Troskovi" field="total_costs" />
-              <SortHeader label="Prihod" field="total_revenue" />
-              <SortHeader label="Profit" field="profit" />
-              <SortHeader label="ROI" field="roi" />
-              <th className="px-4 py-3 w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sorted.map((project) => (
-              <React.Fragment key={project.id}>
-                <tr
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === project.id ? null : project.id)}
-                >
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{project.name}</p>
-                      <p className="text-xs text-gray-500">{project.location}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[project.status] || 'bg-gray-100 text-gray-700'}`}>
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(project.land_cost)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(project.total_costs)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(project.total_revenue)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-semibold ${project.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.profit >= 0 ? '+' : ''}{formatCurrency(project.profit)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-semibold ${project.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.roi.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {expandedId === project.id
-                      ? <ChevronUp className="w-4 h-4 text-gray-400" />
-                      : <ChevronDown className="w-4 h-4 text-gray-400" />
-                    }
-                  </td>
-                </tr>
-                {expandedId === project.id && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-4 bg-gray-50">
-                      <ProjectExpandedDetail project={project} formatCurrency={formatCurrency} />
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-          <tfoot className="bg-gray-100 border-t-2 border-gray-300">
-            <tr className="font-semibold text-gray-900">
-              <td className="px-4 py-3">Ukupno ({projects.length})</td>
-              <td className="px-4 py-3"></td>
-              <td className="px-4 py-3 text-sm">{formatCurrency(totals.land_cost)}</td>
-              <td className="px-4 py-3 text-sm">{formatCurrency(totals.costs)}</td>
-              <td className="px-4 py-3 text-sm">{formatCurrency(totals.revenue)}</td>
-              <td className="px-4 py-3">
-                <span className={`text-sm ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totals.profit >= 0 ? '+' : ''}{formatCurrency(totals.profit)}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                <span className={`text-sm ${totals.costs > 0 ? (totals.profit / totals.costs * 100 >= 0 ? 'text-green-600' : 'text-red-600') : ''}`}>
-                  {totals.costs > 0 ? `${(totals.profit / totals.costs * 100).toFixed(1)}%` : '-'}
-                </span>
-              </td>
-              <td className="px-4 py-3"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <Table className="rounded-none shadow-none border-0">
+        <Table.Head>
+          <Table.Tr hoverable={false}>
+            <SortHeader label="Projekt" field="name" />
+            <Table.Th className="font-semibold text-gray-600">Status</Table.Th>
+            <SortHeader label="Zemljiste" field="land_cost" />
+            <SortHeader label="Troskovi" field="total_costs" />
+            <SortHeader label="Prihod" field="total_revenue" />
+            <SortHeader label="Profit" field="profit" />
+            <SortHeader label="ROI" field="roi" />
+            <Table.Th className="w-10">{''}</Table.Th>
+          </Table.Tr>
+        </Table.Head>
+        <Table.Body>
+          {sorted.map((project) => (
+            <React.Fragment key={project.id}>
+              <Table.Tr
+                className="transition-colors cursor-pointer"
+                onClick={() => setExpandedId(expandedId === project.id ? null : project.id)}
+              >
+                <Table.Td className="py-3">
+                  <div>
+                    <p className="font-medium text-gray-900">{project.name}</p>
+                    <p className="text-xs text-gray-500">{project.location}</p>
+                  </div>
+                </Table.Td>
+                <Table.Td className="py-3">
+                  <Badge variant={statusBadgeVariants[project.status] || 'gray'} size="sm">
+                    {project.status}
+                  </Badge>
+                </Table.Td>
+                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.land_cost)}</Table.Td>
+                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.total_costs)}</Table.Td>
+                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.total_revenue)}</Table.Td>
+                <Table.Td className="py-3">
+                  <span className={`text-sm font-semibold ${project.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {project.profit >= 0 ? '+' : ''}{formatCurrency(project.profit)}
+                  </span>
+                </Table.Td>
+                <Table.Td className="py-3">
+                  <span className={`text-sm font-semibold ${project.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {project.roi.toFixed(1)}%
+                  </span>
+                </Table.Td>
+                <Table.Td className="py-3 text-center">
+                  {expandedId === project.id
+                    ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400" />
+                  }
+                </Table.Td>
+              </Table.Tr>
+              {expandedId === project.id && (
+                <Table.Tr hoverable={false}>
+                  <Table.Td colSpan={8} className="px-4 py-4 bg-gray-50">
+                    <ProjectExpandedDetail project={project} formatCurrency={formatCurrency} />
+                  </Table.Td>
+                </Table.Tr>
+              )}
+            </React.Fragment>
+          ))}
+        </Table.Body>
+        <tfoot className="bg-gray-100 border-t-2 border-gray-300">
+          <tr className="font-semibold text-gray-900">
+            <td className="px-4 py-3">Ukupno ({projects.length})</td>
+            <td className="px-4 py-3"></td>
+            <td className="px-4 py-3 text-sm">{formatCurrency(totals.land_cost)}</td>
+            <td className="px-4 py-3 text-sm">{formatCurrency(totals.costs)}</td>
+            <td className="px-4 py-3 text-sm">{formatCurrency(totals.revenue)}</td>
+            <td className="px-4 py-3">
+              <span className={`text-sm ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totals.profit >= 0 ? '+' : ''}{formatCurrency(totals.profit)}
+              </span>
+            </td>
+            <td className="px-4 py-3">
+              <span className={`text-sm ${totals.costs > 0 ? (totals.profit / totals.costs * 100 >= 0 ? 'text-green-600' : 'text-red-600') : ''}`}>
+                {totals.costs > 0 ? `${(totals.profit / totals.costs * 100).toFixed(1)}%` : '-'}
+              </span>
+            </td>
+            <td className="px-4 py-3"></td>
+          </tr>
+        </tfoot>
+      </Table>
     </div>
   )
 }

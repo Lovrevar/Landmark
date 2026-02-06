@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
+import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog } from '../../../../components/ui'
 
 interface ProjectFormModalProps {
   onClose: () => void
@@ -124,21 +125,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const selectedPlot = landPlots.find(plot => plot.id === formData.land_plot_id)
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            {project ? 'Uredi projekt' : 'Novi projekt'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal show={true} onClose={onClose}>
+      <Modal.Header title={project ? 'Uredi projekt' : 'Novi projekt'} onClose={onClose} />
+      <form onSubmit={handleSubmit}>
+        <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -146,241 +136,198 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Naziv projekta *
-              </label>
-              <input
+            <FormField label="Naziv projekta" required className="md:col-span-2">
+              <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Zemljište
-              </label>
-              {loadingLandPlots ? (
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
-                  Učitavam zemljišta...
-                </div>
-              ) : (
-                <>
-                  <select
-                    value={formData.land_plot_id}
-                    onChange={(e) => handleLandPlotChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">-- Bez zemljišta (ručni unos) --</option>
-                    {landPlots.map(plot => (
-                      <option key={plot.id} value={plot.id}>
-                        {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name} ({plot.purchased_area_m2} m²)
-                      </option>
-                    ))}
-                  </select>
-                  {selectedPlot && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                      <div className="font-medium text-blue-900 mb-1">Info o zemljištu:</div>
-                      <div className="text-blue-800 space-y-1">
-                        <div>Vlasnik: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
-                        <div>Ukupna površina: {selectedPlot.total_area_m2} m²</div>
-                        <div>Kupljena površina: {selectedPlot.purchased_area_m2} m²</div>
-                        <div>Cijena po m²: €{selectedPlot.price_per_m2.toFixed(2)}</div>
-                        <div>Ukupna cijena: €{selectedPlot.total_price.toFixed(2)}</div>
+              <FormField label="Zemljište">
+                {loadingLandPlots ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                    Učitavam zemljišta...
+                  </div>
+                ) : (
+                  <>
+                    <Select
+                      value={formData.land_plot_id}
+                      onChange={(e) => handleLandPlotChange(e.target.value)}
+                    >
+                      <option value="">-- Bez zemljišta (ručni unos) --</option>
+                      {landPlots.map(plot => (
+                        <option key={plot.id} value={plot.id}>
+                          {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name} ({plot.purchased_area_m2} m²)
+                        </option>
+                      ))}
+                    </Select>
+                    {selectedPlot && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                        <div className="font-medium text-blue-900 mb-1">Info o zemljištu:</div>
+                        <div className="text-blue-800 space-y-1">
+                          <div>Vlasnik: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
+                          <div>Ukupna površina: {selectedPlot.total_area_m2} m²</div>
+                          <div>Kupljena površina: {selectedPlot.purchased_area_m2} m²</div>
+                          <div>Cijena po m²: €{selectedPlot.price_per_m2.toFixed(2)}</div>
+                          <div>Ukupna cijena: €{selectedPlot.total_price.toFixed(2)}</div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </FormField>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Lokacija *
-              </label>
-              <input
+            <FormField
+              label="Lokacija"
+              required
+              helperText={formData.land_plot_id ? 'Automatski popunjeno iz odabranog zemljišta' : undefined}
+              className="md:col-span-2"
+            >
+              <Input
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
                 disabled={!!formData.land_plot_id}
               />
-              {formData.land_plot_id && (
-                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno iz odabranog zemljišta</p>
-              )}
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Broj čestice *
-              </label>
-              <input
+            <FormField
+              label="Broj čestice"
+              required
+              helperText={formData.land_plot_id ? 'Automatski popunjeno' : undefined}
+            >
+              <Input
                 type="text"
                 value={formData.plot_number}
                 onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
                 disabled={!!formData.land_plot_id}
               />
-              {formData.land_plot_id && (
-                <p className="mt-1 text-xs text-gray-500">Automatski popunjeno</p>
-              )}
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
+            <FormField label="Status">
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="Planning">Planning</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
                 <option value="On Hold">On Hold</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Površina (m²) *
-              </label>
-              <input
+            <FormField label="Površina (m²)" required>
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.total_area_m2}
                 onChange={(e) => setFormData({ ...formData, total_area_m2: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Budžet projekta (€) *
-              </label>
-              <input
+            <FormField
+              label="Budžet projekta (€)"
+              required
+              helperText={selectedPlot
+                ? `Cijena zemljišta: €${selectedPlot.total_price.toLocaleString('hr-HR')}`
+                : 'Budžet projekta'
+              }
+            >
+              <Input
                 type="number"
                 step="0.01"
                 value={formData.purchase_price}
                 onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">
-                {selectedPlot
-                  ? `Cijena zemljišta: €${selectedPlot.total_price.toLocaleString('hr-HR')}`
-                  : 'Budžet projekta'
-                }
-              </p>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum početka
-              </label>
-              <input
+            <FormField label="Datum početka">
+              <Input
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Datum završetka
-              </label>
-              <input
+            <FormField label="Datum završetka">
+              <Input
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Napomene
-              </label>
-              <textarea
+            <FormField label="Napomene" className="md:col-span-2">
+              <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
+            </FormField>
           </div>
+        </Modal.Body>
 
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+        <Modal.Footer>
+          <div className="flex justify-between items-center w-full">
             <div>
               {project && (
-                <button
+                <Button
                   type="button"
+                  variant="outline-danger"
+                  icon={Trash2}
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                   disabled={loading || deleting}
                 >
-                  <Trash2 className="w-4 h-4" />
                   Obriši projekt
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex space-x-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 disabled={loading || deleting}
               >
                 Odustani
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                loading={loading}
                 disabled={loading || deleting}
               >
-                {loading ? 'Spremam...' : project ? 'Spremi promjene' : 'Kreiraj projekt'}
-              </button>
+                {project ? 'Spremi promjene' : 'Kreiraj projekt'}
+              </Button>
             </div>
           </div>
-        </form>
-      </div>
+        </Modal.Footer>
+      </form>
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Potvrda brisanja</h3>
-            <p className="text-gray-600 mb-6">
-              Jeste li sigurni da želite obrisati projekt "<strong>{project?.name}</strong>"?
-              <br /><br />
-              Ova akcija će obrisati projekt i sve povezane podatke (faze, ugovore, milestones). Ova akcija se ne može poništiti.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={deleting}
-              >
-                Odustani
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                disabled={deleting}
-              >
-                {deleting ? 'Brišem...' : 'Da, obriši'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <ConfirmDialog
+        show={showDeleteConfirm}
+        title="Potvrda brisanja"
+        message={
+          <>
+            Jeste li sigurni da želite obrisati projekt "<strong>{project?.name}</strong>"?
+            <br /><br />
+            Ova akcija će obrisati projekt i sve povezane podatke (faze, ugovore, milestones). Ova akcija se ne može poništiti.
+          </>
+        }
+        confirmLabel={deleting ? 'Brišem...' : 'Da, obriši'}
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        loading={deleting}
+      />
+    </Modal>
   )
 }
