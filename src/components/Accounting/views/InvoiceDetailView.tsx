@@ -193,7 +193,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                         <span className="text-sm text-gray-700">25% PDV:</span>
                         <div className="text-right">
                           <p className="text-sm font-medium">Osnovica: €{formatCurrency(invoice.base_amount_1)}</p>
-                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_1)}</p>
+                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_1 || invoice.base_amount_1 * 0.25)}</p>
                         </div>
                       </div>
                     )}
@@ -202,7 +202,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                         <span className="text-sm text-gray-700">13% PDV:</span>
                         <div className="text-right">
                           <p className="text-sm font-medium">Osnovica: €{formatCurrency(invoice.base_amount_2)}</p>
-                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_2)}</p>
+                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_2 || invoice.base_amount_2 * 0.13)}</p>
                         </div>
                       </div>
                     )}
@@ -211,7 +211,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                         <span className="text-sm text-gray-700">5% PDV:</span>
                         <div className="text-right">
                           <p className="text-sm font-medium">Osnovica: €{formatCurrency(invoice.base_amount_4)}</p>
-                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_4)}</p>
+                          <p className="text-xs text-gray-600">PDV: €{formatCurrency(invoice.vat_amount_4 || invoice.base_amount_4 * 0.05)}</p>
                         </div>
                       </div>
                     )}
