@@ -2,6 +2,7 @@ import React from 'react'
 import DateInput from '../../Common/DateInput'
 import CurrencyInput from '../../Common/CurrencyInput'
 import { InvoiceEntityFields } from './InvoiceEntityFields'
+import { Select, Input, Textarea, FormField } from '../../ui'
 import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types/invoiceTypes'
 
 interface InvoiceFormFieldsProps {
@@ -51,11 +52,8 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
   return (
     <div className="p-6 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tip računa *
-          </label>
-          <select
+        <FormField label="Tip računa" required>
+          <Select
             value={formData.invoice_type}
             onChange={(e) => onFormChange({
               ...formData,
@@ -69,7 +67,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
               contract_id: '',
               milestone_id: ''
             })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
             disabled={editingInvoice !== null}
           >
@@ -86,8 +83,8 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
                 <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
               </>
             )}
-          </select>
-        </div>
+          </Select>
+        </FormField>
 
         <InvoiceEntityFields
           formData={formData}
@@ -107,164 +104,122 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           getMilestonesByContract={getMilestonesByContract}
         />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Firma *
-          </label>
-          <select
+        <FormField label="Firma" required>
+          <Select
             value={formData.company_id}
             onChange={(e) => onFormChange({ ...formData, company_id: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           >
             <option value="">Odaberi firmu</option>
             {companies.map(company => (
               <option key={company.id} value={company.id}>{company.name}</option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Broj računa *
-          </label>
-          <input
+        <FormField label="Broj računa" required>
+          <Input
             type="text"
             value={formData.invoice_number}
             onChange={(e) => onFormChange({ ...formData, invoice_number: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Poziv na broj
-          </label>
-          <input
+        <FormField label="Poziv na broj">
+          <Input
             type="text"
             value={formData.reference_number}
             onChange={(e) => onFormChange({ ...formData, reference_number: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="HR12-3456-7890"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            IBAN
-          </label>
-          <input
+        <FormField label="IBAN">
+          <Input
             type="text"
             value={formData.iban}
             onChange={(e) => onFormChange({ ...formData, iban: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="HR1234567890123456789"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Datum izdavanja *
-          </label>
+        <FormField label="Datum izdavanja" required>
           <DateInput
             value={formData.issue_date}
             onChange={(value) => onFormChange({ ...formData, issue_date: value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Datum dospijeća *
-          </label>
+        <FormField label="Datum dospijeća" required>
           <DateInput
             value={formData.due_date}
             onChange={(value) => onFormChange({ ...formData, due_date: value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Osnovica PDV 25%
-          </label>
+        <FormField label="Osnovica PDV 25%">
           <CurrencyInput
             value={formData.base_amount_1}
             onChange={(value) => onFormChange({ ...formData, base_amount_1: value })}
             placeholder="0,00"
             min={0}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Osnovica PDV 13%
-          </label>
+        <FormField label="Osnovica PDV 13%">
           <CurrencyInput
             value={formData.base_amount_2}
             onChange={(value) => onFormChange({ ...formData, base_amount_2: value })}
             placeholder="0,00"
             min={0}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Osnovica PDV 5%
-          </label>
+        <FormField label="Osnovica PDV 5%">
           <CurrencyInput
             value={formData.base_amount_4}
             onChange={(value) => onFormChange({ ...formData, base_amount_4: value })}
             placeholder="0,00"
             min={0}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Osnovica PDV 0%
-          </label>
+        <FormField label="Osnovica PDV 0%">
           <CurrencyInput
             value={formData.base_amount_3}
             onChange={(value) => onFormChange({ ...formData, base_amount_3: value })}
             placeholder="0,00"
             min={0}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kategorija *
-          </label>
-          <select
+        <FormField label="Kategorija" required>
+          <Select
             value={formData.category}
             onChange={(e) => onFormChange({ ...formData, category: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           >
             <option value="">Odaberi kategoriju</option>
             {invoiceCategories.map(cat => (
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Opis (opcionalno)
-        </label>
-        <textarea
+      <FormField label="Opis (opcionalno)">
+        <Textarea
           value={formData.description}
           onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Dodatne napomene..."
         />
-      </div>
+      </FormField>
     </div>
   )
 }

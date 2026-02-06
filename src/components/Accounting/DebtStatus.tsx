@@ -3,7 +3,7 @@ import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet }
 import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
 import { exportToExcel, exportToPDF } from './utils/debtExport'
-import { PageHeader, StatGrid, LoadingSpinner } from '../ui'
+import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert } from '../ui'
 
 const DebtStatus: React.FC = () => {
   const {
@@ -22,11 +22,11 @@ const DebtStatus: React.FC = () => {
   const getSupplierTypeBadge = (type: string) => {
     switch (type) {
       case 'retail_supplier':
-        return <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">Retail</span>
+        return <Badge variant="teal" size="sm">Retail</Badge>
       case 'office_supplier':
-        return <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Office</span>
+        return <Badge variant="blue" size="sm">Office</Badge>
       default:
-        return <span className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded">Site</span>
+        return <Badge variant="gray" size="sm">Site</Badge>
     }
   }
 
@@ -49,73 +49,50 @@ const DebtStatus: React.FC = () => {
         description="Pregled svih neisplaćenih obveza prema dobavljačima"
         actions={
           <>
-            <button
-              onClick={handleExportExcel}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
+            <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel}>
               Export Excel
-            </button>
-            <button
-              onClick={handleExportPDF}
-              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
+            </Button>
+            <Button variant="danger" icon={FileDown} onClick={handleExportPDF}>
               Export PDF
-            </button>
+            </Button>
           </>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno dobavljača</p>
-              <p className="text-2xl font-bold text-gray-900">{totalSuppliers}</p>
-            </div>
-            <Users className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Dobavljači s dugom</p>
-              <p className="text-2xl font-bold text-orange-600">{suppliersWithDebt}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno neisplaćeno</p>
-              <p className="text-2xl font-bold text-red-600">€{formatEuropeanNumber(totalUnpaid)}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno isplaćeno</p>
-              <p className="text-2xl font-bold text-green-600">€{formatEuropeanNumber(totalPaid)}</p>
-            </div>
-            <DollarSign className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
+        <StatCard
+          label="Ukupno dobavljača"
+          value={totalSuppliers}
+          icon={Users}
+          color="blue"
+        />
+        <StatCard
+          label="Dobavljači s dugom"
+          value={suppliersWithDebt}
+          icon={AlertCircle}
+          color="yellow"
+        />
+        <StatCard
+          label="Ukupno neisplaćeno"
+          value={`€${formatEuropeanNumber(totalUnpaid)}`}
+          icon={TrendingUp}
+          color="red"
+        />
+        <StatCard
+          label="Ukupno isplaćeno"
+          value={`€${formatEuropeanNumber(totalPaid)}`}
+          icon={DollarSign}
+          color="green"
+        />
       </StatGrid>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {debtData.length === 0 ? (
-          <div className="p-12 text-center">
-            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Nema podataka o dugovima</h3>
-            <p className="text-gray-600">Trenutno nema neisplaćenih računa</p>
-          </div>
+          <EmptyState
+            icon={AlertCircle}
+            title="Nema podataka o dugovima"
+            description="Trenutno nema neisplaćenih računa"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -217,20 +194,14 @@ const DebtStatus: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="text-sm text-blue-800">
-            <p className="font-semibold mb-1">Napomena:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Neisplaćeno = preostali iznos svih neplaćenih i djelomično plaćenih računa</li>
-              <li>Isplaćeno = ukupan iznos svih izvršenih plaćanja za tog dobavljača</li>
-              <li>Tablica uključuje sve tipove dobavljača: Site (gradilišni), Retail i Office</li>
-              <li>Kliknite na zaglavlje stupca za sortiranje podataka</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <Alert variant="info" title="Napomena:">
+        <ul className="list-disc list-inside space-y-1">
+          <li>Neisplaćeno = preostali iznos svih neplaćenih i djelomično plaćenih računa</li>
+          <li>Isplaćeno = ukupan iznos svih izvršenih plaćanja za tog dobavljača</li>
+          <li>Tablica uključuje sve tipove dobavljača: Site (gradilišni), Retail i Office</li>
+          <li>Kliknite na zaglavlje stupca za sortiranje podataka</li>
+        </ul>
+      </Alert>
     </div>
   )
 }

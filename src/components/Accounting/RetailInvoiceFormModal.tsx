@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { X } from 'lucide-react'
+import { Modal, Button, Textarea, FormField, Alert } from '../ui'
 import { RetailInvoiceFormFields } from './forms/RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './forms/RetailInvoiceCalculationSummary'
 import { useRetailInvoiceData } from './hooks/useRetailInvoiceData'
@@ -172,20 +172,13 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   const calc = calculateVatAndTotal()
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Novi Retail Račun</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header title="Novi Retail Račun" onClose={onClose} />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
+        <Modal.Body>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
+            <Alert variant="error">{error}</Alert>
           )}
 
           <RetailInvoiceFormFields
@@ -208,37 +201,33 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             calculation={calc}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Napomene
-            </label>
-            <textarea
+          <FormField label="Napomene">
+            <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="Dodatne napomene..."
             />
-          </div>
+          </FormField>
+        </Modal.Body>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              Odustani
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Kreiranje...' : 'Kreiraj račun'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+          >
+            Odustani
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={loading}
+          >
+            {loading ? 'Kreiranje...' : 'Kreiraj račun'}
+          </Button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   )
 }

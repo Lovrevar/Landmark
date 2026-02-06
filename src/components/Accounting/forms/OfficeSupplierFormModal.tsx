@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Button, Input, FormField } from '../../ui'
+import { Modal, Button, Input, FormField, Alert } from '../../ui'
 import { OfficeSupplier, OfficeSupplierFormData } from '../types/officeSupplierTypes'
 
 interface OfficeSupplierFormModalProps {
@@ -26,8 +26,8 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
         onClose={handleCloseModal}
       />
 
-      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
-        <div className="p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
+        <Modal.Body>
           <FormField label="Naziv dobavljača" required>
             <Input
               type="text"
@@ -87,13 +87,11 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
             </FormField>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Napomena:</strong> Office dobavljači se koriste za uredske troškove kao što su plaće,
-              lizinzi automobila, najam ureda, režije i slično. Ne prikazuju se u projektnim računima.
-            </p>
-          </div>
-        </div>
+          <Alert variant="info" title="Napomena">
+            Office dobavljači se koriste za uredske troškove kao što su plaće,
+            lizinzi automobila, najam ureda, režije i slično. Ne prikazuju se u projektnim računima.
+          </Alert>
+        </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={handleCloseModal}>

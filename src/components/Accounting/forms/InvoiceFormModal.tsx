@@ -64,32 +64,34 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
-        <InvoiceFormFields
-          formData={formData}
-          isOfficeInvoice={isOfficeInvoice}
-          editingInvoice={editingInvoice}
-          companies={companies}
-          suppliers={suppliers}
-          officeSuppliers={officeSuppliers}
-          customers={customers}
-          investors={investors}
-          banks={banks}
-          projects={projects}
-          contracts={contracts}
-          milestones={milestones}
-          refunds={refunds}
-          invoiceCategories={invoiceCategories}
-          customerApartments={customerApartments}
-          onFormChange={onFormChange}
-          getCustomerProjects={getCustomerProjects}
-          getCustomerApartmentsByProject={getCustomerApartmentsByProject}
-          getSupplierProjects={getSupplierProjects}
-          getSupplierContractsByProject={getSupplierContractsByProject}
-          getMilestonesByContract={getMilestonesByContract}
-        />
+      <form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
+        <Modal.Body noPadding>
+          <InvoiceFormFields
+            formData={formData}
+            isOfficeInvoice={isOfficeInvoice}
+            editingInvoice={editingInvoice}
+            companies={companies}
+            suppliers={suppliers}
+            officeSuppliers={officeSuppliers}
+            customers={customers}
+            investors={investors}
+            banks={banks}
+            projects={projects}
+            contracts={contracts}
+            milestones={milestones}
+            refunds={refunds}
+            invoiceCategories={invoiceCategories}
+            customerApartments={customerApartments}
+            onFormChange={onFormChange}
+            getCustomerProjects={getCustomerProjects}
+            getCustomerApartmentsByProject={getCustomerApartmentsByProject}
+            getSupplierProjects={getSupplierProjects}
+            getSupplierContractsByProject={getSupplierContractsByProject}
+            getMilestonesByContract={getMilestonesByContract}
+          />
 
-        <InvoiceVATSummary formData={formData} />
+          <InvoiceVATSummary formData={formData} />
+        </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>

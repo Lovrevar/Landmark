@@ -1,5 +1,6 @@
 import React from 'react'
 import { Columns, Check } from 'lucide-react'
+import { Button } from '../../ui'
 
 interface ColumnMenuDropdownProps {
   showColumnMenu: boolean
@@ -18,13 +19,13 @@ export const ColumnMenuDropdown: React.FC<ColumnMenuDropdownProps> = ({
 }) => {
   return (
     <div className="relative column-menu-container">
-      <button
+      <Button
+        variant="secondary"
+        icon={Columns}
         onClick={onToggleMenu}
-        className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
       >
-        <Columns className="w-5 h-5 mr-2" />
         Polja
-      </button>
+      </Button>
       {showColumnMenu && (
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
           <div className="px-3 py-2 border-b border-gray-200">

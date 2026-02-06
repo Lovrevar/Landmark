@@ -2,7 +2,7 @@ import React from 'react'
 import DateInput from '../../Common/DateInput'
 import CurrencyInput, { formatCurrency } from '../../Common/CurrencyInput'
 import { CesijaPaymentFields } from './CesijaPaymentFields'
-import { Modal, Button, Input, Select, Textarea, FormField } from '../../ui'
+import { Modal, Button, Input, Select, Textarea, FormField, Alert } from '../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../types/invoiceTypes'
 
 interface PaymentFormModalProps {
@@ -41,8 +41,8 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
-        <div className="p-6 space-y-4">
+      <form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
+        <Modal.Body>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Ukupan iznos:</span>
@@ -249,20 +249,20 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           </FormField>
 
           {paymentFormData.amount > 0 && paymentFormData.amount <= payingInvoice.remaining_amount && (
-            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
-              <p className="text-sm text-blue-800 font-medium">
+            <Alert variant="info">
+              <p className="font-medium">
                 {paymentFormData.amount === payingInvoice.remaining_amount
                   ? 'Račun će biti označen kao PLAĆEN'
                   : `Preostalo nakon plaćanja: €${formatCurrency(payingInvoice.remaining_amount - paymentFormData.amount)}`}
               </p>
               {paymentFormData.amount < payingInvoice.remaining_amount && (
-                <p className="text-xs text-blue-700">
+                <p className="text-xs mt-1 opacity-90">
                   Status će biti promijenjen na DJELOMIČNO PLAĆENO
                 </p>
               )}
-            </div>
+            </Alert>
           )}
-        </div>
+        </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>

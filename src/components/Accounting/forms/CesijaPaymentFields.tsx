@@ -1,6 +1,7 @@
 import React from 'react'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../types/invoiceTypes'
+import { Select, FormField } from '../../ui'
 
 interface CesijaPaymentFieldsProps {
   paymentFormData: any
@@ -25,18 +26,14 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
 
   return (
     <>
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Firma koja plaća (cesija) *
-        </label>
-        <select
+      <FormField label="Firma koja plaća (cesija)" required className="md:col-span-2">
+        <Select
           value={paymentFormData.cesija_company_id}
           onChange={(e) => onFormChange({
             ...paymentFormData,
             cesija_company_id: e.target.value,
             cesija_bank_account_id: ''
           })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required
         >
           <option value="">Odaberi firmu koja plaća</option>
@@ -45,16 +42,13 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
               {company.name}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </FormField>
 
       {paymentFormData.cesija_company_id && (
         <>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Izvor plaćanja (cesija) *
-            </label>
-            <select
+          <FormField label="Izvor plaćanja (cesija)" required className="md:col-span-2">
+            <Select
               value={paymentFormData.payment_source_type}
               onChange={(e) => onFormChange({
                 ...paymentFormData,
@@ -62,23 +56,27 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                 cesija_bank_account_id: '',
                 cesija_credit_id: ''
               })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
               <option value="bank_account">Bankovni račun</option>
               <option value="credit">Kredit</option>
-            </select>
-          </div>
+            </Select>
+          </FormField>
 
           {paymentFormData.payment_source_type === 'bank_account' && (
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bankovni račun (cesija) *
-              </label>
-              <select
+            <FormField
+              label="Bankovni račun (cesija)"
+              required
+              className="md:col-span-2"
+              error={
+                paymentFormData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === paymentFormData.cesija_company_id).length === 0
+                  ? 'Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.'
+                  : undefined
+              }
+            >
+              <Select
                 value={paymentFormData.cesija_bank_account_id}
                 onChange={(e) => onFormChange({ ...paymentFormData, cesija_bank_account_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi bankovni račun</option>
@@ -89,28 +87,28 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                       {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{formatCurrency(account.current_balance)})
                     </option>
                   ))}
-              </select>
-              {paymentFormData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === paymentFormData.cesija_company_id).length === 0 && (
-                <p className="text-xs text-red-600 mt-1">
-                  Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.
-                </p>
-              )}
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {paymentFormData.payment_source_type === 'credit' && (
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kredit (cesija) *
-              </label>
-              <select
+            <FormField
+              label="Kredit (cesija)"
+              required
+              className="md:col-span-2"
+              error={
+                paymentFormData.cesija_company_id && companyCredits.filter(credit => credit.company_id === paymentFormData.cesija_company_id).length === 0
+                  ? 'Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                  : undefined
+              }
+            >
+              <Select
                 value={paymentFormData.cesija_credit_id}
                 onChange={(e) => {
                   const newCreditId = e.target.value
                   onFormChange({ ...paymentFormData, cesija_credit_id: newCreditId, cesija_credit_allocation_id: '' })
                   onCreditChange(newCreditId)
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi kredit</option>
@@ -124,24 +122,24 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                       </option>
                     )
                   })}
-              </select>
-              {paymentFormData.cesija_company_id && companyCredits.filter(credit => credit.company_id === paymentFormData.cesija_company_id).length === 0 && (
-                <p className="text-xs text-red-600 mt-1">
-                  Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.
-                </p>
-              )}
-            </div>
+              </Select>
+            </FormField>
           )}
 
           {paymentFormData.payment_source_type === 'credit' && paymentFormData.cesija_credit_id && (
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Projekt (cesija) *
-              </label>
-              <select
+            <FormField
+              label="Projekt (cesija)"
+              required
+              className="md:col-span-2"
+              error={
+                creditAllocations.length === 0
+                  ? 'Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.'
+                  : undefined
+              }
+            >
+              <Select
                 value={paymentFormData.cesija_credit_allocation_id}
                 onChange={(e) => onFormChange({ ...paymentFormData, cesija_credit_allocation_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi projekt</option>
@@ -153,13 +151,8 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                     </option>
                   )
                 })}
-              </select>
-              {creditAllocations.length === 0 && (
-                <p className="text-xs text-red-600 mt-1">
-                  Ovaj kredit nema alociranih projekata. Molimo definirajte namjenu kredita u Funding sekciji.
-                </p>
-              )}
-            </div>
+              </Select>
+            </FormField>
           )}
         </>
       )}

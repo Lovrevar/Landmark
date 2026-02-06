@@ -4,7 +4,7 @@ import { format, differenceInDays } from 'date-fns'
 import { useCredits } from './hooks/useCredits'
 import CreditFormModal from './forms/CreditFormModal'
 import type { Credit } from './types/creditTypes'
-import { PageHeader, LoadingSpinner } from '../ui'
+import { PageHeader, LoadingSpinner, Button, Badge, Card, StatCard, StatGrid, EmptyState } from '../ui'
 
 const CompanyCredits: React.FC = () => {
   const {
@@ -47,13 +47,13 @@ const CompanyCredits: React.FC = () => {
         title="Company Credits"
         description="Manage company credit lines and loans"
         actions={
-          <button
+          <Button
             onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            variant="primary"
+            icon={Plus}
           >
-            <Plus className="w-4 h-4" />
-            <span>Add Credit</span>
-          </button>
+            Add Credit
+          </Button>
         }
       />
 
@@ -66,26 +66,20 @@ const CompanyCredits: React.FC = () => {
           const remaining = credit.amount - usedAmount
 
           return (
-            <div key={credit.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <Card key={credit.id} padding="lg">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <CreditCard className="w-6 h-6 text-blue-600" />
                     <h3 className="text-xl font-bold text-gray-900">{credit.credit_name}</h3>
                     {credit.project && (
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
-                        {credit.project.name}
-                      </span>
+                      <Badge variant="blue">{credit.project.name}</Badge>
                     )}
                     {expired && (
-                      <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                        EXPIRED
-                      </span>
+                      <Badge variant="red">EXPIRED</Badge>
                     )}
                     {!expired && expiringSoon && (
-                      <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
-                        EXPIRING SOON
-                      </span>
+                      <Badge variant="orange">EXPIRING SOON</Badge>
                     )}
                   </div>
                   <p className="text-gray-600">
@@ -93,62 +87,59 @@ const CompanyCredits: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  <button
+                  <Button
                     onClick={() => handleOpenModal(credit)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
+                    variant="ghost"
+                    size="icon-md"
+                    icon={Edit}
+                    className="text-blue-600 hover:bg-blue-50"
+                  />
+                  <Button
                     onClick={() => handleDelete(credit.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    variant="outline-danger"
+                    size="icon-md"
+                    icon={Trash2}
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-gray-600 mb-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm">Credit Limit</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-blue-600 mb-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm">Used</span>
-                  </div>
-                  <p className="text-xl font-bold text-blue-900">€{usedAmount.toLocaleString('hr-HR')}</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-purple-600 mb-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm">Repaid</span>
-                  </div>
-                  <p className="text-xl font-bold text-purple-900">€{(credit.repaid_amount || 0).toLocaleString('hr-HR')}</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-green-600 mb-1">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm">Available</span>
-                  </div>
-                  <p className="text-xl font-bold text-green-900">€{remaining.toLocaleString('hr-HR')}</p>
-                </div>
-
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-orange-600 mb-1">
-                    <Percent className="w-4 h-4" />
-                    <span className="text-sm">Interest Rate</span>
-                  </div>
-                  <p className="text-xl font-bold text-orange-900">{credit.interest_rate}%</p>
-                </div>
-              </div>
+              <StatGrid columns={5} className="mb-4">
+                <StatCard
+                  label="Credit Limit"
+                  value={`€${credit.amount.toLocaleString('hr-HR')}`}
+                  icon={DollarSign}
+                  color="gray"
+                  size="sm"
+                />
+                <StatCard
+                  label="Used"
+                  value={`€${usedAmount.toLocaleString('hr-HR')}`}
+                  icon={DollarSign}
+                  color="blue"
+                  size="sm"
+                />
+                <StatCard
+                  label="Repaid"
+                  value={`€${(credit.repaid_amount || 0).toLocaleString('hr-HR')}`}
+                  icon={DollarSign}
+                  color="teal"
+                  size="sm"
+                />
+                <StatCard
+                  label="Available"
+                  value={`€${remaining.toLocaleString('hr-HR')}`}
+                  icon={DollarSign}
+                  color="green"
+                  size="sm"
+                />
+                <StatCard
+                  label="Interest Rate"
+                  value={`${credit.interest_rate}%`}
+                  icon={Percent}
+                  color="yellow"
+                  size="sm"
+                />
+              </StatGrid>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
@@ -190,23 +181,27 @@ const CompanyCredits: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
+            </Card>
           )
         })}
 
         {credits.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Credits Yet</h3>
-            <p className="text-gray-600 mb-4">Add your first credit line to start tracking credit utilization</p>
-            <button
-              onClick={() => handleOpenModal()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Credit</span>
-            </button>
-          </div>
+          <Card padding="none">
+            <EmptyState
+              icon={CreditCard}
+              title="No Credits Yet"
+              description="Add your first credit line to start tracking credit utilization"
+              action={
+                <Button
+                  onClick={() => handleOpenModal()}
+                  variant="primary"
+                  icon={Plus}
+                >
+                  Add Credit
+                </Button>
+              }
+            />
+          </Card>
         )}
       </div>
 

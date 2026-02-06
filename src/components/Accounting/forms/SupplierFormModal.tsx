@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Button, Input, Select, FormField } from '../../ui'
+import { Modal, Button, Input, Select, FormField, Alert } from '../../ui'
 import { SupplierFormData, Project, Phase } from '../types/supplierTypes'
 
 interface SupplierFormModalProps {
@@ -33,7 +33,7 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
       />
 
       <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
-        <div className="p-6 space-y-4">
+        <Modal.Body>
           <FormField label="Naziv dobavljača" required>
             <Input
               type="text"
@@ -94,21 +94,19 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Napomena:</strong> Nakon dodavanja dobavljača, možete kreirati račune za njih u sekciji "Računi".
-              {!editingSupplier && formData.project_id && formData.phase_id ? (
-                <span className="block mt-2">
-                  Dobavljač će biti automatski zakačen na odabrani projekt i fazu kao "bez ugovora". Možete vidjeti dobavljača u "Site Management" modulu za taj projekt.
-                </span>
-              ) : !editingSupplier ? (
-                <span className="block mt-2">
-                  Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
-                </span>
-              ) : null}
-            </p>
-          </div>
-        </div>
+          <Alert variant="info" title="Napomena">
+            Nakon dodavanja dobavljača, možete kreirati račune za njih u sekciji "Računi".
+            {!editingSupplier && formData.project_id && formData.phase_id ? (
+              <span className="block mt-2">
+                Dobavljač će biti automatski zakačen na odabrani projekt i fazu kao "bez ugovora". Možete vidjeti dobavljača u "Site Management" modulu za taj projekt.
+              </span>
+            ) : !editingSupplier ? (
+              <span className="block mt-2">
+                Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
+              </span>
+            ) : null}
+          </Alert>
+        </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>

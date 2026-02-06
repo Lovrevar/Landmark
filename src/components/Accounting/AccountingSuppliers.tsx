@@ -4,7 +4,7 @@ import RetailSupplierModal from './RetailSupplierModal'
 import SupplierFormModal from './forms/SupplierFormModal'
 import SupplierDetailsModal from './views/SupplierDetailsModal'
 import { useSuppliers } from './hooks/useSuppliers'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge } from '../ui'
 
 const AccountingSuppliers: React.FC = () => {
   const {
@@ -50,70 +50,21 @@ const AccountingSuppliers: React.FC = () => {
         description="Pregled svih dobavljača, ugovora i plaćanja"
         actions={
           <>
-            <button
-              onClick={() => handleOpenAddModal()}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5 mr-2" />
+            <Button variant="primary" icon={Plus} onClick={() => handleOpenAddModal()}>
               Novi dobavljač
-            </button>
-            <button
-              onClick={() => setShowRetailModal(true)}
-              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap"
-            >
-              <Store className="w-5 h-5 mr-2" />
+            </Button>
+            <Button variant="primary" icon={Store} onClick={() => setShowRetailModal(true)} className="bg-teal-600 hover:bg-teal-700">
               Novi Retail Dobavljač
-            </button>
+            </Button>
           </>
         }
       />
 
       <StatGrid columns={4}>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno dobavljača</p>
-              <p className="text-2xl font-bold text-gray-900">{suppliers.length}</p>
-            </div>
-            <Users className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno ugovora</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {suppliers.reduce((sum, s) => sum + s.total_contracts, 0)}
-              </p>
-            </div>
-            <Briefcase className="w-8 h-8 text-gray-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno plaćeno</p>
-              <p className="text-2xl font-bold text-green-600">
-                €{suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Ukupno dugovi</p>
-              <p className="text-2xl font-bold text-orange-600">
-                €{suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
+        <StatCard label="Ukupno dobavljača" value={suppliers.length} icon={Users} />
+        <StatCard label="Ukupno ugovora" value={suppliers.reduce((sum, s) => sum + s.total_contracts, 0)} icon={Briefcase} color="gray" />
+        <StatCard label="Ukupno plaćeno" value={`€${suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
+        <StatCard label="Ukupno dugovi" value={`€${suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -127,15 +78,11 @@ const AccountingSuppliers: React.FC = () => {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {filteredSuppliers.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
-            </h3>
-            <p className="text-gray-600">
-              {searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača koristeći gumb iznad'}
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
+            description={searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača koristeći gumb iznad'}
+          />
         ) : (
           <>
             <div className="divide-y divide-gray-200">
@@ -148,13 +95,11 @@ const AccountingSuppliers: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
-                      {supplier.source === 'retail' ? (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full">Retail</span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Site</span>
-                      )}
+                      <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
+                        {supplier.source === 'retail' ? 'Retail' : 'Site'}
+                      </Badge>
                       {supplier.supplier_type && (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">{supplier.supplier_type}</span>
+                        <Badge variant="gray" size="sm">{supplier.supplier_type}</Badge>
                       )}
                     </div>
                     <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
@@ -188,27 +133,9 @@ const AccountingSuppliers: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     {supplier.source === 'site' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOpenAddModal(supplier)
-                        }}
-                        className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                        title="Uredi"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                      <Button variant="ghost" size="icon-sm" icon={Edit} title="Uredi" onClick={(e) => { e.stopPropagation(); handleOpenAddModal(supplier) }} />
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(supplier)
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                      title="Obriši"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <Button variant="outline-danger" size="icon-sm" icon={Trash2} title="Obriši" onClick={(e) => { e.stopPropagation(); handleDelete(supplier) }} />
                     <Eye className="w-5 h-5 text-blue-600 ml-2" />
                   </div>
                 </div>

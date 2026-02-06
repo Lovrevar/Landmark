@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { X, DollarSign } from 'lucide-react'
 import DateInput from '../Common/DateInput'
 import CurrencyInput from '../Common/CurrencyInput'
 import { useBankInvoiceData } from './hooks/useBankInvoiceData'
 import InvoicePreview from './components/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from './types/bankInvoiceTypes'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../ui'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false)
@@ -130,46 +130,27 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const calc = calculateTotal()
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-xl font-bold text-gray-900">Novi Račun Banka</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={true} onClose={onClose} size="md">
+      <Modal.Header title="Novi Račun Banka" onClose={onClose} />
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <Modal.Body>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tip računa *
-              </label>
-              <select
+            <FormField label="Tip računa" required>
+              <Select
                 value={formData.invoice_type}
                 onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
                 <option value="INCOMING_BANK">Ulazni</option>
                 <option value="OUTGOING_BANK">Izlazni</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Moja firma *
-              </label>
-              <select
+            <FormField label="Moja firma" required>
+              <Select
                 value={formData.company_id}
                 onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi firmu</option>
@@ -178,17 +159,13 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                     {company.name}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Banka *
-              </label>
-              <select
+            <FormField label="Banka" required>
+              <Select
                 value={formData.bank_id}
                 onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi banku</option>
@@ -197,17 +174,16 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                     {bank.name} {bank.oib && `(${bank.oib})`}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kredit (opcionalno)
-              </label>
-              <select
+            <FormField
+              label="Kredit (opcionalno)"
+              helperText={formData.bank_id && credits.length === 0 ? 'Nema dostupnih kredita za ovu banku' : undefined}
+            >
+              <Select
                 value={formData.bank_credit_id}
                 onChange={(e) => setFormData({ ...formData, bank_credit_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 disabled={!formData.bank_id || credits.length === 0}
               >
                 <option value="">Bez kredita</option>
@@ -216,80 +192,56 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                     {credit.credit_name}
                   </option>
                 ))}
-              </select>
-              {formData.bank_id && credits.length === 0 && (
-                <p className="text-sm text-gray-500 mt-1">Nema dostupnih kredita za ovu banku</p>
-              )}
-            </div>
+              </Select>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Broj računa *
-              </label>
-              <input
+            <FormField label="Broj računa" required>
+              <Input
                 type="text"
                 value={formData.invoice_number}
                 onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="npr. INV-2024-001"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Poziv na broj
-              </label>
-              <input
+            <FormField label="Poziv na broj">
+              <Input
                 type="text"
                 value={formData.reference_number}
                 onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="HR12-3456-7890"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                IBAN
-              </label>
-              <input
+            <FormField label="IBAN">
+              <Input
                 type="text"
                 value={formData.iban}
                 onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="HR1234567890123456789"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Datum izdavanja *
-              </label>
+            <FormField label="Datum izdavanja" required>
               <DateInput
                 value={formData.issue_date}
                 onChange={(value) => setFormData({ ...formData, issue_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Datum dospjeća *
-              </label>
+            <FormField label="Datum dospjeća" required>
               <DateInput
                 value={formData.due_date}
                 onChange={(value) => setFormData({ ...formData, due_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Osnovica PDV 25% (€)
-              </label>
+            <FormField label="Osnovica PDV 25% (€)">
               <CurrencyInput
                 value={formData.base_amount_1}
                 onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
@@ -297,12 +249,9 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Osnovica PDV 13% (€)
-              </label>
+            <FormField label="Osnovica PDV 13% (€)">
               <CurrencyInput
                 value={formData.base_amount_2}
                 onChange={(value) => setFormData({ ...formData, base_amount_2: value })}
@@ -310,12 +259,9 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Osnovica PDV 5% (€)
-              </label>
+            <FormField label="Osnovica PDV 5% (€)">
               <CurrencyInput
                 value={formData.base_amount_4}
                 onChange={(value) => setFormData({ ...formData, base_amount_4: value })}
@@ -323,12 +269,9 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Osnovica PDV 0% (€)
-              </label>
+            <FormField label="Osnovica PDV 0% (€)">
               <CurrencyInput
                 value={formData.base_amount_3}
                 onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
@@ -336,60 +279,52 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
-            </div>
+            </FormField>
 
             <InvoicePreview formData={formData} calc={calc} />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kategorija *
-              </label>
-              <select
+            <FormField label="Kategorija" required>
+              <Select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               >
                 <option value="">Odaberi kategoriju</option>
                 {invoiceCategories.map(cat => (
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Opis
-            </label>
-            <textarea
+          <FormField label="Opis">
+            <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Dodatni opis računa..."
             />
-          </div>
+          </FormField>
 
           <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Odustani
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="success"
+              loading={loading}
             >
               {loading ? 'Kreiranje...' : 'Kreiraj račun'}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </Modal.Body>
+    </Modal>
   )
 }
 
