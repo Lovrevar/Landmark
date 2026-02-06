@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, DollarSign, AlertCircle, Plus, Edit2, Trash2, X } from 'lucide-react'
+import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { PageHeader, LoadingSpinner, StatGrid } from '../../ui'
+import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
 
 interface BankCredit {
   id: string
@@ -252,10 +252,11 @@ const CreditsManagement: React.FC = () => {
       />
 
       {credits.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">Nema evidentiranih kredita</p>
-        </div>
+        <EmptyState
+          icon={CreditCard}
+          title="Nema evidentiranih kredita"
+          description="Dodajte prvi kredit putem upravljanja bankama"
+        />
       ) : (
         <div className="space-y-4">
           {credits.map((credit) => {
@@ -289,9 +290,13 @@ const CreditsManagement: React.FC = () => {
                           <h3 className="text-xl font-semibold text-gray-900">
                             {credit.credit_name || 'Unnamed Credit'}
                           </h3>
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(credit.status)}`}>
+                          <Badge variant={
+                            credit.status.toLowerCase() === 'active' ? 'green' :
+                            credit.status.toLowerCase() === 'pending' ? 'yellow' :
+                            credit.status.toLowerCase() === 'closed' ? 'gray' : 'blue'
+                          }>
                             {credit.status}
-                          </span>
+                          </Badge>
                         </div>
                         <p className="text-gray-600 mt-1">
                           {credit.bank?.name || 'Unknown Bank'}
@@ -304,13 +309,9 @@ const CreditsManagement: React.FC = () => {
                         <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                         <p className="text-sm text-gray-600">Credit Amount</p>
                       </div>
-                      <button
-                        onClick={() => openAllocationModal(credit)}
-                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
+                      <Button variant="success" icon={Plus} onClick={() => openAllocationModal(credit)}>
                         Namjena kredita
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -513,95 +514,59 @@ const CreditsManagement: React.FC = () => {
         </div>
       )}
 
-      {showAllocationModal && selectedCredit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900">Nova namjena kredita</h3>
-              <button
-                onClick={() => setShowAllocationModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+      <Modal show={showAllocationModal && !!selectedCredit} onClose={() => setShowAllocationModal(false)} size="sm">
+        <Modal.Header title="Nova namjena kredita" onClose={() => setShowAllocationModal(false)} />
+
+        <form onSubmit={handleCreateAllocation}>
+          <Modal.Body>
+            {selectedCredit && (
+              <div>
+                <p className="text-sm font-medium text-gray-700">Credit: {selectedCredit.credit_name}</p>
+                <p className="text-sm text-gray-500">
+                  Unallocated: {(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
+                </p>
+              </div>
+            )}
+
+            <FormField label="Project" helperText="Ostavi prazno za OPEX">
+              <Select
+                value={allocationForm.project_id}
+                onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
               >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+                <option value="">OPEX (Bez projekta)</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
 
-            <form onSubmit={handleCreateAllocation} className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Credit: {selectedCredit.credit_name}
-                  </label>
-                  <p className="text-sm text-gray-500">
-                    Unallocated: €{(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
-                  </p>
-                </div>
+            <FormField label="Allocated Amount" required>
+              <Input
+                type="number"
+                value={allocationForm.allocated_amount}
+                onChange={(e) => setAllocationForm({ ...allocationForm, allocated_amount: parseFloat(e.target.value) || 0 })}
+                min="0"
+                step="0.01"
+              />
+            </FormField>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Project <span className="text-gray-400">(ostavi prazno za OPEX)</span>
-                  </label>
-                  <select
-                    value={allocationForm.project_id}
-                    onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">OPEX (Bez projekta)</option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <FormField label="Description">
+              <Textarea
+                value={allocationForm.description}
+                onChange={(e) => setAllocationForm({ ...allocationForm, description: e.target.value })}
+                rows={3}
+              />
+            </FormField>
+          </Modal.Body>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Allocated Amount (€) *
-                  </label>
-                  <input
-                    type="number"
-                    value={allocationForm.allocated_amount}
-                    onChange={(e) => setAllocationForm({ ...allocationForm, allocated_amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={allocationForm.description}
-                    onChange={(e) => setAllocationForm({ ...allocationForm, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowAllocationModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Create Allocation
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          <Modal.Footer>
+            <Button variant="secondary" type="button" onClick={() => setShowAllocationModal(false)}>Cancel</Button>
+            <Button variant="primary" type="submit">Create Allocation</Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
     </div>
   )
 }

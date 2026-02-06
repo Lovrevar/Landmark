@@ -4,18 +4,15 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle,
-  X,
   Calendar,
   DollarSign,
-  Building2,
   Filter,
   Eye,
   EyeOff,
-  TrendingUp,
-  AlertCircle
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
+import { LoadingSpinner, Badge, Button, EmptyState } from '../../ui'
 import {
   fetchPaymentNotifications,
   calculateNotificationStats,
@@ -185,11 +182,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading payment notifications...</div>
-      </div>
-    )
+    return <LoadingSpinner size="lg" message="Loading payment notifications..." />
   }
 
   return (
@@ -200,13 +193,13 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
             <h2 className="text-2xl font-bold text-gray-900">Payment Notifications</h2>
             <p className="text-gray-600 mt-1">Scheduled bank credit repayments and subcontractor milestone payments</p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            icon={showDismissed ? Eye : EyeOff}
             onClick={() => setShowDismissed(!showDismissed)}
-            className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
           >
-            {showDismissed ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
             {showDismissed ? 'Hide' : 'Show'} Dismissed
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -302,11 +295,11 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
       </div>
 
       {filteredNotifications.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
-          <p className="text-gray-600">No payment notifications match your current filter.</p>
-        </div>
+        <EmptyState
+          icon={CheckCircle}
+          title="All Clear!"
+          description="No payment notifications match your current filter."
+        />
       ) : (
         <div className="space-y-3">
           {filteredNotifications.map((notification) => {
@@ -333,24 +326,21 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                             {notification.payment_source === 'bank' ? notification.bank_name : notification.subcontractor_name}
                           </h3>
                           {notification.payment_source === 'bank' ? (
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              notification.credit_type === 'construction_loan' ? 'bg-blue-100 text-blue-800' :
-                              notification.credit_type === 'term_loan' ? 'bg-green-100 text-green-800' :
-                              notification.credit_type === 'line_of_credit' ? 'bg-purple-100 text-purple-800' :
-                              'bg-orange-100 text-orange-800'
-                            }`}>
+                            <Badge variant={
+                              notification.credit_type === 'construction_loan' ? 'blue' :
+                              notification.credit_type === 'term_loan' ? 'green' :
+                              'orange'
+                            } size="sm">
                               {notification.credit_type?.replace('_', ' ').toUpperCase()}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
-                              SUBCONTRACTOR
-                            </span>
+                            <Badge variant="orange" size="sm">SUBCONTRACTOR</Badge>
                           )}
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
+                          <Badge variant="gray" size="sm">
                             {getNotificationTypeLabel(notification.notification_type)}
                             {notification.payment_source === 'bank' && ` #${notification.payment_number}`}
                             {notification.payment_source === 'subcontractor' && ` (${notification.milestone_percentage}%)`}
-                          </span>
+                          </Badge>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-2">
@@ -386,46 +376,44 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                         </div>
 
                         <div className="flex items-center space-x-2 mt-3">
-                          <button
-                            onClick={() => {
-                              if (onPaymentClick) {
-                                onPaymentClick(notification)
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
+                          <Button
+                            variant="success"
+                            size="sm"
+                            icon={DollarSign}
+                            onClick={() => onPaymentClick?.(notification)}
                           >
-                            <DollarSign className="w-4 h-4 mr-1" />
                             Record Payment
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button
+                            variant="primary"
+                            size="sm"
                             onClick={() => setExpandedNotification(isExpanded ? null : notification.id)}
-                            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200"
                           >
                             {isExpanded ? 'Hide' : 'View'} Details
-                          </button>
+                          </Button>
 
                           {notification.status !== 'dismissed' && notification.status !== 'completed' && (
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDismiss(notification)}
-                              className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors duration-200"
                             >
                               {notification.payment_source === 'subcontractor' ? 'Mark Complete' : 'Dismiss'}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
                     </div>
 
                     <div className="ml-4">
-                      <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${
-                        notification.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                        notification.status === 'pending' ? 'bg-blue-100 text-blue-800' :
-                        notification.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <Badge variant={
+                        notification.status === 'overdue' ? 'red' :
+                        notification.status === 'pending' ? 'blue' :
+                        notification.status === 'completed' ? 'green' : 'gray'
+                      }>
                         {notification.status.toUpperCase()}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
 

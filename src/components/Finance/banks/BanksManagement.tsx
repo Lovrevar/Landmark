@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../../../lib/supabase'
-import { Building2, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, AlertTriangle, CheckCircle, CreditCard as Edit2, Trash2, Eye, X, CreditCard, Percent, Clock } from 'lucide-react'
+import { Plus, Phone, Mail, CreditCard as Edit2, Trash2, Eye, CreditCard } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { PageHeader, LoadingSpinner } from '../../ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]
@@ -65,16 +65,6 @@ const BanksManagement: React.FC = () => {
     fetchData()
   }, [])
 
-  useEffect(() => {
-    if (showBankForm || showCreditForm || selectedBank) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showBankForm, showCreditForm, selectedBank])
 
   const fetchData = async () => {
     setLoading(true)
@@ -532,24 +522,6 @@ const BanksManagement: React.FC = () => {
     }
   }
 
-  const getCreditTypeColor = (type: string) => {
-    switch (type) {
-      case 'construction_loan': return 'bg-blue-100 text-blue-800'
-      case 'term_loan': return 'bg-green-100 text-green-800'
-      case 'line_of_credit': return 'bg-purple-100 text-purple-800'
-      case 'bridge_loan': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'paid': return 'bg-gray-100 text-gray-800'
-      case 'defaulted': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   if (loading) {
     return <LoadingSpinner message="Loading banks..." />
@@ -562,20 +534,8 @@ const BanksManagement: React.FC = () => {
         description="Manage bank partnerships and credit facilities"
         actions={
           <div className="flex space-x-3">
-            <button
-              onClick={() => setShowBankForm(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Bank
-            </button>
-            <button
-              onClick={() => setShowCreditForm(true)}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Credit
-            </button>
+            <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Bank</Button>
+            <Button icon={Plus} variant="success" onClick={() => setShowCreditForm(true)}>Add Credit</Button>
           </div>
         }
       />
@@ -595,33 +555,24 @@ const BanksManagement: React.FC = () => {
                 <p className="text-xs text-gray-500">{bank.contact_email}</p>
               </div>
               <div className="flex space-x-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedBank(bank)
-                  }}
-                  className="p-1 text-gray-400 hover:text-blue-600"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleEditBank(bank)
-                  }}
-                  className="p-1 text-gray-400 hover:text-green-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteBank(bank.id)
-                  }}
-                  className="p-1 text-gray-400 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Eye}
+                  onClick={(e) => { e.stopPropagation(); setSelectedBank(bank) }}
+                />
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Edit2}
+                  onClick={(e) => { e.stopPropagation(); handleEditBank(bank) }}
+                />
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Trash2}
+                  onClick={(e) => { e.stopPropagation(); deleteBank(bank.id) }}
+                />
               </div>
             </div>
 
@@ -674,393 +625,278 @@ const BanksManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Bank Form Modal */}
-      {showBankForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingBank ? 'Edit Bank' : 'Add New Bank'}
-                </h3>
-                <button
-                  onClick={resetBankForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+      <Modal show={showBankForm} onClose={resetBankForm} size="lg">
+        <Modal.Header title={editingBank ? 'Edit Bank' : 'Add New Bank'} onClose={resetBankForm} />
+        <Modal.Body>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <FormField label="Bank Name" required>
+                <Input
+                  type="text"
+                  value={newBank.name}
+                  onChange={(e) => setNewBank({ ...newBank, name: e.target.value })}
+                />
+              </FormField>
             </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name *</label>
-                  <input
-                    type="text"
-                    value={newBank.name}
-                    onChange={(e) => setNewBank({ ...newBank, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
-                  <input
-                    type="text"
-                    value={newBank.contact_person}
-                    onChange={(e) => setNewBank({ ...newBank, contact_person: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
-                  <input
-                    type="email"
-                    value={newBank.contact_email}
-                    onChange={(e) => setNewBank({ ...newBank, contact_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
-                  <input
-                    type="tel"
-                    value={newBank.contact_phone}
-                    onChange={(e) => setNewBank({ ...newBank, contact_phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Relationship Start</label>
-                  <input
-                    type="date"
-                    value={newBank.relationship_start}
-                    onChange={(e) => setNewBank({ ...newBank, relationship_start: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Credit Limit (€)</label>
-                  <input
-                    type="number"
-                    value={newBank.total_credit_limit}
-                    onChange={(e) => setNewBank({ ...newBank, total_credit_limit: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Outstanding Debt (€)</label>
-                  <input
-                    type="number"
-                    value={newBank.outstanding_debt}
-                    onChange={(e) => setNewBank({ ...newBank, outstanding_debt: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Funds (€)</label>
-                  <input
-                    type="number"
-                    value={newBank.available_funds}
-                    onChange={(e) => setNewBank({ ...newBank, available_funds: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Interest Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newBank.interest_rate}
-                    onChange={(e) => setNewBank({ ...newBank, interest_rate: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={newBank.notes}
-                    onChange={(e) => setNewBank({ ...newBank, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={resetBankForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingBank ? updateBank : addBank}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {editingBank ? 'Update' : 'Add'} Bank
-                </button>
-              </div>
+            <FormField label="Contact Person">
+              <Input
+                type="text"
+                value={newBank.contact_person}
+                onChange={(e) => setNewBank({ ...newBank, contact_person: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Contact Email">
+              <Input
+                type="email"
+                value={newBank.contact_email}
+                onChange={(e) => setNewBank({ ...newBank, contact_email: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Contact Phone">
+              <Input
+                type="tel"
+                value={newBank.contact_phone}
+                onChange={(e) => setNewBank({ ...newBank, contact_phone: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Relationship Start">
+              <Input
+                type="date"
+                value={newBank.relationship_start}
+                onChange={(e) => setNewBank({ ...newBank, relationship_start: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Total Credit Limit">
+              <Input
+                type="number"
+                value={newBank.total_credit_limit}
+                onChange={(e) => setNewBank({ ...newBank, total_credit_limit: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Outstanding Debt">
+              <Input
+                type="number"
+                value={newBank.outstanding_debt}
+                onChange={(e) => setNewBank({ ...newBank, outstanding_debt: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Available Funds">
+              <Input
+                type="number"
+                value={newBank.available_funds}
+                onChange={(e) => setNewBank({ ...newBank, available_funds: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Interest Rate (%)">
+              <Input
+                type="number"
+                step="0.1"
+                value={newBank.interest_rate}
+                onChange={(e) => setNewBank({ ...newBank, interest_rate: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <div className="md:col-span-2">
+              <FormField label="Notes">
+                <Textarea
+                  value={newBank.notes}
+                  onChange={(e) => setNewBank({ ...newBank, notes: e.target.value })}
+                  rows={3}
+                />
+              </FormField>
             </div>
           </div>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={resetBankForm}>Cancel</Button>
+          <Button onClick={editingBank ? updateBank : addBank}>
+            {editingBank ? 'Update' : 'Add'} Bank
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-      {/* Credit Form Modal */}
-      {showCreditForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">{editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'}</h3>
-                <button
-                  onClick={resetCreditForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 max-h-[calc(90vh-180px)] overflow-y-auto">
-              {(() => {
-                const calculation = calculatePayments()
-                if (calculation) {
-                  return (
-                    <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
-                          <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                          <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
-                          <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-green-700 mb-1">Interest Payment</p>
-                          <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                          <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
-                          <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
-                        <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
-                      </div>
+      <Modal show={showCreditForm} onClose={resetCreditForm} size="lg">
+        <Modal.Header title={editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'} onClose={resetCreditForm} />
+        <Modal.Body>
+          {(() => {
+            const calculation = calculatePayments()
+            if (calculation) {
+              return (
+                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
+                      <p className="text-xl font-bold text-blue-900">{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                      <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
+                      <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
                     </div>
-                  )
-                }
-                return null
-              })()}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank *</label>
-                  <select
-                    value={newCredit.bank_id}
-                    onChange={(e) => setNewCredit({ ...newCredit, bank_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select bank</option>
-                    {banks.map(bank => (
-                      <option key={bank.id} value={bank.id}>
-                        {bank.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Name *</label>
-                  <input
-                    type="text"
-                    value={newCredit.credit_name}
-                    onChange={(e) => setNewCredit({ ...newCredit, credit_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Kozara Construction Loan 2024"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                  <select
-                    value={newCredit.company_id}
-                    onChange={(e) => setNewCredit({ ...newCredit, company_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select company</option>
-                    {companies.map(company => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Type</label>
-                  <select
-                    value={newCredit.credit_type}
-                    onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="construction_loan_senior">Construction Loan</option>
-                    <option value="term_loan_senior">Term Loan</option>
-                    <option value="line_of_credit_senior">Line of Credit - Senior</option>
-                    <option value="line_of_credit_junior">Line of Credit - Junior</option>
-                    <option value="bridge_loan_senior">Bridge Loan</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (€) *</label>
-                  <input
-                    type="number"
-                    value={newCredit.amount}
-                    onChange={(e) => setNewCredit({ ...newCredit, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Interest Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newCredit.interest_rate}
-                    onChange={(e) => setNewCredit({ ...newCredit, interest_rate: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (months)</label>
-                  <input
-                    type="number"
-                    value={newCredit.grace_period}
-                    onChange={(e) => setNewCredit({ ...newCredit, grace_period: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Principal Repayment Type</label>
-                  <select
-                    value={newCredit.principal_repayment_type}
-                    onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="biyearly">Biyearly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">How often to repay principal</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Interest Repayment Type</label>
-                  <select
-                    value={newCredit.interest_repayment_type}
-                    onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="biyearly">Biyearly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">How often to pay interest</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
-                  <input
-                    type="date"
-                    value={newCredit.start_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Maturity Date</label>
-                  <input
-                    type="date"
-                    value={newCredit.maturity_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, maturity_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Usage Expiration Date</label>
-                  <input
-                    type="date"
-                    value={newCredit.usage_expiration_date}
-                    onChange={(e) => setNewCredit({ ...newCredit, usage_expiration_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
-                  <textarea
-                    value={newCredit.purpose}
-                    onChange={(e) => setNewCredit({ ...newCredit, purpose: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="What is this credit facility for?"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={resetCreditForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addCredit}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  Add Credit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bank Details Modal */}
-      {selectedBank && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">{selectedBank.name}</h3>
-                  <p className="text-gray-600 mt-1">{selectedBank.contact_person}</p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    <div className="flex items-center">
-                      <Mail className="w-4 h-4 text-gray-400 mr-1" />
-                      <span className="text-sm text-gray-600">{selectedBank.contact_email}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Phone className="w-4 h-4 text-gray-400 mr-1" />
-                      <span className="text-sm text-gray-600">{selectedBank.contact_phone}</span>
+                    <div>
+                      <p className="text-sm text-green-700 mb-1">Interest Payment</p>
+                      <p className="text-xl font-bold text-green-900">{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                      <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
+                      <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
                     </div>
                   </div>
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+                    <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setSelectedBank(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+              )
+            }
+            return null
+          })()}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Bank" required>
+              <Select
+                value={newCredit.bank_id}
+                onChange={(e) => setNewCredit({ ...newCredit, bank_id: e.target.value })}
+              >
+                <option value="">Select bank</option>
+                {banks.map(bank => (
+                  <option key={bank.id} value={bank.id}>{bank.name}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Credit Name" required>
+              <Input
+                type="text"
+                value={newCredit.credit_name}
+                onChange={(e) => setNewCredit({ ...newCredit, credit_name: e.target.value })}
+                placeholder="e.g., Kozara Construction Loan 2024"
+              />
+            </FormField>
+            <FormField label="Company">
+              <Select
+                value={newCredit.company_id}
+                onChange={(e) => setNewCredit({ ...newCredit, company_id: e.target.value })}
+              >
+                <option value="">Select company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Credit Type">
+              <Select
+                value={newCredit.credit_type}
+                onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
+              >
+                <option value="construction_loan_senior">Construction Loan</option>
+                <option value="term_loan_senior">Term Loan</option>
+                <option value="line_of_credit_senior">Line of Credit - Senior</option>
+                <option value="line_of_credit_junior">Line of Credit - Junior</option>
+                <option value="bridge_loan_senior">Bridge Loan</option>
+              </Select>
+            </FormField>
+            <FormField label="Amount" required>
+              <Input
+                type="number"
+                value={newCredit.amount}
+                onChange={(e) => setNewCredit({ ...newCredit, amount: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Interest Rate (%)">
+              <Input
+                type="number"
+                step="0.1"
+                value={newCredit.interest_rate}
+                onChange={(e) => setNewCredit({ ...newCredit, interest_rate: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Grace Period (months)">
+              <Input
+                type="number"
+                value={newCredit.grace_period}
+                onChange={(e) => setNewCredit({ ...newCredit, grace_period: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+              />
+            </FormField>
+            <FormField label="Principal Repayment Type" helperText="How often to repay principal">
+              <Select
+                value={newCredit.principal_repayment_type}
+                onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as any })}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="biyearly">Biyearly</option>
+                <option value="yearly">Yearly</option>
+              </Select>
+            </FormField>
+            <FormField label="Interest Repayment Type" helperText="How often to pay interest">
+              <Select
+                value={newCredit.interest_repayment_type}
+                onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as any })}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="biyearly">Biyearly</option>
+                <option value="yearly">Yearly</option>
+              </Select>
+            </FormField>
+            <FormField label="Start Date" required>
+              <Input
+                type="date"
+                value={newCredit.start_date}
+                onChange={(e) => setNewCredit({ ...newCredit, start_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Maturity Date">
+              <Input
+                type="date"
+                value={newCredit.maturity_date}
+                onChange={(e) => setNewCredit({ ...newCredit, maturity_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Usage Expiration Date">
+              <Input
+                type="date"
+                value={newCredit.usage_expiration_date}
+                onChange={(e) => setNewCredit({ ...newCredit, usage_expiration_date: e.target.value })}
+              />
+            </FormField>
+            <div className="md:col-span-2">
+              <FormField label="Purpose">
+                <Textarea
+                  value={newCredit.purpose}
+                  onChange={(e) => setNewCredit({ ...newCredit, purpose: e.target.value })}
+                  rows={3}
+                  placeholder="What is this credit facility for?"
+                />
+              </FormField>
             </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={resetCreditForm}>Cancel</Button>
+          <Button variant="success" onClick={addCredit}>
+            {editingCredit ? 'Update' : 'Add'} Credit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={!!selectedBank} onClose={() => setSelectedBank(null)} size="xl">
+        {selectedBank && (
+          <>
+            <Modal.Header
+              title={selectedBank.name}
+              subtitle={selectedBank.contact_person}
+              onClose={() => setSelectedBank(null)}
+            />
             
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
+            <Modal.Body>
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 text-gray-400 mr-1" />
+                  <span className="text-sm text-gray-600">{selectedBank.contact_email}</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 text-gray-400 mr-1" />
+                  <span className="text-sm text-gray-600">{selectedBank.contact_phone}</span>
+                </div>
+              </div>
+
               {/* Financial Overview */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -1156,10 +992,11 @@ const BanksManagement: React.FC = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-gray-900 mb-4">Credit Facilities</h4>
                 {selectedBank.credits.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <CreditCard className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No credit facilities with this bank yet</p>
-                  </div>
+                  <EmptyState
+                    icon={CreditCard}
+                    title="No credit facilities"
+                    description="No credit facilities with this bank yet"
+                  />
                 ) : (
                   <div className="space-y-3">
                     {selectedBank.credits.map((credit) => {
@@ -1170,22 +1007,25 @@ const BanksManagement: React.FC = () => {
                         <div key={credit.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCreditTypeColor(credit.credit_type)}`}>
+                              <div className="flex items-center space-x-2 mb-2 flex-wrap gap-y-1">
+                                <Badge variant={
+                                  credit.credit_type === 'construction_loan' ? 'blue' :
+                                  credit.credit_type === 'term_loan' ? 'green' :
+                                  credit.credit_type === 'bridge_loan' ? 'orange' : 'gray'
+                                } size="sm">
                                   {credit.credit_type.replace('_', ' ').toUpperCase()}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  credit.credit_seniority === 'senior' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                                }`}>
+                                </Badge>
+                                <Badge variant={credit.credit_seniority === 'senior' ? 'blue' : 'orange'} size="sm">
                                   {credit.credit_seniority?.toUpperCase() || 'SENIOR'}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(credit.status)}`}>
+                                </Badge>
+                                <Badge variant={
+                                  credit.status === 'active' ? 'green' :
+                                  credit.status === 'defaulted' ? 'red' : 'gray'
+                                } size="sm">
                                   {credit.status.toUpperCase()}
-                                </span>
+                                </Badge>
                                 {isMaturing && (
-                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                    MATURING SOON
-                                  </span>
+                                  <Badge variant="orange" size="sm">MATURING SOON</Badge>
                                 )}
                               </div>
                               <p className="text-sm text-gray-600 mb-2">{credit.purpose}</p>
@@ -1251,21 +1091,9 @@ const BanksManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
                           <div className="pt-3 border-t border-gray-200 flex gap-2">
-                            <button
-                              onClick={() => handleEditCredit(credit)}
-                              className="flex-1 items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                            >
-                              <Edit2 className="w-4 h-4 inline mr-2" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCredit(credit.id)}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <Button icon={Edit2} onClick={() => handleEditCredit(credit)} size="sm">Edit</Button>
+                            <Button icon={Trash2} variant="danger" onClick={() => handleDeleteCredit(credit.id)} size="sm" />
                           </div>
                         </div>
                       )
@@ -1281,10 +1109,10 @@ const BanksManagement: React.FC = () => {
                   <p className="text-gray-700">{selectedBank.notes}</p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+          </>
+        )}
+      </Modal>
 
     </div>
   )

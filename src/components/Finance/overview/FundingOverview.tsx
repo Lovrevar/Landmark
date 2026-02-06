@@ -2,22 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { supabase, Project, ProjectInvestment, Investor, BankCredit, Bank, WirePayment } from '../../../lib/supabase'
 import {
   DollarSign,
-  TrendingUp,
   AlertTriangle,
-  Calendar,
   Users,
   Building2,
   ChevronDown,
   ChevronUp,
   Eye,
-  X,
   Clock,
   CheckCircle,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react'
-import { format, differenceInDays, isPast, isWithinInterval, addDays } from 'date-fns'
-import { PageHeader, LoadingSpinner, StatGrid } from '../../ui'
+import { format, differenceInDays, isPast } from 'date-fns'
+import { PageHeader, LoadingSpinner, StatGrid, Badge, Modal, EmptyState, Table } from '../../ui'
 
 interface FundingSource {
   id: string
@@ -502,9 +499,9 @@ const FundingOverview: React.FC = () => {
                       <h3 className="text-xl font-semibold text-gray-900">{projectSummary.project.name}</h3>
                       {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                       {projectSummary.warnings.length > 0 && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                        <Badge variant="orange" size="sm">
                           {projectSummary.warnings.length} warning{projectSummary.warnings.length > 1 ? 's' : ''}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <p className="text-sm text-gray-600">{projectSummary.project.location}</p>
@@ -589,15 +586,16 @@ const FundingOverview: React.FC = () => {
                                 <Building2 className="w-5 h-5 text-green-600" />
                               )}
                               <h5 className="font-semibold text-gray-900">{source.name}</h5>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                source.type === 'investor' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                              }`}>
+                              <Badge variant={source.type === 'investor' ? 'blue' : 'green'} size="sm">
                                 {source.type.toUpperCase()}
-                              </span>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center space-x-1 ${getStatusColor(source.status)}`}>
-                                {getStatusIcon(source.status)}
-                                <span className="ml-1">{source.status.replace('_', ' ').toUpperCase()}</span>
-                              </span>
+                              </Badge>
+                              <Badge variant={
+                                source.status === 'active' ? 'green' :
+                                source.status === 'expiring_soon' ? 'orange' :
+                                source.status === 'expired' ? 'red' : 'gray'
+                              } size="sm">
+                                {source.status.replace('_', ' ').toUpperCase()}
+                              </Badge>
                             </div>
                           </div>
                           <Eye className="w-5 h-5 text-gray-400" />
@@ -678,106 +676,84 @@ const FundingOverview: React.FC = () => {
         })}
       </div>
 
-      {/* Source Transactions Modal */}
-      {selectedSource && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-3 mb-2">
-                    {selectedSource.type === 'investor' ? (
-                      <Users className="w-6 h-6 text-blue-600" />
-                    ) : (
-                      <Building2 className="w-6 h-6 text-green-600" />
-                    )}
-                    <h3 className="text-2xl font-semibold text-gray-900">{selectedSource.name}</h3>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedSource.type === 'investor' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {selectedSource.type.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-gray-600">Transaction History</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedSource(null)
-                    setTransactions([])
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
+      <Modal
+        show={!!selectedSource}
+        onClose={() => { setSelectedSource(null); setTransactions([]) }}
+        size="xl"
+      >
+        {selectedSource && (
+          <>
+            <Modal.Header
+              title={selectedSource.name}
+              subtitle="Transaction History"
+              onClose={() => { setSelectedSource(null); setTransactions([]) }}
+            />
 
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              {/* Summary */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+            <Modal.Body>
+              <div className="grid grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-blue-700 mb-1">Total Committed</p>
-                  <p className="text-2xl font-bold text-blue-900">€{selectedSource.totalAmount.toLocaleString('hr-HR')}</p>
+                  <p className="text-2xl font-bold text-blue-900">{selectedSource.totalAmount.toLocaleString('hr-HR')}</p>
                 </div>
                 <div className="bg-red-50 p-4 rounded-lg">
                   <p className="text-sm text-red-700 mb-1">Total Spent</p>
-                  <p className="text-2xl font-bold text-red-900">€{selectedSource.spentAmount.toLocaleString('hr-HR')}</p>
+                  <p className="text-2xl font-bold text-red-900">{selectedSource.spentAmount.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-red-600 mt-1">{transactions.length} transactions</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-green-700 mb-1">Available</p>
-                  <p className="text-2xl font-bold text-green-900">€{selectedSource.availableAmount.toLocaleString('hr-HR')}</p>
+                  <p className="text-2xl font-bold text-green-900">{selectedSource.availableAmount.toLocaleString('hr-HR')}</p>
                   <p className="text-xs text-green-600 mt-1">
                     {selectedSource.totalAmount > 0 ? ((selectedSource.availableAmount / selectedSource.totalAmount) * 100).toFixed(1) : '0'}% remaining
                   </p>
                 </div>
               </div>
 
-              {/* Transactions Table */}
-              <h4 className="font-semibold text-gray-900 mb-4">Payments from this Source</h4>
+              <h4 className="font-semibold text-gray-900">Payments from this Source</h4>
               {transactions.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No transactions yet</p>
-                </div>
+                <EmptyState
+                  icon={DollarSign}
+                  title="No transactions yet"
+                  description="Payments from this source will appear here"
+                />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subcontractor</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contract</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Milestone</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                  <Table>
+                    <Table.Head>
+                      <Table.Tr>
+                        <Table.Th>Date</Table.Th>
+                        <Table.Th>Subcontractor</Table.Th>
+                        <Table.Th>Contract</Table.Th>
+                        <Table.Th>Milestone</Table.Th>
+                        <Table.Th align="right">Amount</Table.Th>
+                        <Table.Th>Notes</Table.Th>
+                      </Table.Tr>
+                    </Table.Head>
+                    <Table.Body>
                       {transactions.map((transaction) => (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        <Table.Tr key={transaction.id}>
+                          <Table.Td className="whitespace-nowrap">
                             {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{transaction.subcontractor}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{transaction.contract}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{transaction.milestone || '-'}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-semibold text-red-600">
-                            €{transaction.amount.toLocaleString('hr-HR')}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                          </Table.Td>
+                          <Table.Td>{transaction.subcontractor}</Table.Td>
+                          <Table.Td className="text-gray-600">{transaction.contract}</Table.Td>
+                          <Table.Td className="text-gray-600">{transaction.milestone || '-'}</Table.Td>
+                          <Table.Td align="right" className="font-semibold text-red-600">
+                            {transaction.amount.toLocaleString('hr-HR')}
+                          </Table.Td>
+                          <Table.Td className="text-gray-600 max-w-xs truncate">
                             {transaction.notes || '-'}
-                          </td>
-                        </tr>
+                          </Table.Td>
+                        </Table.Tr>
                       ))}
-                    </tbody>
-                  </table>
+                    </Table.Body>
+                  </Table>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+          </>
+        )}
+      </Modal>
     </div>
   )
 }

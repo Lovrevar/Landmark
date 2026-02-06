@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, Investor, ProjectInvestment, Project } from '../../../lib/supabase'
-import { Users, Plus, DollarSign, Calendar, Phone, Mail, TrendingUp, Building2, Target, CreditCard as Edit2, Trash2, Eye, X, PieChart, Briefcase, User, Building } from 'lucide-react'
+import { Plus, Phone, Mail, CreditCard as Edit2, Trash2, Eye, PieChart } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { PageHeader, LoadingSpinner } from '../../ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
 
 interface InvestorWithInvestments extends Investor {
   investments: ProjectInvestment[]
@@ -55,16 +55,6 @@ const InvestorsManagement: React.FC = () => {
     fetchData()
   }, [])
 
-  useEffect(() => {
-    if (showInvestorForm || showInvestmentForm || selectedInvestor) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showInvestorForm, showInvestmentForm, selectedInvestor])
 
   const fetchData = async () => {
     setLoading(true)
@@ -354,34 +344,6 @@ const InvestorsManagement: React.FC = () => {
     setShowInvestorForm(true)
   }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'individual': return <User className="w-4 h-4" />
-      case 'institutional': return <Building className="w-4 h-4" />
-      case 'fund': return <Briefcase className="w-4 h-4" />
-      case 'government': return <Building2 className="w-4 h-4" />
-      default: return <Users className="w-4 h-4" />
-    }
-  }
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'individual': return 'bg-blue-100 text-blue-800'
-      case 'institutional': return 'bg-purple-100 text-purple-800'
-      case 'fund': return 'bg-green-100 text-green-800'
-      case 'government': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getRiskProfileColor = (profile: string) => {
-    switch (profile) {
-      case 'conservative': return 'bg-green-100 text-green-800'
-      case 'moderate': return 'bg-yellow-100 text-yellow-800'
-      case 'aggressive': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   if (loading) {
     return <LoadingSpinner message="Loading investors..." />
@@ -394,20 +356,8 @@ const InvestorsManagement: React.FC = () => {
         description="Manage investor relationships and investment portfolios"
         actions={
           <div className="flex space-x-3">
-            <button
-              onClick={() => setShowInvestorForm(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Investor
-            </button>
-            <button
-              onClick={() => setShowInvestmentForm(true)}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Investment
-            </button>
+            <Button icon={Plus} onClick={() => setShowInvestorForm(true)}>Add Investor</Button>
+            <Button icon={Plus} variant="success" onClick={() => setShowInvestmentForm(true)}>Add Investment</Button>
           </div>
         }
       />
@@ -424,42 +374,36 @@ const InvestorsManagement: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
                   <h3 className="text-lg font-semibold text-gray-900">{investor.name}</h3>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(investor.type)}`}>
-                    {getTypeIcon(investor.type)}
-                    <span className="ml-1">{investor.type.toUpperCase()}</span>
-                  </span>
+                  <Badge variant={
+                    investor.type === 'individual' ? 'blue' :
+                    investor.type === 'fund' ? 'green' :
+                    investor.type === 'government' ? 'orange' : 'gray'
+                  } size="sm">
+                    {investor.type.toUpperCase()}
+                  </Badge>
                 </div>
                 <p className="text-sm text-gray-600">{investor.contact_person}</p>
                 <p className="text-xs text-gray-500">{investor.contact_email}</p>
               </div>
               <div className="flex space-x-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelectedInvestor(investor)
-                  }}
-                  className="p-1 text-gray-400 hover:text-blue-600"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleEditInvestor(investor)
-                  }}
-                  className="p-1 text-gray-400 hover:text-green-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteInvestor(investor.id)
-                  }}
-                  className="p-1 text-gray-400 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Eye}
+                  onClick={(e) => { e.stopPropagation(); setSelectedInvestor(investor) }}
+                />
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Edit2}
+                  onClick={(e) => { e.stopPropagation(); handleEditInvestor(investor) }}
+                />
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  icon={Trash2}
+                  onClick={(e) => { e.stopPropagation(); deleteInvestor(investor.id) }}
+                />
               </div>
             </div>
 
@@ -479,9 +423,12 @@ const InvestorsManagement: React.FC = () => {
             <div className="mb-4">
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-gray-600">Risk Profile</span>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRiskProfileColor(investor.risk_profile)}`}>
+                <Badge variant={
+                  investor.risk_profile === 'conservative' ? 'green' :
+                  investor.risk_profile === 'moderate' ? 'yellow' : 'red'
+                } size="sm">
                   {investor.risk_profile.toUpperCase()}
-                </span>
+                </Badge>
               </div>
             </div>
 
@@ -500,468 +447,341 @@ const InvestorsManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Investor Form Modal */}
-      {showInvestorForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {editingInvestor ? 'Edit Investor' : 'Add New Investor'}
-                </h3>
-                <button
-                  onClick={resetInvestorForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+      <Modal show={showInvestorForm} onClose={resetInvestorForm} size="lg">
+        <Modal.Header title={editingInvestor ? 'Edit Investor' : 'Add New Investor'} onClose={resetInvestorForm} />
+        <Modal.Body>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <FormField label="Investor Name" required>
+                <Input
+                  type="text"
+                  value={newInvestor.name}
+                  onChange={(e) => setNewInvestor({ ...newInvestor, name: e.target.value })}
+                />
+              </FormField>
             </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investor Name *</label>
-                  <input
-                    type="text"
-                    value={newInvestor.name}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investor Type</label>
-                  <select
-                    value={newInvestor.type}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="individual">Individual</option>
-                    <option value="institutional">Institutional</option>
-                    <option value="fund">Investment Fund</option>
-                    <option value="government">Government</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Risk Profile</label>
-                  <select
-                    value={newInvestor.risk_profile}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, risk_profile: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="conservative">Conservative</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="aggressive">Aggressive</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
-                  <input
-                    type="text"
-                    value={newInvestor.contact_person}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, contact_person: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
-                  <input
-                    type="email"
-                    value={newInvestor.contact_email}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, contact_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
-                  <input
-                    type="tel"
-                    value={newInvestor.contact_phone}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, contact_phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Start Date</label>
-                  <input
-                    type="date"
-                    value={newInvestor.investment_start}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, investment_start: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Invested (€)</label>
-                  <input
-                    type="number"
-                    value={newInvestor.total_invested}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, total_invested: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">IRR</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newInvestor.expected_return}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, expected_return: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Sectors</label>
-                  <input
-                    type="text"
-                    value={newInvestor.preferred_sectors}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, preferred_sectors: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Residential, Commercial, Mixed-use"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={newInvestor.notes}
-                    onChange={(e) => setNewInvestor({ ...newInvestor, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={resetInvestorForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingInvestor ? updateInvestor : addInvestor}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {editingInvestor ? 'Update' : 'Add'} Investor
-                </button>
-              </div>
+            <FormField label="Investor Type">
+              <Select
+                value={newInvestor.type}
+                onChange={(e) => setNewInvestor({ ...newInvestor, type: e.target.value as any })}
+              >
+                <option value="individual">Individual</option>
+                <option value="institutional">Institutional</option>
+                <option value="fund">Investment Fund</option>
+                <option value="government">Government</option>
+              </Select>
+            </FormField>
+            <FormField label="Risk Profile">
+              <Select
+                value={newInvestor.risk_profile}
+                onChange={(e) => setNewInvestor({ ...newInvestor, risk_profile: e.target.value as any })}
+              >
+                <option value="conservative">Conservative</option>
+                <option value="moderate">Moderate</option>
+                <option value="aggressive">Aggressive</option>
+              </Select>
+            </FormField>
+            <FormField label="Contact Person">
+              <Input
+                type="text"
+                value={newInvestor.contact_person}
+                onChange={(e) => setNewInvestor({ ...newInvestor, contact_person: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Contact Email">
+              <Input
+                type="email"
+                value={newInvestor.contact_email}
+                onChange={(e) => setNewInvestor({ ...newInvestor, contact_email: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Contact Phone">
+              <Input
+                type="tel"
+                value={newInvestor.contact_phone}
+                onChange={(e) => setNewInvestor({ ...newInvestor, contact_phone: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Investment Start Date">
+              <Input
+                type="date"
+                value={newInvestor.investment_start}
+                onChange={(e) => setNewInvestor({ ...newInvestor, investment_start: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Total Invested">
+              <Input
+                type="number"
+                value={newInvestor.total_invested}
+                onChange={(e) => setNewInvestor({ ...newInvestor, total_invested: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="IRR">
+              <Input
+                type="number"
+                step="0.1"
+                value={newInvestor.expected_return}
+                onChange={(e) => setNewInvestor({ ...newInvestor, expected_return: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <div className="md:col-span-2">
+              <FormField label="Preferred Sectors">
+                <Input
+                  type="text"
+                  value={newInvestor.preferred_sectors}
+                  onChange={(e) => setNewInvestor({ ...newInvestor, preferred_sectors: e.target.value })}
+                  placeholder="e.g., Residential, Commercial, Mixed-use"
+                />
+              </FormField>
+            </div>
+            <div className="md:col-span-2">
+              <FormField label="Notes">
+                <Textarea
+                  value={newInvestor.notes}
+                  onChange={(e) => setNewInvestor({ ...newInvestor, notes: e.target.value })}
+                  rows={3}
+                />
+              </FormField>
             </div>
           </div>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={resetInvestorForm}>Cancel</Button>
+          <Button onClick={editingInvestor ? updateInvestor : addInvestor}>
+            {editingInvestor ? 'Update' : 'Add'} Investor
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-      {/* Investment Form Modal */}
-      {showInvestmentForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">{editingInvestment ? 'Edit Investment' : 'Add New Investment'}</h3>
-                <button
-                  onClick={resetInvestmentForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+      <Modal show={showInvestmentForm} onClose={resetInvestmentForm} size="lg">
+        <Modal.Header title={editingInvestment ? 'Edit Investment' : 'Add New Investment'} onClose={resetInvestmentForm} />
+        <Modal.Body>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Investor" required>
+              <Select
+                value={newInvestment.investor_id}
+                onChange={(e) => setNewInvestment({ ...newInvestment, investor_id: e.target.value })}
+              >
+                <option value="">Select investor</option>
+                {investors.map(investor => (
+                  <option key={investor.id} value={investor.id}>{investor.name}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Project (optional)">
+              <Select
+                value={newInvestment.project_id}
+                onChange={(e) => setNewInvestment({ ...newInvestment, project_id: e.target.value })}
+              >
+                <option value="">No project (refinancing, operation costs, etc.)</option>
+                {projects.map(project => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Investment Type">
+              <Select
+                value={newInvestment.investment_type}
+                onChange={(e) => setNewInvestment({ ...newInvestment, investment_type: e.target.value as any })}
+              >
+                <option value="equity">Equity</option>
+                <option value="loan">Loan</option>
+                <option value="grant">Grant</option>
+                <option value="bond">Bond</option>
+                <option value="Operation Cost Loan">Operation Cost Loan</option>
+                <option value="Refinancing Loan">Refinancing Loan</option>
+              </Select>
+            </FormField>
+            <FormField label="Amount" required>
+              <Input
+                type="number"
+                value={newInvestment.amount}
+                onChange={(e) => setNewInvestment({ ...newInvestment, amount: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Percentage Stake (%)">
+              <Input
+                type="number"
+                step="0.1"
+                value={newInvestment.percentage_stake}
+                onChange={(e) => setNewInvestment({ ...newInvestment, percentage_stake: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="IRR (%)">
+              <Input
+                type="number"
+                step="0.1"
+                value={newInvestment.expected_return}
+                onChange={(e) => setNewInvestment({ ...newInvestment, expected_return: parseFloat(e.target.value) || 0 })}
+              />
+            </FormField>
+            <FormField label="Payment Schedule">
+              <Select
+                value={newInvestment.payment_schedule}
+                onChange={(e) => setNewInvestment({ ...newInvestment, payment_schedule: e.target.value as 'monthly' | 'yearly' })}
+              >
+                <option value="yearly">Yearly</option>
+                <option value="monthly">Monthly</option>
+              </Select>
+            </FormField>
+            <FormField
+              label={`${newInvestment.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow`}
+              helperText={`${newInvestment.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period`}
+            >
+              <Input
+                type="text"
+                value={(() => {
+                  if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
+                    return 'Enter amount, dates, and IRR to calculate'
+                  }
+                  const principal = newInvestment.amount
+                  const annualRate = newInvestment.expected_return / 100
+                  const gracePeriodYears = newInvestment.grace_period / 365
+                  const startDate = new Date(newInvestment.investment_date)
+                  const maturityDate = new Date(newInvestment.maturity_date)
+                  const totalYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                  if (totalYears <= 0) return 'Invalid date range'
+                  const repaymentYears = Math.max(0.1, totalYears - gracePeriodYears)
+                  if (annualRate === 0) {
+                    const payment = newInvestment.payment_schedule === 'yearly'
+                      ? principal / repaymentYears
+                      : principal / (repaymentYears * 12)
+                    return `${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  }
+                  let payment
+                  if (newInvestment.payment_schedule === 'yearly') {
+                    payment = (principal * annualRate * Math.pow(1 + annualRate, repaymentYears)) /
+                             (Math.pow(1 + annualRate, repaymentYears) - 1)
+                  } else {
+                    const monthlyRate = annualRate / 12
+                    const totalMonths = repaymentYears * 12
+                    payment = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
+                             (Math.pow(1 + monthlyRate, totalMonths) - 1)
+                  }
+                  return `${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                })()}
+                readOnly
+                className="bg-gray-50"
+              />
+            </FormField>
+            <FormField label="Money Multiple" helperText="Total return multiple">
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                {(() => {
+                  if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
+                    return 'Enter amount, dates, and IRR to calculate'
+                  }
+                  const principal = newInvestment.amount
+                  const annualRate = newInvestment.expected_return / 100
+                  const startDate = new Date(newInvestment.investment_date)
+                  const maturityDate = new Date(newInvestment.maturity_date)
+                  const years = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+                  if (years <= 0) return 'Invalid date range'
+                  const totalReturn = principal * Math.pow(1 + annualRate, years)
+                  const moneyMultiple = totalReturn / principal
+                  return `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)`
+                })()}
               </div>
+            </FormField>
+            <FormField label="Investment Date" required>
+              <Input
+                type="date"
+                value={newInvestment.investment_date}
+                onChange={(e) => setNewInvestment({ ...newInvestment, investment_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Maturity Date">
+              <Input
+                type="date"
+                value={newInvestment.maturity_date}
+                onChange={(e) => setNewInvestment({ ...newInvestment, maturity_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Usage Expiration Date">
+              <Input
+                type="date"
+                value={newInvestment.usage_expiration_date}
+                onChange={(e) => setNewInvestment({ ...newInvestment, usage_expiration_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Grace Period (months)">
+              <Input
+                type="number"
+                value={newInvestment.grace_period}
+                onChange={(e) => setNewInvestment({ ...newInvestment, grace_period: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+              />
+            </FormField>
+            <FormField label="Mortgages">
+              <Input
+                type="number"
+                step="0.01"
+                value={newInvestment.mortgages_insurance}
+                onChange={(e) => setNewInvestment({ ...newInvestment, mortgages_insurance: parseFloat(e.target.value) || 0 })}
+                placeholder="Amount of mortgages/insurance"
+              />
+            </FormField>
+            <div className="md:col-span-2">
+              <FormField label="Mortages">
+                <Textarea
+                  value={newInvestment.terms}
+                  onChange={(e) => setNewInvestment({ ...newInvestment, terms: e.target.value })}
+                  rows={3}
+                  placeholder="Terms and conditions of the investment..."
+                />
+              </FormField>
             </div>
-            
-            <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investor *</label>
-                  <select
-                    value={newInvestment.investor_id}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, investor_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select investor</option>
-                    {investors.map(investor => (
-                      <option key={investor.id} value={investor.id}>
-                        {investor.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project (optional)</label>
-                  <select
-                    value={newInvestment.project_id}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, project_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">No project (refinancing, operation costs, etc.)</option>
-                    {projects.map(project => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Type</label>
-                  <select
-                    value={newInvestment.investment_type}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, investment_type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="equity">Equity</option>
-                    <option value="loan">Loan</option>
-                    <option value="grant">Grant</option>
-                    <option value="bond">Bond</option>
-                    <option value="Operation Cost Loan">Operation Cost Loan</option>
-                    <option value="Refinancing Loan">Refinancing Loan</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount (€) *</label>
-                  <input
-                    type="number"
-                    value={newInvestment.amount}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Percentage Stake (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newInvestment.percentage_stake}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, percentage_stake: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">IRR (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newInvestment.expected_return}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, expected_return: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Schedule</label>
-                  <select
-                    value={newInvestment.payment_schedule}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, payment_schedule: e.target.value as 'monthly' | 'yearly' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="yearly">Yearly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {newInvestment.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow (€)
-                  </label>
-                  <input
-                    type="text"
-                    value={(() => {
-                      if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
-                        return 'Enter amount, dates, and IRR to calculate'
-                      }
-                      
-                      const principal = newInvestment.amount
-                      const annualRate = newInvestment.expected_return / 100
-                      const gracePeriodYears = newInvestment.grace_period / 365
-                      const startDate = new Date(newInvestment.investment_date)
-                      const maturityDate = new Date(newInvestment.maturity_date)
-                      const totalYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-                      
-                      if (totalYears <= 0) return 'Invalid date range'
-                      
-                      const repaymentYears = Math.max(0.1, totalYears - gracePeriodYears)
-                      
-                      if (annualRate === 0) {
-                        const payment = newInvestment.payment_schedule === 'yearly' 
-                          ? principal / repaymentYears
-                          : principal / (repaymentYears * 12)
-                        return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      }
-                      
-                      let payment
-                      if (newInvestment.payment_schedule === 'yearly') {
-                        payment = (principal * annualRate * Math.pow(1 + annualRate, repaymentYears)) / 
-                                 (Math.pow(1 + annualRate, repaymentYears) - 1)
-                      } else {
-                        const monthlyRate = annualRate / 12
-                        const totalMonths = repaymentYears * 12
-                        payment = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / 
-                                 (Math.pow(1 + monthlyRate, totalMonths) - 1)
-                      }
-                      
-                      return `€${payment.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                    })()}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {newInvestment.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Money Multiple</label>
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                    {(() => {
-                      if (!newInvestment.amount || !newInvestment.investment_date || !newInvestment.maturity_date || !newInvestment.expected_return) {
-                        return 'Enter amount, dates, and IRR to calculate'
-                      }
-                      
-                      const principal = newInvestment.amount
-                      const annualRate = newInvestment.expected_return / 100
-                      const startDate = new Date(newInvestment.investment_date)
-                      const maturityDate = new Date(newInvestment.maturity_date)
-                      const years = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-                      
-                      if (years <= 0) return 'Invalid date range'
-                      
-                      // Calculate total return using compound interest
-                      const totalReturn = principal * Math.pow(1 + annualRate, years)
-                      const moneyMultiple = totalReturn / principal
-                      
-                      return `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)`
-                    })()}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Total return multiple
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Date *</label>
-                  <input
-                    type="date"
-                    value={newInvestment.investment_date}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, investment_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Maturity Date</label>
-                  <input
-                    type="date"
-                    value={newInvestment.maturity_date}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, maturity_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Usage Expiration Date</label>
-                  <input
-                    type="date"
-                    value={newInvestment.usage_expiration_date}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, usage_expiration_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (months)</label>
-                  <input
-                    type="number"
-                    value={newInvestment.grace_period}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, grace_period: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortgages (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={newInvestment.mortgages_insurance}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, mortgages_insurance: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Amount of mortgages/insurance"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mortages</label>
-                  <textarea
-                    value={newInvestment.terms}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, terms: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Terms and conditions of the investment..."
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={newInvestment.notes}
-                    onChange={(e) => setNewInvestment({ ...newInvestment, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Additional notes about this investment..."
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={resetInvestmentForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addInvestment}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  Add Investment
-                </button>
-              </div>
+            <div className="md:col-span-2">
+              <FormField label="Notes">
+                <Textarea
+                  value={newInvestment.notes}
+                  onChange={(e) => setNewInvestment({ ...newInvestment, notes: e.target.value })}
+                  rows={3}
+                  placeholder="Additional notes about this investment..."
+                />
+              </FormField>
             </div>
           </div>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={resetInvestmentForm}>Cancel</Button>
+          <Button variant="success" onClick={addInvestment}>
+            {editingInvestment ? 'Update' : 'Add'} Investment
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-      {/* Investor Details Modal */}
-      {selectedInvestor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-2xl font-semibold text-gray-900">{selectedInvestor.name}</h3>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(selectedInvestor.type)}`}>
-                      {getTypeIcon(selectedInvestor.type)}
-                      <span className="ml-1">{selectedInvestor.type.toUpperCase()}</span>
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRiskProfileColor(selectedInvestor.risk_profile)}`}>
-                      {selectedInvestor.risk_profile.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mt-1">{selectedInvestor.contact_person}</p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    <div className="flex items-center">
-                      <Mail className="w-4 h-4 text-gray-400 mr-1" />
-                      <span className="text-sm text-gray-600">{selectedInvestor.contact_email}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Phone className="w-4 h-4 text-gray-400 mr-1" />
-                      <span className="text-sm text-gray-600">{selectedInvestor.contact_phone}</span>
-                    </div>
-                  </div>
+      <Modal show={!!selectedInvestor} onClose={() => setSelectedInvestor(null)} size="xl">
+        {selectedInvestor && (
+          <>
+            <Modal.Header
+              title={selectedInvestor.name}
+              subtitle={selectedInvestor.contact_person}
+              onClose={() => setSelectedInvestor(null)}
+            />
+            <Modal.Body>
+              <div className="flex items-center space-x-4 mb-4 flex-wrap gap-y-2">
+                <Badge variant={
+                  selectedInvestor.type === 'individual' ? 'blue' :
+                  selectedInvestor.type === 'fund' ? 'green' :
+                  selectedInvestor.type === 'government' ? 'orange' : 'gray'
+                } size="sm">
+                  {selectedInvestor.type.toUpperCase()}
+                </Badge>
+                <Badge variant={
+                  selectedInvestor.risk_profile === 'conservative' ? 'green' :
+                  selectedInvestor.risk_profile === 'moderate' ? 'yellow' : 'red'
+                } size="sm">
+                  {selectedInvestor.risk_profile.toUpperCase()}
+                </Badge>
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 text-gray-400 mr-1" />
+                  <span className="text-sm text-gray-600">{selectedInvestor.contact_email}</span>
                 </div>
-                <button
-                  onClick={() => setSelectedInvestor(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 text-gray-400 mr-1" />
+                  <span className="text-sm text-gray-600">{selectedInvestor.contact_phone}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
               {/* Investment Overview */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="bg-green-50 p-4 rounded-lg">
@@ -1050,10 +870,11 @@ const InvestorsManagement: React.FC = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-gray-900 mb-4">Investment Portfolio</h4>
                 {selectedInvestor.investments.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <PieChart className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No investments with this investor yet</p>
-                  </div>
+                  <EmptyState
+                    icon={PieChart}
+                    title="No investments"
+                    description="No investments with this investor yet"
+                  />
                 ) : (
                   <div className="space-y-3">
                     {selectedInvestor.investments.map((investment) => {
@@ -1067,29 +888,23 @@ const InvestorsManagement: React.FC = () => {
                                 <p className="font-medium text-gray-900">
                                   {investment.projects?.name || 'Unknown Project'}
                                 </p>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  investment.investment_type === 'equity' ? 'bg-green-100 text-green-800' :
-                                  investment.investment_type === 'loan' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-purple-100 text-purple-800'
-                                }`}>
+                                <Badge variant={
+                                  investment.investment_type === 'equity' ? 'green' :
+                                  investment.investment_type === 'loan' ? 'blue' : 'gray'
+                                } size="sm">
                                   {investment.investment_type.toUpperCase()}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  investment.credit_seniority === 'senior' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                                }`}>
+                                </Badge>
+                                <Badge variant={investment.credit_seniority === 'senior' ? 'blue' : 'orange'} size="sm">
                                   {investment.credit_seniority?.toUpperCase() || 'SENIOR'}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  investment.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  investment.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
+                                </Badge>
+                                <Badge variant={
+                                  investment.status === 'active' ? 'green' :
+                                  investment.status === 'completed' ? 'gray' : 'red'
+                                } size="sm">
                                   {investment.status.toUpperCase()}
-                                </span>
+                                </Badge>
                                 {isMaturing && (
-                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                    MATURING SOON
-                                  </span>
+                                  <Badge variant="orange" size="sm">MATURING SOON</Badge>
                                 )}
                               </div>
                               <p className="text-sm text-gray-600 mb-2">{investment.terms}</p>
@@ -1154,21 +969,9 @@ const InvestorsManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
                           <div className="pt-3 mt-3 border-t border-gray-200 flex gap-2">
-                            <button
-                              onClick={() => handleEditInvestment(investment)}
-                              className="flex-1 items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                            >
-                              <Edit2 className="w-4 h-4 inline mr-2" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteInvestment(investment.id)}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <Button icon={Edit2} onClick={() => handleEditInvestment(investment)} size="sm">Edit</Button>
+                            <Button icon={Trash2} variant="danger" onClick={() => handleDeleteInvestment(investment.id)} size="sm" />
                           </div>
                         </div>
                       )
@@ -1184,10 +987,10 @@ const InvestorsManagement: React.FC = () => {
                   <p className="text-gray-700">{selectedInvestor.notes}</p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+          </>
+        )}
+      </Modal>
 
     </div>
   )
