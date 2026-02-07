@@ -215,10 +215,20 @@ export const usePayments = () => {
     const invoice = payment.accounting_invoices
     if (!invoice) return false
 
+    const myCompanyName = invoice.companies?.name || ''
+    const companySupplierName =
+      invoice.bank_company?.name ||
+      invoice.office_suppliers?.name ||
+      invoice.subcontractors?.name ||
+      (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '') ||
+      ''
+
     const matchesSearch =
       invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (payment.reference_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.description.toLowerCase().includes(searchTerm.toLowerCase())
+      payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      myCompanyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      companySupplierName.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesMethod = filterMethod === 'ALL' || payment.payment_method === filterMethod
 

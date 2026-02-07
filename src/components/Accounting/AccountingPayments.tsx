@@ -90,7 +90,7 @@ const AccountingPayments: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Pretraži po broju računa, referenci..."
+            placeholder="Pretraži po broju računa, firmi, dobavljaču..."
           />
 
           <Select
