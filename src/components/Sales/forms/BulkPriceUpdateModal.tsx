@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X, Plus, Minus } from 'lucide-react'
+import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types/salesTypes'
+import { Button, Modal, FormField, Input, Alert } from '../../ui'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
@@ -8,6 +9,7 @@ interface BulkPriceUpdateModalProps {
   unitType: UnitType
   onClose: () => void
   onSubmit: (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => void
+  loading?: boolean
 }
 
 export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
@@ -15,7 +17,8 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   selectedUnits,
   unitType,
   onClose,
-  onSubmit
+  onSubmit,
+  loading = false
 }) => {
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
   const [adjustmentValue, setAdjustmentValue] = useState<string>('')
@@ -79,16 +82,14 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Configure Price for {getUnitLabel()}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header
+        title="Bulk Price Update"
+        subtitle={`Selected: ${selectedUnits.length} units`}
+        onClose={onClose}
+      />
+      <Modal.Body>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-2">Selection Summary</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -140,21 +141,17 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adjustment Amount (€ per m²)
-            </label>
-            <input
+          <FormField label="Adjustment Amount (€)">
+            <Input
               type="number"
               step="0.01"
               min="0"
               value={adjustmentValue}
               onChange={(e) => setAdjustmentValue(e.target.value)}
               placeholder="Enter amount (e.g., 500)"
-              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
-          </div>
+          </FormField>
 
           {adjustmentValue && parseFloat(adjustmentValue) > 0 && (
             <div className={`border-2 rounded-lg p-4 ${
@@ -203,37 +200,29 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
           )}
 
           {wouldCreateNegativePrice && (
-            <div className="bg-red-50 border border-red-300 rounded-lg p-4">
-              <p className="text-red-800 font-semibold">
-                Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.
-              </p>
-            </div>
+            <Alert variant="warning">
+              Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.
+            </Alert>
           )}
 
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={wouldCreateNegativePrice}
-              className={`flex-1 px-6 py-3 rounded-lg transition-colors duration-200 font-medium ${
-                wouldCreateNegativePrice
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : adjustmentType === 'increase'
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-red-600 text-white hover:bg-red-700'
-              }`}
-            >
-              {adjustmentType === 'increase' ? 'Increase' : 'Decrease'} Prices
-            </button>
-          </div>
+          <Alert variant="warning">
+            Warning: This will update {selectedUnits.length} units. This action cannot be undone.
+          </Alert>
         </form>
-      </div>
-    </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="success"
+          loading={loading}
+          onClick={handleSubmit}
+          disabled={wouldCreateNegativePrice}
+        >
+          Update {selectedUnits.length} Units
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

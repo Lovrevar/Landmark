@@ -1,7 +1,8 @@
 import React from 'react'
-import { X, Warehouse, Package } from 'lucide-react'
+import { Warehouse, Package } from 'lucide-react'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { BuildingWithUnits } from '../types/salesTypes'
+import { Button, Modal } from '../../ui'
 
 interface LinkingModalProps {
   visible: boolean
@@ -26,23 +27,9 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
   const availableRepositories = building.repositories.filter(r => r.status === 'Available')
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Link Units to Apartment {apartment.number}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
+    <Modal show={true} onClose={onClose}>
+      <Modal.Header title={`Link Garage & Repository to ${apartment.number}`} onClose={onClose} />
+      <Modal.Body>
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
               <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
@@ -103,16 +90,12 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" fullWidth onClick={onClose}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

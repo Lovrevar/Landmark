@@ -1,6 +1,7 @@
 import React from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, ArrowLeft } from 'lucide-react'
 import { ProjectWithBuildings, OnSelectBuildingCallback, OnDeleteBuildingCallback } from '../types/salesTypes'
+import { Button } from '../../ui'
 
 interface BuildingsGridProps {
   project: ProjectWithBuildings
@@ -17,12 +18,9 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
 }) => {
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="mb-4 text-gray-600 hover:text-gray-900"
-      >
-        ← Back to Projects
-      </button>
+      <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
+        Back to Projects
+      </Button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {project.buildings.map((building) => (

@@ -1,9 +1,14 @@
 import React from 'react'
 import { ProjectWithBuildings, OnSelectProjectCallback } from '../types/salesTypes'
+import { Badge } from '../../ui'
 
 interface ProjectsGridProps {
   projects: ProjectWithBuildings[]
   onSelectProject: OnSelectProjectCallback
+}
+
+const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'gray' => {
+  return status === 'Completed' ? 'green' : status === 'In Progress' ? 'blue' : 'gray'
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject }) => {
@@ -20,13 +25,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
               <p className="text-sm text-gray-600">{project.location}</p>
             </div>
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-              project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-              project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
+            <Badge variant={getStatusBadgeVariant(project.status)}>
               {project.status}
-            </span>
+            </Badge>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">

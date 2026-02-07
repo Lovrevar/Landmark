@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Building2 } from 'lucide-react'
-import { LoadingSpinner, PageHeader } from './ui'
+import { LoadingSpinner, PageHeader, Button } from './ui'
 import { Apartment } from '../lib/supabase'
 import { useSalesData } from './Sales/hooks/useSalesData'
 import * as salesService from './Sales/services/salesService'
@@ -335,38 +335,36 @@ const SalesProjectsEnhanced: React.FC = () => {
           <>
             {viewMode === 'buildings' && selectedProject && (
               <>
-                <button
+                <Button
+                  variant="success"
+                  icon={Plus}
                   onClick={() => setShowBuildingQuantityForm(true)}
-                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Create Buildings (1-20)
-                </button>
-                <button
+                </Button>
+                <Button
+                  icon={Building2}
                   onClick={() => setShowBuildingForm(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  <Building2 className="w-4 h-4 mr-2" />
                   Add Single Building
-                </button>
+                </Button>
               </>
             )}
             {viewMode === 'units' && selectedBuilding && (
               <>
-                <button
+                <Button
+                  variant="success"
+                  icon={Building2}
                   onClick={() => setShowBulkUnitForm(true)}
-                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                  <Building2 className="w-4 h-4 mr-2" />
                   Bulk Create {getUnitLabel(activeUnitType)}
-                </button>
-                <button
+                </Button>
+                <Button
+                  icon={Plus}
                   onClick={() => setShowUnitForm(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
-                </button>
+                </Button>
               </>
             )}
           </>

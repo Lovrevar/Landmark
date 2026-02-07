@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2, DollarSign, CheckSquare, Square } from 'lucide-react'
+import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2, DollarSign, CheckSquare, Square, ArrowLeft } from 'lucide-react'
 import {
   BuildingWithUnits,
   UnitType,
@@ -10,6 +10,7 @@ import {
   OnLinkApartmentCallback
 } from '../types/salesTypes'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
+import { Button, Badge } from '../../ui'
 
 interface UnitsGridProps {
   building: BuildingWithUnits
@@ -31,6 +32,10 @@ interface UnitsGridProps {
   onSelectAllUnits: () => void
   onDeselectAllUnits: () => void
   onConfigurePrice: () => void
+}
+
+const getUnitStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'blue' => {
+  return status === 'Sold' ? 'green' : status === 'Reserved' ? 'yellow' : 'blue'
 }
 
 export const UnitsGrid: React.FC<UnitsGridProps> = ({
@@ -86,12 +91,9 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="mb-4 text-gray-600 hover:text-gray-900"
-      >
-        ← Back to Buildings
-      </button>
+      <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
+        Back to Buildings
+      </Button>
 
       {selectedUnitIds.length > 0 && (
         <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -338,38 +340,25 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
               <div className="border-t pt-3">
                 <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    unit.status === 'Sold' ? 'bg-green-100 text-green-800' :
-                    unit.status === 'Reserved' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
+                  <Badge variant={getUnitStatusBadgeVariant(unit.status)}>
                     {unit.status}
-                  </span>
+                  </Badge>
 
                   {unit.status !== 'Sold' && (
                     <div className="flex space-x-1">
                       {unit.status === 'Available' && (
-                        <button
-                          onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}
-                          className="px-2 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-xs font-medium"
-                        >
+                        <Button size="sm" variant="ghost" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
                           Reserve
-                        </button>
+                        </Button>
                       )}
                       {unit.status === 'Reserved' && (
-                        <button
-                          onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}
-                          className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium"
-                        >
+                        <Button size="sm" variant="ghost" className="bg-blue-100 text-blue-700 hover:bg-blue-200" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
                           Available
-                        </button>
+                        </Button>
                       )}
-                      <button
-                        onClick={() => onSellUnit(unit, activeUnitType)}
-                        className="px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-xs font-medium"
-                      >
+                      <Button size="sm" variant="success" onClick={() => onSellUnit(unit, activeUnitType)}>
                         Sell
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
