@@ -160,7 +160,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
           <div className="flex items-center mb-4">
             <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Alocirani krediti za ovaj projekt</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Alocirana sredstva za ovaj projekt</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {creditAllocations.map((allocation) => {
