@@ -201,7 +201,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
 
-      <div className="flex relative">
+      <div className="flex relative overflow-x-hidden">
         {sidebarOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -245,7 +245,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
         </aside>
 
-        <main className="flex-1 p-6 w-full lg:w-auto">
+        <main className="flex-1 p-6 w-full lg:w-auto overflow-x-hidden">
           {children}
         </main>
       </div>

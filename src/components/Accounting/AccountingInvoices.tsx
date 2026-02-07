@@ -153,7 +153,7 @@ const AccountingInvoices: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       <PageHeader
         title="Računi"
         description="Upravljanje ulaznim i izlaznim računima"
