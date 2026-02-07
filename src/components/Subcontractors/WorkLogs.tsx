@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
   ClipboardCheck,
   Plus,
-  X,
   Calendar,
   AlertTriangle,
   CheckCircle2,
@@ -17,7 +16,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader } from '../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState } from '../ui'
 import { format } from 'date-fns'
 
 interface WorkLog {
@@ -297,11 +296,21 @@ const WorkLogs: React.FC = () => {
   const getStatusBadge = (status: WorkLog['status']) => {
     const config = statusConfig[status]
     const Icon = config.icon
+
+    const variantMap: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'orange'> = {
+      green: 'green',
+      red: 'red',
+      yellow: 'yellow',
+      blue: 'blue',
+      gray: 'gray',
+      orange: 'orange'
+    }
+
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-${config.color}-100 text-${config.color}-800`}>
+      <Badge variant={variantMap[config.color] || 'gray'}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
-      </span>
+      </Badge>
     )
   }
 
@@ -311,7 +320,8 @@ const WorkLogs: React.FC = () => {
         title="Work Logs"
         description="Track subcontractor activities and site observations"
         actions={
-          <button
+          <Button
+            icon={Plus}
             onClick={() => {
               setEditingLog(null)
               setFormData({
@@ -327,39 +337,36 @@ const WorkLogs: React.FC = () => {
               })
               setShowForm(true)
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
           >
-            <Plus className="w-4 h-4 mr-2" />
             New Work Log
-          </button>
+          </Button>
         }
       />
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingLog ? 'Edit Work Log' : 'New Work Log'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingLog(null)
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+      <Modal
+        show={showForm}
+        onClose={() => {
+          setShowForm(false)
+          setEditingLog(null)
+        }}
+        size="md"
+      >
+        <Modal.Header
+          title={editingLog ? 'Edit Work Log' : 'New Work Log'}
+          onClose={() => {
+            setShowForm(false)
+            setEditingLog(null)
+          }}
+        />
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit}>
+          <Modal.Body>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Project *
                   </label>
-                  <select
+                  <Select
                     value={formData.project_id}
                     onChange={(e) => {
                       setFormData({
@@ -371,7 +378,6 @@ const WorkLogs: React.FC = () => {
                       setPhases([])
                       setContracts([])
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Select Project</option>
@@ -380,14 +386,14 @@ const WorkLogs: React.FC = () => {
                         {project.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phase *
                   </label>
-                  <select
+                  <Select
                     value={formData.phase_id}
                     onChange={(e) => {
                       setFormData({
@@ -396,7 +402,6 @@ const WorkLogs: React.FC = () => {
                         contract_id: ''
                       })
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!formData.project_id}
                     required
                   >
@@ -406,7 +411,7 @@ const WorkLogs: React.FC = () => {
                         {phase.phase_name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -414,10 +419,9 @@ const WorkLogs: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contract *
                 </label>
-                <select
+                <Select
                   value={formData.contract_id}
                   onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={!formData.phase_id}
                   required
                 >
@@ -433,7 +437,7 @@ const WorkLogs: React.FC = () => {
                       {contract.contract_number} - {contract.subcontractors?.name} - {contract.job_description}
                     </option>
                   ))}
-                </select>
+                </Select>
                 {formData.phase_id && contracts.length === 0 && (
                   <p className="text-sm text-amber-600 mt-1">
                     No active contracts found for this phase. Make sure contracts exist in Site Management.
@@ -446,11 +450,10 @@ const WorkLogs: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date *
                   </label>
-                  <input
+                  <Input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -459,10 +462,9 @@ const WorkLogs: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status *
                   </label>
-                  <select
+                  <Select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLog['status'] })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     {Object.entries(statusConfig).map(([value, config]) => (
@@ -470,7 +472,7 @@ const WorkLogs: React.FC = () => {
                         {config.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -478,10 +480,9 @@ const WorkLogs: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Work Description *
                 </label>
-                <textarea
+                <Textarea
                   value={formData.work_description}
                   onChange={(e) => setFormData({ ...formData, work_description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={3}
                   placeholder="Describe the work performed or observed..."
                   required
@@ -493,10 +494,9 @@ const WorkLogs: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {formData.status === 'blocker' ? 'Blocker Details' : 'Issue Details'}
                   </label>
-                  <textarea
+                  <Textarea
                     value={formData.blocker_details}
                     onChange={(e) => setFormData({ ...formData, blocker_details: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows={2}
                     placeholder={formData.status === 'blocker' ? 'Describe what is blocking the work...' : 'Describe the quality issue...'}
                   />
@@ -507,10 +507,9 @@ const WorkLogs: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Additional Notes
                 </label>
-                <textarea
+                <Textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={3}
                   placeholder="Any additional observations or notes..."
                 />
@@ -536,28 +535,24 @@ const WorkLogs: React.FC = () => {
                   ))}
                 </div>
               </div>
+          </Modal.Body>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingLog ? 'Update Work Log' : 'Create Work Log'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          <Modal.Footer>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowForm(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              {editingLog ? 'Update Work Log' : 'Create Work Log'}
+            </Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <Card variant="default" padding="none">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <ClipboardCheck className="w-5 h-5 mr-2 text-blue-600" />
@@ -566,84 +561,90 @@ const WorkLogs: React.FC = () => {
         </div>
         <div className="p-6">
           {workLogs.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <Wrench className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">No work logs yet</p>
-              <p className="text-sm text-gray-500">Start tracking subcontractor activities by creating your first work log</p>
-            </div>
+            <Card variant="bordered" padding="lg" className="bg-gray-50">
+              <EmptyState
+                icon={Wrench}
+                title="No work logs yet"
+                description="Start tracking subcontractor activities by creating your first work log"
+              />
+            </Card>
           ) : (
             <div className="space-y-4">
               {workLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white border border-gray-200"
+                  className="border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white border border-gray-200"
                   style={{ borderLeftColor: log.color || 'blue' }}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{log.subcontractors?.name}</h3>
-                        {getStatusBadge(log.status)}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {log.projects?.name} {log.project_phases?.phase_name && `• ${log.project_phases.phase_name}`}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Contract: {log.contracts?.contract_number} - {log.contracts?.job_description}
-                      </p>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="text-right mr-2">
-                        <div className="flex items-center text-gray-600 text-sm mb-1">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {format(new Date(log.date), 'MMM dd, yyyy')}
+                  <Card variant="bordered" padding="md">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-semibold text-gray-900">{log.subcontractors?.name}</h3>
+                          {getStatusBadge(log.status)}
                         </div>
-                        <p className="text-xs text-gray-500">
-                          Logged {format(new Date(log.created_at), 'MMM dd, HH:mm')}
+                        <p className="text-sm text-gray-600">
+                          {log.projects?.name} {log.project_phases?.phase_name && `• ${log.project_phases.phase_name}`}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Contract: {log.contracts?.contract_number} - {log.contracts?.job_description}
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleEdit(log)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(log.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-start space-x-2">
+                        <div className="text-right mr-2">
+                          <div className="flex items-center text-gray-600 text-sm mb-1">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {format(new Date(log.date), 'MMM dd, yyyy')}
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Logged {format(new Date(log.created_at), 'MMM dd, HH:mm')}
+                          </p>
+                        </div>
+                        <Button
+                          size="icon-md"
+                          variant="ghost"
+                          icon={Edit2}
+                          onClick={() => handleEdit(log)}
+                          title="Edit"
+                          className="text-blue-600 hover:bg-blue-50"
+                        />
+                        <Button
+                          size="icon-md"
+                          variant="ghost"
+                          icon={Trash2}
+                          onClick={() => handleDelete(log.id)}
+                          title="Delete"
+                          className="text-red-600 hover:bg-red-50"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                    <p className="text-sm text-gray-700">{log.work_description}</p>
-                  </div>
-
-                  {log.blocker_details && (
-                    <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
-                      <p className="text-xs font-medium text-red-800 mb-1">
-                        {log.status === 'blocker' ? 'Blocker Details:' : 'Issue Details:'}
-                      </p>
-                      <p className="text-sm text-red-700">{log.blocker_details}</p>
+                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                      <p className="text-sm text-gray-700">{log.work_description}</p>
                     </div>
-                  )}
 
-                  {log.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
-                      <p className="text-sm text-gray-600">{log.notes}</p>
-                    </div>
-                  )}
+                    {log.blocker_details && (
+                      <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
+                        <p className="text-xs font-medium text-red-800 mb-1">
+                          {log.status === 'blocker' ? 'Blocker Details:' : 'Issue Details:'}
+                        </p>
+                        <p className="text-sm text-red-700">{log.blocker_details}</p>
+                      </div>
+                    )}
+
+                    {log.notes && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
+                        <p className="text-sm text-gray-600">{log.notes}</p>
+                      </div>
+                    )}
+                  </Card>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

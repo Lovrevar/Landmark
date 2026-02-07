@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, DollarSign, Briefcase, Phone, Mail, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader } from '../ui'
+import { Users, Briefcase, AlertCircle } from 'lucide-react'
+import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface SubcontractorContract {
@@ -175,11 +175,13 @@ const SubcontractorManagement: React.FC = () => {
       />
 
       {subcontractorsList.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Subcontractors Yet</h3>
-          <p className="text-gray-600">Add subcontractors from Site Management</p>
-        </div>
+        <Card variant="default" padding="lg">
+          <EmptyState
+            icon={Users}
+            title="No Subcontractors Yet"
+            description="Add subcontractors from Site Management"
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {subcontractorsList.map((sub) => {
@@ -188,12 +190,13 @@ const SubcontractorManagement: React.FC = () => {
               : 0
 
             return (
-              <div
+              <Card
                 key={`${sub.name}|${sub.contact}`}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                variant="default"
+                padding="lg"
                 onClick={() => setSelectedSubcontractor(sub)}
               >
-                <div className="flex items-start justify-between mb-4">
+                <Card.Header>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{sub.name}</h3>
                     <p className="text-sm text-gray-600">{sub.contact}</p>
@@ -205,92 +208,86 @@ const SubcontractorManagement: React.FC = () => {
                       sub.active_contracts > 0 ? 'text-blue-600' : 'text-gray-600'
                     }`} />
                   </div>
-                </div>
+                </Card.Header>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Total Contracts:</span>
-                    <span className="font-medium text-gray-900">{sub.total_contracts}</span>
+                <Card.Body>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Total Contracts:</span>
+                      <span className="font-medium text-gray-900">{sub.total_contracts}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Active / Completed:</span>
+                      <span className="font-medium text-gray-900">
+                        {sub.active_contracts} / {sub.completed_contracts}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                      <span className="text-gray-600">Total Value:</span>
+                      <span className="font-bold text-gray-900">€{sub.total_contract_value.toLocaleString('hr-HR')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Total Paid:</span>
+                      <span className="font-medium text-teal-600">€{sub.total_paid.toLocaleString('hr-HR')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Remaining:</span>
+                      <span className="font-medium text-orange-600">€{sub.total_remaining.toLocaleString('hr-HR')}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Active / Completed:</span>
-                    <span className="font-medium text-gray-900">
-                      {sub.active_contracts} / {sub.completed_contracts}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">Total Value:</span>
-                    <span className="font-bold text-gray-900">€{sub.total_contract_value.toLocaleString('hr-HR')}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Total Paid:</span>
-                    <span className="font-medium text-teal-600">€{sub.total_paid.toLocaleString('hr-HR')}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Remaining:</span>
-                    <span className="font-medium text-orange-600">€{sub.total_remaining.toLocaleString('hr-HR')}</span>
-                  </div>
-                </div>
 
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-gray-600">Payment Progress</span>
-                    <span className="text-xs font-medium text-gray-900">{paymentPercentage.toFixed(0)}%</span>
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs text-gray-600">Payment Progress</span>
+                      <span className="text-xs font-medium text-gray-900">{paymentPercentage.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, paymentPercentage)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-teal-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, paymentPercentage)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+                </Card.Body>
+              </Card>
             )
           })}
         </div>
       )}
 
-      {/* Details Modal */}
-      {selectedSubcontractor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedSubcontractor.name}</h2>
-                  <p className="text-gray-600 mt-1">{selectedSubcontractor.contact}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedSubcontractor(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <AlertCircle className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
+      <Modal show={!!selectedSubcontractor} onClose={() => setSelectedSubcontractor(null)} size="xl">
+        {selectedSubcontractor && (
+          <>
+            <Modal.Header
+              title={selectedSubcontractor.name}
+              subtitle={selectedSubcontractor.contact}
+              onClose={() => setSelectedSubcontractor(null)}
+            />
 
-            <div className="p-6 overflow-y-auto flex-1">
-              {/* Summary Stats */}
+            <Modal.Body>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-700">Total Contracts</p>
-                  <p className="text-2xl font-bold text-blue-900">{selectedSubcontractor.total_contracts}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-700">Contract Value</p>
-                  <p className="text-2xl font-bold text-gray-900">€{selectedSubcontractor.total_contract_value.toLocaleString('hr-HR')}</p>
-                </div>
-                <div className="bg-teal-50 p-4 rounded-lg">
-                  <p className="text-sm text-teal-700">Total Paid</p>
-                  <p className="text-2xl font-bold text-teal-900">€{selectedSubcontractor.total_paid.toLocaleString('hr-HR')}</p>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-sm text-orange-700">Remaining</p>
-                  <p className="text-2xl font-bold text-orange-900">€{selectedSubcontractor.total_remaining.toLocaleString('hr-HR')}</p>
-                </div>
+                <StatCard
+                  label="Total Contracts"
+                  value={selectedSubcontractor.total_contracts}
+                  color="blue"
+                />
+                <StatCard
+                  label="Contract Value"
+                  value={`€${selectedSubcontractor.total_contract_value.toLocaleString('hr-HR')}`}
+                  color="gray"
+                />
+                <StatCard
+                  label="Total Paid"
+                  value={`€${selectedSubcontractor.total_paid.toLocaleString('hr-HR')}`}
+                  color="teal"
+                />
+                <StatCard
+                  label="Remaining"
+                  value={`€${selectedSubcontractor.total_remaining.toLocaleString('hr-HR')}`}
+                  color="yellow"
+                />
               </div>
 
-              {/* Contracts List */}
               <h3 className="text-lg font-semibold text-gray-900 mb-4">All Contracts</h3>
               <div className="space-y-4">
                 {selectedSubcontractor.contracts.map((contract) => {
@@ -300,15 +297,15 @@ const SubcontractorManagement: React.FC = () => {
                   const hasValidContract = contract.has_contract && contract.cost > 0
 
                   return (
-                    <div key={contract.id} className="border border-gray-200 rounded-lg p-4">
+                    <Card key={contract.id} variant="bordered" padding="md">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-semibold text-gray-900">{contract.project_name}</h4>
                             {!hasValidContract && (
-                              <span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                              <Badge variant="yellow" size="sm">
                                 BEZ UGOVORA
-                              </span>
+                              </Badge>
                             )}
                           </div>
                           {contract.phase_name && (
@@ -317,13 +314,15 @@ const SubcontractorManagement: React.FC = () => {
                           <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
                         </div>
                         {hasValidContract && (
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            contract.progress >= 100 ? 'bg-green-100 text-green-800' :
-                            contract.progress > 0 ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <Badge
+                            variant={
+                              contract.progress >= 100 ? 'green' :
+                              contract.progress > 0 ? 'blue' :
+                              'gray'
+                            }
+                          >
                             {contract.progress}% Complete
-                          </span>
+                          </Badge>
                         )}
                       </div>
 
@@ -372,14 +371,14 @@ const SubcontractorManagement: React.FC = () => {
                           ⚠️ Overdue by {Math.abs(daysUntilDeadline)} days
                         </div>
                       )}
-                    </div>
+                    </Card>
                   )
                 })}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+          </>
+        )}
+      </Modal>
     </div>
   )
 }
