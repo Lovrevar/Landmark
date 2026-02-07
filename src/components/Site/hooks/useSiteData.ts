@@ -343,6 +343,7 @@ export const useSiteData = () => {
         deadline: subcontractor.deadline,
         cost: subcontractor.cost,
         phase_id: subData.phase_id,
+        contract_type_id: subData.contract_type_id,
         has_contract: subData.has_contract
       })
 
@@ -354,6 +355,7 @@ export const useSiteData = () => {
         cost: subcontractor.cost,
         progress: subcontractor.progress || 0,
         phase_id: subData.phase_id,
+        contract_type_id: subData.contract_type_id,
         has_contract: subData.has_contract
       })
 
