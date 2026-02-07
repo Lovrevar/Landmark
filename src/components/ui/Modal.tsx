@@ -39,18 +39,20 @@ interface ModalHeaderProps {
   title: string
   subtitle?: string
   onClose: () => void
+  children?: React.ReactNode
 }
 
-function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
+function ModalHeader({ title, subtitle, onClose, children }: ModalHeaderProps) {
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
-      <div>
+    <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-start flex-shrink-0 rounded-t-lg">
+      <div className="flex-1">
         <h2 className="text-xl font-bold text-gray-900">{title}</h2>
         {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+        {children}
       </div>
       <button
         onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 transition-colors"
+        className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-4"
       >
         <X className="w-6 h-6" />
       </button>
