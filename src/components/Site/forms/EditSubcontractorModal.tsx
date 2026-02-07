@@ -275,7 +275,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
-                  label="Contract Cost (€)"
+                  label="Contracted ammount (€)"
                   helperText="Automatski izračunato: Osnovica + PDV"
                 >
                   <Input
