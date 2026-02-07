@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LoadingSpinner } from './ui'
+import { LoadingSpinner, Modal } from './ui'
 import { useAuth } from '../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './Site/types/siteTypes'
@@ -386,20 +386,16 @@ const SiteManagement: React.FC = () => {
         />
 
         {showMilestoneManagement && milestoneContext && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="max-w-6xl w-full my-8">
-              <div className="bg-white rounded-xl shadow-2xl">
-                <MilestoneList
-                  contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
-                  subcontractorName={milestoneContext.subcontractor.name}
-                  projectName={milestoneContext.project.name}
-                  phaseName={milestoneContext.phase.phase_name}
-                  contractCost={milestoneContext.subcontractor.cost}
-                  onClose={closeMilestoneManagement}
-                />
-              </div>
-            </div>
-          </div>
+          <Modal show={true} onClose={closeMilestoneManagement} size="full">
+            <MilestoneList
+              contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
+              subcontractorName={milestoneContext.subcontractor.name}
+              projectName={milestoneContext.project.name}
+              phaseName={milestoneContext.phase.phase_name}
+              contractCost={milestoneContext.subcontractor.cost}
+              onClose={closeMilestoneManagement}
+            />
+          </Modal>
         )}
       </div>
     )

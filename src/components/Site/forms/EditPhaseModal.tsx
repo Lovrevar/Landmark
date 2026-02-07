@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { ProjectPhase } from '../../../lib/supabase'
 import { ProjectWithPhases, EditPhaseFormData } from '../types/siteTypes'
+import { Modal, FormField, Input, Select, Button } from '../../ui'
 
 interface EditPhaseModalProps {
   visible: boolean
@@ -47,128 +47,98 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   const projectBudgetDiff = newTotalAllocated - project.budget
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Edit Phase</h3>
-              <p className="text-gray-600 mt-1">
-                Phase {phase.phase_number} • Budget Used: €{phase.budget_used.toLocaleString('hr-HR')}
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header
+        title="Edit Phase"
+        subtitle={`Phase ${phase.phase_number} • Budget Used: €${phase.budget_used.toLocaleString('hr-HR')}`}
+        onClose={onClose}
+      />
+
+      <Modal.Body>
+        <div className="space-y-4">
+          <FormField label="Phase Name" required>
+            <Input
+              type="text"
+              value={formData.phase_name}
+              onChange={(e) => setFormData({ ...formData, phase_name: e.target.value })}
+              placeholder="Enter phase name"
+              required
+            />
+          </FormField>
+
+          <FormField
+            label="Budget Allocated (€)"
+            required
+            helperText={
+              formData.budget_allocated < phase.budget_used
+                ? `Warning: Budget is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')})`
+                : `Available after update: €${(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}`
+            }
+            error={formData.budget_allocated < phase.budget_used}
+          >
+            <Input
+              type="number"
+              value={formData.budget_allocated}
+              onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
+              placeholder="0"
+              required
+            />
+          </FormField>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Start Date">
+              <Input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              />
+            </FormField>
+            <FormField label="End Date">
+              <Input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Status">
+            <Select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+            >
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="on_hold">On Hold</option>
+            </Select>
+          </FormField>
+
+          {projectBudgetDiff !== 0 && (
+            <div className={`p-4 rounded-lg border ${
+              projectBudgetDiff > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
+                <span className="font-medium">Note:</span> After this update, total phase budgets
+                ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) will be {' '}
+                {projectBudgetDiff > 0
+                  ? `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} over`
+                  : `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} under`
+                } the project budget.
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+          )}
         </div>
+      </Modal.Body>
 
-        <div className="p-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phase Name *</label>
-              <input
-                type="text"
-                value={formData.phase_name}
-                onChange={(e) => setFormData({ ...formData, phase_name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter phase name"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Budget Allocated (€) *</label>
-              <input
-                type="number"
-                value={formData.budget_allocated}
-                onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-                required
-              />
-              {formData.budget_allocated < phase.budget_used && (
-                <p className="text-xs text-red-600 mt-1">
-                  Warning: Budget is less than already allocated amount (€{phase.budget_used.toLocaleString('hr-HR')})
-                </p>
-              )}
-              {formData.budget_allocated >= phase.budget_used && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Available after update: €{(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                <input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="planning">Planning</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="on_hold">On Hold</option>
-              </select>
-            </div>
-
-            {projectBudgetDiff !== 0 && (
-              <div className={`p-4 rounded-lg border ${
-                projectBudgetDiff > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
-              }`}>
-                <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
-                  <span className="font-medium">Note:</span> After this update, total phase budgets
-                  ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) will be {' '}
-                  {projectBudgetDiff > 0
-                    ? `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} over`
-                    : `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} under`
-                  } the project budget.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onSubmit(formData)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              Update Phase
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={() => onSubmit(formData)}>
+          Update Phase
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

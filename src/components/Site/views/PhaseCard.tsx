@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from '../types/siteTypes'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface PhaseCardProps {
   phase: ProjectPhase
@@ -86,17 +87,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
+            <Button
+              variant="primary"
+              size="icon-lg"
+              icon={isExpanded ? ChevronUp : ChevronDown}
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
-              title={isExpanded ? "Collapse phase" : "Expand phase"}
-            >
-              {isExpanded ? (
-                <ChevronUp className="w-6 h-6 text-blue-600" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-blue-600" />
-              )}
-            </button>
+            />
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
               <p className="text-gray-600">Phase {phase.phase_number} • {phaseSubcontractors.length} subcontractor{phaseSubcontractors.length !== 1 ? 's' : ''}</p>
@@ -107,27 +103,25 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               <p className="text-lg font-bold text-gray-900">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
               <p className="text-sm text-gray-600">Allocated Budget</p>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-md"
+              icon={Edit2}
               onClick={() => onEditPhase(phase)}
-              className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-colors duration-200"
-              title="Edit phase"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
+            />
+            <Button
+              variant="outline-danger"
+              size="icon-md"
+              icon={Trash2}
               onClick={() => onDeletePhase(phase)}
-              className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors duration-200"
-              title="Delete phase"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
+            />
+            <Button
+              variant="success"
+              icon={Plus}
               onClick={() => onAddSubcontractor(phase)}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
             >
-              <Plus className="w-4 h-4 mr-2" />
               Add Subcontractor
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -186,16 +180,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
       {isExpanded && (
         <div className="p-6">
           {phaseSubcontractors.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-500">No subcontractors assigned to this phase yet</p>
-            <button
-              onClick={() => onAddSubcontractor(phase)}
-              className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-            >
-              Add First Subcontractor
-            </button>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No subcontractors yet"
+            description="No subcontractors assigned to this phase yet"
+          />
         ) : (
           <div className="space-y-4">
             {sortedContractTypeKeys.map((contractTypeName) => {
@@ -255,25 +244,25 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-gray-900">{subcontractor.name}</h4>
                         {subcontractor.has_contract === false && (
-                          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                          <Badge variant="yellow" size="sm">
                             BEZ UGOVORA
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
                       <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
                     </div>
                     {hasValidContract && (
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                        subVariance > 0 ? 'bg-red-100 text-red-800' :
-                        isPaid && subVariance === 0 ? 'bg-green-100 text-green-800' :
-                        actualPaid > 0 ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <Badge variant={
+                        subVariance > 0 ? 'red' :
+                        isPaid && subVariance === 0 ? 'green' :
+                        actualPaid > 0 ? 'blue' :
+                        'gray'
+                      } size="sm">
                         {subVariance > 0 ? 'Over Budget' :
                          isPaid && subVariance === 0 ? 'Paid' :
                          actualPaid > 0 ? 'Partial' : 'Unpaid'}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
@@ -329,49 +318,62 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
                   <div className="space-y-2">
                     {onOpenPaymentHistory && (
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={DollarSign}
+                        fullWidth
                         onClick={() => onOpenPaymentHistory(subcontractor)}
-                        className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-xs font-medium hover:bg-teal-700 transition-colors duration-200 flex items-center justify-center"
                       >
-                        View Payments
-                      </button>
+                        Payments
+                      </Button>
                     )}
                     {onOpenInvoices && (
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={FileText}
+                        fullWidth
                         onClick={() => onOpenInvoices(subcontractor)}
-                        className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center"
                       >
-                        View Invoices
-                      </button>
+                        Invoices
+                      </Button>
                     )}
                     <div className="grid grid-cols-4 gap-2">
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        fullWidth
                         onClick={() => onEditSubcontractor(subcontractor)}
-                        className="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        fullWidth
                         onClick={() => onOpenSubDetails(subcontractor)}
-                        className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
                       >
                         Details
-                      </button>
+                      </Button>
                       {onManageMilestones && (
-                        <button
+                        <Button
+                          variant="amber"
+                          size="sm"
+                          icon={Calendar}
+                          fullWidth
                           onClick={() => onManageMilestones(subcontractor, phase, project)}
-                          className="px-2 py-1 bg-amber-600 text-white rounded-md text-xs font-medium hover:bg-amber-700 transition-colors duration-200 flex items-center justify-center"
-                          title="Manage payment milestones"
-                        >
-                          <Calendar className="w-3 h-3" />
-                        </button>
+                        />
                       )}
-                      <button
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        icon={Trash2}
+                        fullWidth
                         onClick={() => onDeleteSubcontractor(subcontractor.id)}
-                        className="px-2 py-1 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors duration-200"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

@@ -12,6 +12,7 @@ import {
   getMilestoneStatsForContract
 } from '../services/siteService'
 import { MilestoneStats } from '../types/siteTypes'
+import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
 
 interface MilestoneListProps {
   contractId: string
@@ -115,21 +116,10 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     return (contractCost * percentage) / 100
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'bg-green-100 text-green-800'
-      case 'completed':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <LoadingSpinner size="lg" />
       </div>
     )
   }
@@ -148,20 +138,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button
+            <Button
+              icon={Plus}
               onClick={openAddModal}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              <Plus className="w-4 h-4 mr-2" />
               Add Milestone
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-md"
+              icon={X}
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              title="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            />
           </div>
         </div>
 
@@ -203,19 +191,11 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
       <div className="p-6">
         {milestones.length === 0 ? (
-          <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500 mb-2">No milestones defined yet</p>
-            <p className="text-sm text-gray-400 mb-4">
-              Add payment milestones to track progress and payments
-            </p>
-            <button
-              onClick={openAddModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              Add First Milestone
-            </button>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="No milestones yet"
+            description="Add milestones to track progress and payments."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -261,26 +241,28 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(milestone.status)}`}>
+                        <Badge variant={
+                          milestone.status === 'paid' ? 'green' :
+                          milestone.status === 'completed' ? 'blue' :
+                          'gray'
+                        } size="sm">
                           {milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center space-x-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            icon={Edit2}
                             onClick={() => openEditModal(milestone)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-200"
-                            title="Edit milestone"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
+                          />
+                          <Button
+                            variant="outline-danger"
+                            size="icon-sm"
+                            icon={Trash2}
                             onClick={() => handleDeleteMilestone(milestone.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                            title="Delete milestone"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          />
                         </div>
                       </td>
                     </tr>

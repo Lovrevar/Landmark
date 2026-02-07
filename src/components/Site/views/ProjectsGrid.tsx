@@ -2,6 +2,7 @@ import React from 'react'
 import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from '../types/siteTypes'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -19,14 +20,13 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           <p className="text-gray-600 mt-2">Manage construction phases and subcontractors by project</p>
         </div>
         {onRefresh && (
-          <button
+          <Button
             onClick={onRefresh}
-            disabled={isRefreshing}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            icon={RefreshCw}
+            loading={isRefreshing}
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-          </button>
+            Refresh Data
+          </Button>
         )}
       </div>
 
@@ -46,26 +46,26 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
                   <p className="text-sm text-gray-600 mb-2">{project.location}</p>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <Badge variant={
+                      project.status === 'Completed' ? 'green' :
+                      project.status === 'In Progress' ? 'blue' :
+                      'gray'
+                    } size="sm">
                       {project.status}
-                    </span>
+                    </Badge>
                     {project.has_phases ? (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                      <Badge variant="blue" size="sm">
                         {project.phases.length} Phases
-                      </span>
+                      </Badge>
                     ) : (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                      <Badge variant="orange" size="sm">
                         No Phases
-                      </span>
+                      </Badge>
                     )}
                     {project.overdue_subcontractors > 0 && (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                      <Badge variant="red" size="sm">
                         {project.overdue_subcontractors} Overdue
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -127,11 +127,11 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
       </div>
 
       {projects.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Found</h3>
-          <p className="text-gray-600">No construction projects available for site management.</p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="No projects available"
+          description="Projects will appear here once they are created."
+        />
       )}
     </div>
   )

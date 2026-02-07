@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react'
-import { X, Building2, User, FileText } from 'lucide-react'
+import { Building2, User, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../lib/supabase'
+import { Modal, Button, Badge, EmptyState } from '../../ui'
 
 interface AccountingPayment {
   id: string
@@ -48,27 +49,21 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     }
   }, [visible])
 
+  const getStatusVariant = (status: string): 'green' | 'yellow' => {
+    return status === 'paid' ? 'green' : 'yellow'
+  }
+
   if (!visible || !subcontractor) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Payment History</h3>
-              <p className="text-sm text-gray-600 mt-1">{subcontractor.name}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
+    <Modal show={true} onClose={onClose} size="xl">
+      <Modal.Header
+        title="Payment History"
+        subtitle={subcontractor.name}
+        onClose={onClose}
+      />
 
-        <div className="p-6 overflow-y-auto flex-1">
+      <Modal.Body>
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
@@ -88,13 +83,14 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             </div>
           </div>
 
-          <h4 className="font-semibold text-gray-900 mb-3">All Payments ({payments.length})</h4>
+        <h4 className="font-semibold text-gray-900 mb-3">All Payments ({payments.length})</h4>
 
-          {payments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No payments recorded yet
-            </div>
-          ) : (
+        {payments.length === 0 ? (
+          <EmptyState
+            icon={DollarSign}
+            title="No payments recorded yet"
+          />
+        ) : (
             <div className="space-y-3">
               {payments.map((payment) => {
                 const isAccountingPayment = 'invoice' in payment
@@ -124,13 +120,9 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                                 {accountingPayment.invoice.invoice_number}
                               </span>
                             </span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              accountingPayment.invoice.status === 'paid'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
+                            <Badge variant={getStatusVariant(accountingPayment.invoice.status)} size="sm">
                               {accountingPayment.invoice.status}
-                            </span>
+                            </Badge>
                           </div>
                         )}
 
@@ -183,18 +175,12 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                       </div>
                       {!isAccountingPayment && (
                         <div className="flex space-x-2 ml-4">
-                          <button
-                            onClick={() => onEditPayment(payment as WirePayment)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                          >
+                          <Button size="sm" onClick={() => onEditPayment(payment as WirePayment)}>
                             Edit
-                          </button>
-                          <button
-                            onClick={() => onDeletePayment(payment.id, payment.amount)}
-                            className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                          >
+                          </Button>
+                          <Button size="sm" variant="danger" onClick={() => onDeletePayment(payment.id, payment.amount)}>
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       )}
                       {isAccountingPayment && (
@@ -206,10 +192,15 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                   </div>
                 )
               })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
+        )}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

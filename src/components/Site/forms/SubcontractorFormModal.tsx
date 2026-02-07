@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { X, Building2, User } from 'lucide-react'
+import { Building2, User } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { SubcontractorFormData, ContractType } from '../types/siteTypes'
 import { fetchProjectFunders } from '../services/siteService'
 import { supabase } from '../../../lib/supabase'
+import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -176,352 +177,295 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const availableBudget = phase.budget_allocated - phase.budget_used
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Add Subcontractor</h3>
-              <p className="text-gray-600 mt-1">
-                {phase.phase_name} • Available Budget: €{availableBudget.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
+    <Modal show={true} onClose={onClose} size="xl">
+      <Modal.Header
+        title="Add New Subcontractor"
+        subtitle={`${phase.phase_name} • Available Budget: €${availableBudget.toLocaleString('hr-HR')}`}
+        onClose={onClose}
+      />
+
+      <Modal.Body>
+        <Alert variant="warning">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!hasContract}
+              onChange={(e) => setHasContract(!e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-2 text-sm font-medium text-gray-900">Bez ugovora</span>
+          </label>
+          <p className="text-xs text-gray-600 mt-1 ml-6">
+            {hasContract
+              ? 'Subkontraktor ima formalan ugovor sa osnovicom i PDV-om'
+              : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
+          </p>
+        </Alert>
+
+        <FormField
+          label="Kategorija ugovora"
+          required
+          helperText="Odaberite tip ugovora za ovu fazu"
+        >
+          <Select
+            value={formData.contract_type_id}
+            onChange={(e) => setFormData({ ...formData, contract_type_id: parseInt(e.target.value) })}
+            required
+            disabled={loadingContractTypes}
+          >
+            {contractTypes.map(type => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Subcontractor Selection
+          </label>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                checked={!useExistingSubcontractor}
+                onChange={() => setUseExistingSubcontractor(false)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Create New Subcontractor</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                checked={useExistingSubcontractor}
+                onChange={() => setUseExistingSubcontractor(true)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Select Existing Subcontractor</span>
+            </label>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hasContract}
-                onChange={(e) => setHasContract(!e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm font-medium text-gray-900">Bez ugovora</span>
-            </label>
-            <p className="text-xs text-gray-600 mt-1 ml-6">
-              {hasContract
-                ? 'Subkontraktor ima formalan ugovor sa osnovicom i PDV-om'
-                : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
-            </p>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kategorija ugovora *
-            </label>
-            <select
-              value={formData.contract_type_id}
-              onChange={(e) => setFormData({ ...formData, contract_type_id: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              disabled={loadingContractTypes}
-            >
-              {contractTypes.map(type => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Odaberite tip ugovora za ovu fazu
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Subcontractor Selection
-            </label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={!useExistingSubcontractor}
-                  onChange={() => setUseExistingSubcontractor(false)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Create New Subcontractor</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={useExistingSubcontractor}
-                  onChange={() => setUseExistingSubcontractor(true)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Select Existing Subcontractor</span>
-              </label>
-            </div>
-          </div>
-
-          {useExistingSubcontractor ? (
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Subcontractor *
-                </label>
-                <select
-                  value={formData.existing_subcontractor_id}
-                  onChange={(e) => {
-                    const selectedSub = existingSubcontractors.find(sub => sub.id === e.target.value)
-                    setFormData({
-                      ...formData,
-                      existing_subcontractor_id: e.target.value,
-                      name: selectedSub?.name || '',
-                      contact: selectedSub?.contact || '',
-                      job_description: selectedSub?.job_description || ''
-                    })
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Choose existing subcontractor</option>
-                  {existingSubcontractors.map(subcontractor => (
-                    <option key={subcontractor.id} value={subcontractor.id}>
-                      {subcontractor.name} - {subcontractor.contact}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {useExistingSubcontractor ? (
+          <div className="grid grid-cols-1 gap-4">
+            <FormField label="Select Subcontractor" required>
+              <Select
+                value={formData.existing_subcontractor_id}
+                onChange={(e) => {
+                  const selectedSub = existingSubcontractors.find(sub => sub.id === e.target.value)
+                  setFormData({
+                    ...formData,
+                    existing_subcontractor_id: e.target.value,
+                    name: selectedSub?.name || '',
+                    contact: selectedSub?.contact || '',
+                    job_description: selectedSub?.job_description || ''
+                  })
+                }}
+                required
+              >
+                <option value="">Choose existing subcontractor</option>
+                {existingSubcontractors.map(subcontractor => (
+                  <option key={subcontractor.id} value={subcontractor.id}>
+                    {subcontractor.name} - {subcontractor.contact}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
 
 {hasContract && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Osnovica (€) *
-                      </label>
-                      <input
-                        type="number"
-                        value={baseAmount}
-                        onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="0"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        PDV *
-                      </label>
-                      <select
-                        value={vatRate}
-                        onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      >
-                        <option value="0">0%</option>
-                        <option value="13">13%</option>
-                        <option value="25">25%</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Contract Cost (€)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.cost.toFixed(2)}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Automatski izračunato: Osnovica + PDV
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Deadline *
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.deadline}
-                        onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {!hasContract && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deadline (opcionalno)
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Description for this Phase
-                </label>
-                <textarea
-                  value={formData.job_description}
-                  onChange={(e) => setFormData({ ...formData, job_description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Describe the work for this specific phase..."
-                />
-              </div>
-
-              {(investors.length > 0 || banks.length > 0) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Financed By (Optional)
-                  </label>
-                  <select
-                    value={getFunderValue()}
-                    onChange={(e) => handleFunderChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={loadingFunders}
-                  >
-                    <option value="">No financing source selected</option>
-                    {investors.length > 0 && (
-                      <optgroup label="Investors">
-                        {investors.map(investor => (
-                          <option key={investor.id} value={`investor:${investor.id}`}>
-                            {investor.name} {investor.type && `(${investor.type})`}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {banks.length > 0 && (
-                      <optgroup label="Banks">
-                        {banks.map(bank => (
-                          <option key={bank.id} value={`bank:${bank.id}`}>
-                            {bank.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Select which investor or bank is financing this contract
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter company name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Information *</label>
-                <input
-                  type="text"
-                  value={formData.contact}
-                  onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Email or phone"
-                  required
-                />
-              </div>
-              {hasContract && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Osnovica (€) *</label>
-                    <input
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="Osnovica (€)" required>
+                    <Input
                       type="number"
                       value={baseAmount}
                       onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0"
                       required
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">PDV *</label>
-                    <select
+                  </FormField>
+                  <FormField label="PDV" required>
+                    <Select
                       value={vatRate}
                       onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
                       <option value="0">0%</option>
                       <option value="13">13%</option>
                       <option value="25">25%</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contract Cost (€)</label>
-                    <input
+                    </Select>
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Contract Cost (€)"
+                    helperText="Automatski izračunato: Osnovica + PDV"
+                  >
+                    <Input
                       type="number"
                       value={formData.cost.toFixed(2)}
                       readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                      className="bg-gray-50 text-gray-700 font-semibold"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Automatski izračunato: Osnovica + PDV
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
-                    <input
+                  </FormField>
+                  <FormField label="Deadline" required>
+                    <Input
                       type="date"
                       value={formData.deadline}
                       onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
                     />
-                  </div>
-                </>
-              )}
-              {!hasContract && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Deadline (opcionalno)</label>
-                  <input
+                  </FormField>
+                </div>
+              </>
+            )}
+
+            {!hasContract && (
+              <FormField label="Deadline (opcionalno)">
+                <Input
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                />
+              </FormField>
+            )}
+
+            <FormField label="Job Description for this Phase">
+              <Textarea
+                value={formData.job_description}
+                onChange={(e) => setFormData({ ...formData, job_description: e.target.value })}
+                rows={3}
+                placeholder="Describe the work for this specific phase..."
+              />
+            </FormField>
+
+            {(investors.length > 0 || banks.length > 0) && (
+              <FormField
+                label="Financed By (Optional)"
+                helperText="Select which investor or bank is financing this contract"
+              >
+                <Select
+                  value={getFunderValue()}
+                  onChange={(e) => handleFunderChange(e.target.value)}
+                  disabled={loadingFunders}
+                >
+                  <option value="">No financing source selected</option>
+                  {investors.length > 0 && (
+                    <optgroup label="Investors">
+                      {investors.map(investor => (
+                        <option key={investor.id} value={`investor:${investor.id}`}>
+                          {investor.name} {investor.type && `(${investor.type})`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {banks.length > 0 && (
+                    <optgroup label="Banks">
+                      {banks.map(bank => (
+                        <option key={bank.id} value={`bank:${bank.id}`}>
+                          {bank.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </Select>
+              </FormField>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <FormField label="Company Name" required>
+                <Input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter company name"
+                  required
+                />
+              </FormField>
+            </div>
+            <FormField label="Contact Information" required>
+              <Input
+                type="text"
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                placeholder="Email or phone"
+                required
+              />
+            </FormField>
+            {hasContract && (
+              <>
+                <FormField label="Osnovica (€)" required>
+                  <Input
+                    type="number"
+                    value={baseAmount}
+                    onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    required
+                  />
+                </FormField>
+                <FormField label="PDV" required>
+                  <Select
+                    value={vatRate}
+                    onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                    required
+                  >
+                    <option value="0">0%</option>
+                    <option value="13">13%</option>
+                    <option value="25">25%</option>
+                  </Select>
+                </FormField>
+                <FormField
+                  label="Contract Cost (€)"
+                  helperText="Automatski izračunato: Osnovica + PDV"
+                >
+                  <Input
+                    type="number"
+                    value={formData.cost.toFixed(2)}
+                    readOnly
+                    className="bg-gray-50 text-gray-700 font-semibold"
+                  />
+                </FormField>
+                <FormField label="Deadline">
+                  <Input
                     type="date"
                     value={formData.deadline}
                     onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-              )}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
-                <textarea
+                </FormField>
+              </>
+            )}
+            {!hasContract && (
+              <FormField label="Deadline (opcionalno)">
+                <Input
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                />
+              </FormField>
+            )}
+            <div className="md:col-span-2">
+              <FormField label="Job Description">
+                <Textarea
                   value={formData.job_description}
                   onChange={(e) => setFormData({ ...formData, job_description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Describe the work package and responsibilities..."
                 />
-              </div>
-              {(investors.length > 0 || banks.length > 0) && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Financed By (Optional)
-                  </label>
-                  <select
+              </FormField>
+            </div>
+            {(investors.length > 0 || banks.length > 0) && (
+              <div className="md:col-span-2">
+                <FormField
+                  label="Financed By (Optional)"
+                  helperText="Select which investor or bank is financing this contract"
+                >
+                  <Select
                     value={getFunderValue()}
                     onChange={(e) => handleFunderChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={loadingFunders}
                   >
                     <option value="">No financing source selected</option>
@@ -543,35 +487,26 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                         ))}
                       </optgroup>
                     )}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Select which investor or bank is financing this contract
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-        </div>
-
-        <div className="p-6 border-t border-gray-200 flex-shrink-0">
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={formData.cost > availableBudget}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              Add Subcontractor
-            </button>
+                  </Select>
+                </FormField>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="success"
+          onClick={handleSubmit}
+          disabled={formData.cost > availableBudget}
+        >
+          Add Subcontractor
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

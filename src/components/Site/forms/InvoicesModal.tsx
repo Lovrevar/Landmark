@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { X, FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
+import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../lib/supabase'
+import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../ui'
 
 interface Invoice {
   id: string
@@ -125,16 +126,16 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
     switch (status) {
       case 'PAID':
-        return 'bg-green-100 text-green-800'
+        return 'green'
       case 'PARTIALLY_PAID':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'yellow'
       case 'UNPAID':
-        return 'bg-red-100 text-red-800'
+        return 'red'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'gray'
     }
   }
 
@@ -159,37 +160,25 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   if (!isOpen || !subcontractor) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-              <FileText className="w-6 h-6 mr-2 text-blue-600" />
-              Invoices - {(subcontractor as any).company_name || subcontractor.name}
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Contract: {(subcontractor as any).contract_title || (subcontractor as any).contract_number || 'N/A'}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Modal show={true} onClose={onClose} size="full">
+      <Modal.Header
+        title={`Invoices - ${(subcontractor as any).company_name || subcontractor.name}`}
+        subtitle={`Contract: ${(subcontractor as any).contract_title || (subcontractor as any).contract_number || 'N/A'}`}
+        onClose={onClose}
+      />
 
-        <div className="p-6 overflow-y-auto flex-1">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : invoices.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No invoices found for this subcontractor</p>
-            </div>
-          ) : (
+      <Modal.Body>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : invoices.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No invoices found"
+            description="No invoices found for this subcontractor"
+          />
+        ) : (
             <div className="space-y-4">
               {invoices.map((invoice) => (
                 <div
@@ -202,9 +191,9 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-medium text-gray-500 uppercase">Invoice Number</label>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusColor(invoice.status)}`}>
+                        <Badge variant={getStatusVariant(invoice.status)} size="sm">
                           {getStatusLabel(invoice.status)}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-lg font-bold text-gray-900">{invoice.invoice_number}</p>
                     </div>
@@ -274,24 +263,18 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Total Invoices: <span className="font-semibold">{invoices.length}</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Close
-            </button>
           </div>
+        )}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <div className="text-sm text-gray-600">
+          Total Invoices: <span className="font-semibold">{invoices.length}</span>
         </div>
-      </div>
-    </div>
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

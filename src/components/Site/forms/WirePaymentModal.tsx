@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { X, Building2, User } from 'lucide-react'
+import { Building2, User } from 'lucide-react'
 import { Subcontractor, SubcontractorMilestone } from '../../../lib/supabase'
 import { fetchMilestonesBySubcontractor, fetchProjectFunders } from '../services/siteService'
+import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
 
 interface Funder {
   id: string
@@ -164,24 +165,14 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   const wouldBeOverBudget = newTotalPaid > subcontractor.cost
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full my-8">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Wire Payment</h3>
-              <p className="text-sm text-gray-600 mt-1">{subcontractor.name}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
+    <Modal show={true} onClose={onClose} size="lg">
+      <Modal.Header
+        title="Make Wire Payment"
+        subtitle={subcontractor.name}
+        onClose={onClose}
+      />
 
-        <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+      <Modal.Body>
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Contract Amount:</span>
@@ -200,14 +191,13 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
           </div>
 
           {milestones.length > 0 && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Milestone (Optional)
-              </label>
-              <select
+            <FormField
+              label="Select Milestone (Optional)"
+              helperText="Selecting a milestone will auto-fill the payment amount"
+            >
+              <Select
                 value={selectedMilestoneId}
                 onChange={(e) => handleMilestoneSelect(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="">Manual Payment (No Milestone)</option>
                 {milestones.map((milestone) => {
@@ -218,56 +208,56 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     </option>
                   )
                 })}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Selecting a milestone will auto-fill the payment amount
-              </p>
-            </div>
+              </Select>
+            </FormField>
           )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Amount (€) *
-            </label>
-            <input
+          <FormField
+            label="Payment Amount (€)"
+            required
+            helperText="You can pay any amount, including more than the contract value"
+          >
+            <Input
               type="number"
               min="0"
               step="0.01"
               value={amount}
               onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Enter payment amount"
               autoFocus
             />
-            <p className="text-xs text-gray-500 mt-1">
-              You can pay any amount, including more than the contract value
-            </p>
-          </div>
+          </FormField>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Date (Optional)
-            </label>
-            <input
+          <FormField
+            label="Payment Date (Optional)"
+            helperText="Leave empty if date is not yet known"
+          >
+            <Input
               type="date"
               value={paymentDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Leave empty if date is not yet known
-            </p>
-          </div>
+          </FormField>
 
           {(investors.length > 0 || banks.length > 0) && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Paid By (Optional)
-              </label>
-              <select
+            <FormField
+              label="Paid By (Optional)"
+              helperText={
+                subcontractor.financed_by_type && (subcontractor.financed_by_investor_id || subcontractor.financed_by_bank_id) ? (
+                  <span className="text-blue-600">
+                    Default: {subcontractor.financed_by_type === 'investor'
+                      ? investors.find(i => i.id === subcontractor.financed_by_investor_id)?.name || 'Investor'
+                      : banks.find(b => b.id === subcontractor.financed_by_bank_id)?.name || 'Bank'
+                    } (can be changed)
+                  </span>
+                ) : (
+                  'Select which investor or bank is making this payment'
+                )
+              }
+            >
+              <Select
                 value={getPaidByValue()}
                 onChange={(e) => handlePaidByChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 disabled={loadingFunders}
               >
                 <option value="">No payer selected</option>
@@ -289,73 +279,39 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     ))}
                   </optgroup>
                 )}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {subcontractor.financed_by_type && (subcontractor.financed_by_investor_id || subcontractor.financed_by_bank_id) ? (
-                  <span className="text-blue-600">
-                    Default: {subcontractor.financed_by_type === 'investor'
-                      ? investors.find(i => i.id === subcontractor.financed_by_investor_id)?.name || 'Investor'
-                      : banks.find(b => b.id === subcontractor.financed_by_bank_id)?.name || 'Bank'
-                    } (can be changed)
-                  </span>
-                ) : (
-                  'Select which investor or bank is making this payment'
-                )}
-              </p>
-            </div>
+              </Select>
+            </FormField>
           )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
+          <FormField label="Notes (Optional)">
+            <Textarea
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Add any notes about this payment"
             />
-          </div>
+          </FormField>
 
-          {amount > 0 && (
-            <div className={`p-3 rounded-lg mb-4 ${
-              wouldBeOverBudget
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-blue-50 border border-blue-200'
-            }`}>
-              <p className={`text-sm ${
-                wouldBeOverBudget
-                  ? 'text-red-700'
-                  : 'text-blue-700'
-              }`}>
+          {amount > 0 && wouldBeOverBudget && (
+            <Alert variant="warning">
+              <p className="text-sm">
                 <span className="font-medium">New Total Paid:</span> €{newTotalPaid.toLocaleString('hr-HR')}
               </p>
-              {wouldBeOverBudget && (
-                <p className="text-sm text-red-700 mt-1">
-                  <span className="font-medium">Loss:</span> €{(newTotalPaid - subcontractor.cost).toLocaleString('hr-HR')}
-                </p>
-              )}
-            </div>
+              <p className="text-sm mt-1">
+                <span className="font-medium">Loss:</span> €{(newTotalPaid - subcontractor.cost).toLocaleString('hr-HR')}
+              </p>
+            </Alert>
           )}
+      </Modal.Body>
 
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={amount <= 0}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              Record Payment
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="success" onClick={handleSubmit} disabled={amount <= 0}>
+          Record Payment
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

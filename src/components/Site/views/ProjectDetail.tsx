@@ -4,6 +4,7 @@ import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from '../types/siteTypes'
 import { PhaseCard } from './PhaseCard'
 import { supabase } from '../../../lib/supabase'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface Company {
   id: string
@@ -102,13 +103,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   return (
     <div>
       <div className="mb-6">
-        <button
+        <Button
+          variant="ghost"
+          icon={ArrowLeft}
+          size="sm"
           onClick={onBack}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Projects
-        </button>
+        </Button>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
@@ -125,30 +127,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-              project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
+            <Badge variant={
+              project.status === 'Completed' ? 'green' :
+              project.status === 'In Progress' ? 'blue' :
+              'gray'
+            } size="md">
               {project.status}
-            </span>
+            </Badge>
             {!project.has_phases ? (
-              <button
+              <Button
                 onClick={onOpenPhaseSetup}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                icon={Settings}
               >
-                <Settings className="w-4 h-4 mr-2" />
                 Setup Phases
-              </button>
+              </Button>
             ) : (
               onEditPhaseSetup && (
-                <button
+                <Button
                   onClick={onEditPhaseSetup}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  icon={Settings}
                 >
-                  <Settings className="w-4 h-4 mr-2" />
                   Edit Phases
-                </button>
+                </Button>
               )
             )}
           </div>
@@ -180,7 +180,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Alocirano:</span>
-                      <span className="font-bold text-purple-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
+                      <span className="font-bold text-blue-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Iskorišteno:</span>
@@ -194,7 +194,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Kamatna stopa:</span>
-                      <span className="font-semibold text-blue-600">{credit.interest_rate}%</span>
+                      <span className="font-semibold text-teal-600">{credit.interest_rate}%</span>
                     </div>
                   </div>
 
@@ -214,7 +214,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         className={`h-2 rounded-full transition-all ${
                           allocationUsedPercentage >= 100 ? 'bg-red-500' :
                           allocationUsedPercentage >= 80 ? 'bg-orange-500' :
-                          'bg-purple-500'
+                          'bg-blue-500'
                         }`}
                         style={{ width: `${Math.min(allocationUsedPercentage, 100)}%` }}
                       />
@@ -252,21 +252,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           })}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="text-center py-12">
-            <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Project Phases Not Set Up</h3>
-            <p className="text-gray-600 mb-4">
-              Set up construction phases to better organize subcontractors and budget allocation.
-            </p>
-            <button
-              onClick={onOpenPhaseSetup}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              Setup Project Phases
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="No phases created yet"
+          description="Set up construction phases to better organize subcontractors and budget allocation."
+          action={
+            <Button onClick={onOpenPhaseSetup} icon={Settings}>
+              Setup Phases
+            </Button>
+          }
+        />
       )}
 
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
