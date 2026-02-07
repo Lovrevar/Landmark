@@ -363,7 +363,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               contract_type_id: contractTypeId,
               has_contract: hasContract
             } as any
-
+            console.log(contractTypeId)
             onSubmit(updatedSubcontractor)
           }}
         >
