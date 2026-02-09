@@ -282,30 +282,40 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Contract:</span>
-                      <span className="font-medium text-gray-900">{formatCurrency(contract.contract_amount)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Paid:</span>
-                      <span className="font-medium text-teal-600">{formatCurrency(contract.budget_realized)}</span>
-                    </div>
-                    {remainingToPay > 0 && (
+                    {contract.has_contract && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Remaining:</span>
-                        <span className="font-medium text-orange-600">{formatCurrency(remainingToPay)}</span>
+                        <span className="text-gray-600">Contract:</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(contract.contract_amount)}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-gray-600 font-medium">Gain/Loss:</span>
-                      <span className={`font-bold ${
-                        gainLoss > 0 ? 'text-red-600' :
-                        gainLoss < 0 ? 'text-green-600' :
-                        'text-gray-900'
-                      }`}>
-                        {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-medium text-teal-600">{formatCurrency(contract.budget_realized)}</span>
                     </div>
+                    {(contract.invoiced_remaining && contract.invoiced_remaining > 0) && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Amount Due:</span>
+                        <span className="font-medium text-orange-600">{formatCurrency(contract.invoiced_remaining)}</span>
+                      </div>
+                    )}
+                    {contract.has_contract && remainingToPay > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Remaining (Contract):</span>
+                        <span className="font-medium text-blue-600">{formatCurrency(remainingToPay)}</span>
+                      </div>
+                    )}
+                    {contract.has_contract && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                        <span className={`font-bold ${
+                          gainLoss > 0 ? 'text-red-600' :
+                          gainLoss < 0 ? 'text-green-600' :
+                          'text-gray-900'
+                        }`}>
+                          {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
