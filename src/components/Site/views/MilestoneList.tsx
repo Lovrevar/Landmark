@@ -206,6 +206,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Description</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Percentage</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Paid</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Due Date</th>
                   <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
                   <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
@@ -214,6 +215,11 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               <tbody>
                 {milestones.map((milestone) => {
                   const amount = calculateAmount(milestone.percentage)
+                  const paidAmount = milestone.paid_amount || 0
+                  const isFullyPaid = paidAmount >= amount
+                  const isPartiallyPaid = paidAmount > 0 && paidAmount < amount
+                  const paymentPercentage = amount > 0 ? (paidAmount / amount) * 100 : 0
+
                   return (
                     <tr key={milestone.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4 text-sm font-medium text-gray-900">
@@ -235,6 +241,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           €{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="space-y-1">
+                          <div className="text-sm font-semibold text-gray-900">
+                            €{paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          {isPartiallyPaid && (
+                            <div className="text-xs text-gray-500">
+                              {paymentPercentage.toFixed(1)}% paid
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <div className="text-sm text-gray-600">
                           {milestone.due_date ? format(new Date(milestone.due_date), 'MMM dd, yyyy') : '-'}
@@ -242,11 +260,12 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant={
-                          milestone.status === 'paid' ? 'green' :
+                          isFullyPaid ? 'green' :
+                          isPartiallyPaid ? 'yellow' :
                           milestone.status === 'completed' ? 'blue' :
                           'gray'
                         } size="sm">
-                          {milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
+                          {isFullyPaid ? 'Paid' : isPartiallyPaid ? 'Partially Paid' : milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
@@ -277,6 +296,9 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-gray-900">
                     €{stats?.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="py-3 px-4 text-right text-sm text-gray-900">
+                    €{stats?.total_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td colSpan={3}></td>
                 </tr>

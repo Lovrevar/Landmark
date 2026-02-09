@@ -618,7 +618,7 @@ export const createSubcontractorComment = async (data: {
 export const fetchMilestonesByContract = async (
   contractId: string
 ) => {
-  const { data, error } = await supabase
+  const { data: milestones, error } = await supabase
     .from('subcontractor_milestones')
     .select('*')
     .eq('contract_id', contractId)
@@ -626,7 +626,35 @@ export const fetchMilestonesByContract = async (
 
   if (error) throw error
 
-  return data || []
+  const milestonesData = milestones || []
+
+  const milestoneIds = milestonesData.map(m => m.id)
+
+  if (milestoneIds.length === 0) {
+    return []
+  }
+
+  const { data: invoices, error: invoicesError } = await supabase
+    .from('accounting_invoices')
+    .select('milestone_id, paid_amount')
+    .in('milestone_id', milestoneIds)
+    .not('milestone_id', 'is', null)
+
+  if (invoicesError) {
+    console.error('Error fetching invoice payments:', invoicesError)
+  }
+
+  const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
+    if (inv.milestone_id) {
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.paid_amount || 0)
+    }
+    return acc
+  }, {} as Record<string, number>)
+
+  return milestonesData.map(milestone => ({
+    ...milestone,
+    paid_amount: paymentsByMilestone[milestone.id] || 0
+  }))
 }
 
 export const fetchMilestonesBySubcontractor = async (subcontractorId: string) => {
@@ -761,9 +789,7 @@ export const getMilestoneStatsForContract = async (
   const paidCount = milestones.filter(m => m.status === 'paid').length
 
   const totalAmount = (contractCost * totalPercentage) / 100
-  const totalPaid = milestones
-    .filter(m => m.status === 'paid')
-    .reduce((sum, m) => sum + (contractCost * m.percentage) / 100, 0)
+  const totalPaid = milestones.reduce((sum, m) => sum + (m.paid_amount || 0), 0)
 
   return {
     total_percentage: totalPercentage,
