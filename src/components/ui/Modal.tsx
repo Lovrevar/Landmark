@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
@@ -19,20 +20,36 @@ interface ModalProps {
 }
 
 function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
+  const mouseDownOnBackdrop = useRef(false)
+
   if (!show) return null
 
-  return (
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      mouseDownOnBackdrop.current = true
+    }
+  }
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && mouseDownOnBackdrop.current) {
+      onClose()
+    }
+    mouseDownOnBackdrop.current = false
+  }
+
+  const modalContent = (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
       <div className={`bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col`}>
         {children}
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
 interface ModalHeaderProps {
