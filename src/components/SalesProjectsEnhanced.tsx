@@ -436,6 +436,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         visible={showUnitForm}
         buildingId={selectedBuilding?.id || ''}
         unitType={activeUnitType}
+        selectedBuilding={selectedBuilding || { name: '' }}
         onClose={() => setShowUnitForm(false)}
         onSubmit={handleCreateUnit}
       />
