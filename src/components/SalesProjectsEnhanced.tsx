@@ -426,6 +426,7 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       <SingleBuildingModal
         visible={showBuildingForm}
+        project={selectedProject || { name: '' }}
         onClose={() => setShowBuildingForm(false)}
         onSubmit={handleCreateBuilding}
       />
@@ -441,6 +442,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       <BulkUnitsModal
         visible={showBulkUnitForm}
         unitType={activeUnitType}
+        selectedBuilding={selectedBuilding || { name: '' }}
         onClose={() => setShowBulkUnitForm(false)}
         onSubmit={handleBulkCreateUnits}
       />
