@@ -141,19 +141,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
         <FormField label="Dobavljač" required>
           <Select
             value={formData.supplier_id}
-            onChange={(e) => {
-              const newSupplierId = e.target.value
-              const supplierProjects = getSupplierProjects(newSupplierId)
-              const currentProjectInList = supplierProjects.some(p => p.id === formData.project_id)
-
-              onFormChange({
-                ...formData,
-                supplier_id: newSupplierId,
-                project_id: currentProjectInList ? formData.project_id : '',
-                contract_id: '',
-                milestone_id: ''
-              })
-            }}
+            onChange={(e) => onFormChange({ ...formData, supplier_id: e.target.value })}
             required
           >
             <option value="">Odaberi dobavljača</option>
@@ -236,47 +224,19 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
           </FormField>
 
           {formData.contract_id && getMilestonesByContract(formData.contract_id).length > 0 && (
-            <FormField label="Milestone (opcionalno)" helperText="Odabir milestone-a će automatski ažurirati osnovicu prema postotku milestone-a">
+            <FormField label="Milestone (opcionalno)" helperText="Odabir milestone-a će automatski ažurirati njegov status na &quot;plaćen&quot;">
               <Select
                 value={formData.milestone_id}
-                onChange={(e) => {
-                  const milestoneId = e.target.value
-                  if (milestoneId) {
-                    const milestone = getMilestonesByContract(formData.contract_id).find(m => m.id === milestoneId)
-                    const contract = getSupplierContractsByProject(formData.supplier_id, formData.project_id).find(c => c.id === formData.contract_id)
-
-                    if (milestone && contract) {
-                      const contractBaseAmount = contract.contract_amount / 1.25
-                      const milestoneBaseAmount = (contractBaseAmount * milestone.percentage) / 100
-                      onFormChange({
-                        ...formData,
-                        milestone_id: milestoneId,
-                        base_amount_1: milestoneBaseAmount,
-                        base_amount_2: 0,
-                        base_amount_3: 0,
-                        base_amount_4: 0
-                      })
-                      return
-                    }
-                  }
-                  onFormChange({ ...formData, milestone_id: milestoneId })
-                }}
+                onChange={(e) => onFormChange({ ...formData, milestone_id: e.target.value })}
               >
                 <option value="">Bez milestone-a</option>
-                {(() => {
-                  const contract = getSupplierContractsByProject(formData.supplier_id, formData.project_id).find(c => c.id === formData.contract_id)
-                  return getMilestonesByContract(formData.contract_id).map(milestone => {
-                    const contractBaseAmount = contract ? contract.contract_amount / 1.25 : 0
-                    const milestoneBaseAmount = (contractBaseAmount * milestone.percentage) / 100
-                    return (
-                      <option key={milestone.id} value={milestone.id}>
-                        #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}% = €{formatCurrency(milestoneBaseAmount)})
-                        {milestone.status === 'completed' && ' - Završeno'}
-                        {milestone.status === 'pending' && ' - Na čekanju'}
-                      </option>
-                    )
-                  })
-                })()}
+                {getMilestonesByContract(formData.contract_id).map(milestone => (
+                  <option key={milestone.id} value={milestone.id}>
+                    #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
+                    {milestone.status === 'completed' && ' - Završeno'}
+                    {milestone.status === 'pending' && ' - Na čekanju'}
+                  </option>
+                ))}
               </Select>
             </FormField>
           )}
