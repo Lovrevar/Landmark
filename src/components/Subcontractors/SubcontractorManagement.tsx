@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Users, Briefcase, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge } from '../ui'
+import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge, SearchInput } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 
 interface SubcontractorContract {
@@ -33,6 +33,7 @@ const SubcontractorManagement: React.FC = () => {
   const [subcontractors, setSubcontractors] = useState<Map<string, SubcontractorSummary>>(new Map())
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -161,6 +162,15 @@ const SubcontractorManagement: React.FC = () => {
 
   const subcontractorsList = Array.from(subcontractors.values())
 
+  const filteredSubcontractors = subcontractorsList.filter(sub =>
+    sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const displayCount = searchTerm
+    ? `${filteredSubcontractors.length} / ${subcontractorsList.length}`
+    : subcontractorsList.length
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -168,11 +178,21 @@ const SubcontractorManagement: React.FC = () => {
         description="Overview of all subcontractors and their contracts"
         actions={
           <div className="text-right">
-            <p className="text-sm text-gray-600">Total Subcontractors</p>
-            <p className="text-2xl font-bold text-gray-900">{subcontractorsList.length}</p>
+            <p className="text-sm text-gray-600">
+              {searchTerm ? 'Showing' : 'Total'} Subcontractors
+            </p>
+            <p className="text-2xl font-bold text-gray-900">{displayCount}</p>
           </div>
         }
       />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Search by subcontractor name or contact..."
+        />
+      </div>
 
       {subcontractorsList.length === 0 ? (
         <Card variant="default" padding="lg">
@@ -182,9 +202,17 @@ const SubcontractorManagement: React.FC = () => {
             description="Add subcontractors from Site Management"
           />
         </Card>
+      ) : filteredSubcontractors.length === 0 ? (
+        <Card variant="default" padding="lg">
+          <EmptyState
+            icon={Users}
+            title="No Matching Subcontractors"
+            description="Try adjusting your search criteria"
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {subcontractorsList.map((sub) => {
+          {filteredSubcontractors.map((sub) => {
             const paymentPercentage = sub.total_contract_value > 0
               ? (sub.total_paid / sub.total_contract_value) * 100
               : 0
