@@ -123,6 +123,7 @@ export interface RetailContract {
   building_surface_m2: number | null
   total_surface_m2: number | null
   price_per_m2: number | null
+  has_contract: boolean
   notes: string | null
   created_at: string
   updated_at: string

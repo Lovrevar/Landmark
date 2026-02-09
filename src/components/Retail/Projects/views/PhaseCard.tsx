@@ -227,9 +227,16 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       )}
                       <p className="text-xs text-gray-500">{contract.contract_number}</p>
                     </div>
-                    <Badge variant={getContractBadgeVariant()}>
-                      {getContractStatusLabel()}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      {contract.has_contract === false && (
+                        <Badge variant="yellow" size="sm">
+                          BEZ UGOVORA
+                        </Badge>
+                      )}
+                      <Badge variant={getContractBadgeVariant()}>
+                        {getContractStatusLabel()}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">

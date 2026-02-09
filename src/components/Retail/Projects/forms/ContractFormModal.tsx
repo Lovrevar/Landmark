@@ -25,7 +25,8 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     status: contract?.status || 'Active',
     start_date: contract?.start_date || '',
     end_date: contract?.end_date || '',
-    notes: contract?.notes || ''
+    notes: contract?.notes || '',
+    has_contract: contract?.has_contract ?? true
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,11 +70,12 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
         phase_id: phase.id,
         supplier_id: formData.supplier_id,
         contract_number: formData.contract_number,
-        contract_amount: parseFloat(formData.contract_amount),
+        contract_amount: formData.has_contract ? parseFloat(formData.contract_amount) : 0,
         status: formData.status as 'Active' | 'Completed' | 'Cancelled',
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        has_contract: formData.has_contract
       }
 
       if (contract) {
@@ -143,6 +145,23 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               </FormField>
             </div>
 
+            <div className="md:col-span-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.has_contract}
+                  onChange={(e) => setFormData({ ...formData, has_contract: e.target.checked })}
+                  className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Postoji formalni ugovor</span>
+              </label>
+              {!formData.has_contract && (
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Koristite ovu opciju za praćenje dobavljača bez formalnog ugovora
+                </p>
+              )}
+            </div>
+
             <FormField label="Broj ugovora *">
               <Input
                 type="text"
@@ -168,9 +187,11 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               <Input
                 type="number"
                 step="0.01"
-                value={formData.contract_amount}
+                value={formData.has_contract ? formData.contract_amount : '0'}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
-                required
+                required={formData.has_contract}
+                disabled={!formData.has_contract}
+                className={!formData.has_contract ? 'bg-gray-100 cursor-not-allowed' : ''}
               />
             </FormField>
 
