@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Briefcase, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge, SearchInput } from '../ui'
+import { Users, Briefcase, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react'
+import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge, SearchInput, Button, Input, FormField, ConfirmDialog } from '../ui'
 import { format, differenceInDays } from 'date-fns'
+
+interface Subcontractor {
+  id: string
+  name: string
+  contact: string
+  notes?: string
+}
 
 interface SubcontractorContract {
   id: string
@@ -18,8 +25,10 @@ interface SubcontractorContract {
 }
 
 interface SubcontractorSummary {
+  id: string
   name: string
   contact: string
+  notes?: string
   total_contracts: number
   total_contract_value: number
   total_paid: number
@@ -34,6 +43,18 @@ const SubcontractorManagement: React.FC = () => {
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showFormModal, setShowFormModal] = useState(false)
+  const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id: string; name: string }>({
+    show: false,
+    id: '',
+    name: ''
+  })
+  const [formData, setFormData] = useState({
+    name: '',
+    contact: '',
+    notes: ''
+  })
 
   useEffect(() => {
     fetchData()
@@ -49,6 +70,79 @@ const SubcontractorManagement: React.FC = () => {
       document.body.style.overflow = 'unset'
     }
   }, [selectedSubcontractor])
+
+  const handleOpenAddModal = () => {
+    setEditingSubcontractor(null)
+    setFormData({ name: '', contact: '', notes: '' })
+    setShowFormModal(true)
+  }
+
+  const handleOpenEditModal = (sub: SubcontractorSummary, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingSubcontractor({ id: sub.id, name: sub.name, contact: sub.contact, notes: sub.notes })
+    setFormData({ name: sub.name, contact: sub.contact, notes: sub.notes || '' })
+    setShowFormModal(true)
+  }
+
+  const handleSaveSubcontractor = async () => {
+    if (!formData.name.trim() || !formData.contact.trim()) {
+      alert('Please fill in name and contact')
+      return
+    }
+
+    try {
+      if (editingSubcontractor) {
+        const { error } = await supabase
+          .from('subcontractors')
+          .update({
+            name: formData.name.trim(),
+            contact: formData.contact.trim(),
+            notes: formData.notes.trim() || null
+          })
+          .eq('id', editingSubcontractor.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('subcontractors')
+          .insert({
+            name: formData.name.trim(),
+            contact: formData.contact.trim(),
+            notes: formData.notes.trim() || null
+          })
+
+        if (error) throw error
+      }
+
+      setShowFormModal(false)
+      fetchData()
+    } catch (error) {
+      console.error('Error saving subcontractor:', error)
+      alert('Failed to save subcontractor')
+    }
+  }
+
+  const handleDeleteConfirm = (sub: SubcontractorSummary, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeleteConfirm({ show: true, id: sub.id, name: sub.name })
+  }
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('subcontractors')
+        .delete()
+        .eq('id', deleteConfirm.id)
+
+      if (error) throw error
+
+      setDeleteConfirm({ show: false, id: '', name: '' })
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting subcontractor:', error)
+      alert('Failed to delete subcontractor. Check if there are contracts associated with it.')
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -136,8 +230,10 @@ const SubcontractorManagement: React.FC = () => {
         const completedContracts = contracts.filter(c => c.progress >= 100 || contractsData?.find(cd => cd.id === c.id)?.status === 'completed').length
 
         grouped.set(key, {
+          id: sub.id,
           name: sub.name,
           contact: sub.contact,
+          notes: sub.notes,
           total_contracts: contracts.length,
           total_contract_value: totalValue,
           total_paid: totalPaid,
@@ -177,11 +273,16 @@ const SubcontractorManagement: React.FC = () => {
         title="Subcontractors"
         description="Overview of all subcontractors and their contracts"
         actions={
-          <div className="text-right">
-            <p className="text-sm text-gray-600">
-              {searchTerm ? 'Showing' : 'Total'} Subcontractors
-            </p>
-            <p className="text-2xl font-bold text-gray-900">{displayCount}</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm text-gray-600">
+                {searchTerm ? 'Showing' : 'Total'} Subcontractors
+              </p>
+              <p className="text-2xl font-bold text-gray-900">{displayCount}</p>
+            </div>
+            <Button onClick={handleOpenAddModal} icon={Plus}>
+              Add Subcontractor
+            </Button>
           </div>
         }
       />
@@ -220,7 +321,7 @@ const SubcontractorManagement: React.FC = () => {
 
             return (
               <Card
-                key={`${sub.name}|${sub.contact}`}
+                key={sub.id}
                 variant="default"
                 padding="lg"
                 onClick={() => setSelectedSubcontractor(sub)}
@@ -230,12 +331,28 @@ const SubcontractorManagement: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">{sub.name}</h3>
                     <p className="text-sm text-gray-600">{sub.contact}</p>
                   </div>
-                  <div className={`p-2 rounded-lg ${
-                    sub.active_contracts > 0 ? 'bg-blue-100' : 'bg-gray-100'
-                  }`}>
-                    <Briefcase className={`w-5 h-5 ${
-                      sub.active_contracts > 0 ? 'text-blue-600' : 'text-gray-600'
-                    }`} />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleOpenEditModal(sub, e)}
+                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit Subcontractor"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteConfirm(sub, e)}
+                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Subcontractor"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className={`p-2 rounded-lg ${
+                      sub.active_contracts > 0 ? 'bg-blue-100' : 'bg-gray-100'
+                    }`}>
+                      <Briefcase className={`w-5 h-5 ${
+                        sub.active_contracts > 0 ? 'text-blue-600' : 'text-gray-600'
+                      }`} />
+                    </div>
                   </div>
                 </Card.Header>
 
@@ -283,6 +400,47 @@ const SubcontractorManagement: React.FC = () => {
           })}
         </div>
       )}
+
+      <Modal show={showFormModal} onClose={() => setShowFormModal(false)}>
+        <Modal.Header
+          title={editingSubcontractor ? 'Edit Subcontractor' : 'Add Subcontractor'}
+          onClose={() => setShowFormModal(false)}
+        />
+        <Modal.Body>
+          <div className="space-y-4">
+            <FormField label="Name" required>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter subcontractor name"
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Contact" required>
+              <Input
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                placeholder="Phone number or email"
+              />
+            </FormField>
+            <FormField label="Notes">
+              <Input
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Optional notes"
+              />
+            </FormField>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline" onClick={() => setShowFormModal(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveSubcontractor}>
+            {editingSubcontractor ? 'Update' : 'Add'} Subcontractor
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={!!selectedSubcontractor} onClose={() => setSelectedSubcontractor(null)} size="xl">
         {selectedSubcontractor && (
@@ -408,6 +566,15 @@ const SubcontractorManagement: React.FC = () => {
           </>
         )}
       </Modal>
+
+      <ConfirmDialog
+        show={deleteConfirm.show}
+        title="Delete Subcontractor"
+        message={`Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm({ show: false, id: '', name: '' })}
+      />
     </div>
   )
 }
