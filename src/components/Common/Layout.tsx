@@ -157,7 +157,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Menu className="w-6 h-6" />
               </button>
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Landmark</h1>
+              <h1 className="text-xl font-bold text-gray-900">Cognilion</h1>
             </div>
             <div className="flex items-center space-x-4">
               {user?.role !== 'Supervision' && (
