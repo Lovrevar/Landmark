@@ -101,7 +101,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             {phase.phase_type !== 'sales' && (
               <div className="text-right">
                 <p className="text-lg font-bold text-gray-900">{formatCurrency(phase.budget_allocated)}</p>
-                <p className="text-sm text-gray-600">Allocated Budget</p>
+                <p className="text-sm text-gray-600">Forecasted Budget</p>
               </div>
             )}
             <Button
