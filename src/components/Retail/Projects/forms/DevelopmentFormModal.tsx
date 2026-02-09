@@ -23,7 +23,8 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
     contract_amount: contract?.contract_amount?.toString() || '',
     contract_date: contract?.contract_date || '',
     notes: contract?.notes || '',
-    status: contract?.status || 'Active'
+    status: contract?.status || 'Active',
+    has_contract: contract?.has_contract ?? true
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,13 +72,14 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
         phase_id: phase.id,
         supplier_id: formData.supplier_id,
         contract_number: formData.contract_number,
-        contract_amount: parseFloat(formData.contract_amount),
+        contract_amount: formData.has_contract ? parseFloat(formData.contract_amount) : 0,
         contract_date: formData.contract_date,
         status: formData.status as 'Active' | 'Completed' | 'Cancelled',
         start_date: null,
         end_date: null,
         land_area_m2: null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        has_contract: formData.has_contract
       }
 
       if (contract) {
@@ -137,6 +139,23 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
               </FormField>
             </div>
 
+            <div className="md:col-span-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.has_contract}
+                  onChange={(e) => setFormData({ ...formData, has_contract: e.target.checked })}
+                  className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Postoji formalni ugovor</span>
+              </label>
+              {!formData.has_contract && (
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Koristite ovu opciju za praćenje dobavljača bez formalnog ugovora
+                </p>
+              )}
+            </div>
+
             <FormField label="Broj ugovora *">
               <Input
                 type="text"
@@ -161,10 +180,12 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
               <Input
                 type="number"
                 step="0.01"
-                value={formData.contract_amount}
+                value={formData.has_contract ? formData.contract_amount : '0'}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
                 placeholder="npr. 50000"
-                required
+                required={formData.has_contract}
+                disabled={!formData.has_contract}
+                className={!formData.has_contract ? 'bg-gray-100 cursor-not-allowed' : ''}
               />
             </FormField>
 
