@@ -145,7 +145,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           }`}>
             <p className={`text-sm ${
               (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-700' : 'text-green-700'
-            }`}>Forecasted Budget</p>
+            }`}>Budget</p>
             <p className={`text-lg font-bold ${
               (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-900' : 'text-green-900'
             }`}>
