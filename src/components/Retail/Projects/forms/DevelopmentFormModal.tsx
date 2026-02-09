@@ -69,7 +69,7 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
         supplier_id: formData.supplier_id,
         contract_number: formData.contract_number,
         contract_amount: formData.has_contract ? parseFloat(formData.contract_amount) : 0,
-        contract_date: formData.contract_date,
+        contract_date: formData.contract_date || null,
         status: formData.status as 'Active' | 'Completed' | 'Cancelled',
         start_date: null,
         end_date: null,
