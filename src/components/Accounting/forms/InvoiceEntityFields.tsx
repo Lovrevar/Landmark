@@ -246,11 +246,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
                     const contract = getSupplierContractsByProject(formData.supplier_id, formData.project_id).find(c => c.id === formData.contract_id)
 
                     if (milestone && contract) {
-                      const milestoneAmount = (contract.contract_amount * milestone.percentage) / 100
+                      const contractBaseAmount = contract.contract_amount / 1.25
+                      const milestoneBaseAmount = (contractBaseAmount * milestone.percentage) / 100
                       onFormChange({
                         ...formData,
                         milestone_id: milestoneId,
-                        base_amount_1: milestoneAmount,
+                        base_amount_1: milestoneBaseAmount,
                         base_amount_2: 0,
                         base_amount_3: 0,
                         base_amount_4: 0
@@ -265,10 +266,11 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
                 {(() => {
                   const contract = getSupplierContractsByProject(formData.supplier_id, formData.project_id).find(c => c.id === formData.contract_id)
                   return getMilestonesByContract(formData.contract_id).map(milestone => {
-                    const milestoneAmount = contract ? (contract.contract_amount * milestone.percentage) / 100 : 0
+                    const contractBaseAmount = contract ? contract.contract_amount / 1.25 : 0
+                    const milestoneBaseAmount = (contractBaseAmount * milestone.percentage) / 100
                     return (
                       <option key={milestone.id} value={milestone.id}>
-                        #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}% = €{formatCurrency(milestoneAmount)})
+                        #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}% = €{formatCurrency(milestoneBaseAmount)})
                         {milestone.status === 'completed' && ' - Završeno'}
                         {milestone.status === 'pending' && ' - Na čekanju'}
                       </option>
