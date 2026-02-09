@@ -122,7 +122,8 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             supplier_id: newSupplier.id,
             contract_amount: 0,
             budget_realized: 0,
-            status: 'Active'
+            status: 'Active',
+            has_contract: false
           }])
 
         if (contractError) throw contractError
