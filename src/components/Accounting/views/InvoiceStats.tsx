@@ -22,7 +22,7 @@ export const InvoiceStats: React.FC<InvoiceStatsProps> = ({
         color="white"
       />
       <StatCard
-        label="Prikazano Neplaćeno"
+        label="Neplaćeno"
         value={`€${new Intl.NumberFormat('hr-HR', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
