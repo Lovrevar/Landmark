@@ -182,49 +182,53 @@ const AccountingInvoices: React.FC = () => {
         totalUnpaidAmount={totalUnpaidAmount}
       />
 
-      <InvoiceFilters
-        searchTerm={searchTerm}
-        filterType={filterType}
-        filterStatus={filterStatus}
-        filterCompany={filterCompany}
-        companies={companies}
-        onSearchChange={setSearchTerm}
-        onTypeChange={(value) => setFilterType(value as any)}
-        onStatusChange={(value) => setFilterStatus(value as any)}
-        onCompanyChange={setFilterCompany}
-        onClearFilters={() => {
-          setSearchTerm('')
-          setFilterType('ALL')
-          setFilterStatus('ALL')
-          setFilterCompany('ALL')
-          setSortField(null)
-          setSortDirection('asc')
-        }}
-      />
+      <div className="flex gap-4">
+        <InvoiceFilters
+          searchTerm={searchTerm}
+          filterType={filterType}
+          filterStatus={filterStatus}
+          filterCompany={filterCompany}
+          companies={companies}
+          onSearchChange={setSearchTerm}
+          onTypeChange={(value) => setFilterType(value as any)}
+          onStatusChange={(value) => setFilterStatus(value as any)}
+          onCompanyChange={setFilterCompany}
+          onClearFilters={() => {
+            setSearchTerm('')
+            setFilterType('ALL')
+            setFilterStatus('ALL')
+            setFilterCompany('ALL')
+            setSortField(null)
+            setSortDirection('asc')
+          }}
+        />
 
-      <InvoiceTable
-        invoices={filteredInvoices}
-        visibleColumns={visibleColumns}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        onView={handleViewInvoice}
-        onEdit={handleOpenModal}
-        onDelete={handleDelete}
-        onPayment={handleOpenPaymentModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
-        getSupplierCustomerName={getSupplierCustomerName}
-        isOverdue={isOverdue}
-      />
+        <div className="flex-1 space-y-4">
+          <InvoiceTable
+            invoices={filteredInvoices}
+            visibleColumns={visibleColumns}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onView={handleViewInvoice}
+            onEdit={handleOpenModal}
+            onDelete={handleDelete}
+            onPayment={handleOpenPaymentModal}
+            getTypeColor={getTypeColor}
+            getTypeLabel={getTypeLabel}
+            getStatusColor={getStatusColor}
+            getSupplierCustomerName={getSupplierCustomerName}
+            isOverdue={isOverdue}
+          />
 
-      <InvoicePagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalCount={totalCount}
-        onPageChange={setCurrentPage}
-      />
+          <InvoicePagination
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </div>
 
       <InvoiceFormModal
         show={showInvoiceModal}
