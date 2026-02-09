@@ -145,4 +145,5 @@ export interface Invoice {
   projects?: { name: string }
   contracts?: { contract_number: string; job_description: string }
   office_suppliers?: { name: string }
+  refunds?: { name: string }
 }

@@ -10,6 +10,7 @@ import {
   RetailContract,
   RetailMilestone,
   InvoiceCategory,
+  Refund,
   RetailInvoiceFormData
 } from '../types/retailInvoiceTypes'
 
@@ -23,6 +24,7 @@ interface RetailInvoiceFormFieldsProps {
   contracts: RetailContract[]
   milestones: RetailMilestone[]
   invoiceCategories: InvoiceCategory[]
+  refunds: Refund[]
 }
 
 export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = ({
@@ -34,7 +36,8 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
   projects,
   contracts,
   milestones,
-  invoiceCategories
+  invoiceCategories,
+  refunds
 }) => {
   const getEntityOptions = () => {
     if (formData.entity_type === 'supplier') {
@@ -80,6 +83,20 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
           ))}
         </Select>
       </FormField>
+
+      {formData.invoice_type === 'incoming' && formData.entity_type === 'supplier' && (
+        <FormField label="Refundacija (opcionalno)">
+          <Select
+            value={formData.refund_id}
+            onChange={(e) => setFormData({ ...formData, refund_id: e.target.value })}
+          >
+            <option value="">Bez refundacije</option>
+            {refunds.map(refund => (
+              <option key={refund.id} value={refund.id}>{refund.name}</option>
+            ))}
+          </Select>
+        </FormField>
+      )}
 
       <FormField label="Moja firma (izdaje račun)" required>
         <Select

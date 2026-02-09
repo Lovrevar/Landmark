@@ -142,7 +142,8 @@ export const fetchData = async (
     contracts: inv.contract_number ? { contract_number: inv.contract_number, job_description: inv.contract_job_description || '' } : null,
     office_suppliers: inv.office_supplier_name ? { name: inv.office_supplier_name } : null,
     retail_suppliers: inv.retail_supplier_name ? { name: inv.retail_supplier_name } : null,
-    retail_customers: inv.retail_customer_name ? { name: inv.retail_customer_name } : null
+    retail_customers: inv.retail_customer_name ? { name: inv.retail_customer_name } : null,
+    refunds: inv.refund_name ? { name: inv.refund_name } : null
   }))
 
   let stats = {

@@ -50,6 +50,7 @@ export interface RetailInvoiceFormData {
   retail_project_id: string
   retail_contract_id: string
   retail_milestone_id: string
+  refund_id: string
   invoice_number: string
   reference_number: string
   iban: string
@@ -67,6 +68,11 @@ export interface RetailInvoiceFormData {
 
 export interface InvoiceCategory {
   id: string
+  name: string
+}
+
+export interface Refund {
+  id: number
   name: string
 }
 

@@ -152,7 +152,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
           </div>
         )}
 
-        {(invoice.reference_number || invoice.iban) && (
+        {(invoice.reference_number || invoice.iban || invoice.refunds) && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 mb-2">Platni detalji</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -166,6 +166,12 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                 <div>
                   <span className="text-sm text-gray-500">IBAN:</span>
                   <p className="text-sm font-medium text-gray-900">{invoice.iban}</p>
+                </div>
+              )}
+              {invoice.refunds && (
+                <div>
+                  <span className="text-sm text-gray-500">Refundacija:</span>
+                  <p className="text-sm font-medium text-gray-900">{invoice.refunds.name}</p>
                 </div>
               )}
             </div>

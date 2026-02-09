@@ -24,6 +24,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     retail_project_id: '',
     retail_contract_id: '',
     retail_milestone_id: '',
+    refund_id: '',
     invoice_number: '',
     reference_number: '',
     iban: '',
@@ -47,6 +48,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     contracts,
     milestones,
     invoiceCategories,
+    refunds,
     error,
     setError
   } = useRetailInvoiceData(formData)
@@ -133,6 +135,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         retail_project_id: formData.retail_project_id,
         retail_contract_id: formData.retail_contract_id,
         retail_milestone_id: formData.retail_milestone_id || null,
+        refund_id: formData.refund_id ? parseInt(formData.refund_id) : null,
         invoice_number: formData.invoice_number,
         reference_number: formData.reference_number || null,
         iban: formData.iban || null,
@@ -191,6 +194,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             contracts={contracts}
             milestones={milestones}
             invoiceCategories={invoiceCategories}
+            refunds={refunds}
           />
 
           <RetailInvoiceCalculationSummary

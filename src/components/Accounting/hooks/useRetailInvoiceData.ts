@@ -8,6 +8,7 @@ import {
   RetailContract,
   RetailMilestone,
   InvoiceCategory,
+  Refund,
   RetailInvoiceFormData
 } from '../types/retailInvoiceTypes'
 
@@ -19,14 +20,16 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
   const [contracts, setContracts] = useState<RetailContract[]>([])
   const [milestones, setMilestones] = useState<RetailMilestone[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<InvoiceCategory[]>([])
+  const [refunds, setRefunds] = useState<Refund[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const loadInitialData = async () => {
     try {
-      const [companiesRes, projectsRes, categoriesRes] = await Promise.all([
+      const [companiesRes, projectsRes, categoriesRes, refundsRes] = await Promise.all([
         supabase.from('accounting_companies').select('id, name').order('name'),
         supabase.from('retail_projects').select('id, name, plot_number').order('name'),
-        supabase.from('invoice_categories').select('id, name').eq('is_active', true).order('sort_order')
+        supabase.from('invoice_categories').select('id, name').eq('is_active', true).order('sort_order'),
+        supabase.from('accounting_invoices_refund').select('id, name').order('name')
       ])
 
       if (companiesRes.error) throw companiesRes.error
@@ -36,6 +39,9 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
       setProjects(projectsRes.data || [])
       if (!categoriesRes.error) {
         setInvoiceCategories(categoriesRes.data || [])
+      }
+      if (!refundsRes.error) {
+        setRefunds(refundsRes.data || [])
       }
     } catch (err) {
       console.error('Error loading initial data:', err)
@@ -149,6 +155,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
     contracts,
     milestones,
     invoiceCategories,
+    refunds,
     error,
     setError
   }
