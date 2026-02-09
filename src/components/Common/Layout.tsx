@@ -22,7 +22,9 @@ import {
   Lock,
   AlertCircle,
   MapPin,
-  ShoppingCart
+  ShoppingCart,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -32,7 +34,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -150,12 +152,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden mr-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
               <h1 className="text-xl font-bold text-gray-900">Cognilion</h1>
             </div>
@@ -201,51 +197,61 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
 
-      <div className="flex relative overflow-x-hidden">
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
+      <div className="flex relative">
         <aside
           className={`
-            fixed lg:static inset-y-0 left-0 z-50
-            w-64 bg-white shadow-sm border-r border-gray-200
-            transform transition-transform duration-300 ease-in-out
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            lg:min-h-screen
+            bg-white shadow-sm border-r border-gray-200 min-h-screen
+            transition-all duration-300 ease-in-out
+            ${sidebarOpen ? 'w-64' : 'w-16'}
+            flex-shrink-0
           `}
         >
-          <div className="flex justify-between items-center p-4 border-b border-gray-200 lg:hidden">
-            <span className="font-semibold text-gray-900">Menu</span>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="flex flex-col h-full">
+            <div className="p-4 border-b border-gray-200 flex justify-end">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
+              >
+                {sidebarOpen ? (
+                  <ChevronLeft className="w-5 h-5" />
+                ) : (
+                  <ChevronRight className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <nav className="p-4 flex-1">
+              <ul className="space-y-2">
+                {menuItems.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      to={item.path}
+                      className="flex items-center px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200 group relative"
+                      title={!sidebarOpen ? item.name : undefined}
+                    >
+                      <item.icon className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? 'mr-3' : ''}`} />
+                      <span
+                        className={`
+                          whitespace-nowrap overflow-hidden transition-all duration-300
+                          ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
+                        `}
+                      >
+                        {item.name}
+                      </span>
+                      {!sidebarOpen && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
+                          {item.name}
+                        </div>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           </div>
-          <nav className="p-4">
-            <ul className="space-y-2">
-              {menuItems.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    to={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex items-center px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200"
-                  >
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
         </aside>
 
-        <main className="flex-1 p-6 w-full lg:w-auto overflow-x-hidden">
+        <main className="flex-1 p-6 overflow-x-auto">
           {children}
         </main>
       </div>
