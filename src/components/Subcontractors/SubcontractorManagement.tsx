@@ -189,7 +189,8 @@ const SubcontractorManagement: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <SearchInput
           value={searchTerm}
-          onChange={setSearchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClear={() => setSearchTerm('')}
           placeholder="Search by subcontractor name or contact..."
         />
       </div>
