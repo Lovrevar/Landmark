@@ -16,7 +16,7 @@ export const InvoiceStats: React.FC<InvoiceStatsProps> = ({
   return (
     <StatGrid columns={3}>
       <StatCard
-        label="Prikazano računa"
+        label="Ukupno računa"
         value={filteredTotalCount}
         icon={FileText}
         color="white"
