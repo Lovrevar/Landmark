@@ -64,10 +64,6 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
         throw new Error('Morate odabrati dobavljača')
       }
 
-      if (!formData.contract_date) {
-        throw new Error('Morate unijeti datum ugovora')
-      }
-
       const dataToSubmit = {
         phase_id: phase.id,
         supplier_id: formData.supplier_id,
@@ -167,12 +163,11 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum ugovora *">
+            <FormField label="Datum ugovora">
               <Input
                 type="date"
                 value={formData.contract_date}
                 onChange={(e) => setFormData({ ...formData, contract_date: e.target.value })}
-                required
               />
             </FormField>
 
@@ -201,13 +196,12 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Opis *">
+              <FormField label="Opis">
                 <Textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={4}
                   placeholder="Opis usluge... (npr. Izrada projektne dokumentacije, Geodetski snimak, itd.)"
-                  required
                 />
               </FormField>
             </div>
