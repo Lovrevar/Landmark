@@ -420,6 +420,7 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       <BuildingQuantityModal
         visible={showBuildingQuantityForm}
+        project={selectedProject || { name: '' }}
         onClose={() => setShowBuildingQuantityForm(false)}
         onSubmit={handleCreateBulkBuildings}
       />
