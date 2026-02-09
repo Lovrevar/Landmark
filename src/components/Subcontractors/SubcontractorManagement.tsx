@@ -163,8 +163,8 @@ const SubcontractorManagement: React.FC = () => {
   const subcontractorsList = Array.from(subcontractors.values())
 
   const filteredSubcontractors = subcontractorsList.filter(sub =>
-    sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.contact.toLowerCase().includes(searchTerm.toLowerCase())
+    (sub.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (sub.contact || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const displayCount = searchTerm
