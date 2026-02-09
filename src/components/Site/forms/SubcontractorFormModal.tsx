@@ -31,8 +31,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 }) => {
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [hasContract, setHasContract] = useState(true)
-  const [baseAmount, setBaseAmount] = useState(0)
-  const [vatRate, setVatRate] = useState(0)
   const [formData, setFormData] = useState<SubcontractorFormData>({
     existing_subcontractor_id: '',
     name: '',
@@ -53,32 +51,19 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [loadingContractTypes, setLoadingContractTypes] = useState(false)
 
-  const calculateTotalCost = (base: number, vat: number) => {
-    const vatAmount = base * (vat / 100)
-    return base + vatAmount
-  }
-
   useEffect(() => {
-    if (hasContract) {
-      const totalCost = calculateTotalCost(baseAmount, vatRate)
-      setFormData(prev => ({ ...prev, cost: totalCost, has_contract: true }))
-    } else {
+    if (!hasContract) {
       setFormData(prev => ({ ...prev, cost: 0, has_contract: false }))
+    } else {
+      setFormData(prev => ({ ...prev, has_contract: true }))
     }
-  }, [baseAmount, vatRate, hasContract])
+  }, [hasContract])
 
   useEffect(() => {
     if (phase) {
       setFormData(prev => ({ ...prev, phase_id: phase.id }))
     }
   }, [phase])
-
-  useEffect(() => {
-    if (!visible) {
-      setBaseAmount(0)
-      setVatRate(0)
-    }
-  }, [visible])
 
   useEffect(() => {
     if (visible && projectId) {
@@ -197,7 +182,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           </label>
           <p className="text-xs text-gray-600 mt-1 ml-6">
             {hasContract
-              ? 'Subkontraktor ima formalan ugovor sa osnovicom i PDV-om'
+              ? 'Subkontraktor ima formalan ugovor - unesite osnovicu bez PDV-a'
               : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
           </p>
         </Alert>
@@ -274,52 +259,29 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
             </FormField>
 
 {hasContract && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField label="Osnovica (€)" required>
-                    <Input
-                      type="number"
-                      value={baseAmount}
-                      onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      required
-                    />
-                  </FormField>
-                  <FormField label="PDV" required>
-                    <Select
-                      value={vatRate}
-                      onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                      required
-                    >
-                      <option value="0">0%</option>
-                      <option value="13">13%</option>
-                      <option value="25">25%</option>
-                    </Select>
-                  </FormField>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    label="Contract Cost (€)"
-                    helperText="Automatski izračunato: Osnovica + PDV"
-                  >
-                    <Input
-                      type="number"
-                      value={formData.cost.toFixed(2)}
-                      readOnly
-                      className="bg-gray-50 text-gray-700 font-semibold"
-                    />
-                  </FormField>
-                  <FormField label="Deadline" required>
-                    <Input
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                      required
-                    />
-                  </FormField>
-                </div>
-              </>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  label="Contract Amount (€)"
+                  helperText="Base amount without VAT"
+                  required
+                >
+                  <Input
+                    type="number"
+                    value={formData.cost}
+                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    required
+                  />
+                </FormField>
+                <FormField label="Deadline" required>
+                  <Input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    required
+                  />
+                </FormField>
+              </div>
             )}
 
             {!hasContract && (
@@ -398,35 +360,17 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
             </FormField>
             {hasContract && (
               <>
-                <FormField label="Osnovica (€)" required>
-                  <Input
-                    type="number"
-                    value={baseAmount}
-                    onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    required
-                  />
-                </FormField>
-                <FormField label="PDV" required>
-                  <Select
-                    value={vatRate}
-                    onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                    required
-                  >
-                    <option value="0">0%</option>
-                    <option value="13">13%</option>
-                    <option value="25">25%</option>
-                  </Select>
-                </FormField>
                 <FormField
-                  label="Contract Cost (€)"
-                  helperText="Automatski izračunato: Osnovica + PDV"
+                  label="Contract Amount (€)"
+                  helperText="Base amount without VAT"
+                  required
                 >
                   <Input
                     type="number"
-                    value={formData.cost.toFixed(2)}
-                    readOnly
-                    className="bg-gray-50 text-gray-700 font-semibold"
+                    value={formData.cost}
+                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    required
                   />
                 </FormField>
                 <FormField label="Deadline">

@@ -636,7 +636,7 @@ export const fetchMilestonesByContract = async (
 
   const { data: invoices, error: invoicesError } = await supabase
     .from('accounting_invoices')
-    .select('milestone_id, paid_amount')
+    .select('milestone_id, base_amount, status')
     .in('milestone_id', milestoneIds)
     .not('milestone_id', 'is', null)
 
@@ -646,7 +646,7 @@ export const fetchMilestonesByContract = async (
 
   const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
     if (inv.milestone_id) {
-      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.paid_amount || 0)
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.base_amount || 0)
     }
     return acc
   }, {} as Record<string, number>)

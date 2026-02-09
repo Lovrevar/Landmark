@@ -134,7 +134,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               {projectName} • {phaseName} • {subcontractorName}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Contract: €{contractCost.toLocaleString('hr-HR')}
+              Contract (Base): €{contractCost.toLocaleString('hr-HR')}
             </p>
           </div>
           <div className="flex items-center space-x-3">

@@ -25,8 +25,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   onChange,
   onSubmit
 }) => {
-  const [baseAmount, setBaseAmount] = useState(0)
-  const [vatRate, setVatRate] = useState(0)
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
@@ -38,33 +36,17 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [contact, setContact] = useState('')
   const [jobDescription, setJobDescription] = useState('')
   const [deadline, setDeadline] = useState('')
+  const [cost, setCost] = useState(0)
 
   useEffect(() => {
     if (visible && subcontractor) {
-      const possibleVatRates = [0, 5, 13, 25]
-      let foundVat = 0
-      let foundBase = subcontractor.cost
-
-      for (const rate of possibleVatRates) {
-        const calculatedBase = subcontractor.cost / (1 + rate / 100)
-        const calculatedVat = calculatedBase * (rate / 100)
-        const calculatedTotal = calculatedBase + calculatedVat
-
-        if (Math.abs(calculatedTotal - subcontractor.cost) < 0.01) {
-          foundVat = rate
-          foundBase = calculatedBase
-          break
-        }
-      }
-
-      setBaseAmount(foundBase)
-      setVatRate(foundVat)
       setHasContract((subcontractor as any).has_contract !== false)
       setSelectedPhaseId((subcontractor as any).phase_id || '')
       setName(subcontractor.name)
       setContact(subcontractor.contact)
       setJobDescription(subcontractor.job_description)
       setDeadline(subcontractor.deadline)
+      setCost(subcontractor.cost || 0)
 
       loadPhases()
       loadContractTypes()
@@ -140,11 +122,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       console.error('Error loading contract type:', error)
       setContractTypeId(0)
     }
-  }
-
-  const calculateTotalCost = () => {
-    const vatAmount = baseAmount * (vatRate / 100)
-    return baseAmount + vatAmount
   }
 
   if (!visible || !subcontractor) return null
@@ -248,53 +225,29 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           </div>
 
           {hasContract && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Osnovica (€)" required>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={baseAmount}
-                    onChange={(e) => setBaseAmount(parseFloat(e.target.value) || 0)}
-                  />
-                </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                label="Contract Amount (€)"
+                helperText="Base amount without VAT"
+                required
+              >
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cost}
+                  onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
+                />
+              </FormField>
 
-                <FormField label="PDV" required>
-                  <Select
-                    value={vatRate}
-                    onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                  >
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="13">13%</option>
-                    <option value="25">25%</option>
-                  </Select>
-                </FormField>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  label="Contracted ammount (€)"
-                  helperText="Automatski izračunato: Osnovica + PDV"
-                >
-                  <Input
-                    type="number"
-                    value={calculateTotalCost().toFixed(2)}
-                    readOnly
-                    className="bg-gray-50 text-gray-700 font-semibold"
-                  />
-                </FormField>
-
-                <FormField label="Deadline" required>
-                  <Input
-                    type="date"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                  />
-                </FormField>
-              </div>
-            </>
+              <FormField label="Deadline" required>
+                <Input
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                />
+              </FormField>
+            </div>
           )}
 
           {hasContract && (
@@ -302,20 +255,20 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Paid:</span>
+                  <span className="text-gray-600">Total Paid (Base):</span>
                   <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Remaining:</span>
                   <span className="font-medium text-orange-600">
-                    €{Math.max(0, calculateTotalCost() - subcontractor.budget_realized).toLocaleString('hr-HR')}
+                    €{Math.max(0, cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
                   <span className="text-gray-600">Progress:</span>
                   <span className="font-medium text-gray-900">
-                    {calculateTotalCost() > 0
-                      ? Math.min(100, ((subcontractor.budget_realized / calculateTotalCost()) * 100)).toFixed(1)
+                    {cost > 0
+                      ? Math.min(100, ((subcontractor.budget_realized / cost) * 100)).toFixed(1)
                       : 0}%
                   </span>
                 </div>
@@ -325,15 +278,15 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
-                      width: `${calculateTotalCost() > 0
-                        ? Math.min(100, (subcontractor.budget_realized / calculateTotalCost()) * 100)
+                      width: `${cost > 0
+                        ? Math.min(100, (subcontractor.budget_realized / cost) * 100)
                         : 0}%`
                     }}
                   />
                 </div>
               </div>
               <p className="text-xs text-blue-600 mt-2">
-                Progress is automatically calculated based on payments
+                Progress is automatically calculated based on payments (base amounts)
               </p>
             </div>
           )}
@@ -358,12 +311,12 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               contact,
               job_description: jobDescription,
               deadline,
-              cost: calculateTotalCost(),
+              cost,
               phase_id: selectedPhaseId,
               contract_type_id: contractTypeId,
               has_contract: hasContract
             } as any
-            
+
             onSubmit(updatedSubcontractor)
           }}
         >

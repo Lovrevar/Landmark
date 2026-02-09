@@ -108,7 +108,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
         title={editingMilestone ? 'Edit Milestone' : 'Add Payment Milestone'}
-        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | Contract: €${contractCost.toLocaleString('hr-HR')} • Available: ${remainingPercentage.toFixed(2)}%`}
+        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | Contract (Base): €${contractCost.toLocaleString('hr-HR')} • Available: ${remainingPercentage.toFixed(2)}%`}
         onClose={onClose}
       />
 
