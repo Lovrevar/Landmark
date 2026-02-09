@@ -33,11 +33,23 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const totalContractCost = phaseContracts.reduce((sum, contract) => sum + contract.contract_amount, 0)
-  const totalBudgetRealized = phaseContracts.reduce((sum, contract) => sum + contract.budget_realized, 0)
-  const unpaidContracts = phaseContracts.reduce((sum, contract) => sum + (contract.invoiced_remaining || 0), 0)
-  const availableBudget = phase.budget_allocated - totalContractCost
-  const budgetUtilization = phase.budget_allocated > 0 ? (totalBudgetRealized / phase.budget_allocated) * 100 : 0
+  const contractsWithContract = phaseContracts.filter(c => c.has_contract && c.contract_amount > 0)
+  const contractsWithoutContract = phaseContracts.filter(c => !c.has_contract || c.contract_amount === 0)
+
+  const totalContractCost = contractsWithContract.reduce((sum, c) => sum + c.contract_amount, 0)
+  const totalPaidWithContract = contractsWithContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
+  const totalPaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
+  const totalPaidOut = totalPaidWithContract + totalPaidWithoutContract
+
+  const totalUnpaidWithContract = contractsWithContract.reduce((sum, c) => {
+    const paid = c.invoice_total_paid || 0
+    return sum + Math.max(0, c.contract_amount - paid)
+  }, 0)
+  const totalUnpaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoiced_remaining || 0), 0)
+  const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
+
+  const availableBudget = phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract
+  const budgetUtilization = phase.budget_allocated > 0 ? (totalPaidOut / phase.budget_allocated) * 100 : 0
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('hr-HR', {
@@ -118,21 +130,21 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
         <div className={`mt-4 grid grid-cols-1 gap-4 ${phase.phase_type === 'sales' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? 'Sales Revenue' : 'Contract Cost'}</p>
+            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? 'Sales Revenue' : 'Contracted Amount'}</p>
             <p className="text-lg font-bold text-gray-900">{formatCurrency(totalContractCost)}</p>
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
             <p className="text-sm text-teal-700">{phase.phase_type === 'sales' ? 'Received' : 'Paid Out'}</p>
-            <p className="text-lg font-bold text-teal-900">{formatCurrency(totalBudgetRealized)}</p>
+            <p className="text-lg font-bold text-teal-900">{formatCurrency(totalPaidOut)}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
             <p className="text-sm text-orange-700">{phase.phase_type === 'sales' ? 'Outstanding' : 'Unpaid Contracts'}</p>
-            <p className="text-lg font-bold text-orange-900">{formatCurrency(unpaidContracts)}</p>
+            <p className="text-lg font-bold text-orange-900">{formatCurrency(totalUnpaid)}</p>
           </div>
           {phase.phase_type !== 'sales' && (
             <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
               <p className={`text-sm ${availableBudget < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                Available Budget
+                Forecasted Budget
               </p>
               <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900' : 'text-green-900'}`}>
                 {formatCurrency(availableBudget)}
@@ -144,7 +156,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         {phase.phase_type !== 'sales' && (
           <div className="mt-4">
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-gray-600">Budget Utilization (Realized vs Allocated)</span>
+              <span className="text-sm text-gray-600">Budget Utilization (Paid vs Allocated)</span>
               <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
@@ -159,7 +171,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </div>
             {budgetUtilization > 100 && (
               <p className="text-xs text-red-600 mt-1">
-                Over budget by {formatCurrency(totalBudgetRealized - phase.budget_allocated)}
+                Over budget by {formatCurrency(totalPaidOut - phase.budget_allocated)}
               </p>
             )}
           </div>
@@ -185,12 +197,16 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseContracts.map((contract) => {
-              const remainingToPay = Math.max(0, contract.contract_amount - contract.budget_realized)
-              const isPaid = contract.budget_realized >= contract.contract_amount
-              const isPartial = contract.budget_realized > 0 && contract.budget_realized < contract.contract_amount
-              const gainLoss = contract.budget_realized - contract.contract_amount
+              const hasValidContract = contract.has_contract && contract.contract_amount > 0
+              const actualPaid = contract.invoice_total_paid || 0
+              const contractAmount = contract.contract_amount || 0
+              const remainingToPay = hasValidContract ? Math.max(0, contractAmount - actualPaid) : 0
+              const gainLoss = hasValidContract ? actualPaid - contractAmount : 0
+              const isPaid = hasValidContract && actualPaid >= contractAmount
+              const isPartial = actualPaid > 0 && actualPaid < contractAmount
 
-              const getContractBadgeVariant = (): 'red' | 'green' | 'blue' | 'gray' => {
+              const getContractBadgeVariant = (): 'red' | 'green' | 'blue' | 'gray' | 'yellow' => {
+                if (!hasValidContract) return 'yellow'
                 if (gainLoss > 0) return 'red'
                 if (isPaid && gainLoss === 0) return 'green'
                 if (isPartial) return 'blue'
@@ -208,6 +224,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 <div
                   key={contract.id}
                   className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                    !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
                     gainLoss > 0 ? 'border-red-200 bg-red-50' :
                     isPaid && gainLoss === 0 ? 'border-green-200 bg-green-50' :
                     isPartial ? 'border-blue-200 bg-blue-50' :
@@ -216,27 +233,29 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">
-                        {phase.phase_type === 'sales'
-                          ? (contract.customer?.name || 'Unknown Customer')
-                          : (contract.supplier?.name || 'Unknown Supplier')
-                        }
-                      </h4>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">
+                          {phase.phase_type === 'sales'
+                            ? (contract.customer?.name || 'Unknown Customer')
+                            : (contract.supplier?.name || 'Unknown Supplier')
+                          }
+                        </h4>
+                        {!hasValidContract && (
+                          <Badge variant="yellow" size="sm">
+                            BEZ UGOVORA
+                          </Badge>
+                        )}
+                      </div>
                       {phase.phase_type !== 'sales' && contract.supplier?.supplier_type && (
                         <p className="text-sm text-gray-600 mb-1">{contract.supplier.supplier_type}</p>
                       )}
                       <p className="text-xs text-gray-500">{contract.contract_number}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {contract.has_contract === false && (
-                        <Badge variant="yellow" size="sm">
-                          BEZ UGOVORA
-                        </Badge>
-                      )}
-                      <Badge variant={getContractBadgeVariant()}>
+                    {hasValidContract && (
+                      <Badge variant={getContractBadgeVariant()} size="sm">
                         {getContractStatusLabel()}
                       </Badge>
-                    </div>
+                    )}
                   </div>
 
                   <div className="space-y-2 text-xs mb-3">
@@ -282,64 +301,69 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         </span>
                       </div>
                     )}
-                    {contract.has_contract && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Contract:</span>
-                        <span className="font-medium text-gray-900">{formatCurrency(contract.contract_amount)}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Amount Paid:</span>
-                      <span className="font-medium text-teal-600">{formatCurrency(contract.budget_realized)}</span>
-                    </div>
-                    {(contract.invoiced_remaining && contract.invoiced_remaining > 0) && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Amount Due:</span>
-                        <span className="font-medium text-orange-600">{formatCurrency(contract.invoiced_remaining)}</span>
-                      </div>
-                    )}
-                    {contract.has_contract && remainingToPay > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Remaining (Contract):</span>
-                        <span className="font-medium text-blue-600">{formatCurrency(remainingToPay)}</span>
-                      </div>
-                    )}
-                    {contract.has_contract && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <span className="text-gray-600 font-medium">Gain/Loss:</span>
-                        <span className={`font-bold ${
-                          gainLoss > 0 ? 'text-red-600' :
-                          gainLoss < 0 ? 'text-green-600' :
-                          'text-gray-900'
-                        }`}>
-                          {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
-                        </span>
-                      </div>
+                    {hasValidContract ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Contract:</span>
+                          <span className="font-medium text-gray-900">{formatCurrency(contractAmount)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Paid:</span>
+                          <span className="font-medium text-teal-600">{formatCurrency(actualPaid)}</span>
+                        </div>
+                        {remainingToPay > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Remaining:</span>
+                            <span className="font-medium text-orange-600">{formatCurrency(remainingToPay)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                          <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                          <span className={`font-bold ${
+                            gainLoss > 0 ? 'text-red-600' :
+                            gainLoss < 0 ? 'text-green-600' :
+                            'text-gray-900'
+                          }`}>
+                            {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                          <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                          <span className="font-bold text-green-600">{formatCurrency(actualPaid)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600 font-medium">Ukupno dugovi:</span>
+                          <span className="font-bold text-orange-600">{formatCurrency(contract.invoiced_remaining || 0)}</span>
+                        </div>
+                      </>
                     )}
                   </div>
 
                   <div className="space-y-2">
                     <Button
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
                       fullWidth
-                      className="bg-teal-600 text-white hover:bg-teal-700"
                       onClick={() => onViewPayments(contract)}
                     >
-                      View Payments
+                      Payments
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
                       fullWidth
-                      className="bg-blue-600 text-white hover:bg-blue-700"
                       onClick={() => onViewInvoices(contract)}
                     >
-                      View Invoices
+                      Invoices
                     </Button>
                     <div className="grid grid-cols-3 gap-2">
                       <Button
+                        variant="primary"
                         size="sm"
+                        fullWidth
                         onClick={() => onEditContract(contract)}
                       >
                         Edit
@@ -347,6 +371,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <Button
                         variant="amber"
                         size="sm"
+                        fullWidth
                         onClick={() => onManageMilestones(contract, phase, project)}
                       >
                         📊
@@ -354,6 +379,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <Button
                         variant="danger"
                         size="sm"
+                        fullWidth
                         onClick={() => onDeleteContract(contract.id)}
                       >
                         Delete

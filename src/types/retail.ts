@@ -128,6 +128,7 @@ export interface RetailContract {
   created_at: string
   updated_at: string
   invoiced_remaining?: number
+  invoice_total_paid?: number
   supplier?: RetailSupplier
   customer?: RetailCustomer
 }

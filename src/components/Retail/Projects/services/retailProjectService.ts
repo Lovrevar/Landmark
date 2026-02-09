@@ -293,19 +293,25 @@ export const retailProjectService = {
     const contractIds = contracts.map(c => c.id)
     const { data: invoices } = await supabase
       .from('accounting_invoices')
-      .select('retail_contract_id, remaining_amount, status')
+      .select('retail_contract_id, paid_amount, remaining_amount, status')
       .in('retail_contract_id', contractIds)
 
+    const paidMap = new Map<string, number>()
     const remainingMap = new Map<string, number>()
+
     ;(invoices || []).forEach(inv => {
+      const currentPaid = paidMap.get(inv.retail_contract_id) || 0
+      paidMap.set(inv.retail_contract_id, currentPaid + parseFloat(inv.paid_amount?.toString() || '0'))
+
       if (inv.status !== 'PAID') {
-        const current = remainingMap.get(inv.retail_contract_id) || 0
-        remainingMap.set(inv.retail_contract_id, current + parseFloat(inv.remaining_amount?.toString() || '0'))
+        const currentRemaining = remainingMap.get(inv.retail_contract_id) || 0
+        remainingMap.set(inv.retail_contract_id, currentRemaining + parseFloat(inv.remaining_amount?.toString() || '0'))
       }
     })
 
     return contracts.map(c => ({
       ...c,
+      invoice_total_paid: paidMap.get(c.id) || 0,
       invoiced_remaining: remainingMap.get(c.id) || 0
     }))
   },
