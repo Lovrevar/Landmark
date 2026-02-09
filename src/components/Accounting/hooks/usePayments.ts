@@ -37,6 +37,7 @@ export const usePayments = () => {
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
+  const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
 
   const [formData, setFormData] = useState<PaymentFormData>({
     invoice_id: '',
@@ -181,6 +182,14 @@ export const usePayments = () => {
     setEditingPayment(null)
   }
 
+  const handleViewPayment = (payment: Payment) => {
+    setViewingPayment(payment)
+  }
+
+  const handleCloseDetailView = () => {
+    setViewingPayment(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -272,12 +281,15 @@ export const usePayments = () => {
     setShowColumnMenu,
     showPaymentModal,
     editingPayment,
+    viewingPayment,
     formData,
     setFormData,
     visibleColumns,
     toggleColumn,
     handleOpenModal,
     handleCloseModal,
+    handleViewPayment,
+    handleCloseDetailView,
     handleSubmit,
     handleDelete,
     filteredPayments,

@@ -6,6 +6,7 @@ import { usePayments } from './hooks/usePayments'
 import AccountingPaymentFormModal from './forms/AccountingPaymentFormModal'
 import PaymentStatsCards from './components/PaymentStatsCards'
 import PaymentTable from './views/PaymentTable'
+import { PaymentDetailView } from './views/PaymentDetailView'
 import { columnLabels } from './utils/paymentHelpers'
 
 const AccountingPayments: React.FC = () => {
@@ -30,12 +31,15 @@ const AccountingPayments: React.FC = () => {
     setShowColumnMenu,
     showPaymentModal,
     editingPayment,
+    viewingPayment,
     formData,
     setFormData,
     visibleColumns,
     toggleColumn,
     handleOpenModal,
     handleCloseModal,
+    handleViewPayment,
+    handleCloseDetailView,
     handleSubmit,
     handleDelete,
     filteredPayments,
@@ -146,8 +150,14 @@ const AccountingPayments: React.FC = () => {
       <PaymentTable
         payments={filteredPayments}
         visibleColumns={visibleColumns}
+        onView={handleViewPayment}
         onEdit={handleOpenModal}
         onDelete={handleDelete}
+      />
+
+      <PaymentDetailView
+        payment={viewingPayment}
+        onClose={handleCloseDetailView}
       />
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">

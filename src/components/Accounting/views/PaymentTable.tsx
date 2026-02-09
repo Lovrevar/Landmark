@@ -8,6 +8,7 @@ import { Table, Button, EmptyState } from '../../ui'
 interface PaymentTableProps {
   payments: Payment[]
   visibleColumns: VisibleColumns
+  onView: (payment: Payment) => void
   onEdit: (payment: Payment) => void
   onDelete: (id: string) => void
 }
@@ -15,6 +16,7 @@ interface PaymentTableProps {
 const PaymentTable: React.FC<PaymentTableProps> = ({
   payments,
   visibleColumns,
+  onView,
   onEdit,
   onDelete
 }) => {
@@ -50,7 +52,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             if (!invoice) return null
 
             return (
-              <Table.Tr key={payment.id}>
+              <Table.Tr key={payment.id} onClick={() => onView(payment)} className="cursor-pointer">
                 {visibleColumns.payment_date && (
                   <Table.Td>
                     {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
@@ -120,7 +122,10 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                       variant="ghost"
                       size="icon-sm"
                       icon={Edit}
-                      onClick={() => onEdit(payment)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit(payment)
+                      }}
                       title="Uredi"
                       className="text-blue-600 hover:bg-blue-50 bg-transparent"
                     />
@@ -128,7 +133,10 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                       variant="ghost"
                       size="icon-sm"
                       icon={Trash2}
-                      onClick={() => onDelete(payment.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(payment.id)
+                      }}
                       title="Obriši"
                       className="text-red-600 hover:bg-red-50 bg-transparent"
                     />
