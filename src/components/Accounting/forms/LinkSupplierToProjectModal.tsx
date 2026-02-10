@@ -160,7 +160,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
           budget_realized: 0,
           status: 'active',
           has_contract: false,
-          contract_type_id: null,
+          contract_type_id: 0,
           end_date: null
         })
 
