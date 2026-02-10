@@ -376,12 +376,58 @@ export const fetchCreditAllocations = async (creditId: string) => {
 }
 
 export const fetchMilestones = async (contractId: string) => {
-  const { data, error } = await supabase
+  const { data: milestonesData, error } = await supabase
     .from('subcontractor_milestones')
     .select('*')
     .eq('contract_id', contractId)
     .order('milestone_number', { ascending: true })
 
   if (error) throw error
-  return data || []
+
+  const milestones = milestonesData || []
+
+  if (milestones.length === 0) {
+    return []
+  }
+
+  const { data: contractData, error: contractError } = await supabase
+    .from('contracts')
+    .select('contract_amount')
+    .eq('id', contractId)
+    .single()
+
+  if (contractError) throw contractError
+
+  const contractAmount = parseFloat(contractData.contract_amount || '0')
+  const milestoneIds = milestones.map(m => m.id)
+
+  const { data: invoices, error: invoicesError } = await supabase
+    .from('accounting_invoices')
+    .select('milestone_id, base_amount')
+    .in('milestone_id', milestoneIds)
+    .not('milestone_id', 'is', null)
+
+  if (invoicesError) {
+    console.error('Error fetching invoice payments:', invoicesError)
+  }
+
+  const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
+    if (inv.milestone_id) {
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.base_amount || '0')
+    }
+    return acc
+  }, {} as Record<string, number>)
+
+  return milestones.map(milestone => {
+    const milestoneAmount = (contractAmount * milestone.percentage) / 100
+    const paidAmount = paymentsByMilestone[milestone.id] || 0
+    const remainingAmount = milestoneAmount - paidAmount
+
+    return {
+      ...milestone,
+      milestone_amount: milestoneAmount,
+      paid_amount: paidAmount,
+      remaining_amount: remainingAmount
+    }
+  })
 }

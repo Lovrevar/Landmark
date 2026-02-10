@@ -230,13 +230,20 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
                 onChange={(e) => onFormChange({ ...formData, milestone_id: e.target.value })}
               >
                 <option value="">Bez milestone-a</option>
-                {getMilestonesByContract(formData.contract_id).map(milestone => (
-                  <option key={milestone.id} value={milestone.id}>
-                    #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
-                    {milestone.status === 'completed' && ' - Završeno'}
-                    {milestone.status === 'pending' && ' - Na čekanju'}
-                  </option>
-                ))}
+                {getMilestonesByContract(formData.contract_id).map(milestone => {
+                  const remainingText = milestone.remaining_amount !== undefined
+                    ? ` - preostalo €${milestone.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : ''
+
+                  return (
+                    <option key={milestone.id} value={milestone.id}>
+                      #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
+                      {milestone.status === 'completed' && ' - Završeno'}
+                      {milestone.status === 'pending' && ' - Na čekanju'}
+                      {remainingText}
+                    </option>
+                  )
+                })}
               </Select>
             </FormField>
           )}

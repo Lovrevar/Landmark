@@ -87,6 +87,9 @@ export interface Milestone {
   percentage: number
   due_date: string | null
   status: 'pending' | 'completed' | 'paid'
+  milestone_amount?: number
+  paid_amount?: number
+  remaining_amount?: number
 }
 
 export interface Invoice {
