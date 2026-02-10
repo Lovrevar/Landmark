@@ -165,8 +165,6 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
         })
 
       if (error) throw error
-
-      alert('Dobavljač uspješno povezan!')
       resetForm()
       onSuccess()
     } catch (error) {
