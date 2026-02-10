@@ -217,7 +217,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   const totalAmount = formData.deposit_amount + formData.remaining_amount
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal show={isOpen} onClose={handleClose} size="lg">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Kupoprodaja Zemljišta</h2>
         <button
