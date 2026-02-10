@@ -2,7 +2,7 @@ import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'amber' | 'outline-danger'
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'amber' | 'outline-danger' | 'emerald' | 'purple'
 
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon-sm' | 'icon-md' | 'icon-lg'
 
@@ -24,6 +24,8 @@ const variantStyles: Record<ButtonVariant, string> = {
   ghost: 'text-gray-700 bg-gray-100 hover:bg-gray-200',
   amber: 'bg-amber-600 text-white hover:bg-amber-700',
   'outline-danger': 'text-red-600 bg-red-50 hover:bg-red-100',
+  emerald: 'bg-emerald-600 text-white hover:bg-emerald-700',
+  purple: 'bg-purple-600 text-white hover:bg-purple-700',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {

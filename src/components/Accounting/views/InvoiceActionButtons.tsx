@@ -20,10 +20,10 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="secondary"
+        variant="emerald"
         icon={Landmark}
         onClick={onNewLandPurchaseInvoice}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         Kupoprodaja Zemljišta
       </Button>
@@ -36,10 +36,10 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         Novi Office Račun
       </Button>
       <Button
-        variant="primary"
+        variant="purple"
         icon={ShoppingCart}
         onClick={onNewRetailInvoice}
-        className="bg-purple-600 hover:bg-purple-700 whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         Novi Retail Račun
       </Button>
