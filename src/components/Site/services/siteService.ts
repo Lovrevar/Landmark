@@ -869,6 +869,7 @@ export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, co
     .select(`
       id,
       base_amount,
+      total_amount,
       status,
       paid_amount
     `)
@@ -895,9 +896,9 @@ export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, co
   const totalOwed = invoices
     .filter(inv => inv.status !== 'PAID')
     .reduce((sum, inv) => {
-      const baseAmount = parseFloat(inv.base_amount?.toString() || '0')
+      const totalAmount = parseFloat(inv.total_amount?.toString() || '0')
       const paidAmount = parseFloat(inv.paid_amount?.toString() || '0')
-      return sum + (baseAmount - paidAmount)
+      return sum + (totalAmount - paidAmount)
     }, 0)
 
   return {
