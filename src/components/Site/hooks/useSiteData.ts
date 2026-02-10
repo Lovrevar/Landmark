@@ -19,10 +19,9 @@ export const useSiteData = () => {
       setExistingSubcontractors(allSubcontractorsData)
 
       const invoiceStatsPromises = subcontractorsWithPhaseData.map(async (sub) => {
-        const hasContract = sub.has_contract !== false && sub.cost > 0
         const stats = await siteService.fetchSubcontractorInvoiceStats(
           sub.subcontractor_id,
-          hasContract ? sub.contract_id : undefined
+          sub.id
         )
         return {
           contractId: sub.id,
