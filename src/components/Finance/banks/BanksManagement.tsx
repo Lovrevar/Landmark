@@ -305,6 +305,7 @@ const BanksManagement: React.FC = () => {
           ...newCredit,
           company_id: newCredit.company_id || null,
           project_id: newCredit.project_id || null,
+          disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null,
           credit_type: actualCreditType,
           credit_seniority: seniority,
           outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
@@ -480,7 +481,9 @@ const BanksManagement: React.FC = () => {
           grace_period: newCredit.grace_period,
           repayment_type: newCredit.repayment_type,
           principal_repayment_type: newCredit.principal_repayment_type,
-          interest_repayment_type: newCredit.interest_repayment_type
+          interest_repayment_type: newCredit.interest_repayment_type,
+          disbursed_to_account: newCredit.disbursed_to_account || false,
+          disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null
         })
         .eq('id', editingCredit.id)
 
