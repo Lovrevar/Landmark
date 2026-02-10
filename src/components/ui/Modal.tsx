@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
@@ -21,6 +21,18 @@ interface ModalProps {
 
 function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
   const mouseDownOnBackdrop = useRef(false)
+
+  useEffect(() => {
+    if (show) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [show])
 
   if (!show) return null
 

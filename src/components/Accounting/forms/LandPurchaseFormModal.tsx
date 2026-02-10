@@ -44,6 +44,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   onSuccess
 }) => {
   const [loading, setLoading] = useState(false)
+  const [projectType, setProjectType] = useState<'projects' | 'retail'>('projects')
   const [companies, setCompanies] = useState<Company[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -68,7 +69,29 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       fetchCompanies()
       fetchSuppliersWithContracts()
     }
-  }, [isOpen])
+  }, [isOpen, projectType])
+
+  useEffect(() => {
+    setFormData({
+      company_id: formData.company_id,
+      supplier_id: '',
+      project_id: '',
+      phase_id: '',
+      invoice_name: '',
+      iban: formData.iban,
+      deposit_amount: 0,
+      deposit_due_date: new Date().toISOString().split('T')[0],
+      remaining_amount: 0,
+      remaining_due_date: new Date().toISOString().split('T')[0]
+    })
+    setProjects([])
+    setPhases([])
+    setSuppliers([])
+    setSelectedContract(null)
+    if (isOpen) {
+      fetchSuppliersWithContracts()
+    }
+  }, [projectType])
 
   useEffect(() => {
     if (formData.supplier_id) {
@@ -107,75 +130,148 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   }
 
   const fetchSuppliersWithContracts = async () => {
-    const { data } = await supabase
-      .from('subcontractors')
-      .select(`
-        id,
-        name,
-        contracts!inner(id)
-      `)
-      .order('name')
+    if (projectType === 'projects') {
+      const { data } = await supabase
+        .from('subcontractors')
+        .select(`
+          id,
+          name,
+          contracts!inner(id)
+        `)
+        .order('name')
 
-    if (data) {
-      const uniqueSuppliers = data.map(s => ({ id: s.id, name: s.name }))
-      setSuppliers(uniqueSuppliers)
+      if (data) {
+        const uniqueSuppliers = data.map(s => ({ id: s.id, name: s.name }))
+        setSuppliers(uniqueSuppliers)
+      }
+    } else {
+      const { data } = await supabase
+        .from('retail_suppliers')
+        .select(`
+          id,
+          name,
+          retail_contracts!inner(id)
+        `)
+        .order('name')
+
+      if (data) {
+        const uniqueSuppliers = data.map(s => ({ id: s.id, name: s.name }))
+        setSuppliers(uniqueSuppliers)
+      }
     }
   }
 
   const fetchProjectsForSupplier = async (supplierId: string) => {
-    const { data } = await supabase
-      .from('contracts')
-      .select('project_id, projects(id, name)')
-      .eq('subcontractor_id', supplierId)
+    if (projectType === 'projects') {
+      const { data } = await supabase
+        .from('contracts')
+        .select('project_id, projects(id, name)')
+        .eq('subcontractor_id', supplierId)
 
-    if (data) {
-      const uniqueProjects = Array.from(
-        new Map(
-          data
-            .filter(c => c.projects)
-            .map(c => [c.projects!.id, { id: c.projects!.id, name: c.projects!.name }])
-        ).values()
-      )
-      setProjects(uniqueProjects as Project[])
+      if (data) {
+        const uniqueProjects = Array.from(
+          new Map(
+            data
+              .filter(c => c.projects)
+              .map(c => [c.projects!.id, { id: c.projects!.id, name: c.projects!.name }])
+          ).values()
+        )
+        setProjects(uniqueProjects as Project[])
+      }
+    } else {
+      const { data } = await supabase
+        .from('retail_contracts')
+        .select('retail_project_id, retail_projects(id, name)')
+        .eq('retail_supplier_id', supplierId)
+
+      if (data) {
+        const uniqueProjects = Array.from(
+          new Map(
+            data
+              .filter(c => c.retail_projects)
+              .map(c => [c.retail_projects!.id, { id: c.retail_projects!.id, name: c.retail_projects!.name }])
+          ).values()
+        )
+        setProjects(uniqueProjects as Project[])
+      }
     }
   }
 
   const fetchPhasesForSupplierAndProject = async (supplierId: string, projectId: string) => {
-    const { data } = await supabase
-      .from('contracts')
-      .select('phase_id, project_phases(id, phase_name)')
-      .eq('subcontractor_id', supplierId)
-      .eq('project_id', projectId)
+    if (projectType === 'projects') {
+      const { data } = await supabase
+        .from('contracts')
+        .select('phase_id, project_phases(id, phase_name)')
+        .eq('subcontractor_id', supplierId)
+        .eq('project_id', projectId)
 
-    if (data) {
-      const uniquePhases = Array.from(
-        new Map(
-          data
-            .filter(c => c.project_phases)
-            .map(c => [c.project_phases!.id, { id: c.project_phases!.id, phase_name: c.project_phases!.phase_name }])
-        ).values()
-      )
-      setPhases(uniquePhases as Phase[])
+      if (data) {
+        const uniquePhases = Array.from(
+          new Map(
+            data
+              .filter(c => c.project_phases)
+              .map(c => [c.project_phases!.id, { id: c.project_phases!.id, phase_name: c.project_phases!.phase_name }])
+          ).values()
+        )
+        setPhases(uniquePhases as Phase[])
+      }
+    } else {
+      const { data } = await supabase
+        .from('retail_contracts')
+        .select('retail_phase_id, retail_phases(id, phase_name)')
+        .eq('retail_supplier_id', supplierId)
+        .eq('retail_project_id', projectId)
+
+      if (data) {
+        const uniquePhases = Array.from(
+          new Map(
+            data
+              .filter(c => c.retail_phases)
+              .map(c => [c.retail_phases!.id, { id: c.retail_phases!.id, phase_name: c.retail_phases!.phase_name }])
+          ).values()
+        )
+        setPhases(uniquePhases as Phase[])
+      }
     }
   }
 
   const fetchContract = async () => {
-    const { data } = await supabase
-      .from('contracts')
-      .select('id, contract_number, contract_amount, base_amount, start_date')
-      .eq('subcontractor_id', formData.supplier_id)
-      .eq('project_id', formData.project_id)
-      .eq('phase_id', formData.phase_id)
-      .maybeSingle()
+    if (projectType === 'projects') {
+      const { data } = await supabase
+        .from('contracts')
+        .select('id, contract_number, contract_amount, base_amount, start_date')
+        .eq('subcontractor_id', formData.supplier_id)
+        .eq('project_id', formData.project_id)
+        .eq('phase_id', formData.phase_id)
+        .maybeSingle()
 
-    if (data) {
-      setSelectedContract({
-        id: data.id,
-        contract_number: data.contract_number,
-        contract_amount: data.contract_amount,
-        base_amount: data.base_amount,
-        contract_date: data.start_date || new Date().toISOString().split('T')[0]
-      })
+      if (data) {
+        setSelectedContract({
+          id: data.id,
+          contract_number: data.contract_number,
+          contract_amount: data.contract_amount,
+          base_amount: data.base_amount,
+          contract_date: data.start_date || new Date().toISOString().split('T')[0]
+        })
+      }
+    } else {
+      const { data } = await supabase
+        .from('retail_contracts')
+        .select('id, contract_number, contract_amount, base_amount, contract_date')
+        .eq('retail_supplier_id', formData.supplier_id)
+        .eq('retail_project_id', formData.project_id)
+        .eq('retail_phase_id', formData.phase_id)
+        .maybeSingle()
+
+      if (data) {
+        setSelectedContract({
+          id: data.id,
+          contract_number: data.contract_number,
+          contract_amount: data.contract_amount,
+          base_amount: data.base_amount,
+          contract_date: data.contract_date || new Date().toISOString().split('T')[0]
+        })
+      }
     }
   }
 
@@ -201,72 +297,142 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
       const invoicesToCreate = []
 
-      if (deposit_amount > 0) {
-        invoicesToCreate.push({
-          invoice_number: `${invoice_name}-Kapara`,
-          invoice_type: 'INCOMING_SUPPLIER',
-          invoice_category: 'SUBCONTRACTOR',
-          company_id: company_id,
-          supplier_id: supplier_id,
-          contract_id: selectedContract.id,
-          project_id: formData.project_id,
-          issue_date: selectedContract.contract_date,
-          due_date: deposit_due_date,
-          base_amount: deposit_amount,
-          vat_rate: 0,
-          vat_amount: 0,
-          total_amount: deposit_amount,
-          category: 'land_purchase',
-          description: 'Kapara za kupoprodaju zemljišta',
-          status: 'UNPAID',
-          paid_amount: 0,
-          remaining_amount: deposit_amount,
-          base_amount_1: 0,
-          vat_rate_1: 25,
-          vat_amount_1: 0,
-          base_amount_2: 0,
-          vat_rate_2: 13,
-          vat_amount_2: 0,
-          base_amount_3: deposit_amount,
-          vat_rate_3: 0,
-          vat_amount_3: 0,
-          approved: false,
-          iban: iban || null
-        })
-      }
+      if (projectType === 'projects') {
+        if (deposit_amount > 0) {
+          invoicesToCreate.push({
+            invoice_number: `${invoice_name}-Kapara`,
+            invoice_type: 'INCOMING_SUPPLIER',
+            invoice_category: 'SUBCONTRACTOR',
+            company_id: company_id,
+            supplier_id: supplier_id,
+            contract_id: selectedContract.id,
+            project_id: formData.project_id,
+            issue_date: selectedContract.contract_date,
+            due_date: deposit_due_date,
+            base_amount: deposit_amount,
+            vat_rate: 0,
+            vat_amount: 0,
+            total_amount: deposit_amount,
+            category: 'land_purchase',
+            description: 'Kapara za kupoprodaju zemljišta',
+            status: 'UNPAID',
+            paid_amount: 0,
+            remaining_amount: deposit_amount,
+            base_amount_1: 0,
+            vat_rate_1: 25,
+            vat_amount_1: 0,
+            base_amount_2: 0,
+            vat_rate_2: 13,
+            vat_amount_2: 0,
+            base_amount_3: deposit_amount,
+            vat_rate_3: 0,
+            vat_amount_3: 0,
+            approved: false,
+            iban: iban || null
+          })
+        }
 
-      if (remaining_amount > 0) {
-        invoicesToCreate.push({
-          invoice_number: `${invoice_name}-Preostalo`,
-          invoice_type: 'INCOMING_SUPPLIER',
-          invoice_category: 'SUBCONTRACTOR',
-          company_id: company_id,
-          supplier_id: supplier_id,
-          contract_id: selectedContract.id,
-          project_id: formData.project_id,
-          issue_date: selectedContract.contract_date,
-          due_date: remaining_due_date,
-          base_amount: remaining_amount,
-          vat_rate: 0,
-          vat_amount: 0,
-          total_amount: remaining_amount,
-          category: 'land_purchase',
-          description: 'Preostali iznos za kupoprodaju zemljišta',
-          status: 'UNPAID',
-          paid_amount: 0,
-          remaining_amount: remaining_amount,
-          base_amount_1: 0,
-          vat_rate_1: 25,
-          vat_amount_1: 0,
-          base_amount_2: 0,
-          vat_rate_2: 13,
-          vat_amount_2: 0,
-          base_amount_3: remaining_amount,
-          vat_rate_3: 0,
-          vat_amount_3: 0,
-          approved: false,
-          iban: iban || null
-        })
+        if (remaining_amount > 0) {
+          invoicesToCreate.push({
+            invoice_number: `${invoice_name}-Preostalo`,
+            invoice_type: 'INCOMING_SUPPLIER',
+            invoice_category: 'SUBCONTRACTOR',
+            company_id: company_id,
+            supplier_id: supplier_id,
+            contract_id: selectedContract.id,
+            project_id: formData.project_id,
+            issue_date: selectedContract.contract_date,
+            due_date: remaining_due_date,
+            base_amount: remaining_amount,
+            vat_rate: 0,
+            vat_amount: 0,
+            total_amount: remaining_amount,
+            category: 'land_purchase',
+            description: 'Preostali iznos za kupoprodaju zemljišta',
+            status: 'UNPAID',
+            paid_amount: 0,
+            remaining_amount: remaining_amount,
+            base_amount_1: 0,
+            vat_rate_1: 25,
+            vat_amount_1: 0,
+            base_amount_2: 0,
+            vat_rate_2: 13,
+            vat_amount_2: 0,
+            base_amount_3: remaining_amount,
+            vat_rate_3: 0,
+            vat_amount_3: 0,
+            approved: false,
+            iban: iban || null
+          })
+        }
+      } else {
+        if (deposit_amount > 0) {
+          invoicesToCreate.push({
+            invoice_number: `${invoice_name}-Kapara`,
+            invoice_type: 'INCOMING_SUPPLIER',
+            invoice_category: 'RETAIL',
+            company_id: company_id,
+            retail_supplier_id: supplier_id,
+            retail_contract_id: selectedContract.id,
+            retail_project_id: formData.project_id,
+            issue_date: selectedContract.contract_date,
+            due_date: deposit_due_date,
+            base_amount: deposit_amount,
+            vat_rate: 0,
+            vat_amount: 0,
+            total_amount: deposit_amount,
+            category: 'land_purchase',
+            description: 'Kapara za kupoprodaju zemljišta',
+            status: 'UNPAID',
+            paid_amount: 0,
+            remaining_amount: deposit_amount,
+            base_amount_1: 0,
+            vat_rate_1: 25,
+            vat_amount_1: 0,
+            base_amount_2: 0,
+            vat_rate_2: 13,
+            vat_amount_2: 0,
+            base_amount_3: deposit_amount,
+            vat_rate_3: 0,
+            vat_amount_3: 0,
+            approved: false,
+            iban: iban || null
+          })
+        }
+
+        if (remaining_amount > 0) {
+          invoicesToCreate.push({
+            invoice_number: `${invoice_name}-Preostalo`,
+            invoice_type: 'INCOMING_SUPPLIER',
+            invoice_category: 'RETAIL',
+            company_id: company_id,
+            retail_supplier_id: supplier_id,
+            retail_contract_id: selectedContract.id,
+            retail_project_id: formData.project_id,
+            issue_date: selectedContract.contract_date,
+            due_date: remaining_due_date,
+            base_amount: remaining_amount,
+            vat_rate: 0,
+            vat_amount: 0,
+            total_amount: remaining_amount,
+            category: 'land_purchase',
+            description: 'Preostali iznos za kupoprodaju zemljišta',
+            status: 'UNPAID',
+            paid_amount: 0,
+            remaining_amount: remaining_amount,
+            base_amount_1: 0,
+            vat_rate_1: 25,
+            vat_amount_1: 0,
+            base_amount_2: 0,
+            vat_rate_2: 13,
+            vat_amount_2: 0,
+            base_amount_3: remaining_amount,
+            vat_rate_3: 0,
+            vat_amount_3: 0,
+            approved: false,
+            iban: iban || null
+          })
+        }
       }
 
       if (invoicesToCreate.length > 0) {
@@ -301,6 +467,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       remaining_due_date: new Date().toISOString().split('T')[0]
     })
     setSelectedContract(null)
+    setProjectType('projects')
+    setSuppliers([])
+    setProjects([])
+    setPhases([])
     onClose()
   }
 
@@ -315,6 +485,34 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       <form onSubmit={handleSubmit}>
       <Modal.Body>
         <div className="bg-slate-50 p-5 rounded-lg mb-5">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Tip Projekta</h3>
+            <div className="inline-flex rounded-lg border border-slate-300 bg-white p-1">
+              <button
+                type="button"
+                onClick={() => setProjectType('projects')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  projectType === 'projects'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                Projekti
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectType('retail')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  projectType === 'retail'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                Retail
+              </button>
+            </div>
+          </div>
+
           <h3 className="text-base font-semibold text-slate-800 mb-4">Osnovni Podaci</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -338,7 +536,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Dobavljač *
+                {projectType === 'retail' ? 'Retail Dobavljač *' : 'Dobavljač *'}
               </label>
               <select
                 value={formData.supplier_id}
@@ -346,7 +544,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 required
               >
-                <option value="">Odaberite dobavljača</option>
+                <option value="">Odaberite {projectType === 'retail' ? 'retail dobavljača' : 'dobavljača'}</option>
                 {suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}
@@ -357,7 +555,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Projekt *
+                {projectType === 'retail' ? 'Retail Projekt *' : 'Projekt *'}
               </label>
               <select
                 value={formData.project_id}
@@ -366,7 +564,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 required
                 disabled={!formData.supplier_id}
               >
-                <option value="">Odaberite projekt</option>
+                <option value="">Odaberite {projectType === 'retail' ? 'retail projekt' : 'projekt'}</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
