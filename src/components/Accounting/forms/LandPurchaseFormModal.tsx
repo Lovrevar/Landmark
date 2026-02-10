@@ -181,15 +181,21 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     } else {
       const { data } = await supabase
         .from('retail_contracts')
-        .select('retail_project_id, retail_projects(id, name)')
-        .eq('retail_supplier_id', supplierId)
+        .select('phase_id, retail_project_phases!inner(project_id, retail_projects(id, name))')
+        .eq('supplier_id', supplierId)
 
       if (data) {
         const uniqueProjects = Array.from(
           new Map(
             data
-              .filter(c => c.retail_projects)
-              .map(c => [c.retail_projects!.id, { id: c.retail_projects!.id, name: c.retail_projects!.name }])
+              .filter(c => c.retail_project_phases?.retail_projects)
+              .map(c => [
+                c.retail_project_phases!.retail_projects!.id,
+                {
+                  id: c.retail_project_phases!.retail_projects!.id,
+                  name: c.retail_project_phases!.retail_projects!.name
+                }
+              ])
           ).values()
         )
         setProjects(uniqueProjects as Project[])
@@ -218,16 +224,19 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     } else {
       const { data } = await supabase
         .from('retail_contracts')
-        .select('retail_phase_id, retail_phases(id, phase_name)')
-        .eq('retail_supplier_id', supplierId)
-        .eq('retail_project_id', projectId)
+        .select('phase_id, retail_project_phases!inner(id, phase_name, project_id)')
+        .eq('supplier_id', supplierId)
 
       if (data) {
+        const filteredPhases = data.filter(c =>
+          c.retail_project_phases &&
+          c.retail_project_phases.project_id === projectId
+        )
+
         const uniquePhases = Array.from(
           new Map(
-            data
-              .filter(c => c.retail_phases)
-              .map(c => [c.retail_phases!.id, { id: c.retail_phases!.id, phase_name: c.retail_phases!.phase_name }])
+            filteredPhases
+              .map(c => [c.retail_project_phases!.id, { id: c.retail_project_phases!.id, phase_name: c.retail_project_phases!.phase_name }])
           ).values()
         )
         setPhases(uniquePhases as Phase[])
@@ -257,10 +266,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     } else {
       const { data } = await supabase
         .from('retail_contracts')
-        .select('id, contract_number, contract_amount, base_amount, contract_date')
-        .eq('retail_supplier_id', formData.supplier_id)
-        .eq('retail_project_id', formData.project_id)
-        .eq('retail_phase_id', formData.phase_id)
+        .select('id, contract_number, contract_amount, contract_date')
+        .eq('supplier_id', formData.supplier_id)
+        .eq('phase_id', formData.phase_id)
         .maybeSingle()
 
       if (data) {
@@ -268,7 +276,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           id: data.id,
           contract_number: data.contract_number,
           contract_amount: data.contract_amount,
-          base_amount: data.base_amount,
+          base_amount: data.contract_amount,
           contract_date: data.contract_date || new Date().toISOString().split('T')[0]
         })
       }
