@@ -87,6 +87,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             repaid_amount,
             outstanding_balance,
             interest_rate,
+            disbursed_to_account,
             company:accounting_companies(id, name)
           )
         `)

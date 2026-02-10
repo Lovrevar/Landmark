@@ -77,6 +77,7 @@ export const fetchCredits = async () => {
   const result = await supabase
     .from('bank_credits')
     .select('*')
+    .or('disbursed_to_account.is.null,disbursed_to_account.eq.false')
     .order('credit_name')
 
   if (result.error) throw result.error
