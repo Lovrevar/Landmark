@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { Button, Modal } from '../../ui'
 import CurrencyInput from '../../Common/CurrencyInput'
@@ -217,119 +216,116 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   const totalAmount = formData.deposit_amount + formData.remaining_amount
 
   return (
-    <Modal show={isOpen} onClose={handleClose} size="lg">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Kupoprodaja Zemljišta</h2>
-        <button
-          onClick={handleClose}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+    <Modal show={isOpen} onClose={handleClose} size="xl">
+      <Modal.Header title="Kupoprodaja Zemljišta" onClose={handleClose} />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Dobavljač *
-            </label>
-            <select
-              value={formData.supplier_id}
-              onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="">Odaberite dobavljača</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      <form onSubmit={handleSubmit}>
+      <Modal.Body>
+        <div className="bg-slate-50 p-5 rounded-lg mb-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Osnovni Podaci</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Dobavljač *
+              </label>
+              <select
+                value={formData.supplier_id}
+                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                required
+              >
+                <option value="">Odaberite dobavljača</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Projekt *
-            </label>
-            <select
-              value={formData.project_id}
-              onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="">Odaberite projekt</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Projekt *
+              </label>
+              <select
+                value={formData.project_id}
+                onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                required
+              >
+                <option value="">Odaberite projekt</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Faza *
-            </label>
-            <select
-              value={formData.phase_id}
-              onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              disabled={!formData.project_id}
-            >
-              <option value="">Odaberite fazu</option>
-              {phases.map((phase) => (
-                <option key={phase.id} value={phase.id}>
-                  {phase.phase_name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Faza *
+              </label>
+              <select
+                value={formData.phase_id}
+                onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
+                required
+                disabled={!formData.project_id}
+              >
+                <option value="">Odaberite fazu</option>
+                {phases.map((phase) => (
+                  <option key={phase.id} value={phase.id}>
+                    {phase.phase_name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Broj Ugovora *
-            </label>
-            <input
-              type="text"
-              value={formData.contract_number}
-              onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Broj Ugovora *
+              </label>
+              <input
+                type="text"
+                value={formData.contract_number}
+                onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              IBAN
-            </label>
-            <input
-              type="text"
-              value={formData.iban}
-              onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Datum Ugovora *
+              </label>
+              <DateInput
+                value={formData.contract_date}
+                onChange={(value) => setFormData({ ...formData, contract_date: value })}
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Datum Ugovora *
-            </label>
-            <DateInput
-              value={formData.contract_date}
-              onChange={(value) => setFormData({ ...formData, contract_date: value })}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                IBAN
+              </label>
+              <input
+                type="text"
+                value={formData.iban}
+                onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="HR..."
+              />
+            </div>
           </div>
         </div>
 
-        <div className="border-t pt-4 mt-4">
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">Kapara</h3>
+        <div className="bg-green-50 p-5 rounded-lg mb-5 border border-green-200">
+          <h3 className="text-base font-semibold text-green-900 mb-4">Kapara</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Iznos Kapare *
               </label>
               <CurrencyInput
@@ -340,8 +336,8 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Datum Dospijeća Kapare *
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Datum Dospijeća *
               </label>
               <DateInput
                 value={formData.deposit_due_date}
@@ -352,11 +348,11 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           </div>
         </div>
 
-        <div className="border-t pt-4 mt-4">
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">Preostalo</h3>
+        <div className="bg-orange-50 p-5 rounded-lg mb-5 border border-orange-200">
+          <h3 className="text-base font-semibold text-orange-900 mb-4">Preostali Iznos</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Iznos Preostalog *
               </label>
               <CurrencyInput
@@ -367,8 +363,8 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Datum Dospijeća Preostalog *
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Datum Dospijeća *
               </label>
               <DateInput
                 value={formData.remaining_due_date}
@@ -379,7 +375,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           </div>
         </div>
 
-        <div className="border-t pt-4 mt-4 bg-blue-50 p-4 rounded-lg">
+        <div className="bg-blue-50 p-4 rounded-lg mt-6">
           <div className="flex justify-between items-center">
             <span className="text-lg font-semibold text-slate-700">Sveukupno:</span>
             <span className="text-2xl font-bold text-blue-600">
@@ -387,24 +383,25 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </span>
           </div>
         </div>
+      </Modal.Body>
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleClose}
-            disabled={loading}
-          >
-            Odustani
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={loading}
-          >
-            {loading ? 'Spremanje...' : 'Kreiraj Račune'}
-          </Button>
-        </div>
+      <Modal.Footer>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleClose}
+          disabled={loading}
+        >
+          Odustani
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={loading}
+        >
+          {loading ? 'Spremanje...' : 'Kreiraj Račune'}
+        </Button>
+      </Modal.Footer>
       </form>
     </Modal>
   )
