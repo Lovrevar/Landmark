@@ -207,10 +207,14 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
 
       {(formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') && formData.supplier_id && (
         <>
-          <FormField label="Ugovor / Faza (opcionalno)">
+          <FormField
+            label={formData.project_id ? "Ugovor / Faza" : "Ugovor / Faza (opcionalno)"}
+            required={!!formData.project_id}
+          >
             <Select
               value={formData.contract_id}
               onChange={(e) => onFormChange({ ...formData, contract_id: e.target.value, milestone_id: '' })}
+              required={!!formData.project_id}
             >
               <option value="">Bez ugovora</option>
               {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (

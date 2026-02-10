@@ -262,6 +262,11 @@ export const handleSubmit = async (
     invoice_category = 'CUSTOMER'
   }
 
+  if ((formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') &&
+      formData.project_id && !formData.contract_id) {
+    throw new Error('Molimo odaberite ugovor/fazu kada je odabran projekt')
+  }
+
   let approved = false
   if (formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') {
     approved = true
