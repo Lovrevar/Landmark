@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Building2, User, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Subcontractor, WirePayment } from '../../../lib/supabase'
+import { Subcontractor, WirePayment, supabase } from '../../../lib/supabase'
 import { Modal, Button, Badge, EmptyState } from '../../ui'
 
 interface AccountingPayment {
@@ -38,6 +38,10 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0)
+  const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0)
+  const [loading, setLoading] = useState(false)
+
   useEffect(() => {
     if (visible) {
       document.body.style.overflow = 'hidden'
@@ -48,6 +52,40 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       document.body.style.overflow = 'unset'
     }
   }, [visible])
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      fetchInvoiceTotals()
+    }
+  }, [visible, subcontractor])
+
+  const fetchInvoiceTotals = async () => {
+    if (!subcontractor) return
+
+    const contractId = (subcontractor as any).contract_id || subcontractor.id
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('accounting_invoices')
+        .select('total_amount, paid_amount')
+        .eq('contract_id', contractId)
+
+      if (error) throw error
+
+      const totalInvoices = (data || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || '0'), 0)
+      const totalPaid = (data || []).reduce((sum, inv) => sum + parseFloat(inv.paid_amount || '0'), 0)
+
+      setTotalInvoiceAmount(totalInvoices)
+      setTotalPaidAmount(totalPaid)
+    } catch (error) {
+      console.error('Error fetching invoice totals:', error)
+      setTotalInvoiceAmount(0)
+      setTotalPaidAmount(0)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getStatusVariant = (status: string): 'green' | 'yellow' => {
     return status === 'paid' ? 'green' : 'yellow'
@@ -67,17 +105,21 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-sm text-gray-600">Contract Amount</p>
-                <p className="text-lg font-bold text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</p>
+                <p className="text-sm text-gray-600">Total Invoices</p>
+                <p className="text-lg font-bold text-gray-900">
+                  €{loading ? '...' : totalInvoiceAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Paid</p>
-                <p className="text-lg font-bold text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</p>
+                <p className="text-lg font-bold text-teal-600">
+                  €{loading ? '...' : totalPaidAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Remaining</p>
                 <p className="text-lg font-bold text-orange-600">
-                  €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
+                  €{loading ? '...' : Math.max(0, totalInvoiceAmount - totalPaidAmount).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
