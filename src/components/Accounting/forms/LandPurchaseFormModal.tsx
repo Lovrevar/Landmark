@@ -55,6 +55,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     supplier_id: '',
     project_id: '',
     phase_id: '',
+    invoice_name: '',
     iban: '',
     deposit_amount: 0,
     deposit_due_date: new Date().toISOString().split('T')[0],
@@ -183,9 +184,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     setLoading(true)
 
     try {
-      const { company_id, supplier_id, deposit_amount, deposit_due_date, remaining_amount, remaining_due_date, iban } = formData
+      const { company_id, supplier_id, invoice_name, deposit_amount, deposit_due_date, remaining_amount, remaining_due_date, iban } = formData
 
-      if (!company_id || !supplier_id || !selectedContract) {
+      if (!company_id || !supplier_id || !selectedContract || !invoice_name) {
         alert('Molimo popunite sva obavezna polja')
         setLoading(false)
         return
@@ -202,9 +203,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
       if (deposit_amount > 0) {
         invoicesToCreate.push({
-          invoice_number: `${selectedContract.contract_number} - Kapara`,
+          invoice_number: `${invoice_name}-Kapara`,
           invoice_type: 'incoming',
-          invoice_category: 'subcontractor',
+          invoice_category: 'SUBCONTRACTOR',
           company_id: company_id,
           supplier_id: supplier_id,
           contract_id: selectedContract.id,
@@ -239,9 +240,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
       if (remaining_amount > 0) {
         invoicesToCreate.push({
-          invoice_number: `${selectedContract.contract_number} - Preostalo`,
+          invoice_number: `${invoice_name}-Preostalo`,
           invoice_type: 'incoming',
-          invoice_category: 'subcontractor',
+          invoice_category: 'SUBCONTRACTOR',
           company_id: company_id,
           supplier_id: supplier_id,
           contract_id: selectedContract.id,
@@ -298,6 +299,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       supplier_id: '',
       project_id: '',
       phase_id: '',
+      invoice_name: '',
       iban: '',
       deposit_amount: 0,
       deposit_due_date: new Date().toISOString().split('T')[0],
@@ -430,6 +432,28 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
           )}
         </div>
+
+        {selectedContract && (
+          <div className="bg-slate-50 p-5 rounded-lg mb-5">
+            <h3 className="text-base font-semibold text-slate-800 mb-4">Ime Računa</h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Ime Računa *
+              </label>
+              <input
+                type="text"
+                value={formData.invoice_name}
+                onChange={(e) => setFormData({ ...formData, invoice_name: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="npr. Zemljište Kozara"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                Računi će biti kreirani kao: <span className="font-semibold">{formData.invoice_name || '(ime)'}-Kapara</span> i <span className="font-semibold">{formData.invoice_name || '(ime)'}-Preostalo</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         {selectedContract && (
           <>
