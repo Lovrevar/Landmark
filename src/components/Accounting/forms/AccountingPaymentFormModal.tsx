@@ -141,7 +141,9 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       {companyCredits
                         .filter(credit => {
                           const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                          return selectedInvoice && credit.company_id === selectedInvoice.company_id
+                          return selectedInvoice &&
+                            credit.company_id === selectedInvoice.company_id &&
+                            !credit.disbursed_to_account
                         })
                         .map(credit => {
                           const available = credit.amount - credit.used_amount

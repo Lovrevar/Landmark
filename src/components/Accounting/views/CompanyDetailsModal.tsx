@@ -96,6 +96,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                 const available = credit.amount - usedAmount
                 const utilizationPercent = credit.amount > 0 ? (usedAmount / credit.amount) * 100 : 0
                 const isExpired = new Date(credit.maturity_date) < new Date()
+                const isDisbursedToAccount = credit.disbursed_to_account || false
 
                 return (
                   <div key={credit.id} className="bg-white border-2 border-orange-200 rounded-lg p-4">
@@ -107,33 +108,56 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                     </div>
                     <div className="space-y-1 mb-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Limit:</span>
+                        <span className="text-gray-600">{isDisbursedToAccount ? 'Iznos Kredita:' : 'Limit:'}</span>
                         <span className="font-medium text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Iskorišteno:</span>
-                        <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Dostupno:</span>
-                        <span className="font-bold text-green-600">€{available.toLocaleString('hr-HR')}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Kamata:</span>
-                        <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
-                      </div>
+                      {!isDisbursedToAccount && (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Iskorišteno:</span>
+                            <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Dostupno:</span>
+                            <span className="font-bold text-green-600">€{available.toLocaleString('hr-HR')}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Kamata:</span>
+                            <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          utilizationPercent >= 90 ? 'bg-red-500' :
-                          utilizationPercent >= 70 ? 'bg-orange-500' :
-                          'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1 text-right">{utilizationPercent.toFixed(1)}% iskorišteno</p>
+
+                    {isDisbursedToAccount && credit.allocations && credit.allocations.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Namjena:</p>
+                        <div className="space-y-1">
+                          {credit.allocations.map((allocation) => (
+                            <div key={allocation.id} className="flex justify-between text-xs">
+                              <span className="text-gray-600">{allocation.project?.name || 'OPEX'}:</span>
+                              <span className="font-medium text-gray-900">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!isDisbursedToAccount && (
+                      <>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${
+                              utilizationPercent >= 90 ? 'bg-red-500' :
+                              utilizationPercent >= 70 ? 'bg-orange-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 text-right">{utilizationPercent.toFixed(1)}% iskorišteno</p>
+                      </>
+                    )}
                   </div>
                 )
               })}

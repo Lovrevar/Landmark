@@ -163,7 +163,18 @@ export const fetchCompanyDetails = async (companyId: string) => {
 
     supabase
       .from('bank_credits')
-      .select('*, used_amount, repaid_amount')
+      .select(`
+        *,
+        used_amount,
+        repaid_amount,
+        disbursed_to_account,
+        allocations:credit_allocations(
+          id,
+          allocated_amount,
+          description,
+          project:projects(id, name)
+        )
+      `)
       .eq('company_id', companyId)
       .order('credit_name'),
 

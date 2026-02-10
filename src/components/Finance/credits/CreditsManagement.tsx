@@ -21,6 +21,8 @@ interface BankCredit {
   usage_expiration_date: string | null
   status: string
   purpose: string
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
   bank?: {
     id: string
     name: string
@@ -451,12 +453,18 @@ const CreditsManagement: React.FC = () => {
                                       <div className="text-sm text-gray-600">
                                         Alocirano: <span className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
                                       </div>
-                                      <div className="text-xs text-gray-500">
-                                        Iskorišteno: €{allocation.used_amount.toLocaleString('hr-HR')} |
-                                        Dostupno: <span className={allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                                          €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
-                                        </span>
-                                      </div>
+                                      {credit.disbursed_to_account ? (
+                                        <div className="text-xs text-gray-500">
+                                          Isplaćeno: <span className="font-semibold text-green-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs text-gray-500">
+                                          Iskorišteno: €{allocation.used_amount.toLocaleString('hr-HR')} |
+                                          Dostupno: <span className={allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+                                            €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                     <button
                                       onClick={(e) => {
@@ -474,22 +482,35 @@ const CreditsManagement: React.FC = () => {
                                     {allocation.description && (
                                       <p className="text-sm text-gray-600 mb-3">{allocation.description}</p>
                                     )}
-                                    <div className="grid grid-cols-3 gap-3 text-sm">
-                                      <div>
-                                        <p className="text-gray-600">Alocirano</p>
-                                        <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                    {credit.disbursed_to_account ? (
+                                      <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                          <p className="text-gray-600">Alocirano</p>
+                                          <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Isplaćeno</p>
+                                          <p className="font-semibold text-green-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <p className="text-gray-600">Iskorišteno</p>
-                                        <p className="font-semibold text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
+                                    ) : (
+                                      <div className="grid grid-cols-3 gap-3 text-sm">
+                                        <div>
+                                          <p className="text-gray-600">Alocirano</p>
+                                          <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Iskorišteno</p>
+                                          <p className="font-semibold text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Dostupno</p>
+                                          <p className={`font-semibold ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                                          </p>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <p className="text-gray-600">Dostupno</p>
-                                        <p className={`font-semibold ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                          €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
-                                        </p>
-                                      </div>
-                                    </div>
+                                    )}
                                   </div>
                                 )}
                               </div>

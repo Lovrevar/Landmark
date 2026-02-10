@@ -24,6 +24,7 @@ interface CreditAllocation {
     repaid_amount: number
     outstanding_balance: number
     interest_rate: number
+    disbursed_to_account?: boolean
     company: Company
   }
 }
@@ -182,20 +183,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <span className="text-gray-600">Alocirano:</span>
                       <span className="font-bold text-blue-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Iskorišteno:</span>
-                      <span className="font-semibold text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Dostupno:</span>
-                      <span className={`font-semibold ${availableAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        €{availableAmount.toLocaleString('hr-HR')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Kamatna stopa:</span>
-                      <span className="font-semibold text-teal-600">{credit.interest_rate}%</span>
-                    </div>
+                    {credit.disbursed_to_account ? null : (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Iskorišteno:</span>
+                          <span className="font-semibold text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Dostupno:</span>
+                          <span className={`font-semibold ${availableAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            €{availableAmount.toLocaleString('hr-HR')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Kamatna stopa:</span>
+                          <span className="font-semibold text-teal-600">{credit.interest_rate}%</span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {allocation.description && (
@@ -204,22 +209,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </div>
                   )}
 
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-500">Iskorištenost alokacije</span>
-                      <span className="font-semibold text-gray-700">{allocationUsedPercentage.toFixed(1)}%</span>
+                  {!credit.disbursed_to_account && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-500">Iskorištenost alokacije</span>
+                        <span className="font-semibold text-gray-700">{allocationUsedPercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            allocationUsedPercentage >= 100 ? 'bg-red-500' :
+                            allocationUsedPercentage >= 80 ? 'bg-orange-500' :
+                            'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min(allocationUsedPercentage, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          allocationUsedPercentage >= 100 ? 'bg-red-500' :
-                          allocationUsedPercentage >= 80 ? 'bg-orange-500' :
-                          'bg-blue-500'
-                        }`}
-                        style={{ width: `${Math.min(allocationUsedPercentage, 100)}%` }}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               )
             })}

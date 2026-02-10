@@ -25,6 +25,16 @@ export interface Credit {
   used_amount: number
   repaid_amount: number
   outstanding_balance: number
+  disbursed_to_account?: boolean
+  allocations?: Array<{
+    id: string
+    allocated_amount: number
+    description?: string
+    project?: {
+      id: string
+      name: string
+    }
+  }>
 }
 
 export interface Invoice {

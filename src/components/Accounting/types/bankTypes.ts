@@ -21,6 +21,8 @@ export interface BankCredit {
   principal_repayment_type?: string
   interest_repayment_type?: string
   monthly_payment: number
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
   project?: {
     id: string
     name: string
@@ -57,6 +59,18 @@ export interface Company {
   oib: string
 }
 
+export interface CompanyBankAccount {
+  id: string
+  company_id: string
+  bank_id: string
+  account_number: string
+  current_balance: number
+  bank?: {
+    id: string
+    name: string
+  }
+}
+
 export interface NewCreditForm {
   bank_id: string
   company_id: string
@@ -76,6 +90,8 @@ export interface NewCreditForm {
   credit_seniority: 'senior' | 'junior'
   principal_repayment_type: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
   interest_repayment_type: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
 }
 
 export interface PaymentCalculation {

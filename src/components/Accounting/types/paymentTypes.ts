@@ -30,6 +30,7 @@ export interface CompanyCredit {
   outstanding_balance: number
   used_amount: number
   repaid_amount: number
+  disbursed_to_account?: boolean
 }
 
 export interface Company {
