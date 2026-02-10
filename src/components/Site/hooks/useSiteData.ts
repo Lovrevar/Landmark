@@ -360,6 +360,10 @@ export const useSiteData = () => {
         job_description: subcontractor.job_description,
         deadline: subcontractor.deadline,
         cost: subcontractor.cost,
+        base_amount: subData.base_amount,
+        vat_rate: subData.vat_rate,
+        vat_amount: subData.vat_amount,
+        total_amount: subData.total_amount,
         phase_id: subData.phase_id,
         contract_type_id: subData.contract_type_id,
         has_contract: subData.has_contract
@@ -372,6 +376,10 @@ export const useSiteData = () => {
         deadline: subcontractor.deadline,
         cost: subcontractor.cost,
         progress: subcontractor.progress || 0,
+        base_amount: subData.base_amount,
+        vat_rate: subData.vat_rate,
+        vat_amount: subData.vat_amount,
+        total_amount: subData.total_amount,
         phase_id: subData.phase_id,
         contract_type_id: subData.contract_type_id,
         has_contract: subData.has_contract

@@ -355,6 +355,10 @@ export const updateSubcontractor = async (
     deadline: string
     cost: number
     progress: number
+    base_amount?: number
+    vat_rate?: number
+    vat_amount?: number
+    total_amount?: number
     phase_id?: string
     contract_type_id?: number
     has_contract?: boolean
@@ -389,6 +393,12 @@ export const updateSubcontractor = async (
   }
   if (updates.vat_rate !== undefined) {
     contractUpdateData.vat_rate = updates.vat_rate
+  }
+  if (updates.vat_amount !== undefined) {
+    contractUpdateData.vat_amount = updates.vat_amount
+  }
+  if (updates.total_amount !== undefined) {
+    contractUpdateData.total_amount = updates.total_amount
   }
 
   // Add phase_id if provided
