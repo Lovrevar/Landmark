@@ -57,13 +57,50 @@ const BanksManagement: React.FC = () => {
     repayment_type: 'monthly' as const,
     credit_seniority: 'senior' as const,
     principal_repayment_type: 'yearly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
-    interest_repayment_type: 'monthly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
+    interest_repayment_type: 'monthly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
+    disbursed_to_account: false,
+    disbursed_to_bank_account_id: ''
   })
+  const [companyBankAccounts, setCompanyBankAccounts] = useState<any[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    if (newCredit.company_id && newCredit.disbursed_to_account) {
+      fetchCompanyBankAccounts(newCredit.company_id)
+    } else {
+      setCompanyBankAccounts([])
+    }
+  }, [newCredit.company_id, newCredit.disbursed_to_account])
+
+  const fetchCompanyBankAccounts = async (companyId: string) => {
+    try {
+      setLoadingAccounts(true)
+      const { data, error } = await supabase
+        .from('company_bank_accounts')
+        .select(`
+          id,
+          company_id,
+          bank_id,
+          account_number,
+          current_balance,
+          bank:banks(id, name)
+        `)
+        .eq('company_id', companyId)
+
+      if (error) throw error
+      setCompanyBankAccounts(data || [])
+    } catch (error) {
+      console.error('Error fetching company bank accounts:', error)
+      setCompanyBankAccounts([])
+    } finally {
+      setLoadingAccounts(false)
+    }
+  }
 
 
   const fetchData = async () => {
@@ -323,7 +360,9 @@ const BanksManagement: React.FC = () => {
       repayment_type: 'monthly',
       credit_seniority: 'senior',
       principal_repayment_type: 'yearly',
-      interest_repayment_type: 'monthly'
+      interest_repayment_type: 'monthly',
+      disbursed_to_account: false,
+      disbursed_to_bank_account_id: ''
     })
     setEditingCredit(null)
     setShowCreditForm(false)
@@ -349,7 +388,9 @@ const BanksManagement: React.FC = () => {
       repayment_type: credit.repayment_type,
       credit_seniority: credit.credit_seniority,
       principal_repayment_type: credit.principal_repayment_type || 'yearly',
-      interest_repayment_type: credit.interest_repayment_type || 'monthly'
+      interest_repayment_type: credit.interest_repayment_type || 'monthly',
+      disbursed_to_account: (credit as any).disbursed_to_account || false,
+      disbursed_to_bank_account_id: (credit as any).disbursed_to_bank_account_id || ''
     })
     setSelectedBank(null)
     setShowCreditForm(true)
@@ -865,6 +906,65 @@ const BanksManagement: React.FC = () => {
                   placeholder="What is this credit facility for?"
                 />
               </FormField>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newCredit.disbursed_to_account}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setNewCredit({
+                      ...newCredit,
+                      disbursed_to_account: checked,
+                      disbursed_to_bank_account_id: checked ? newCredit.disbursed_to_bank_account_id : ''
+                    })
+                  }}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <div className="flex-1">
+                  <span className="font-medium text-gray-900">Isplata na račun</span>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Kada je označeno, ceo iznos kredita će automatski biti isplaćen na odabrani bankovni račun firme.
+                  </p>
+                </div>
+              </label>
+
+              {newCredit.disbursed_to_account && (
+                <div className="mt-4">
+                  {!newCredit.company_id ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste videli dostupne bankovne račune.</p>
+                    </div>
+                  ) : loadingAccounts ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-600">Učitavanje računa...</p>
+                    </div>
+                  ) : companyBankAccounts.length === 0 ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-800">Odabrana firma nema bankovnih računa. Molimo dodajte račun u "Moje firme" prvo.</p>
+                    </div>
+                  ) : (
+                    <FormField label="Bankovni račun" required>
+                      <Select
+                        value={newCredit.disbursed_to_bank_account_id}
+                        onChange={(e) => setNewCredit({ ...newCredit, disbursed_to_bank_account_id: e.target.value })}
+                        required={newCredit.disbursed_to_account}
+                      >
+                        <option value="">Odaberite račun</option>
+                        {companyBankAccounts.map((account: any) => (
+                          <option key={account.id} value={account.id}>
+                            {account.bank?.name || 'Nepoznata banka'} - {account.account_number} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                          </option>
+                        ))}
+                      </Select>
+                    </FormField>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Modal.Body>
