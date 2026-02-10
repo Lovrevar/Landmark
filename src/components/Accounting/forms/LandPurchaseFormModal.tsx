@@ -204,7 +204,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       if (deposit_amount > 0) {
         invoicesToCreate.push({
           invoice_number: `${invoice_name}-Kapara`,
-          invoice_type: 'incoming',
+          invoice_type: 'INCOMING_SUPPLIER',
           invoice_category: 'SUBCONTRACTOR',
           company_id: company_id,
           supplier_id: supplier_id,
@@ -241,7 +241,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       if (remaining_amount > 0) {
         invoicesToCreate.push({
           invoice_number: `${invoice_name}-Preostalo`,
-          invoice_type: 'incoming',
+          invoice_type: 'INCOMING_SUPPLIER',
           invoice_category: 'SUBCONTRACTOR',
           company_id: company_id,
           supplier_id: supplier_id,
