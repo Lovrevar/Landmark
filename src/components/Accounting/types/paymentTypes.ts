@@ -12,6 +12,7 @@ export interface Invoice {
   customers?: { name: string; surname: string }
   office_suppliers?: { name: string }
   bank_company?: { name: string }
+  retail_suppliers?: { name: string }
 }
 
 export interface CompanyBankAccount {

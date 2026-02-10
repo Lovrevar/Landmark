@@ -82,6 +82,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   <Table.Td>
                     {invoice.bank_company?.name ||
                      invoice.office_suppliers?.name ||
+                     invoice.retail_suppliers?.name ||
                      invoice.subcontractors?.name ||
                      (invoice.customers ? `${invoice.customers.name} ${invoice.customers.surname}` : '') ||
                      invoice.companies?.name ||

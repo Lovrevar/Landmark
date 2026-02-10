@@ -18,7 +18,8 @@ export const fetchPayments = async () => {
         subcontractors:supplier_id (name),
         customers:customer_id (name, surname),
         office_suppliers:office_supplier_id (name),
-        bank_company:bank_id (name)
+        bank_company:bank_id (name),
+        retail_suppliers:retail_supplier_id (name)
       )
     `)
     .order('payment_date', { ascending: false })
@@ -42,7 +43,8 @@ export const fetchInvoices = async () => {
       subcontractors:supplier_id (name),
       customers:customer_id (name, surname),
       office_suppliers:office_supplier_id (name),
-      bank_company:bank_id (name)
+      bank_company:bank_id (name),
+      retail_suppliers:retail_supplier_id (name)
     `)
     .neq('status', 'PAID')
     .order('invoice_number')
