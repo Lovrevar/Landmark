@@ -2,6 +2,7 @@ import React from 'react'
 import { LoadingSpinner, PageHeader } from '../ui'
 import { RetailInvoiceFormModal } from './RetailInvoiceFormModal'
 import BankInvoiceFormModal from './BankInvoiceFormModal'
+import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
 import { useInvoices } from './hooks/useInvoices'
 import { InvoiceFormModal } from './forms/InvoiceFormModal'
 import { PaymentFormModal } from './forms/PaymentFormModal'
@@ -63,6 +64,7 @@ const AccountingInvoices: React.FC = () => {
     isOfficeInvoice,
     showRetailInvoiceModal,
     showBankInvoiceModal,
+    showLandPurchaseModal,
     editingInvoice,
     viewingInvoice,
     showPaymentModal,
@@ -81,6 +83,7 @@ const AccountingInvoices: React.FC = () => {
     setIsOfficeInvoice,
     setShowRetailInvoiceModal,
     setShowBankInvoiceModal,
+    setShowLandPurchaseModal,
     setEditingInvoice,
     setCurrentPage,
     setFormData,
@@ -170,6 +173,7 @@ const AccountingInvoices: React.FC = () => {
               onNewOfficeInvoice={handleNewOfficeInvoice}
               onNewRetailInvoice={() => setShowRetailInvoiceModal(true)}
               onNewBankInvoice={() => setShowBankInvoiceModal(true)}
+              onNewLandPurchaseInvoice={() => setShowLandPurchaseModal(true)}
               onNewInvoice={() => handleOpenModal()}
             />
           </div>
@@ -292,6 +296,17 @@ const AccountingInvoices: React.FC = () => {
           onClose={() => setShowBankInvoiceModal(false)}
           onSuccess={() => {
             setShowBankInvoiceModal(false)
+            fetchData()
+          }}
+        />
+      )}
+
+      {showLandPurchaseModal && (
+        <LandPurchaseFormModal
+          isOpen={showLandPurchaseModal}
+          onClose={() => setShowLandPurchaseModal(false)}
+          onSuccess={() => {
+            setShowLandPurchaseModal(false)
             fetchData()
           }}
         />

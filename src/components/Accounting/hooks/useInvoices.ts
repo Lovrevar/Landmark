@@ -41,6 +41,7 @@ export const useInvoices = () => {
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
   const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
   const [showBankInvoiceModal, setShowBankInvoiceModal] = useState(false)
+  const [showLandPurchaseModal, setShowLandPurchaseModal] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -292,6 +293,7 @@ export const useInvoices = () => {
     isOfficeInvoice,
     showRetailInvoiceModal,
     showBankInvoiceModal,
+    showLandPurchaseModal,
     editingInvoice,
     viewingInvoice,
     showPaymentModal,
@@ -311,6 +313,7 @@ export const useInvoices = () => {
     setIsOfficeInvoice,
     setShowRetailInvoiceModal,
     setShowBankInvoiceModal,
+    setShowLandPurchaseModal,
     setEditingInvoice,
     setCurrentPage,
     setFormData,
