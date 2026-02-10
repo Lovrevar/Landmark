@@ -46,6 +46,26 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         entityId = editingInvoice.retail_customer_id || ''
       }
 
+      let base1 = editingInvoice.base_amount_1 || 0
+      let base2 = editingInvoice.base_amount_2 || 0
+      let base3 = editingInvoice.base_amount_3 || 0
+      let base4 = editingInvoice.base_amount_4 || 0
+
+      const hasMultipleVatRates = base1 + base2 + base3 + base4 > 0
+
+      if (!hasMultipleVatRates && editingInvoice.base_amount > 0) {
+        const vatRate = editingInvoice.vat_rate || 0
+        if (vatRate === 25) {
+          base1 = editingInvoice.base_amount
+        } else if (vatRate === 13) {
+          base2 = editingInvoice.base_amount
+        } else if (vatRate === 0) {
+          base3 = editingInvoice.base_amount
+        } else if (vatRate === 5) {
+          base4 = editingInvoice.base_amount
+        }
+      }
+
       return {
         invoice_type: invoiceType,
         entity_type: entityType,
@@ -62,10 +82,10 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         due_date: editingInvoice.due_date,
         base_amount: '',
         vat_rate: '25',
-        base_amount_1: editingInvoice.base_amount_1 || 0,
-        base_amount_2: editingInvoice.base_amount_2 || 0,
-        base_amount_3: editingInvoice.base_amount_3 || 0,
-        base_amount_4: editingInvoice.base_amount_4 || 0,
+        base_amount_1: base1,
+        base_amount_2: base2,
+        base_amount_3: base3,
+        base_amount_4: base4,
         category: editingInvoice.category || '',
         notes: editingInvoice.description || ''
       }
