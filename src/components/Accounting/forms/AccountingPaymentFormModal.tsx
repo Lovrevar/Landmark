@@ -28,6 +28,44 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const getInvoiceTypeLabel = (type: string) => {
+    const typeMap: Record<string, string> = {
+      'INCOMING_SUPPLIER': 'Ulazni dobavljač',
+      'INCOMING_INVESTMENT': 'Ulazni investitor',
+      'OUTGOING_SUPPLIER': 'Izlazni dobavljač',
+      'OUTGOING_SALES': 'Izlazni prodaja',
+      'INCOMING_OFFICE': 'Ulazni ured',
+      'OUTGOING_OFFICE': 'Izlazni ured',
+      'INCOMING_BANK': 'Ulazni banka',
+      'OUTGOING_BANK': 'Izlazni banka'
+    }
+    return typeMap[type] || type
+  }
+
+  const getInvoiceEntityName = (invoice: Invoice) => {
+    if (invoice.subcontractors?.name) return invoice.subcontractors.name
+    if (invoice.customers) return `${invoice.customers.name} ${invoice.customers.surname}`
+    if (invoice.office_suppliers?.name) return invoice.office_suppliers.name
+    if (invoice.bank_company?.name) return invoice.bank_company.name
+    if (invoice.retail_suppliers?.name) return invoice.retail_suppliers.name
+    return ''
+  }
+
+  const formatInvoiceDisplay = (invoice: Invoice) => {
+    const companyName = invoice.companies?.name || ''
+    const entityName = getInvoiceEntityName(invoice)
+    const typeLabel = getInvoiceTypeLabel(invoice.invoice_type)
+    const remaining = `€${invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+    const parts = [invoice.invoice_number]
+    if (typeLabel) parts.push(typeLabel)
+    if (companyName) parts.push(companyName)
+    if (entityName) parts.push(entityName)
+    parts.push(`Preostalo: ${remaining}`)
+
+    return parts.join(' - ')
+  }
+
   return (
     <Modal show={showModal} onClose={onClose}>
       <Modal.Header
@@ -56,11 +94,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                 <option value="">Odaberi račun</option>
                 {invoices.map(invoice => (
                   <option key={invoice.id} value={invoice.id}>
-                    {invoice.invoice_number} -
-                    {invoice.invoice_type === 'EXPENSE'
-                      ? ` ${invoice.subcontractors?.name}`
-                      : invoice.customers ? ` ${invoice.customers.name} ${invoice.customers.surname}` : ''} -
-                    Preostalo: €{invoice.remaining_amount.toLocaleString('hr-HR')}
+                    {formatInvoiceDisplay(invoice)}
                   </option>
                 ))}
               </Select>
