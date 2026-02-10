@@ -283,11 +283,16 @@ const AccountingInvoices: React.FC = () => {
 
       {showRetailInvoiceModal && (
         <RetailInvoiceFormModal
-          onClose={() => setShowRetailInvoiceModal(false)}
+          onClose={() => {
+            setShowRetailInvoiceModal(false)
+            setEditingInvoice(null)
+          }}
           onSuccess={() => {
             setShowRetailInvoiceModal(false)
+            setEditingInvoice(null)
             fetchData()
           }}
+          editingInvoice={editingInvoice}
         />
       )}
 

@@ -91,4 +91,28 @@ export interface VatCalculation {
 export interface RetailInvoiceFormModalProps {
   onClose: () => void
   onSuccess: () => void
+  editingInvoice?: {
+    id: string
+    invoice_type: string
+    company_id: string
+    retail_supplier_id?: string
+    retail_customer_id?: string
+    retail_project_id?: string
+    retail_contract_id?: string
+    retail_milestone_id?: string
+    refund_id?: number
+    invoice_number: string
+    reference_number?: string
+    iban?: string
+    issue_date: string
+    due_date: string
+    base_amount: number
+    base_amount_1?: number
+    base_amount_2?: number
+    base_amount_3?: number
+    base_amount_4?: number
+    vat_rate: number
+    category?: string
+    description?: string
+  }
 }

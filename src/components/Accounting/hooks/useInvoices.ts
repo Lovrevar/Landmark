@@ -130,7 +130,36 @@ export const useInvoices = () => {
   const handleOpenModal = (invoice?: Invoice) => {
     if (invoice) {
       if (invoice.invoice_category === 'RETAIL') {
-        alert('Retail računi se ne mogu editovati ovdje. Molimo koristite "Novi Retail Račun" formu ili obrišite i kreirajte novi.')
+        setEditingInvoice(invoice)
+        setFormData({
+          invoice_type: invoice.invoice_type,
+          company_id: invoice.company_id,
+          supplier_id: invoice.retail_supplier_id || '',
+          office_supplier_id: invoice.office_supplier_id || '',
+          customer_id: invoice.retail_customer_id || '',
+          investor_id: invoice.investor_id || '',
+          bank_id: invoice.bank_id || '',
+          apartment_id: invoice.apartment_id || '',
+          contract_id: invoice.retail_contract_id || '',
+          milestone_id: invoice.retail_milestone_id || '',
+          invoice_number: invoice.invoice_number,
+          reference_number: invoice.reference_number || '',
+          iban: invoice.iban || '',
+          issue_date: invoice.issue_date,
+          due_date: invoice.due_date,
+          base_amount: invoice.base_amount,
+          vat_rate: invoice.vat_rate,
+          base_amount_1: invoice.base_amount_1 || 0,
+          base_amount_2: invoice.base_amount_2 || 0,
+          base_amount_3: invoice.base_amount_3 || 0,
+          base_amount_4: invoice.base_amount_4 || 0,
+          category: invoice.category,
+          project_id: invoice.project_id || '',
+          refund_id: invoice.refund_id ? String(invoice.refund_id) : '',
+          description: invoice.description
+        })
+        document.body.style.overflow = 'hidden'
+        setShowRetailInvoiceModal(true)
         return
       }
 

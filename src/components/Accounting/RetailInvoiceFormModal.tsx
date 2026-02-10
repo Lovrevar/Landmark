@@ -12,33 +12,91 @@ import {
 
 export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   onClose,
-  onSuccess
+  onSuccess,
+  editingInvoice
 }) => {
   const [loading, setLoading] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  const [formData, setFormData] = useState<RetailInvoiceFormData>({
-    invoice_type: 'incoming',
-    entity_type: 'supplier',
-    entity_id: '',
-    company_id: '',
-    retail_project_id: '',
-    retail_contract_id: '',
-    retail_milestone_id: '',
-    refund_id: '',
-    invoice_number: '',
-    reference_number: '',
-    iban: '',
-    issue_date: '',
-    due_date: '',
-    base_amount: '',
-    vat_rate: '25',
-    base_amount_1: 0,
-    base_amount_2: 0,
-    base_amount_3: 0,
-    base_amount_4: 0,
-    category: '',
-    notes: ''
-  })
+  useEffect(() => {
+    setIsInitialLoad(false)
+  }, [])
+
+  const getInitialFormData = (): RetailInvoiceFormData => {
+    if (editingInvoice) {
+      let invoiceType: 'incoming' | 'outgoing' = 'incoming'
+      let entityType: 'supplier' | 'customer' = 'supplier'
+      let entityId = ''
+
+      if (editingInvoice.invoice_type === 'INCOMING_SUPPLIER') {
+        invoiceType = 'incoming'
+        entityType = 'supplier'
+        entityId = editingInvoice.retail_supplier_id || ''
+      } else if (editingInvoice.invoice_type === 'OUTGOING_SALES') {
+        invoiceType = 'outgoing'
+        entityType = 'customer'
+        entityId = editingInvoice.retail_customer_id || ''
+      } else if (editingInvoice.invoice_type === 'OUTGOING_SUPPLIER') {
+        invoiceType = 'outgoing'
+        entityType = 'supplier'
+        entityId = editingInvoice.retail_supplier_id || ''
+      } else if (editingInvoice.invoice_type === 'INCOMING_INVESTMENT') {
+        invoiceType = 'incoming'
+        entityType = 'customer'
+        entityId = editingInvoice.retail_customer_id || ''
+      }
+
+      return {
+        invoice_type: invoiceType,
+        entity_type: entityType,
+        entity_id: entityId,
+        company_id: editingInvoice.company_id,
+        retail_project_id: editingInvoice.retail_project_id || '',
+        retail_contract_id: editingInvoice.retail_contract_id || '',
+        retail_milestone_id: editingInvoice.retail_milestone_id || '',
+        refund_id: editingInvoice.refund_id ? String(editingInvoice.refund_id) : '',
+        invoice_number: editingInvoice.invoice_number,
+        reference_number: editingInvoice.reference_number || '',
+        iban: editingInvoice.iban || '',
+        issue_date: editingInvoice.issue_date,
+        due_date: editingInvoice.due_date,
+        base_amount: '',
+        vat_rate: '25',
+        base_amount_1: editingInvoice.base_amount_1 || 0,
+        base_amount_2: editingInvoice.base_amount_2 || 0,
+        base_amount_3: editingInvoice.base_amount_3 || 0,
+        base_amount_4: editingInvoice.base_amount_4 || 0,
+        category: editingInvoice.category || '',
+        notes: editingInvoice.description || ''
+      }
+    }
+
+    return {
+      invoice_type: 'incoming',
+      entity_type: 'supplier',
+      entity_id: '',
+      company_id: '',
+      retail_project_id: '',
+      retail_contract_id: '',
+      retail_milestone_id: '',
+      refund_id: '',
+      invoice_number: '',
+      reference_number: '',
+      iban: '',
+      issue_date: '',
+      due_date: '',
+      base_amount: '',
+      vat_rate: '25',
+      base_amount_1: 0,
+      base_amount_2: 0,
+      base_amount_3: 0,
+      base_amount_4: 0,
+      category: '',
+      notes: ''
+    }
+  }
+
+  const [formData, setFormData] = useState<RetailInvoiceFormData>(getInitialFormData())
 
   const {
     companies,
@@ -54,17 +112,19 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   } = useRetailInvoiceData(formData)
 
   useEffect(() => {
-    setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '', retail_milestone_id: '' }))
+    if (!isInitialLoad) {
+      setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '', retail_milestone_id: '' }))
+    }
   }, [formData.entity_type])
 
   useEffect(() => {
-    if (!formData.retail_project_id || !formData.entity_id) {
+    if (!isInitialLoad && (!formData.retail_project_id || !formData.entity_id)) {
       setFormData(prev => ({ ...prev, retail_contract_id: '', retail_milestone_id: '' }))
     }
   }, [formData.retail_project_id, formData.entity_id])
 
   useEffect(() => {
-    if (!formData.retail_contract_id) {
+    if (!isInitialLoad && !formData.retail_contract_id) {
       setFormData(prev => ({ ...prev, retail_milestone_id: '' }))
     }
   }, [formData.retail_contract_id])
@@ -156,11 +216,20 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         invoiceData.retail_customer_id = formData.entity_id
       }
 
-      const { error: insertError } = await supabase
-        .from('accounting_invoices')
-        .insert(invoiceData)
+      if (editingInvoice) {
+        const { error: updateError } = await supabase
+          .from('accounting_invoices')
+          .update(invoiceData)
+          .eq('id', editingInvoice.id)
 
-      if (insertError) throw insertError
+        if (updateError) throw updateError
+      } else {
+        const { error: insertError } = await supabase
+          .from('accounting_invoices')
+          .insert(invoiceData)
+
+        if (insertError) throw insertError
+      }
 
       onSuccess()
       onClose()
@@ -176,7 +245,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
-      <Modal.Header title="Novi Retail Račun" onClose={onClose} />
+      <Modal.Header title={editingInvoice ? 'Uredi Retail Račun' : 'Novi Retail Račun'} onClose={onClose} />
 
       <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
@@ -228,7 +297,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             variant="primary"
             loading={loading}
           >
-            {loading ? 'Kreiranje...' : 'Kreiraj račun'}
+            {loading ? (editingInvoice ? 'Spremanje...' : 'Kreiranje...') : (editingInvoice ? 'Spremi izmjene' : 'Kreiraj račun')}
           </Button>
         </Modal.Footer>
       </form>
