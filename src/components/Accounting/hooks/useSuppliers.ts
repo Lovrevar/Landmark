@@ -12,6 +12,7 @@ export const useSuppliers = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
   const [editingSupplier, setEditingSupplier] = useState<string | null>(null)
   const [showRetailModal, setShowRetailModal] = useState(false)
+  const [showLinkModal, setShowLinkModal] = useState(false)
 
   const [formData, setFormData] = useState<SupplierFormData>({
     name: '',
@@ -161,6 +162,16 @@ export const useSuppliers = () => {
     setSelectedSupplier(null)
   }
 
+  const handleOpenLinkModal = () => {
+    document.body.style.overflow = 'hidden'
+    setShowLinkModal(true)
+  }
+
+  const handleCloseLinkModal = () => {
+    document.body.style.overflow = 'unset'
+    setShowLinkModal(false)
+  }
+
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.contact.toLowerCase().includes(searchTerm.toLowerCase())
@@ -188,6 +199,7 @@ export const useSuppliers = () => {
     editingSupplier,
     showRetailModal,
     setShowRetailModal,
+    showLinkModal,
     formData,
     setFormData,
     projects,
@@ -205,6 +217,8 @@ export const useSuppliers = () => {
     handleSubmit,
     handleDelete,
     handleViewDetails,
-    handleCloseDetailsModal
+    handleCloseDetailsModal,
+    handleOpenLinkModal,
+    handleCloseLinkModal
   }
 }

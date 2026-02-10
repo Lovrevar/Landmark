@@ -1,8 +1,9 @@
 import React from 'react'
-import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store } from 'lucide-react'
+import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store, Link2 } from 'lucide-react'
 import RetailSupplierModal from './RetailSupplierModal'
 import SupplierFormModal from './forms/SupplierFormModal'
 import SupplierDetailsModal from './views/SupplierDetailsModal'
+import { LinkSupplierToProjectModal } from './forms/LinkSupplierToProjectModal'
 import { useSuppliers } from './hooks/useSuppliers'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge } from '../ui'
 
@@ -20,6 +21,7 @@ const AccountingSuppliers: React.FC = () => {
     editingSupplier,
     showRetailModal,
     setShowRetailModal,
+    showLinkModal,
     formData,
     setFormData,
     projects,
@@ -36,7 +38,9 @@ const AccountingSuppliers: React.FC = () => {
     handleSubmit,
     handleDelete,
     handleViewDetails,
-    handleCloseDetailsModal
+    handleCloseDetailsModal,
+    handleOpenLinkModal,
+    handleCloseLinkModal
   } = useSuppliers()
 
   if (loading) {
@@ -50,6 +54,9 @@ const AccountingSuppliers: React.FC = () => {
         description="Pregled svih dobavljača, ugovora i plaćanja"
         actions={
           <>
+            <Button variant="secondary" icon={Link2} onClick={handleOpenLinkModal}>
+              Poveži Dobavljača
+            </Button>
             <Button variant="primary" icon={Plus} onClick={() => handleOpenAddModal()}>
               Novi dobavljač
             </Button>
@@ -260,6 +267,15 @@ const AccountingSuppliers: React.FC = () => {
           }}
         />
       )}
+
+      <LinkSupplierToProjectModal
+        visible={showLinkModal}
+        onClose={handleCloseLinkModal}
+        onSuccess={() => {
+          handleCloseLinkModal()
+          fetchData()
+        }}
+      />
     </div>
   )
 }
