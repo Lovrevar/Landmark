@@ -55,6 +55,7 @@ export const fetchData = async (
     supabase
       .from('bank_credits')
       .select('*')
+      .eq('disbursed_to_account', false)
       .order('credit_name'),
 
     supabase

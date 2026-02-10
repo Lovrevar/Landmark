@@ -108,8 +108,11 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     label="Kredit"
                     required
                     className="md:col-span-2"
-                    error={companyCredits.filter(credit => credit.company_id === payingInvoice.company_id).length === 0
-                      ? 'Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                    error={companyCredits.filter(credit =>
+                      credit.company_id === payingInvoice.company_id &&
+                      !credit.disbursed_to_account
+                    ).length === 0
+                      ? 'Ova firma nema dostupnih kredita. Molimo dodajte kredit u sekciji Krediti.'
                       : undefined}
                   >
                     <Select
@@ -123,7 +126,10 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     >
                       <option value="">Odaberi kredit</option>
                       {companyCredits
-                        .filter(credit => credit.company_id === payingInvoice.company_id)
+                        .filter(credit =>
+                          credit.company_id === payingInvoice.company_id &&
+                          !credit.disbursed_to_account
+                        )
                         .map(credit => {
                           const available = credit.amount - credit.used_amount
                           return (

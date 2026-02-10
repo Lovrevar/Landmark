@@ -97,8 +97,11 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
               required
               className="md:col-span-2"
               error={
-                paymentFormData.cesija_company_id && companyCredits.filter(credit => credit.company_id === paymentFormData.cesija_company_id).length === 0
-                  ? 'Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                paymentFormData.cesija_company_id && companyCredits.filter(credit =>
+                  credit.company_id === paymentFormData.cesija_company_id &&
+                  !credit.disbursed_to_account
+                ).length === 0
+                  ? 'Ova firma nema dostupnih kredita. Molimo dodajte kredit u sekciji Krediti.'
                   : undefined
               }
             >
@@ -113,7 +116,10 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
               >
                 <option value="">Odaberi kredit</option>
                 {companyCredits
-                  .filter(credit => credit.company_id === paymentFormData.cesija_company_id)
+                  .filter(credit =>
+                    credit.company_id === paymentFormData.cesija_company_id &&
+                    !credit.disbursed_to_account
+                  )
                   .map(credit => {
                     const available = credit.amount - credit.used_amount
                     return (

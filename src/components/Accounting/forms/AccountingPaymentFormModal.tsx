@@ -126,9 +126,11 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     error={
                       formData.invoice_id && companyCredits.filter(credit => {
                         const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                        return selectedInvoice && credit.company_id === selectedInvoice.company_id
+                        return selectedInvoice &&
+                          credit.company_id === selectedInvoice.company_id &&
+                          !credit.disbursed_to_account
                       }).length === 0
-                        ? 'Ova firma nema dodanih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                        ? 'Ova firma nema dostupnih kredita. Molimo dodajte kredit u sekciji Krediti.'
                         : undefined
                     }
                   >
