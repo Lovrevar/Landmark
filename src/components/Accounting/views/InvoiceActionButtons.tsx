@@ -51,13 +51,14 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
       >
         Novi Račun Banka
       </Button>
-      <button
+      <Button
+        variant="primary"
+        icon={Plus}
         onClick={onNewInvoice}
-        className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200 whitespace-nowrap"
+        className="whitespace-nowrap"
       >
-        <Plus className="w-4 h-4 mr-2" />
         Novi račun
-      </button>
+      </Button>
     </div>
   )
 }
