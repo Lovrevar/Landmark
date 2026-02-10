@@ -121,8 +121,15 @@ const SiteManagement: React.FC = () => {
       job_description: data.job_description,
       deadline: data.deadline,
       cost: data.cost,
+      base_amount: data.base_amount,
+      vat_rate: data.vat_rate,
+      vat_amount: data.vat_amount,
+      total_amount: data.total_amount,
       contract_type_id: data.contract_type_id,
-      budget_realized: data.budget_realized
+      has_contract: data.has_contract,
+      financed_by_type: data.financed_by_type,
+      financed_by_investor_id: data.financed_by_investor_id,
+      financed_by_bank_id: data.financed_by_bank_id
     })
     if (success) {
       setShowSubcontractorForm(false)

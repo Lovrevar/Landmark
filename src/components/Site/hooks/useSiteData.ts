@@ -238,8 +238,15 @@ export const useSiteData = () => {
       job_description: string
       deadline: string
       cost: number
+      base_amount?: number
+      vat_rate?: number
+      vat_amount?: number
+      total_amount?: number
       contract_type_id?: number
       has_contract?: boolean
+      financed_by_type?: 'investor' | 'bank' | null
+      financed_by_investor_id?: string | null
+      financed_by_bank_id?: string | null
     }
   ) => {
     try {
@@ -298,7 +305,10 @@ export const useSiteData = () => {
 
         const newSubcontractor = await siteService.createSubcontractorWithReturn({
           name: data.name,
-          contact: data.contact
+          contact: data.contact,
+          financed_by_type: data.financed_by_type || null,
+          financed_by_investor_id: data.financed_by_investor_id || null,
+          financed_by_bank_id: data.financed_by_bank_id || null
         })
 
         const newContract = await siteService.createContract({
