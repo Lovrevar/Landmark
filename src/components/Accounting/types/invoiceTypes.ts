@@ -102,6 +102,9 @@ export interface Invoice {
   customer_id: string | null
   retail_supplier_id: string | null
   retail_customer_id: string | null
+  retail_project_id: string | null
+  retail_contract_id: string | null
+  retail_milestone_id: string | null
   investor_id: string | null
   bank_id: string | null
   apartment_id: string | null
