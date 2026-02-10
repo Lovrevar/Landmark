@@ -60,6 +60,10 @@ export interface SubcontractorFormData {
   job_description: string
   deadline: string
   cost: number
+  base_amount: number
+  vat_rate: number
+  vat_amount: number
+  total_amount: number
   phase_id: string
   contract_type_id: number
   financed_by_type?: 'investor' | 'bank' | null

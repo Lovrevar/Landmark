@@ -38,6 +38,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     job_description: '',
     deadline: '',
     cost: 0,
+    base_amount: 0,
+    vat_rate: 0,
+    vat_amount: 0,
+    total_amount: 0,
     phase_id: '',
     contract_type_id: 0,
     financed_by_type: null,
@@ -53,11 +57,22 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   useEffect(() => {
     if (!hasContract) {
-      setFormData(prev => ({ ...prev, cost: 0, has_contract: false }))
+      setFormData(prev => ({ ...prev, cost: 0, base_amount: 0, vat_amount: 0, total_amount: 0, has_contract: false }))
     } else {
       setFormData(prev => ({ ...prev, has_contract: true }))
     }
   }, [hasContract])
+
+  useEffect(() => {
+    const vatAmount = Math.round(formData.base_amount * formData.vat_rate) / 100
+    const totalAmount = formData.base_amount + vatAmount
+    setFormData(prev => ({
+      ...prev,
+      vat_amount: vatAmount,
+      total_amount: totalAmount,
+      cost: totalAmount
+    }))
+  }, [formData.base_amount, formData.vat_rate])
 
   useEffect(() => {
     if (phase) {
@@ -259,28 +274,53 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
             </FormField>
 
 {hasContract && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  label="Contract Amount (€)"
-                  helperText="Base amount without VAT"
-                  required
-                >
-                  <Input
-                    type="number"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Osnovica (€)"
+                    helperText="Base amount without VAT"
                     required
-                  />
-                </FormField>
-                <FormField label="Deadline" required>
-                  <Input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    required
-                  />
-                </FormField>
+                  >
+                    <Input
+                      type="number"
+                      value={formData.base_amount}
+                      onChange={(e) => setFormData({ ...formData, base_amount: parseFloat(e.target.value) || 0 })}
+                      placeholder="0"
+                      step="0.01"
+                      required
+                    />
+                  </FormField>
+                  <FormField label="PDV stopa" required>
+                    <Select
+                      value={formData.vat_rate}
+                      onChange={(e) => setFormData({ ...formData, vat_rate: parseFloat(e.target.value) })}
+                      required
+                    >
+                      <option value="0">0%</option>
+                      <option value="5">5%</option>
+                      <option value="13">13%</option>
+                      <option value="25">25%</option>
+                    </Select>
+                  </FormField>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
+                  <div>
+                    <label className="text-xs text-gray-600">Iznos PDV</label>
+                    <p className="text-lg font-semibold text-gray-900">€{formData.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600">Ukupno</label>
+                    <p className="text-lg font-bold text-blue-600">€{formData.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <FormField label="Deadline" required>
+                    <Input
+                      type="date"
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                      required
+                    />
+                  </FormField>
+                </div>
               </div>
             )}
 
@@ -359,28 +399,53 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               />
             </FormField>
             {hasContract && (
-              <>
-                <FormField
-                  label="Contract Amount (€)"
-                  helperText="Base amount without VAT"
-                  required
-                >
-                  <Input
-                    type="number"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
+              <div className="md:col-span-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Osnovica (€)"
+                    helperText="Base amount without VAT"
                     required
-                  />
-                </FormField>
-                <FormField label="Deadline">
-                  <Input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  />
-                </FormField>
-              </>
+                  >
+                    <Input
+                      type="number"
+                      value={formData.base_amount}
+                      onChange={(e) => setFormData({ ...formData, base_amount: parseFloat(e.target.value) || 0 })}
+                      placeholder="0"
+                      step="0.01"
+                      required
+                    />
+                  </FormField>
+                  <FormField label="PDV stopa" required>
+                    <Select
+                      value={formData.vat_rate}
+                      onChange={(e) => setFormData({ ...formData, vat_rate: parseFloat(e.target.value) })}
+                      required
+                    >
+                      <option value="0">0%</option>
+                      <option value="5">5%</option>
+                      <option value="13">13%</option>
+                      <option value="25">25%</option>
+                    </Select>
+                  </FormField>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
+                  <div>
+                    <label className="text-xs text-gray-600">Iznos PDV</label>
+                    <p className="text-lg font-semibold text-gray-900">€{formData.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600">Ukupno</label>
+                    <p className="text-lg font-bold text-blue-600">€{formData.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <FormField label="Deadline">
+                    <Input
+                      type="date"
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    />
+                  </FormField>
+                </div>
+              </div>
             )}
             {!hasContract && (
               <FormField label="Deadline (opcionalno)">

@@ -383,6 +383,14 @@ export const updateSubcontractor = async (
     contract_amount: updates.cost
   }
 
+  // Add VAT fields if provided
+  if (updates.base_amount !== undefined) {
+    contractUpdateData.base_amount = updates.base_amount
+  }
+  if (updates.vat_rate !== undefined) {
+    contractUpdateData.vat_rate = updates.vat_rate
+  }
+
   // Add phase_id if provided
   if (updates.phase_id !== undefined) {
     contractUpdateData.phase_id = updates.phase_id
@@ -472,6 +480,10 @@ export const createContract = async (data: {
   subcontractor_id: string
   job_description: string
   contract_amount: number
+  base_amount?: number
+  vat_rate?: number
+  vat_amount?: number
+  total_amount?: number
   budget_realized: number
   end_date: string | null
   status: string
