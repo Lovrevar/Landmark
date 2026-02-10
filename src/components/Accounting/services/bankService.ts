@@ -155,15 +155,26 @@ export const createCredit = async (credit: NewCreditForm): Promise<void> => {
   const { error } = await supabase
     .from('bank_credits')
     .insert({
-      ...credit,
-      company_id: credit.company_id || null,
-      project_id: credit.project_id || null,
+      bank_id: credit.bank_id,
+      company_id: credit.company_id && credit.company_id.trim() !== '' ? credit.company_id : null,
+      project_id: credit.project_id && credit.project_id.trim() !== '' ? credit.project_id : null,
+      credit_name: credit.credit_name,
       credit_type: actualCreditType,
       credit_seniority: seniority,
+      amount: credit.amount,
+      interest_rate: credit.interest_rate,
+      start_date: credit.start_date,
+      maturity_date: credit.maturity_date,
       outstanding_balance: credit.outstanding_balance || credit.amount,
       monthly_payment: calculateRateAmount(credit),
+      purpose: credit.purpose,
+      usage_expiration_date: credit.usage_expiration_date && credit.usage_expiration_date.trim() !== '' ? credit.usage_expiration_date : null,
+      grace_period: credit.grace_period,
+      repayment_type: credit.repayment_type,
       principal_repayment_type: credit.principal_repayment_type,
-      interest_repayment_type: credit.interest_repayment_type
+      interest_repayment_type: credit.interest_repayment_type,
+      disbursed_to_account: credit.disbursed_to_account || false,
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id && credit.disbursed_to_bank_account_id.trim() !== '' ? credit.disbursed_to_bank_account_id : null
     })
 
   if (error) throw error
@@ -178,8 +189,8 @@ export const updateCredit = async (creditId: string, credit: NewCreditForm): Pro
     .from('bank_credits')
     .update({
       bank_id: credit.bank_id,
-      company_id: credit.company_id || null,
-      project_id: credit.project_id || null,
+      company_id: credit.company_id && credit.company_id.trim() !== '' ? credit.company_id : null,
+      project_id: credit.project_id && credit.project_id.trim() !== '' ? credit.project_id : null,
       credit_name: credit.credit_name,
       credit_type: actualCreditType,
       credit_seniority: seniority,
@@ -190,11 +201,13 @@ export const updateCredit = async (creditId: string, credit: NewCreditForm): Pro
       outstanding_balance: credit.outstanding_balance,
       monthly_payment: calculateRateAmount(credit),
       purpose: credit.purpose,
-      usage_expiration_date: credit.usage_expiration_date || null,
+      usage_expiration_date: credit.usage_expiration_date && credit.usage_expiration_date.trim() !== '' ? credit.usage_expiration_date : null,
       grace_period: credit.grace_period,
       repayment_type: credit.repayment_type,
       principal_repayment_type: credit.principal_repayment_type,
-      interest_repayment_type: credit.interest_repayment_type
+      interest_repayment_type: credit.interest_repayment_type,
+      disbursed_to_account: credit.disbursed_to_account || false,
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id && credit.disbursed_to_bank_account_id.trim() !== '' ? credit.disbursed_to_bank_account_id : null
     })
     .eq('id', creditId)
 
