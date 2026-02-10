@@ -10,6 +10,11 @@ interface LandPurchaseFormModalProps {
   onSuccess: () => void
 }
 
+interface Company {
+  id: string
+  name: string
+}
+
 interface Supplier {
   id: string
   name: string
@@ -23,7 +28,14 @@ interface Project {
 interface Phase {
   id: string
   phase_name: string
-  project_id: string
+}
+
+interface Contract {
+  id: string
+  contract_number: string
+  contract_amount: number
+  base_amount: number
+  contract_date: string
 }
 
 export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
@@ -32,17 +44,18 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   onSuccess
 }) => {
   const [loading, setLoading] = useState(false)
+  const [companies, setCompanies] = useState<Company[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
 
   const [formData, setFormData] = useState({
+    company_id: '',
     supplier_id: '',
     project_id: '',
     phase_id: '',
-    contract_number: '',
     iban: '',
-    contract_date: new Date().toISOString().split('T')[0],
     deposit_amount: 0,
     deposit_due_date: new Date().toISOString().split('T')[0],
     remaining_amount: 0,
@@ -51,37 +64,118 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchData()
+      fetchCompanies()
+      fetchSuppliersWithContracts()
     }
   }, [isOpen])
 
   useEffect(() => {
-    if (formData.project_id) {
-      fetchPhases(formData.project_id)
+    if (formData.supplier_id) {
+      fetchProjectsForSupplier(formData.supplier_id)
+    } else {
+      setProjects([])
+      setFormData(prev => ({ ...prev, project_id: '', phase_id: '' }))
+    }
+  }, [formData.supplier_id])
+
+  useEffect(() => {
+    if (formData.project_id && formData.supplier_id) {
+      fetchPhasesForSupplierAndProject(formData.supplier_id, formData.project_id)
     } else {
       setPhases([])
       setFormData(prev => ({ ...prev, phase_id: '' }))
     }
   }, [formData.project_id])
 
-  const fetchData = async () => {
-    const [suppliersRes, projectsRes] = await Promise.all([
-      supabase.from('subcontractors').select('id, name').order('name'),
-      supabase.from('projects').select('id, name').order('name')
-    ])
+  useEffect(() => {
+    if (formData.phase_id && formData.supplier_id && formData.project_id) {
+      fetchContract()
+    } else {
+      setSelectedContract(null)
+      setFormData(prev => ({ ...prev, deposit_amount: 0, remaining_amount: 0 }))
+    }
+  }, [formData.phase_id])
 
-    if (suppliersRes.data) setSuppliers(suppliersRes.data)
-    if (projectsRes.data) setProjects(projectsRes.data)
+  const fetchCompanies = async () => {
+    const { data } = await supabase
+      .from('accounting_companies')
+      .select('id, name')
+      .order('name')
+
+    if (data) setCompanies(data)
   }
 
-  const fetchPhases = async (projectId: string) => {
+  const fetchSuppliersWithContracts = async () => {
     const { data } = await supabase
-      .from('project_phases')
-      .select('id, phase_name, project_id')
-      .eq('project_id', projectId)
-      .order('phase_name')
+      .from('subcontractors')
+      .select(`
+        id,
+        name,
+        contracts!inner(id)
+      `)
+      .order('name')
 
-    if (data) setPhases(data)
+    if (data) {
+      const uniqueSuppliers = data.map(s => ({ id: s.id, name: s.name }))
+      setSuppliers(uniqueSuppliers)
+    }
+  }
+
+  const fetchProjectsForSupplier = async (supplierId: string) => {
+    const { data } = await supabase
+      .from('contracts')
+      .select('project_id, projects(id, name)')
+      .eq('subcontractor_id', supplierId)
+
+    if (data) {
+      const uniqueProjects = Array.from(
+        new Map(
+          data
+            .filter(c => c.projects)
+            .map(c => [c.projects!.id, { id: c.projects!.id, name: c.projects!.name }])
+        ).values()
+      )
+      setProjects(uniqueProjects as Project[])
+    }
+  }
+
+  const fetchPhasesForSupplierAndProject = async (supplierId: string, projectId: string) => {
+    const { data } = await supabase
+      .from('contracts')
+      .select('phase_id, project_phases(id, phase_name)')
+      .eq('subcontractor_id', supplierId)
+      .eq('project_id', projectId)
+
+    if (data) {
+      const uniquePhases = Array.from(
+        new Map(
+          data
+            .filter(c => c.project_phases)
+            .map(c => [c.project_phases!.id, { id: c.project_phases!.id, phase_name: c.project_phases!.phase_name }])
+        ).values()
+      )
+      setPhases(uniquePhases as Phase[])
+    }
+  }
+
+  const fetchContract = async () => {
+    const { data } = await supabase
+      .from('contracts')
+      .select('id, contract_number, contract_amount, base_amount, start_date')
+      .eq('subcontractor_id', formData.supplier_id)
+      .eq('project_id', formData.project_id)
+      .eq('phase_id', formData.phase_id)
+      .maybeSingle()
+
+    if (data) {
+      setSelectedContract({
+        id: data.id,
+        contract_number: data.contract_number,
+        contract_amount: data.contract_amount,
+        base_amount: data.base_amount,
+        contract_date: data.start_date || new Date().toISOString().split('T')[0]
+      })
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,93 +183,94 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     setLoading(true)
 
     try {
-      const { supplier_id, project_id, phase_id, contract_number, iban, contract_date, deposit_amount, deposit_due_date, remaining_amount, remaining_due_date } = formData
+      const { company_id, supplier_id, deposit_amount, deposit_due_date, remaining_amount, remaining_due_date, iban } = formData
 
-      if (!supplier_id || !project_id || !phase_id || !contract_number) {
+      if (!company_id || !supplier_id || !selectedContract) {
         alert('Molimo popunite sva obavezna polja')
         setLoading(false)
         return
       }
 
-      const { data: existingContract } = await supabase
-        .from('contracts')
-        .select('id')
-        .eq('subcontractor_id', supplier_id)
-        .eq('project_id', project_id)
-        .eq('phase_id', phase_id)
-        .maybeSingle()
-
-      let contractId = existingContract?.id
-
-      if (!contractId) {
-        const { data: newContract, error: contractError } = await supabase
-          .from('contracts')
-          .insert({
-            contract_number: contract_number,
-            project_id: project_id,
-            phase_id: phase_id,
-            subcontractor_id: supplier_id,
-            job_description: 'Kupoprodaja zemljišta',
-            contract_amount: deposit_amount + remaining_amount,
-            base_amount: deposit_amount + remaining_amount,
-            vat_rate: 0,
-            vat_amount: 0,
-            total_amount: deposit_amount + remaining_amount,
-            budget_realized: 0,
-            status: 'active',
-            has_contract: true,
-            contract_type_id: 0,
-            end_date: null,
-            contract_date: contract_date
-          })
-          .select('id')
-          .single()
-
-        if (contractError) throw contractError
-        contractId = newContract.id
+      const totalAmount = deposit_amount + remaining_amount
+      if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
+        alert(`Zbir kapare i preostalog iznosa (${totalAmount.toFixed(2)} €) mora biti jednak iznosu iz ugovora (${selectedContract.base_amount.toFixed(2)} €)`)
+        setLoading(false)
+        return
       }
 
       const invoicesToCreate = []
 
       if (deposit_amount > 0) {
         invoicesToCreate.push({
-          invoice_number: `${contract_number} - Kapara`,
-          entity_type: 'subcontractor',
-          entity_id: supplier_id,
-          contract_id: contractId,
-          project_id: project_id,
-          category: 'supervision',
-          type: 'incoming',
+          invoice_number: `${selectedContract.contract_number} - Kapara`,
+          invoice_type: 'incoming',
+          invoice_category: 'subcontractor',
+          company_id: company_id,
+          supplier_id: supplier_id,
+          contract_id: selectedContract.id,
+          project_id: formData.project_id,
+          issue_date: selectedContract.contract_date,
+          due_date: deposit_due_date,
           base_amount: deposit_amount,
           vat_rate: 0,
           vat_amount: 0,
           total_amount: deposit_amount,
-          due_date: deposit_due_date,
-          invoice_date: contract_date,
-          payment_status: 'unpaid',
-          investor_bank: iban,
-          approved: false
+          category: 'land_purchase',
+          description: 'Kapara za kupoprodaju zemljišta',
+          status: 'unpaid',
+          paid_amount: 0,
+          remaining_amount: deposit_amount,
+          base_amount_1: deposit_amount,
+          vat_rate_1: 0,
+          vat_amount_1: 0,
+          base_amount_2: 0,
+          vat_rate_2: 0,
+          vat_amount_2: 0,
+          base_amount_3: 0,
+          vat_rate_3: 0,
+          vat_amount_3: 0,
+          base_amount_4: 0,
+          vat_rate_4: 0,
+          vat_amount_4: 0,
+          approved: false,
+          iban: iban || null
         })
       }
 
       if (remaining_amount > 0) {
         invoicesToCreate.push({
-          invoice_number: `${contract_number} - Preostalo`,
-          entity_type: 'subcontractor',
-          entity_id: supplier_id,
-          contract_id: contractId,
-          project_id: project_id,
-          category: 'supervision',
-          type: 'incoming',
+          invoice_number: `${selectedContract.contract_number} - Preostalo`,
+          invoice_type: 'incoming',
+          invoice_category: 'subcontractor',
+          company_id: company_id,
+          supplier_id: supplier_id,
+          contract_id: selectedContract.id,
+          project_id: formData.project_id,
+          issue_date: selectedContract.contract_date,
+          due_date: remaining_due_date,
           base_amount: remaining_amount,
           vat_rate: 0,
           vat_amount: 0,
           total_amount: remaining_amount,
-          due_date: remaining_due_date,
-          invoice_date: contract_date,
-          payment_status: 'unpaid',
-          investor_bank: iban,
-          approved: false
+          category: 'land_purchase',
+          description: 'Preostali iznos za kupoprodaju zemljišta',
+          status: 'unpaid',
+          paid_amount: 0,
+          remaining_amount: remaining_amount,
+          base_amount_1: remaining_amount,
+          vat_rate_1: 0,
+          vat_amount_1: 0,
+          base_amount_2: 0,
+          vat_rate_2: 0,
+          vat_amount_2: 0,
+          base_amount_3: 0,
+          vat_rate_3: 0,
+          vat_amount_3: 0,
+          base_amount_4: 0,
+          vat_rate_4: 0,
+          vat_amount_4: 0,
+          approved: false,
+          iban: iban || null
         })
       }
 
@@ -199,21 +294,23 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
   const handleClose = () => {
     setFormData({
+      company_id: '',
       supplier_id: '',
       project_id: '',
       phase_id: '',
-      contract_number: '',
       iban: '',
-      contract_date: new Date().toISOString().split('T')[0],
       deposit_amount: 0,
       deposit_due_date: new Date().toISOString().split('T')[0],
       remaining_amount: 0,
       remaining_due_date: new Date().toISOString().split('T')[0]
     })
+    setSelectedContract(null)
     onClose()
   }
 
   const totalAmount = formData.deposit_amount + formData.remaining_amount
+  const contractAmount = selectedContract?.base_amount || 0
+  const amountMismatch = selectedContract && Math.abs(totalAmount - contractAmount) > 0.01
 
   return (
     <Modal show={isOpen} onClose={handleClose} size="xl">
@@ -226,11 +323,30 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Firma *
+              </label>
+              <select
+                value={formData.company_id}
+                onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                required
+              >
+                <option value="">Odaberite firmu</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Dobavljač *
               </label>
               <select
                 value={formData.supplier_id}
-                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value, project_id: '', phase_id: '' })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 required
               >
@@ -249,9 +365,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </label>
               <select
                 value={formData.project_id}
-                onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
                 required
+                disabled={!formData.supplier_id}
               >
                 <option value="">Odaberite projekt</option>
                 {projects.map((project) => (
@@ -282,31 +399,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Broj Ugovora *
-              </label>
-              <input
-                type="text"
-                value={formData.contract_number}
-                onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Datum Ugovora *
-              </label>
-              <DateInput
-                value={formData.contract_date}
-                onChange={(value) => setFormData({ ...formData, contract_date: value })}
-                required
-              />
-            </div>
-
-            <div>
+            <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 IBAN
               </label>
@@ -319,70 +412,104 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               />
             </div>
           </div>
+
+          {selectedContract && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-slate-600">Broj ugovora:</span>
+                  <span className="ml-2 font-semibold text-slate-800">{selectedContract.contract_number}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">Iznos ugovora:</span>
+                  <span className="ml-2 font-semibold text-blue-700">
+                    {selectedContract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="bg-green-50 p-5 rounded-lg mb-5 border border-green-200">
-          <h3 className="text-base font-semibold text-green-900 mb-4">Kapara</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Iznos Kapare *
-              </label>
-              <CurrencyInput
-                value={formData.deposit_amount}
-                onChange={(value) => setFormData({ ...formData, deposit_amount: value })}
-                required
-              />
+        {selectedContract && (
+          <>
+            <div className="bg-green-50 p-5 rounded-lg mb-5 border border-green-200">
+              <h3 className="text-base font-semibold text-green-900 mb-4">Kapara</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Iznos Kapare *
+                  </label>
+                  <CurrencyInput
+                    value={formData.deposit_amount}
+                    onChange={(value) => setFormData({ ...formData, deposit_amount: value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Datum Dospijeća *
+                  </label>
+                  <DateInput
+                    value={formData.deposit_due_date}
+                    onChange={(value) => setFormData({ ...formData, deposit_due_date: value })}
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Datum Dospijeća *
-              </label>
-              <DateInput
-                value={formData.deposit_due_date}
-                onChange={(value) => setFormData({ ...formData, deposit_due_date: value })}
-                required
-              />
+            <div className="bg-orange-50 p-5 rounded-lg mb-5 border border-orange-200">
+              <h3 className="text-base font-semibold text-orange-900 mb-4">Preostali Iznos</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Iznos Preostalog *
+                  </label>
+                  <CurrencyInput
+                    value={formData.remaining_amount}
+                    onChange={(value) => setFormData({ ...formData, remaining_amount: value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Datum Dospijeća *
+                  </label>
+                  <DateInput
+                    value={formData.remaining_due_date}
+                    onChange={(value) => setFormData({ ...formData, remaining_due_date: value })}
+                    required
+                  />
+                </div>
+              </div>
             </div>
+
+            <div className={`p-4 rounded-lg ${amountMismatch ? 'bg-red-50 border border-red-300' : 'bg-blue-50'}`}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-lg font-semibold text-slate-700">Sveukupno:</span>
+                  {amountMismatch && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Zbir mora biti {contractAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                    </p>
+                  )}
+                </div>
+                <span className={`text-2xl font-bold ${amountMismatch ? 'text-red-600' : 'text-blue-600'}`}>
+                  {totalAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!selectedContract && formData.phase_id && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800">Nema pronađenog ugovora za odabranu kombinaciju.</p>
           </div>
-        </div>
-
-        <div className="bg-orange-50 p-5 rounded-lg mb-5 border border-orange-200">
-          <h3 className="text-base font-semibold text-orange-900 mb-4">Preostali Iznos</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Iznos Preostalog *
-              </label>
-              <CurrencyInput
-                value={formData.remaining_amount}
-                onChange={(value) => setFormData({ ...formData, remaining_amount: value })}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Datum Dospijeća *
-              </label>
-              <DateInput
-                value={formData.remaining_due_date}
-                onChange={(value) => setFormData({ ...formData, remaining_due_date: value })}
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-blue-50 p-4 rounded-lg mt-6">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-semibold text-slate-700">Sveukupno:</span>
-            <span className="text-2xl font-bold text-blue-600">
-              {totalAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-            </span>
-          </div>
-        </div>
+        )}
       </Modal.Body>
 
       <Modal.Footer>
@@ -397,7 +524,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         <Button
           type="submit"
           variant="primary"
-          disabled={loading}
+          disabled={loading || !selectedContract || amountMismatch}
         >
           {loading ? 'Spremanje...' : 'Kreiraj Račune'}
         </Button>
