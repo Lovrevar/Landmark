@@ -201,7 +201,6 @@ const CreditsManagement: React.FC = () => {
 
       await fetchAllocationsForCredit(selectedCredit.id)
       setShowAllocationModal(false)
-      alert('Allocation created successfully')
     } catch (error) {
       console.error('Error creating allocation:', error)
       alert('Error creating allocation')
