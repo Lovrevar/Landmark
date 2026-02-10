@@ -77,11 +77,18 @@ export const fetchCredits = async () => {
   const result = await supabase
     .from('bank_credits')
     .select('*')
-    .or('disbursed_to_account.is.null,disbursed_to_account.eq.false')
     .order('credit_name')
 
   if (result.error) throw result.error
-  return result.data as CompanyCredit[]
+
+  const filtered = (result.data || []).filter(credit =>
+    credit.disbursed_to_account !== true
+  )
+
+  console.log('All credits from DB:', result.data)
+  console.log('Filtered credits (disbursed_to_account !== true):', filtered)
+
+  return filtered as CompanyCredit[]
 }
 
 export const createPayment = async (formData: PaymentFormData) => {

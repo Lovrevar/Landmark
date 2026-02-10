@@ -138,21 +138,24 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       required
                     >
                       <option value="">Odaberi kredit</option>
-                      {companyCredits
-                        .filter(credit => {
+                      {(() => {
+                        const filtered = companyCredits.filter(credit => {
                           const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                          return selectedInvoice &&
+                          const matches = selectedInvoice &&
                             credit.company_id === selectedInvoice.company_id &&
                             !credit.disbursed_to_account
+                          console.log(`Credit ${credit.credit_name}: disbursed_to_account=${credit.disbursed_to_account}, matches=${matches}`)
+                          return matches
                         })
-                        .map(credit => {
+                        return filtered.map(credit => {
                           const available = credit.amount - credit.used_amount
                           return (
                             <option key={credit.id} value={credit.id}>
                               {credit.credit_name} (Dostupno: €{available.toLocaleString('hr-HR')})
                             </option>
                           )
-                        })}
+                        })
+                      })()}
                     </Select>
                   </FormField>
                 )}
