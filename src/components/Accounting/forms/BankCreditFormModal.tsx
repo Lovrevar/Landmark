@@ -46,10 +46,9 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
         .select(`
           id,
           company_id,
-          bank_id,
+          bank_name,
           account_number,
-          current_balance,
-          bank:banks(id, name)
+          current_balance
         `)
         .eq('company_id', companyId)
 
@@ -286,7 +285,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
                       <option value="">Odaberite račun</option>
                       {companyBankAccounts.map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.bank?.name || 'Nepoznata banka'} - {account.account_number} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                          {account.bank_name || 'Nepoznata banka'} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{Number(account.current_balance).toLocaleString('hr-HR')})
                         </option>
                       ))}
                     </Select>
