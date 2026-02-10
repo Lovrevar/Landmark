@@ -141,8 +141,8 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                     <div>
-                      <p className="text-xs text-gray-500">Ukupno (bez PDV)</p>
-                      <p className="text-sm font-medium">€{parseFloat((invoice.base_amount || 0).toString()).toLocaleString('hr-HR')}</p>
+                      <p className="text-xs text-gray-500">Ukupno (sa PDV)</p>
+                      <p className="text-sm font-medium">€{parseFloat((invoice.total_amount || 0).toString()).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Plaćeno</p>
@@ -151,7 +151,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                     <div>
                       <p className="text-xs text-gray-500">Preostalo</p>
                       <p className="text-sm font-medium text-orange-600">
-                        €{Math.max(0, parseFloat((invoice.base_amount || 0).toString()) - (invoice.actual_paid || 0)).toLocaleString('hr-HR')}
+                        €{Math.max(0, parseFloat((invoice.total_amount || 0).toString()) - (invoice.actual_paid || 0)).toLocaleString('hr-HR')}
                       </p>
                     </div>
                   </div>
