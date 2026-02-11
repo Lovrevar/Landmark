@@ -180,7 +180,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }`}
                         >
                           <span>{profile}</span>
-                          {profile === 'Accounting' && <Lock className="w-3 h-3" />}
+                          {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                         </button>
                       ))}
                     </div>
