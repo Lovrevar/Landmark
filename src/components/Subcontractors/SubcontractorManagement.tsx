@@ -170,7 +170,7 @@ const SubcontractorManagement: React.FC = () => {
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
-        .select('contract_id, base_amount, paid_amount, remaining_amount')
+        .select('contract_id, base_amount, total_amount, paid_amount, remaining_amount')
         .eq('invoice_category', 'SUBCONTRACTOR')
 
       if (invoicesError) throw invoicesError
@@ -188,7 +188,7 @@ const SubcontractorManagement: React.FC = () => {
 
           const contractInvoices = invoicesData?.filter(inv => inv.contract_id === contractData.id) || []
           const budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
-          const invoiceValue = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
+          const invoiceValue = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
           const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
 
           return {
@@ -216,9 +216,9 @@ const SubcontractorManagement: React.FC = () => {
           const contractInvoices = allInvoicesForSub.filter(inv => inv.contract_id === contractData.id)
 
           if (contractData.has_contract) {
-            totalValue += parseFloat(contractData.base_amount || contractData.contract_amount || 0)
+            totalValue += parseFloat(contractData.contract_amount || 0)
           } else {
-            totalValue += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
+            totalValue += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
           }
 
           if (contractInvoices.length > 0) {
