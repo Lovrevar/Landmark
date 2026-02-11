@@ -149,7 +149,16 @@ const AccountingApprovals: React.FC = () => {
   }
 
   const handleHideInvoice = async () => {
-    if (!hideConfirmDialog.invoiceId) return
+    console.log('=== handleHideInvoice called ===')
+    console.log('Invoice ID:', hideConfirmDialog.invoiceId)
+    console.log('User object:', user)
+    console.log('User ID:', user?.id)
+
+    if (!hideConfirmDialog.invoiceId) {
+      console.error('No invoice ID')
+      alert('Greška: ID računa nije pronađen.')
+      return
+    }
 
     if (!user?.id) {
       console.error('User ID not found')
@@ -157,27 +166,41 @@ const AccountingApprovals: React.FC = () => {
       return
     }
 
+    console.log('Attempting to insert into hidden_approved_invoices...')
+    console.log('Data:', { invoice_id: hideConfirmDialog.invoiceId, hidden_by: user.id })
+
     try {
-      const { error } = await supabase.from('hidden_approved_invoices').insert({
+      const { data, error } = await supabase.from('hidden_approved_invoices').insert({
         invoice_id: hideConfirmDialog.invoiceId,
         hidden_by: user.id
-      })
+      }).select()
+
+      console.log('Insert result - data:', data)
+      console.log('Insert result - error:', error)
 
       if (error) {
-        console.error('Supabase error:', error)
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+
         if (error.code === '23505') {
           alert('Ovaj račun je već sakriven.')
         } else {
-          throw error
+          alert(`Greška pri skrivanju računa:\n${error.message}\nKod: ${error.code}`)
         }
         return
       }
 
+      console.log('Successfully inserted, refreshing invoices...')
       await fetchApprovedInvoices()
+
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
       alert('Račun je uspješno sakriven.')
     } catch (error: any) {
-      console.error('Error hiding invoice:', error)
+      console.error('Caught error:', error)
       alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
     }
   }
