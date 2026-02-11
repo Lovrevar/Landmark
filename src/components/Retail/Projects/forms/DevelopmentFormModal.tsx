@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
+import { SupplierFormModal } from './SupplierFormModal'
 
 interface DevelopmentFormModalProps {
   phase: RetailProjectPhase
@@ -17,6 +18,7 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
   contract
 }) => {
   const [suppliers, setSuppliers] = useState<RetailSupplier[]>([])
+  const [showAddSupplier, setShowAddSupplier] = useState(false)
   const [formData, setFormData] = useState({
     supplier_id: contract?.supplier_id || '',
     contract_number: contract?.contract_number || '',
@@ -93,8 +95,30 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
     }
   }
 
+  const handleAddSupplierClick = () => {
+    setShowAddSupplier(true)
+  }
+
+  const handleSupplierCreated = async () => {
+    await loadSuppliers()
+    setShowAddSupplier(false)
+    const updatedSuppliers = await retailProjectService.fetchSuppliers()
+    if (updatedSuppliers.length > 0) {
+      const latestSupplier = updatedSuppliers[updatedSuppliers.length - 1]
+      setFormData(prev => ({ ...prev, supplier_id: latestSupplier.id }))
+    }
+  }
+
   return (
-    <Modal show={true} onClose={onClose} size="lg">
+    <>
+      {showAddSupplier && (
+        <SupplierFormModal
+          onClose={() => setShowAddSupplier(false)}
+          onSuccess={handleSupplierCreated}
+        />
+      )}
+
+      <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
         title={contract ? 'Uredi dobavljača' : 'Novi dobavljač'}
         subtitle={`Faza: ${phase.phase_name}`}
@@ -117,21 +141,28 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <FormField label="Dobavljač *">
-                <Select
-                  value={formData.supplier_id}
-                  onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-                  required
-                >
-                  <option value="">Odaberi dobavljača...</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name} - {supplier.supplier_type}
-                    </option>
-                  ))}
-                </Select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Ako dobavljač ne postoji, dodajte ga prvo preko "Dobavljači" menija
-                </p>
+                <div className="flex space-x-2">
+                  <Select
+                    value={formData.supplier_id}
+                    onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                    className="flex-1"
+                    required
+                  >
+                    <option value="">Odaberi dobavljača...</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name} - {supplier.supplier_type}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="success"
+                    onClick={handleAddSupplierClick}
+                  >
+                    + Novi
+                  </Button>
+                </div>
               </FormField>
             </div>
 
@@ -225,5 +256,6 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
         </Modal.Footer>
       </form>
     </Modal>
+    </>
   )
 }

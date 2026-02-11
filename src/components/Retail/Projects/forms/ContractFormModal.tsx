@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
+import { SupplierFormModal } from './SupplierFormModal'
 
 interface ContractFormModalProps {
   phase: RetailProjectPhase
@@ -97,53 +98,66 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     setShowAddSupplier(true)
   }
 
-  return (
-    <Modal show={true} onClose={onClose} size="lg">
-      <Modal.Header
-        title={contract ? 'Uredi ugovor' : 'Novi ugovor'}
-        subtitle={`Faza: ${phase.phase_name}`}
-        onClose={onClose}
-      />
-      <form onSubmit={handleSubmit}>
-        <Modal.Body>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
+  const handleSupplierCreated = async () => {
+    await loadSuppliers()
+    setShowAddSupplier(false)
+    const updatedSuppliers = await retailProjectService.fetchSuppliers()
+    if (updatedSuppliers.length > 0) {
+      const latestSupplier = updatedSuppliers[updatedSuppliers.length - 1]
+      setFormData(prev => ({ ...prev, supplier_id: latestSupplier.id }))
+    }
+  }
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <FormField label="Dobavljač *">
-                <div className="flex space-x-2">
-                  <Select
-                    value={formData.supplier_id}
-                    onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-                    className="flex-1"
-                    required
-                  >
-                    <option value="">Odaberi dobavljača...</option>
-                    {suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name} - {supplier.supplier_type}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="success"
-                    onClick={handleAddSupplierClick}
-                  >
-                    + Novi
-                  </Button>
-                </div>
-                {showAddSupplier && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Dodavanje novog dobavljača će biti omogućeno kroz modal
-                  </p>
-                )}
-              </FormField>
-            </div>
+  return (
+    <>
+      {showAddSupplier && (
+        <SupplierFormModal
+          onClose={() => setShowAddSupplier(false)}
+          onSuccess={handleSupplierCreated}
+        />
+      )}
+
+      <Modal show={true} onClose={onClose} size="lg">
+        <Modal.Header
+          title={contract ? 'Uredi ugovor' : 'Novi ugovor'}
+          subtitle={`Faza: ${phase.phase_name}`}
+          onClose={onClose}
+        />
+        <form onSubmit={handleSubmit}>
+          <Modal.Body>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <FormField label="Dobavljač *">
+                  <div className="flex space-x-2">
+                    <Select
+                      value={formData.supplier_id}
+                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                      className="flex-1"
+                      required
+                    >
+                      <option value="">Odaberi dobavljača...</option>
+                      {suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.name} - {supplier.supplier_type}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="success"
+                      onClick={handleAddSupplierClick}
+                    >
+                      + Novi
+                    </Button>
+                  </div>
+                </FormField>
+              </div>
 
             <div className="md:col-span-2">
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -240,5 +254,6 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
         </Modal.Footer>
       </form>
     </Modal>
+    </>
   )
 }
