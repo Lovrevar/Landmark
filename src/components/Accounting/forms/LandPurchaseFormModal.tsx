@@ -266,9 +266,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     } else {
       const { data } = await supabase
         .from('retail_contracts')
-        .select('id, contract_number, contract_amount, contract_date')
+        .select('id, contract_number, contract_amount, contract_date, retail_project_phases!inner(project_id)')
         .eq('supplier_id', formData.supplier_id)
         .eq('phase_id', formData.phase_id)
+        .eq('retail_project_phases.project_id', formData.project_id)
         .maybeSingle()
 
       if (data) {
