@@ -490,7 +490,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     <Modal show={isOpen} onClose={handleClose} size="xl">
       <Modal.Header title="Kupoprodaja Zemljišta" onClose={handleClose} />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
       <Modal.Body>
         <div className="bg-slate-50 p-5 rounded-lg mb-5">
           <div className="flex justify-between items-center mb-4">
