@@ -24,7 +24,8 @@ import {
   MapPin,
   ShoppingCart,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -95,7 +96,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         /*{ name: 'Krediti', icon: CreditCard, path: '/company-credits' },*/
         { name: 'Kupci', icon: Users, path: '/accounting-customers' },
         { name: 'Pozajmice', icon: TrendingUp, path: '/accounting-loans' },
-        { name: 'Stanje duga', icon: AlertCircle, path: '/debt-status' }
+        { name: 'Stanje duga', icon: AlertCircle, path: '/debt-status' },
+        { name: 'Odobrenja', icon: CheckCircle, path: '/accounting-approvals' }
       ],
       Retail: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
