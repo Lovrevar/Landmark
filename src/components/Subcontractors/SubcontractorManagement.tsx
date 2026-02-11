@@ -169,7 +169,7 @@ const SubcontractorManagement: React.FC = () => {
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('accounting_invoices')
-        .select('contract_id, base_amount, paid_amount, remaining_amount')
+        .select('supplier_id, contract_id, base_amount, paid_amount, remaining_amount')
         .eq('invoice_category', 'SUBCONTRACTOR')
 
       if (invoicesError) throw invoicesError
@@ -205,6 +205,7 @@ const SubcontractorManagement: React.FC = () => {
 
         const allContractIds = subContracts.map(c => c.id)
         const allInvoicesForSub = invoicesData?.filter(inv => allContractIds.includes(inv.contract_id)) || []
+        const invoicesWithoutContract = invoicesData?.filter(inv => inv.supplier_id === sub.id && !inv.contract_id) || []
 
         let totalPaid = 0
         let totalRemaining = 0
@@ -224,6 +225,12 @@ const SubcontractorManagement: React.FC = () => {
             totalPaid += budgetRealized
             totalRemaining += (contractAmount - budgetRealized)
           }
+        })
+
+        invoicesWithoutContract.forEach((invoice: any) => {
+          totalValue += parseFloat(invoice.base_amount || 0)
+          totalPaid += parseFloat(invoice.paid_amount || 0)
+          totalRemaining += parseFloat(invoice.remaining_amount || 0)
         })
 
         const activeContracts = contracts.filter(c => c.progress < 100 && contractsData?.find(cd => cd.id === c.id)?.status === 'active').length
