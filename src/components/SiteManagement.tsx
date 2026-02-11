@@ -74,6 +74,8 @@ const SiteManagement: React.FC = () => {
   } | null>(null)
   const [showInvoicesModal, setShowInvoicesModal] = useState(false)
   const [selectedSubcontractorForInvoices, setSelectedSubcontractorForInvoices] = useState<Subcontractor | null>(null)
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
+  const [expandedContractTypes, setExpandedContractTypes] = useState<Map<string, Set<string>>>(new Map())
 
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
@@ -279,6 +281,33 @@ const SiteManagement: React.FC = () => {
           onDeleteSubcontractor={handleDeleteSubcontractor}
           onManageMilestones={handleManageMilestones}
           canManagePayments={userCanManagePayments}
+          expandedPhases={expandedPhases}
+          expandedContractTypes={expandedContractTypes}
+          onTogglePhase={(phaseId) => {
+            setExpandedPhases(prev => {
+              const next = new Set(prev)
+              if (next.has(phaseId)) {
+                next.delete(phaseId)
+              } else {
+                next.add(phaseId)
+              }
+              return next
+            })
+          }}
+          onToggleContractType={(phaseId, typeKey) => {
+            setExpandedContractTypes(prev => {
+              const next = new Map(prev)
+              const phaseTypes = next.get(phaseId) || new Set()
+              const newPhaseTypes = new Set(phaseTypes)
+              if (newPhaseTypes.has(typeKey)) {
+                newPhaseTypes.delete(typeKey)
+              } else {
+                newPhaseTypes.add(typeKey)
+              }
+              next.set(phaseId, newPhaseTypes)
+              return next
+            })
+          }}
         />
 
         <PhaseSetupModal

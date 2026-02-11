@@ -44,6 +44,10 @@ interface ProjectDetailProps {
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   canManagePayments?: boolean
+  expandedPhases: Set<string>
+  expandedContractTypes: Map<string, Set<string>>
+  onTogglePhase: (phaseId: string) => void
+  onToggleContractType: (phaseId: string, typeKey: string) => void
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -60,7 +64,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onOpenSubDetails,
   onDeleteSubcontractor,
   onManageMilestones,
-  canManagePayments = true
+  canManagePayments = true,
+  expandedPhases,
+  expandedContractTypes,
+  onTogglePhase,
+  onToggleContractType
 }) => {
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [loadingCredits, setLoadingCredits] = useState(false)
@@ -255,6 +263,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onOpenSubDetails={onOpenSubDetails}
                 onDeleteSubcontractor={onDeleteSubcontractor}
                 onManageMilestones={onManageMilestones}
+                isExpanded={expandedPhases.has(phase.id)}
+                expandedContractTypes={expandedContractTypes.get(phase.id) || new Set()}
+                onToggleExpand={() => onTogglePhase(phase.id)}
+                onToggleContractType={(typeKey) => onToggleContractType(phase.id, typeKey)}
               />
             )
           })}

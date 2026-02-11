@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
@@ -18,6 +18,10 @@ interface PhaseCardProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  isExpanded: boolean
+  expandedContractTypes: Set<string>
+  onToggleExpand: () => void
+  onToggleContractType: (typeKey: string) => void
 }
 
 export const PhaseCard: React.FC<PhaseCardProps> = ({
@@ -32,22 +36,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onEditSubcontractor,
   onOpenSubDetails,
   onDeleteSubcontractor,
-  onManageMilestones
+  onManageMilestones,
+  isExpanded,
+  expandedContractTypes,
+  onToggleExpand,
+  onToggleContractType
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [expandedContractTypes, setExpandedContractTypes] = useState<Set<string>>(new Set())
-
-  const toggleContractType = (typeKey: string) => {
-    setExpandedContractTypes(prev => {
-      const next = new Set(prev)
-      if (next.has(typeKey)) {
-        next.delete(typeKey)
-      } else {
-        next.add(typeKey)
-      }
-      return next
-    })
-  }
 
   const groupedSubcontractors = phaseSubcontractors.reduce((groups, sub) => {
     const typeKey = sub.contract_type_name || 'Uncategorized'
@@ -91,7 +85,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               variant="primary"
               size="icon-lg"
               icon={isExpanded ? ChevronUp : ChevronDown}
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={onToggleExpand}
             />
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
@@ -196,7 +190,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               return (
                 <div key={contractTypeName} className="border border-gray-200 rounded-lg overflow-hidden">
                   <button
-                    onClick={() => toggleContractType(contractTypeName)}
+                    onClick={() => onToggleContractType(contractTypeName)}
                     className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
                   >
                     <div className="flex items-center space-x-3">
