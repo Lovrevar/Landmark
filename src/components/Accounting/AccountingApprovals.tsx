@@ -10,7 +10,6 @@ import {
   Button,
   Badge,
   EmptyState,
-  Table,
   ConfirmDialog
 } from '../ui'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
@@ -152,20 +151,34 @@ const AccountingApprovals: React.FC = () => {
   const handleHideInvoice = async () => {
     if (!hideConfirmDialog.invoiceId) return
 
+    if (!user?.id) {
+      console.error('User ID not found')
+      alert('Greška: Korisnik nije pronađen. Pokušajte se ponovno prijaviti.')
+      return
+    }
+
     try {
       const { error } = await supabase.from('hidden_approved_invoices').insert({
         invoice_id: hideConfirmDialog.invoiceId,
-        hidden_by: user?.id
+        hidden_by: user.id
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        if (error.code === '23505') {
+          alert('Ovaj račun je već sakriven.')
+        } else {
+          throw error
+        }
+        return
+      }
 
       await fetchApprovedInvoices()
-
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
-    } catch (error) {
+      alert('Račun je uspješno sakriven.')
+    } catch (error: any) {
       console.error('Error hiding invoice:', error)
-      alert('Došlo je do greške pri skrivanju računa.')
+      alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
     }
   }
 
@@ -219,71 +232,68 @@ const AccountingApprovals: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between gap-4">
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Pretraži račune..."
-              className="max-w-md"
-            />
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Pretraži račune..."
+            className="max-w-md"
+          />
         </div>
 
-        <div className="overflow-x-auto">
-          {filteredInvoices.length === 0 ? (
+        {filteredInvoices.length === 0 ? (
+          <div className="p-8">
             <EmptyState
               icon={CheckCircle}
               title="Nema računa za prikaz"
               description="Svi odobreni računi su obrađeni i skriveni."
             />
-          ) : (
-            <Table>
-              <thead>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th>Broj računa</th>
-                  <th>Dobavljač</th>
-                  <th>Projekt</th>
-                  <th>Faza</th>
-                  <th>Datum izdavanja</th>
-                  <th>Dospijeće</th>
-                  <th>Osnovica</th>
-                  <th>PDV</th>
-                  <th>Ukupno</th>
-                  <th>Status</th>
-                  <th>Akcije</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Faza</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Datum izdavanja</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dospijeće</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Osnovica</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDV</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ukupno</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Akcije</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td className="font-medium">{invoice.invoice_number}</td>
-                    <td>{invoice.supplier_name}</td>
-                    <td>{invoice.project_name}</td>
-                    <td>{invoice.phase_name}</td>
-                    <td>{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                    <td>{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
-                    <td>
-                      €
-                      {invoice.base_amount.toLocaleString('hr-HR', {
+                  <tr key={invoice.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.phase_name}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                      €{invoice.base_amount.toLocaleString('hr-HR', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                       })}
                     </td>
-                    <td>
-                      €
-                      {invoice.vat_amount.toLocaleString('hr-HR', {
+                    <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                      €{invoice.vat_amount.toLocaleString('hr-HR', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                       })}
                     </td>
-                    <td className="font-semibold">
-                      €
-                      {invoice.total_amount.toLocaleString('hr-HR', {
+                    <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                      €{invoice.total_amount.toLocaleString('hr-HR', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                       })}
                     </td>
-                    <td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant={
@@ -299,7 +309,7 @@ const AccountingApprovals: React.FC = () => {
                         <Badge variant="success">Odobreno</Badge>
                       </div>
                     </td>
-                    <td>
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -318,9 +328,9 @@ const AccountingApprovals: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-            </Table>
-          )}
-        </div>
+            </table>
+          </div>
+        )}
       </div>
 
       {invoices.length > 0 && filteredInvoices.length === 0 && searchTerm && (
