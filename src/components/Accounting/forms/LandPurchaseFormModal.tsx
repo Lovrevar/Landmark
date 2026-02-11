@@ -270,6 +270,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('supplier_id', formData.supplier_id)
         .eq('phase_id', formData.phase_id)
         .eq('retail_project_phases.project_id', formData.project_id)
+        .gt('contract_amount', 0)
+        .order('contract_date', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (data) {
