@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, User } from 'lucide-react'
+import { Building2, User, Plus } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { SubcontractorFormData, ContractType } from '../types/siteTypes'
 import { fetchProjectFunders } from '../services/siteService'
@@ -54,6 +54,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [contractTypes, setContractTypes] = useState<ContractType[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [loadingContractTypes, setLoadingContractTypes] = useState(false)
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDescription, setNewCategoryDescription] = useState('')
+  const [savingCategory, setSavingCategory] = useState(false)
+  const [categoryError, setCategoryError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!hasContract) {
@@ -126,6 +131,58 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       console.error('Error loading contract types:', error)
     } finally {
       setLoadingContractTypes(false)
+    }
+  }
+
+  const handleSaveNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setCategoryError('Naziv kategorije je obavezan')
+      return
+    }
+
+    try {
+      setSavingCategory(true)
+      setCategoryError(null)
+
+      const { data: existingTypes } = await supabase
+        .from('contract_types')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1)
+
+      const maxId = existingTypes && existingTypes.length > 0 ? existingTypes[0].id : 0
+      const newId = maxId + 1
+
+      const { data, error } = await supabase
+        .from('contract_types')
+        .insert({
+          id: newId,
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim() || null,
+          is_active: true
+        })
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === '23505') {
+          setCategoryError('Kategorija s tim nazivom već postoji')
+        } else {
+          throw error
+        }
+        return
+      }
+
+      await loadContractTypes()
+      setFormData({ ...formData, contract_type_id: newId })
+      setShowNewCategoryModal(false)
+      setNewCategoryName('')
+      setNewCategoryDescription('')
+    } catch (error) {
+      console.error('Error creating category:', error)
+      setCategoryError('Greška pri spremanju kategorije')
+    } finally {
+      setSavingCategory(false)
     }
   }
 
@@ -207,18 +264,31 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           required
           helperText="Odaberite tip ugovora za ovu fazu"
         >
-          <Select
-            value={formData.contract_type_id}
-            onChange={(e) => setFormData({ ...formData, contract_type_id: parseInt(e.target.value) })}
-            required
-            disabled={loadingContractTypes}
-          >
-            {contractTypes.map(type => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </Select>
+          <div className="flex gap-2">
+            <Select
+              value={formData.contract_type_id}
+              onChange={(e) => setFormData({ ...formData, contract_type_id: parseInt(e.target.value) })}
+              required
+              disabled={loadingContractTypes}
+              className="flex-1"
+            >
+              <option value="">Odaberi kategoriju</option>
+              {contractTypes.map(type => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </Select>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowNewCategoryModal(true)}
+              className="px-3"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
         </FormField>
 
         <div className="mb-6">
@@ -516,6 +586,72 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           Add Subcontractor
         </Button>
       </Modal.Footer>
+
+      {showNewCategoryModal && (
+        <Modal show={true} onClose={() => {
+          setShowNewCategoryModal(false)
+          setNewCategoryName('')
+          setNewCategoryDescription('')
+          setCategoryError(null)
+        }} size="sm">
+          <Modal.Header
+            title="Nova kategorija ugovora"
+            subtitle="Dodajte novu kategoriju koja će biti dostupna za sve buduće ugovore"
+            onClose={() => {
+              setShowNewCategoryModal(false)
+              setNewCategoryName('')
+              setNewCategoryDescription('')
+              setCategoryError(null)
+            }}
+          />
+          <Modal.Body>
+            {categoryError && (
+              <Alert variant="error" className="mb-4">
+                {categoryError}
+              </Alert>
+            )}
+            <FormField label="Naziv kategorije" required>
+              <Input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="npr. Elektrika, Građevinski radovi..."
+                required
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Opis (opcionalno)">
+              <Textarea
+                value={newCategoryDescription}
+                onChange={(e) => setNewCategoryDescription(e.target.value)}
+                placeholder="Dodajte kratki opis kategorije..."
+                rows={3}
+              />
+            </FormField>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowNewCategoryModal(false)
+                setNewCategoryName('')
+                setNewCategoryDescription('')
+                setCategoryError(null)
+              }}
+              disabled={savingCategory}
+            >
+              Odustani
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveNewCategory}
+              loading={savingCategory}
+            >
+              Spremi kategoriju
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </Modal>
   )
 }
