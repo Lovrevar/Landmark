@@ -22,7 +22,7 @@ export const useCompanies = () => {
     name: '',
     oib: '',
     accountCount: 1,
-    bankAccounts: [{ bank_name: '', initial_balance: 0 }]
+    bankAccounts: [{ bank_name: '', current_balance: 0 }]
   })
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export const useCompanies = () => {
         name: company.name,
         oib: company.oib,
         accountCount: bankAccountsForEdit.length || 1,
-        bankAccounts: bankAccountsForEdit.length > 0 ? bankAccountsForEdit : [{ bank_name: '', initial_balance: 0 }]
+        bankAccounts: bankAccountsForEdit.length > 0 ? bankAccountsForEdit : [{ bank_name: '', current_balance: 0 }]
       })
     } else {
       setEditingCompany(null)
@@ -59,7 +59,7 @@ export const useCompanies = () => {
         name: '',
         oib: '',
         accountCount: 1,
-        bankAccounts: [{ bank_name: '', initial_balance: 0 }]
+        bankAccounts: [{ bank_name: '', current_balance: 0 }]
       })
     }
     document.body.style.overflow = 'hidden'
@@ -67,7 +67,7 @@ export const useCompanies = () => {
   }
 
   const handleCloseAddModal = () => {
-    setFormData({ name: '', oib: '', accountCount: 1, bankAccounts: [{ bank_name: '', initial_balance: 0 }] })
+    setFormData({ name: '', oib: '', accountCount: 1, bankAccounts: [{ bank_name: '', current_balance: 0 }] })
     document.body.style.overflow = 'unset'
     setShowAddModal(false)
     setEditingCompany(null)
@@ -140,7 +140,7 @@ export const useCompanies = () => {
     if (newCount > currentAccounts.length) {
       const newAccounts = [...currentAccounts]
       for (let i = currentAccounts.length; i < newCount; i++) {
-        newAccounts.push({ bank_name: '', initial_balance: 0 })
+        newAccounts.push({ bank_name: '', current_balance: 0 })
       }
       setFormData({ ...formData, accountCount: newCount, bankAccounts: newAccounts })
     } else if (newCount < currentAccounts.length) {
@@ -148,7 +148,7 @@ export const useCompanies = () => {
     }
   }
 
-  const handleBankAccountChange = (index: number, field: 'bank_name' | 'initial_balance', value: string | number) => {
+  const handleBankAccountChange = (index: number, field: 'bank_name' | 'current_balance', value: string | number) => {
     const newAccounts = [...formData.bankAccounts]
     newAccounts[index] = { ...newAccounts[index], [field]: value }
     setFormData({ ...formData, bankAccounts: newAccounts })

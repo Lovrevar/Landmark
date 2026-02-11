@@ -43,7 +43,7 @@ export const fetchBankAccountsForCompany = async (companyId: string) => {
   return (bankAccountsData || []).map(acc => ({
     id: acc.id,
     bank_name: acc.bank_name,
-    initial_balance: acc.initial_balance
+    current_balance: acc.current_balance
   }))
 }
 
@@ -63,8 +63,8 @@ export const createCompany = async (formData: CompanyFormData) => {
   const bankAccountsToInsert = formData.bankAccounts.map(acc => ({
     company_id: companyData.id,
     bank_name: acc.bank_name,
-    initial_balance: acc.initial_balance,
-    current_balance: acc.initial_balance
+    initial_balance: 0,
+    current_balance: acc.current_balance
   }))
 
   const { error: bankError } = await supabase
@@ -91,51 +91,12 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
       const { error: updateError } = await supabase
         .from('company_bank_accounts')
         .update({
-          initial_balance: account.initial_balance,
+          current_balance: account.current_balance,
           updated_at: new Date().toISOString()
         })
         .eq('id', account.id)
 
       if (updateError) throw updateError
-
-      const { data: directPayments } = await supabase
-        .from('accounting_payments')
-        .select('amount, invoice:accounting_invoices!inner(invoice_type)')
-        .eq('company_bank_account_id', account.id)
-
-      const { data: cesijaPayments } = await supabase
-        .from('accounting_payments')
-        .select('amount')
-        .eq('cesija_bank_account_id', account.id)
-        .eq('is_cesija', true)
-
-      let totalChange = 0
-
-      if (directPayments && directPayments.length > 0) {
-        totalChange += directPayments.reduce((sum, payment: any) => {
-          const invoiceType = payment.invoice?.invoice_type
-          if (invoiceType && ['INCOMING_INVESTMENT', 'OUTGOING_SALES', 'OUTGOING_BANK'].includes(invoiceType)) {
-            return sum + payment.amount
-          } else if (invoiceType && ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_OFFICE', 'INCOMING_BANK', 'OUTGOING_RETAIL_DEVELOPMENT', 'OUTGOING_RETAIL_CONSTRUCTION'].includes(invoiceType)) {
-            return sum - payment.amount
-          }
-          return sum
-        }, 0)
-      }
-
-      if (cesijaPayments && cesijaPayments.length > 0) {
-        const cesijaTotal = cesijaPayments.reduce((sum, payment: any) => sum + payment.amount, 0)
-        totalChange -= cesijaTotal
-      }
-
-      const { error: balanceError } = await supabase
-        .from('company_bank_accounts')
-        .update({
-          current_balance: account.initial_balance + totalChange
-        })
-        .eq('id', account.id)
-
-      if (balanceError) throw balanceError
     }
   }
 }

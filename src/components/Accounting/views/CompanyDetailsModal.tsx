@@ -21,11 +21,11 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
       />
 
       <Modal.Body>
-        <StatGrid columns={5}>
+        <StatGrid columns={4}>
           <StatCard
-            label="Početno stanje"
-            value={`€${company.initial_balance.toLocaleString('hr-HR')}`}
-            color="blue"
+            label="Trenutno stanje"
+            value={`€${company.current_balance.toLocaleString('hr-HR')}`}
+            color={company.current_balance >= 0 ? 'green' : 'red'}
           />
           <StatCard
             label="Izdano računa"
@@ -36,11 +36,6 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
             label="Plaćeno računa"
             value={`€${company.total_expense_paid.toLocaleString('hr-HR')}`}
             color="red"
-          />
-          <StatCard
-            label="Trenutno stanje"
-            value={`€${company.current_balance.toLocaleString('hr-HR')}`}
-            color="gray"
           />
           <StatCard
             label={company.profit >= 0 ? 'Dobit' : 'Gubitak'}
@@ -60,21 +55,15 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {company.bank_accounts.map((account) => (
                 <div key={account.id} className="bg-white border-2 border-blue-200 rounded-lg p-4">
-                  <p className="font-semibold text-gray-900 mb-2">{account.bank_name}</p>
+                  <p className="font-semibold text-gray-900 mb-3">{account.bank_name}</p>
                   {account.account_number && (
                     <p className="text-xs text-gray-500 mb-2">{account.account_number}</p>
                   )}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Početno:</span>
-                      <span className="font-medium text-gray-900">€{account.initial_balance.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Trenutno:</span>
-                      <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        €{account.current_balance.toLocaleString('hr-HR')}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-lg">
+                    <span className="text-gray-600">Stanje:</span>
+                    <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      €{account.current_balance.toLocaleString('hr-HR')}
+                    </span>
                   </div>
                 </div>
               ))}

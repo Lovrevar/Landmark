@@ -92,6 +92,6 @@ export interface CompanyFormData {
   bankAccounts: Array<{
     id?: string
     bank_name: string
-    initial_balance: number
+    current_balance: number
   }>
 }

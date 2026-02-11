@@ -9,7 +9,7 @@ interface CompanyFormModalProps {
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   onAccountCountChange: (count: number) => void
-  onBankAccountChange: (index: number, field: 'bank_name' | 'initial_balance', value: string | number) => void
+  onBankAccountChange: (index: number, field: 'bank_name' | 'current_balance', value: string | number) => void
   onFormDataChange: (field: keyof CompanyFormData, value: any) => void
 }
 
@@ -84,13 +84,13 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                     disabled={editingCompany !== null}
                   />
                 </FormField>
-                <FormField label="Početno stanje (€)" required compact>
+                <FormField label="Trenutno stanje (€)" required compact>
                   <Input
                     type="number"
                     compact
                     step="0.01"
-                    value={account.initial_balance}
-                    onChange={(e) => onBankAccountChange(index, 'initial_balance', parseFloat(e.target.value) || 0)}
+                    value={account.current_balance}
+                    onChange={(e) => onBankAccountChange(index, 'current_balance', parseFloat(e.target.value) || 0)}
                     required
                     placeholder="0.00"
                   />
@@ -103,8 +103,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
             <p className="text-sm text-blue-800">
               {editingCompany ? (
                 <>
-                  <strong>Napomena:</strong> Možete promijeniti početna stanja računa. Current balance će se preračunati
-                  automatski na osnovu novih početnih stanja.
+                  <strong>Napomena:</strong> Možete promijeniti trenutna stanja računa. Promjene će biti vidljive odmah.
                 </>
               ) : (
                 <>
