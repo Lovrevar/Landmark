@@ -18,10 +18,6 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
     name: supplier?.name || '',
     supplier_type: supplier?.supplier_type || 'Other',
     contact_person: supplier?.contact_person || '',
-    contact_phone: supplier?.contact_phone || '',
-    contact_email: supplier?.contact_email || '',
-    oib: supplier?.oib || '',
-    address: supplier?.address || '',
     notes: supplier?.notes || ''
   })
   const [loading, setLoading] = useState(false)
@@ -36,10 +32,10 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
       const dataToSubmit = {
         ...formData,
         contact_person: formData.contact_person || null,
-        contact_phone: formData.contact_phone || null,
-        contact_email: formData.contact_email || null,
-        oib: formData.oib || null,
-        address: formData.address || null,
+        contact_phone: null,
+        contact_email: null,
+        oib: null,
+        address: null,
         notes: formData.notes || null
       }
 
@@ -98,38 +94,6 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                 type="text"
                 value={formData.contact_person}
                 onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-              />
-            </FormField>
-
-            <FormField label="Telefon">
-              <Input
-                type="tel"
-                value={formData.contact_phone}
-                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-              />
-            </FormField>
-
-            <FormField label="Email">
-              <Input
-                type="email"
-                value={formData.contact_email}
-                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-              />
-            </FormField>
-
-            <FormField label="OIB">
-              <Input
-                type="text"
-                value={formData.oib}
-                onChange={(e) => setFormData({ ...formData, oib: e.target.value })}
-              />
-            </FormField>
-
-            <FormField label="Adresa" className="md:col-span-2">
-              <Input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </FormField>
 
