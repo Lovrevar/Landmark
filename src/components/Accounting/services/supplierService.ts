@@ -8,7 +8,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     { data: paymentsData }
   ] = await Promise.all([
     supabase.from('subcontractors').select('id, name, contact').order('name'),
-    supabase.from('retail_suppliers').select('id, name, supplier_type, contact_person, contact_phone, contact_email').order('name'),
+    supabase.from('retail_suppliers').select('id, name, contact_person, contact_phone, contact_email, supplier_type:retail_supplier_types(name)').order('name'),
     supabase.from('accounting_payments').select('invoice_id, amount')
   ])
 
@@ -85,7 +85,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
         name: supplier.name,
         contact,
         source,
-        supplier_type: source === 'retail' ? supplier.supplier_type : undefined,
+        supplier_type: source === 'retail' ? supplier.supplier_type?.name : undefined,
         total_contracts: stats.contractCount,
         total_contract_value: stats.contractValue,
         total_paid: stats.totalPaid,
