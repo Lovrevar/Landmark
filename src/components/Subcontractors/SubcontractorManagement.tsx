@@ -211,11 +211,14 @@ const SubcontractorManagement: React.FC = () => {
         let totalValue = 0
 
         subContracts.forEach((contractData: any) => {
-          if (contractData.has_contract && parseFloat(contractData.base_amount || contractData.contract_amount || 0) > 0) {
+          const contractInvoices = allInvoicesForSub.filter(inv => inv.contract_id === contractData.id)
+
+          if (contractData.has_contract) {
             totalValue += parseFloat(contractData.base_amount || contractData.contract_amount || 0)
+          } else {
+            totalValue += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
           }
 
-          const contractInvoices = allInvoicesForSub.filter(inv => inv.contract_id === contractData.id)
           if (contractInvoices.length > 0) {
             totalPaid += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
             totalRemaining += contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
