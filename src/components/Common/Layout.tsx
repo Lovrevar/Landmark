@@ -266,7 +266,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Accounting Access</h2>
+                <h2 className="text-xl font-bold text-gray-900">Cashflow Access</h2>
                 <p className="text-sm text-gray-600">Unesite šifru za pristup</p>
               </div>
             </div>
