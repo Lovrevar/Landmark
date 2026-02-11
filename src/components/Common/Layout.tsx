@@ -115,7 +115,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = getMenuItems()
 
   const handleProfileChange = (profile: Profile) => {
-    if (profile === 'Accounting') {
+    if (profile === 'Cashflow') {
       setPendingProfile(profile)
       setShowPasswordModal(true)
       setShowProfileDropdown(false)
