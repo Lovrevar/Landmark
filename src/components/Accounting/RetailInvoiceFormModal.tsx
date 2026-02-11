@@ -18,10 +18,6 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  useEffect(() => {
-    setIsInitialLoad(false)
-  }, [])
-
   const getInitialFormData = (): RetailInvoiceFormData => {
     if (editingInvoice) {
       let invoiceType: 'incoming' | 'outgoing' = 'incoming'
@@ -132,7 +128,12 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   } = useRetailInvoiceData(formData)
 
   useEffect(() => {
-    setFormData(getInitialFormData())
+    setIsInitialLoad(false)
+  }, [])
+
+  useEffect(() => {
+    const newFormData = getInitialFormData()
+    setFormData(newFormData)
   }, [editingInvoice])
 
   useEffect(() => {

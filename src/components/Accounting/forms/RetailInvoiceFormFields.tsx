@@ -254,7 +254,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
 
       <FormField label="Osnovica PDV 0% (€)">
         <CurrencyInput
-          value={formData.base_amount_2}
+          value={formData.base_amount_3}
           onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
           placeholder="0,00"
           min={0}
