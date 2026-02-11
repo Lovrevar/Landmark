@@ -33,9 +33,6 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
 
   useEffect(() => {
     loadSuppliers()
-    if (!contract) {
-      generateContractNumber()
-    }
   }, [])
 
   const loadSuppliers = async () => {
@@ -44,15 +41,6 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
       setSuppliers(data)
     } catch (err) {
       console.error('Error loading suppliers:', err)
-    }
-  }
-
-  const generateContractNumber = async () => {
-    try {
-      const number = await retailProjectService.generateContractNumber()
-      setFormData(prev => ({ ...prev, contract_number: number }))
-    } catch (err) {
-      console.error('Error generating contract number:', err)
     }
   }
 
@@ -66,10 +54,15 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
         throw new Error('Morate odabrati dobavljača')
       }
 
+      let contractNumber = formData.contract_number
+      if (!contract) {
+        contractNumber = await retailProjectService.generateContractNumber(phase.project_id)
+      }
+
       const dataToSubmit = {
         phase_id: phase.id,
         supplier_id: formData.supplier_id,
-        contract_number: formData.contract_number,
+        contract_number: contractNumber,
         contract_amount: formData.has_contract ? parseFloat(formData.contract_amount) : 0,
         contract_date: formData.contract_date || null,
         status: formData.status as 'Active' | 'Completed' | 'Cancelled',
@@ -182,17 +175,6 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
                 </p>
               )}
             </div>
-
-            <FormField label="Broj ugovora *">
-              <Input
-                type="text"
-                value={formData.contract_number}
-                onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                className="bg-gray-50"
-                required
-                readOnly={!!contract}
-              />
-            </FormField>
 
             <FormField label="Datum ugovora">
               <Input

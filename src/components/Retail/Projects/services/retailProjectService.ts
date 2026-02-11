@@ -461,22 +461,38 @@ export const retailProjectService = {
     if (error) throw error
   },
 
-  async generateContractNumber(): Promise<string> {
-    const { data, error } = await supabase
+  async generateContractNumber(projectId: string): Promise<string> {
+    const { data: phases } = await supabase
+      .from('retail_project_phases')
+      .select('id')
+      .eq('project_id', projectId)
+
+    const phaseIds = (phases || []).map(p => p.id)
+
+    const { data: projectContracts } = await supabase
       .from('retail_contracts')
       .select('contract_number')
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .in('phase_id', phaseIds)
+      .not('contract_number', 'is', null)
 
-    if (error) throw error
-
-    const lastNumber = data && data[0]?.contract_number
-      ? parseInt(data[0].contract_number.split('-').pop() || '0')
-      : 0
-
-    const newNumber = lastNumber + 1
     const year = new Date().getFullYear()
-    return `RET-${year}-${String(newNumber).padStart(6, '0')}`
+    const timestamp = Date.now().toString().slice(-6)
+    const prefix = `RET-${year}-`
+
+    let maxNumber = 0
+    if (projectContracts && projectContracts.length > 0) {
+      projectContracts.forEach(contract => {
+        if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
+          const parts = contract.contract_number.replace(prefix, '').split('-')
+          const num = parseInt(parts[0], 10)
+          if (!isNaN(num) && num > maxNumber) {
+            maxNumber = num
+          }
+        }
+      })
+    }
+
+    return `${prefix}${String(maxNumber + 1).padStart(4, '0')}-${timestamp}`
   },
 
   async getNextMilestoneNumber(contractId: string): Promise<number> {
