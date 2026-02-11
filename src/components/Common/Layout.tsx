@@ -84,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Payments', icon: DollarSign, path: '/funding-payments' },
         { name: 'TIC', icon: Calculator, path: '/tic' }
       ],
-      Accounting: [
+      Cashflow: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
         { name: 'Računi', icon: FileText, path: '/accounting-invoices' },
         { name: 'Plaćanja', icon: DollarSign, path: '/accounting-payments' },
