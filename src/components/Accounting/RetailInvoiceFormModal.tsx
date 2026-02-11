@@ -132,6 +132,10 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   } = useRetailInvoiceData(formData)
 
   useEffect(() => {
+    setFormData(getInitialFormData())
+  }, [editingInvoice])
+
+  useEffect(() => {
     if (!isInitialLoad) {
       setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '', retail_milestone_id: '' }))
     }
