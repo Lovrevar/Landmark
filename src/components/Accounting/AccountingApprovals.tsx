@@ -367,15 +367,16 @@ const AccountingApprovals: React.FC = () => {
       )}
 
       <ConfirmDialog
-        isOpen={hideConfirmDialog.isOpen}
-        onClose={() =>
+        show={hideConfirmDialog.isOpen}
+        onCancel={() =>
           setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
         }
         onConfirm={handleHideInvoice}
         title="Sakrij račun"
         message={`Jeste li sigurni da želite sakriti račun ${hideConfirmDialog.invoiceNumber}? Račun će biti uklonjen s ove stranice, ali će ostati vidljiv u ostalim dijelovima sustava.`}
-        confirmText="Sakrij"
-        cancelText="Odustani"
+        confirmLabel="Sakrij"
+        cancelLabel="Odustani"
+        variant="danger"
       />
     </div>
   )
