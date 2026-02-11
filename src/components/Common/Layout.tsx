@@ -171,7 +171,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                      {(['General', 'Supervision', 'Sales', 'Funding', 'Accounting', 'Retail'] as Profile[]).map((profile) => (
+                      {(['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail'] as Profile[]).map((profile) => (
                         <button
                           key={profile}
                           onClick={() => handleProfileChange(profile)}
