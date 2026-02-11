@@ -198,7 +198,6 @@ const AccountingApprovals: React.FC = () => {
       await fetchApprovedInvoices()
 
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
-      alert('Račun je uspješno sakriven.')
     } catch (error: any) {
       console.error('Caught error:', error)
       alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
