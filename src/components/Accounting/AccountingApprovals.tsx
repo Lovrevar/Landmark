@@ -85,7 +85,7 @@ const AccountingApprovals: React.FC = () => {
             phase_id
           )
         `)
-        .eq('invoice_category', 'SUPERVISION')
+        .eq('invoice_category', 'SUBCONTRACTOR')
         .eq('approved', true)
         .not('project_id', 'is', null)
         .order('issue_date', { ascending: true })
@@ -185,7 +185,7 @@ const AccountingApprovals: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Odobrenja"
-        subtitle="Odobreni supervision računi koji čekaju obradu"
+        subtitle="Odobreni računi od podizvodjača koji čekaju obradu"
         icon={CheckCircle}
       />
 
@@ -234,7 +234,7 @@ const AccountingApprovals: React.FC = () => {
             <EmptyState
               icon={CheckCircle}
               title="Nema računa za prikaz"
-              description="Svi odobreni supervision računi su obrađeni i skriveni."
+              description="Svi odobreni računi su obrađeni i skriveni."
             />
           ) : (
             <Table>
