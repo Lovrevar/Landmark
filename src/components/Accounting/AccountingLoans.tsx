@@ -45,7 +45,7 @@ const AccountingLoans: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Pretraži pozajmice..."
+            placeholder="Pretraži pozajmice i prijenose..."
           />
         </div>
 
