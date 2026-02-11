@@ -30,8 +30,8 @@ const AccountingLoans: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pozajmice"
-        description="Evidencija pozajmica između firmi"
+        title="Pozajmice i prijenosi"
+        description="Evidencija pozajmica i prijenosa između firmi"
         actions={
           <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
             Nova Pozajmica
