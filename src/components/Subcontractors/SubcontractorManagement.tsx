@@ -22,6 +22,7 @@ interface SubcontractorContract {
   deadline: string
   created_at: string
   has_contract: boolean
+  invoice_value: number
 }
 
 interface SubcontractorSummary {
@@ -187,6 +188,7 @@ const SubcontractorManagement: React.FC = () => {
 
           const contractInvoices = invoicesData?.filter(inv => inv.contract_id === contractData.id) || []
           const budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+          const invoiceValue = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
           const progress = cost > 0 ? (budgetRealized / cost) * 100 : 0
 
           return {
@@ -199,7 +201,8 @@ const SubcontractorManagement: React.FC = () => {
             progress: Math.min(100, progress),
             deadline: contractData.end_date || '',
             created_at: contractData.created_at,
-            has_contract: hasContract
+            has_contract: hasContract,
+            invoice_value: invoiceValue
           }
         })
 
@@ -539,10 +542,18 @@ const SubcontractorManagement: React.FC = () => {
                           )}
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                          <div>
+                            <p className="text-gray-600">Value:</p>
+                            <p className="font-medium text-gray-900">€{contract.invoice_value.toLocaleString('hr-HR')}</p>
+                          </div>
                           <div>
                             <p className="text-gray-600">Paid:</p>
                             <p className="font-medium text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Remaining:</p>
+                            <p className="font-medium text-orange-600">€{(contract.invoice_value - contract.budget_realized).toLocaleString('hr-HR')}</p>
                           </div>
                           {contract.deadline && (
                             <div>
