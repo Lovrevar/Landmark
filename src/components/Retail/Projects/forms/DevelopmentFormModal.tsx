@@ -151,7 +151,7 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
                     <option value="">Odaberi dobavljača...</option>
                     {suppliers.map((supplier) => (
                       <option key={supplier.id} value={supplier.id}>
-                        {supplier.name} - {supplier.supplier_type}
+                        {supplier.name} - {supplier.supplier_type?.name || 'N/A'}
                       </option>
                     ))}
                   </Select>

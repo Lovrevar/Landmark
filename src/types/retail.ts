@@ -93,10 +93,17 @@ export interface RetailProjectPhase {
   updated_at: string
 }
 
+export interface RetailSupplierType {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface RetailSupplier {
   id: string
   name: string
-  supplier_type: 'Geodet' | 'Arhitekt' | 'Projektant' | 'Consultant' | 'Other'
+  supplier_type_id: string
   contact_person: string | null
   contact_phone: string | null
   contact_email: string | null
@@ -105,6 +112,7 @@ export interface RetailSupplier {
   notes: string | null
   created_at: string
   updated_at: string
+  supplier_type?: RetailSupplierType
 }
 
 export interface RetailContract {

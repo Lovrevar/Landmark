@@ -33,12 +33,12 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
     supabase.from('retail_project_phases').select('*'),
     supabase.from('retail_contracts').select(`
       *,
-      supplier:retail_suppliers(id, name, supplier_type),
+      supplier:retail_suppliers(id, name, supplier_type:retail_supplier_types(id, name)),
       customer:retail_customers(id, name)
     `),
     supabase.from('retail_land_plots').select('id, purchased_area_m2, total_price, payment_status'),
     supabase.from('retail_customers').select('id, name'),
-    supabase.from('retail_suppliers').select('id, name, supplier_type'),
+    supabase.from('retail_suppliers').select('id, name, supplier_type:retail_supplier_types(id, name)'),
     supabase.from('accounting_invoices')
       .select('id, status, total_amount, paid_amount, remaining_amount, due_date, retail_contract_id, retail_customer_id')
       .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
@@ -234,7 +234,7 @@ function buildSupplierReports(
       const existing = supplierMap.get(c.supplier_id) || {
         id: c.supplier_id,
         name: (c.supplier as any)?.name || 'N/A',
-        supplier_type: (c.supplier as any)?.supplier_type || 'Other',
+        supplier_type: (c.supplier as any)?.supplier_type?.name || 'Other',
         total_contracts: 0,
         total_amount: 0,
         total_paid: 0

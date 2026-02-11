@@ -246,8 +246,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                           </Badge>
                         )}
                       </div>
-                      {phase.phase_type !== 'sales' && contract.supplier?.supplier_type && (
-                        <p className="text-sm text-gray-600 mb-1">{contract.supplier.supplier_type}</p>
+                      {phase.phase_type !== 'sales' && contract.supplier?.supplier_type?.name && (
+                        <p className="text-sm text-gray-600 mb-1">{contract.supplier.supplier_type.name}</p>
                       )}
                       <p className="text-xs text-gray-500">{contract.contract_number}</p>
                     </div>

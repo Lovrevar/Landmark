@@ -3,6 +3,7 @@ import type {
   RetailProject,
   RetailProjectPhase,
   RetailSupplier,
+  RetailSupplierType,
   RetailContract,
   RetailContractMilestone,
   RetailProjectWithPhases,
@@ -211,10 +212,34 @@ export const retailProjectService = {
     if (error) throw error
   },
 
+  async fetchSupplierTypes(): Promise<RetailSupplierType[]> {
+    const { data, error } = await supabase
+      .from('retail_supplier_types')
+      .select('*')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async createSupplierType(name: string): Promise<RetailSupplierType> {
+    const { data, error } = await supabase
+      .from('retail_supplier_types')
+      .insert([{ name }])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
   async fetchSuppliers(): Promise<RetailSupplier[]> {
     const { data, error } = await supabase
       .from('retail_suppliers')
-      .select('*')
+      .select(`
+        *,
+        supplier_type:retail_supplier_types(*)
+      `)
       .order('name', { ascending: true })
 
     if (error) throw error
