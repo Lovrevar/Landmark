@@ -30,10 +30,10 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     { data: retailContractsData },
     { data: retailInvoicesData }
   ] = await Promise.all([
-    supabase.from('contracts').select('subcontractor_id, contract_amount').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
-    supabase.from('accounting_invoices').select('id, supplier_id, remaining_amount, status').in('supplier_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
-    supabase.from('retail_contracts').select('supplier_id, contract_amount').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
-    supabase.from('accounting_invoices').select('id, retail_supplier_id, remaining_amount, status').in('retail_supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000'])
+    supabase.from('contracts').select('id, subcontractor_id, contract_amount, has_contract').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
+    supabase.from('accounting_invoices').select('id, supplier_id, remaining_amount, status, base_amount, contract_id').in('supplier_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
+    supabase.from('retail_contracts').select('id, supplier_id, contract_amount, has_contract').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
+    supabase.from('accounting_invoices').select('id, retail_supplier_id, remaining_amount, status, base_amount, retail_contract_id').in('retail_supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000'])
   ])
 
   const buildStatsMap = (ids: string[]) => {
@@ -43,10 +43,27 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
   }
 
   const siteStats = buildStatsMap(supplierIds)
+
+  const siteContractInvoiceTotals = new Map<string, number>()
+  ;(invoicesData || []).forEach(inv => {
+    if ((inv as any).contract_id) {
+      const current = siteContractInvoiceTotals.get((inv as any).contract_id) || 0
+      siteContractInvoiceTotals.set((inv as any).contract_id, current + parseFloat(inv.base_amount?.toString() || '0'))
+    }
+  })
+
   ;(contractsData || []).forEach(c => {
     const s = siteStats.get(c.subcontractor_id)
-    if (s) { s.contractCount++; s.contractValue += parseFloat(c.contract_amount?.toString() || '0') }
+    if (s) {
+      s.contractCount++
+      if ((c as any).has_contract === false) {
+        s.contractValue += siteContractInvoiceTotals.get(c.id) || 0
+      } else {
+        s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
+      }
+    }
   })
+
   ;(invoicesData || []).forEach(inv => {
     const s = siteStats.get(inv.supplier_id)
     if (s) {
@@ -57,10 +74,27 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
   })
 
   const retailStats = buildStatsMap(retailSupplierIds)
+
+  const retailContractInvoiceTotals = new Map<string, number>()
+  ;(retailInvoicesData || []).forEach(inv => {
+    if ((inv as any).retail_contract_id) {
+      const current = retailContractInvoiceTotals.get((inv as any).retail_contract_id) || 0
+      retailContractInvoiceTotals.set((inv as any).retail_contract_id, current + parseFloat(inv.base_amount?.toString() || '0'))
+    }
+  })
+
   ;(retailContractsData || []).forEach(c => {
     const s = retailStats.get(c.supplier_id)
-    if (s) { s.contractCount++; s.contractValue += parseFloat(c.contract_amount?.toString() || '0') }
+    if (s) {
+      s.contractCount++
+      if ((c as any).has_contract === false) {
+        s.contractValue += retailContractInvoiceTotals.get(c.id) || 0
+      } else {
+        s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
+      }
+    }
   })
+
   ;(retailInvoicesData || []).forEach(inv => {
     const s = retailStats.get(inv.retail_supplier_id)
     if (s) {
@@ -209,7 +243,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
   if (supplier.source === 'retail') {
     const { data: rContracts } = await supabase
       .from('retail_contracts')
-      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, phases:phase_id (phase_name)`)
+      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, has_contract, phases:phase_id (phase_name)`)
       .eq('supplier_id', supplier.id)
       .in('status', ['Active', 'Completed'])
 
@@ -241,9 +275,11 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
     invoicesWithPayments = (rInvoices || []).map(inv => ({ ...inv, actual_paid: paymentsMap.get(inv.id) || 0 }))
 
     const contractPayMap = new Map<string, number>()
+    const contractInvoiceTotalMap = new Map<string, number>()
     invoicesWithPayments.forEach(inv => {
       if ((inv as any).retail_contract_id) {
         contractPayMap.set((inv as any).retail_contract_id, (contractPayMap.get((inv as any).retail_contract_id) || 0) + (inv.actual_paid || 0))
+        contractInvoiceTotalMap.set((inv as any).retail_contract_id, (contractInvoiceTotalMap.get((inv as any).retail_contract_id) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
       }
     })
 
@@ -259,12 +295,14 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       status: c.status,
       projects: { name: phaseProjectMap.get(c.phase_id) || 'N/A' },
       phases: c.phases,
-      actual_paid: contractPayMap.get(c.id) || 0
+      actual_paid: contractPayMap.get(c.id) || 0,
+      has_contract: c.has_contract,
+      total_invoiced: contractInvoiceTotalMap.get(c.id) || 0
     }))
   } else {
     const { data: contractsData } = await supabase
       .from('contracts')
-      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, projects:project_id (name), phases:phase_id (phase_name)')
+      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name)')
       .eq('subcontractor_id', supplier.id)
       .in('status', ['draft', 'active'])
 
@@ -286,13 +324,19 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
     invoicesWithPayments = (invoicesData || []).map(inv => ({ ...inv, actual_paid: paymentsMap.get(inv.id) || 0 }))
 
     const contractPayMap = new Map<string, number>()
+    const contractInvoiceTotalMap = new Map<string, number>()
     invoicesWithPayments.forEach(inv => {
       if ((inv as any).contract_id) {
         contractPayMap.set((inv as any).contract_id, (contractPayMap.get((inv as any).contract_id) || 0) + (inv.actual_paid || 0))
+        contractInvoiceTotalMap.set((inv as any).contract_id, (contractInvoiceTotalMap.get((inv as any).contract_id) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
       }
     })
 
-    contractsWithPayments = (contractsData || []).map(c => ({ ...c, actual_paid: contractPayMap.get(c.id) || 0 }))
+    contractsWithPayments = (contractsData || []).map(c => ({
+      ...c,
+      actual_paid: contractPayMap.get(c.id) || 0,
+      total_invoiced: contractInvoiceTotalMap.get(c.id) || 0
+    }))
   }
 
   return { contracts: contractsWithPayments, invoices: invoicesWithPayments }

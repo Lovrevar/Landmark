@@ -59,8 +59,8 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
             color="green"
           />
           <StatCard
-            label="Dugovi"
-            value={`€${supplier.total_remaining.toLocaleString('hr-HR')}`}
+            label="Preostalo"
+            value={`€${(supplier.total_contract_value - supplier.total_paid).toLocaleString('hr-HR')}`}
             color="yellow"
           />
         </StatGrid>
@@ -91,8 +91,15 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                     <div>
-                      <p className="text-xs text-gray-500">Ugovor</p>
-                      <p className="text-sm font-medium">€{parseFloat(contract.contract_amount.toString()).toLocaleString('hr-HR')}</p>
+                      <p className="text-xs text-gray-500">
+                        {contract.has_contract === false ? 'Vrijednost (računi)' : 'Ugovor'}
+                      </p>
+                      <p className="text-sm font-medium">
+                        €{(contract.has_contract === false
+                          ? (contract.total_invoiced || 0)
+                          : parseFloat(contract.contract_amount.toString())
+                        ).toLocaleString('hr-HR')}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Plaćeno</p>
@@ -101,7 +108,10 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                     <div>
                       <p className="text-xs text-gray-500">Preostalo</p>
                       <p className="text-sm font-medium text-orange-600">
-                        €{(parseFloat(contract.contract_amount.toString()) - (contract.actual_paid || 0)).toLocaleString('hr-HR')}
+                        €{((contract.has_contract === false
+                          ? (contract.total_invoiced || 0)
+                          : parseFloat(contract.contract_amount.toString())
+                        ) - (contract.actual_paid || 0)).toLocaleString('hr-HR')}
                       </p>
                     </div>
                   </div>

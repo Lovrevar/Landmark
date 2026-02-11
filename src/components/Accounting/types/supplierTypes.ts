@@ -11,6 +11,8 @@ export interface Contract {
   projects?: { name: string }
   phases?: { phase_name: string }
   actual_paid?: number
+  has_contract?: boolean
+  total_invoiced?: number
 }
 
 export interface Invoice {
