@@ -73,11 +73,13 @@ const BanksManagement: React.FC = () => {
     expected_return: 0,
     investment_date: '',
     maturity_date: '',
-    payment_schedule: 'yearly' as 'monthly' | 'yearly',
+    payment_schedule: 'yearly' as 'monthly' | 'yearly' | 'custom',
     terms: '',
     notes: '',
     usage_expiration_date: '',
-    grace_period: 0
+    grace_period: 0,
+    custom_payment_count: 0,
+    custom_payments: [] as { date: string; amount: number }[]
   })
 
   useEffect(() => {
@@ -1196,16 +1198,84 @@ const BanksManagement: React.FC = () => {
             <FormField label="Payment Schedule">
               <Select
                 value={newEquity.payment_schedule}
-                onChange={(e) => setNewEquity({ ...newEquity, payment_schedule: e.target.value as 'monthly' | 'yearly' })}
+                onChange={(e) => {
+                  const newSchedule = e.target.value as 'monthly' | 'yearly' | 'custom'
+                  setNewEquity({
+                    ...newEquity,
+                    payment_schedule: newSchedule,
+                    custom_payment_count: newSchedule === 'custom' ? 0 : 0,
+                    custom_payments: []
+                  })
+                }}
               >
                 <option value="yearly">Yearly</option>
                 <option value="monthly">Monthly</option>
+                <option value="custom">Custom</option>
               </Select>
             </FormField>
-            <FormField
-              label={`${newEquity.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow`}
-              helperText={`${newEquity.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period`}
-            >
+
+            {newEquity.payment_schedule === 'custom' && (
+              <>
+                <FormField label="Number of Payments" required>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newEquity.custom_payment_count || ''}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0
+                      const newPayments = Array.from({ length: count }, (_, i) =>
+                        newEquity.custom_payments[i] || { date: '', amount: 0 }
+                      )
+                      setNewEquity({
+                        ...newEquity,
+                        custom_payment_count: count,
+                        custom_payments: newPayments
+                      })
+                    }}
+                    placeholder="Enter number of payments"
+                  />
+                </FormField>
+
+                {newEquity.custom_payment_count > 0 && (
+                  <div className="md:col-span-2 space-y-4">
+                    <h4 className="font-medium text-gray-900">Payment Schedule Details</h4>
+                    {newEquity.custom_payments.map((payment, index) => (
+                      <div key={index} className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <FormField label={`Payment ${index + 1} - Date`} required>
+                          <Input
+                            type="date"
+                            value={payment.date}
+                            onChange={(e) => {
+                              const updatedPayments = [...newEquity.custom_payments]
+                              updatedPayments[index] = { ...updatedPayments[index], date: e.target.value }
+                              setNewEquity({ ...newEquity, custom_payments: updatedPayments })
+                            }}
+                          />
+                        </FormField>
+                        <FormField label={`Payment ${index + 1} - Amount`} required>
+                          <Input
+                            type="number"
+                            value={payment.amount || ''}
+                            onChange={(e) => {
+                              const updatedPayments = [...newEquity.custom_payments]
+                              updatedPayments[index] = { ...updatedPayments[index], amount: parseFloat(e.target.value) || 0 }
+                              setNewEquity({ ...newEquity, custom_payments: updatedPayments })
+                            }}
+                            placeholder="Amount"
+                          />
+                        </FormField>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {newEquity.payment_schedule !== 'custom' && (
+              <FormField
+                label={`${newEquity.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow`}
+                helperText={`${newEquity.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period`}
+              >
               <Input
                 type="text"
                 value={(() => {
@@ -1242,6 +1312,7 @@ const BanksManagement: React.FC = () => {
                 className="bg-gray-50"
               />
             </FormField>
+            )}
             <FormField label="Money Multiple" helperText="Total return multiple">
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                 {(() => {
