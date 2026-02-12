@@ -47,7 +47,7 @@ export const NotificationPaymentModal: React.FC<NotificationPaymentModalProps> =
               <p className="font-medium text-blue-900">{notification.bank_name}</p>
             </div>
             <div>
-              <p className="text-blue-700">Credit Type</p>
+              <p className="text-blue-700">Loan Type</p>
               <p className="font-medium text-blue-900">
                 {notification.credit_type?.replace('_', ' ').toUpperCase()}
               </p>
