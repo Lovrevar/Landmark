@@ -42,7 +42,6 @@ import RetailReports from './components/Retail/RetailReports'
 import RetailProjects from './components/Retail/Projects/RetailProjects'
 import TICManagement from './components/Finance/TIC/TICManagement'
 import CreditsManagement from './components/Finance/credits/CreditsManagement'
-import InvestmentsManagement from './components/Finance/investments/InvestmentsManagement'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth()
@@ -244,14 +243,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CreditsManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/funding-investments"
-          element={
-            <ProtectedRoute>
-              <InvestmentsManagement />
             </ProtectedRoute>
           }
         />

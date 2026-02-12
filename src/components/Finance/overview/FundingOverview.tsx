@@ -404,6 +404,7 @@ const FundingOverview: React.FC = () => {
       //
       // if (notificationError) throw notificationError
 
+      alert('Payment recorded successfully!')
 
       setShowPaymentModal(false)
       setSelectedNotification(null)

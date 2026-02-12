@@ -132,7 +132,7 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
             Cancel
           </Button>
           <Button type="submit">
-            {editingCredit ? 'Update Loan' : 'Add Loan'}
+            {editingCredit ? 'Update Credit' : 'Add Credit'}
           </Button>
         </Modal.Footer>
       </form>

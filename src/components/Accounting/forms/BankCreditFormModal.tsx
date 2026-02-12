@@ -138,7 +138,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Loan Type">
+          <FormField label="Credit Type">
             <Select
               value={newCredit.credit_type}
               onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
@@ -148,7 +148,6 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <option value="line_of_credit_senior">Line of Credit - Senior</option>
               <option value="line_of_credit_junior">Line of Credit - Junior</option>
               <option value="bridge_loan_senior">Bridge Loan</option>
-              <option value="grant">Grant</option>
             </Select>
           </FormField>
 
@@ -303,7 +302,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           Cancel
         </Button>
         <Button variant="success" onClick={addCredit}>
-          Add Loan
+          Add Credit
         </Button>
       </Modal.Footer>
     </Modal>

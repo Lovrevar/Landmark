@@ -52,7 +52,7 @@ const CompanyCredits: React.FC = () => {
             variant="primary"
             icon={Plus}
           >
-            Add Loan
+            Add Credit
           </Button>
         }
       />
@@ -197,7 +197,7 @@ const CompanyCredits: React.FC = () => {
                   variant="primary"
                   icon={Plus}
                 >
-                  Add Loan
+                  Add Credit
                 </Button>
               }
             />

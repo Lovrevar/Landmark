@@ -306,6 +306,7 @@ const BanksManagement: React.FC = () => {
         custom_payments: []
       })
       await fetchData()
+      alert('Equity investment added successfully')
     } catch (error) {
       console.error('Error adding equity:', error)
       alert('Error adding equity investment.')
@@ -635,8 +636,8 @@ const BanksManagement: React.FC = () => {
         description="Manage bank partnerships and credit facilities"
         actions={
           <div className="flex space-x-3">
-            <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Investor</Button>
-            <Button icon={Plus} variant="success" onClick={() => setShowCreditForm(true)}>Add Loan</Button>
+            <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Bank</Button>
+            <Button icon={Plus} variant="success" onClick={() => setShowCreditForm(true)}>Add Credit</Button>
             <Button icon={Plus} variant="primary" onClick={() => setShowEquityForm(true)}>Add Equity</Button>
           </div>
         }
@@ -833,7 +834,7 @@ const BanksManagement: React.FC = () => {
                 ))}
               </Select>
             </FormField>
-            <FormField label="Loan Type">
+            <FormField label="Credit Type">
               <Select
                 value={newCredit.credit_type}
                 onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
@@ -843,7 +844,6 @@ const BanksManagement: React.FC = () => {
                 <option value="line_of_credit_senior">Line of Credit - Senior</option>
                 <option value="line_of_credit_junior">Line of Credit - Junior</option>
                 <option value="bridge_loan_senior">Bridge Loan</option>
-                <option value="grant">Grant</option>
               </Select>
             </FormField>
             <FormField label="Amount" required>

@@ -76,9 +76,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       ],
       Funding: [
         { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Investors', icon: Building2, path: '/banks' },
-        { name: 'Credits', icon: CreditCard, path: '/funding-credits' },
-        { name: 'Investments', icon: TrendingUp, path: '/funding-investments' },
+        { name: 'Funding Overview', icon: TrendingUp, path: '/funding-overview' },
+        { name: 'Banks', icon: Building2, path: '/banks' },
+        { name: 'Krediti', icon: CreditCard, path: '/funding-credits' },
         { name: 'Investment Projects', icon: Building2, path: '/investment-projects' },
         { name: 'Payments', icon: DollarSign, path: '/funding-payments' },
         { name: 'TIC', icon: Calculator, path: '/tic' }
