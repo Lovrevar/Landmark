@@ -45,7 +45,7 @@ export const BankWirePaymentModal: React.FC<BankWirePaymentModalProps> = ({
               <p className="font-medium text-blue-900">{bankName}</p>
             </div>
             <div>
-              <p className="text-blue-700">Credit Type</p>
+              <p className="text-blue-700">Loan Type</p>
               <p className="font-medium text-blue-900">
                 {credit.credit_type.replace('_', ' ')}
               </p>
