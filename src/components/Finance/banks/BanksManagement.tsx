@@ -1326,7 +1326,7 @@ const BanksManagement: React.FC = () => {
                 onChange={(e) => setNewEquity({ ...newEquity, investment_date: e.target.value })}
               />
             </FormField>
-            <FormField label="Maturity Date">
+            <FormField label="Exit Date">
               <Input
                 type="date"
                 value={newEquity.maturity_date}
