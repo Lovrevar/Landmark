@@ -973,24 +973,12 @@ const BanksManagement: React.FC = () => {
                   <h4 className="font-semibold text-blue-900 mb-3">Credit Facilities</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-blue-700">Total Limit:</span>
-                      <span className="font-medium text-blue-900">€{selectedBank.total_credit_limit.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-blue-700">Credit Utilized:</span>
                       <span className="font-medium text-green-700">€{selectedBank.credit_utilized.toLocaleString('hr-HR')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Outstanding:</span>
                       <span className="font-medium text-red-700">€{selectedBank.outstanding_debt.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700">Available:</span>
-                      <span className="font-medium text-blue-900">€{selectedBank.available_funds.toLocaleString('hr-HR')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700">Utilization:</span>
-                      <span className="font-medium text-blue-900">{selectedBank.credit_utilization.toFixed(1)}%</span>
                     </div>
                   </div>
                 </div>
