@@ -38,13 +38,7 @@ const BanksManagement: React.FC = () => {
     name: '',
     contact_person: '',
     contact_email: '',
-    contact_phone: '',
-    total_credit_limit: 0,
-    outstanding_debt: 0,
-    available_funds: 0,
-    interest_rate: 0,
-    relationship_start: '',
-    notes: ''
+    contact_phone: ''
   })
   const [newCredit, setNewCredit] = useState({
     bank_id: '',
@@ -361,13 +355,7 @@ const BanksManagement: React.FC = () => {
       name: '',
       contact_person: '',
       contact_email: '',
-      contact_phone: '',
-      total_credit_limit: 0,
-      outstanding_debt: 0,
-      available_funds: 0,
-      interest_rate: 0,
-      relationship_start: '',
-      notes: ''
+      contact_phone: ''
     })
     setEditingBank(null)
     setShowBankForm(false)
@@ -536,13 +524,7 @@ const BanksManagement: React.FC = () => {
       name: bank.name,
       contact_person: bank.contact_person || '',
       contact_email: bank.contact_email || '',
-      contact_phone: bank.contact_phone || '',
-      total_credit_limit: bank.total_credit_limit,
-      outstanding_debt: bank.outstanding_debt,
-      available_funds: bank.available_funds,
-      interest_rate: bank.interest_rate,
-      relationship_start: bank.relationship_start || '',
-      notes: bank.notes || ''
+      contact_phone: bank.contact_phone || ''
     })
     setShowBankForm(true)
   }
@@ -688,10 +670,6 @@ const BanksManagement: React.FC = () => {
 
             {/* Additional Info */}
             <div className="border-t pt-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Interest Rate</span>
-                <span className="text-sm font-medium text-gray-900">{bank.interest_rate}%</span>
-              </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Active Credits</span>
                 <span className="text-sm font-medium text-gray-900">{bank.active_credits}</span>
@@ -701,24 +679,24 @@ const BanksManagement: React.FC = () => {
         ))}
       </div>
 
-      <Modal show={showBankForm} onClose={resetBankForm} size="lg">
+      <Modal show={showBankForm} onClose={resetBankForm} size="md">
         <Modal.Header title={editingBank ? 'Edit Bank' : 'Add New Bank'} onClose={resetBankForm} />
         <Modal.Body>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <FormField label="Bank Name" required>
-                <Input
-                  type="text"
-                  value={newBank.name}
-                  onChange={(e) => setNewBank({ ...newBank, name: e.target.value })}
-                />
-              </FormField>
-            </div>
+          <div className="space-y-4">
+            <FormField label="Bank Name" required>
+              <Input
+                type="text"
+                value={newBank.name}
+                onChange={(e) => setNewBank({ ...newBank, name: e.target.value })}
+                placeholder="Enter bank name"
+              />
+            </FormField>
             <FormField label="Contact Person">
               <Input
                 type="text"
                 value={newBank.contact_person}
                 onChange={(e) => setNewBank({ ...newBank, contact_person: e.target.value })}
+                placeholder="Enter contact person name"
               />
             </FormField>
             <FormField label="Contact Email">
@@ -726,6 +704,7 @@ const BanksManagement: React.FC = () => {
                 type="email"
                 value={newBank.contact_email}
                 onChange={(e) => setNewBank({ ...newBank, contact_email: e.target.value })}
+                placeholder="Enter contact email"
               />
             </FormField>
             <FormField label="Contact Phone">
@@ -733,53 +712,9 @@ const BanksManagement: React.FC = () => {
                 type="tel"
                 value={newBank.contact_phone}
                 onChange={(e) => setNewBank({ ...newBank, contact_phone: e.target.value })}
+                placeholder="Enter contact phone"
               />
             </FormField>
-            <FormField label="Relationship Start">
-              <Input
-                type="date"
-                value={newBank.relationship_start}
-                onChange={(e) => setNewBank({ ...newBank, relationship_start: e.target.value })}
-              />
-            </FormField>
-            <FormField label="Total Credit Limit">
-              <Input
-                type="number"
-                value={newBank.total_credit_limit}
-                onChange={(e) => setNewBank({ ...newBank, total_credit_limit: parseFloat(e.target.value) || 0 })}
-              />
-            </FormField>
-            <FormField label="Outstanding Debt">
-              <Input
-                type="number"
-                value={newBank.outstanding_debt}
-                onChange={(e) => setNewBank({ ...newBank, outstanding_debt: parseFloat(e.target.value) || 0 })}
-              />
-            </FormField>
-            <FormField label="Available Funds">
-              <Input
-                type="number"
-                value={newBank.available_funds}
-                onChange={(e) => setNewBank({ ...newBank, available_funds: parseFloat(e.target.value) || 0 })}
-              />
-            </FormField>
-            <FormField label="Interest Rate (%)">
-              <Input
-                type="number"
-                step="0.1"
-                value={newBank.interest_rate}
-                onChange={(e) => setNewBank({ ...newBank, interest_rate: parseFloat(e.target.value) || 0 })}
-              />
-            </FormField>
-            <div className="md:col-span-2">
-              <FormField label="Notes">
-                <Textarea
-                  value={newBank.notes}
-                  onChange={(e) => setNewBank({ ...newBank, notes: e.target.value })}
-                  rows={3}
-                />
-              </FormField>
-            </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -1061,21 +996,8 @@ const BanksManagement: React.FC = () => {
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-900 mb-3">Relationship Details</h4>
+                  <h4 className="font-semibold text-green-900 mb-3">Credit Overview</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Since:</span>
-                      <span className="font-medium text-green-900">
-                        {selectedBank.relationship_start 
-                          ? format(new Date(selectedBank.relationship_start), 'MMM yyyy')
-                          : 'N/A'
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Avg. Rate:</span>
-                      <span className="font-medium text-green-900">{selectedBank.interest_rate}%</span>
-                    </div>
                     <div className="flex justify-between">
                       <span className="text-green-700">Active Credits:</span>
                       <span className="font-medium text-green-900">{selectedBank.active_credits}</span>
@@ -1104,19 +1026,10 @@ const BanksManagement: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-orange-700">Concentration:</span>
                       <span className="font-medium text-orange-900">
-                        {banks.length > 0 
+                        {banks.length > 0
                           ? ((selectedBank.outstanding_debt / banks.reduce((sum, b) => sum + b.outstanding_debt, 0)) * 100).toFixed(1)
                           : '0'
                         }%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-orange-700">Relationship:</span>
-                      <span className="font-medium text-orange-900">
-                        {selectedBank.relationship_start 
-                          ? `${Math.floor(differenceInDays(new Date(), new Date(selectedBank.relationship_start)) / 365)}y`
-                          : 'New'
-                        }
                       </span>
                     </div>
                   </div>
@@ -1236,14 +1149,6 @@ const BanksManagement: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* Notes */}
-              {selectedBank.notes && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-2">Notes</h4>
-                  <p className="text-gray-700">{selectedBank.notes}</p>
-                </div>
-              )}
             </Modal.Body>
           </>
         )}
