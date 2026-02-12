@@ -138,7 +138,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Credit Type">
+          <FormField label="Loan Type">
             <Select
               value={newCredit.credit_type}
               onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
