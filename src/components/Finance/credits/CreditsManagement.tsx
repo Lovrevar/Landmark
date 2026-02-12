@@ -45,13 +45,34 @@ interface CreditAllocation {
   used_amount: number
   description: string | null
   created_at: string
+  allocation_type: 'project' | 'opex' | 'refinancing'
+  refinancing_entity_type?: 'company' | 'bank' | null
+  refinancing_entity_id?: string | null
   project?: {
+    id: string
+    name: string
+  }
+  refinancing_company?: {
+    id: string
+    name: string
+  }
+  refinancing_bank?: {
     id: string
     name: string
   }
 }
 
 interface Project {
+  id: string
+  name: string
+}
+
+interface Company {
+  id: string
+  name: string
+}
+
+interface Bank {
   id: string
   name: string
 }
@@ -65,9 +86,14 @@ const CreditsManagement: React.FC = () => {
   const [showAllocationModal, setShowAllocationModal] = useState(false)
   const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [banks, setBanks] = useState<Bank[]>([])
 
   const [allocationForm, setAllocationForm] = useState({
+    allocation_type: 'project' as 'project' | 'opex' | 'refinancing',
     project_id: '',
+    refinancing_entity_type: 'company' as 'company' | 'bank',
+    refinancing_entity_id: '',
     allocated_amount: 0,
     description: ''
   })
@@ -79,7 +105,7 @@ const CreditsManagement: React.FC = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      await Promise.all([fetchCredits(), fetchProjects()])
+      await Promise.all([fetchCredits(), fetchProjects(), fetchCompanies(), fetchBanks()])
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -126,9 +152,32 @@ const CreditsManagement: React.FC = () => {
 
       if (error) throw error
 
+      const enrichedData = await Promise.all((data || []).map(async (allocation) => {
+        if (allocation.allocation_type === 'refinancing' && allocation.refinancing_entity_id) {
+          if (allocation.refinancing_entity_type === 'company') {
+            const { data: company } = await supabase
+              .from('accounting_companies')
+              .select('id, name')
+              .eq('id', allocation.refinancing_entity_id)
+              .maybeSingle()
+
+            return { ...allocation, refinancing_company: company }
+          } else if (allocation.refinancing_entity_type === 'bank') {
+            const { data: bank } = await supabase
+              .from('banks')
+              .select('id, name')
+              .eq('id', allocation.refinancing_entity_id)
+              .maybeSingle()
+
+            return { ...allocation, refinancing_bank: bank }
+          }
+        }
+        return allocation
+      }))
+
       setAllocations(prev => {
         const next = new Map(prev)
-        next.set(creditId, data || [])
+        next.set(creditId, enrichedData)
         return next
       })
     } catch (error) {
@@ -148,6 +197,36 @@ const CreditsManagement: React.FC = () => {
       setProjects(data || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
+    }
+  }
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accounting_companies')
+        .select('id, name')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Error fetching companies:', error)
+    }
+  }
+
+  const fetchBanks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('banks')
+        .select('id, name')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      setBanks(data || [])
+    } catch (error) {
+      console.error('Error fetching banks:', error)
     }
   }
 
@@ -178,7 +257,10 @@ const CreditsManagement: React.FC = () => {
   const openAllocationModal = (credit: BankCredit) => {
     setSelectedCredit(credit)
     setAllocationForm({
+      allocation_type: 'project',
       project_id: '',
+      refinancing_entity_type: 'company',
+      refinancing_entity_id: '',
       allocated_amount: 0,
       description: ''
     })
@@ -190,14 +272,26 @@ const CreditsManagement: React.FC = () => {
     if (!selectedCredit) return
 
     try {
+      const payload: any = {
+        credit_id: selectedCredit.id,
+        allocation_type: allocationForm.allocation_type,
+        allocated_amount: allocationForm.allocated_amount,
+        description: allocationForm.description,
+        project_id: null,
+        refinancing_entity_type: null,
+        refinancing_entity_id: null
+      }
+
+      if (allocationForm.allocation_type === 'project') {
+        payload.project_id = allocationForm.project_id || null
+      } else if (allocationForm.allocation_type === 'refinancing') {
+        payload.refinancing_entity_type = allocationForm.refinancing_entity_type
+        payload.refinancing_entity_id = allocationForm.refinancing_entity_id
+      }
+
       const { error } = await supabase
         .from('credit_allocations')
-        .insert({
-          credit_id: selectedCredit.id,
-          project_id: allocationForm.project_id || null,
-          allocated_amount: allocationForm.allocated_amount,
-          description: allocationForm.description
-        })
+        .insert(payload)
 
       if (error) throw error
 
@@ -448,8 +542,19 @@ const CreditsManagement: React.FC = () => {
                                       <ChevronDown className="w-4 h-4 text-gray-600" />
                                     )}
                                     <span className="font-semibold text-gray-900">
-                                      {allocation.project?.name || 'OPEX (Bez projekta)'}
+                                      {allocation.allocation_type === 'project' && allocation.project?.name}
+                                      {allocation.allocation_type === 'opex' && 'OPEX (Bez projekta)'}
+                                      {allocation.allocation_type === 'refinancing' && (
+                                        <>
+                                          Refinanciranje - {allocation.refinancing_company?.name || allocation.refinancing_bank?.name || 'N/A'}
+                                        </>
+                                      )}
                                     </span>
+                                    {allocation.allocation_type === 'refinancing' && (
+                                      <Badge variant="orange" className="ml-2">
+                                        {allocation.refinancing_entity_type === 'company' ? 'FIRMA' : 'BANKA'}
+                                      </Badge>
+                                    )}
                                   </div>
                                   <div className="flex items-center space-x-4">
                                     <div className="text-right">
@@ -551,19 +656,78 @@ const CreditsManagement: React.FC = () => {
               </div>
             )}
 
-            <FormField label="Project" helperText="Ostavi prazno za OPEX">
+            <FormField label="Kategorija" required>
               <Select
-                value={allocationForm.project_id}
-                onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
+                value={allocationForm.allocation_type}
+                onChange={(e) => setAllocationForm({
+                  ...allocationForm,
+                  allocation_type: e.target.value as 'project' | 'opex' | 'refinancing',
+                  project_id: '',
+                  refinancing_entity_id: ''
+                })}
               >
-                <option value="">OPEX (Bez projekta)</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
+                <option value="project">Projekt</option>
+                <option value="opex">OPEX (Bez projekta)</option>
+                <option value="refinancing">Refinanciranje</option>
               </Select>
             </FormField>
+
+            {allocationForm.allocation_type === 'project' && (
+              <FormField label="Project" required>
+                <Select
+                  value={allocationForm.project_id}
+                  onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
+                  required
+                >
+                  <option value="">Odaberi projekt...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            )}
+
+            {allocationForm.allocation_type === 'refinancing' && (
+              <>
+                <FormField label="Tip entiteta" required>
+                  <Select
+                    value={allocationForm.refinancing_entity_type}
+                    onChange={(e) => setAllocationForm({
+                      ...allocationForm,
+                      refinancing_entity_type: e.target.value as 'company' | 'bank',
+                      refinancing_entity_id: ''
+                    })}
+                  >
+                    <option value="company">Firma</option>
+                    <option value="bank">Banka</option>
+                  </Select>
+                </FormField>
+
+                <FormField label={allocationForm.refinancing_entity_type === 'company' ? 'Firma' : 'Banka'} required>
+                  <Select
+                    value={allocationForm.refinancing_entity_id}
+                    onChange={(e) => setAllocationForm({ ...allocationForm, refinancing_entity_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Odaberi {allocationForm.refinancing_entity_type === 'company' ? 'firmu' : 'banku'}...</option>
+                    {allocationForm.refinancing_entity_type === 'company'
+                      ? companies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.name}
+                          </option>
+                        ))
+                      : banks.map((bank) => (
+                          <option key={bank.id} value={bank.id}>
+                            {bank.name}
+                          </option>
+                        ))
+                    }
+                  </Select>
+                </FormField>
+              </>
+            )}
 
             <FormField label="Allocated Amount" required>
               <Input
