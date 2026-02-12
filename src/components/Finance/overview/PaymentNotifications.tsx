@@ -429,7 +429,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                                 <p className="text-sm font-medium text-gray-900">{notification.bank_name}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">Credit Type</p>
+                                <p className="text-sm text-gray-600">Loan Type</p>
                                 <p className="text-sm font-medium text-gray-900">
                                   {notification.credit_type?.replace('_', ' ')}
                                 </p>
