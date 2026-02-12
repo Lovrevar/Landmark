@@ -67,7 +67,6 @@ const BanksManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [newEquity, setNewEquity] = useState({
     investor_id: '',
-    project_id: '',
     investment_type: 'equity' as const,
     amount: 0,
     percentage_stake: 0,
@@ -1156,17 +1155,6 @@ const BanksManagement: React.FC = () => {
                 <option value="">Select investor</option>
                 {investors.map(investor => (
                   <option key={investor.id} value={investor.id}>{investor.name}</option>
-                ))}
-              </Select>
-            </FormField>
-            <FormField label="Project (optional)">
-              <Select
-                value={newEquity.project_id}
-                onChange={(e) => setNewEquity({ ...newEquity, project_id: e.target.value })}
-              >
-                <option value="">No project (refinancing, operation costs, etc.)</option>
-                {projects.map(project => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
                 ))}
               </Select>
             </FormField>
