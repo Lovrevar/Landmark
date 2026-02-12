@@ -473,7 +473,7 @@ const CreditsManagement: React.FC = () => {
                         </h4>
                         <div className="space-y-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Credit Type:</span>
+                            <span className="text-gray-600">Loan Type:</span>
                             <span className="font-medium text-gray-900">{credit.credit_type}</span>
                           </div>
                           <div className="flex justify-between">
