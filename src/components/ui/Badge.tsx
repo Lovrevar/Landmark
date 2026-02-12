@@ -8,6 +8,7 @@ type BadgeVariant =
   | 'gray'
   | 'orange'
   | 'teal'
+  | 'purple'
 
 const variantStyles: Record<BadgeVariant, string> = {
   green: 'bg-green-100 text-green-700',
@@ -17,6 +18,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   gray: 'bg-gray-100 text-gray-700',
   orange: 'bg-orange-100 text-orange-700',
   teal: 'bg-teal-100 text-teal-700',
+  purple: 'bg-purple-100 text-purple-700',
 }
 
 type BadgeSize = 'sm' | 'md'

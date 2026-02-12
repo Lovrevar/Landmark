@@ -18,16 +18,10 @@ interface Company {
   oib: string
 }
 
-interface Investor {
-  id: string
-  name: string
-}
-
 const BanksManagement: React.FC = () => {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
-  const [investors, setInvestors] = useState<Investor[]>([])
   const [selectedBank, setSelectedBank] = useState<BankWithCredits | null>(null)
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
@@ -66,7 +60,8 @@ const BanksManagement: React.FC = () => {
   const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [loading, setLoading] = useState(true)
   const [newEquity, setNewEquity] = useState({
-    investor_id: '',
+    bank_id: '',
+    company_id: '',
     investment_type: 'equity' as const,
     amount: 0,
     percentage_stake: 0,
@@ -146,14 +141,6 @@ const BanksManagement: React.FC = () => {
 
       if (companiesError) throw companiesError
 
-      // Fetch investors
-      const { data: investorsData, error: investorsError } = await supabase
-        .from('investors')
-        .select('id, name')
-        .order('name')
-
-      if (investorsError) throw investorsError
-
       // Fetch bank credits with used and repaid amounts
       const { data: creditsData, error: creditsError } = await supabase
         .from('bank_credits')
@@ -203,7 +190,6 @@ const BanksManagement: React.FC = () => {
       setBanks(banksWithCredits)
       setProjects(projectsData || [])
       setCompanies(companiesData || [])
-      setInvestors(investorsData || [])
     } catch (error) {
       console.error('Error fetching banks data:', error)
     } finally {
@@ -265,6 +251,65 @@ const BanksManagement: React.FC = () => {
     } catch (error) {
       console.error('Error deleting bank:', error)
       alert('Error deleting bank.')
+    }
+  }
+
+  const addEquity = async () => {
+    if (!newEquity.bank_id || !newEquity.amount || !newEquity.investment_date) {
+      alert('Please fill in required fields (Bank, Amount, Investment Date)')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('bank_credits')
+        .insert({
+          bank_id: newEquity.bank_id,
+          company_id: newEquity.company_id || null,
+          project_id: null,
+          credit_name: `Equity Investment ${format(new Date(newEquity.investment_date), 'MMM yyyy')}`,
+          credit_type: 'equity',
+          credit_seniority: 'junior',
+          amount: newEquity.amount,
+          interest_rate: newEquity.expected_return,
+          start_date: newEquity.investment_date,
+          maturity_date: newEquity.maturity_date || null,
+          usage_expiration_date: newEquity.usage_expiration_date || null,
+          outstanding_balance: newEquity.amount,
+          status: 'active',
+          purpose: newEquity.terms || null,
+          grace_period: newEquity.grace_period || 0,
+          repayment_type: newEquity.payment_schedule === 'monthly' ? 'monthly' : 'yearly',
+          principal_repayment_type: newEquity.payment_schedule === 'monthly' ? 'monthly' : 'yearly',
+          interest_repayment_type: newEquity.payment_schedule === 'monthly' ? 'monthly' : 'yearly',
+          monthly_payment: 0
+        })
+
+      if (error) throw error
+
+      setShowEquityForm(false)
+      setNewEquity({
+        bank_id: '',
+        company_id: '',
+        investment_type: 'equity',
+        amount: 0,
+        percentage_stake: 0,
+        expected_return: 0,
+        investment_date: '',
+        maturity_date: '',
+        payment_schedule: 'yearly',
+        terms: '',
+        notes: '',
+        usage_expiration_date: '',
+        grace_period: 0,
+        custom_payment_count: 0,
+        custom_payments: []
+      })
+      await fetchData()
+      alert('Equity investment added successfully')
+    } catch (error) {
+      console.error('Error adding equity:', error)
+      alert('Error adding equity investment.')
     }
   }
 
@@ -1044,13 +1089,17 @@ const BanksManagement: React.FC = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2 flex-wrap gap-y-1">
-                                <Badge variant={
-                                  credit.credit_type === 'construction_loan' ? 'blue' :
-                                  credit.credit_type === 'term_loan' ? 'green' :
-                                  credit.credit_type === 'bridge_loan' ? 'orange' : 'gray'
-                                } size="sm">
-                                  {credit.credit_type.replace('_', ' ').toUpperCase()}
-                                </Badge>
+                                {credit.credit_type === 'equity' ? (
+                                  <Badge variant="purple" size="sm">EQUITY</Badge>
+                                ) : (
+                                  <Badge variant={
+                                    credit.credit_type === 'construction_loan' ? 'blue' :
+                                    credit.credit_type === 'term_loan' ? 'green' :
+                                    credit.credit_type === 'bridge_loan' ? 'orange' : 'gray'
+                                  } size="sm">
+                                    {credit.credit_type.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                )}
                                 <Badge variant={credit.credit_seniority === 'senior' ? 'blue' : 'orange'} size="sm">
                                   {credit.credit_seniority?.toUpperCase() || 'SENIOR'}
                                 </Badge>
@@ -1149,14 +1198,25 @@ const BanksManagement: React.FC = () => {
         <Modal.Header title="Add New Investment" onClose={() => setShowEquityForm(false)} />
         <Modal.Body>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Investor" required>
+            <FormField label="Bank" required>
               <Select
-                value={newEquity.investor_id}
-                onChange={(e) => setNewEquity({ ...newEquity, investor_id: e.target.value })}
+                value={newEquity.bank_id}
+                onChange={(e) => setNewEquity({ ...newEquity, bank_id: e.target.value })}
               >
-                <option value="">Select investor</option>
-                {investors.map(investor => (
-                  <option key={investor.id} value={investor.id}>{investor.name}</option>
+                <option value="">Select bank</option>
+                {banks.map(bank => (
+                  <option key={bank.id} value={bank.id}>{bank.name}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Company">
+              <Select
+                value={newEquity.company_id}
+                onChange={(e) => setNewEquity({ ...newEquity, company_id: e.target.value })}
+              >
+                <option value="">Select company</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
                 ))}
               </Select>
             </FormField>
@@ -1364,7 +1424,7 @@ const BanksManagement: React.FC = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowEquityForm(false)}>Cancel</Button>
-          <Button variant="success" onClick={() => alert('Functionality will be implemented')}>
+          <Button variant="success" onClick={addEquity}>
             Add Investment
           </Button>
         </Modal.Footer>

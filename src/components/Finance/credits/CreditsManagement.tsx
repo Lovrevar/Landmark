@@ -291,6 +291,9 @@ const CreditsManagement: React.FC = () => {
                           <h3 className="text-xl font-semibold text-gray-900">
                             {credit.credit_name || 'Unnamed Credit'}
                           </h3>
+                          {credit.credit_type === 'equity' && (
+                            <Badge variant="purple">EQUITY</Badge>
+                          )}
                           <Badge variant={
                             credit.status.toLowerCase() === 'active' ? 'green' :
                             credit.status.toLowerCase() === 'pending' ? 'yellow' :
