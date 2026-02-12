@@ -1167,14 +1167,6 @@ const BanksManagement: React.FC = () => {
                 onChange={(e) => setNewEquity({ ...newEquity, amount: parseFloat(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Percentage Stake (%)">
-              <Input
-                type="number"
-                step="0.1"
-                value={newEquity.percentage_stake}
-                onChange={(e) => setNewEquity({ ...newEquity, percentage_stake: parseFloat(e.target.value) || 0 })}
-              />
-            </FormField>
             <FormField label="IRR (%)">
               <Input
                 type="number"
