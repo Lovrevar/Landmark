@@ -58,9 +58,11 @@ export const createCredit = async (formData: CreditFormData) => {
       interest_rate: formData.interest_rate,
       amount: formData.initial_amount,
       outstanding_balance: 0,
-      credit_type: 'line_of_credit',
+      credit_type: 'equity',
       status: 'active',
-      purpose: formData.credit_name
+      purpose: formData.credit_name,
+      disbursed_to_account: formData.disbursed_to_account || false,
+      disbursed_to_bank_account_id: formData.disbursed_to_bank_account_id || null
     }])
 
   if (error) throw error
@@ -77,7 +79,9 @@ export const updateCredit = async (creditId: string, formData: CreditFormData) =
       maturity_date: formData.end_date,
       grace_period: formData.grace_period_months * 30,
       interest_rate: formData.interest_rate,
-      amount: formData.initial_amount
+      amount: formData.initial_amount,
+      disbursed_to_account: formData.disbursed_to_account || false,
+      disbursed_to_bank_account_id: formData.disbursed_to_bank_account_id || null
     })
     .eq('id', creditId)
 

@@ -23,11 +23,21 @@ export interface Credit {
   repaid_amount: number
   outstanding_balance: number
   created_at: string
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
 }
 
 export interface CreditWithCompany extends Credit {
   company: Company
   project?: Project
+}
+
+export interface CompanyBankAccount {
+  id: string
+  company_id: string
+  bank_name: string
+  account_number: string
+  current_balance: number
 }
 
 export interface CreditFormData {
@@ -39,4 +49,6 @@ export interface CreditFormData {
   grace_period_months: number
   interest_rate: number
   initial_amount: number
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
 }

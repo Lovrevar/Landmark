@@ -10,7 +10,9 @@ const initialFormData: CreditFormData = {
   end_date: '',
   grace_period_months: 0,
   interest_rate: 0,
-  initial_amount: 0
+  initial_amount: 0,
+  disbursed_to_account: false,
+  disbursed_to_bank_account_id: undefined
 }
 
 export const useCredits = () => {
@@ -56,7 +58,7 @@ export const useCredits = () => {
     setEditingCredit(null)
   }
 
-  const handleOpenModal = (credit?: Credit) => {
+  const handleOpenModal = (credit?: Credit & { disbursed_to_account?: boolean, disbursed_to_bank_account_id?: string }) => {
     if (credit) {
       setEditingCredit(credit)
       setFormData({
@@ -67,7 +69,9 @@ export const useCredits = () => {
         end_date: credit.maturity_date,
         grace_period_months: Math.round(credit.grace_period / 30),
         interest_rate: credit.interest_rate,
-        initial_amount: credit.amount
+        initial_amount: credit.amount,
+        disbursed_to_account: credit.disbursed_to_account || false,
+        disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || undefined
       })
     } else {
       resetForm()

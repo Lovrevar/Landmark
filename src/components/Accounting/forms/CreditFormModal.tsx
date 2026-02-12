@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import DateInput from '../../Common/DateInput'
 import { Modal, Button, Input, Select, FormField } from '../../ui'
-import type { Company, Project, Credit, CreditFormData } from '../types/creditTypes'
+import type { Company, Project, Credit, CreditFormData, CompanyBankAccount } from '../types/creditTypes'
+import { supabase } from '../../../lib/supabase'
 
 interface CreditFormModalProps {
   showModal: boolean
@@ -24,6 +25,41 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
   onSubmit,
   onClose
 }) => {
+  const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+
+  useEffect(() => {
+    if (formData.company_id && formData.disbursed_to_account) {
+      fetchCompanyBankAccounts(formData.company_id)
+    } else {
+      setCompanyBankAccounts([])
+    }
+  }, [formData.company_id, formData.disbursed_to_account])
+
+  const fetchCompanyBankAccounts = async (companyId: string) => {
+    try {
+      setLoadingAccounts(true)
+      const { data, error } = await supabase
+        .from('company_bank_accounts')
+        .select(`
+          id,
+          company_id,
+          bank_name,
+          account_number,
+          current_balance
+        `)
+        .eq('company_id', companyId)
+
+      if (error) throw error
+      setCompanyBankAccounts(data || [])
+    } catch (error) {
+      console.error('Error fetching company bank accounts:', error)
+      setCompanyBankAccounts([])
+    } finally {
+      setLoadingAccounts(false)
+    }
+  }
+
   return (
     <Modal show={showModal} onClose={onClose} size="md">
       <Modal.Header
@@ -125,6 +161,65 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
               required
             />
           </FormField>
+        </div>
+
+        <div className="px-6 pb-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <label className="flex items-start space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.disbursed_to_account || false}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setFormData({
+                    ...formData,
+                    disbursed_to_account: checked,
+                    disbursed_to_bank_account_id: checked ? formData.disbursed_to_bank_account_id : undefined
+                  })
+                }}
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Isplata na račun</span>
+                <p className="text-sm text-gray-600 mt-1">
+                  Kada je označeno, ceo iznos kredita će automatski biti isplaćen na odabrani bankovni račun firme.
+                </p>
+              </div>
+            </label>
+
+            {formData.disbursed_to_account && (
+              <div className="mt-4">
+                {!formData.company_id ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste videli dostupne bankovne račune.</p>
+                  </div>
+                ) : loadingAccounts ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600">Učitavanje računa...</p>
+                  </div>
+                ) : companyBankAccounts.length === 0 ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-800">Odabrana firma nema bankovnih računa. Molimo dodajte račun u "Moje firme" prvo.</p>
+                  </div>
+                ) : (
+                  <FormField label="Bankovni račun" required>
+                    <Select
+                      value={formData.disbursed_to_bank_account_id || ''}
+                      onChange={(e) => setFormData({ ...formData, disbursed_to_bank_account_id: e.target.value })}
+                      required={formData.disbursed_to_account}
+                    >
+                      <option value="">Odaberite račun</option>
+                      {companyBankAccounts.map(account => (
+                        <option key={account.id} value={account.id}>
+                          {account.bank_name || 'Nepoznata banka'} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{Number(account.current_balance).toLocaleString('hr-HR')})
+                        </option>
+                      ))}
+                    </Select>
+                  </FormField>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <Modal.Footer>
