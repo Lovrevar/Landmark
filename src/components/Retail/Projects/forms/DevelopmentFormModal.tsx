@@ -3,6 +3,7 @@ import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
 import { SupplierFormModal } from './SupplierFormModal'
+import DateInput from '../../../Common/DateInput'
 
 interface DevelopmentFormModalProps {
   phase: RetailProjectPhase
@@ -177,10 +178,9 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
             </div>
 
             <FormField label="Datum ugovora">
-              <Input
-                type="date"
+              <DateInput
                 value={formData.contract_date}
-                onChange={(e) => setFormData({ ...formData, contract_date: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, contract_date: value })}
               />
             </FormField>
 
