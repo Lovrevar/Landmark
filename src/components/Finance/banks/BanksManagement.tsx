@@ -1164,7 +1164,6 @@ const BanksManagement: React.FC = () => {
                 onChange={(e) => setNewEquity({ ...newEquity, investment_type: e.target.value as any })}
               >
                 <option value="equity">Equity</option>
-                <option value="loan">Loan</option>
                 <option value="grant">Grant</option>
                 <option value="bond">Bond</option>
                 <option value="Operation Cost Loan">Operation Cost Loan</option>
