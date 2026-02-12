@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react'
 import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '../types/bankTypes'
 import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../services/bankService'
-import { supabase } from '../../../lib/supabase'
 
 export const useBanks = () => {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
-  const [investors, setInvestors] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [showCreditForm, setShowCreditForm] = useState(false)
-  const [showEquityForm, setShowEquityForm] = useState(false)
   const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newCredit, setNewCredit] = useState<NewCreditForm>({
     bank_id: '',
@@ -36,16 +33,14 @@ export const useBanks = () => {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [projectsData, companiesData, banksData, investorsData] = await Promise.all([
+      const [projectsData, companiesData, banksData] = await Promise.all([
         fetchProjects(),
         fetchCompanies(),
-        fetchBanksWithCredits(),
-        fetchInvestors()
+        fetchBanksWithCredits()
       ])
       setProjects(projectsData)
       setCompanies(companiesData)
       setBanks(banksData)
-      setInvestors(investorsData)
     } catch (error) {
       console.error('Error fetching banks:', error)
     } finally {
@@ -53,25 +48,12 @@ export const useBanks = () => {
     }
   }
 
-  const fetchInvestors = async () => {
-    const { data, error } = await supabase
-      .from('investors')
-      .select('id, name')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching investors:', error)
-      return []
-    }
-    return data || []
-  }
-
   useEffect(() => {
     fetchData()
   }, [])
 
   useEffect(() => {
-    if (showCreditForm || showEquityForm) {
+    if (showCreditForm) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -79,7 +61,7 @@ export const useBanks = () => {
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [showCreditForm, showEquityForm])
+  }, [showCreditForm])
 
   const addCredit = async () => {
     if (editingCredit) {
@@ -186,19 +168,15 @@ export const useBanks = () => {
     banks,
     projects,
     companies,
-    investors,
     loading,
     showCreditForm,
     setShowCreditForm,
-    showEquityForm,
-    setShowEquityForm,
     editingCredit,
     newCredit,
     setNewCredit,
     addCredit,
     handleEditCredit,
     handleDeleteCredit,
-    resetCreditForm,
-    fetchData
+    resetCreditForm
   }
 }

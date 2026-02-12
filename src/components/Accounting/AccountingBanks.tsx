@@ -3,14 +3,12 @@ import { Building2, CreditCard, DollarSign, TrendingUp, TrendingDown, Plus, Edit
 import { LoadingSpinner, PageHeader, StatGrid, Button, Badge, StatCard, EmptyState } from '../ui'
 import { useBanks } from './hooks/useBanks'
 import BankCreditFormModal from './forms/BankCreditFormModal'
-import EquityInvestmentFormModal from './forms/EquityInvestmentFormModal'
 
 const AccountingBanks: React.FC = () => {
   const {
     banks,
     projects,
     companies,
-    investors,
     loading,
     showCreditForm,
     setShowCreditForm,
@@ -20,10 +18,7 @@ const AccountingBanks: React.FC = () => {
     addCredit,
     handleEditCredit,
     handleDeleteCredit,
-    resetCreditForm,
-    showEquityForm,
-    setShowEquityForm,
-    fetchData
+    resetCreditForm
   } = useBanks()
 
   if (loading) {
@@ -41,14 +36,9 @@ const AccountingBanks: React.FC = () => {
         title="Banke"
         description="Pregled svih bankovnih kredita"
         actions={
-          <div className="flex space-x-3">
-            <Button variant="success" icon={Plus} onClick={() => setShowCreditForm(true)}>
-              Add Credit
-            </Button>
-            <Button variant="primary" icon={Plus} onClick={() => setShowEquityForm(true)}>
-              Add Equity
-            </Button>
-          </div>
+          <Button variant="success" icon={Plus} onClick={() => setShowCreditForm(true)}>
+            Add Credit
+          </Button>
         }
       />
 
@@ -230,14 +220,6 @@ const AccountingBanks: React.FC = () => {
         companies={companies}
         addCredit={addCredit}
         resetCreditForm={resetCreditForm}
-      />
-
-      <EquityInvestmentFormModal
-        showEquityForm={showEquityForm}
-        onClose={() => setShowEquityForm(false)}
-        investors={investors}
-        projects={projects}
-        onSuccess={fetchData}
       />
     </div>
   )
