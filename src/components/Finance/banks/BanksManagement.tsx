@@ -76,7 +76,6 @@ const BanksManagement: React.FC = () => {
     maturity_date: '',
     payment_schedule: 'yearly' as 'monthly' | 'yearly',
     terms: '',
-    mortgages_insurance: 0,
     notes: '',
     usage_expiration_date: '',
     grace_period: 0
@@ -1303,17 +1302,8 @@ const BanksManagement: React.FC = () => {
                 placeholder="0"
               />
             </FormField>
-            <FormField label="Mortgages">
-              <Input
-                type="number"
-                step="0.01"
-                value={newEquity.mortgages_insurance}
-                onChange={(e) => setNewEquity({ ...newEquity, mortgages_insurance: parseFloat(e.target.value) || 0 })}
-                placeholder="Amount of mortgages/insurance"
-              />
-            </FormField>
             <div className="md:col-span-2">
-              <FormField label="Mortages">
+              <FormField label="Mortgages">
                 <Textarea
                   value={newEquity.terms}
                   onChange={(e) => setNewEquity({ ...newEquity, terms: e.target.value })}
