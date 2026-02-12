@@ -49,6 +49,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
+  const [availableContracts, setAvailableContracts] = useState<Contract[]>([])
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
 
   const [formData, setFormData] = useState({
@@ -56,6 +57,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     supplier_id: '',
     project_id: '',
     phase_id: '',
+    contract_id: '',
     invoice_name: '',
     iban: '',
     deposit_amount: 0,
@@ -77,6 +79,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       supplier_id: '',
       project_id: '',
       phase_id: '',
+      contract_id: '',
       invoice_name: '',
       iban: formData.iban,
       deposit_amount: 0,
@@ -87,6 +90,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     setProjects([])
     setPhases([])
     setSuppliers([])
+    setAvailableContracts([])
     setSelectedContract(null)
     if (isOpen) {
       fetchSuppliersWithContracts()
@@ -98,7 +102,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       fetchProjectsForSupplier(formData.supplier_id)
     } else {
       setProjects([])
-      setFormData(prev => ({ ...prev, project_id: '', phase_id: '' }))
+      setFormData(prev => ({ ...prev, project_id: '', phase_id: '', contract_id: '' }))
     }
   }, [formData.supplier_id])
 
@@ -107,18 +111,29 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       fetchPhasesForSupplierAndProject(formData.supplier_id, formData.project_id)
     } else {
       setPhases([])
-      setFormData(prev => ({ ...prev, phase_id: '' }))
+      setFormData(prev => ({ ...prev, phase_id: '', contract_id: '' }))
     }
   }, [formData.project_id])
 
   useEffect(() => {
     if (formData.phase_id && formData.supplier_id && formData.project_id) {
-      fetchContract()
+      fetchContracts()
+    } else {
+      setAvailableContracts([])
+      setSelectedContract(null)
+      setFormData(prev => ({ ...prev, contract_id: '', deposit_amount: 0, remaining_amount: 0 }))
+    }
+  }, [formData.phase_id])
+
+  useEffect(() => {
+    if (formData.contract_id) {
+      const contract = availableContracts.find(c => c.id === formData.contract_id)
+      setSelectedContract(contract || null)
     } else {
       setSelectedContract(null)
       setFormData(prev => ({ ...prev, deposit_amount: 0, remaining_amount: 0 }))
     }
-  }, [formData.phase_id])
+  }, [formData.contract_id, availableContracts])
 
   const fetchCompanies = async () => {
     const { data } = await supabase
@@ -244,7 +259,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     }
   }
 
-  const fetchContract = async () => {
+  const fetchContracts = async () => {
     if (projectType === 'projects') {
       const { data } = await supabase
         .from('contracts')
@@ -252,16 +267,20 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('subcontractor_id', formData.supplier_id)
         .eq('project_id', formData.project_id)
         .eq('phase_id', formData.phase_id)
-        .maybeSingle()
+        .gt('base_amount', 0)
+        .order('start_date', { ascending: false })
 
       if (data) {
-        setSelectedContract({
-          id: data.id,
-          contract_number: data.contract_number,
-          contract_amount: data.contract_amount,
-          base_amount: data.base_amount,
-          contract_date: data.start_date || new Date().toISOString().split('T')[0]
-        })
+        const contracts = data.map(c => ({
+          id: c.id,
+          contract_number: c.contract_number,
+          contract_amount: c.contract_amount,
+          base_amount: c.base_amount,
+          contract_date: c.start_date || new Date().toISOString().split('T')[0]
+        }))
+        setAvailableContracts(contracts)
+      } else {
+        setAvailableContracts([])
       }
     } else {
       const { data } = await supabase
@@ -272,17 +291,18 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('retail_project_phases.project_id', formData.project_id)
         .gt('contract_amount', 0)
         .order('contract_date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
 
       if (data) {
-        setSelectedContract({
-          id: data.id,
-          contract_number: data.contract_number,
-          contract_amount: data.contract_amount,
-          base_amount: data.contract_amount,
-          contract_date: data.contract_date || new Date().toISOString().split('T')[0]
-        })
+        const contracts = data.map(c => ({
+          id: c.id,
+          contract_number: c.contract_number,
+          contract_amount: c.contract_amount,
+          base_amount: c.contract_amount,
+          contract_date: c.contract_date || new Date().toISOString().split('T')[0]
+        }))
+        setAvailableContracts(contracts)
+      } else {
+        setAvailableContracts([])
       }
     }
   }
@@ -471,6 +491,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       supplier_id: '',
       project_id: '',
       phase_id: '',
+      contract_id: '',
       invoice_name: '',
       iban: '',
       deposit_amount: 0,
@@ -479,6 +500,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       remaining_due_date: new Date().toISOString().split('T')[0]
     })
     setSelectedContract(null)
+    setAvailableContracts([])
     setProjectType('projects')
     setSuppliers([])
     setProjects([])
@@ -591,7 +613,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </label>
               <select
                 value={formData.phase_id}
-                onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, phase_id: e.target.value, contract_id: '' })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
                 required
                 disabled={!formData.project_id}
@@ -604,6 +626,27 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 ))}
               </select>
             </div>
+
+            {availableContracts.length > 0 && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Ugovor *
+                </label>
+                <select
+                  value={formData.contract_id}
+                  onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  required
+                >
+                  <option value="">Odaberite ugovor</option>
+                  {availableContracts.map((contract) => (
+                    <option key={contract.id} value={contract.id}>
+                      {contract.contract_number} - {contract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -733,9 +776,9 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           </>
         )}
 
-        {!selectedContract && formData.phase_id && (
+        {formData.phase_id && availableContracts.length === 0 && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800">Nema pronađenog ugovora za odabranu kombinaciju.</p>
+            <p className="text-yellow-800">Nema pronađenog ugovora za odabranu kombinaciju (dobavljač + projekt + faza).</p>
           </div>
         )}
       </Modal.Body>
