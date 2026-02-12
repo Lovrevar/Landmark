@@ -315,10 +315,8 @@ const CreditsManagement: React.FC = () => {
       if (error) throw error
 
       await fetchAllocationsForCredit(creditId)
-      alert('Allocation deleted successfully')
     } catch (error) {
       console.error('Error deleting allocation:', error)
-      alert('Error deleting allocation')
     }
   }
 
