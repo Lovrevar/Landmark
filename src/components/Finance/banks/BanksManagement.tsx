@@ -1160,18 +1160,6 @@ const BanksManagement: React.FC = () => {
                 ))}
               </Select>
             </FormField>
-            <FormField label="Investment Type">
-              <Select
-                value={newEquity.investment_type}
-                onChange={(e) => setNewEquity({ ...newEquity, investment_type: e.target.value as any })}
-              >
-                <option value="equity">Equity</option>
-                <option value="grant">Grant</option>
-                <option value="bond">Bond</option>
-                <option value="Operation Cost Loan">Operation Cost Loan</option>
-                <option value="Refinancing Loan">Refinancing Loan</option>
-              </Select>
-            </FormField>
             <FormField label="Amount" required>
               <Input
                 type="number"
