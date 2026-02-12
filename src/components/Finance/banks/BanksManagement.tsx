@@ -1064,6 +1064,9 @@ const BanksManagement: React.FC = () => {
                                   <Badge variant="orange" size="sm">MATURING SOON</Badge>
                                 )}
                               </div>
+                              {(credit as any).credit_name && (
+                                <p className="text-base font-semibold text-gray-900 mb-1">{(credit as any).credit_name}</p>
+                              )}
                               <p className="text-sm text-gray-600 mb-2">{credit.purpose}</p>
                               {(credit as any).accounting_companies && (
                                 <p className="text-xs text-gray-500 mb-1">Company: {(credit as any).accounting_companies.name}</p>
