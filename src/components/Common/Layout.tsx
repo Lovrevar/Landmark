@@ -80,7 +80,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Banks', icon: Building2, path: '/banks' },
         { name: 'Krediti', icon: CreditCard, path: '/funding-credits' },
         { name: 'Investment Projects', icon: Building2, path: '/investment-projects' },
-        { name: 'Investors', icon: Users, path: '/investors' },
         { name: 'Payments', icon: DollarSign, path: '/funding-payments' },
         { name: 'TIC', icon: Calculator, path: '/tic' }
       ],

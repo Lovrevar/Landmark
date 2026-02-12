@@ -14,7 +14,6 @@ import CustomersManagement from './components/CustomersManagement'
 import SalesReports from './components/Reports/SalesReports'
 import BanksManagement from './components/Finance/banks/BanksManagement'
 import InvestmentProjects from './components/Projects/InvestmentProjects'
-import InvestorsManagement from './components/Finance/investors/InvestorsManagement'
 import PaymentsManagement from './components/Payments/PaymentsManagement'
 import InvoicesManagement from './components/Payments/InvoicesManagement'
 import ApartmentManagement from './components/ApartmentManagement'
@@ -172,14 +171,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <InvestmentProjects />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/investors"
-          element={
-            <ProtectedRoute>
-              <InvestorsManagement />
             </ProtectedRoute>
           }
         />
