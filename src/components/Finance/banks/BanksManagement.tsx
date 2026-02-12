@@ -306,7 +306,6 @@ const BanksManagement: React.FC = () => {
         custom_payments: []
       })
       await fetchData()
-      alert('Equity investment added successfully')
     } catch (error) {
       console.error('Error adding equity:', error)
       alert('Error adding equity investment.')
