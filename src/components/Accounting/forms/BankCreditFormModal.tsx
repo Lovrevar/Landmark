@@ -302,7 +302,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           Cancel
         </Button>
         <Button variant="success" onClick={addCredit}>
-          Add Credit
+          Add Loan
         </Button>
       </Modal.Footer>
     </Modal>
