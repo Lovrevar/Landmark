@@ -197,7 +197,7 @@ const CompanyCredits: React.FC = () => {
                   variant="primary"
                   icon={Plus}
                 >
-                  Add Credit
+                  Add Loan
                 </Button>
               }
             />
