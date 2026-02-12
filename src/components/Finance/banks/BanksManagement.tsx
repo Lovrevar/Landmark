@@ -635,7 +635,7 @@ const BanksManagement: React.FC = () => {
         description="Manage bank partnerships and credit facilities"
         actions={
           <div className="flex space-x-3">
-            <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Bank</Button>
+            <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Investor</Button>
             <Button icon={Plus} variant="success" onClick={() => setShowCreditForm(true)}>Add Credit</Button>
             <Button icon={Plus} variant="primary" onClick={() => setShowEquityForm(true)}>Add Equity</Button>
           </div>
