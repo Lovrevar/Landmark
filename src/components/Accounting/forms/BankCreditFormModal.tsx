@@ -148,6 +148,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <option value="line_of_credit_senior">Line of Credit - Senior</option>
               <option value="line_of_credit_junior">Line of Credit - Junior</option>
               <option value="bridge_loan_senior">Bridge Loan</option>
+              <option value="grant">Grant</option>
             </Select>
           </FormField>
 
