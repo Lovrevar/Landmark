@@ -77,8 +77,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount)
   }
 
