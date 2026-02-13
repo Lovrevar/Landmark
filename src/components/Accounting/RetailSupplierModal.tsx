@@ -13,17 +13,20 @@ interface RetailPhase {
   phase_type: string
 }
 
+interface SupplierType {
+  id: string
+  name: string
+}
+
 interface RetailSupplierModalProps {
   onClose: () => void
   onSuccess: () => void
 }
 
-const SUPPLIER_TYPES = ['Geodet', 'Arhitekt', 'Projektant', 'Consultant', 'Other'] as const
-
 const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
-    supplier_type: 'Other' as string,
+    supplier_type_id: '',
     contact_person: '',
     contact_phone: '',
     contact_email: '',
@@ -32,6 +35,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
   })
   const [projects, setProjects] = useState<RetailProject[]>([])
   const [phases, setPhases] = useState<RetailPhase[]>([])
+  const [supplierTypes, setSupplierTypes] = useState<SupplierType[]>([])
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +43,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     loadRetailProjects()
+    loadSupplierTypes()
     return () => { document.body.style.overflow = 'unset' }
   }, [])
 
@@ -49,6 +54,27 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
       setPhases([])
     }
   }, [formData.project_id])
+
+  const loadSupplierTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('retail_supplier_types')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+
+      const types = data || []
+      setSupplierTypes(types)
+
+      if (types.length > 0) {
+        const otherType = types.find(t => t.name === 'Other')
+        setFormData(prev => ({ ...prev, supplier_type_id: otherType?.id || types[0].id }))
+      }
+    } catch (err) {
+      console.error('Error loading supplier types:', err)
+    }
+  }
 
   const loadRetailProjects = async () => {
     try {
@@ -99,7 +125,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
         .from('retail_suppliers')
         .insert([{
           name: formData.name,
-          supplier_type: formData.supplier_type,
+          supplier_type_id: formData.supplier_type_id,
           contact_person: formData.contact_person || null,
           contact_phone: formData.contact_phone || null,
           contact_email: formData.contact_email || null
@@ -164,12 +190,12 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
           <FormField label="Tip dobavljača" required>
             <Select
-              value={formData.supplier_type}
-              onChange={(e) => setFormData({ ...formData, supplier_type: e.target.value })}
+              value={formData.supplier_type_id}
+              onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
               required
             >
-              {SUPPLIER_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
+              {supplierTypes.map(type => (
+                <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </Select>
           </FormField>
