@@ -70,8 +70,10 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, className, requi
       const isoDate = formatToISO(input)
       if (isoDate) {
         onChange(isoDate)
+      } else if (!required) {
+        onChange('')
       }
-    } else if (input.length === 0) {
+    } else if (input.length === 0 && !required) {
       onChange('')
     }
   }
@@ -82,9 +84,11 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, className, requi
       if (isoDate) {
         onChange(isoDate)
         setDisplayValue(formatToDisplay(isoDate))
-      } else {
+      } else if (!required) {
         setDisplayValue('')
         onChange('')
+      } else {
+        setDisplayValue('')
       }
     }
   }

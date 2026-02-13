@@ -320,6 +320,26 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         return
       }
 
+      const isValidDate = (dateStr: string): boolean => {
+        if (!dateStr || typeof dateStr !== 'string') return false
+        const regex = /^\d{4}-\d{2}-\d{2}$/
+        if (!regex.test(dateStr)) return false
+        const date = new Date(dateStr)
+        return date instanceof Date && !isNaN(date.getTime()) && dateStr === date.toISOString().split('T')[0]
+      }
+
+      if (deposit_amount > 0 && !isValidDate(deposit_due_date)) {
+        alert('Molimo unesite ispravan datum dospijeća za kaparu (format: DD/MM/YYYY)')
+        setLoading(false)
+        return
+      }
+
+      if (remaining_amount > 0 && !isValidDate(remaining_due_date)) {
+        alert('Molimo unesite ispravan datum dospijeća za preostali iznos (format: DD/MM/YYYY)')
+        setLoading(false)
+        return
+      }
+
       const totalAmount = deposit_amount + remaining_amount
       if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
         alert(`Zbir kapare i preostalog iznosa (${totalAmount.toFixed(2)} €) mora biti jednak iznosu iz ugovora (${selectedContract.base_amount.toFixed(2)} €)`)
@@ -477,9 +497,16 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
       onSuccess()
       handleClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating land purchase invoices:', error)
-      alert('Greška pri kreiranju računa')
+
+      if (error?.code === '22008' || error?.message?.includes('invalid datetime') || error?.message?.includes('timestamp')) {
+        alert('Greška: Nevažeći format datuma. Molimo provjerite sve datume i pokušajte ponovo.')
+      } else if (error?.message) {
+        alert(`Greška pri kreiranju računa: ${error.message}`)
+      } else {
+        alert('Greška pri kreiranju računa')
+      }
     } finally {
       setLoading(false)
     }
