@@ -42,11 +42,14 @@ export const drawBarChart = (
 
     pdf.setFontSize(7)
     pdf.setTextColor(0, 0, 0)
-    pdf.text(item.label, barX + barWidth / 2, y + height + 4, { align: 'center' })
+    const labelWidth = pdf.getTextWidth(item.label)
+    pdf.text(item.label, barX + barWidth / 2 - labelWidth / 2, y + height + 4)
 
     if (showValues && item.value > 0) {
       pdf.setFontSize(6)
-      pdf.text(formatValue(item.value), barX + barWidth / 2, barY - 1, { align: 'center' })
+      const valueText = formatValue(item.value)
+      const valueWidth = pdf.getTextWidth(valueText)
+      pdf.text(valueText, barX + barWidth / 2 - valueWidth / 2, barY - 1)
     }
   })
 
@@ -66,13 +69,18 @@ export const drawPieChart = (
   if (title) {
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'bold')
-    pdf.text(title, centerX, centerY - radius - 5, { align: 'center' })
+    const titleWidth = pdf.getTextWidth(title)
+    pdf.text(title, centerX - titleWidth / 2, centerY - radius - 5)
   }
 
   const total = data.reduce((sum, item) => sum + item.value, 0)
+  if (total === 0) return
+
   let currentAngle = -Math.PI / 2
 
   data.forEach((item) => {
+    if (item.value === 0) return
+
     const sliceAngle = (item.value / total) * 2 * Math.PI
     const endAngle = currentAngle + sliceAngle
     const color = hexToRgb(item.color)
@@ -96,15 +104,19 @@ export const drawPieChart = (
     pdf.lineTo(centerX, centerY)
     pdf.fill()
 
-    const percentage = ((item.value / total) * 100).toFixed(1)
-    const labelAngle = currentAngle + sliceAngle / 2
-    const labelX = centerX + (radius * 0.6) * Math.cos(labelAngle)
-    const labelY = centerY + (radius * 0.6) * Math.sin(labelAngle)
+    if (sliceAngle > 0.2) {
+      const percentage = ((item.value / total) * 100).toFixed(1)
+      const labelAngle = currentAngle + sliceAngle / 2
+      const labelX = centerX + (radius * 0.6) * Math.cos(labelAngle)
+      const labelY = centerY + (radius * 0.6) * Math.sin(labelAngle)
 
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(8)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(`${percentage}%`, labelX, labelY, { align: 'center' })
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(8)
+      pdf.setFont('helvetica', 'bold')
+      const percentText = `${percentage}%`
+      const textWidth = pdf.getTextWidth(percentText)
+      pdf.text(percentText, labelX - textWidth / 2, labelY)
+    }
 
     currentAngle = endAngle
   })
@@ -112,6 +124,8 @@ export const drawPieChart = (
   if (showLegend) {
     let legendY = centerY + radius + 10
     data.forEach((item) => {
+      if (item.value === 0) return
+
       const color = hexToRgb(item.color)
       pdf.setFillColor(color.r, color.g, color.b)
       pdf.rect(centerX - radius, legendY, 3, 3, 'F')
@@ -193,7 +207,8 @@ export const drawLineChart = (
   pdf.setFontSize(7)
   pdf.setTextColor(0, 0, 0)
   data.forEach((item, index) => {
-    pdf.text(item.label, points[index].x, y + height + 4, { align: 'center' })
+    const labelWidth = pdf.getTextWidth(item.label)
+    pdf.text(item.label, points[index].x - labelWidth / 2, y + height + 4)
   })
 
   pdf.setLineWidth(0.2)
@@ -234,7 +249,8 @@ export const drawHorizontalBarChart = (
     pdf.setFontSize(8)
     pdf.setTextColor(0, 0, 0)
     pdf.setFont('helvetica', 'normal')
-    pdf.text(item.label, x - 2, barY + barHeight / 2 + 1, { align: 'right' })
+    const labelWidth = pdf.getTextWidth(item.label)
+    pdf.text(item.label, x - 2 - labelWidth, barY + barHeight / 2 + 1)
 
     if (showValues) {
       pdf.setFont('helvetica', 'bold')
@@ -281,7 +297,8 @@ export const drawProgressBar = (
     pdf.setTextColor(0, 0, 0)
     pdf.setFont('helvetica', 'bold')
     const text = label ? `${label}: ${percentage.toFixed(1)}%` : `${percentage.toFixed(1)}%`
-    pdf.text(text, x + width / 2, y + height / 2 + 1, { align: 'center' })
+    const textWidth = pdf.getTextWidth(text)
+    pdf.text(text, x + width / 2 - textWidth / 2, y + height / 2 + 1)
   }
 
   pdf.setTextColor(0, 0, 0)

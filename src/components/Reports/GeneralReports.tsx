@@ -769,12 +769,18 @@ const GeneralReports: React.FC = () => {
       pdf.setTextColor(255, 255, 255)
       pdf.setFontSize(48)
       pdf.setFont('helvetica', 'bold')
-      pdf.text('LANDMARK', pageWidth / 2, 80, { align: 'center' })
-      pdf.text('GROUP', pageWidth / 2, 95, { align: 'center' })
+      let text = 'LANDMARK'
+      let textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 80)
+      text = 'GROUP'
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 95)
 
       pdf.setFontSize(24)
       pdf.setFont('helvetica', 'normal')
-      pdf.text('Executive Portfolio Report', pageWidth / 2, 120, { align: 'center' })
+      text = 'Executive Portfolio Report'
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 120)
 
       pdf.setDrawColor(37, 99, 235)
       pdf.setLineWidth(1)
@@ -782,8 +788,12 @@ const GeneralReports: React.FC = () => {
 
       pdf.setFontSize(14)
       pdf.setTextColor(200, 200, 200)
-      pdf.text(`Report Period: ${format(new Date(), 'MMMM yyyy')}`, pageWidth / 2, 145, { align: 'center' })
-      pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy')}`, pageWidth / 2, 155, { align: 'center' })
+      text = `Report Period: ${format(new Date(), 'MMMM yyyy')}`
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 145)
+      text = `Generated: ${format(new Date(), 'MMMM dd, yyyy')}`
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 155)
 
       pdf.setFontSize(12)
       const summaryStats = [
@@ -791,11 +801,15 @@ const GeneralReports: React.FC = () => {
         `€${(report.executive_summary.total_revenue / 1000000).toFixed(1)}M Revenue`,
         `${report.kpis.roi.toFixed(1)}% ROI`
       ]
-      pdf.text(summaryStats.join('  |  '), pageWidth / 2, 180, { align: 'center' })
+      text = summaryStats.join('  |  ')
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, 180)
 
       pdf.setFontSize(10)
       pdf.setTextColor(150, 150, 150)
-      pdf.text('CONFIDENTIAL', pageWidth / 2, pageHeight - 30, { align: 'center' })
+      text = 'CONFIDENTIAL'
+      textWidth = pdf.getTextWidth(text)
+      pdf.text(text, pageWidth / 2 - textWidth / 2, pageHeight - 30)
 
       pdf.addPage()
       yPosition = margin
@@ -884,12 +898,14 @@ const GeneralReports: React.FC = () => {
         pdf.setFontSize(16)
         pdf.setFont('helvetica', 'bold')
         pdf.setTextColor(37, 99, 235)
-        pdf.text(kpi[0], xPos + kpiBoxWidth / 2, yPosition + 10, { align: 'center' })
+        let kpiTextWidth = pdf.getTextWidth(kpi[0])
+        pdf.text(kpi[0], xPos + kpiBoxWidth / 2 - kpiTextWidth / 2, yPosition + 10)
 
         pdf.setFontSize(8)
         pdf.setFont('helvetica', 'normal')
         pdf.setTextColor(100, 100, 100)
-        pdf.text(kpi[1], xPos + kpiBoxWidth / 2, yPosition + 16, { align: 'center' })
+        kpiTextWidth = pdf.getTextWidth(kpi[1])
+        pdf.text(kpi[1], xPos + kpiBoxWidth / 2 - kpiTextWidth / 2, yPosition + 16)
 
         xPos += kpiBoxWidth + 2
       })
@@ -1525,7 +1541,8 @@ const GeneralReports: React.FC = () => {
           pdf.setTextColor(255, 255, 255)
           pdf.setFontSize(7)
           pdf.setFont('helvetica', 'bold')
-          pdf.text(project.risk_level, pageWidth - margin - 15, yPosition + 8.5, { align: 'center' })
+          const riskTextWidth = pdf.getTextWidth(project.risk_level)
+          pdf.text(project.risk_level, pageWidth - margin - 15 - riskTextWidth / 2, yPosition + 8.5)
 
           pdf.setTextColor(0, 0, 0)
           pdf.setFontSize(9)
@@ -1688,9 +1705,13 @@ const GeneralReports: React.FC = () => {
         pdf.text('Confidential Executive Report', margin, pageHeight - 6)
 
         pdf.setFont('helvetica', 'bold')
-        pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' })
+        const pageText = `Page ${i} of ${totalPages}`
+        const pageTextWidth = pdf.getTextWidth(pageText)
+        pdf.text(pageText, pageWidth - margin - pageTextWidth, pageHeight - 10)
         pdf.setFont('helvetica', 'normal')
-        pdf.text(format(new Date(), 'yyyy-MM-dd'), pageWidth - margin, pageHeight - 6, { align: 'right' })
+        const dateText = format(new Date(), 'yyyy-MM-dd')
+        const dateTextWidth = pdf.getTextWidth(dateText)
+        pdf.text(dateText, pageWidth - margin - dateTextWidth, pageHeight - 6)
       }
 
       pdf.save(`LANDMARK_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
