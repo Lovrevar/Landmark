@@ -360,7 +360,7 @@ const InvestmentDashboard: React.FC = () => {
               <div className="flex items-center p-2 bg-orange-50 border border-orange-200 rounded">
                 <Clock className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
                 <span className="text-sm text-orange-800">
-                  {financialSummary.upcoming_maturities} credit(s) maturing soon
+                  {financialSummary.upcoming_maturities} investment(s) maturing soon
                 </span>
               </div>
             )}
