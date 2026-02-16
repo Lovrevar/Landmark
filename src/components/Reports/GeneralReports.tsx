@@ -332,7 +332,7 @@ const GeneralReports: React.FC = () => {
       return sum + saleTotal
     }, 0)
 
-    const totalExpenses = contractsArray.reduce((sum, c) => sum + (c.cost || 0), 0)
+    const totalExpenses = contractsArray.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -413,7 +413,7 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
-        const projectExpenses = projectContracts.reduce((sum, c) => sum + (c.cost || 0), 0)
+        const projectExpenses = projectContracts.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
