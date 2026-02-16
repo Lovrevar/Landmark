@@ -97,6 +97,8 @@ interface ComprehensiveReport {
     total_phases: number
     completed_phases: number
     work_logs_7days: number
+    total_milestones: number
+    completed_milestones: number
   }
   accounting_overview: {
     total_invoices: number
@@ -129,6 +131,14 @@ interface ComprehensiveReport {
     credits_used: number
     cesija_payments: number
     cesija_value: number
+    total_allocations: number
+    allocated_amount: number
+  }
+  company_loans: {
+    total_loans: number
+    total_loan_amount: number
+    total_outstanding: number
+    active_loans: number
   }
   bank_accounts: {
     total_accounts: number
@@ -136,6 +146,31 @@ interface ComprehensiveReport {
     positive_balance_accounts: number
     negative_balance_accounts: number
   }
+  buildings_units: {
+    total_buildings: number
+    total_units: number
+    sold_units: number
+    reserved_units: number
+    available_units: number
+    total_garages: number
+    total_repositories: number
+  }
+  retail_portfolio: {
+    total_retail_projects: number
+    active_retail_projects: number
+    total_land_plots: number
+    total_retail_contracts: number
+    retail_contract_value: number
+    retail_budget_realized: number
+    retail_phases: number
+    completed_retail_phases: number
+    total_retail_customers: number
+    retail_suppliers: number
+  }
+  contract_types: Array<{
+    name: string
+    count: number
+  }>
   cash_flow: Array<{
     month: string
     inflow: number
@@ -200,6 +235,22 @@ const GeneralReports: React.FC = () => {
     const { data: ticCostStructures } = await supabase.from('tic_cost_structures').select('*')
     const { data: officeSuppliers } = await supabase.from('office_suppliers').select('*')
     const { data: bankCredits } = await supabase.from('bank_credits').select('*')
+    const { data: companyLoans } = await supabase.from('company_loans').select('*')
+    const { data: creditAllocations } = await supabase.from('credit_allocations').select('*')
+
+    const { data: buildings } = await supabase.from('buildings').select('*')
+    const { data: units } = await supabase.from('units').select('*')
+    const { data: garages } = await supabase.from('garages').select('*')
+    const { data: repositories } = await supabase.from('repositories').select('*')
+    const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
+    const { data: contractTypes } = await supabase.from('contract_types').select('*')
+
+    const { data: retailProjects } = await supabase.from('retail_projects').select('*')
+    const { data: retailContracts } = await supabase.from('retail_contracts').select('*')
+    const { data: retailPhases } = await supabase.from('retail_phases').select('*')
+    const { data: retailLandPlots } = await supabase.from('retail_land_plots').select('*')
+    const { data: retailCustomers } = await supabase.from('retail_customers').select('*')
+    const { data: retailSuppliers } = await supabase.from('retail_suppliers').select('*')
 
     const projectsArray = projects || []
     const apartmentsArray = apartments || []
@@ -220,6 +271,22 @@ const GeneralReports: React.FC = () => {
     const ticCostStructuresArray = ticCostStructures || []
     const officeSuppliersArray = officeSuppliers || []
     const bankCreditsArray = bankCredits || []
+    const companyLoansArray = companyLoans || []
+    const creditAllocationsArray = creditAllocations || []
+
+    const buildingsArray = buildings || []
+    const unitsArray = units || []
+    const garagesArray = garages || []
+    const repositoriesArray = repositories || []
+    const subcontractorMilestonesArray = subcontractorMilestones || []
+    const contractTypesArray = contractTypes || []
+
+    const retailProjectsArray = retailProjects || []
+    const retailContractsArray = retailContracts || []
+    const retailPhasesArray = retailPhases || []
+    const retailLandPlotsArray = retailLandPlots || []
+    const retailCustomersArray = retailCustomers || []
+    const retailSuppliersArray = retailSuppliers || []
 
     const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
       const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
@@ -301,6 +368,9 @@ const GeneralReports: React.FC = () => {
     const completedPhases = projectPhasesArray.filter(p => p.status === 'completed').length
     const sevenDaysAgo = subMonths(new Date(), 0.25)
     const recentWorkLogs = workLogsArray.filter(w => new Date(w.date) >= sevenDaysAgo).length
+
+    const totalMilestones = subcontractorMilestonesArray.length
+    const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'completed').length
 
     const months = eachMonthOfInterval({
       start: new Date(dateRange.start),
@@ -476,6 +546,40 @@ const GeneralReports: React.FC = () => {
     const positiveBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) > 0).length
     const negativeBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) < 0).length
 
+    const totalLoans = companyLoansArray.length
+    const totalLoanAmount = companyLoansArray.reduce((sum, loan) => sum + (loan.amount || 0), 0)
+    const totalLoanOutstanding = companyLoansArray.reduce((sum, loan) => sum + (loan.current_balance || 0), 0)
+    const activeLoans = companyLoansArray.filter(loan => (loan.current_balance || 0) > 0).length
+
+    const totalAllocations = creditAllocationsArray.length
+    const allocatedAmount = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
+
+    const totalBuildings = buildingsArray.length
+    const totalUnitsFromBuildings = unitsArray.length
+    const soldUnitsFromBuildings = unitsArray.filter(u => u.status === 'Sold').length
+    const reservedUnitsFromBuildings = unitsArray.filter(u => u.status === 'Reserved').length
+    const availableUnitsFromBuildings = unitsArray.filter(u => u.status === 'Available').length
+    const totalGarages = garagesArray.length
+    const totalRepositories = repositoriesArray.length
+
+    const totalRetailProjects = retailProjectsArray.length
+    const activeRetailProjects = retailProjectsArray.filter(rp => rp.status === 'active').length
+    const totalRetailContracts = retailContractsArray.length
+    const retailContractValue = retailContractsArray.reduce((sum, rc) => sum + (rc.contract_amount || 0), 0)
+    const retailBudgetRealized = retailContractsArray.reduce((sum, rc) => sum + (rc.budget_realized || 0), 0)
+    const retailPhasesCount = retailPhasesArray.length
+    const completedRetailPhases = retailPhasesArray.filter(rp => rp.status === 'completed').length
+    const totalRetailCustomers = retailCustomersArray.length
+    const totalRetailSuppliers = retailSuppliersArray.length
+    const totalLandPlots = retailLandPlotsArray.length
+
+    const contractTypeCounts: { [key: string]: number } = {}
+    contractsArray.forEach(c => {
+      const typeName = c.contract_type || 'Uncategorized'
+      contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
+    })
+    const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))
+
     return {
       executive_summary: {
         total_projects: projectsArray.length,
@@ -532,7 +636,9 @@ const GeneralReports: React.FC = () => {
         total_subcontractors: subcontractorsArray.length,
         total_phases: projectPhasesArray.length,
         completed_phases: completedPhases,
-        work_logs_7days: recentWorkLogs
+        work_logs_7days: recentWorkLogs,
+        total_milestones: totalMilestones,
+        completed_milestones: completedMilestones
       },
       accounting_overview: {
         total_invoices: totalInvoices,
@@ -564,7 +670,15 @@ const GeneralReports: React.FC = () => {
         credits_available: creditsAvailable,
         credits_used: creditsUsed,
         cesija_payments: cesijaPayments,
-        cesija_value: cesijaValue
+        cesija_value: cesijaValue,
+        total_allocations: totalAllocations,
+        allocated_amount: allocatedAmount
+      },
+      company_loans: {
+        total_loans: totalLoans,
+        total_loan_amount: totalLoanAmount,
+        total_outstanding: totalLoanOutstanding,
+        active_loans: activeLoans
       },
       bank_accounts: {
         total_accounts: totalBankAccounts,
@@ -572,6 +686,28 @@ const GeneralReports: React.FC = () => {
         positive_balance_accounts: positiveBalanceAccounts,
         negative_balance_accounts: negativeBalanceAccounts
       },
+      buildings_units: {
+        total_buildings: totalBuildings,
+        total_units: totalUnitsFromBuildings,
+        sold_units: soldUnitsFromBuildings,
+        reserved_units: reservedUnitsFromBuildings,
+        available_units: availableUnitsFromBuildings,
+        total_garages: totalGarages,
+        total_repositories: totalRepositories
+      },
+      retail_portfolio: {
+        total_retail_projects: totalRetailProjects,
+        active_retail_projects: activeRetailProjects,
+        total_land_plots: totalLandPlots,
+        total_retail_contracts: totalRetailContracts,
+        retail_contract_value: retailContractValue,
+        retail_budget_realized: retailBudgetRealized,
+        retail_phases: retailPhasesCount,
+        completed_retail_phases: completedRetailPhases,
+        total_retail_customers: totalRetailCustomers,
+        retail_suppliers: totalRetailSuppliers
+      },
+      contract_types: contractTypesData,
       cash_flow: cashFlow,
       projects: projectDetails,
       risks: risks,
@@ -1371,6 +1507,14 @@ const GeneralReports: React.FC = () => {
               <span className="font-bold text-gray-700">Work Logs (7 days):</span>
               <span className="font-bold text-gray-900">{report.construction_status.work_logs_7days}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Milestones:</span>
+              <span className="font-bold text-gray-900">{report.construction_status.total_milestones}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Completed Milestones:</span>
+              <span className="font-bold text-gray-900">{report.construction_status.completed_milestones}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1495,6 +1639,14 @@ const GeneralReports: React.FC = () => {
               <span className="font-bold text-gray-700">Cesija Value:</span>
               <span className="font-bold text-gray-900">€{report.company_credits.cesija_value.toLocaleString()}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Credit Allocations:</span>
+              <span className="font-bold text-gray-900">{report.company_credits.total_allocations}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Allocated Amount:</span>
+              <span className="font-bold text-gray-900">€{report.company_credits.allocated_amount.toLocaleString()}</span>
+            </div>
           </div>
         </div>
 
@@ -1525,6 +1677,136 @@ const GeneralReports: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+          <div className="flex items-center mb-4">
+            <CreditCard className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-bold text-blue-900">COMPANY LOANS</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Loans:</span>
+              <span className="font-bold text-gray-900">{report.company_loans.total_loans}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Loan Amount:</span>
+              <span className="font-bold text-gray-900">€{report.company_loans.total_loan_amount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Outstanding:</span>
+              <span className="font-bold text-red-600">€{report.company_loans.total_outstanding.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Active Loans:</span>
+              <span className="font-bold text-gray-900">{report.company_loans.active_loans}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-sm border border-teal-200 p-6">
+          <div className="flex items-center mb-4">
+            <Building2 className="w-6 h-6 text-teal-600 mr-2" />
+            <h2 className="text-xl font-bold text-teal-900">BUILDINGS & UNITS</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Buildings:</span>
+              <span className="font-bold text-gray-900">{report.buildings_units.total_buildings}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Units:</span>
+              <span className="font-bold text-gray-900">{report.buildings_units.total_units}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Sold Units:</span>
+              <span className="font-bold text-green-600">{report.buildings_units.sold_units}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Reserved Units:</span>
+              <span className="font-bold text-yellow-600">{report.buildings_units.reserved_units}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Available Units:</span>
+              <span className="font-bold text-gray-900">{report.buildings_units.available_units}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Garages:</span>
+              <span className="font-bold text-gray-900">{report.buildings_units.total_garages}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Repositories:</span>
+              <span className="font-bold text-gray-900">{report.buildings_units.total_repositories}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+        <div className="flex items-center mb-4">
+          <Home className="w-6 h-6 text-green-600 mr-2" />
+          <h2 className="text-2xl font-bold text-green-900">RETAIL PORTFOLIO</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div>
+            <p className="font-bold text-gray-700">Retail Projects:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.total_retail_projects}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Active Projects:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.active_retail_projects}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Land Plots:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.total_land_plots}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Retail Contracts:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.total_retail_contracts}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Contract Value:</p>
+            <p className="text-xl font-bold text-gray-900">€{report.retail_portfolio.retail_contract_value.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Budget Realized:</p>
+            <p className="text-xl font-bold text-gray-900">€{report.retail_portfolio.retail_budget_realized.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Retail Phases:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.retail_phases}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Completed Phases:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.completed_retail_phases}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Retail Customers:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.total_retail_customers}</p>
+          </div>
+          <div>
+            <p className="font-bold text-gray-700">Retail Suppliers:</p>
+            <p className="text-xl font-bold text-gray-900">{report.retail_portfolio.retail_suppliers}</p>
+          </div>
+        </div>
+      </div>
+
+      {report.contract_types.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <FileText className="w-6 h-6 text-gray-600 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-900">CONTRACT TYPES</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {report.contract_types.map((ct, index) => (
+              <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p className="font-bold text-gray-700 text-sm">{ct.name}</p>
+                <p className="text-2xl font-bold text-gray-900">{ct.count}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center mb-4">
