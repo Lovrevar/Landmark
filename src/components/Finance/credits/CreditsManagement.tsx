@@ -405,7 +405,7 @@ const CreditsManagement: React.FC = () => {
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
-                        <p className="text-sm text-gray-600">Credit Amount</p>
+                        <p className="text-sm text-gray-600">Investment Amount</p>
                       </div>
                       <Button variant="success" icon={Plus} onClick={() => openAllocationModal(credit)}>
                         Namjena kredita
