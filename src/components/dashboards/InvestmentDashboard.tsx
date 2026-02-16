@@ -432,7 +432,7 @@ const InvestmentDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900">€{Number(credit.amount).toLocaleString('hr-HR')}</p>
-                        <p className="text-sm text-gray-600">Credit Limit</p>
+                        <p className="text-sm text-gray-600">Investment Amount</p>
                       </div>
                     </div>
 
