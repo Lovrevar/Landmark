@@ -15,9 +15,11 @@ import {
   ArrowDownRight,
   Target,
   Calendar,
-  CreditCard
+  CreditCard,
+  FileDown
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { generateInvestmentReportPDF } from './investmentReportPdf'
 
 interface Project {
   id: string
@@ -108,6 +110,15 @@ const InvestmentDashboard: React.FC = () => {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const handleExportPDF = async () => {
+    try {
+      await generateInvestmentReportPDF(financialSummary, bankCredits, projects, companies)
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF report')
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -235,6 +246,14 @@ const InvestmentDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Investment Dashboard</h1>
           <p className="text-gray-600 mt-1">Overview of funding, investments, and financial metrics</p>
         </div>
+        <Button
+          variant="danger"
+          icon={FileDown}
+          onClick={handleExportPDF}
+          disabled={bankCredits.length === 0}
+        >
+          Export to PDF
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
