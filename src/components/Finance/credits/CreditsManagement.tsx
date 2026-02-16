@@ -408,7 +408,7 @@ const CreditsManagement: React.FC = () => {
                         <p className="text-sm text-gray-600">Investment Amount</p>
                       </div>
                       <Button variant="success" icon={Plus} onClick={() => openAllocationModal(credit)}>
-                        Namjena kredita
+                        Namjena Investicije
                       </Button>
                     </div>
                   </div>
