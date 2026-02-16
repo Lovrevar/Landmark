@@ -325,7 +325,7 @@ const InvestmentDashboard: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Banking Partners</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Investment Partners</h3>
             <CreditCard className="w-5 h-5 text-green-600" />
           </div>
           <div className="space-y-3">
