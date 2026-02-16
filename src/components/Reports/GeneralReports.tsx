@@ -1567,26 +1567,6 @@ const GeneralReports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6">
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Companies:</span>
-              <span className="font-bold text-gray-900">{report.tic_cost_management.total_companies}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total TIC Budget:</span>
-              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_budget.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total TIC Spent:</span>
-              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_spent.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">TIC Utilization:</span>
-              <span className="font-bold text-gray-900">{report.tic_cost_management.tic_utilization.toFixed(1)}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Companies Over Budget:</span>
-              <span className="font-bold text-red-600">{report.tic_cost_management.companies_over_budget}</span>
-            </div>
           </div>
         </div>
 
