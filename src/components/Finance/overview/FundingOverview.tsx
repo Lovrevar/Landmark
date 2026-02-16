@@ -11,10 +11,13 @@ import {
   Clock,
   CheckCircle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  FileDown
 } from 'lucide-react'
 import { format, differenceInDays, isPast } from 'date-fns'
-import { PageHeader, LoadingSpinner, StatGrid, Badge, Modal, EmptyState, Table } from '../../ui'
+import { PageHeader, LoadingSpinner, StatGrid, Badge, Modal, EmptyState, Table, Button } from '../../ui'
+import { generateFundingReportPDF } from './fundingReportPdf'
+import { PaymentNotification } from '../services/paymentNotificationService'
 
 interface FundingSource {
   id: string
@@ -297,6 +300,15 @@ const FundingOverview: React.FC = () => {
     }
   }
 
+  const handleExportPDF = async () => {
+    try {
+      await generateFundingReportPDF(projects)
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF report')
+    }
+  }
+
   const handlePaymentClick = (notification: PaymentNotification) => {
     setSelectedNotification(notification)
 
@@ -435,6 +447,16 @@ const FundingOverview: React.FC = () => {
       <PageHeader
         title="Funding Overview"
         description="Track funding sources, spending, and availability across all projects"
+        actions={
+          <Button
+            variant="danger"
+            icon={FileDown}
+            onClick={handleExportPDF}
+            disabled={projects.length === 0}
+          >
+            Export to PDF
+          </Button>
+        }
       />
 
       {/* Overall Stats */}
