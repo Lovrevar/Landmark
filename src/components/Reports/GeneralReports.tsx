@@ -334,7 +334,14 @@ const GeneralReports: React.FC = () => {
       return sum + saleTotal
     }, 0)
 
-    const totalExpenses = accountingPaymentsArray.reduce((sum, p) => sum + (p.base_amount || 0), 0)
+    const totalExpenses = accountingInvoicesArray
+      .filter(inv =>
+        inv.invoice_type === 'INCOMING_SUPPLIER' ||
+        inv.invoice_type === 'INCOMING_OFFICE' ||
+        inv.invoice_type === 'INCOMING_BANK_INTEREST' ||
+        inv.invoice_type === 'INCOMING_BANK_FEE'
+      )
+      .reduce((sum, inv) => sum + (inv.base_amount || 0), 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -422,11 +429,14 @@ const GeneralReports: React.FC = () => {
           (inv.contract_id && contractIds.includes(inv.contract_id))
         )
 
-        const projectPayments = accountingPaymentsArray.filter(pay =>
-          projectInvoices.some(inv => inv.id === pay.invoice_id)
-        )
-
-        const projectExpenses = projectPayments.reduce((sum, p) => sum + (p.base_amount || 0), 0)
+        const projectExpenses = projectInvoices
+          .filter(inv =>
+            inv.invoice_type === 'INCOMING_SUPPLIER' ||
+            inv.invoice_type === 'INCOMING_OFFICE' ||
+            inv.invoice_type === 'INCOMING_BANK_INTEREST' ||
+            inv.invoice_type === 'INCOMING_BANK_FEE'
+          )
+          .reduce((sum, inv) => sum + (inv.base_amount || 0), 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
