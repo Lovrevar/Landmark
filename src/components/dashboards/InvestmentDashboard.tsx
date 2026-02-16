@@ -398,8 +398,8 @@ const InvestmentDashboard: React.FC = () => {
           {bankCredits.length === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Credits Found</h3>
-              <p className="text-gray-600">No bank credits available.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Investments Found</h3>
+              <p className="text-gray-600">No investments available.</p>
             </div>
           ) : (
             <div className="space-y-4">
