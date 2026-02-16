@@ -1663,29 +1663,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
-          <div className="flex items-center mb-4">
-            <CreditCard className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-xl font-bold text-blue-900">COMPANY LOANS</h2>
-          </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Loans:</span>
-              <span className="font-bold text-gray-900">{report.company_loans.total_loans}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Loan Amount:</span>
-              <span className="font-bold text-gray-900">€{report.company_loans.total_loan_amount.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Outstanding:</span>
-              <span className="font-bold text-red-600">€{report.company_loans.total_outstanding.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Active Loans:</span>
-              <span className="font-bold text-gray-900">{report.company_loans.active_loans}</span>
-            </div>
-          </div>
+        
         </div>
 
         <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-sm border border-teal-200 p-6">
