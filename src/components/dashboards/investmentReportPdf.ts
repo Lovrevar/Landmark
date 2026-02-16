@@ -318,16 +318,8 @@ export const generateInvestmentReportPDF = async (
 
   yPos += 65
 
-  if (yPos > 240) {
-    doc.addPage()
-    yPos = 20
-  }
-
-  yPos = addSectionTitle(doc, 'INVESTMENT UTILIZATION BY CREDIT', yPos)
-
   const creditUtilizationData = bankCredits
     .sort((a, b) => Number(b.used_amount) - Number(a.used_amount))
-    .slice(0, 10)
     .map(c => {
       const utilPercent = c.amount > 0 ? (c.used_amount / c.amount) * 100 : 0
       const color = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
@@ -340,12 +332,36 @@ export const generateInvestmentReportPDF = async (
     })
 
   if (creditUtilizationData.length > 0) {
-    const chartHeight = Math.min(creditUtilizationData.length * 8, 70)
-    drawBarChart(doc, 70, yPos, 120, chartHeight, creditUtilizationData)
-    yPos += chartHeight + 15
+    const chartHeight = creditUtilizationData.length * 8
+    const itemsPerPage = Math.floor(210 / 8)
+    const totalChunks = Math.ceil(creditUtilizationData.length / itemsPerPage)
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * itemsPerPage
+      const end = Math.min(start + itemsPerPage, creditUtilizationData.length)
+      const chunk = creditUtilizationData.slice(start, end)
+      const currentChartHeight = chunk.length * 8
+
+      if (yPos + currentChartHeight + 20 > 260) {
+        doc.addPage()
+        yPos = 20
+      }
+
+      if (chunkIndex === 0 || yPos === 20) {
+        yPos = addSectionTitle(doc, 'INVESTMENT UTILIZATION BY CREDIT', yPos)
+      }
+
+      drawBarChart(doc, 70, yPos, 120, currentChartHeight, chunk)
+      yPos += currentChartHeight + 15
+
+      if (chunkIndex < totalChunks - 1) {
+        doc.addPage()
+        yPos = 20
+      }
+    }
   }
 
-  if (yPos > 220) {
+  if (yPos > 260) {
     doc.addPage()
     yPos = 20
   }
@@ -356,7 +372,7 @@ export const generateInvestmentReportPDF = async (
     .sort((a, b) => Number(b.amount) - Number(a.amount))
     .forEach((credit, index) => {
       const requiredHeight = credit.project ? 43 : 41
-      if (yPos + requiredHeight > 270) {
+      if (yPos + requiredHeight > 260) {
         doc.addPage()
         yPos = 20
       }
@@ -426,7 +442,7 @@ export const generateInvestmentReportPDF = async (
       yPos += boxHeight + 3
     })
 
-  if (yPos > 220 && projects.length > 0) {
+  if (yPos > 260 && projects.length > 0) {
     doc.addPage()
     yPos = 20
   }
@@ -443,7 +459,7 @@ export const generateInvestmentReportPDF = async (
     yPos += 10
 
     projects.slice(0, 15).forEach(project => {
-      if (yPos > 270) {
+      if (yPos > 260) {
         doc.addPage()
         yPos = 20
       }
@@ -476,9 +492,9 @@ export const generateInvestmentReportPDF = async (
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(150, 150, 150)
-    doc.text(`Page ${i} of ${totalPages}`, 105, 290, { align: 'center' })
-    doc.text(`Cogni Real Estate Management System`, 20, 290)
-    doc.text(format(new Date(), 'MMM dd, yyyy'), 190, 290, { align: 'right' })
+    doc.text(`Page ${i} of ${totalPages}`, 105, 280, { align: 'center' })
+    doc.text(`Cogni Real Estate Management System`, 20, 280)
+    doc.text(format(new Date(), 'MMM dd, yyyy'), 190, 280, { align: 'right' })
   }
 
   doc.save(`Investment_Dashboard_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
