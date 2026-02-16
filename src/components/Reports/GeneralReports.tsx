@@ -1663,8 +1663,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        </div>
+      
 
         <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-sm border border-teal-200 p-6">
           <div className="flex items-center mb-4">
