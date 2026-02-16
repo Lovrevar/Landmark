@@ -17,6 +17,16 @@ interface Company {
   oib: string
 }
 
+interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  project?: Project
+}
+
 interface BankCredit {
   id: string
   credit_name: string
@@ -34,6 +44,7 @@ interface BankCredit {
   credit_type: string
   company?: Company
   project?: Project
+  credit_allocations?: CreditAllocation[]
 }
 
 interface FinancialSummary {
@@ -304,13 +315,45 @@ export const generateInvestmentReportPDF = async (
 
   yPos += 8
 
-  yPos = addSectionTitle(doc, 'INVESTMENT DISTRIBUTION', yPos)
+  yPos = addSectionTitle(doc, 'INVESTMENT DISTRIBUTION BY PROJECT', yPos)
 
-  const donutData = [
-    { label: 'Used', value: financialSummary.total_used_credit, color: [59, 130, 246] },
-    { label: 'Available', value: financialSummary.available_credit, color: [34, 197, 94] },
-    { label: 'Repaid', value: financialSummary.total_repaid_credit, color: [168, 85, 247] }
-  ].filter(d => d.value > 0)
+  const projectAllocations = new Map<string, number>()
+
+  bankCredits.forEach(credit => {
+    if (credit.credit_allocations && credit.credit_allocations.length > 0) {
+      credit.credit_allocations.forEach(allocation => {
+        const projectName = allocation.project?.name || 'OPEX'
+        const currentAmount = projectAllocations.get(projectName) || 0
+        projectAllocations.set(projectName, currentAmount + Number(allocation.allocated_amount))
+      })
+    } else if (credit.amount > 0) {
+      const projectName = credit.project?.name || 'Unallocated'
+      const currentAmount = projectAllocations.get(projectName) || 0
+      projectAllocations.set(projectName, currentAmount + Number(credit.amount))
+    }
+  })
+
+  const colors = [
+    [59, 130, 246],
+    [34, 197, 94],
+    [168, 85, 247],
+    [249, 115, 22],
+    [239, 68, 68],
+    [156, 163, 175],
+    [236, 72, 153],
+    [147, 51, 234],
+    [14, 165, 233],
+    [34, 211, 238]
+  ]
+
+  const donutData = Array.from(projectAllocations.entries())
+    .map(([label, value], index) => ({
+      label,
+      value,
+      color: colors[index % colors.length]
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10)
 
   if (donutData.length > 0) {
     drawDonutChart(doc, 50, yPos + 25, 20, 10, donutData)
@@ -318,18 +361,36 @@ export const generateInvestmentReportPDF = async (
 
   yPos += 65
 
-  const creditUtilizationData = bankCredits
-    .sort((a, b) => Number(b.used_amount) - Number(a.used_amount))
-    .map(c => {
-      const utilPercent = c.amount > 0 ? (c.used_amount / c.amount) * 100 : 0
+  const allAllocations: Array<{ label: string, value: number, max: number, color: number[] }> = []
+
+  bankCredits.forEach(credit => {
+    if (credit.credit_allocations && credit.credit_allocations.length > 0) {
+      credit.credit_allocations.forEach(allocation => {
+        const projectName = allocation.project?.name || 'OPEX'
+        const creditLabel = `${credit.credit_name || credit.company?.name || 'Credit'} - ${projectName}`
+        const utilPercent = allocation.allocated_amount > 0 ? (allocation.used_amount / allocation.allocated_amount) * 100 : 0
+        const color = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
+
+        allAllocations.push({
+          label: creditLabel,
+          value: allocation.allocated_amount,
+          max: allocation.allocated_amount,
+          color
+        })
+      })
+    } else {
+      const utilPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
       const color = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
-      return {
-        label: c.credit_name || `${c.company?.name || 'Credit'}`,
-        value: c.used_amount,
-        max: c.amount,
+      allAllocations.push({
+        label: credit.credit_name || `${credit.company?.name || 'Credit'}`,
+        value: credit.amount,
+        max: credit.amount,
         color
-      }
-    })
+      })
+    }
+  })
+
+  const creditUtilizationData = allAllocations.sort((a, b) => Number(b.value) - Number(a.value))
 
   if (creditUtilizationData.length > 0) {
     const chartHeight = creditUtilizationData.length * 8
@@ -348,7 +409,7 @@ export const generateInvestmentReportPDF = async (
       }
 
       if (chunkIndex === 0 || yPos === 20) {
-        yPos = addSectionTitle(doc, 'INVESTMENT UTILIZATION BY CREDIT', yPos)
+        yPos = addSectionTitle(doc, 'INVESTMENT ALLOCATIONS BY PROJECT', yPos)
       }
 
       drawBarChart(doc, 70, yPos, 120, currentChartHeight, chunk)
@@ -371,7 +432,13 @@ export const generateInvestmentReportPDF = async (
   bankCredits
     .sort((a, b) => Number(b.amount) - Number(a.amount))
     .forEach((credit, index) => {
-      const requiredHeight = credit.project ? 43 : 41
+      const hasAllocations = credit.credit_allocations && credit.credit_allocations.length > 0
+      const allocationCount = hasAllocations ? credit.credit_allocations!.length : 0
+      const baseHeight = 38
+      const allocationHeight = allocationCount * 6
+      const boxHeight = baseHeight + allocationHeight
+      const requiredHeight = boxHeight + 3
+
       if (yPos + requiredHeight > 260) {
         doc.addPage()
         yPos = 20
@@ -379,7 +446,6 @@ export const generateInvestmentReportPDF = async (
 
       const utilizationPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
       const bgColor = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
-      const boxHeight = credit.project ? 40 : 38
 
       doc.setFillColor(...bgColor)
       doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
@@ -389,18 +455,11 @@ export const generateInvestmentReportPDF = async (
       doc.setTextColor(30, 30, 30)
       doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`, 23, yPos + 5)
 
-      if (credit.project) {
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8)
-        doc.setTextColor(100, 100, 100)
-        doc.text(`Project: ${credit.project.name}`, 23, yPos + 10)
-      }
-
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
       doc.setTextColor(60, 60, 60)
 
-      const detailY = yPos + (credit.project ? 15 : 11)
+      const detailY = yPos + 11
 
       doc.text(`Amount: €${formatEuropean(credit.amount)}`, 23, detailY)
       doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 70, detailY)
@@ -421,6 +480,28 @@ export const generateInvestmentReportPDF = async (
 
       if (credit.usage_expiration_date) {
         doc.text(`Usage Expires: ${format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}`, 117, detailY + 10)
+      }
+
+      let currentY = detailY + 15
+
+      if (hasAllocations) {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8)
+        doc.setTextColor(30, 58, 138)
+        doc.text('Allocations:', 23, currentY)
+        currentY += 5
+
+        credit.credit_allocations!.forEach(allocation => {
+          const projectName = allocation.project?.name || 'OPEX'
+          const allocPercent = allocation.allocated_amount > 0 ? (allocation.allocated_amount / credit.amount) * 100 : 0
+
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(7)
+          doc.setTextColor(60, 60, 60)
+          doc.text(`• ${projectName}: €${formatEuropean(allocation.allocated_amount)} (${allocPercent.toFixed(1)}%)`, 26, currentY)
+
+          currentY += 5
+        })
       }
 
       doc.setFont('helvetica', 'bold')

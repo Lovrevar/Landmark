@@ -45,6 +45,16 @@ interface Bank {
   contact_email?: string
 }
 
+interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  project?: Project
+}
+
 interface BankCredit {
   id: string
   credit_name: string
@@ -62,6 +72,7 @@ interface BankCredit {
   credit_type: string
   company?: Company
   project?: Project
+  credit_allocations?: CreditAllocation[]
 }
 
 interface FinancialSummary {
@@ -135,7 +146,16 @@ const InvestmentDashboard: React.FC = () => {
         supabase.from('bank_credits').select(`
           *,
           company:accounting_companies(id, name, oib),
-          project:projects(id, name, location, budget, status)
+          project:projects(id, name, location, budget, status),
+          credit_allocations:credit_allocations(
+            id,
+            credit_id,
+            project_id,
+            allocated_amount,
+            used_amount,
+            description,
+            project:projects(id, name, location, budget, status)
+          )
         `).order('created_at', { ascending: false })
       ])
 
