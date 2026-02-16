@@ -332,21 +332,7 @@ const GeneralReports: React.FC = () => {
       return sum + saleTotal
     }, 0)
 
-    const contractExpenses = contractsArray.map(c => {
-      const contractInvoices = accountingInvoicesArray.filter(
-        inv => inv.contract_id === c.id &&
-        (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-      )
-      const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-      return Math.max(c.total_amount || 0, invoicedTotal)
-    })
-
-    const invoicesWithoutContract = accountingInvoicesArray.filter(
-      inv => !inv.contract_id &&
-      (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-    ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-    const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
+    const totalExpenses = contractsArray.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -427,22 +413,7 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
-        const projectContractExpenses = projectContracts.map(c => {
-          const contractInvoices = accountingInvoicesArray.filter(
-            inv => inv.contract_id === c.id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-          )
-          const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-          return Math.max(c.total_amount || 0, invoicedTotal)
-        })
-
-        const projectInvoicesWithoutContract = accountingInvoicesArray.filter(
-          inv => inv.project_id === project.id &&
-          !inv.contract_id &&
-          (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-        ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-        const projectExpenses = projectContractExpenses.reduce((sum, exp) => sum + exp, 0) + projectInvoicesWithoutContract
+        const projectExpenses = projectContracts.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
@@ -1566,7 +1537,32 @@ const GeneralReports: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6">
-          
+          <div className="flex items-center mb-4">
+            <PieChart className="w-6 h-6 text-emerald-600 mr-2" />
+            <h2 className="text-xl font-bold text-emerald-900">TIC COST MANAGEMENT</h2>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total Companies:</span>
+              <span className="font-bold text-gray-900">{report.tic_cost_management.total_companies}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total TIC Budget:</span>
+              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_budget.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Total TIC Spent:</span>
+              <span className="font-bold text-gray-900">€{report.tic_cost_management.total_tic_spent.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">TIC Utilization:</span>
+              <span className="font-bold text-gray-900">{report.tic_cost_management.tic_utilization.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-bold text-gray-700">Companies Over Budget:</span>
+              <span className="font-bold text-red-600">{report.tic_cost_management.companies_over_budget}</span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm border border-amber-200 p-6">
