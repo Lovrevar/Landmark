@@ -220,7 +220,7 @@ const GeneralReports: React.FC = () => {
     const { data: apartments } = await supabase.from('apartments').select('*')
     const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
     const { data: customers } = await supabase.from('customers').select('*')
-    const { data: contracts } = await supabase.from('contracts').select('*')
+    const { data: contracts } = await supabase.from('contracts').select('*, contract_types(name)')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
     const { data: projectPhases } = await supabase.from('project_phases').select('*')
     const { data: workLogs } = await supabase.from('work_logs').select('*')
@@ -587,7 +587,7 @@ const GeneralReports: React.FC = () => {
 
     const contractTypeCounts: { [key: string]: number } = {}
     contractsArray.forEach(c => {
-      const typeName = c.contract_type || 'Uncategorized'
+      const typeName = c.contract_types?.name || 'Uncategorized'
       contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
     })
     const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))
