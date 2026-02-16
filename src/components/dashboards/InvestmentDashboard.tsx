@@ -334,7 +334,7 @@ const InvestmentDashboard: React.FC = () => {
               <span className="font-medium">{banks.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Active Credits:</span>
+              <span className="text-gray-600">Active Investments:</span>
               <span className="font-medium">{bankCredits.filter(c => c.status === 'active').length}</span>
             </div>
             <div className="flex justify-between">
