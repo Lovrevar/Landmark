@@ -65,8 +65,7 @@ export const fetchDebtData = async (): Promise<DebtSummary[]> => {
   })
 
   const debtMap = new Map<string, {
-    name: string
-    type: 'subcontractor' | 'retail_supplier' | 'office_supplier'
+    types: Set<'subcontractor' | 'retail_supplier' | 'office_supplier'>
     unpaid: number
     paid: number
     invoiceCount: number
@@ -79,17 +78,19 @@ export const fetchDebtData = async (): Promise<DebtSummary[]> => {
     const supplierInfo = supplierMap.get(supplierId)
     if (!supplierInfo) return
 
-    if (!debtMap.has(supplierId)) {
-      debtMap.set(supplierId, {
-        name: supplierInfo.name,
-        type: supplierInfo.type,
+    const supplierName = supplierInfo.name
+
+    if (!debtMap.has(supplierName)) {
+      debtMap.set(supplierName, {
+        types: new Set(),
         unpaid: 0,
         paid: 0,
         invoiceCount: 0
       })
     }
 
-    const debt = debtMap.get(supplierId)!
+    const debt = debtMap.get(supplierName)!
+    debt.types.add(supplierInfo.type)
     debt.invoiceCount++
 
     const paidAmount = parseFloat(invoice.paid_amount?.toString() || '0')
@@ -103,10 +104,10 @@ export const fetchDebtData = async (): Promise<DebtSummary[]> => {
   })
 
   const debtSummaries: DebtSummary[] = Array.from(debtMap.entries())
-    .map(([id, data]) => ({
-      supplier_id: id,
-      supplier_name: data.name,
-      supplier_type: data.type,
+    .map(([name, data]) => ({
+      supplier_id: name,
+      supplier_name: name,
+      supplier_type: data.types.size > 1 ? 'mixed' : Array.from(data.types)[0] || 'subcontractor',
       total_unpaid: data.unpaid,
       total_paid: data.paid,
       invoice_count: data.invoiceCount

@@ -25,6 +25,8 @@ const DebtStatus: React.FC = () => {
         return <Badge variant="teal" size="sm">Retail</Badge>
       case 'office_supplier':
         return <Badge variant="blue" size="sm">Office</Badge>
+      case 'mixed':
+        return <Badge variant="purple" size="sm">Mixed</Badge>
       default:
         return <Badge variant="gray" size="sm">Site</Badge>
     }
@@ -198,7 +200,8 @@ const DebtStatus: React.FC = () => {
         <ul className="list-disc list-inside space-y-1">
           <li>Neisplaćeno = preostali iznos svih neplaćenih i djelomično plaćenih računa</li>
           <li>Isplaćeno = ukupan iznos svih izvršenih plaćanja za tog dobavljača</li>
-          <li>Tablica uključuje sve tipove dobavljača: Site (gradilišni), Retail i Office</li>
+          <li>Dobavljači s istim imenom grupirani su i zbrojeni bez obzira na tip (Site, Retail, Office)</li>
+          <li>Tip "Mixed" označava da se dobavljač pojavljuje u više kategorija</li>
           <li>Kliknite na zaglavlje stupca za sortiranje podataka</li>
         </ul>
       </Alert>

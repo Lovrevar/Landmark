@@ -7,6 +7,8 @@ const getSupplierTypeText = (type: string) => {
       return 'Retail'
     case 'office_supplier':
       return 'Office'
+    case 'mixed':
+      return 'Mixed'
     default:
       return 'Site'
   }
