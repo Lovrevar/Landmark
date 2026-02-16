@@ -330,7 +330,7 @@ const InvestmentDashboard: React.FC = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Active Banks:</span>
+              <span className="text-gray-600">Active Investors:</span>
               <span className="font-medium">{banks.length}</span>
             </div>
             <div className="flex justify-between">
