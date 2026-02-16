@@ -1566,10 +1566,6 @@ const GeneralReports: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm border border-emerald-200 p-6">
-          <div className="flex items-center mb-4">
-            <PieChart className="w-6 h-6 text-emerald-600 mr-2" />
-            <h2 className="text-xl font-bold text-emerald-900">TIC COST MANAGEMENT</h2>
-          </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="font-bold text-gray-700">Total Companies:</span>
