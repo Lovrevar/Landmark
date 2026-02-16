@@ -632,7 +632,7 @@ const BanksManagement: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Banking Relationships"
+        title="Investors"
         description="Manage bank partnerships and credit facilities"
         actions={
           <div className="flex space-x-3">
