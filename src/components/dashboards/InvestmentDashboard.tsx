@@ -233,7 +233,7 @@ const InvestmentDashboard: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Investment Dashboard</h1>
-          <p className="text-gray-600 mt-1">Overview of funding, credits, and financial metrics</p>
+          <p className="text-gray-600 mt-1">Overview of funding, investments, and financial metrics</p>
         </div>
       </div>
 
@@ -272,7 +272,7 @@ const InvestmentDashboard: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Available Credit</p>
+              <p className="text-sm text-gray-600">Available Investments</p>
               <p className="text-2xl font-bold text-gray-900">
                 €{(financialSummary.available_credit / 1000000).toFixed(1)}M
               </p>
