@@ -736,6 +736,14 @@ const GeneralReports: React.FC = () => {
 
     try {
       const { jsPDF } = await import('jspdf')
+      const {
+        drawBarChart,
+        drawPieChart,
+        drawLineChart,
+        drawHorizontalBarChart,
+        drawProgressBar
+      } = await import('./pdfCharts')
+
       const pdf = new jsPDF('p', 'mm', 'a4')
 
       const pageWidth = pdf.internal.pageSize.getWidth()
@@ -752,23 +760,67 @@ const GeneralReports: React.FC = () => {
         return false
       }
 
+      pdf.setFillColor(15, 23, 42)
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+
       pdf.setFillColor(37, 99, 235)
-      pdf.rect(0, 0, pageWidth, 50, 'F')
+      pdf.rect(0, 0, 10, pageHeight, 'F')
 
       pdf.setTextColor(255, 255, 255)
-      pdf.setFontSize(28)
+      pdf.setFontSize(48)
       pdf.setFont('helvetica', 'bold')
-      pdf.text('LANDMARK GROUP', margin, 25)
+      pdf.text('LANDMARK', pageWidth / 2, 80, { align: 'center' })
+      pdf.text('GROUP', pageWidth / 2, 95, { align: 'center' })
 
-      pdf.setFontSize(16)
+      pdf.setFontSize(24)
       pdf.setFont('helvetica', 'normal')
-      pdf.text('Comprehensive Executive Report', margin, 35)
+      pdf.text('Executive Portfolio Report', pageWidth / 2, 120, { align: 'center' })
+
+      pdf.setDrawColor(37, 99, 235)
+      pdf.setLineWidth(1)
+      pdf.line(pageWidth / 2 - 40, 125, pageWidth / 2 + 40, 125)
+
+      pdf.setFontSize(14)
+      pdf.setTextColor(200, 200, 200)
+      pdf.text(`Report Period: ${format(new Date(), 'MMMM yyyy')}`, pageWidth / 2, 145, { align: 'center' })
+      pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy')}`, pageWidth / 2, 155, { align: 'center' })
+
+      pdf.setFontSize(12)
+      const summaryStats = [
+        `${report.executive_summary.total_projects} Projects`,
+        `€${(report.executive_summary.total_revenue / 1000000).toFixed(1)}M Revenue`,
+        `${report.kpis.roi.toFixed(1)}% ROI`
+      ]
+      pdf.text(summaryStats.join('  |  '), pageWidth / 2, 180, { align: 'center' })
 
       pdf.setFontSize(10)
-      pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, margin, 42)
+      pdf.setTextColor(150, 150, 150)
+      pdf.text('CONFIDENTIAL', pageWidth / 2, pageHeight - 30, { align: 'center' })
+
+      pdf.addPage()
+      yPosition = margin
+
+      pdf.setFillColor(15, 23, 42)
+      pdf.rect(0, 0, pageWidth, 55, 'F')
+
+      pdf.setFillColor(37, 99, 235)
+      pdf.rect(0, 0, 8, 55, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(32)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('LANDMARK GROUP', margin, 22)
+
+      pdf.setFontSize(18)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text('Executive Portfolio Report', margin, 33)
+
+      pdf.setFontSize(10)
+      pdf.setTextColor(200, 200, 200)
+      pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, margin, 43)
 
       pdf.setTextColor(0, 0, 0)
-      yPosition = 60
+      yPosition = 65
 
       pdf.setFillColor(240, 245, 250)
       pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
@@ -844,14 +896,91 @@ const GeneralReports: React.FC = () => {
 
       yPosition += 30
 
+      pdf.addPage()
+      yPosition = margin
+
+      pdf.setFontSize(16)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('PORTFOLIO ANALYTICS', margin, yPosition)
+      yPosition += 10
+
+      const fundingChartData = [
+        { label: 'Equity', value: report.funding_structure.total_equity, color: '#22c55e' },
+        { label: 'Debt', value: report.funding_structure.total_debt, color: '#ef4444' }
+      ]
+      drawPieChart(pdf, margin + 30, yPosition + 30, 25, fundingChartData, {
+        title: 'Capital Structure',
+        showLegend: true
+      })
+
+      const salesChartData = [
+        { label: 'Sold', value: report.sales_performance.units_sold, color: '#22c55e' },
+        { label: 'Reserved', value: report.sales_performance.reserved_units, color: '#f59e0b' },
+        { label: 'Available', value: report.sales_performance.available_units, color: '#6b7280' }
+      ]
+      drawPieChart(pdf, pageWidth - margin - 30, yPosition + 30, 25, salesChartData, {
+        title: 'Units Status',
+        showLegend: true
+      })
+
+      yPosition += 85
+
       checkPageBreak(60)
+      const cashFlowData = report.cash_flow.slice(0, 6).map(m => ({
+        label: m.month.substring(0, 3),
+        value: m.net / 1000
+      }))
+      drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 50, cashFlowData, {
+        title: 'Monthly Net Cash Flow (€K)',
+        color: '#2563eb',
+        showValues: true
+      })
+
+      yPosition += 60
+
+      checkPageBreak(60)
+      const topProjects = report.projects
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5)
+        .map(p => ({
+          label: p.name.substring(0, 15),
+          value: p.revenue / 1000000,
+          color: p.profit_margin > 20 ? '#22c55e' : p.profit_margin > 10 ? '#f59e0b' : '#ef4444'
+        }))
+
+      if (topProjects.length > 0) {
+        drawHorizontalBarChart(pdf, margin + 50, yPosition, pageWidth - 2 * margin - 50, 50, topProjects, {
+          title: 'Top Projects by Revenue (€M)',
+          showValues: true
+        })
+        yPosition += 60
+      }
+
+      pdf.addPage()
+      yPosition = margin
+
+      pdf.setFillColor(22, 163, 74)
+      pdf.rect(0, 0, pageWidth, 45, 'F')
+
+      pdf.setFillColor(21, 128, 61)
+      pdf.rect(0, 0, 8, 45, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('SALES PERFORMANCE', margin, 25)
+
+      pdf.setTextColor(0, 0, 0)
+      yPosition = 55
+
       pdf.setFillColor(220, 252, 231)
       pdf.rect(margin, yPosition, pageWidth - 2 * margin, 40, 'F')
 
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(22, 163, 74)
-      pdf.text('SALES PERFORMANCE', margin + 5, yPosition + 10)
+      pdf.text('Sales Overview', margin + 5, yPosition + 10)
 
       pdf.setFontSize(9)
       pdf.setFont('helvetica', 'normal')
@@ -879,8 +1008,64 @@ const GeneralReports: React.FC = () => {
 
       yPosition += 50
 
+      checkPageBreak(40)
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('Sales Progress', margin, yPosition)
+      yPosition += 8
+
+      const salesRate = (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
+      drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, salesRate, {
+        label: 'Units Sold',
+        color: '#22c55e',
+        showPercentage: true
+      })
+      yPosition += 15
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('Construction Progress', margin, yPosition)
+      yPosition += 8
+
+      const constructionProgress = (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
+      drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, constructionProgress, {
+        label: 'Phases Completed',
+        color: '#2563eb',
+        showPercentage: true
+      })
+      yPosition += 15
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('Budget Utilization', margin, yPosition)
+      yPosition += 8
+
+      drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, report.construction_status.budget_utilization, {
+        label: 'Budget Realized',
+        color: report.construction_status.budget_utilization > 90 ? '#ef4444' : '#f59e0b',
+        showPercentage: true
+      })
+      yPosition += 20
+
       pdf.addPage()
       yPosition = margin
+
+      pdf.setFillColor(245, 158, 11)
+      pdf.rect(0, 0, pageWidth, 45, 'F')
+
+      pdf.setFillColor(180, 83, 9)
+      pdf.rect(0, 0, 8, 45, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('FUNDING & FINANCE', margin, 25)
+
+      pdf.setTextColor(0, 0, 0)
+      yPosition = 55
 
       pdf.setFillColor(254, 243, 199)
       pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
@@ -888,7 +1073,7 @@ const GeneralReports: React.FC = () => {
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(245, 158, 11)
-      pdf.text('FUNDING & FINANCIAL STRUCTURE', margin + 5, yPosition + 10)
+      pdf.text('Financial Structure', margin + 5, yPosition + 10)
 
       pdf.setFontSize(9)
       pdf.setFont('helvetica', 'normal')
@@ -916,14 +1101,30 @@ const GeneralReports: React.FC = () => {
 
       yPosition += 60
 
-      checkPageBreak(50)
+      pdf.addPage()
+      yPosition = margin
+
+      pdf.setFillColor(239, 68, 68)
+      pdf.rect(0, 0, pageWidth, 45, 'F')
+
+      pdf.setFillColor(185, 28, 28)
+      pdf.rect(0, 0, 8, 45, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('CONSTRUCTION STATUS', margin, 25)
+
+      pdf.setTextColor(0, 0, 0)
+      yPosition = 55
+
       pdf.setFillColor(254, 226, 226)
       pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
 
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(220, 38, 38)
-      pdf.text('CONSTRUCTION & SUPERVISION STATUS', margin + 5, yPosition + 10)
+      pdf.text('Construction & Supervision Overview', margin + 5, yPosition + 10)
 
       pdf.setFontSize(9)
       pdf.setFont('helvetica', 'normal')
@@ -954,14 +1155,27 @@ const GeneralReports: React.FC = () => {
       pdf.addPage()
       yPosition = margin
 
-      checkPageBreak(60)
+      pdf.setFillColor(6, 182, 212)
+      pdf.rect(0, 0, pageWidth, 45, 'F')
+
+      pdf.setFillColor(8, 145, 178)
+      pdf.rect(0, 0, 8, 45, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('ACCOUNTING OVERVIEW', margin, 25)
+
+      pdf.setTextColor(0, 0, 0)
+      yPosition = 55
+
       pdf.setFillColor(224, 242, 254)
       pdf.rect(margin, yPosition, pageWidth - 2 * margin, 60, 'F')
 
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(6, 182, 212)
-      pdf.text('ACCOUNTING OVERVIEW', margin + 5, yPosition + 10)
+      pdf.text('Invoice & Payment Summary', margin + 5, yPosition + 10)
 
       pdf.setFontSize(9)
       pdf.setFont('helvetica', 'normal')
@@ -989,7 +1203,38 @@ const GeneralReports: React.FC = () => {
         }
       })
 
-      yPosition += 70
+      yPosition += 50
+
+      checkPageBreak(70)
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('Invoice Status Distribution', margin, yPosition)
+      yPosition += 8
+
+      const invoiceStatusData = [
+        { label: 'Paid', value: report.accounting_overview.paid_invoices },
+        { label: 'Pending', value: report.accounting_overview.pending_invoices },
+        { label: 'Overdue', value: report.accounting_overview.overdue_invoices }
+      ]
+      drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, invoiceStatusData, {
+        color: '#06b6d4',
+        showValues: true
+      })
+      yPosition += 55
+
+      checkPageBreak(25)
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('Payment Completion Rate', margin, yPosition)
+      yPosition += 8
+
+      drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, report.accounting_overview.payment_completion_rate, {
+        color: '#06b6d4',
+        showPercentage: true
+      })
+      yPosition += 20
 
       checkPageBreak(100)
       pdf.setFillColor(209, 250, 229)
@@ -1108,6 +1353,57 @@ const GeneralReports: React.FC = () => {
 
       yPosition += 60
 
+      if (report.contract_types.length > 0) {
+        checkPageBreak(60)
+        pdf.setFontSize(14)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(37, 99, 235)
+        pdf.text('CONTRACT DISTRIBUTION', margin, yPosition)
+        yPosition += 8
+
+        const contractData = report.contract_types.map((ct, idx) => ({
+          label: ct.name.substring(0, 12),
+          value: ct.count,
+          color: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]
+        }))
+
+        if (contractData.length <= 6) {
+          drawPieChart(pdf, pageWidth / 2, yPosition + 35, 28, contractData, {
+            showLegend: true
+          })
+          yPosition += 80
+        } else {
+          const barData = contractData.map(cd => ({
+            label: cd.label,
+            value: cd.value
+          }))
+          drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, barData, {
+            color: '#2563eb',
+            showValues: true
+          })
+          yPosition += 55
+        }
+      }
+
+      checkPageBreak(70)
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(37, 99, 235)
+      pdf.text('CASH FLOW TREND', margin, yPosition)
+      yPosition += 8
+
+      const cashFlowTrend = report.cash_flow.slice(0, 6).map(m => ({
+        label: m.month.substring(0, 3),
+        value: m.net / 1000
+      }))
+      drawLineChart(pdf, margin, yPosition, pageWidth - 2 * margin, 50, cashFlowTrend, {
+        color: '#2563eb',
+        showPoints: true,
+        fillArea: true
+      })
+
+      yPosition += 60
+
       checkPageBreak(60)
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
@@ -1158,132 +1454,246 @@ const GeneralReports: React.FC = () => {
         pdf.addPage()
         yPosition = margin
 
+        pdf.setFillColor(15, 23, 42)
+        pdf.rect(0, 0, pageWidth, 45, 'F')
+
+        pdf.setFillColor(37, 99, 235)
+        pdf.rect(0, 0, 8, 45, 'F')
+
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFontSize(20)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('PROJECT PORTFOLIO', margin, 25)
+
+        pdf.setTextColor(0, 0, 0)
+        yPosition = 55
+
         pdf.setFontSize(14)
         pdf.setFont('helvetica', 'bold')
         pdf.setTextColor(37, 99, 235)
-        pdf.text('PROJECT-BY-PROJECT BREAKDOWN', margin, yPosition)
+        pdf.text('Project Performance Overview', margin, yPosition)
         yPosition += 10
 
-        report.projects.forEach((project) => {
-          checkPageBreak(40)
+        const projectPerformance = report.projects
+          .sort((a, b) => b.profit_margin - a.profit_margin)
+          .slice(0, 8)
+          .map(p => ({
+            label: p.name.substring(0, 15),
+            value: p.profit_margin,
+            color: p.profit_margin > 20 ? '#22c55e' : p.profit_margin > 10 ? '#f59e0b' : '#ef4444'
+          }))
 
-          pdf.setFillColor(240, 240, 240)
-          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
+        if (projectPerformance.length > 0) {
+          drawHorizontalBarChart(pdf, margin + 50, yPosition, pageWidth - 2 * margin - 50, 70, projectPerformance, {
+            title: 'Profit Margin (%)',
+            showValues: true
+          })
+          yPosition += 80
+        }
+
+        checkPageBreak(15)
+        pdf.setFontSize(14)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setTextColor(37, 99, 235)
+        pdf.text('Detailed Project Breakdown', margin, yPosition)
+        yPosition += 10
+
+        report.projects.forEach((project, idx) => {
+          checkPageBreak(55)
+
+          pdf.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 250 : 255, idx % 2 === 0 ? 252 : 255)
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
+
+          pdf.setDrawColor(37, 99, 235)
+          pdf.setLineWidth(0.5)
+          pdf.line(margin, yPosition, margin, yPosition + 50)
 
           pdf.setFontSize(12)
           pdf.setFont('helvetica', 'bold')
           pdf.setTextColor(0, 0, 0)
-          pdf.text(project.name, margin + 5, yPosition + 5)
+          pdf.text(project.name, margin + 5, yPosition + 7)
 
-          pdf.setFontSize(9)
+          pdf.setFontSize(8)
           pdf.setFont('helvetica', 'normal')
           pdf.setTextColor(100, 100, 100)
-          pdf.text(project.location, pageWidth - margin - 50, yPosition + 5)
+          pdf.text(project.location, margin + 5, yPosition + 12)
 
-          yPosition += 12
+          const riskColor = project.risk_level === 'High' ? '#ef4444' : project.risk_level === 'Medium' ? '#f59e0b' : '#22c55e'
+          const riskBg = hexToRgb(riskColor)
+          pdf.setFillColor(riskBg.r, riskBg.g, riskBg.b)
+          pdf.roundedRect(pageWidth - margin - 25, yPosition + 4, 20, 6, 2, 2, 'F')
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFontSize(7)
+          pdf.setFont('helvetica', 'bold')
+          pdf.text(project.risk_level, pageWidth - margin - 15, yPosition + 8.5, { align: 'center' })
 
-          pdf.setFontSize(9)
           pdf.setTextColor(0, 0, 0)
+          pdf.setFontSize(9)
+          pdf.setFont('helvetica', 'normal')
 
           const projectData = [
-            ['Status:', project.status, 'Units:', `${project.units_sold}/${project.total_units} sold (${project.sales_rate.toFixed(1)}%)`],
-            ['Budget:', '€' + project.budget.toLocaleString(), 'Contracts:', project.contracts.toString()],
-            ['Revenue:', '€' + project.revenue.toLocaleString(), 'Phases:', `${project.phases_done}/${project.total_phases} done`],
-            ['Expenses:', '€' + project.expenses.toLocaleString(), 'Funding:', `€${project.equity.toLocaleString()} equity, €${project.debt.toLocaleString()} debt`]
+            ['Budget:', '€' + (project.budget / 1000000).toFixed(1) + 'M', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
+            ['Expenses:', '€' + (project.expenses / 1000000).toFixed(1) + 'M', 'Profit:', '€' + (project.profit / 1000000).toFixed(1) + 'M'],
+            ['Units:', `${project.units_sold}/${project.total_units}`, 'Sales Rate:', `${project.sales_rate.toFixed(1)}%`],
+            ['Phases:', `${project.phases_done}/${project.total_phases}`, 'Contracts:', project.contracts.toString()]
           ]
 
           projectData.forEach((row, index) => {
-            const y = yPosition + (index * 5)
+            const y = yPosition + 20 + (index * 6)
             pdf.setFont('helvetica', 'bold')
             pdf.text(row[0], margin + 5, y)
             pdf.setFont('helvetica', 'normal')
-            pdf.text(row[1], margin + 30, y)
+            pdf.text(row[1], margin + 25, y)
             pdf.setFont('helvetica', 'bold')
-            pdf.text(row[2], margin + 95, y)
+            pdf.text(row[2], margin + 65, y)
             pdf.setFont('helvetica', 'normal')
-            pdf.text(row[3], margin + 115, y)
+            pdf.text(row[3], margin + 85, y)
           })
 
-          yPosition += 20
+          const profitMarginPercent = project.profit_margin
+          drawProgressBar(pdf, margin + 5, yPosition + 44, pageWidth - 2 * margin - 10, 4, profitMarginPercent, {
+            color: profitMarginPercent > 20 ? '#22c55e' : profitMarginPercent > 10 ? '#f59e0b' : '#ef4444',
+            showPercentage: false
+          })
 
-          pdf.setFont('helvetica', 'bold')
-          pdf.text('Risk:', margin + 5, yPosition)
-
-          const riskColor = project.risk_level === 'High' ? [220, 38, 38] : project.risk_level === 'Medium' ? [245, 158, 11] : [22, 163, 74]
-          pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2])
-          pdf.text(project.risk_level, margin + 20, yPosition)
-          pdf.setTextColor(0, 0, 0)
-
-          yPosition += 10
+          yPosition += 55
         })
+      }
+
+      const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+        hex = hex.replace('#', '')
+        return {
+          r: parseInt(hex.substring(0, 2), 16),
+          g: parseInt(hex.substring(2, 4), 16),
+          b: parseInt(hex.substring(4, 6), 16)
+        }
       }
 
       if (report.risks.length > 0) {
         pdf.addPage()
         yPosition = margin
 
-        pdf.setFillColor(254, 226, 226)
-        pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F')
+        pdf.setFillColor(220, 38, 38)
+        pdf.rect(0, 0, pageWidth, 45, 'F')
 
-        pdf.setFontSize(14)
+        pdf.setFillColor(127, 29, 29)
+        pdf.rect(0, 0, 8, 45, 'F')
+
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFontSize(20)
         pdf.setFont('helvetica', 'bold')
-        pdf.setTextColor(220, 38, 38)
-        pdf.text('RISK ASSESSMENT', margin + 5, yPosition + 10)
-        yPosition += 25
+        pdf.text('RISK ASSESSMENT', margin, 25)
 
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
         pdf.setTextColor(0, 0, 0)
+        yPosition = 55
 
         report.risks.forEach((risk, index) => {
-          pdf.text(`• ${risk.type}: ${risk.description}`, margin + 5, yPosition + (index * 5))
-        })
+          checkPageBreak(25)
 
-        yPosition += report.risks.length * 5 + 10
+          pdf.setFillColor(254, 226, 226)
+          pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F')
+
+          pdf.setDrawColor(220, 38, 38)
+          pdf.setLineWidth(1)
+          pdf.line(margin, yPosition, margin, yPosition + 20)
+
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'bold')
+          pdf.setTextColor(220, 38, 38)
+          pdf.text(risk.type, margin + 5, yPosition + 8)
+
+          pdf.setFontSize(9)
+          pdf.setFont('helvetica', 'normal')
+          pdf.setTextColor(0, 0, 0)
+          pdf.text(risk.description, margin + 5, yPosition + 15)
+
+          yPosition += 25
+        })
+        yPosition += 5
       }
 
-      checkPageBreak(50)
-      pdf.setFillColor(220, 252, 231)
-      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 40, 'F')
+      checkPageBreak(100)
+      pdf.addPage()
+      yPosition = margin
 
-      pdf.setFontSize(14)
+      pdf.setFillColor(22, 163, 74)
+      pdf.rect(0, 0, pageWidth, 45, 'F')
+
+      pdf.setFillColor(21, 128, 61)
+      pdf.rect(0, 0, 8, 45, 'F')
+
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('INSIGHTS & RECOMMENDATIONS', margin, 25)
+
+      pdf.setTextColor(0, 0, 0)
+      yPosition = 55
+
+      pdf.setFillColor(220, 252, 231)
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
+
+      pdf.setFontSize(12)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(22, 163, 74)
-      pdf.text('EXECUTIVE INSIGHTS & RECOMMENDATIONS', margin + 5, yPosition + 10)
-      yPosition += 18
+      pdf.text('Top Performing Projects', margin + 5, yPosition + 8)
+      yPosition += 15
 
       pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(0, 0, 0)
-      pdf.text('TOP PERFORMING PROJECTS:', margin + 5, yPosition)
-      yPosition += 5
-
       pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
       report.insights.top_projects.forEach((project, index) => {
-        pdf.text(` - ${project.name}: €${(project.revenue / 1000000).toFixed(1)}M revenue, ${project.sales_rate.toFixed(1)}% sales rate`, margin + 5, yPosition + (index * 5))
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(`Revenue: €${(project.revenue / 1000000).toFixed(1)}M | Sales Rate: ${project.sales_rate.toFixed(1)}%`, margin + 10, yPosition + 5)
+        yPosition += 10
       })
 
-      yPosition += report.insights.top_projects.length * 5 + 5
-
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('STRATEGIC RECOMMENDATIONS:', margin + 5, yPosition)
       yPosition += 5
 
+      pdf.setFillColor(220, 252, 231)
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
+
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(22, 163, 74)
+      pdf.text('Strategic Recommendations', margin + 5, yPosition + 8)
+      yPosition += 15
+
+      pdf.setFontSize(9)
       pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(0, 0, 0)
+
       report.insights.recommendations.forEach((rec, index) => {
-        pdf.text(`• ${rec}`, margin + 5, yPosition + (index * 5))
+        pdf.setFillColor(240, 253, 244)
+        pdf.rect(margin + 2, yPosition - 3, 3, 3, 'F')
+        pdf.text(rec, margin + 8, yPosition)
+        yPosition += 7
       })
 
       const totalPages = pdf.getNumberOfPages()
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i)
+
+        pdf.setDrawColor(37, 99, 235)
+        pdf.setLineWidth(0.5)
+        pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15)
+
         pdf.setFontSize(8)
         pdf.setTextColor(100, 100, 100)
-        pdf.text('LANDMARK GROUP - Confidential Executive Report', margin, pageHeight - 10)
-        pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text('LANDMARK GROUP', margin, pageHeight - 10)
+        pdf.text('Confidential Executive Report', margin, pageHeight - 6)
+
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' })
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(format(new Date(), 'yyyy-MM-dd'), pageWidth - margin, pageHeight - 6, { align: 'right' })
       }
 
-      pdf.save(`LANDMARK_Comprehensive_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
+      pdf.save(`LANDMARK_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert('Failed to generate PDF. Please try again.')
