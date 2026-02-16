@@ -239,7 +239,6 @@ const GeneralReports: React.FC = () => {
     const { data: creditAllocations } = await supabase.from('credit_allocations').select('*')
 
     const { data: buildings } = await supabase.from('buildings').select('*')
-    const { data: units } = await supabase.from('units').select('*')
     const { data: garages } = await supabase.from('garages').select('*')
     const { data: repositories } = await supabase.from('repositories').select('*')
     const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
@@ -247,7 +246,7 @@ const GeneralReports: React.FC = () => {
 
     const { data: retailProjects } = await supabase.from('retail_projects').select('*')
     const { data: retailContracts } = await supabase.from('retail_contracts').select('*')
-    const { data: retailPhases } = await supabase.from('retail_phases').select('*')
+    const { data: retailPhases } = await supabase.from('retail_project_phases').select('*')
     const { data: retailLandPlots } = await supabase.from('retail_land_plots').select('*')
     const { data: retailCustomers } = await supabase.from('retail_customers').select('*')
     const { data: retailSuppliers } = await supabase.from('retail_suppliers').select('*')
@@ -275,7 +274,6 @@ const GeneralReports: React.FC = () => {
     const creditAllocationsArray = creditAllocations || []
 
     const buildingsArray = buildings || []
-    const unitsArray = units || []
     const garagesArray = garages || []
     const repositoriesArray = repositories || []
     const subcontractorMilestonesArray = subcontractorMilestones || []
@@ -544,10 +542,6 @@ const GeneralReports: React.FC = () => {
     const allocatedAmount = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
 
     const totalBuildings = buildingsArray.length
-    const totalUnitsFromBuildings = unitsArray.length
-    const soldUnitsFromBuildings = unitsArray.filter(u => u.status === 'Sold').length
-    const reservedUnitsFromBuildings = unitsArray.filter(u => u.status === 'Reserved').length
-    const availableUnitsFromBuildings = unitsArray.filter(u => u.status === 'Available').length
     const totalGarages = garagesArray.length
     const totalRepositories = repositoriesArray.length
 
@@ -677,10 +671,10 @@ const GeneralReports: React.FC = () => {
       },
       buildings_units: {
         total_buildings: totalBuildings,
-        total_units: totalUnitsFromBuildings,
-        sold_units: soldUnitsFromBuildings,
-        reserved_units: reservedUnitsFromBuildings,
-        available_units: availableUnitsFromBuildings,
+        total_units: totalUnits,
+        sold_units: soldUnits,
+        reserved_units: reservedUnits,
+        available_units: availableUnits,
         total_garages: totalGarages,
         total_repositories: totalRepositories
       },
