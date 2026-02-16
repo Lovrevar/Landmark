@@ -286,7 +286,7 @@ const InvestmentDashboard: React.FC = () => {
               <PieChart className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-gray-600">Credit Utilization</p>
+              <p className="text-sm text-gray-600">Investment Utilization</p>
               <p className="text-2xl font-bold text-gray-900">
                 {financialSummary.total_credit_lines > 0
                   ? ((financialSummary.total_used_credit / financialSummary.total_credit_lines) * 100).toFixed(1)
