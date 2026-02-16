@@ -633,7 +633,7 @@ const BanksManagement: React.FC = () => {
     <div>
       <PageHeader
         title="Investors"
-        description="Manage bank partnerships and credit facilities"
+        description="Manage investor partnerships and investments"
         actions={
           <div className="flex space-x-3">
             <Button icon={Plus} onClick={() => setShowBankForm(true)}>Add Investor</Button>
