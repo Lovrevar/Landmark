@@ -167,7 +167,7 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
 
 const drawBarChart = (doc: any, x: number, y: number, width: number, height: number, data: { label: string, value: number, max: number, color?: number[] }[]) => {
   const maxValue = Math.max(...data.map(d => d.max))
-  const barHeight = (height - (data.length + 1) * 3) / data.length
+  const barHeight = Math.min(6, (height - (data.length + 1) * 2) / data.length)
 
   doc.setDrawColor(200, 200, 200)
   doc.setLineWidth(0.1)
@@ -175,7 +175,7 @@ const drawBarChart = (doc: any, x: number, y: number, width: number, height: num
   doc.line(x, y + height, x + width, y + height)
 
   data.forEach((item, index) => {
-    const barY = y + index * (barHeight + 3)
+    const barY = y + index * (barHeight + 2)
     const barWidth = maxValue > 0 ? (item.value / maxValue) * width : 0
 
     doc.setFillColor(226, 232, 240)
@@ -186,19 +186,21 @@ const drawBarChart = (doc: any, x: number, y: number, width: number, height: num
     doc.rect(x, barY, barWidth, barHeight, 'F')
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
+    doc.setFontSize(7)
     doc.setTextColor(30, 30, 30)
 
     const labelText = item.label.length > 20 ? item.label.substring(0, 18) + '...' : item.label
-    doc.text(labelText, x - 2, barY + barHeight / 2 + 1, { align: 'right' })
+    doc.text(labelText, x - 2, barY + barHeight / 2 + 0.8, { align: 'right' })
 
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(255, 255, 255)
-    if (barWidth > 20) {
-      doc.text(`€${formatEuropean(item.value)}`, x + barWidth - 2, barY + barHeight / 2 + 1, { align: 'right' })
+    doc.setFontSize(7)
+    const valueText = `€${formatEuropean(item.value)}`
+    if (barWidth > 25) {
+      doc.setTextColor(255, 255, 255)
+      doc.text(valueText, x + barWidth - 2, barY + barHeight / 2 + 0.8, { align: 'right' })
     } else {
       doc.setTextColor(...color)
-      doc.text(`€${formatEuropean(item.value)}`, x + barWidth + 2, barY + barHeight / 2 + 1)
+      doc.text(valueText, x + barWidth + 2, barY + barHeight / 2 + 0.8)
     }
   })
 
@@ -338,8 +340,9 @@ export const generateInvestmentReportPDF = async (
     })
 
   if (creditUtilizationData.length > 0) {
-    drawBarChart(doc, 70, yPos, 120, Math.min(creditUtilizationData.length * 10, 80), creditUtilizationData)
-    yPos += Math.min(creditUtilizationData.length * 10, 80) + 15
+    const chartHeight = Math.min(creditUtilizationData.length * 8, 70)
+    drawBarChart(doc, 70, yPos, 120, chartHeight, creditUtilizationData)
+    yPos += chartHeight + 15
   }
 
   if (yPos > 220) {
@@ -352,16 +355,18 @@ export const generateInvestmentReportPDF = async (
   bankCredits
     .sort((a, b) => Number(b.amount) - Number(a.amount))
     .forEach((credit, index) => {
-      if (yPos > 240) {
+      const requiredHeight = credit.project ? 43 : 41
+      if (yPos + requiredHeight > 270) {
         doc.addPage()
         yPos = 20
       }
 
       const utilizationPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
       const bgColor = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
+      const boxHeight = credit.project ? 40 : 38
 
       doc.setFillColor(...bgColor)
-      doc.roundedRect(20, yPos, 170, 35, 2, 2, 'F')
+      doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(10)
@@ -376,43 +381,49 @@ export const generateInvestmentReportPDF = async (
       }
 
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
+      doc.setFontSize(8)
       doc.setTextColor(60, 60, 60)
 
-      const detailY = yPos + (credit.project ? 14 : 10)
+      const detailY = yPos + (credit.project ? 15 : 11)
 
       doc.text(`Amount: €${formatEuropean(credit.amount)}`, 23, detailY)
-      doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 23, detailY + 5)
-      doc.text(`Available: €${formatEuropean(credit.amount - credit.used_amount)}`, 23, detailY + 10)
+      doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 70, detailY)
+      doc.text(`Available: €${formatEuropean(credit.amount - credit.used_amount)}`, 117, detailY)
 
-      doc.text(`Outstanding: €${formatEuropean(credit.outstanding_balance)}`, 95, detailY)
-      doc.text(`Repaid: €${formatEuropean(credit.repaid_amount)}`, 95, detailY + 5)
-      doc.text(`Interest: ${Number(credit.interest_rate).toFixed(2)}%`, 95, detailY + 10)
+      doc.text(`Outstanding: €${formatEuropean(credit.outstanding_balance)}`, 23, detailY + 5)
+      doc.text(`Repaid: €${formatEuropean(credit.repaid_amount)}`, 70, detailY + 5)
+      doc.text(`Interest: ${Number(credit.interest_rate).toFixed(2)}%`, 117, detailY + 5)
 
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.text(`Start: ${format(new Date(credit.start_date), 'MMM dd, yyyy')}`, 150, detailY, { align: 'right' })
+      doc.setFontSize(7)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Start: ${format(new Date(credit.start_date), 'MMM dd, yyyy')}`, 23, detailY + 10)
 
       if (credit.maturity_date) {
-        doc.text(`Maturity: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`, 150, detailY + 5, { align: 'right' })
+        doc.text(`Maturity: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`, 70, detailY + 10)
+      }
+
+      if (credit.usage_expiration_date) {
+        doc.text(`Usage Expires: ${format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}`, 117, detailY + 10)
       }
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 100)
-      doc.text('Utilization:', 23, yPos + 29)
-      doc.text(`${utilizationPercent.toFixed(1)}%`, 170, yPos + 29, { align: 'right' })
+      const utilizationY = boxHeight - 8
+      doc.text('Utilization:', 23, yPos + utilizationY)
+      doc.text(`${utilizationPercent.toFixed(1)}%`, 187, yPos + utilizationY, { align: 'right' })
 
       const barStartX = 45
-      const barWidth = 125
+      const barWidth = 142
       doc.setFillColor(226, 232, 240)
-      doc.roundedRect(barStartX, yPos + 26, barWidth, 4, 1, 1, 'F')
+      doc.roundedRect(barStartX, yPos + utilizationY - 3, barWidth, 4, 1, 1, 'F')
 
       const utilBarColor = utilizationPercent >= 90 ? [239, 68, 68] : utilizationPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
       doc.setFillColor(...utilBarColor)
-      doc.roundedRect(barStartX, yPos + 26, (barWidth * Math.min(utilizationPercent, 100)) / 100, 4, 1, 1, 'F')
+      doc.roundedRect(barStartX, yPos + utilizationY - 3, (barWidth * Math.min(utilizationPercent, 100)) / 100, 4, 1, 1, 'F')
 
-      yPos += 38
+      yPos += boxHeight + 3
     })
 
   if (yPos > 220 && projects.length > 0) {
