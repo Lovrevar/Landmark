@@ -332,7 +332,21 @@ const GeneralReports: React.FC = () => {
       return sum + saleTotal
     }, 0)
 
-    const totalExpenses = contractsArray.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
+    const contractExpenses = contractsArray.map(c => {
+      const contractInvoices = accountingInvoicesArray.filter(
+        inv => inv.contract_id === c.id &&
+        (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+      )
+      const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+      return Math.max(c.total_amount || 0, invoicedTotal)
+    })
+
+    const invoicesWithoutContract = accountingInvoicesArray.filter(
+      inv => !inv.contract_id &&
+      (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+    ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+
+    const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -413,7 +427,22 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
-        const projectExpenses = projectContracts.reduce((sum, c) => sum + (c.budget_realized || 0), 0)
+        const projectContractExpenses = projectContracts.map(c => {
+          const contractInvoices = accountingInvoicesArray.filter(
+            inv => inv.contract_id === c.id &&
+            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+          )
+          const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+          return Math.max(c.total_amount || 0, invoicedTotal)
+        })
+
+        const projectInvoicesWithoutContract = accountingInvoicesArray.filter(
+          inv => inv.project_id === project.id &&
+          !inv.contract_id &&
+          (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+        ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+
+        const projectExpenses = projectContractExpenses.reduce((sum, exp) => sum + exp, 0) + projectInvoicesWithoutContract
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
