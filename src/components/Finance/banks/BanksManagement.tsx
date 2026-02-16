@@ -682,10 +682,6 @@ const BanksManagement: React.FC = () => {
             {/* Credit Stats */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="text-center">
-                <p className="text-xl font-bold text-blue-600">€{(bank.total_credit_limit / 1000000).toFixed(1)}M</p>
-                <p className="text-xs text-gray-600">Credit Limit</p>
-              </div>
-              <div className="text-center">
                 <p className="text-xl font-bold text-green-600">€{(bank.credit_utilized / 1000000).toFixed(1)}M</p>
                 <p className="text-xs text-gray-600">Credit Utilized</p>
               </div>
