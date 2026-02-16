@@ -223,14 +223,6 @@ function AppContent() {
           }
         />
         <Route
-          path="/funding-overview"
-          element={
-            <ProtectedRoute>
-              <FundingOverview />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/tic"
           element={
             <ProtectedRoute>
