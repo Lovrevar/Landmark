@@ -99,78 +99,82 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
 
   if (total === 0) return
 
-  let currentAngle = -Math.PI / 2
+  let currentAngle = 0
 
-  data.forEach(item => {
-    const sliceAngle = (item.value / total) * 2 * Math.PI
-    const rgb = item.color
-    doc.setFillColor(rgb[0], rgb[1], rgb[2])
+  data.forEach((item, index) => {
+    const sliceAngle = (item.value / total) * 360
+    const startAngle = currentAngle
+    const endAngle = currentAngle + sliceAngle
+
+    doc.setFillColor(item.color[0], item.color[1], item.color[2])
     doc.setDrawColor(255, 255, 255)
-    doc.setLineWidth(1)
+    doc.setLineWidth(0.5)
 
-    const segments = 100
+    const numPoints = Math.max(20, Math.ceil(sliceAngle / 3))
+    const angleStep = (sliceAngle * Math.PI / 180) / numPoints
 
-    for (let i = 0; i < segments; i++) {
-      const angle1 = currentAngle + (sliceAngle * i) / segments
-      const angle2 = currentAngle + (sliceAngle * (i + 1)) / segments
+    const points = []
 
-      const x1_outer = x + outerRadius * Math.cos(angle1)
-      const y1_outer = y + outerRadius * Math.sin(angle1)
-      const x2_outer = x + outerRadius * Math.cos(angle2)
-      const y2_outer = y + outerRadius * Math.sin(angle2)
-
-      const x1_inner = x + innerRadius * Math.cos(angle1)
-      const y1_inner = y + innerRadius * Math.sin(angle1)
-      const x2_inner = x + innerRadius * Math.cos(angle2)
-      const y2_inner = y + innerRadius * Math.sin(angle2)
-
-      doc.lines([
-        [x2_outer - x1_outer, y2_outer - y1_outer],
-        [x2_inner - x2_outer, y2_inner - y2_outer],
-        [x1_inner - x2_inner, y1_inner - y2_inner],
-        [x1_outer - x1_inner, y1_outer - y1_inner]
-      ], x1_outer, y1_outer, [1, 1], 'FD')
+    for (let i = 0; i <= numPoints; i++) {
+      const angle = (startAngle * Math.PI / 180) + (i * angleStep)
+      const xOuter = x + outerRadius * Math.cos(angle)
+      const yOuter = y + outerRadius * Math.sin(angle)
+      points.push([xOuter, yOuter])
     }
 
-    const midAngle = currentAngle + sliceAngle / 2
+    for (let i = numPoints; i >= 0; i--) {
+      const angle = (startAngle * Math.PI / 180) + (i * angleStep)
+      const xInner = x + innerRadius * Math.cos(angle)
+      const yInner = y + innerRadius * Math.sin(angle)
+      points.push([xInner, yInner])
+    }
+
+    if (points.length > 0) {
+      doc.setFillColor(item.color[0], item.color[1], item.color[2])
+      doc.polygon(points, 'FD')
+    }
+
+    const midAngle = ((startAngle + endAngle) / 2) * Math.PI / 180
     const percentage = ((item.value / total) * 100).toFixed(0)
     const labelRadius = (outerRadius + innerRadius) / 2
     const labelX = x + labelRadius * Math.cos(midAngle)
-    const labelY = y + labelRadius * Math.sin(midAngle)
+    const labelY = y + labelRadius * Math.sin(midAngle) + 1
 
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(255, 255, 255)
-    doc.text(`${percentage}%`, labelX, labelY, { align: 'center' })
+    if (Number(percentage) > 5) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(255, 255, 255)
+      doc.text(`${percentage}%`, labelX, labelY, { align: 'center' })
+    }
 
-    currentAngle += sliceAngle
+    currentAngle = endAngle
   })
 
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(12)
+  doc.setFontSize(11)
   doc.setTextColor(30, 30, 30)
-  doc.text('Total', x, y - 2, { align: 'center' })
-  doc.setFontSize(10)
+  doc.text('Total', x, y - 1, { align: 'center' })
+  doc.setFontSize(9)
   doc.text(`€${formatEuropean(total)}`, x, y + 4, { align: 'center' })
 
-  let legendY = y - (data.length * 4)
-  const legendX = x + outerRadius + 20
+  let legendY = y - (data.length * 5.5)
+  const legendX = x + outerRadius + 15
 
   data.forEach(item => {
     doc.setFillColor(item.color[0], item.color[1], item.color[2])
     doc.roundedRect(legendX, legendY - 2.5, 5, 5, 1, 1, 'F')
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setTextColor(30, 30, 30)
-    doc.text(item.label, legendX + 8, legendY + 2)
+    doc.text(item.label, legendX + 8, legendY + 1.5)
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
-    doc.text(`€${formatEuropean(item.value)} (${((item.value / total) * 100).toFixed(1)}%)`, legendX + 8, legendY + 7)
+    doc.text(`€${formatEuropean(item.value)} (${((item.value / total) * 100).toFixed(1)}%)`, legendX + 8, legendY + 6)
 
-    legendY += 12
+    legendY += 11
   })
 
   doc.setTextColor(0, 0, 0)
@@ -356,10 +360,16 @@ export const generateInvestmentReportPDF = async (
     .slice(0, 10)
 
   if (donutData.length > 0) {
-    drawDonutChart(doc, 50, yPos + 25, 20, 10, donutData)
-  }
+    const chartCenterX = 55
+    const chartCenterY = yPos + 30
+    const outerRadius = 20
+    const innerRadius = 12
 
-  yPos += 65
+    drawDonutChart(doc, chartCenterX, chartCenterY, outerRadius, innerRadius, donutData)
+    yPos += 70
+  } else {
+    yPos += 10
+  }
 
   const allAllocations: Array<{ label: string, value: number, max: number, color: number[] }> = []
 
