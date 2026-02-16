@@ -101,7 +101,7 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
 
   let currentAngle = 0
 
-  data.forEach((item, index) => {
+  data.forEach((item) => {
     const sliceAngle = (item.value / total) * 360
     const startAngle = currentAngle
     const endAngle = currentAngle + sliceAngle
@@ -110,28 +110,35 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
     doc.setDrawColor(255, 255, 255)
     doc.setLineWidth(0.5)
 
-    const numPoints = Math.max(20, Math.ceil(sliceAngle / 3))
-    const angleStep = (sliceAngle * Math.PI / 180) / numPoints
+    const numSegments = Math.max(30, Math.ceil(sliceAngle / 2))
+    const angleStep = (sliceAngle * Math.PI / 180) / numSegments
 
-    const points = []
+    for (let i = 0; i < numSegments; i++) {
+      const angle1 = (startAngle * Math.PI / 180) + (i * angleStep)
+      const angle2 = (startAngle * Math.PI / 180) + ((i + 1) * angleStep)
 
-    for (let i = 0; i <= numPoints; i++) {
-      const angle = (startAngle * Math.PI / 180) + (i * angleStep)
-      const xOuter = x + outerRadius * Math.cos(angle)
-      const yOuter = y + outerRadius * Math.sin(angle)
-      points.push([xOuter, yOuter])
-    }
+      const x1_outer = x + outerRadius * Math.cos(angle1)
+      const y1_outer = y + outerRadius * Math.sin(angle1)
+      const x2_outer = x + outerRadius * Math.cos(angle2)
+      const y2_outer = y + outerRadius * Math.sin(angle2)
 
-    for (let i = numPoints; i >= 0; i--) {
-      const angle = (startAngle * Math.PI / 180) + (i * angleStep)
-      const xInner = x + innerRadius * Math.cos(angle)
-      const yInner = y + innerRadius * Math.sin(angle)
-      points.push([xInner, yInner])
-    }
+      const x1_inner = x + innerRadius * Math.cos(angle1)
+      const y1_inner = y + innerRadius * Math.sin(angle1)
+      const x2_inner = x + innerRadius * Math.cos(angle2)
+      const y2_inner = y + innerRadius * Math.sin(angle2)
 
-    if (points.length > 0) {
-      doc.setFillColor(item.color[0], item.color[1], item.color[2])
-      doc.polygon(points, 'FD')
+      doc.lines(
+        [
+          [x2_outer - x1_outer, y2_outer - y1_outer],
+          [x2_inner - x2_outer, y2_inner - y2_outer],
+          [x1_inner - x2_inner, y1_inner - y2_inner],
+          [x1_outer - x1_inner, y1_outer - y1_inner]
+        ],
+        x1_outer,
+        y1_outer,
+        [1, 1],
+        'FD'
+      )
     }
 
     const midAngle = ((startAngle + endAngle) / 2) * Math.PI / 180
