@@ -29,11 +29,17 @@ export const drawBarChart = (
   if (data.length === 0) return
 
   const max = maxValue || Math.max(...data.map(d => d.value))
+  if (max === 0 || !isFinite(max)) return
+
   const barWidth = width / data.length - 2
+  if (barWidth <= 0) return
+
   const scale = height / max
 
   data.forEach((item, index) => {
-    const barHeight = item.value * scale
+    if (!item.value || item.value < 0) return
+
+    const barHeight = Math.max(0.1, item.value * scale)
     const barX = x + (index * (width / data.length)) + 1
     const barY = y + height - barHeight
 
@@ -171,6 +177,8 @@ export const drawLineChart = (
 
   const max = Math.max(...data.map(d => d.value))
   const min = Math.min(...data.map(d => d.value))
+  if (!isFinite(max) || !isFinite(min)) return
+
   const range = max - min || 1
   const scale = height / range
   const stepX = width / (data.length - 1 || 1)
@@ -235,11 +243,17 @@ export const drawHorizontalBarChart = (
   if (data.length === 0) return
 
   const max = Math.max(...data.map(d => d.value))
+  if (max === 0 || !isFinite(max)) return
+
   const barHeight = (height / data.length) - 2
+  if (barHeight <= 0) return
+
   const scale = width / max
 
   data.forEach((item, index) => {
-    const barWidth = item.value * scale
+    if (!item.value || item.value <= 0) return
+
+    const barWidth = Math.max(0.1, item.value * scale)
     const barY = y + (index * (height / data.length))
     const color = item.color ? hexToRgb(item.color) : { r: 37, g: 99, b: 235 }
 
@@ -288,9 +302,13 @@ export const drawProgressBar = (
   pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b)
   pdf.rect(x, y, width, height, 'F')
 
-  const fillWidth = (width * percentage) / 100
-  pdf.setFillColor(fgColor.r, fgColor.g, fgColor.b)
-  pdf.rect(x, y, fillWidth, height, 'F')
+  const safePercentage = Math.max(0, Math.min(100, percentage))
+  const fillWidth = Math.max(0, (width * safePercentage) / 100)
+
+  if (fillWidth > 0) {
+    pdf.setFillColor(fgColor.r, fgColor.g, fgColor.b)
+    pdf.rect(x, y, fillWidth, height, 'F')
+  }
 
   if (label || showPercentage) {
     pdf.setFontSize(8)
