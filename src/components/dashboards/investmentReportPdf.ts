@@ -189,8 +189,7 @@ const drawBarChart = (doc: any, x: number, y: number, width: number, height: num
     doc.setFontSize(7)
     doc.setTextColor(30, 30, 30)
 
-    const maxLabelLength = 28
-    const labelText = item.label.length > maxLabelLength ? item.label.substring(0, maxLabelLength - 3) + '...' : item.label
+    const labelText = item.label.length > 20 ? item.label.substring(0, 18) + '...' : item.label
     doc.text(labelText, x - 2, barY + barHeight / 2 + 0.8, { align: 'right' })
 
     doc.setFont('helvetica', 'bold')
@@ -342,7 +341,7 @@ export const generateInvestmentReportPDF = async (
 
   if (creditUtilizationData.length > 0) {
     const chartHeight = Math.min(creditUtilizationData.length * 8, 70)
-    drawBarChart(doc, 85, yPos, 105, chartHeight, creditUtilizationData)
+    drawBarChart(doc, 70, yPos, 120, chartHeight, creditUtilizationData)
     yPos += chartHeight + 15
   }
 
