@@ -349,8 +349,8 @@ const CreditsManagement: React.FC = () => {
       {credits.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="Nema evidentiranih kredita"
-          description="Dodajte prvi kredit putem upravljanja bankama"
+          title="Nema evidentiranih investicija"
+          description="Dodajte prvu investiciju putem upravljanja investicijama"
         />
       ) : (
         <div className="space-y-4">
