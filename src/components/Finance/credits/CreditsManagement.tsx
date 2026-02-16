@@ -342,8 +342,8 @@ const CreditsManagement: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Krediti"
-        description="Pregled svih bankovnih kredita i njihovih namjena"
+        title="Investicije"
+        description="Pregled svih investicija i njihovih namjena"
       />
 
       {credits.length === 0 ? (
