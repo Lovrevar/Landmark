@@ -17,7 +17,8 @@ const getSupplierTypeText = (type: string) => {
 export const exportToExcel = (
   sortedData: DebtSummary[],
   totalUnpaid: number,
-  totalPaid: number
+  totalPaid: number,
+  projectName?: string | null
 ) => {
   const headers = ['Firma', 'Tip', 'Računi', 'Neisplaćeno (€)', 'Isplaćeno (€)', 'Ukupno (€)']
 
@@ -92,8 +93,11 @@ export const exportToExcel = (
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
 
+  const projectSuffix = projectName ? `_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}` : ''
+  const fileName = `stanje_duga${projectSuffix}_${new Date().toISOString().split('T')[0]}.xls`
+
   link.setAttribute('href', url)
-  link.setAttribute('download', `stanje_duga_${new Date().toISOString().split('T')[0]}.xls`)
+  link.setAttribute('download', fileName)
   link.style.visibility = 'hidden'
   document.body.appendChild(link)
   link.click()
@@ -105,7 +109,8 @@ export const exportToPDF = async (
   totalUnpaid: number,
   totalPaid: number,
   totalSuppliers: number,
-  suppliersWithDebt: number
+  suppliersWithDebt: number,
+  projectName?: string | null
 ) => {
   const jsPDF = (await import('jspdf')).default
   const doc = new jsPDF()
@@ -121,7 +126,8 @@ export const exportToPDF = async (
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text('Stanje duga', 105, 20, { align: 'center' })
+  const title = projectName ? `Stanje duga - ${normalizeText(projectName)}` : 'Stanje duga'
+  doc.text(title, 105, 20, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
@@ -271,5 +277,7 @@ export const exportToPDF = async (
   totalXPos += colWidths[4]
   doc.text(formatEuropeanNumber(totalUnpaid + totalPaid), totalXPos + colWidths[5] - 2, yPosition + 5.5, { align: 'right' })
 
-  doc.save(`stanje_duga_${new Date().toISOString().split('T')[0]}.pdf`)
+  const projectSuffix = projectName ? `_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}` : ''
+  const fileName = `stanje_duga${projectSuffix}_${new Date().toISOString().split('T')[0]}.pdf`
+  doc.save(fileName)
 }

@@ -1,9 +1,9 @@
 import React from 'react'
-import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet } from 'lucide-react'
+import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet, Filter } from 'lucide-react'
 import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
 import { exportToExcel, exportToPDF } from './utils/debtExport'
-import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert } from '../ui'
+import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../ui'
 
 const DebtStatus: React.FC = () => {
   const {
@@ -16,6 +16,9 @@ const DebtStatus: React.FC = () => {
     totalPaid,
     totalSuppliers,
     suppliersWithDebt,
+    projects,
+    selectedProjectId,
+    setSelectedProjectId,
     handleSort
   } = useDebtStatus()
 
@@ -32,12 +35,18 @@ const DebtStatus: React.FC = () => {
     }
   }
 
+  const getSelectedProjectName = () => {
+    if (!selectedProjectId) return null
+    const project = projects.find(p => p.id === selectedProjectId)
+    return project ? project.name : null
+  }
+
   const handleExportExcel = () => {
-    exportToExcel(sortedData, totalUnpaid, totalPaid)
+    exportToExcel(sortedData, totalUnpaid, totalPaid, getSelectedProjectName())
   }
 
   const handleExportPDF = () => {
-    exportToPDF(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt)
+    exportToPDF(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, getSelectedProjectName())
   }
 
   if (loading) {
@@ -87,6 +96,38 @@ const DebtStatus: React.FC = () => {
           color="green"
         />
       </StatGrid>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center gap-4">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filtriraj po projektu
+            </label>
+            <Select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full max-w-md"
+            >
+              <option value="">Svi projekti</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name} {project.type === 'retail' ? '(Retail)' : '(Site)'}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {selectedProjectId && (
+            <Button
+              variant="secondary"
+              onClick={() => setSelectedProjectId('')}
+              className="mt-6"
+            >
+              Poništi filter
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {debtData.length === 0 ? (
@@ -202,6 +243,7 @@ const DebtStatus: React.FC = () => {
           <li>Isplaćeno = ukupan iznos svih izvršenih plaćanja za tog dobavljača</li>
           <li>Dobavljači s istim imenom grupirani su i zbrojeni bez obzira na tip (Site, Retail, Office)</li>
           <li>Tip "Mixed" označava da se dobavljač pojavljuje u više kategorija</li>
+          <li>Koristite filter za prikaz dugovanja samo za određeni projekt</li>
           <li>Kliknite na zaglavlje stupca za sortiranje podataka</li>
         </ul>
       </Alert>

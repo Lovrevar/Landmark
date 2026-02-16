@@ -7,8 +7,25 @@ export const formatEuropeanNumber = (num: number): string => {
   return `${integerPart},${parts[1]}`
 }
 
-export const fetchDebtData = async (): Promise<DebtSummary[]> => {
-  const { data: invoicesData, error: invoicesError } = await supabase
+export const fetchProjects = async () => {
+  const [
+    { data: siteProjects },
+    { data: retailProjects }
+  ] = await Promise.all([
+    supabase.from('projects').select('id, name').order('name'),
+    supabase.from('retail_projects').select('id, name').order('name')
+  ])
+
+  const allProjects = [
+    ...(siteProjects || []).map(p => ({ ...p, type: 'site' as const })),
+    ...(retailProjects || []).map(p => ({ ...p, type: 'retail' as const }))
+  ].sort((a, b) => a.name.localeCompare(b.name))
+
+  return allProjects
+}
+
+export const fetchDebtData = async (projectId?: string): Promise<DebtSummary[]> => {
+  let invoicesQuery = supabase
     .from('accounting_invoices')
     .select(`
       id,
@@ -17,17 +34,60 @@ export const fetchDebtData = async (): Promise<DebtSummary[]> => {
       office_supplier_id,
       remaining_amount,
       paid_amount,
-      status
+      status,
+      contract_id,
+      retail_contract_id
     `)
     .in('status', ['UNPAID', 'PARTIALLY_PAID', 'PAID'])
 
+  const { data: invoicesData, error: invoicesError } = await invoicesQuery
+
   if (invoicesError) throw invoicesError
+
+  let filteredInvoices = invoicesData || []
+
+  if (projectId) {
+    const contractIds = new Set<string>()
+    const retailContractIds = new Set<string>()
+
+    const [
+      { data: contracts },
+      { data: retailPhases }
+    ] = await Promise.all([
+      supabase
+        .from('contracts')
+        .select('id')
+        .eq('project_id', projectId),
+      supabase
+        .from('retail_project_phases')
+        .select('id')
+        .eq('project_id', projectId)
+    ])
+
+    ;(contracts || []).forEach(c => contractIds.add(c.id))
+
+    if (retailPhases && retailPhases.length > 0) {
+      const phaseIds = retailPhases.map(p => p.id)
+      const { data: retailContracts } = await supabase
+        .from('retail_contracts')
+        .select('id')
+        .in('phase_id', phaseIds)
+
+      ;(retailContracts || []).forEach(c => retailContractIds.add(c.id))
+    }
+
+    filteredInvoices = filteredInvoices.filter(inv => {
+      if (inv.contract_id && contractIds.has(inv.contract_id)) return true
+      if (inv.retail_contract_id && retailContractIds.has(inv.retail_contract_id)) return true
+      return false
+    })
+  }
 
   const supplierIds = new Set<string>()
   const retailSupplierIds = new Set<string>()
   const officeSupplierIds = new Set<string>()
 
-  ;(invoicesData || []).forEach(invoice => {
+  filteredInvoices.forEach(invoice => {
     if (invoice.supplier_id) supplierIds.add(invoice.supplier_id)
     if (invoice.retail_supplier_id) retailSupplierIds.add(invoice.retail_supplier_id)
     if (invoice.office_supplier_id) officeSupplierIds.add(invoice.office_supplier_id)
@@ -71,7 +131,7 @@ export const fetchDebtData = async (): Promise<DebtSummary[]> => {
     invoiceCount: number
   }>()
 
-  ;(invoicesData || []).forEach(invoice => {
+  filteredInvoices.forEach(invoice => {
     const supplierId = invoice.supplier_id || invoice.retail_supplier_id || invoice.office_supplier_id
     if (!supplierId) return
 

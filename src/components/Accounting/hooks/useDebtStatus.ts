@@ -1,21 +1,42 @@
 import { useState, useEffect } from 'react'
 import { DebtSummary } from '../types/debtTypes'
-import { fetchDebtData } from '../services/debtService'
+import { fetchDebtData, fetchProjects } from '../services/debtService'
+
+interface Project {
+  id: string
+  name: string
+  type: 'site' | 'retail'
+}
 
 export const useDebtStatus = () => {
   const [debtData, setDebtData] = useState<DebtSummary[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'name' | 'unpaid' | 'paid'>('unpaid')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
-    loadDebtData()
+    loadProjects()
   }, [])
+
+  useEffect(() => {
+    loadDebtData()
+  }, [selectedProjectId])
+
+  const loadProjects = async () => {
+    try {
+      const data = await fetchProjects()
+      setProjects(data)
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+    }
+  }
 
   const loadDebtData = async () => {
     try {
       setLoading(true)
-      const data = await fetchDebtData()
+      const data = await fetchDebtData(selectedProjectId || undefined)
       setDebtData(data)
     } catch (error) {
       console.error('Error fetching debt data:', error)
@@ -66,6 +87,9 @@ export const useDebtStatus = () => {
     totalPaid,
     totalSuppliers,
     suppliersWithDebt,
+    projects,
+    selectedProjectId,
+    setSelectedProjectId,
     handleSort
   }
 }
