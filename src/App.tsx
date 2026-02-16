@@ -21,7 +21,6 @@ import SalesPaymentsManagement from './components/Payments/SalesPaymentsManageme
 import RetailSalesPaymentsManagement from './components/Payments/RetailSalesPaymentsManagement'
 import WorkLogs from './components/Subcontractors/WorkLogs'
 import FundingPaymentsManagement from './components/Payments/FundingPaymentsManagement'
-import FundingOverview from './components/Finance/overview/FundingOverview'
 import GeneralReports from './components/Reports/GeneralReports'
 import AccountingInvoices from './components/Accounting/AccountingInvoices'
 import AccountingPayments from './components/Accounting/AccountingPayments'
