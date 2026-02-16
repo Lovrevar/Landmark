@@ -1565,7 +1565,6 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
         <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm border border-amber-200 p-6">
           <div className="flex items-center mb-4">
             <Building2 className="w-6 h-6 text-amber-600 mr-2" />
@@ -1590,9 +1589,7 @@ const GeneralReports: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl shadow-sm border border-rose-200 p-6">
           <div className="flex items-center mb-4">
             <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
@@ -1633,7 +1630,9 @@ const GeneralReports: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center mb-4">
             <Wallet className="w-6 h-6 text-slate-600 mr-2" />
@@ -1660,10 +1659,6 @@ const GeneralReports: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
 
         <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-sm border border-teal-200 p-6">
           <div className="flex items-center mb-4">
