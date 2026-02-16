@@ -107,10 +107,8 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
     const endAngle = currentAngle + sliceAngle
 
     doc.setFillColor(item.color[0], item.color[1], item.color[2])
-    doc.setDrawColor(255, 255, 255)
-    doc.setLineWidth(0.5)
 
-    const numSegments = Math.max(30, Math.ceil(sliceAngle / 2))
+    const numSegments = Math.max(100, Math.ceil(sliceAngle))
     const angleStep = (sliceAngle * Math.PI / 180) / numSegments
 
     for (let i = 0; i < numSegments; i++) {
@@ -137,7 +135,7 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
         x1_outer,
         y1_outer,
         [1, 1],
-        'FD'
+        'F'
       )
     }
 
@@ -155,6 +153,24 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
     }
 
     currentAngle = endAngle
+  })
+
+  currentAngle = 0
+  doc.setDrawColor(255, 255, 255)
+  doc.setLineWidth(1)
+  data.forEach((item) => {
+    const sliceAngle = (item.value / total) * 360
+    const startAngle = currentAngle
+    const angle = (startAngle * Math.PI / 180)
+
+    const x1_outer = x + outerRadius * Math.cos(angle)
+    const y1_outer = y + outerRadius * Math.sin(angle)
+    const x1_inner = x + innerRadius * Math.cos(angle)
+    const y1_inner = y + innerRadius * Math.sin(angle)
+
+    doc.line(x1_inner, y1_inner, x1_outer, y1_outer)
+
+    currentAngle += sliceAngle
   })
 
   doc.setFont('helvetica', 'bold')
