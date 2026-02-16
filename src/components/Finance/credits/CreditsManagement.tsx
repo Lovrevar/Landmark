@@ -415,7 +415,7 @@ const CreditsManagement: React.FC = () => {
 
                   <StatGrid columns={5} className="mt-4">
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-700">Credit Amount</p>
+                      <p className="text-sm text-blue-700">Investment Amount</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-purple-50 p-3 rounded-lg">
