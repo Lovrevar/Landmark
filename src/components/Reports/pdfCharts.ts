@@ -322,7 +322,7 @@ export const drawProgressBar = (
   pdf.setTextColor(0, 0, 0)
 }
 
-const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   hex = hex.replace('#', '')
   return {
     r: parseInt(hex.substring(0, 2), 16),

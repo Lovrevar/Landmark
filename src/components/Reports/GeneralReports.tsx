@@ -741,7 +741,8 @@ const GeneralReports: React.FC = () => {
         drawPieChart,
         drawLineChart,
         drawHorizontalBarChart,
-        drawProgressBar
+        drawProgressBar,
+        hexToRgb
       } = await import('./pdfCharts')
 
       const pdf = new jsPDF('p', 'mm', 'a4')
@@ -1575,15 +1576,6 @@ const GeneralReports: React.FC = () => {
 
           yPosition += 55
         })
-      }
-
-      const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
-        hex = hex.replace('#', '')
-        return {
-          r: parseInt(hex.substring(0, 2), 16),
-          g: parseInt(hex.substring(2, 4), 16),
-          b: parseInt(hex.substring(4, 6), 16)
-        }
       }
 
       if (report.risks.length > 0) {
