@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Building2 } from 'lucide-react'
+import { Plus, Building2, FileUp, Warehouse } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button } from './ui'
 import { Apartment } from '../lib/supabase'
 import { useSalesData } from './Sales/hooks/useSalesData'
@@ -27,6 +27,8 @@ import { BulkUnitsModal } from './Sales/forms/BulkUnitsModal'
 import { LinkingModal } from './Sales/forms/LinkingModal'
 import { SaleFormModal } from './Sales/forms/SaleFormModal'
 import { BulkPriceUpdateModal } from './Sales/forms/BulkPriceUpdateModal'
+import { ExcelImportApartmentsModal } from './Sales/forms/ExcelImportApartmentsModal'
+import { ExcelImportGaragesModal } from './Sales/forms/ExcelImportGaragesModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
@@ -65,6 +67,8 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [unitForSale, setUnitForSale] = useState<UnitForSale | null>(null)
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([])
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false)
+  const [showImportApartmentsModal, setShowImportApartmentsModal] = useState(false)
+  const [showImportGaragesModal, setShowImportGaragesModal] = useState(false)
 
   const handleSelectProject = (project: ProjectWithBuildings) => {
     setSelectedProject(project)
@@ -336,6 +340,13 @@ const SalesProjectsEnhanced: React.FC = () => {
             {viewMode === 'buildings' && selectedProject && (
               <>
                 <Button
+                  variant="info"
+                  icon={FileUp}
+                  onClick={() => setShowImportApartmentsModal(true)}
+                >
+                  Import from Excel
+                </Button>
+                <Button
                   variant="success"
                   icon={Plus}
                   onClick={() => setShowBuildingQuantityForm(true)}
@@ -352,6 +363,15 @@ const SalesProjectsEnhanced: React.FC = () => {
             )}
             {viewMode === 'units' && selectedBuilding && (
               <>
+                {activeUnitType === 'garage' && (
+                  <Button
+                    variant="info"
+                    icon={FileUp}
+                    onClick={() => setShowImportGaragesModal(true)}
+                  >
+                    Import Garages from Excel
+                  </Button>
+                )}
                 <Button
                   variant="success"
                   icon={Building2}
@@ -487,6 +507,26 @@ const SalesProjectsEnhanced: React.FC = () => {
         unitType={activeUnitType}
         onClose={() => setShowBulkPriceModal(false)}
         onSubmit={handleBulkPriceUpdate}
+      />
+
+      <ExcelImportApartmentsModal
+        visible={showImportApartmentsModal}
+        selectedProject={selectedProject}
+        onClose={() => setShowImportApartmentsModal(false)}
+        onComplete={() => {
+          setShowImportApartmentsModal(false)
+          refetch()
+        }}
+      />
+
+      <ExcelImportGaragesModal
+        visible={showImportGaragesModal}
+        selectedBuilding={selectedBuilding}
+        onClose={() => setShowImportGaragesModal(false)}
+        onComplete={() => {
+          setShowImportGaragesModal(false)
+          refetch()
+        }}
       />
     </div>
   )

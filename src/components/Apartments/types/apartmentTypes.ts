@@ -29,6 +29,20 @@ export interface ApartmentWithDetails {
   building_name: string
   project_id: string
   building_id: string
+  garages?: Array<{
+    id: string
+    number: string
+    size_m2: number
+    price: number
+    status: string
+  }>
+  repositories?: Array<{
+    id: string
+    number: string
+    size_m2: number
+    price: number
+    status: string
+  }>
 }
 
 export interface ApartmentPayment {

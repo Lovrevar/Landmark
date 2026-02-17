@@ -38,8 +38,8 @@ const ApartmentManagement: React.FC = () => {
   const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
   const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
   const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
-  const [linkedGarages, setLinkedGarages] = useState<Record<string, any>>({})
-  const [linkedStorages, setLinkedStorages] = useState<Record<string, any>>({})
+  const [linkedGarages, setLinkedGarages] = useState<Record<string, any[]>>({})
+  const [linkedStorages, setLinkedStorages] = useState<Record<string, any[]>>({})
 
   useEffect(() => {
     fetchData()
@@ -111,46 +111,49 @@ const ApartmentManagement: React.FC = () => {
       setGaragePaymentTotals(garPaymentTotals)
       setStoragePaymentTotals(storPaymentTotals)
 
-      const garageIds = [...new Set(apartmentsData?.map((a: any) => a.garage_id).filter(Boolean) || [])]
-      const storageIds = [...new Set(apartmentsData?.map((a: any) => a.repository_id).filter(Boolean) || [])]
+      const garagesMap: Record<string, any[]> = {}
+      const storagesMap: Record<string, any[]> = {}
 
-      const garagesMap: Record<string, any> = {}
-      const storagesMap: Record<string, any> = {}
+      if (apartmentsData && apartmentsData.length > 0) {
+        const apartmentIds = apartmentsData.map((a: any) => a.id)
 
-      if (garageIds.length > 0) {
-        const { data: garagesData } = await supabase
-          .from('garages')
-          .select('id, number, size_m2, price')
-          .in('id', garageIds)
+        const { data: garageLinks } = await supabase
+          .from('apartment_garages')
+          .select(`
+            apartment_id,
+            garage:garages(id, number, size_m2, price, status)
+          `)
+          .in('apartment_id', apartmentIds)
 
-        const garageById: Record<string, any> = {}
-        garagesData?.forEach((g: any) => {
-          garageById[g.id] = g
-        })
+        if (garageLinks) {
+          garageLinks.forEach((link: any) => {
+            if (!garagesMap[link.apartment_id]) {
+              garagesMap[link.apartment_id] = []
+            }
+            if (link.garage) {
+              garagesMap[link.apartment_id].push(link.garage)
+            }
+          })
+        }
 
-        apartmentsData?.forEach((apt: any) => {
-          if (apt.garage_id && garageById[apt.garage_id]) {
-            garagesMap[apt.id] = garageById[apt.garage_id]
-          }
-        })
-      }
+        const { data: repositoryLinks } = await supabase
+          .from('apartment_repositories')
+          .select(`
+            apartment_id,
+            repository:repositories(id, number, size_m2, price, status)
+          `)
+          .in('apartment_id', apartmentIds)
 
-      if (storageIds.length > 0) {
-        const { data: storagesData } = await supabase
-          .from('repositories')
-          .select('id, number, size_m2, price')
-          .in('id', storageIds)
-
-        const storageById: Record<string, any> = {}
-        storagesData?.forEach((s: any) => {
-          storageById[s.id] = s
-        })
-
-        apartmentsData?.forEach((apt: any) => {
-          if (apt.repository_id && storageById[apt.repository_id]) {
-            storagesMap[apt.id] = storageById[apt.repository_id]
-          }
-        })
+        if (repositoryLinks) {
+          repositoryLinks.forEach((link: any) => {
+            if (!storagesMap[link.apartment_id]) {
+              storagesMap[link.apartment_id] = []
+            }
+            if (link.repository) {
+              storagesMap[link.apartment_id].push(link.repository)
+            }
+          })
+        }
       }
 
       setLinkedGarages(garagesMap)
@@ -408,15 +411,17 @@ const ApartmentManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredApartments.map((apartment) => {
-            const linkedGarage = linkedGarages[apartment.id]
-            const linkedStorage = linkedStorages[apartment.id]
+            const aptLinkedGarages = linkedGarages[apartment.id] || []
+            const aptLinkedStorages = linkedStorages[apartment.id] || []
 
             const aptPaid = apartmentPaymentTotals[apartment.id] || 0
-            const garagePaid = linkedGarage ? (garagePaymentTotals[linkedGarage.id] || 0) : 0
-            const storagePaid = linkedStorage ? (storagePaymentTotals[linkedStorage.id] || 0) : 0
+            const garagesTotalPaid = aptLinkedGarages.reduce((sum, g) => sum + (garagePaymentTotals[g.id] || 0), 0)
+            const storagesTotalPaid = aptLinkedStorages.reduce((sum, s) => sum + (storagePaymentTotals[s.id] || 0), 0)
 
-            const totalPrice = apartment.price + (linkedGarage?.price || 0) + (linkedStorage?.price || 0)
-            const totalPaid = aptPaid + garagePaid + storagePaid
+            const garagesTotalPrice = aptLinkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
+            const storagesTotalPrice = aptLinkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
+            const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+            const totalPaid = aptPaid + garagesTotalPaid + storagesTotalPaid
             const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
@@ -453,27 +458,27 @@ const ApartmentManagement: React.FC = () => {
                     <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
                   </div>
 
-                  {(linkedGarage || linkedStorage) && (
+                  {(aptLinkedGarages.length > 0 || aptLinkedStorages.length > 0) && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <p className="text-xs font-semibold text-gray-700 mb-1">Linked Units:</p>
-                      {linkedGarage && (
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      {aptLinkedGarages.map((garage) => (
+                        <div key={garage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
-                            Garage {linkedGarage.number}
+                            Garage {garage.number}
                           </span>
-                          <span className="font-medium text-orange-600">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
+                          <span className="font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</span>
                         </div>
-                      )}
-                      {linkedStorage && (
-                        <div className="flex items-center justify-between text-xs text-gray-600">
+                      ))}
+                      {aptLinkedStorages.map((storage) => (
+                        <div key={storage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Package className="w-3 h-3 mr-1 text-gray-600" />
-                            Storage {linkedStorage.number}
+                            Storage {storage.number}
                           </span>
-                          <span className="font-medium text-gray-600">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
+                          <span className="font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</span>
                         </div>
-                      )}
+                      ))}
                       <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
                         <span className="text-xs font-semibold text-gray-700">Total Value:</span>
                         <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString('hr-HR')}</span>
@@ -631,8 +636,8 @@ const ApartmentManagement: React.FC = () => {
         }}
         apartment={selectedApartment}
         payments={payments}
-        linkedGarage={selectedApartment ? linkedGarages[selectedApartment.id] : null}
-        linkedStorage={selectedApartment ? linkedStorages[selectedApartment.id] : null}
+        linkedGarages={selectedApartment ? (linkedGarages[selectedApartment.id] || []) : []}
+        linkedStorages={selectedApartment ? (linkedStorages[selectedApartment.id] || []) : []}
         onEditPayment={(payment) => {
           setEditingPayment(payment)
           setShowEditPaymentModal(true)

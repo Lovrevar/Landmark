@@ -9,8 +9,8 @@ interface PaymentHistoryModalProps {
   onClose: () => void
   apartment: ApartmentWithDetails | null
   payments: PaymentWithCustomer[]
-  linkedGarage?: { id: string; number: string; price: number } | null
-  linkedStorage?: { id: string; number: string; price: number } | null
+  linkedGarages?: Array<{ id: string; number: string; price: number }>
+  linkedStorages?: Array<{ id: string; number: string; price: number }>
   onEditPayment: (payment: PaymentWithCustomer) => void
   onDeletePayment: (paymentId: string, saleId: string | null, amount: number) => void
 }
@@ -20,8 +20,8 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onClose,
   apartment,
   payments,
-  linkedGarage,
-  linkedStorage,
+  linkedGarages = [],
+  linkedStorages = [],
   onEditPayment,
   onDeletePayment
 }) => {
@@ -36,15 +36,23 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   const storagePaid = storagePayments.reduce((sum, p) => sum + p.amount, 0)
   const totalPaid = aptPaid + garagePaid + storagePaid
 
-  const totalPrice = apartment.price + (linkedGarage?.price || 0) + (linkedStorage?.price || 0)
+  const garagesTotalPrice = linkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
+  const storagesTotalPrice = linkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
+  const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
   const remainingBalance = totalPrice - totalPaid
 
   const getPaymentUnitInfo = (payment: PaymentWithCustomer) => {
-    if (payment.garage_id && linkedGarage) {
-      return { icon: Warehouse, label: `Garage ${linkedGarage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+    if (payment.garage_id) {
+      const garage = linkedGarages.find(g => g.id === payment.garage_id)
+      if (garage) {
+        return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+      }
     }
-    if (payment.storage_id && linkedStorage) {
-      return { icon: Package, label: `Storage ${linkedStorage.number}`, color: 'text-gray-600', bgColor: 'bg-gray-100' }
+    if (payment.storage_id) {
+      const storage = linkedStorages.find(s => s.id === payment.storage_id)
+      if (storage) {
+        return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600', bgColor: 'bg-gray-100' }
+      }
     }
     return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100' }
   }
@@ -99,20 +107,20 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </p>
                 <p className="text-sm font-bold text-blue-600">€{aptPaid.toLocaleString('hr-HR')}</p>
               </div>
-              {linkedGarage && (
+              {linkedGarages.length > 0 && (
                 <div className="bg-orange-50 p-2 rounded">
                   <p className="text-xs text-gray-600 flex items-center">
                     <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
-                    Garage
+                    Garages ({linkedGarages.length})
                   </p>
                   <p className="text-sm font-bold text-orange-600">€{garagePaid.toLocaleString('hr-HR')}</p>
                 </div>
               )}
-              {linkedStorage && (
+              {linkedStorages.length > 0 && (
                 <div className="bg-gray-50 p-2 rounded">
                   <p className="text-xs text-gray-600 flex items-center">
                     <Package className="w-3 h-3 mr-1 text-gray-600" />
-                    Storage
+                    Storages ({linkedStorages.length})
                   </p>
                   <p className="text-sm font-bold text-gray-600">€{storagePaid.toLocaleString('hr-HR')}</p>
                 </div>
