@@ -59,6 +59,12 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     }
   }
 
+  const parseNumber = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0
+    const str = String(value).replace(/\./g, '').replace(',', '.')
+    return parseFloat(str) || 0
+  }
+
   const parseFile = async () => {
     if (!file) return
 
@@ -68,7 +74,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-      const dataRows = rows.slice(5).filter(row => row[4])
+      const dataRows = rows.slice(1).filter(row => row[3])
 
       const buildingsMap = new Map()
       selectedProject?.buildings?.forEach((b: any) => {
@@ -77,10 +83,10 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
       const parsed: ParsedApartmentRow[] = dataRows.map((row, idx) => {
         const errors: string[] = []
-        const buildingLabel = String(row[1] || '').trim()
-        const apartmentNumber = String(row[4] || '').trim()
-        const sizeM2 = Number(row[10]) || 0
-        const price = Number(row[12]) || 0
+        const buildingLabel = String(row[0] || '').trim()
+        const apartmentNumber = String(row[3] || '').trim()
+        const sizeM2 = parseNumber(row[9])
+        const price = parseNumber(row[11])
 
         if (!apartmentNumber) errors.push('Missing apartment number')
         if (!sizeM2) errors.push('Missing size (m2)')
@@ -92,26 +98,26 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         }
 
         return {
-          rowIndex: idx + 6,
+          rowIndex: idx + 2,
           building_label: buildingLabel,
-          entrance: row[2] || '',
-          floor: Number(row[3]) || 0,
+          entrance: row[1] || '',
+          floor: parseNumber(row[2]),
           number: apartmentNumber,
-          type: row[5] || '',
-          rooms: row[6] || '',
-          area_closed: Number(row[7]) || 0,
-          area_open: Number(row[8]) || 0,
-          area_open_coef: Number(row[9]) || 0,
+          type: row[4] || '',
+          rooms: row[5] || '',
+          area_closed: parseNumber(row[6]),
+          area_open: parseNumber(row[7]),
+          area_open_coef: parseNumber(row[8]),
           size_m2: sizeM2,
-          price_per_m2: Number(row[11]) || 0,
+          price_per_m2: parseNumber(row[10]),
           price: price,
-          parking_label: row[13] || null,
-          parking_m2: row[14] ? Number(row[14]) : null,
-          parking_price: row[15] ? Number(row[15]) : null,
-          storage_label: row[16] || null,
-          storage_m2: row[17] ? Number(row[17]) : null,
-          storage_price: row[18] ? Number(row[18]) : null,
-          total_price: Number(row[19]) || 0,
+          parking_label: row[12] || null,
+          parking_m2: row[13] ? parseNumber(row[13]) : null,
+          parking_price: row[14] ? parseNumber(row[14]) : null,
+          storage_label: row[15] || null,
+          storage_m2: row[16] ? parseNumber(row[16]) : null,
+          storage_price: row[17] ? parseNumber(row[17]) : null,
+          total_price: parseNumber(row[18]),
           errors,
           building_id
         }
@@ -329,11 +335,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 Upload Apartment Excel File
               </h3>
               <p className="text-sm text-gray-500 mb-4">
-                Select the "Tablica stanova" Excel file with apartment data
+                Select the "Tablica stanova" Excel file (.xlsx or .csv) with apartment data
               </p>
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv"
                 onChange={handleFileChange}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
@@ -347,13 +353,14 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">Expected File Format:</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Headers on row 1, data starts at row 6</li>
-                <li>Column 2: zgrada (building name - must match existing building)</li>
-                <li>Column 5: oznaka stana (apartment number)</li>
-                <li>Column 11: stan m2 prodajno (total saleable area)</li>
-                <li>Column 13: cijena stana (apartment price)</li>
-                <li>Columns 14-16: parking data (optional)</li>
-                <li>Columns 17-19: storage data (optional)</li>
+                <li>Headers on row 1, data starts at row 2</li>
+                <li>Column 1 (A): zgrada (building name - must match existing building)</li>
+                <li>Column 4 (D): oznaka stana (apartment number)</li>
+                <li>Column 10 (J): stan m2 prodajno (total saleable area)</li>
+                <li>Column 12 (L): cijena stana (apartment price)</li>
+                <li>Columns 13-15: parking data (optional)</li>
+                <li>Columns 16-18: storage data (optional)</li>
+                <li>Numbers can use European format with commas (e.g., "3.000,00")</li>
               </ul>
             </div>
           </div>
@@ -390,7 +397,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                     <div key={row.rowIndex} className="text-sm">
                       <span className="font-medium text-red-800">Row {row.rowIndex}:</span>
                       <span className="text-red-700 ml-2">
-                        {row.number || '(no number)'} - {row.errors.join(', ')}
+                        {row.building_label || '(no building)'} - {row.number || '(no number)'} - {row.errors.join(', ')}
                       </span>
                     </div>
                   ))}
