@@ -391,7 +391,7 @@ const InvestmentProjects: React.FC = () => {
 
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Banking Partners</span>
+                  <span className="text-sm font-medium text-gray-700">Investors</span>
                   <Building2 className="w-4 h-4 text-gray-400" />
                 </div>
                 <div className="space-y-1">
