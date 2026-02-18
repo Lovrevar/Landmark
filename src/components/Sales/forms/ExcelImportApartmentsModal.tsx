@@ -27,12 +27,12 @@ interface ParsedApartmentRow {
   total_price: number
   datum_potpisa_predugovora: string | null
   contract_payment_type: 'credit' | 'installments' | null
-  kapara_10_posto: string | null
-  rata_1_ab_konstrukcija_30: string | null
-  rata_2_postava_stolarije_20: string | null
-  rata_3_obrtnicki_radovi_20: string | null
-  rata_4_uporabna_20: string | null
-  kredit_etaziranje_90: string | null
+  kapara_10_posto: number | null
+  rata_1_ab_konstrukcija_30: number | null
+  rata_2_postava_stolarije_20: number | null
+  rata_3_obrtnicki_radovi_20: number | null
+  rata_4_uporabna_20: number | null
+  kredit_etaziranje_90: number | null
   errors: string[]
   building_id?: string
 }
@@ -154,12 +154,12 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
           total_price: parseNumber(row[18]),
           datum_potpisa_predugovora: parseDate(row[19]),
           contract_payment_type: detectPaymentType(row),
-          kapara_10_posto: parseDate(row[20]),
-          rata_1_ab_konstrukcija_30: parseDate(row[21]),
-          rata_2_postava_stolarije_20: parseDate(row[22]),
-          rata_3_obrtnicki_radovi_20: parseDate(row[23]),
-          rata_4_uporabna_20: parseDate(row[24]),
-          kredit_etaziranje_90: parseDate(row[25]),
+          kapara_10_posto: row[20] ? parseNumber(row[20]) : null,
+          rata_1_ab_konstrukcija_30: row[21] ? parseNumber(row[21]) : null,
+          rata_2_postava_stolarije_20: row[22] ? parseNumber(row[22]) : null,
+          rata_3_obrtnicki_radovi_20: row[23] ? parseNumber(row[23]) : null,
+          rata_4_uporabna_20: row[24] ? parseNumber(row[24]) : null,
+          kredit_etaziranje_90: row[25] ? parseNumber(row[25]) : null,
           errors,
           building_id
         }
@@ -277,7 +277,6 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
               if (garageError) throw garageError
               garageId = newGarage.id
-              garagesCreated++
             }
 
             await supabase
@@ -286,6 +285,8 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 apartment_id: apartmentId,
                 garage_id: garageId
               }, { onConflict: 'apartment_id,garage_id' })
+
+            garagesCreated++
           }
 
           if (row.storage_label && row.storage_m2 && row.storage_price) {
@@ -324,7 +325,6 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
               if (storageError) throw storageError
               storageId = newStorage.id
-              storagesCreated++
             }
 
             await supabase
@@ -333,6 +333,8 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 apartment_id: apartmentId,
                 repository_id: storageId
               }, { onConflict: 'apartment_id,repository_id' })
+
+            storagesCreated++
           }
 
           successCount++
@@ -531,11 +533,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 <div className="text-3xl font-bold text-red-700">{importResults.failed}</div>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="text-sm text-orange-600 mb-1">Garages Created</div>
+                <div className="text-sm text-orange-600 mb-1">Garages Linked</div>
                 <div className="text-3xl font-bold text-orange-700">{importResults.garagesCreated}</div>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">Storages Created</div>
+                <div className="text-sm text-gray-600 mb-1">Storages Linked</div>
                 <div className="text-3xl font-bold text-gray-700">{importResults.storagesCreated}</div>
               </div>
             </div>

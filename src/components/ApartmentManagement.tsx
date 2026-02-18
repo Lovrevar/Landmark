@@ -226,6 +226,9 @@ const ApartmentManagement: React.FC = () => {
   }
 
   const handleDeleteApartment = async (id: string) => {
+    const apt = apartments.find(a => a.id === id)
+    const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
+    if (!window.confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) return
 
     try {
       await apartmentService.deleteApartment(id)

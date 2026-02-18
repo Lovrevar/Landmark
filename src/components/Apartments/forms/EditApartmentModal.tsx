@@ -184,7 +184,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <ContractedSection value={contractFields} onChange={setContractFields} />
+            <ContractedSection value={contractFields} onChange={setContractFields} price={formData.price} />
           </div>
         </Modal.Body>
 
