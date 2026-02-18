@@ -156,12 +156,18 @@ export type Repository = {
   created_at: string
 }
 
+export type LinkedUnit = {
+  id: string
+  number: string
+  size_m2: number
+  price: number
+  status: string
+}
+
 export type Apartment = {
   id: string
   project_id: string
   building_id: string | null
-  garage_id: string | null
-  repository_id: string | null
   number: string
   floor: number
   size_m2: number
@@ -170,6 +176,8 @@ export type Apartment = {
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
+  linked_garages?: LinkedUnit[]
+  linked_repositories?: LinkedUnit[]
   sale_info?: {
     sale_price: number
     payment_method: string
@@ -179,6 +187,9 @@ export type Apartment = {
     monthly_payment: number
     sale_date: string
     contract_signed: boolean
+    buyer_name?: string
+    buyer_email?: string
+    buyer_phone?: string
   }
 }
 

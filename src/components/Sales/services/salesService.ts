@@ -24,11 +24,22 @@ export const fetchBuildings = async () => {
 export const fetchApartments = async () => {
   const { data, error } = await supabase
     .from('apartments')
-    .select('*')
+    .select(`
+      *,
+      apartment_garages(garage:garages(id, number, size_m2, price, status)),
+      apartment_repositories(repository:repositories(id, number, size_m2, price, status))
+    `)
     .order('number')
 
   if (error) throw error
-  return data || []
+
+  return (data || []).map((apt: any) => ({
+    ...apt,
+    linked_garages: (apt.apartment_garages || []).map((ag: any) => ag.garage).filter(Boolean),
+    linked_repositories: (apt.apartment_repositories || []).map((ar: any) => ar.repository).filter(Boolean),
+    apartment_garages: undefined,
+    apartment_repositories: undefined,
+  }))
 }
 
 export const fetchGarages = async () => {

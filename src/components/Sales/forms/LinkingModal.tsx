@@ -44,7 +44,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                     onClose()
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
-                    apartment.garage_id === garage.id
+                    apartment.linked_garages?.some(g => g.id === garage.id)
                       ? 'border-orange-500 bg-orange-50'
                       : 'border-gray-200 hover:border-orange-300 bg-white'
                   }`}
@@ -74,7 +74,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                     onClose()
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
-                    apartment.repository_id === repository.id
+                    apartment.linked_repositories?.some(r => r.id === repository.id)
                       ? 'border-gray-500 bg-gray-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}

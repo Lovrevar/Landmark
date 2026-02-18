@@ -179,10 +179,10 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredUnits.map((unit: any) => {
-          const linkedGarage = activeUnitType === 'apartment' && unit.garage_id ?
-            garages.find(g => g.id === unit.garage_id) : null
-          const linkedRepository = activeUnitType === 'apartment' && unit.repository_id ?
-            repositories.find(r => r.id === unit.repository_id) : null
+          const linkedGarage = activeUnitType === 'apartment' && unit.linked_garages?.length > 0
+            ? unit.linked_garages[0] : null
+          const linkedRepository = activeUnitType === 'apartment' && unit.linked_repositories?.length > 0
+            ? unit.linked_repositories[0] : null
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
