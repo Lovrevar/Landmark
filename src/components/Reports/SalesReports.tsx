@@ -96,46 +96,32 @@ const SalesReports: React.FC = () => {
       const project = projects.find(p => p.id === selectedProject)
       if (!project) return
 
-      // Fetch project funding information - all investments for this project
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select(`
-          *,
-          investors(name),
-          banks(name)
-        `)
-        .eq('project_id', selectedProject)
-
-      if (investmentsError) throw investmentsError
-
-      // Fetch bank credits for this project
+      // Fetch bank credits directly assigned to this project
       const { data: creditsData, error: creditsError } = await supabase
         .from('bank_credits')
-        .select(`
-          *,
-          banks(name)
-        `)
+        .select('*, banks(name)')
         .eq('project_id', selectedProject)
 
       if (creditsError) throw creditsError
 
-      // Collect all investors and banks
-      const investors = (investmentsData || [])
-        .filter(inv => inv.investors)
-        .map(inv => inv.investors.name)
-        .filter((name, index, self) => self.indexOf(name) === index) // unique
+      // Fetch credit allocations for this project (new funding model)
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
+        .select('*, bank_credits(banks(name))')
+        .eq('project_id', selectedProject)
 
-      const banks = [
-        ...(investmentsData || [])
-          .filter(inv => inv.banks)
-          .map(inv => inv.banks.name),
-        ...(creditsData || [])
-          .filter(credit => credit.banks)
-          .map(credit => credit.banks.name)
-      ].filter((name, index, self) => self.indexOf(name) === index) // unique
+      if (allocationsError) throw allocationsError
 
-      // Combine all funding sources
-      const fundingSources = [...banks, ...investors].join(', ') || 'N/A'
+      // Collect unique bank names from both direct credits and allocations
+      const bankNamesFromCredits = (creditsData || [])
+        .map(credit => credit.banks?.name)
+        .filter(Boolean) as string[]
+
+      const bankNamesFromAllocations = (allocationsData || [])
+        .map(alloc => (alloc.bank_credits as any)?.banks?.name)
+        .filter(Boolean) as string[]
+
+      const fundingSources = [...new Set([...bankNamesFromCredits, ...bankNamesFromAllocations])].join(', ') || 'N/A'
 
       // Add funding info to project
       const projectWithFunding = {
@@ -675,7 +661,7 @@ const SalesReports: React.FC = () => {
                     <span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Investor:</span>
+                    <span className="text-gray-600">Funders:</span>
                     <span className="font-medium">{projectReport.project.investor || 'N/A'}</span>
                   </div>
                 </div>

@@ -161,13 +161,13 @@ const SupervisionReports: React.FC = () => {
 
       if (bankCreditsError) throw bankCreditsError
 
-      // Fetch project investments
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select('*, investors(name)')
+      // Fetch credit allocations for this project (new funding model)
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
+        .select('*, bank_credits(banks(name))')
         .eq('project_id', selectedProject)
 
-      if (investmentsError) throw investmentsError
+      if (allocationsError) throw allocationsError
 
       const contracts = contractsData || []
       const phases = phasesData || []
@@ -201,10 +201,11 @@ const SupervisionReports: React.FC = () => {
           }
         })
       }
-      if (investmentsData && investmentsData.length > 0) {
-        investmentsData.forEach(inv => {
-          if (inv.investors?.name && !investorNames.includes(inv.investors.name)) {
-            investorNames.push(inv.investors.name)
+      if (allocationsData && allocationsData.length > 0) {
+        allocationsData.forEach(alloc => {
+          const bankName = (alloc.bank_credits as any)?.banks?.name
+          if (bankName && !investorNames.includes(bankName)) {
+            investorNames.push(bankName)
           }
         })
       }
@@ -587,7 +588,7 @@ const SupervisionReports: React.FC = () => {
                     <span className="font-medium">€{projectReport.total_budget.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Investor:</span>
+                    <span className="text-gray-600">Funders:</span>
                     <span className="font-medium">{projectReport.investors}</span>
                   </div>
                 </div>
