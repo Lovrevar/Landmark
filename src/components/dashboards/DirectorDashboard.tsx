@@ -81,7 +81,7 @@ interface FundingMetrics {
   total_investors: number
   total_banks: number
   total_bank_credit: number
-  available_credit: number
+  outstanding_debt: number
   credit_paid_out: number
   avg_interest_rate: number
   monthly_debt_service: number
@@ -135,7 +135,7 @@ const DirectorDashboard: React.FC = () => {
     total_investors: 0,
     total_banks: 0,
     total_bank_credit: 0,
-    available_credit: 0,
+    outstanding_debt: 0,
     credit_paid_out: 0,
     avg_interest_rate: 0,
     monthly_debt_service: 0,
@@ -407,10 +407,6 @@ const DirectorDashboard: React.FC = () => {
       const { data: creditAllocations } = await supabase
         .from('credit_allocations')
         .select('bank_credits(bank_id)')
-      const { data: invoices } = await supabase
-        .from('accounting_invoices')
-        .select('paid_amount')
-
       const totalBanks = companies?.length || 0
 
       const activeFunderIds = new Set(
@@ -423,7 +419,7 @@ const DirectorDashboard: React.FC = () => {
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.amount), 0) || 0
       const totalInvestments = totalBankCredit
 
-      const investmentsSpent = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
+      const outstandingDebt = bankCredits?.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0) || 0
 
       const totalUsedCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0) || 0
       const totalRepaidCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.repaid_amount || 0), 0) || 0
@@ -445,7 +441,7 @@ const DirectorDashboard: React.FC = () => {
         total_investors: totalInvestors,
         total_banks: totalBanks,
         total_bank_credit: totalInvestments,
-        available_credit: investmentsSpent,
+        outstanding_debt: outstandingDebt,
         credit_paid_out: creditPaidOut,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService,
@@ -838,12 +834,12 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-xl font-bold text-gray-900">€{(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Investments Spent</p>
-            <p className="text-xl font-bold text-green-600">€{(fundingMetrics.available_credit / 1000000).toFixed(1)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Avg Interest Rate</p>
             <p className="text-xl font-bold text-blue-600">{fundingMetrics.avg_interest_rate.toFixed(2)}%</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Outstanding Debt</p>
+            <p className="text-xl font-bold text-red-600">€{(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Monthly Debt Service</p>
