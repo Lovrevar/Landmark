@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentWithDetails } from '../types/apartmentTypes'
 import { Modal, FormField, Input, Select, Button } from '../../ui'
+import {
+  ContractedSection,
+  ContractFields,
+  emptyContractFields,
+  contractFieldsFromData,
+  contractFieldsToPayload
+} from './ContractedSection'
 
 interface EditApartmentModalProps {
   visible: boolean
@@ -27,6 +34,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     povrsina_otvoreno: null as number | null,
     povrsina_ot_sa_koef: null as number | null
   })
+  const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
 
   useEffect(() => {
     if (apartment) {
@@ -42,13 +50,14 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
         povrsina_otvoreno: apartment.povrsina_otvoreno ?? null,
         povrsina_ot_sa_koef: apartment.povrsina_ot_sa_koef ?? null
       })
+      setContractFields(contractFieldsFromData(apartment))
     }
   }, [apartment])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!apartment) return
-    onSubmit(apartment.id, formData)
+    onSubmit(apartment.id, { ...formData, ...contractFieldsToPayload(contractFields) })
   }
 
   if (!visible || !apartment) return null
@@ -174,6 +183,8 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 </Select>
               </FormField>
             </div>
+
+            <ContractedSection value={contractFields} onChange={setContractFields} />
           </div>
         </Modal.Body>
 

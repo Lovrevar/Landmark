@@ -16,7 +16,15 @@ export const createSingleApartment = async (data: ApartmentFormData) => {
       tip_stana: data.tip_stana || null,
       sobnost: data.sobnost ?? null,
       povrsina_otvoreno: data.povrsina_otvoreno ?? null,
-      povrsina_ot_sa_koef: data.povrsina_ot_sa_koef ?? null
+      povrsina_ot_sa_koef: data.povrsina_ot_sa_koef ?? null,
+      datum_potpisa_predugovora: data.datum_potpisa_predugovora || null,
+      contract_payment_type: data.contract_payment_type || null,
+      kapara_10_posto: data.kapara_10_posto || null,
+      rata_1_ab_konstrukcija_30: data.rata_1_ab_konstrukcija_30 || null,
+      rata_2_postava_stolarije_20: data.rata_2_postava_stolarije_20 || null,
+      rata_3_obrtnicki_radovi_20: data.rata_3_obrtnicki_radovi_20 || null,
+      rata_4_uporabna_20: data.rata_4_uporabna_20 || null,
+      kredit_etaziranje_90: data.kredit_etaziranje_90 || null
     })
     .select()
     .single()

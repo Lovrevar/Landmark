@@ -25,6 +25,14 @@ interface ParsedApartmentRow {
   storage_m2: number | null
   storage_price: number | null
   total_price: number
+  datum_potpisa_predugovora: string | null
+  contract_payment_type: 'credit' | 'installments' | null
+  kapara_10_posto: string | null
+  rata_1_ab_konstrukcija_30: string | null
+  rata_2_postava_stolarije_20: string | null
+  rata_3_obrtnicki_radovi_20: string | null
+  rata_4_uporabna_20: string | null
+  kredit_etaziranje_90: string | null
   errors: string[]
   building_id?: string
 }
@@ -63,6 +71,32 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     if (value === null || value === undefined || value === '') return 0
     const str = String(value).replace(/\./g, '').replace(',', '.')
     return parseFloat(str) || 0
+  }
+
+  const parseDate = (value: any): string | null => {
+    if (value === null || value === undefined || value === '') return null
+    if (typeof value === 'number') {
+      const date = new Date(Math.round((value - 25569) * 86400 * 1000))
+      return date.toISOString().split('T')[0]
+    }
+    const str = String(value).trim()
+    if (!str) return null
+    const parts = str.split('.')
+    if (parts.length === 3) {
+      const [d, m, y] = parts
+      return `${y.padStart(4, '20')}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+    }
+    const parsed = new Date(str)
+    if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0]
+    return null
+  }
+
+  const detectPaymentType = (row: any[]): 'credit' | 'installments' | null => {
+    const hasInstallments = row[21] || row[22] || row[23] || row[24]
+    const hasCredit = row[25]
+    if (hasInstallments) return 'installments'
+    if (hasCredit) return 'credit'
+    return null
   }
 
   const parseFile = async () => {
@@ -118,6 +152,14 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
           storage_m2: row[16] ? parseNumber(row[16]) : null,
           storage_price: row[17] ? parseNumber(row[17]) : null,
           total_price: parseNumber(row[18]),
+          datum_potpisa_predugovora: parseDate(row[19]),
+          contract_payment_type: detectPaymentType(row),
+          kapara_10_posto: parseDate(row[20]),
+          rata_1_ab_konstrukcija_30: parseDate(row[21]),
+          rata_2_postava_stolarije_20: parseDate(row[22]),
+          rata_3_obrtnicki_radovi_20: parseDate(row[23]),
+          rata_4_uporabna_20: parseDate(row[24]),
+          kredit_etaziranje_90: parseDate(row[25]),
           errors,
           building_id
         }
@@ -167,7 +209,15 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
             tip_stana: row.type || null,
             sobnost: row.rooms ? parseInt(String(row.rooms)) || null : null,
             povrsina_otvoreno: row.area_open || null,
-            povrsina_ot_sa_koef: row.area_open_coef || null
+            povrsina_ot_sa_koef: row.area_open_coef || null,
+            datum_potpisa_predugovora: row.datum_potpisa_predugovora,
+            contract_payment_type: row.contract_payment_type,
+            kapara_10_posto: row.kapara_10_posto,
+            rata_1_ab_konstrukcija_30: row.rata_1_ab_konstrukcija_30,
+            rata_2_postava_stolarije_20: row.rata_2_postava_stolarije_20,
+            rata_3_obrtnicki_radovi_20: row.rata_3_obrtnicki_radovi_20,
+            rata_4_uporabna_20: row.rata_4_uporabna_20,
+            kredit_etaziranje_90: row.kredit_etaziranje_90
           }
 
           let apartmentId: string
@@ -365,7 +415,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 <li>Column 12 (L): cijena stana (apartment price)</li>
                 <li>Columns 13-15: parking data (optional)</li>
                 <li>Columns 16-18: storage data (optional)</li>
+                <li>Column 20 (T): datum potpisa predugovora (optional)</li>
+                <li>Column 21 (U): kapara 10% (optional)</li>
+                <li>Columns 22-25 (V-Y): installment dates or credit date (optional)</li>
                 <li>Numbers can use European format with commas (e.g., "3.000,00")</li>
+                <li>Dates can use DD.MM.YYYY format</li>
               </ul>
             </div>
           </div>

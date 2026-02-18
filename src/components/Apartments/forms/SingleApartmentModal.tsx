@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentFormData } from '../types/apartmentTypes'
 import { Modal, FormField, Select, Input, Button } from '../../ui'
+import {
+  ContractedSection,
+  ContractFields,
+  emptyContractFields,
+  contractFieldsToPayload
+} from './ContractedSection'
 
 interface SingleApartmentModalProps {
   visible: boolean
@@ -17,7 +23,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
-  const [formData, setFormData] = useState<ApartmentFormData>({
+  const [formData, setFormData] = useState({
     project_id: '',
     building_id: '',
     number: '',
@@ -26,10 +32,11 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
     price: 150000,
     ulaz: '',
     tip_stana: '',
-    sobnost: null,
-    povrsina_otvoreno: null,
-    povrsina_ot_sa_koef: null
+    sobnost: null as number | null,
+    povrsina_otvoreno: null as number | null,
+    povrsina_ot_sa_koef: null as number | null
   })
+  const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
 
   const filteredBuildings = buildings.filter(b => b.project_id === formData.project_id)
 
@@ -45,7 +52,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
       alert('Please fill in all required fields')
       return
     }
-    onSubmit(formData)
+    onSubmit({ ...formData, ...contractFieldsToPayload(contractFields) })
   }
 
   if (!visible) return null
@@ -180,6 +187,8 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
             </div>
+
+            <ContractedSection value={contractFields} onChange={setContractFields} />
           </div>
         </Modal.Body>
 
