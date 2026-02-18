@@ -815,7 +815,7 @@ const DirectorDashboard: React.FC = () => {
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <Building2 className="w-6 h-6 text-blue-600 mb-2" />
             <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
-            <p className="text-sm text-gray-600">Banking Partners</p>
+            <p className="text-sm text-gray-600">Investors</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <Target className="w-6 h-6 text-purple-600 mb-2" />
