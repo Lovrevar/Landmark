@@ -209,7 +209,7 @@ const InvoicesManagement: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       <PageHeader
         title="Project Invoices"
         description="Track and manage supplier and supervision invoices for all projects"
@@ -282,7 +282,7 @@ const InvoicesManagement: React.FC = () => {
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-          <table className="w-full min-w-[1100px] bg-white">
+          <table className="w-full min-w-[1400px] bg-white">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">Appr.</th>
