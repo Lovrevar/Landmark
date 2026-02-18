@@ -19,12 +19,27 @@ const formatAmount = (val: number | null | undefined): string => {
   return `€${val.toLocaleString('hr-HR')}`
 }
 
+const hasContractData = (apartment: ApartmentWithDetails): boolean => {
+  return !!(
+    apartment.datum_potpisa_predugovora ||
+    apartment.contract_payment_type ||
+    apartment.kapara_10_posto != null ||
+    apartment.rata_1_ab_konstrukcija_30 != null ||
+    apartment.rata_2_postava_stolarije_20 != null ||
+    apartment.rata_3_obrtnicki_radovi_20 != null ||
+    apartment.rata_4_uporabna_20 != null ||
+    apartment.kredit_etaziranje_90 != null
+  )
+}
+
 export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
   visible,
   onClose,
   apartment
 }) => {
   if (!visible || !apartment) return null
+
+  const showContract = hasContractData(apartment)
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
@@ -121,7 +136,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
             </div>
           )}
 
-          <div className="border-t border-gray-200 pt-4">
+          {showContract && <div className="border-t border-gray-200 pt-4">
             <h4 className="text-lg font-semibold text-gray-900 mb-3">Contract</h4>
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
@@ -163,7 +178,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </div>}
         </div>
       </Modal.Body>
 

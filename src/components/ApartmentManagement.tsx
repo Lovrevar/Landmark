@@ -179,7 +179,15 @@ const ApartmentManagement: React.FC = () => {
           tip_stana: apt.tip_stana ?? null,
           sobnost: apt.sobnost ?? null,
           povrsina_otvoreno: apt.povrsina_otvoreno ?? null,
-          povrsina_ot_sa_koef: apt.povrsina_ot_sa_koef ?? null
+          povrsina_ot_sa_koef: apt.povrsina_ot_sa_koef ?? null,
+          datum_potpisa_predugovora: apt.datum_potpisa_predugovora ?? null,
+          contract_payment_type: apt.contract_payment_type ?? null,
+          kapara_10_posto: apt.kapara_10_posto ?? null,
+          rata_1_ab_konstrukcija_30: apt.rata_1_ab_konstrukcija_30 ?? null,
+          rata_2_postava_stolarije_20: apt.rata_2_postava_stolarije_20 ?? null,
+          rata_3_obrtnicki_radovi_20: apt.rata_3_obrtnicki_radovi_20 ?? null,
+          rata_4_uporabna_20: apt.rata_4_uporabna_20 ?? null,
+          kredit_etaziranje_90: apt.kredit_etaziranje_90 ?? null
         }
       })
 
