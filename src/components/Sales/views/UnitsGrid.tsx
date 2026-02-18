@@ -179,18 +179,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredUnits.map((unit: any) => {
-          const linkedGarage = activeUnitType === 'apartment' && unit.linked_garages?.length > 0
-            ? unit.linked_garages[0] : null
-          const linkedRepository = activeUnitType === 'apartment' && unit.linked_repositories?.length > 0
-            ? unit.linked_repositories[0] : null
+          const linkedGarages: any[] = activeUnitType === 'apartment' ? (unit.linked_garages || []) : []
+          const linkedRepositories: any[] = activeUnitType === 'apartment' ? (unit.linked_repositories || []) : []
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
           const apartmentPrice = unit.price || 0
-          const garagePrice = linkedGarage?.price || 0
-          const repositoryPrice = linkedRepository?.price || 0
-          const totalPackagePrice = apartmentPrice + garagePrice + repositoryPrice
-          const hasLinkedUnits = linkedGarage || linkedRepository
+          const garagesPrice = linkedGarages.reduce((sum: number, g: any) => sum + (g?.price || 0), 0)
+          const repositoriesPrice = linkedRepositories.reduce((sum: number, r: any) => sum + (r?.price || 0), 0)
+          const totalPackagePrice = apartmentPrice + garagesPrice + repositoriesPrice
+          const hasLinkedUnits = linkedGarages.length > 0 || linkedRepositories.length > 0
 
           return (
             <div
@@ -306,12 +304,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   </>
                 )}
 
-                {linkedGarage && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 space-y-1">
+                {linkedGarages.map((garage: any) => (
+                  <div key={garage.id} className="bg-orange-50 border border-orange-200 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-orange-700">Garage: {linkedGarage.number}</span>
+                      <span className="text-xs font-semibold text-orange-700">Garage: {garage.number}</span>
                       <button
-                        onClick={() => onUnlinkGarage(unit.id, linkedGarage.id)}
+                        onClick={() => onUnlinkGarage(unit.id, garage.id)}
                         className="text-orange-600 hover:text-orange-800"
                       >
                         <Unlink className="w-3 h-3" />
@@ -319,17 +317,17 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-orange-600">Price:</span>
-                      <span className="text-xs font-bold text-orange-700">€{garagePrice.toLocaleString('hr-HR')}</span>
+                      <span className="text-xs font-bold text-orange-700">€{(garage.price || 0).toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
-                )}
+                ))}
 
-                {linkedRepository && (
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-1">
+                {linkedRepositories.map((repository: any) => (
+                  <div key={repository.id} className="bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-700">Repository: {linkedRepository.number}</span>
+                      <span className="text-xs font-semibold text-gray-700">Repository: {repository.number}</span>
                       <button
-                        onClick={() => onUnlinkRepository(unit.id, linkedRepository.id)}
+                        onClick={() => onUnlinkRepository(unit.id, repository.id)}
                         className="text-gray-600 hover:text-gray-800"
                       >
                         <Unlink className="w-3 h-3" />
@@ -337,10 +335,10 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-600">Price:</span>
-                      <span className="text-xs font-bold text-gray-700">€{repositoryPrice.toLocaleString('hr-HR')}</span>
+                      <span className="text-xs font-bold text-gray-700">€{(repository.price || 0).toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
 
               <div className="border-t pt-3">
