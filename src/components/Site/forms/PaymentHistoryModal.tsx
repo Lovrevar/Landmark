@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Building2, User, FileText, DollarSign } from 'lucide-react'
+import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment, supabase } from '../../../lib/supabase'
 import { Modal, Button, Badge, EmptyState } from '../../ui'
@@ -180,28 +180,14 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           </div>
                         )}
 
-                        {!isAccountingPayment && (payment as WirePayment).paid_by_type && ((payment as WirePayment).paid_by_investor_id || (payment as WirePayment).paid_by_bank_id) && (
+                        {!isAccountingPayment && (payment as WirePayment).paid_by_bank_id && (
                           <div className="flex items-center space-x-2 mb-2">
-                            {(payment as WirePayment).paid_by_type === 'investor' ? (
-                              <>
-                                <User className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm text-gray-700">
-                                  Paid by: <span className="font-medium text-blue-600">
-                                    {(payment as any).investor?.name || 'Investor'}
-                                    {(payment as any).investor?.type && ` (${(payment as any).investor.type})`}
-                                  </span>
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <Building2 className="w-4 h-4 text-green-600" />
-                                <span className="text-sm text-gray-700">
-                                  Paid by: <span className="font-medium text-green-600">
-                                    {(payment as any).bank?.name || 'Bank'}
-                                  </span>
-                                </span>
-                              </>
-                            )}
+                            <Building2 className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-gray-700">
+                              Paid by: <span className="font-medium text-green-600">
+                                {(payment as any).bank?.name || 'Bank'}
+                              </span>
+                            </span>
                           </div>
                         )}
 

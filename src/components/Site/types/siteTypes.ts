@@ -66,8 +66,7 @@ export interface SubcontractorFormData {
   total_amount: number
   phase_id: string
   contract_type_id: number
-  financed_by_type?: 'investor' | 'bank' | null
-  financed_by_investor_id?: string | null
+  financed_by_type?: 'bank' | null
   financed_by_bank_id?: string | null
   has_contract?: boolean
 }

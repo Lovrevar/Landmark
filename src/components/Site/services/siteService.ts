@@ -44,7 +44,6 @@ export const fetchSubcontractorsWithPhases = async () => {
         name,
         contact,
         financed_by_type,
-        financed_by_investor_id,
         financed_by_bank_id,
         completed_at,
         created_at
@@ -80,7 +79,6 @@ export const fetchSubcontractorsWithPhases = async () => {
       phase_id: contract.phase_id,
       progress,
       financed_by_type: contract.subcontractor.financed_by_type,
-      financed_by_investor_id: contract.subcontractor.financed_by_investor_id,
       financed_by_bank_id: contract.subcontractor.financed_by_bank_id,
       completed_at: contract.subcontractor.completed_at,
       contract_id: contract.id,
@@ -297,8 +295,7 @@ export const resequencePhases = async (phases: ProjectPhase[]) => {
 export const createSubcontractor = async (data: {
   name: string
   contact: string
-  financed_by_type?: 'investor' | 'bank' | null
-  financed_by_investor_id?: string | null
+  financed_by_type?: 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
   const { error } = await supabase
@@ -311,8 +308,7 @@ export const createSubcontractor = async (data: {
 export const createSubcontractorWithReturn = async (data: {
   name: string
   contact: string
-  financed_by_type?: 'investor' | 'bank' | null
-  financed_by_investor_id?: string | null
+  financed_by_type?: 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
   const { data: newSubcontractor, error } = await supabase

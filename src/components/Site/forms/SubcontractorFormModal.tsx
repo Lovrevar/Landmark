@@ -45,7 +45,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     phase_id: '',
     contract_type_id: 0,
     financed_by_type: null,
-    financed_by_investor_id: null,
     financed_by_bank_id: null,
     has_contract: true
   })

@@ -243,8 +243,7 @@ export const useSiteData = () => {
       total_amount?: number
       contract_type_id?: number
       has_contract?: boolean
-      financed_by_type?: 'investor' | 'bank' | null
-      financed_by_investor_id?: string | null
+      financed_by_type?: 'bank' | null
       financed_by_bank_id?: string | null
     }
   ) => {
@@ -306,7 +305,6 @@ export const useSiteData = () => {
           name: data.name,
           contact: data.contact,
           financed_by_type: data.financed_by_type || null,
-          financed_by_investor_id: data.financed_by_investor_id || null,
           financed_by_bank_id: data.financed_by_bank_id || null
         })
 
