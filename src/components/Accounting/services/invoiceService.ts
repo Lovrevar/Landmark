@@ -18,7 +18,6 @@ export const fetchData = async (
     suppliersResult,
     officeSuppliersResult,
     customersResult,
-    investorsResult,
     banksResult,
     projectsResult,
     contractsResult,
@@ -71,11 +70,6 @@ export const fetchData = async (
     supabase
       .from('customers')
       .select('id, name, surname, email')
-      .order('name'),
-
-    supabase
-      .from('investors')
-      .select('id, name, type')
       .order('name'),
 
     supabase
@@ -137,7 +131,6 @@ export const fetchData = async (
     companies: inv.company_name ? { name: inv.company_name } : null,
     subcontractors: inv.supplier_name ? { name: inv.supplier_name } : null,
     customers: inv.customer_name ? { name: inv.customer_name, surname: inv.customer_surname || '' } : null,
-    investors: inv.investor_name ? { name: inv.investor_name } : null,
     banks: inv.bank_name ? { name: inv.bank_name } : null,
     projects: inv.project_name ? { name: inv.project_name } : null,
     contracts: inv.contract_number ? { contract_number: inv.contract_number, job_description: inv.contract_job_description || '' } : null,
@@ -194,8 +187,6 @@ export const fetchData = async (
   }
   console.log('Loaded customers:', customersResult.data)
 
-  if (investorsResult.error) throw investorsResult.error
-
   if (banksResult.error) throw banksResult.error
 
   if (projectsResult.error) {
@@ -223,7 +214,6 @@ export const fetchData = async (
     suppliers: suppliersResult.data || [],
     officeSuppliers: officeSuppliersResult.data || [],
     customers: customersResult.data || [],
-    investors: investorsResult.data || [],
     banks: banksResult.data || [],
     projects: projectsResult.data || [],
     contracts: contractsResult.data || [],
@@ -244,7 +234,6 @@ export const handleSubmit = async (
   let supplier_id = null
   let office_supplier_id = null
   let customer_id = null
-  let investor_id = null
   let bank_id = null
   let invoice_category = 'GENERAL'
 
@@ -255,9 +244,8 @@ export const handleSubmit = async (
     office_supplier_id = formData.office_supplier_id || null
     invoice_category = 'OFFICE'
   } else if (formData.invoice_type === 'INCOMING_INVESTMENT') {
-    investor_id = formData.investor_id || null
     bank_id = formData.bank_id || null
-    invoice_category = investor_id ? 'INVESTOR' : 'BANK_CREDIT'
+    invoice_category = 'BANK_CREDIT'
   } else if (formData.invoice_type === 'OUTGOING_SALES') {
     customer_id = formData.customer_id || null
     invoice_category = 'CUSTOMER'
@@ -283,7 +271,6 @@ export const handleSubmit = async (
     supplier_id,
     office_supplier_id,
     customer_id,
-    investor_id,
     bank_id,
     apartment_id: formData.apartment_id || null,
     contract_id: formData.contract_id || null,

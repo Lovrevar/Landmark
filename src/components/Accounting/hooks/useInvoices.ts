@@ -14,7 +14,6 @@ export const useInvoices = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [officeSuppliers, setOfficeSuppliers] = useState<OfficeSupplier[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [investors, setInvestors] = useState<any[]>([])
   const [banks, setBanks] = useState<any[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -111,7 +110,6 @@ export const useInvoices = () => {
       setSuppliers(result.suppliers)
       setOfficeSuppliers(result.officeSuppliers)
       setCustomers(result.customers)
-      setInvestors(result.investors)
       setBanks(result.banks)
       setProjects(result.projects)
       setContracts(result.contracts)
@@ -137,7 +135,6 @@ export const useInvoices = () => {
           supplier_id: invoice.retail_supplier_id || '',
           office_supplier_id: invoice.office_supplier_id || '',
           customer_id: invoice.retail_customer_id || '',
-          investor_id: invoice.investor_id || '',
           bank_id: invoice.bank_id || '',
           apartment_id: invoice.apartment_id || '',
           contract_id: invoice.retail_contract_id || '',
@@ -171,7 +168,6 @@ export const useInvoices = () => {
         supplier_id: invoice.supplier_id || '',
         office_supplier_id: invoice.office_supplier_id || '',
         customer_id: invoice.customer_id || '',
-        investor_id: invoice.investor_id || '',
         bank_id: invoice.bank_id || '',
         apartment_id: invoice.apartment_id || '',
         contract_id: invoice.contract_id || '',
@@ -295,7 +291,6 @@ export const useInvoices = () => {
     suppliers,
     officeSuppliers,
     customers,
-    investors,
     banks,
     projects,
     contracts,

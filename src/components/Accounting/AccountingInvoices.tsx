@@ -38,7 +38,6 @@ const AccountingInvoices: React.FC = () => {
     suppliers,
     officeSuppliers,
     customers,
-    investors,
     banks,
     projects,
     contracts,
@@ -137,7 +136,6 @@ const AccountingInvoices: React.FC = () => {
       invoice_type: 'INCOMING_OFFICE',
       supplier_id: '',
       customer_id: '',
-      investor_id: '',
       bank_id: '',
       apartment_id: '',
       contract_id: '',
@@ -239,7 +237,6 @@ const AccountingInvoices: React.FC = () => {
         suppliers={suppliers}
         officeSuppliers={officeSuppliers}
         customers={customers}
-        investors={investors}
         banks={banks}
         projects={projects}
         contracts={contracts}

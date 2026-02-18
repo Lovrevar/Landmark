@@ -13,7 +13,6 @@ interface InvoiceFormModalProps {
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  investors: any[]
   banks: any[]
   projects: Project[]
   contracts: Contract[]
@@ -40,7 +39,6 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
   suppliers,
   officeSuppliers,
   customers,
-  investors,
   banks,
   projects,
   contracts,
@@ -74,7 +72,6 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
             suppliers={suppliers}
             officeSuppliers={officeSuppliers}
             customers={customers}
-            investors={investors}
             banks={banks}
             projects={projects}
             contracts={contracts}

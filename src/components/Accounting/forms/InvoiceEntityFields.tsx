@@ -9,7 +9,6 @@ interface InvoiceEntityFieldsProps {
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  investors: any[]
   banks: any[]
   projects: Project[]
   refunds: Refund[]
@@ -27,7 +26,6 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
   suppliers,
   officeSuppliers,
   customers,
-  investors,
   banks,
   projects,
   refunds,
@@ -111,30 +109,17 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'INCOMING_INVESTMENT' && (
-        <>
-          <FormField label="Investor (opcionalno)">
-            <Select
-              value={formData.investor_id}
-              onChange={(e) => onFormChange({ ...formData, investor_id: e.target.value, bank_id: '' })}
-            >
-              <option value="">Bez investora</option>
-              {investors.map(investor => (
-                <option key={investor.id} value={investor.id}>{investor.name}</option>
-              ))}
-            </Select>
-          </FormField>
-          <FormField label="Banka (opcionalno)">
-            <Select
-              value={formData.bank_id}
-              onChange={(e) => onFormChange({ ...formData, bank_id: e.target.value, investor_id: '' })}
-            >
-              <option value="">Bez banke</option>
-              {banks.map(bank => (
-                <option key={bank.id} value={bank.id}>{bank.name}</option>
-              ))}
-            </Select>
-          </FormField>
-        </>
+        <FormField label="Banka (opcionalno)">
+          <Select
+            value={formData.bank_id}
+            onChange={(e) => onFormChange({ ...formData, bank_id: e.target.value })}
+          >
+            <option value="">Bez banke</option>
+            {banks.map(bank => (
+              <option key={bank.id} value={bank.id}>{bank.name}</option>
+            ))}
+          </Select>
+        </FormField>
       )}
 
       {formData.invoice_type === 'OUTGOING_SUPPLIER' && (

@@ -13,7 +13,6 @@ interface InvoiceFormFieldsProps {
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  investors: any[]
   banks: any[]
   projects: Project[]
   contracts: Contract[]
@@ -37,7 +36,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
   suppliers,
   officeSuppliers,
   customers,
-  investors,
   banks,
   projects,
   refunds,
@@ -92,7 +90,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           suppliers={suppliers}
           officeSuppliers={officeSuppliers}
           customers={customers}
-          investors={investors}
           banks={banks}
           projects={projects}
           refunds={refunds}

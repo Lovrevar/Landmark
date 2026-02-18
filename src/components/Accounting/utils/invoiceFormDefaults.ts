@@ -4,7 +4,6 @@ export const getDefaultInvoiceFormData = () => ({
   supplier_id: '',
   office_supplier_id: '',
   customer_id: '',
-  investor_id: '',
   bank_id: '',
   apartment_id: '',
   contract_id: '',
