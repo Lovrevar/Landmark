@@ -290,7 +290,6 @@ const InvoicesManagement: React.FC = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
@@ -319,7 +318,6 @@ const InvoicesManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{invoice.contract_number}</td>
                   <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{invoice.project_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{invoice.phase_name}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
