@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, User, Plus } from 'lucide-react'
+import { Building2, Plus } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { SubcontractorFormData, ContractType } from '../types/siteTypes'
 import { fetchProjectFunders } from '../services/siteService'
@@ -49,7 +49,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     financed_by_bank_id: null,
     has_contract: true
   })
-  const [investors, setInvestors] = useState<Funder[]>([])
   const [banks, setBanks] = useState<Funder[]>([])
   const [contractTypes, setContractTypes] = useState<ContractType[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
@@ -107,7 +106,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     try {
       setLoadingFunders(true)
       const funders = await fetchProjectFunders(projectId)
-      setInvestors(funders.investors)
       setBanks(funders.banks)
     } catch (error) {
       console.error('Error loading funders:', error)
@@ -187,43 +185,14 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   }
 
   const handleFunderChange = (value: string) => {
-    if (!value) {
-      setFormData({
-        ...formData,
-        financed_by_type: null,
-        financed_by_investor_id: null,
-        financed_by_bank_id: null
-      })
-      return
-    }
-
-    const [type, id] = value.split(':')
-    if (type === 'investor') {
-      setFormData({
-        ...formData,
-        financed_by_type: 'investor',
-        financed_by_investor_id: id,
-        financed_by_bank_id: null
-      })
-    } else if (type === 'bank') {
-      setFormData({
-        ...formData,
-        financed_by_type: 'bank',
-        financed_by_bank_id: id,
-        financed_by_investor_id: null
-      })
-    }
+    setFormData({
+      ...formData,
+      financed_by_type: value ? 'bank' : null,
+      financed_by_bank_id: value || null
+    })
   }
 
-  const getFunderValue = () => {
-    if (formData.financed_by_type === 'investor' && formData.financed_by_investor_id) {
-      return `investor:${formData.financed_by_investor_id}`
-    }
-    if (formData.financed_by_type === 'bank' && formData.financed_by_bank_id) {
-      return `bank:${formData.financed_by_bank_id}`
-    }
-    return ''
-  }
+  const getFunderValue = () => formData.financed_by_bank_id || ''
 
   const handleSubmit = () => {
     onSubmit(formData, useExistingSubcontractor)
@@ -413,10 +382,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               />
             </FormField>
 
-            {(investors.length > 0 || banks.length > 0) && (
+            {banks.length > 0 && (
               <FormField
                 label="Financed By (Optional)"
-                helperText="Select which investor or bank is financing this contract"
+                helperText="Select which bank is financing this contract"
               >
                 <Select
                   value={getFunderValue()}
@@ -424,24 +393,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   disabled={loadingFunders}
                 >
                   <option value="">No financing source selected</option>
-                  {investors.length > 0 && (
-                    <optgroup label="Investors">
-                      {investors.map(investor => (
-                        <option key={investor.id} value={`investor:${investor.id}`}>
-                          {investor.name} {investor.type && `(${investor.type})`}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {banks.length > 0 && (
-                    <optgroup label="Banks">
-                      {banks.map(bank => (
-                        <option key={bank.id} value={`bank:${bank.id}`}>
-                          {bank.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+                  {banks.map(bank => (
+                    <option key={bank.id} value={bank.id}>{bank.name}</option>
+                  ))}
                 </Select>
               </FormField>
             )}
@@ -536,11 +490,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                 />
               </FormField>
             </div>
-            {(investors.length > 0 || banks.length > 0) && (
+            {banks.length > 0 && (
               <div className="md:col-span-2">
                 <FormField
                   label="Financed By (Optional)"
-                  helperText="Select which investor or bank is financing this contract"
+                  helperText="Select which bank is financing this contract"
                 >
                   <Select
                     value={getFunderValue()}
@@ -548,24 +502,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                     disabled={loadingFunders}
                   >
                     <option value="">No financing source selected</option>
-                    {investors.length > 0 && (
-                      <optgroup label="Investors">
-                        {investors.map(investor => (
-                          <option key={investor.id} value={`investor:${investor.id}`}>
-                            {investor.name} {investor.type && `(${investor.type})`}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {banks.length > 0 && (
-                      <optgroup label="Banks">
-                        {banks.map(bank => (
-                          <option key={bank.id} value={`bank:${bank.id}`}>
-                            {bank.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
+                    {banks.map(bank => (
+                      <option key={bank.id} value={bank.id}>{bank.name}</option>
+                    ))}
                   </Select>
                 </FormField>
               </div>

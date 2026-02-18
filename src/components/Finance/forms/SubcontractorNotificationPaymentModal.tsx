@@ -6,7 +6,6 @@ import { Modal, FormField, Input, Select, Textarea, Button } from '../../ui'
 interface Funder {
   id: string
   name: string
-  type?: string
 }
 
 interface SubcontractorNotificationPaymentModalProps {
@@ -25,10 +24,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   const [amount, setAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
-  const [investors, setInvestors] = useState<Funder[]>([])
   const [banks, setBanks] = useState<Funder[]>([])
-  const [paidByType, setPaidByType] = useState<'investor' | 'bank' | null>(null)
-  const [paidByInvestorId, setPaidByInvestorId] = useState<string | null>(null)
   const [paidByBankId, setPaidByBankId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [alreadyPaid, setAlreadyPaid] = useState(0)
@@ -57,37 +53,20 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
       if (milestoneError) throw milestoneError
 
-      const projectId = milestoneData.project_id
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
+        .select('bank_credits(banks(id, name))')
+        .eq('project_id', milestoneData.project_id)
 
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select('investors(id, name)')
-        .eq('project_id', projectId)
+      if (allocationsError) throw allocationsError
 
-      if (investmentsError) throw investmentsError
-
-      const uniqueInvestors = investmentsData
-        .filter(inv => inv.investors)
-        .map(inv => ({ id: inv.investors!.id, name: inv.investors!.name }))
-        .filter((investor, index, self) =>
-          index === self.findIndex(i => i.id === investor.id)
-        )
-
-      setInvestors(uniqueInvestors)
-
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('bank_credits')
-        .select('banks(id, name)')
-        .eq('project_id', projectId)
-
-      if (creditsError) throw creditsError
-
-      const uniqueBanks = creditsData
-        .filter(credit => credit.banks)
-        .map(credit => ({ id: credit.banks!.id, name: credit.banks!.name }))
-        .filter((bank, index, self) =>
-          index === self.findIndex(b => b.id === bank.id)
-        )
+      const uniqueBanks = Array.from(
+        new Map(
+          (allocationsData || [])
+            .filter((alloc: any) => alloc.bank_credits?.banks)
+            .map((alloc: any) => [alloc.bank_credits.banks.id, { id: alloc.bank_credits.banks.id, name: alloc.bank_credits.banks.name }])
+        ).values()
+      )
 
       setBanks(uniqueBanks)
     } catch (error) {
@@ -106,8 +85,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
       if (error) throw error
 
-      const totalPaid = (data || []).reduce((sum, payment) => sum + Number(payment.amount), 0)
-      setAlreadyPaid(totalPaid)
+      setAlreadyPaid((data || []).reduce((sum, payment) => sum + Number(payment.amount), 0))
     } catch (error) {
       console.error('Error loading payment history:', error)
     }
@@ -119,53 +97,18 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
     try {
       const { data, error } = await supabase
         .from('subcontractors')
-        .select('financed_by_type, financed_by_investor_id, financed_by_bank_id')
+        .select('financed_by_bank_id')
         .eq('id', notification.subcontractor_id)
         .single()
 
       if (error) throw error
 
-      if (data.financed_by_type && (data.financed_by_investor_id || data.financed_by_bank_id)) {
-        setPaidByType(data.financed_by_type)
-        if (data.financed_by_type === 'investor') {
-          setPaidByInvestorId(data.financed_by_investor_id)
-        } else {
-          setPaidByBankId(data.financed_by_bank_id)
-        }
+      if (data.financed_by_bank_id) {
+        setPaidByBankId(data.financed_by_bank_id)
       }
     } catch (error) {
       console.error('Error loading subcontractor financing:', error)
     }
-  }
-
-  const handlePaidByChange = (value: string) => {
-    if (!value) {
-      setPaidByType(null)
-      setPaidByInvestorId(null)
-      setPaidByBankId(null)
-      return
-    }
-
-    const [type, id] = value.split(':')
-    if (type === 'investor') {
-      setPaidByType('investor')
-      setPaidByInvestorId(id)
-      setPaidByBankId(null)
-    } else if (type === 'bank') {
-      setPaidByType('bank')
-      setPaidByBankId(id)
-      setPaidByInvestorId(null)
-    }
-  }
-
-  const getPaidByValue = () => {
-    if (paidByType === 'investor' && paidByInvestorId) {
-      return `investor:${paidByInvestorId}`
-    }
-    if (paidByType === 'bank' && paidByBankId) {
-      return `bank:${paidByBankId}`
-    }
-    return ''
   }
 
   const handleSubmit = async () => {
@@ -184,8 +127,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           payment_date: paymentDate || null,
           notes,
           milestone_id: notification.milestone_id,
-          paid_by_type: paidByType,
-          paid_by_investor_id: paidByInvestorId,
+          paid_by_type: paidByBankId ? 'bank' : null,
           paid_by_bank_id: paidByBankId
         })
 
@@ -236,9 +178,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           </div>
           <div className="flex justify-between pt-2 border-t border-gray-200">
             <span className="text-sm font-medium text-gray-700">Remaining:</span>
-            <span className="text-sm font-bold text-orange-600">
-              {remaining.toLocaleString('hr-HR')}
-            </span>
+            <span className="text-sm font-bold text-orange-600">{remaining.toLocaleString('hr-HR')}</span>
           </div>
         </div>
 
@@ -273,31 +213,16 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           />
         </FormField>
 
-        {(investors.length > 0 || banks.length > 0) && (
-          <FormField label="Paid By (Optional)" helperText="Select which investor or bank is making this payment">
+        {banks.length > 0 && (
+          <FormField label="Paid By (Optional)" helperText="Select which bank is making this payment">
             <Select
-              value={getPaidByValue()}
-              onChange={(e) => handlePaidByChange(e.target.value)}
+              value={paidByBankId || ''}
+              onChange={(e) => setPaidByBankId(e.target.value || null)}
             >
               <option value="">No payer selected</option>
-              {investors.length > 0 && (
-                <optgroup label="Investors">
-                  {investors.map(investor => (
-                    <option key={investor.id} value={`investor:${investor.id}`}>
-                      {investor.name} {investor.type && `(${investor.type})`}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              {banks.length > 0 && (
-                <optgroup label="Banks">
-                  {banks.map(bank => (
-                    <option key={bank.id} value={`bank:${bank.id}`}>
-                      {bank.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
+              {banks.map(bank => (
+                <option key={bank.id} value={bank.id}>{bank.name}</option>
+              ))}
             </Select>
           </FormField>
         )}

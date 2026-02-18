@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { MessageSquare, Send, Calendar, Building2, User, FileText, Clock, DollarSign } from 'lucide-react'
+import { MessageSquare, Send, Calendar, Building2, FileText, Clock, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../lib/supabase'
 import { CommentWithUser } from '../types/siteTypes'
@@ -101,33 +101,21 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   const loadFunderInfo = async () => {
     if (!subcontractor) return
 
-    if (!subcontractor.financed_by_type || (!subcontractor.financed_by_investor_id && !subcontractor.financed_by_bank_id)) {
+    if (!subcontractor.financed_by_bank_id) {
       setFunderName(null)
       return
     }
 
     try {
       setLoadingFunder(true)
-      if (subcontractor.financed_by_type === 'investor' && subcontractor.financed_by_investor_id) {
-        const { data, error } = await supabase
-          .from('investors')
-          .select('name')
-          .eq('id', subcontractor.financed_by_investor_id)
-          .maybeSingle()
+      const { data, error } = await supabase
+        .from('banks')
+        .select('name')
+        .eq('id', subcontractor.financed_by_bank_id)
+        .maybeSingle()
 
-        if (!error && data) {
-          setFunderName(data.name)
-        }
-      } else if (subcontractor.financed_by_type === 'bank' && subcontractor.financed_by_bank_id) {
-        const { data, error } = await supabase
-          .from('banks')
-          .select('name')
-          .eq('id', subcontractor.financed_by_bank_id)
-          .maybeSingle()
-
-        if (!error && data) {
-          setFunderName(data.name)
-        }
+      if (!error && data) {
+        setFunderName(data.name)
       }
     } catch (error) {
       console.error('Error loading funder:', error)
@@ -303,11 +291,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           {funderName && (
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="flex items-center">
-                {subcontractor.financed_by_type === 'investor' ? (
-                  <User className="w-5 h-5 text-blue-600 mr-2" />
-                ) : (
-                  <Building2 className="w-5 h-5 text-blue-600 mr-2" />
-                )}
+                <Building2 className="w-5 h-5 text-blue-600 mr-2" />
                 <div>
                   <p className="text-xs text-blue-700 font-medium">Financira</p>
                   <p className="text-sm font-semibold text-blue-900">{funderName}</p>

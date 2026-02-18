@@ -423,21 +423,8 @@ export const useSiteData = () => {
     notes: string,
     userId: string,
     milestoneId?: string,
-    paidByType?: 'investor' | 'bank' | null,
-    paidByInvestorId?: string | null,
     paidByBankId?: string | null
   ) => {
-    console.log('addPaymentToSubcontractor called', {
-      subcontractor,
-      amount,
-      paymentDate,
-      notes,
-      userId,
-      milestoneId,
-      paidByType,
-      paidByInvestorId,
-      paidByBankId
-    })
 
     if (amount <= 0) {
       alert('Please enter a valid payment amount')

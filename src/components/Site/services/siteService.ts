@@ -825,42 +825,25 @@ export const getMilestoneStatsForContract = async (
 }
 
 export const fetchProjectFunders = async (projectId: string) => {
-  const { data: investorsData, error: investorsError } = await supabase
-    .from('project_investments')
-    .select('investor_id, investors(id, name, type)')
+  const { data, error } = await supabase
+    .from('credit_allocations')
+    .select('bank_credits(bank_id, banks(id, name))')
     .eq('project_id', projectId)
-    .not('investor_id', 'is', null)
 
-  if (investorsError) throw investorsError
+  if (error) throw error
 
-  const { data: banksData, error: banksError } = await supabase
-    .from('bank_credits')
-    .select('bank_id, banks(id, name)')
-    .eq('project_id', projectId)
-    .not('bank_id', 'is', null)
-
-  if (banksError) throw banksError
-
-  const uniqueInvestors = Array.from(
+  const banks = Array.from(
     new Map(
-      (investorsData || [])
-        .filter(inv => inv.investors)
-        .map(inv => [inv.investors.id, inv.investors])
+      (data || [])
+        .filter(alloc => alloc.bank_credits?.banks)
+        .map(alloc => [
+          (alloc.bank_credits as any).banks.id,
+          (alloc.bank_credits as any).banks
+        ])
     ).values()
   )
 
-  const uniqueBanks = Array.from(
-    new Map(
-      (banksData || [])
-        .filter(bank => bank.banks)
-        .map(bank => [bank.banks.id, bank.banks])
-    ).values()
-  )
-
-  return {
-    investors: uniqueInvestors,
-    banks: uniqueBanks
-  }
+  return { banks }
 }
 
 export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, contractId?: string) => {
