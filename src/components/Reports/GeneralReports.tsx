@@ -218,7 +218,7 @@ const GeneralReports: React.FC = () => {
   const fetchAllData = async (): Promise<ComprehensiveReport> => {
     const { data: projects } = await supabase.from('projects').select('*')
     const { data: apartments } = await supabase.from('apartments').select('*')
-    const { data: sales } = await supabase.from('sales').select('*, apartments(garage_id, repository_id)')
+    const { data: sales } = await supabase.from('sales').select('sale_price, apartment_id')
     const { data: customers } = await supabase.from('customers').select('*')
     const { data: contracts } = await supabase.from('contracts').select('*, contract_types(name)')
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
@@ -321,16 +321,9 @@ const GeneralReports: React.FC = () => {
       ? projectsArray
       : projectsArray.filter(p => p.id === selectedProject)
 
-    const totalRevenue = salesArray.reduce((sum, s) => {
-      let saleTotal = s.sale_price
-      if (s.apartments?.garage_id) {
-        saleTotal += garageMap.get(s.apartments.garage_id) || 0
-      }
-      if (s.apartments?.repository_id) {
-        saleTotal += storageMap.get(s.apartments.repository_id) || 0
-      }
-      return sum + saleTotal
-    }, 0)
+    const totalRevenue = apartmentsArray
+      .filter(a => a.status === 'Sold')
+      .reduce((sum, a) => sum + (a.price || 0), 0)
 
     const contractExpenses = contractsArray.map(c => {
       const contractInvoices = accountingInvoicesArray.filter(
