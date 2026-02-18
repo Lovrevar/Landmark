@@ -3,13 +3,14 @@ import React from 'react'
 interface TableRootProps {
   children: React.ReactNode
   className?: string
+  tableClassName?: string
 }
 
-function TableRoot({ children, className = '' }: TableRootProps) {
+function TableRoot({ children, className = '', tableClassName = 'min-w-max' }: TableRootProps) {
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-max">
+        <table className={`w-full ${tableClassName}`}>
           {children}
         </table>
       </div>

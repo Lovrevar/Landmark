@@ -281,7 +281,7 @@ const InvoicesManagement: React.FC = () => {
           description="Try adjusting your search or filters"
         />
       ) : (
-        <Table>
+        <Table tableClassName="w-full">
           <Table.Head>
             <Table.Tr>
               <Table.Th>Approved</Table.Th>
