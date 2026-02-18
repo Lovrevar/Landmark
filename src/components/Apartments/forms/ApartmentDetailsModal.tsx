@@ -14,16 +14,9 @@ const formatDate = (dateStr: string | null | undefined): string => {
   return d.toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const hasContractData = (apartment: ApartmentWithDetails): boolean => {
-  return !!(
-    apartment.datum_potpisa_predugovora ||
-    apartment.kapara_10_posto ||
-    apartment.rata_1_ab_konstrukcija_30 ||
-    apartment.rata_2_postava_stolarije_20 ||
-    apartment.rata_3_obrtnicki_radovi_20 ||
-    apartment.rata_4_uporabna_20 ||
-    apartment.kredit_etaziranje_90
-  )
+const formatAmount = (val: number | null | undefined): string => {
+  if (val == null) return '—'
+  return `€${val.toLocaleString('hr-HR')}`
 }
 
 export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
@@ -32,8 +25,6 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
   apartment
 }) => {
   if (!visible || !apartment) return null
-
-  const showContract = hasContractData(apartment)
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
@@ -130,61 +121,49 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
             </div>
           )}
 
-          {showContract && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">Contract</h4>
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
-                {apartment.datum_potpisa_predugovora && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Datum potpisa predugovora:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.datum_potpisa_predugovora)}</span>
-                  </div>
-                )}
-                {apartment.contract_payment_type && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment type:</span>
-                    <span className="font-medium text-gray-900 capitalize">{apartment.contract_payment_type}</span>
-                  </div>
-                )}
-                {apartment.kapara_10_posto && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kapara 10%:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.kapara_10_posto)}</span>
-                  </div>
-                )}
-                {apartment.rata_1_ab_konstrukcija_30 && (
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">Contract</h4>
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Datum potpisa predugovora:</span>
+                <span className="font-medium text-gray-900">{formatDate(apartment.datum_potpisa_predugovora) || '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment type:</span>
+                <span className="font-medium text-gray-900 capitalize">{apartment.contract_payment_type || '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Kapara 10%:</span>
+                <span className="font-medium text-gray-900">{formatAmount(apartment.kapara_10_posto)}</span>
+              </div>
+              {apartment.contract_payment_type === 'installments' && (
+                <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">1. rata AB konstrukcija 30%:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.rata_1_ab_konstrukcija_30)}</span>
+                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_1_ab_konstrukcija_30)}</span>
                   </div>
-                )}
-                {apartment.rata_2_postava_stolarije_20 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">2. rata postava stolarije 20%:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.rata_2_postava_stolarije_20)}</span>
+                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_2_postava_stolarije_20)}</span>
                   </div>
-                )}
-                {apartment.rata_3_obrtnicki_radovi_20 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">3. rata obrtnički radovi 20%:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.rata_3_obrtnicki_radovi_20)}</span>
+                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_3_obrtnicki_radovi_20)}</span>
                   </div>
-                )}
-                {apartment.rata_4_uporabna_20 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">4. rata uporabna 20%:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.rata_4_uporabna_20)}</span>
+                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_4_uporabna_20)}</span>
                   </div>
-                )}
-                {apartment.kredit_etaziranje_90 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kredit etažiranje 90% ili manje:</span>
-                    <span className="font-medium text-gray-900">{formatDate(apartment.kredit_etaziranje_90)}</span>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
+              {apartment.contract_payment_type === 'credit' && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Kredit etažiranje 90%:</span>
+                  <span className="font-medium text-gray-900">{formatAmount(apartment.kredit_etaziranje_90)}</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </Modal.Body>
 

@@ -12,12 +12,12 @@ export interface ApartmentFormData {
   povrsina_ot_sa_koef?: number | null
   datum_potpisa_predugovora?: string | null
   contract_payment_type?: 'credit' | 'installments' | null
-  kapara_10_posto?: string | null
-  rata_1_ab_konstrukcija_30?: string | null
-  rata_2_postava_stolarije_20?: string | null
-  rata_3_obrtnicki_radovi_20?: string | null
-  rata_4_uporabna_20?: string | null
-  kredit_etaziranje_90?: string | null
+  kapara_10_posto?: number | null
+  rata_1_ab_konstrukcija_30?: number | null
+  rata_2_postava_stolarije_20?: number | null
+  rata_3_obrtnicki_radovi_20?: number | null
+  rata_4_uporabna_20?: number | null
+  kredit_etaziranje_90?: number | null
 }
 
 export interface BulkApartmentData {
@@ -49,12 +49,12 @@ export interface ApartmentWithDetails {
   povrsina_ot_sa_koef?: number | null
   datum_potpisa_predugovora?: string | null
   contract_payment_type?: 'credit' | 'installments' | null
-  kapara_10_posto?: string | null
-  rata_1_ab_konstrukcija_30?: string | null
-  rata_2_postava_stolarije_20?: string | null
-  rata_3_obrtnicki_radovi_20?: string | null
-  rata_4_uporabna_20?: string | null
-  kredit_etaziranje_90?: string | null
+  kapara_10_posto?: number | null
+  rata_1_ab_konstrukcija_30?: number | null
+  rata_2_postava_stolarije_20?: number | null
+  rata_3_obrtnicki_radovi_20?: number | null
+  rata_4_uporabna_20?: number | null
+  kredit_etaziranje_90?: number | null
   garages?: Array<{
     id: string
     number: string

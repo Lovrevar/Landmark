@@ -66,7 +66,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Edit Apartment" onClose={onClose} />
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
