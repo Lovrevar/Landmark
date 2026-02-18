@@ -248,7 +248,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Price per m²:</span>
-                  <span className="text-sm font-medium text-blue-600">€{unit.price_per_m2?.toLocaleString('hr-HR') || '0'}/m²</span>
+                  <span className="text-sm font-medium text-blue-600">
+                    €{(unit.price_per_m2 && unit.price_per_m2 > 0
+                      ? unit.price_per_m2
+                      : unit.size_m2 > 0 ? Math.round(unit.price / unit.size_m2) : 0
+                    ).toLocaleString('hr-HR')}/m²
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? 'Apartment Price:' : 'Total Price:'}</span>
