@@ -87,11 +87,13 @@ export const fetchCredits = async () => {
 export const createPayment = async (formData: PaymentFormData) => {
   const { data: { user } } = await supabase.auth.getUser()
 
+  const isKompenzacija = !formData.is_cesija && formData.payment_source_type === 'kompenzacija'
+
   const paymentData = {
     invoice_id: formData.invoice_id,
     payment_source_type: formData.is_cesija ? 'bank_account' : formData.payment_source_type,
-    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' ? (formData.company_bank_account_id || null) : null),
-    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' ? (formData.credit_id || null) : null),
+    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' && !isKompenzacija ? (formData.company_bank_account_id || null) : null),
+    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' && !isKompenzacija ? (formData.credit_id || null) : null),
     is_cesija: formData.is_cesija,
     cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
     cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,
@@ -113,11 +115,13 @@ export const createPayment = async (formData: PaymentFormData) => {
 export const updatePayment = async (id: string, formData: PaymentFormData) => {
   const { data: { user } } = await supabase.auth.getUser()
 
+  const isKompenzacija = !formData.is_cesija && formData.payment_source_type === 'kompenzacija'
+
   const paymentData = {
     invoice_id: formData.invoice_id,
     payment_source_type: formData.is_cesija ? 'bank_account' : formData.payment_source_type,
-    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' ? (formData.company_bank_account_id || null) : null),
-    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' ? (formData.credit_id || null) : null),
+    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' && !isKompenzacija ? (formData.company_bank_account_id || null) : null),
+    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' && !isKompenzacija ? (formData.credit_id || null) : null),
     is_cesija: formData.is_cesija,
     cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
     cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,

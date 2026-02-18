@@ -55,7 +55,7 @@ export interface Payment {
 
 export interface PaymentFormData {
   invoice_id: string
-  payment_source_type: 'bank_account' | 'credit'
+  payment_source_type: 'bank_account' | 'credit' | 'kompenzacija'
   company_bank_account_id: string
   credit_id: string
   is_cesija: boolean

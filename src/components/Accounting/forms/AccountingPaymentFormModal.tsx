@@ -107,7 +107,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     value={formData.payment_source_type}
                     onChange={(e) => setFormData({
                       ...formData,
-                      payment_source_type: e.target.value as 'bank_account' | 'credit',
+                      payment_source_type: e.target.value as 'bank_account' | 'credit' | 'kompenzacija',
                       company_bank_account_id: '',
                       credit_id: ''
                     })}
@@ -115,6 +115,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                   >
                     <option value="bank_account">Bankovni račun</option>
                     <option value="credit">Kredit</option>
+                    <option value="kompenzacija">Kompenzacija</option>
                   </Select>
                 </FormField>
 
