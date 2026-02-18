@@ -224,8 +224,6 @@ const GeneralReports: React.FC = () => {
     const { data: subcontractors } = await supabase.from('subcontractors').select('*')
     const { data: projectPhases } = await supabase.from('project_phases').select('*')
     const { data: workLogs } = await supabase.from('work_logs').select('*')
-    const { data: investors } = await supabase.from('investors').select('*')
-    const { data: projectInvestments } = await supabase.from('project_investments').select('*')
 
     const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('*')
     const { data: accountingPayments } = await supabase.from('accounting_payments').select('*')
@@ -259,8 +257,6 @@ const GeneralReports: React.FC = () => {
     const subcontractorsArray = subcontractors || []
     const projectPhasesArray = projectPhases || []
     const workLogsArray = workLogs || []
-    const investorsArray = investors || []
-    const projectInvestmentsArray = projectInvestments || []
 
     const accountingInvoicesArray = accountingInvoices || []
     const accountingPaymentsArray = accountingPayments || []
@@ -344,8 +340,14 @@ const GeneralReports: React.FC = () => {
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
     const portfolioValue = projectsArray.reduce((sum, p) => sum + p.budget, 0)
-    const totalEquity = projectInvestmentsArray.reduce((sum, inv) => sum + inv.amount, 0)
+    const totalEquity = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
     const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
+    const activeFunderIds = new Set(
+      creditAllocationsArray
+        .map(alloc => bankCreditsArray.find(bc => bc.id === alloc.credit_id)?.bank_id)
+        .filter(Boolean)
+    )
+    const activeFundersCount = activeFunderIds.size
     const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
 
     const totalUnits = apartmentsArray.length
@@ -413,9 +415,9 @@ const GeneralReports: React.FC = () => {
         const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
         const projectContracts = contractsArray.filter(c => c.project_id === project.id)
         const projectPhases = projectPhasesArray.filter(p => p.project_id === project.id)
-        const projectInvestment = projectInvestmentsArray
-          .filter(inv => inv.project_id === project.id)
-          .reduce((sum, inv) => sum + inv.amount, 0)
+        const projectInvestment = creditAllocationsArray
+          .filter(alloc => alloc.project_id === project.id)
+          .reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
 
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
@@ -625,7 +627,7 @@ const GeneralReports: React.FC = () => {
         debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
         total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
         available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.available_balance || 0) - (bc.drawn_amount || 0)), 0),
-        active_investors: investorsArray.length,
+        active_investors: activeFundersCount,
         active_banks: banksArray.length,
         bank_credits: bankCreditsArray.length,
         avg_interest_rate: avgInterestRate,
@@ -1090,7 +1092,7 @@ const GeneralReports: React.FC = () => {
       pdf.setTextColor(0, 0, 0)
 
       const fundingData = [
-        ['Total Equity Invested:', '€' + report.funding_structure.total_equity.toLocaleString(), 'Active Investors:', report.funding_structure.active_investors.toString()],
+        ['Total Equity Invested:', '€' + report.funding_structure.total_equity.toLocaleString(), 'Active Funders:', report.funding_structure.active_investors.toString()],
         ['Total Debt:', '€' + report.funding_structure.total_debt.toLocaleString(), 'Active Banks:', report.funding_structure.active_banks.toString()],
         ['Debt-to-Equity Ratio:', report.funding_structure.debt_equity_ratio.toFixed(2), 'Bank Credits:', report.funding_structure.bank_credits.toString()],
         ['Total Credit Lines:', '€' + report.funding_structure.total_credit_lines.toLocaleString(), 'Avg Interest Rate:', report.funding_structure.avg_interest_rate.toFixed(2) + '%'],
@@ -1867,7 +1869,7 @@ const GeneralReports: React.FC = () => {
               <span className="font-bold text-gray-900">€{report.funding_structure.available_credit.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Active Investors:</span>
+              <span className="font-bold text-gray-700">Active Funders:</span>
               <span className="font-bold text-gray-900">{report.funding_structure.active_investors}</span>
             </div>
             <div className="flex justify-between">
