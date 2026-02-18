@@ -548,10 +548,9 @@ export const generateComprehensiveExecutiveReport = async () => {
       customersData,
       contractsData,
       wirePaymentsData,
-      investorsData,
+      creditAllocationsData,
       banksData,
       bankCreditsData,
-      projectInvestmentsData,
       subcontractorsData,
       phasesData,
       workLogsData
@@ -562,10 +561,9 @@ export const generateComprehensiveExecutiveReport = async () => {
       supabase.from('customers').select('*'),
       supabase.from('contracts').select('*'),
       supabase.from('subcontractor_payments').select('*'),
-      supabase.from('investors').select('*'),
+      supabase.from('credit_allocations').select('*'),
       supabase.from('banks').select('*'),
       supabase.from('bank_credits').select('*'),
-      supabase.from('project_investments').select('*'),
       supabase.from('subcontractors').select('*'),
       supabase.from('project_phases').select('*'),
       supabase.from('work_logs').select('*')
@@ -577,10 +575,9 @@ export const generateComprehensiveExecutiveReport = async () => {
     const customers = customersData.data || []
     const contracts = contractsData.data || []
     const wirePayments = wirePaymentsData.data || []
-    const investors = investorsData.data || []
+    const creditAllocations = creditAllocationsData.data || []
     const banks = banksData.data || []
     const bankCredits = bankCreditsData.data || []
-    const projectInvestments = projectInvestmentsData.data || []
     const subcontractors = subcontractorsData.data || []
     const phases = phasesData.data || []
     const workLogs = workLogsData.data || []
@@ -607,8 +604,14 @@ export const generateComprehensiveExecutiveReport = async () => {
     const totalRevenue = sales.reduce((sum, s) => sum + s.sale_price, 0)
     const totalExpenses = wirePayments.reduce((sum, p) => sum + p.amount, 0)
     const netProfit = totalRevenue - totalExpenses
-    const totalEquity = projectInvestments.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
+    const totalEquity = creditAllocations.reduce((sum, alloc) => sum + parseFloat(alloc.allocated_amount || 0), 0)
     const totalDebt = banks.reduce((sum, b) => sum + b.outstanding_debt, 0)
+    const activeFunderIds = new Set(
+      creditAllocations
+        .map(alloc => bankCredits.find(bc => bc.id === alloc.credit_id)?.bank_id)
+        .filter(Boolean)
+    )
+    const activeFundersCount = activeFunderIds.size
     const debtToEquity = totalEquity > 0 ? totalDebt / totalEquity : 0
 
     pdf.setFillColor(248, 250, 252)
@@ -762,7 +765,7 @@ export const generateComprehensiveExecutiveReport = async () => {
       ['Debt-to-Equity Ratio', debtToEquity.toFixed(2)],
       ['Total Credit Lines', `€${totalCreditLimit.toLocaleString()}`],
       ['Available Credit', `€${availableCredit.toLocaleString()}`],
-      ['Active Investors', investors.length.toString()],
+      ['Active Funders', activeFundersCount.toString()],
       ['Active Banks', banks.length.toString()],
       ['Bank Credits', bankCredits.length.toString()],
       ['Avg Interest Rate', `${avgInterestRate.toFixed(2)}%`],
@@ -955,12 +958,12 @@ export const generateComprehensiveExecutiveReport = async () => {
         return contract && contract.project_id === project.id
       })
       const projectPhases = phases.filter(ph => ph.project_id === project.id)
-      const projectInvs = projectInvestments.filter(pi => pi.project_id === project.id)
       const projectCredits = bankCredits.filter(bc => bc.project_id === project.id)
+      const projectAllocations = creditAllocations.filter(alloc => alloc.project_id === project.id)
 
       const projectRevenue = projectSales.reduce((sum, s) => sum + s.sale_price, 0)
       const projectExpenses = projectPayments.reduce((sum, p) => sum + p.amount, 0)
-      const projectEquity = projectInvs.reduce((sum, pi) => sum + parseFloat(pi.amount), 0)
+      const projectEquity = projectAllocations.reduce((sum, alloc) => sum + parseFloat(alloc.allocated_amount || 0), 0)
       const projectDebt = projectCredits.reduce((sum, bc) => sum + bc.outstanding_balance, 0)
       const soldUnitsProj = projectApartments.filter(a => a.status === 'Sold').length
       const salesRate = projectApartments.length > 0 ? (soldUnitsProj / projectApartments.length) * 100 : 0
