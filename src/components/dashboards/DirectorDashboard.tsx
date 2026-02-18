@@ -445,7 +445,7 @@ const DirectorDashboard: React.FC = () => {
         total_investors: totalInvestors,
         total_banks: totalBanks,
         total_bank_credit: totalInvestments,
-        available_credit: y,
+        available_credit: investmentsSpent,
         credit_paid_out: creditPaidOut,
         avg_interest_rate: avgInterestRate,
         monthly_debt_service: monthlyDebtService,
