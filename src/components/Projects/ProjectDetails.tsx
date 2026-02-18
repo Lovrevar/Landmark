@@ -137,13 +137,13 @@ const ProjectDetails: React.FC = () => {
 
       if (bankCreditsError) throw bankCreditsError
 
-      // Fetch project investments
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select('*, investors(name)')
+      // Fetch credit allocations for this project
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from('credit_allocations')
+        .select('*, bank_credits(banks(name))')
         .eq('project_id', id)
 
-      if (investmentsError) throw investmentsError
+      if (allocationsError) throw allocationsError
 
       // Calculate project statistics
       const subcontractors = subcontractorsData || []
@@ -155,7 +155,7 @@ const ProjectDetails: React.FC = () => {
       const total_revenue = apartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
       const pending_invoices = invoices.filter(inv => !inv.paid).length
 
-      // Build investors list
+      // Build funders list from bank_credits and credit_allocations
       const investorNames: string[] = []
       if (bankCreditsData && bankCreditsData.length > 0) {
         bankCreditsData.forEach(bc => {
@@ -164,10 +164,11 @@ const ProjectDetails: React.FC = () => {
           }
         })
       }
-      if (investmentsData && investmentsData.length > 0) {
-        investmentsData.forEach(inv => {
-          if (inv.investors?.name && !investorNames.includes(inv.investors.name)) {
-            investorNames.push(inv.investors.name)
+      if (allocationsData && allocationsData.length > 0) {
+        allocationsData.forEach(alloc => {
+          const bankName = (alloc.bank_credits as any)?.banks?.name
+          if (bankName && !investorNames.includes(bankName)) {
+            investorNames.push(bankName)
           }
         })
       }

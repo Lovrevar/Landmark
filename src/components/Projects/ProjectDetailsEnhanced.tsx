@@ -72,13 +72,18 @@ interface Apartment {
   buyer_name: string | null
 }
 
-interface Investment {
+interface CreditAllocationItem {
   id: string
-  amount: number
-  investment_type: string
-  investment_date: string
-  investor?: { name: string }
-  bank?: { name: string }
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  created_at: string
+  bank_credits?: {
+    credit_name: string
+    credit_type: string
+    start_date: string | null
+    banks?: { name: string }
+  }
 }
 
 type TabType = 'overview' | 'phases' | 'apartments' | 'subcontractors' | 'financing' | 'milestones'
@@ -91,7 +96,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [phases, setPhases] = useState<Phase[]>([])
   const [contracts, setContracts] = useState<Contract[]>([])
   const [apartments, setApartments] = useState<Apartment[]>([])
-  const [investments, setInvestments] = useState<Investment[]>([])
+  const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -156,16 +161,19 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setApartments(apartmentsData || [])
 
       const { data: investmentsData } = await supabase
-        .from('project_investments')
+        .from('credit_allocations')
         .select(`
-          *,
-          investor:investors(name),
-          bank:banks(name)
+          id,
+          allocated_amount,
+          used_amount,
+          description,
+          created_at,
+          bank_credits(credit_name, credit_type, start_date, banks(name))
         `)
         .eq('project_id', id)
-        .order('investment_date', { ascending: false })
+        .order('created_at', { ascending: false })
 
-      setInvestments(investmentsData || [])
+      setInvestments((investmentsData || []) as CreditAllocationItem[])
     } catch (error) {
       console.error('Error fetching project:', error)
     } finally {
@@ -602,7 +610,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Funding Sources</h3>
               {investments.length === 0 ? (
-                <EmptyState icon={DollarSign} title="No investments recorded" />
+                <EmptyState icon={DollarSign} title="No credit allocations recorded" />
               ) : (
                 <div className="space-y-4">
                   {investments.map((investment) => (
@@ -610,13 +618,20 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">
-                            {investment.investor?.name || investment.bank?.name || 'Unknown'}
+                            {investment.bank_credits?.banks?.name || 'Unknown Bank'}
                           </h4>
                           <p className="text-sm text-gray-600 mt-1">
-                            Type: {investment.investment_type} • {format(parseISO(investment.investment_date), 'MMM dd, yyyy')}
+                            {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
+                            {investment.bank_credits?.start_date ? ` • ${format(parseISO(investment.bank_credits.start_date), 'MMM dd, yyyy')}` : ''}
                           </p>
+                          {investment.description && (
+                            <p className="text-xs text-gray-500 mt-1">{investment.description}</p>
+                          )}
                         </div>
-                        <p className="text-2xl font-bold text-blue-600">€{investment.amount.toLocaleString('hr-HR')}</p>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-blue-600">€{investment.allocated_amount.toLocaleString('hr-HR')}</p>
+                          <p className="text-xs text-gray-500 mt-1">Used: €{investment.used_amount.toLocaleString('hr-HR')}</p>
+                        </div>
                       </div>
                     </div>
                   ))}

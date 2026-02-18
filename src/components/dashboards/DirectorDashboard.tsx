@@ -173,14 +173,14 @@ const DirectorDashboard: React.FC = () => {
         { data: apartments },
         { data: contracts },
         { data: accountingInvoices },
-        { data: projectInvestments },
+        { data: creditAllocations },
         { data: bankCredits }
       ] = await Promise.all([
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('apartments').select('id, project_id, price, status'),
         supabase.from('contracts').select('id, project_id, total_amount'),
         supabase.from('accounting_invoices').select('id, contract_id, project_id, invoice_type, total_amount'),
-        supabase.from('project_investments').select('project_id, amount'),
+        supabase.from('credit_allocations').select('project_id, allocated_amount'),
         supabase.from('bank_credits').select('project_id, outstanding_balance')
       ])
 
@@ -189,7 +189,7 @@ const DirectorDashboard: React.FC = () => {
       const apartmentsArray = apartments || []
       const contractsArray = contracts || []
       const invoicesArray = accountingInvoices || []
-      const investmentsArray = projectInvestments || []
+      const allocationsArray = creditAllocations || []
       const creditsArray = bankCredits || []
 
       const projectsWithStats = (projectsData || []).map((project) => {
@@ -218,9 +218,9 @@ const DirectorDashboard: React.FC = () => {
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         const apartmentSales = soldApts.reduce((sum, a) => sum + a.price, 0)
 
-        const totalInvestment = investmentsArray
-          .filter(inv => inv.project_id === project.id)
-          .reduce((sum, inv) => sum + inv.amount, 0)
+        const totalInvestment = allocationsArray
+          .filter(alloc => alloc.project_id === project.id)
+          .reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
 
         const totalDebt = creditsArray
           .filter(bc => bc.project_id === project.id)
@@ -265,14 +265,14 @@ const DirectorDashboard: React.FC = () => {
         return invoice?.invoice_category === 'CUSTOMER'
       }) || []
       const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
-      const { data: projectInvestments } = await supabase.from('project_investments').select('amount')
+      const { data: creditAllocations } = await supabase.from('credit_allocations').select('allocated_amount')
 
       const totalRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
       const totalExpenses = invoices?.filter(inv => inv.invoice_category === 'SUBCONTRACTOR').reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
       const totalProfit = totalRevenue - totalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
       const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
-      const totalEquity = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
+      const totalEquity = creditAllocations?.reduce((sum, alloc) => sum + Number(alloc.allocated_amount), 0) || 0
       const debtToEquityRatio = totalEquity > 0 ? totalDebt / totalEquity : 0
 
       const currentMonth = startOfMonth(new Date())
@@ -400,24 +400,28 @@ const DirectorDashboard: React.FC = () => {
 
   const fetchFundingData = async () => {
     try {
-      const { data: investors } = await supabase.from('investors').select('*')
       const { data: companies } = await supabase.from('banks').select('*')
       const { data: bankCredits } = await supabase
         .from('bank_credits')
-        .select('amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date')
-      const { data: projectInvestments } = await supabase
-        .from('project_investments')
-        .select('amount')
+        .select('amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date, bank_id')
+      const { data: creditAllocations } = await supabase
+        .from('credit_allocations')
+        .select('bank_credits(bank_id)')
       const { data: invoices } = await supabase
         .from('accounting_invoices')
         .select('paid_amount')
 
-      const totalInvestors = investors?.length || 0
       const totalBanks = companies?.length || 0
 
+      const activeFunderIds = new Set(
+        (creditAllocations || [])
+          .map(alloc => (alloc.bank_credits as any)?.bank_id)
+          .filter(Boolean)
+      )
+      const totalInvestors = activeFunderIds.size
+
       const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.amount), 0) || 0
-      const totalEquityInvestments = projectInvestments?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0
-      const totalInvestments = totalBankCredit + totalEquityInvestments
+      const totalInvestments = totalBankCredit
 
       const investmentsSpent = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
 
@@ -810,12 +814,12 @@ const DirectorDashboard: React.FC = () => {
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <Users className="w-6 h-6 text-green-600 mb-2" />
             <p className="text-3xl font-bold text-green-600">{fundingMetrics.total_investors}</p>
-            <p className="text-sm text-gray-600">Active Investors</p>
+            <p className="text-sm text-gray-600">Active Funders</p>
           </div>
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <Building2 className="w-6 h-6 text-blue-600 mb-2" />
             <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
-            <p className="text-sm text-gray-600">Investors</p>
+            <p className="text-sm text-gray-600">Banks</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <Target className="w-6 h-6 text-purple-600 mb-2" />

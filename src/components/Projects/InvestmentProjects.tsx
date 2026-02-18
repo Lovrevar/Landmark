@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, ProjectInvestment, Investor, Bank, BankCredit } from '../../lib/supabase'
+import { supabase, Project, Bank, BankCredit } from '../../lib/supabase'
 import {
   Building2,
   DollarSign,
@@ -10,8 +10,7 @@ import {
   ArrowDownRight,
   Target,
   Eye,
-  Banknote,
-  UserCheck
+  Banknote
 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, Modal } from '../ui'
 import { format, differenceInDays } from 'date-fns'
@@ -42,9 +41,7 @@ interface CreditAllocation {
 interface ProjectWithFinancials extends Project {
   total_investment: number
   total_debt: number
-  equity_investments: ProjectInvestment[]
   debt_allocations: CreditAllocation[]
-  investors: Investor[]
   banks: Bank[]
   funding_ratio: number
   debt_to_equity: number
@@ -74,17 +71,6 @@ const InvestmentProjects: React.FC = () => {
 
       if (projectsError) throw projectsError
 
-      // Fetch project investments with investor details
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select(`
-          *,
-          investors(*),
-          banks(*)
-        `)
-
-      if (investmentsError) throw investmentsError
-
       // Fetch credit allocations with bank credit and bank details
       const { data: allocationsData, error: allocationsError } = await supabase
         .from('credit_allocations')
@@ -109,24 +95,15 @@ const InvestmentProjects: React.FC = () => {
 
       // Process projects with financial data
       const projectsWithFinancials = (projectsData || []).map(project => {
-        const projectInvestments = (investmentsData || []).filter(inv => inv.project_id === project.id)
         const projectAllocations = (allocationsData || []).filter(alloc => alloc.project_id === project.id)
 
-        const total_investment = projectInvestments.reduce((sum, inv) => sum + inv.amount, 0)
         const total_debt = projectAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
-        const funding_ratio = project.budget > 0 ? ((total_investment + total_debt) / project.budget) * 100 : 0
-        const debt_to_equity = total_investment > 0 ? total_debt / total_investment : 0
-        const expected_roi = projectInvestments.length > 0 
-          ? projectInvestments.reduce((sum, inv) => sum + inv.expected_return, 0) / projectInvestments.length 
+        const total_investment = total_debt
+        const funding_ratio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
+        const debt_to_equity = 0
+        const expected_roi = projectAllocations.length > 0
+          ? projectAllocations.reduce((sum, alloc) => sum + (alloc.credit?.interest_rate || 0), 0) / projectAllocations.length
           : 0
-
-        // Get unique investors and banks
-        const uniqueInvestors = projectInvestments
-          .filter(inv => inv.investors)
-          .map(inv => inv.investors)
-          .filter((investor, index, self) => 
-            index === self.findIndex(i => i.id === investor.id)
-          )
 
         const uniqueBanks = projectAllocations
           .filter(alloc => alloc.credit?.bank)
@@ -138,7 +115,7 @@ const InvestmentProjects: React.FC = () => {
         // Calculate risk level
         const debtRatio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
         const timeOverrun = project.end_date ? differenceInDays(new Date(), new Date(project.end_date)) : 0
-        
+
         let risk_level: 'Low' | 'Medium' | 'High' = 'Low'
         if (debtRatio > 70 || timeOverrun > 30 || funding_ratio < 80) risk_level = 'High'
         else if (debtRatio > 50 || timeOverrun > 0 || funding_ratio < 90) risk_level = 'Medium'
@@ -147,9 +124,7 @@ const InvestmentProjects: React.FC = () => {
           ...project,
           total_investment,
           total_debt,
-          equity_investments: projectInvestments,
           debt_allocations: projectAllocations,
-          investors: uniqueInvestors,
           banks: uniqueBanks,
           funding_ratio,
           debt_to_equity,
@@ -174,13 +149,6 @@ const InvestmentProjects: React.FC = () => {
 
   const fetchFundingUtilization = async (projectId: string) => {
     try {
-      const { data: investmentsData, error: investmentsError } = await supabase
-        .from('project_investments')
-        .select('*, investors(*)')
-        .eq('project_id', projectId)
-
-      if (investmentsError) throw investmentsError
-
       const { data: allocationsData, error: allocationsError } = await supabase
         .from('credit_allocations')
         .select(`
@@ -200,32 +168,7 @@ const InvestmentProjects: React.FC = () => {
 
       if (allocationsError) throw allocationsError
 
-      const { data: wirePaymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
-        .select('*')
-
-      if (paymentsError) throw paymentsError
-
       const utilization: any[] = []
-
-      investmentsData?.forEach(investment => {
-        if (!investment.investor_id) return
-
-        const spent = (wirePaymentsData || [])
-          .filter(p => p.paid_by_investor_id === investment.investor_id)
-          .reduce((sum, p) => sum + Number(p.amount), 0)
-
-        utilization.push({
-          id: investment.investor_id,
-          type: 'investor',
-          name: investment.investors?.name || 'Unknown',
-          totalAmount: investment.amount,
-          spentAmount: spent,
-          availableAmount: investment.amount - spent,
-          usageExpirationDate: investment.usage_expiration_date,
-          investmentDate: investment.investment_date
-        })
-      })
 
       allocationsData?.forEach(allocation => {
         if (!allocation.credit?.bank) return
@@ -366,48 +309,25 @@ const InvestmentProjects: React.FC = () => {
               </div>
             </div>
 
-            {/* Investors and Banks Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Investment Partners</span>
-                  <Users className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="space-y-1">
-                  {project.investors.length === 0 ? (
-                    <p className="text-xs text-gray-500">No equity investors</p>
-                  ) : (
-                    project.investors.slice(0, 3).map((investor, index) => (
-                      <p key={investor.id} className="text-xs text-gray-700">
-                        • {investor.name} ({investor.type})
-                      </p>
-                    ))
-                  )}
-                  {project.investors.length > 3 && (
-                    <p className="text-xs text-gray-500">+{project.investors.length - 3} more</p>
-                  )}
-                </div>
+            {/* Funders Summary */}
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Funders</span>
+                <Building2 className="w-4 h-4 text-gray-400" />
               </div>
-
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Investors</span>
-                  <Building2 className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="space-y-1">
-                  {project.banks.length === 0 ? (
-                    <p className="text-xs text-gray-500">No debt financing</p>
-                  ) : (
-                    project.banks.slice(0, 3).map((bank, index) => (
-                      <p key={bank.id} className="text-xs text-gray-700">
-                        • {bank.name}
-                      </p>
-                    ))
-                  )}
-                  {project.banks.length > 3 && (
-                    <p className="text-xs text-gray-500">+{project.banks.length - 3} more</p>
-                  )}
-                </div>
+              <div className="space-y-1">
+                {project.banks.length === 0 ? (
+                  <p className="text-xs text-gray-500">No financing sources</p>
+                ) : (
+                  project.banks.slice(0, 3).map((bank, index) => (
+                    <p key={bank.id} className="text-xs text-gray-700">
+                      • {bank.name}
+                    </p>
+                  ))
+                )}
+                {project.banks.length > 3 && (
+                  <p className="text-xs text-gray-500">+{project.banks.length - 3} more</p>
+                )}
               </div>
             </div>
           </div>
@@ -468,13 +388,11 @@ const InvestmentProjects: React.FC = () => {
 
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-green-700">Equity Investment</span>
-                    <ArrowUpRight className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-green-700">Active Funders</span>
+                    <Users className="w-4 h-4 text-green-600" />
                   </div>
-                  <p className="text-xl font-bold text-green-900">€{selectedProject.total_investment.toLocaleString('hr-HR')}</p>
-                  <p className="text-xs text-green-600">
-                    {selectedProject.budget > 0 ? ((selectedProject.total_investment / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
-                  </p>
+                  <p className="text-xl font-bold text-green-900">{selectedProject.banks.length}</p>
+                  <p className="text-xs text-green-600">Financing banks</p>
                 </div>
 
                 <div className="bg-red-50 p-4 rounded-lg">
@@ -490,7 +408,7 @@ const InvestmentProjects: React.FC = () => {
 
                 <div className="bg-teal-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-teal-700">Expected ROI</span>
+                    <span className="text-sm text-teal-700">Avg Interest Rate</span>
                     <Target className="w-4 h-4 text-teal-600" />
                   </div>
                   <p className="text-xl font-bold text-teal-900">{selectedProject.expected_roi.toFixed(1)}%</p>
@@ -501,42 +419,6 @@ const InvestmentProjects: React.FC = () => {
               {/* Funding Breakdown */}
               <div className="mb-6">
                 <h4 className="font-semibold text-gray-900 mb-4">Funding Breakdown</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Equity Investments */}
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h5 className="font-medium text-green-900 mb-3 flex items-center">
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Equity Investments
-                    </h5>
-                    {selectedProject.equity_investments.length === 0 ? (
-                      <p className="text-sm text-green-700">No equity investments</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedProject.equity_investments.map((investment) => (
-                          <div key={investment.id} className="bg-white p-3 rounded border border-green-200">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {investment.investors?.name || 'Unknown Investor'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {investment.investors?.type} • {investment.percentage_stake}% stake
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-green-600">€{investment.amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-xs text-green-600">{investment.expected_return}Expected Return</p>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600">
-                              Invested: {format(new Date(investment.investment_date), 'MMM dd, yyyy')}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
                   {/* Debt Financing */}
                   <div className="bg-red-50 p-4 rounded-lg">
                     <h5 className="font-medium text-red-900 mb-3 flex items-center">
@@ -588,7 +470,6 @@ const InvestmentProjects: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </div>
               </div>
 
               {/* Key Metrics */}
@@ -731,14 +612,10 @@ const InvestmentProjects: React.FC = () => {
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
                                 <div className="flex items-center space-x-3 mb-2">
-                                  {source.type === 'investor' ? (
-                                    <UserCheck className="w-5 h-5 text-blue-600" />
-                                  ) : (
-                                    <Banknote className="w-5 h-5 text-green-600" />
-                                  )}
+                                  <Banknote className="w-5 h-5 text-green-600" />
                                   <h5 className="text-lg font-semibold text-gray-900">{source.name}</h5>
-                                  <Badge variant={source.type === 'investor' ? 'blue' : 'green'} size="sm">
-                                    {source.type.toUpperCase()}
+                                  <Badge variant="green" size="sm">
+                                    BANK
                                   </Badge>
                                   {isExpiringSoon && (
                                     <Badge variant="orange" size="sm">
