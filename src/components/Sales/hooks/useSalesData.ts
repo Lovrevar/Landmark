@@ -46,7 +46,15 @@ export const useSalesData = () => {
         return apartment
       })
 
+      const linkedGarageIds = new Set(
+        apartmentsData.flatMap(apt => (apt.linked_garages || []).map((g: any) => g.id))
+      )
+      const linkedRepositoryIds = new Set(
+        apartmentsData.flatMap(apt => (apt.linked_repositories || []).map((r: any) => r.id))
+      )
+
       const enhancedGarages = garagesData.map(garage => {
+        const isLinked = linkedGarageIds.has(garage.id)
         const sale = salesData.find(s => s.garage_id === garage.id)
         if (sale && garage.status === 'Sold') {
           return {
@@ -66,10 +74,14 @@ export const useSalesData = () => {
             }
           }
         }
+        if (isLinked && garage.status === 'Available') {
+          return { ...garage, status: 'Reserved' as const }
+        }
         return garage
       })
 
       const enhancedRepositories = repositoriesData.map(repository => {
+        const isLinked = linkedRepositoryIds.has(repository.id)
         const sale = salesData.find(s => s.repository_id === repository.id)
         if (sale && repository.status === 'Sold') {
           return {
@@ -88,6 +100,9 @@ export const useSalesData = () => {
               buyer_phone: sale.customers?.phone || ''
             }
           }
+        }
+        if (isLinked && repository.status === 'Available') {
+          return { ...repository, status: 'Reserved' as const }
         }
         return repository
       })

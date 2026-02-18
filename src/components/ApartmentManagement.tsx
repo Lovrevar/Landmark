@@ -527,7 +527,7 @@ const ApartmentManagement: React.FC = () => {
                   >
                     View Payments
                   </Button>
-                  {(!linkedGarage || !linkedStorage) && (
+                  {(aptLinkedGarages.length === 0 || aptLinkedStorages.length === 0) && (
                     <Button
                       variant="secondary"
                       size="sm"
