@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, BankCreditPayment, InvestorPayment } from '../lib/supabase'
-import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2, Users } from 'lucide-react'
+import { supabase, BankCreditPayment } from '../lib/supabase'
+import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from './ui'
 import { format } from 'date-fns'
 
@@ -11,29 +11,20 @@ interface BankPaymentWithDetails extends BankCreditPayment {
   payment_type: 'bank'
 }
 
-interface InvestorPaymentWithDetails extends InvestorPayment {
-  investor_name?: string
-  investment_type?: string
-  project_name?: string
-  payment_type: 'investor'
-}
-
-type CombinedPayment = BankPaymentWithDetails | InvestorPaymentWithDetails
+type CombinedPayment = BankPaymentWithDetails
 
 const FundingPaymentsManagement: React.FC = () => {
   const [payments, setPayments] = useState<CombinedPayment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
-  const [filterType, setFilterType] = useState<'all' | 'bank' | 'investor'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const [stats, setStats] = useState({
     totalPayments: 0,
     totalAmount: 0,
     paymentsThisMonth: 0,
     amountThisMonth: 0,
-    bankPayments: 0,
-    investorPayments: 0
+    bankPayments: 0
   })
 
   useEffect(() => {
@@ -62,25 +53,6 @@ const FundingPaymentsManagement: React.FC = () => {
 
       if (bankError) throw bankError
 
-      const { data: investorPaymentsData, error: investorError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          *,
-          invoice:accounting_invoices!inner(
-            investment_id,
-            project_investments(
-              investment_type,
-              project_id,
-              investor_id,
-              investors(name)
-            )
-          )
-        `)
-        .not('invoice.investment_id', 'is', null)
-        .order('payment_date', { ascending: false })
-
-      if (investorError) throw investorError
-
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name')
@@ -104,29 +76,8 @@ const FundingPaymentsManagement: React.FC = () => {
         }
       })
 
-      const enrichedInvestorPayments: InvestorPaymentWithDetails[] = (investorPaymentsData || []).map(payment => {
-        const investment = payment.invoice?.project_investments
-        const project = investment?.project_id
-          ? projectsData?.find(p => p.id === investment.project_id)
-          : undefined
-
-        return {
-          ...payment,
-          investor_name: investment?.investors?.name || 'Unknown Investor',
-          investment_type: investment?.investment_type || 'N/A',
-          project_name: project?.name || 'No Project',
-          payment_type: 'investor' as const,
-          created_at: payment.created_at,
-          notes: payment.description
-        }
-      })
-
-      const combinedPayments = [...enrichedBankPayments, ...enrichedInvestorPayments].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-
-      setPayments(combinedPayments)
-      calculateStats(combinedPayments)
+      setPayments(enrichedBankPayments)
+      calculateStats(enrichedBankPayments)
     } catch (error) {
       console.error('Error fetching payments:', error)
       alert('Failed to load payments')
@@ -142,25 +93,20 @@ const FundingPaymentsManagement: React.FC = () => {
     const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
     const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
     const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
-    const bankPayments = paymentsData.filter(p => p.payment_type === 'bank').length
-    const investorPayments = paymentsData.filter(p => p.payment_type === 'investor').length
+    const bankPayments = paymentsData.length
 
     setStats({
       totalPayments: paymentsData.length,
       totalAmount,
       paymentsThisMonth: paymentsThisMonth.length,
       amountThisMonth,
-      bankPayments,
-      investorPayments
+      bankPayments
     })
   }
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
-      (payment.payment_type === 'bank'
-        ? (payment as BankPaymentWithDetails).bank_name?.toLowerCase().includes(searchTerm.toLowerCase())
-        : (payment as InvestorPaymentWithDetails).investor_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ||
+      payment.bank_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
 
@@ -173,21 +119,17 @@ const FundingPaymentsManagement: React.FC = () => {
       (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && Number(payment.amount) > 50000)
 
-    const matchesType =
-      filterType === 'all' ||
-      payment.payment_type === filterType
-
-    return matchesSearch && matchesDateRange && matchesFilter && matchesType
+    return matchesSearch && matchesDateRange && matchesFilter
   })
 
   const exportToCSV = () => {
     const headers = ['Date', 'Type', 'Recipient', 'Project', 'Category', 'Amount', 'Notes']
     const rows = filteredPayments.map(p => [
       p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
-      p.payment_type === 'bank' ? 'Bank' : 'Investor',
-      p.payment_type === 'bank' ? (p as BankPaymentWithDetails).bank_name : (p as InvestorPaymentWithDetails).investor_name,
+      'Bank',
+      p.bank_name,
       p.project_name,
-      p.payment_type === 'bank' ? (p as BankPaymentWithDetails).credit_type : (p as InvestorPaymentWithDetails).investment_type,
+      p.credit_type,
       p.amount.toString(),
       p.notes || ''
     ])
@@ -209,7 +151,7 @@ const FundingPaymentsManagement: React.FC = () => {
     <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Funding Payments"
-        description="Track and manage all funding payments across banks and investors"
+        description="Track and manage all bank credit payments"
         className="mb-8"
       />
 
@@ -220,7 +162,7 @@ const FundingPaymentsManagement: React.FC = () => {
             <FileText className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{stats.totalPayments}</p>
-          <p className="text-xs text-gray-500 mt-1">{stats.bankPayments} bank, {stats.investorPayments} investor</p>
+          <p className="text-xs text-gray-500 mt-1">{stats.bankPayments} bank credit payments</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -250,7 +192,7 @@ const FundingPaymentsManagement: React.FC = () => {
       </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <SearchInput
               value={searchTerm}
@@ -258,18 +200,6 @@ const FundingPaymentsManagement: React.FC = () => {
               onClear={() => setSearchTerm('')}
               placeholder="Search payments..."
             />
-          </div>
-
-          <div>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="bank">Banks</option>
-              <option value="investor">Investors</option>
-            </select>
           </div>
 
           <div>
@@ -351,38 +281,19 @@ const FundingPaymentsManagement: React.FC = () => {
                         : format(new Date(payment.created_at), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
-                        payment.payment_type === 'bank'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {payment.payment_type === 'bank' ? (
-                          <>
-                            <Building2 className="w-3 h-3 mr-1" />
-                            Bank
-                          </>
-                        ) : (
-                          <>
-                            <Users className="w-3 h-3 mr-1" />
-                            Investor
-                          </>
-                        )}
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <Building2 className="w-3 h-3 mr-1" />
+                        Bank
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {payment.payment_type === 'bank'
-                          ? (payment as BankPaymentWithDetails).bank_name
-                          : (payment as InvestorPaymentWithDetails).investor_name}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{payment.bank_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {payment.project_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.payment_type === 'bank'
-                        ? (payment as BankPaymentWithDetails).credit_type?.replace('_', ' ').toUpperCase()
-                        : (payment as InvestorPaymentWithDetails).investment_type?.toUpperCase()}
+                      {payment.credit_type?.replace('_', ' ').toUpperCase()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-green-600">
