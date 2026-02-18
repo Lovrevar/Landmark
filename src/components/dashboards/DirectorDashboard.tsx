@@ -168,73 +168,85 @@ const DirectorDashboard: React.FC = () => {
 
   const fetchProjectsData = async () => {
     try {
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const [
+        { data: projectsData, error: projectsError },
+        { data: apartments },
+        { data: contracts },
+        { data: accountingInvoices },
+        { data: projectInvestments },
+        { data: bankCredits }
+      ] = await Promise.all([
+        supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('apartments').select('id, project_id, price, status'),
+        supabase.from('contracts').select('id, project_id, total_amount'),
+        supabase.from('accounting_invoices').select('id, contract_id, project_id, invoice_type, total_amount'),
+        supabase.from('project_investments').select('project_id, amount'),
+        supabase.from('bank_credits').select('project_id, outstanding_balance')
+      ])
 
       if (projectsError) throw projectsError
 
-      const projectsWithStats = await Promise.all(
-        (projectsData || []).map(async (project) => {
-          const { data: contracts } = await supabase
-            .from('contracts')
-            .select('id')
-            .eq('project_id', project.id)
+      const apartmentsArray = apartments || []
+      const contractsArray = contracts || []
+      const invoicesArray = accountingInvoices || []
+      const investmentsArray = projectInvestments || []
+      const creditsArray = bankCredits || []
 
-          const contractIds = contracts?.map(c => c.id) || []
+      const projectsWithStats = (projectsData || []).map((project) => {
+        const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
+        const projectContracts = contractsArray.filter(c => c.project_id === project.id)
 
-          let totalExpenses = 0
-          if (contractIds.length > 0) {
-            const { data: invoices } = await supabase
-              .from('accounting_invoices')
-              .select('paid_amount')
-              .in('contract_id', contractIds)
-              .eq('invoice_category', 'SUBCONTRACTOR')
-            totalExpenses = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
-          }
-
-          const { data: apartments } = await supabase
-            .from('apartments')
-            .select('price, status')
-            .eq('project_id', project.id)
-
-          const apartmentSales = apartments?.filter(a => a.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0) || 0
-
-          const { data: projectInvestments } = await supabase
-            .from('project_investments')
-            .select('amount')
-            .eq('project_id', project.id)
-          const totalInvestment = projectInvestments?.reduce((sum, inv) => sum + inv.amount, 0) || 0
-
-          const { data: bankCredits } = await supabase
-            .from('bank_credits')
-            .select('outstanding_balance')
-            .eq('project_id', project.id)
-          const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
-
-          const totalUnits = apartments?.length || 0
-          const soldUnits = apartments?.filter(a => a.status === 'Sold').length || 0
-          const completionPercentage = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-
-          const profit = apartmentSales - totalExpenses
-          const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
-
-          return {
-            id: project.id,
-            name: project.name,
-            location: project.location,
-            status: project.status,
-            budget: project.budget,
-            total_expenses: totalExpenses,
-            apartment_sales: apartmentSales,
-            total_investment: totalInvestment,
-            total_debt: totalDebt,
-            profit_margin: profitMargin,
-            completion_percentage: completionPercentage
-          }
+        const contractExpenses = projectContracts.map(c => {
+          const contractInvoices = invoicesArray.filter(
+            inv => inv.contract_id === c.id &&
+            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+          )
+          const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+          return Math.max(c.total_amount || 0, invoicedTotal)
         })
-      )
+
+        const invoicesWithoutContract = invoicesArray
+          .filter(inv =>
+            inv.project_id === project.id &&
+            !inv.contract_id &&
+            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+          )
+          .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+
+        const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
+
+        const soldApts = projectApartments.filter(a => a.status === 'Sold')
+        const apartmentSales = soldApts.reduce((sum, a) => sum + a.price, 0)
+
+        const totalInvestment = investmentsArray
+          .filter(inv => inv.project_id === project.id)
+          .reduce((sum, inv) => sum + inv.amount, 0)
+
+        const totalDebt = creditsArray
+          .filter(bc => bc.project_id === project.id)
+          .reduce((sum, bc) => sum + bc.outstanding_balance, 0)
+
+        const totalUnits = projectApartments.length
+        const soldUnits = soldApts.length
+        const completionPercentage = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+
+        const profit = apartmentSales - totalExpenses
+        const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
+
+        return {
+          id: project.id,
+          name: project.name,
+          location: project.location,
+          status: project.status,
+          budget: project.budget,
+          total_expenses: totalExpenses,
+          apartment_sales: apartmentSales,
+          total_investment: totalInvestment,
+          total_debt: totalDebt,
+          profit_margin: profitMargin,
+          completion_percentage: completionPercentage
+        }
+      })
 
       setProjects(projectsWithStats)
     } catch (error) {
