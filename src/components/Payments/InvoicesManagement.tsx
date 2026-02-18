@@ -281,60 +281,70 @@ const InvoicesManagement: React.FC = () => {
           description="Try adjusting your search or filters"
         />
       ) : (
-        <Table>
-          <Table.Head>
-            <Table.Tr>
-              <Table.Th>Approved</Table.Th>
-              <Table.Th>Invoice #</Table.Th>
-              <Table.Th>Date</Table.Th>
-              <Table.Th>Supplier</Table.Th>
-              <Table.Th>Project</Table.Th>
-              <Table.Th>Phase</Table.Th>
-              <Table.Th>Company</Table.Th>
-              <Table.Th align="right">Amount</Table.Th>
-              <Table.Th>Status</Table.Th>
-            </Table.Tr>
-          </Table.Head>
-          <Table.Body>
-            {filteredInvoices.map((invoice) => (
-              <Table.Tr key={invoice.id}>
-                <Table.Td>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    icon={invoice.approved ? CheckSquare : Square}
-                    onClick={() => handleApprove(invoice.id, invoice.approved)}
-                    title={invoice.approved ? "Approved" : "Click to approve"}
-                    className="text-blue-600 hover:text-blue-800"
-                  />
-                </Table.Td>
-                <Table.Td className="font-medium">{invoice.invoice_number}</Table.Td>
-                <Table.Td>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</Table.Td>
-                <Table.Td className="font-medium">{invoice.supplier_name}</Table.Td>
-                <Table.Td>{invoice.project_name}</Table.Td>
-                <Table.Td className="text-gray-500">{invoice.phase_name}</Table.Td>
-                <Table.Td>
-                  <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium">{invoice.company_name}</span>
-                  </div>
-                </Table.Td>
-                <Table.Td align="right" className="font-semibold">
-                  €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
-                </Table.Td>
-                <Table.Td>
-                  <Badge variant={
-                    invoice.status === 'PAID' ? 'green'
-                      : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
-                      : 'red'
-                  }>
-                    {invoice.status}
-                  </Badge>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Body>
-        </Table>
+        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+          <table className="w-full min-w-[1100px] bg-white">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">Appr.</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phase</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredInvoices.map((invoice) => (
+                <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      icon={invoice.approved ? CheckSquare : Square}
+                      onClick={() => handleApprove(invoice.id, invoice.approved)}
+                      title={invoice.approved ? "Approved" : "Click to approve"}
+                      className={invoice.approved ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-blue-600'}
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <Badge variant={invoice.invoice_category === 'SUPERVISION' ? 'blue' : 'gray'} size="sm">
+                      {invoice.invoice_category}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{invoice.contract_number}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{invoice.project_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{invoice.phase_name}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm font-medium text-gray-800">{invoice.company_name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                    €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <Badge variant={
+                      invoice.status === 'PAID' ? 'green'
+                        : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
+                        : 'red'
+                    }>
+                      {invoice.status}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )
