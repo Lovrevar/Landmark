@@ -174,7 +174,12 @@ const ApartmentManagement: React.FC = () => {
           project_name: project?.name || 'Unknown Project',
           building_name: building?.name || 'No Building',
           project_id: apt.project_id,
-          building_id: apt.building_id || ''
+          building_id: apt.building_id || '',
+          ulaz: apt.ulaz ?? null,
+          tip_stana: apt.tip_stana ?? null,
+          sobnost: apt.sobnost ?? null,
+          povrsina_otvoreno: apt.povrsina_otvoreno ?? null,
+          povrsina_ot_sa_koef: apt.povrsina_ot_sa_koef ?? null
         }
       })
 

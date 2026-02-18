@@ -176,6 +176,11 @@ export type Apartment = {
   status: 'Available' | 'Reserved' | 'Sold'
   buyer_name: string | null
   created_at: string
+  ulaz: string | null
+  tip_stana: string | null
+  sobnost: number | null
+  povrsina_otvoreno: number | null
+  povrsina_ot_sa_koef: number | null
   linked_garages?: LinkedUnit[]
   linked_repositories?: LinkedUnit[]
   sale_info?: {

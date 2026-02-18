@@ -20,7 +20,12 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     floor: 1,
     size_m2: 80,
     price: 150000,
-    status: 'Available'
+    status: 'Available',
+    ulaz: '',
+    tip_stana: '',
+    sobnost: null as number | null,
+    povrsina_otvoreno: null as number | null,
+    povrsina_ot_sa_koef: null as number | null
   })
 
   useEffect(() => {
@@ -30,7 +35,12 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
         floor: apartment.floor,
         size_m2: apartment.size_m2,
         price: apartment.price,
-        status: apartment.status
+        status: apartment.status,
+        ulaz: apartment.ulaz || '',
+        tip_stana: apartment.tip_stana || '',
+        sobnost: apartment.sobnost ?? null,
+        povrsina_otvoreno: apartment.povrsina_otvoreno ?? null,
+        povrsina_ot_sa_koef: apartment.povrsina_ot_sa_koef ?? null
       })
     }
   }, [apartment])
@@ -59,17 +69,28 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
               </p>
             </div>
 
-            <FormField label="Apartment Number" required>
-              <Input
-                type="text"
-                value={formData.number}
-                onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                required
-              />
-            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Apartment Number (Oznaka stana)" required>
+                <Input
+                  type="text"
+                  value={formData.number}
+                  onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Entrance (Ulaz)">
+                <Input
+                  type="text"
+                  value={formData.ulaz}
+                  onChange={(e) => setFormData({ ...formData, ulaz: e.target.value })}
+                  placeholder="e.g., A, 1, Ulaz 1"
+                />
+              </FormField>
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor" required>
+              <FormField label="Floor (Etaža)" required>
                 <Input
                   type="number"
                   value={formData.floor}
@@ -78,16 +99,59 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Size (m2)" required>
+              <FormField label="Apartment Type (Tip stana)">
+                <Input
+                  type="text"
+                  value={formData.tip_stana}
+                  onChange={(e) => setFormData({ ...formData, tip_stana: e.target.value })}
+                  placeholder="e.g., 2S, 3S+K"
+                />
+              </FormField>
+
+              <FormField label="Rooms (Sobnost)">
+                <Input
+                  type="number"
+                  value={formData.sobnost ?? ''}
+                  onChange={(e) => setFormData({ ...formData, sobnost: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="e.g., 2"
+                  min="0"
+                />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Saleable Area m² (Stan m2 prodajno)" required>
                 <Input
                   type="number"
                   value={formData.size_m2}
                   onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
                   required
-                  step="0.1"
+                  step="0.01"
                 />
               </FormField>
 
+              <FormField label="Open Area m² (Površina otvoreno)">
+                <Input
+                  type="number"
+                  value={formData.povrsina_otvoreno ?? ''}
+                  onChange={(e) => setFormData({ ...formData, povrsina_otvoreno: e.target.value ? parseFloat(e.target.value) : null })}
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </FormField>
+
+              <FormField label="Open Area w/ Coef. m²">
+                <Input
+                  type="number"
+                  value={formData.povrsina_ot_sa_koef ?? ''}
+                  onChange={(e) => setFormData({ ...formData, povrsina_ot_sa_koef: e.target.value ? parseFloat(e.target.value) : null })}
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField label="Price (EUR)" required>
                 <Input
                   type="number"
@@ -97,19 +161,19 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                   step="0.01"
                 />
               </FormField>
-            </div>
 
-            <FormField label="Status" required>
-              <Select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                required
-              >
-                <option value="Available">Available</option>
-                <option value="Reserved">Reserved</option>
-                <option value="Sold">Sold</option>
-              </Select>
-            </FormField>
+              <FormField label="Status" required>
+                <Select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  required
+                >
+                  <option value="Available">Available</option>
+                  <option value="Reserved">Reserved</option>
+                  <option value="Sold">Sold</option>
+                </Select>
+              </FormField>
+            </div>
           </div>
         </Modal.Body>
 

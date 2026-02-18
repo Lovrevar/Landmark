@@ -162,7 +162,12 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
             size_m2: row.size_m2,
             price: row.price,
             price_per_m2: row.price_per_m2,
-            status: 'Available'
+            status: 'Available',
+            ulaz: row.entrance || null,
+            tip_stana: row.type || null,
+            sobnost: row.rooms ? parseInt(String(row.rooms)) || null : null,
+            povrsina_otvoreno: row.area_open || null,
+            povrsina_ot_sa_koef: row.area_open_coef || null
           }
 
           let apartmentId: string

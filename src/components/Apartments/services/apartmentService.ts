@@ -11,7 +11,12 @@ export const createSingleApartment = async (data: ApartmentFormData) => {
       floor: data.floor,
       size_m2: data.size_m2,
       price: data.price,
-      status: 'Available'
+      status: 'Available',
+      ulaz: data.ulaz || null,
+      tip_stana: data.tip_stana || null,
+      sobnost: data.sobnost ?? null,
+      povrsina_otvoreno: data.povrsina_otvoreno ?? null,
+      povrsina_ot_sa_koef: data.povrsina_ot_sa_koef ?? null
     })
     .select()
     .single()
