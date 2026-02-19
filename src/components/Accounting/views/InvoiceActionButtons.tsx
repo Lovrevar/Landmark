@@ -49,7 +49,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewBankInvoice}
         className="whitespace-nowrap"
       >
-        Novi Račun Banka
+        Investicije
       </Button>
       <Button
         variant="primary"
