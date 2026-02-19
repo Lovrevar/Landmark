@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus, Trash2 } from 'lucide-react'
+import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
+import AllocationRow from './AllocationRow'
 
 interface BankCredit {
   id: string
@@ -527,101 +528,16 @@ const CreditsManagement: React.FC = () => {
                         <div className="space-y-3">
                           {creditAllocations.map((allocation) => {
                             const allocationKey = `${credit.id}-${allocation.id}`
-                            const isAllocExpanded = expandedAllocations.has(allocationKey)
-
                             return (
-                              <div key={allocation.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                                <button
-                                  onClick={() => toggleAllocation(allocationKey)}
-                                  className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
-                                >
-                                  <div className="flex items-center space-x-3">
-                                    {isAllocExpanded ? (
-                                      <ChevronUp className="w-4 h-4 text-gray-600" />
-                                    ) : (
-                                      <ChevronDown className="w-4 h-4 text-gray-600" />
-                                    )}
-                                    <span className="font-semibold text-gray-900">
-                                      {allocation.allocation_type === 'project' && allocation.project?.name}
-                                      {allocation.allocation_type === 'opex' && 'OPEX (Bez projekta)'}
-                                      {allocation.allocation_type === 'refinancing' && (
-                                        <>
-                                          Refinanciranje - {allocation.refinancing_company?.name || allocation.refinancing_bank?.name || 'N/A'}
-                                        </>
-                                      )}
-                                    </span>
-                                    {allocation.allocation_type === 'refinancing' && (
-                                      <Badge variant="orange" className="ml-2">
-                                        {allocation.refinancing_entity_type === 'company' ? 'FIRMA' : 'BANKA'}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-4">
-                                    <div className="text-right">
-                                      <div className="text-sm text-gray-600">
-                                        Alocirano: <span className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
-                                      </div>
-                                      {credit.disbursed_to_account ? (
-                                        <div className="text-xs text-gray-500">
-                                          Isplaćeno: <span className="font-semibold text-green-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
-                                        </div>
-                                      ) : (
-                                        <div className="text-xs text-gray-500">
-                                          Iskorišteno: €{allocation.used_amount.toLocaleString('hr-HR')} |
-                                          Dostupno: <span className={allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                                            €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteAllocation(allocation.id, credit.id)
-                                      }}
-                                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </button>
-                                {isAllocExpanded && (
-                                  <div className="px-4 py-3 bg-white border-t border-gray-200">
-                                    {allocation.description && (
-                                      <p className="text-sm text-gray-600 mb-3">{allocation.description}</p>
-                                    )}
-                                    {credit.disbursed_to_account ? (
-                                      <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                          <p className="text-gray-600">Alocirano</p>
-                                          <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-gray-600">Isplaćeno</p>
-                                          <p className="font-semibold text-green-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="grid grid-cols-3 gap-3 text-sm">
-                                        <div>
-                                          <p className="text-gray-600">Alocirano</p>
-                                          <p className="font-semibold text-purple-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-gray-600">Iskorišteno</p>
-                                          <p className="font-semibold text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-gray-600">Dostupno</p>
-                                          <p className={`font-semibold ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                              <AllocationRow
+                                key={allocation.id}
+                                allocation={allocation}
+                                credit={credit}
+                                allocationKey={allocationKey}
+                                isExpanded={expandedAllocations.has(allocationKey)}
+                                onToggle={toggleAllocation}
+                                onDelete={handleDeleteAllocation}
+                              />
                             )
                           })}
                         </div>
