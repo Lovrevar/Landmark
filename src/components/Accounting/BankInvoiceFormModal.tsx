@@ -168,7 +168,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
                 required
               >
-                <option value="">Odaberi banku</option>
+                <option value="">Odaberi investitora</option>
                 {banks.map((bank) => (
                   <option key={bank.id} value={bank.id}>
                     {bank.name} {bank.oib && `(${bank.oib})`}
