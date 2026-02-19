@@ -179,7 +179,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
             <FormField
               label="Investicija (opcionalno)"
-              helperText={formData.bank_id && credits.length === 0 ? 'Nema dostupnih kredita za ovu banku' : undefined}
+              helperText={formData.bank_id && credits.length === 0 ? 'Nema dostupnih investicija za ovog investitora' : undefined}
             >
               <Select
                 value={formData.bank_credit_id}
