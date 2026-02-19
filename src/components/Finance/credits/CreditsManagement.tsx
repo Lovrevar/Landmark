@@ -389,7 +389,7 @@ const CreditsManagement: React.FC = () => {
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
             const paidOutPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
             const totalUsagePercentage = allocationPercentage + paidOutPercentage
-            const netUsed = credit.used_amount - credit.repaid_amount
+            const netUsed = credit.used_amount + paidOut - credit.repaid_amount
 
             return (
               <div key={credit.id} className="bg-white rounded-xl shadow-sm border border-gray-200">
