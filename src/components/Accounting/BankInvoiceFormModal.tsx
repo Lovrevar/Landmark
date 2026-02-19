@@ -162,7 +162,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               </Select>
             </FormField>
 
-            <FormField label="Banka" required>
+            <FormField label="Investitor" required>
               <Select
                 value={formData.bank_id}
                 onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
