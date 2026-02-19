@@ -82,6 +82,7 @@ interface Bank {
 const CreditsManagement: React.FC = () => {
   const [credits, setCredits] = useState<BankCredit[]>([])
   const [allocations, setAllocations] = useState<Map<string, CreditAllocation[]>>(new Map())
+  const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
   const [expandedCredits, setExpandedCredits] = useState<Set<string>>(new Set())
   const [expandedAllocations, setExpandedAllocations] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -132,6 +133,8 @@ const CreditsManagement: React.FC = () => {
       setCredits(data || [])
 
       if (data) {
+        const creditIds = data.map((c) => c.id)
+        await fetchDisbursedAmounts(creditIds)
         for (const credit of data) {
           await fetchAllocationsForCredit(credit.id)
         }
@@ -184,6 +187,27 @@ const CreditsManagement: React.FC = () => {
       })
     } catch (error) {
       console.error('Error fetching allocations:', error)
+    }
+  }
+
+  const fetchDisbursedAmounts = async (creditIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('accounting_invoices')
+        .select('bank_credit_id, total_amount')
+        .eq('invoice_type', 'OUTGOING_BANK')
+        .in('bank_credit_id', creditIds)
+
+      if (error) throw error
+
+      const map = new Map<string, number>()
+      for (const row of data || []) {
+        if (!row.bank_credit_id) continue
+        map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+      }
+      setDisbursedAmounts(map)
+    } catch (error) {
+      console.error('Error fetching disbursed amounts:', error)
     }
   }
 
@@ -360,10 +384,11 @@ const CreditsManagement: React.FC = () => {
             const isExpanded = expandedCredits.has(credit.id)
             const creditAllocations = allocations.get(credit.id) || []
             const totalAllocated = creditAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
-            const availableAmount = credit.amount - credit.used_amount
-            const unallocatedAmount = credit.amount - totalAllocated
-            const utilizationPercentage = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
+            const paidOut = disbursedAmounts.get(credit.id) || 0
+            const unallocatedAmount = credit.amount - totalAllocated - paidOut
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
+            const paidOutPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
+            const totalUsagePercentage = allocationPercentage + paidOutPercentage
             const netUsed = credit.used_amount - credit.repaid_amount
 
             return (
@@ -420,13 +445,13 @@ const CreditsManagement: React.FC = () => {
                       <p className="text-sm text-blue-700">Investment Amount</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                     </div>
-                    <div className="bg-purple-50 p-3 rounded-lg">
-                      <p className="text-sm text-purple-700">Allocated</p>
-                      <p className="text-lg font-bold text-purple-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
+                    <div className="bg-violet-50 p-3 rounded-lg">
+                      <p className="text-sm text-violet-700">Allocated</p>
+                      <p className="text-lg font-bold text-violet-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
                       <p className="text-sm text-orange-700">Paid Out</p>
-                      <p className="text-lg font-bold text-orange-900">€{credit.used_amount.toLocaleString('hr-HR')}</p>
+                      <p className="text-lg font-bold text-orange-900">€{paidOut.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
                       <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Used (Net)</p>
@@ -444,22 +469,34 @@ const CreditsManagement: React.FC = () => {
 
                   <div className="mt-4">
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-600">Allocation Progress</span>
-                      <span className="text-sm font-medium">{allocationPercentage.toFixed(1)}%</span>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="font-medium text-gray-700">Credit Usage</span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-3 h-3 rounded-sm bg-violet-600"></span>
+                          Allocated {allocationPercentage.toFixed(1)}%
+                        </span>
+                        {paidOutPercentage > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
+                            Paid Out {paidOutPercentage.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800">{totalUsagePercentage.toFixed(1)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
                       <div
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          allocationPercentage > 100 ? 'bg-red-600' :
-                          allocationPercentage > 80 ? 'bg-orange-600' :
-                          'bg-purple-600'
-                        }`}
+                        className={`h-3 transition-all duration-300 ${totalUsagePercentage > 100 ? 'bg-red-600' : 'bg-violet-600'}`}
                         style={{ width: `${Math.min(100, allocationPercentage)}%` }}
-                      ></div>
+                      />
+                      <div
+                        className={`h-3 transition-all duration-300 ${totalUsagePercentage > 100 ? 'bg-red-400' : 'bg-orange-500'}`}
+                        style={{ width: `${Math.min(100 - Math.min(100, allocationPercentage), paidOutPercentage)}%` }}
+                      />
                     </div>
-                    {allocationPercentage > 100 && (
+                    {totalUsagePercentage > 100 && (
                       <p className="text-xs text-red-600 mt-1">
-                        Over-allocated by €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
+                        Over-allocated by €{(totalAllocated + paidOut - credit.amount).toLocaleString('hr-HR')}
                       </p>
                     )}
                   </div>
