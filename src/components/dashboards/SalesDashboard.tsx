@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Apartment, Project, Sale, Customer } from '../../lib/supabase'
 import { LoadingSpinner } from '../ui'
 import {
   Home,
@@ -9,219 +8,40 @@ import {
   Building2,
   CheckCircle,
   Calendar,
-  Target,
   PieChart,
   BarChart3
 } from 'lucide-react'
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { format } from 'date-fns'
+import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
+import * as salesService from './services/salesDashboardService'
 
-interface ProjectStats {
-  project_id: string
-  project_name: string
-  total_units: number
-  sold_units: number
-  reserved_units: number
-  available_units: number
-  total_revenue: number
-  sales_rate: number
-}
-
-interface MonthlyTrend {
-  month: string
-  sales_count: number
-  revenue: number
-}
-
-interface RecentSale extends Sale {
-  apartment_number: string
-  project_name: string
-  customer_name: string
+const defaultStats: SalesDashboardStats = {
+  totalUnits: 0, availableUnits: 0, reservedUnits: 0, soldUnits: 0,
+  totalRevenue: 0, avgSalePrice: 0, salesRate: 0, totalCustomers: 0,
+  activeLeads: 0, monthlyRevenue: 0, monthlyTarget: 5000000
 }
 
 const SalesDashboard: React.FC = () => {
-  const [stats, setStats] = useState({
-    totalUnits: 0,
-    availableUnits: 0,
-    reservedUnits: 0,
-    soldUnits: 0,
-    totalRevenue: 0,
-    avgSalePrice: 0,
-    salesRate: 0,
-    totalCustomers: 0,
-    activeLeads: 0,
-    monthlyRevenue: 0,
-    monthlyTarget: 5000000
-  })
+  const [stats, setStats] = useState<SalesDashboardStats>(defaultStats)
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([])
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([])
   const [recentSales, setRecentSales] = useState<RecentSale[]>([])
-  const [paymentMethodBreakdown, setPaymentMethodBreakdown] = useState<{[key: string]: number}>({})
+  const [paymentMethodBreakdown, setPaymentMethodBreakdown] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchDashboardData()
+    loadAll()
   }, [])
 
-  const fetchDashboardData = async () => {
+  const loadAll = async () => {
     try {
-      const [
-        apartmentsData,
-        salesData,
-        customersData,
-        projectsData,
-        paymentsData
-      ] = await Promise.all([
-        supabase.from('apartments').select('*'),
-        supabase.from('sales').select('*, apartment_id'),
-        supabase.from('customers').select('*'),
-        supabase.from('projects').select('*'),
-        supabase.from('accounting_payments').select(`
-          amount,
-          payment_date,
-          invoice:accounting_invoices!inner(
-            apartment_id,
-            invoice_type
-          )
-        `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null)
-      ])
-
-      if (apartmentsData.error) throw apartmentsData.error
-      if (salesData.error) throw salesData.error
-      if (customersData.error) throw customersData.error
-      if (projectsData.error) throw projectsData.error
-
-      const apartments = apartmentsData.data || []
-      const sales = salesData.data || []
-      const customers = customersData.data || []
-      const projects = projectsData.data || []
-      const payments = paymentsData.data || []
-
-      // Calculate total revenue from payments
-      const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-      // Calculate total sales value from sales table (not payments)
-      const totalSalesValue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price), 0)
-
-      const totalUnits = apartments.length
-      const availableUnits = apartments.filter(a => a.status === 'Available').length
-      const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
-      const soldUnits = apartments.filter(a => a.status === 'Sold').length
-      const avgSalePrice = sales.length > 0 ? totalSalesValue / sales.length : 0
-      const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-      const totalCustomers = customers.length
-      const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
-
-      const currentMonth = startOfMonth(new Date())
-      const monthlyPayments = payments.filter(p =>
-        new Date(p.payment_date) >= currentMonth
-      )
-      const monthlyRevenue = monthlyPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-      setStats({
-        totalUnits,
-        availableUnits,
-        reservedUnits,
-        soldUnits,
-        totalRevenue,
-        avgSalePrice,
-        salesRate,
-        totalCustomers,
-        activeLeads,
-        monthlyRevenue,
-        monthlyTarget: 5000000
-      })
-
-      const projectStatsMap = new Map<string, ProjectStats>()
-
-      projects.forEach(project => {
-        const projectApartments = apartments.filter(a => a.project_id === project.id)
-
-        // Calculate revenue from payments for this project
-        const projectPayments = payments.filter(p => {
-          const apt = apartments.find(a => a.id === p.invoice?.apartment_id)
-          return apt && apt.project_id === project.id
-        })
-        const revenue = projectPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-        const total = projectApartments.length
-        const sold = projectApartments.filter(a => a.status === 'Sold').length
-        const reserved = projectApartments.filter(a => a.status === 'Reserved').length
-        const available = projectApartments.filter(a => a.status === 'Available').length
-
-        if (total > 0) {
-          projectStatsMap.set(project.id, {
-            project_id: project.id,
-            project_name: project.name,
-            total_units: total,
-            sold_units: sold,
-            reserved_units: reserved,
-            available_units: available,
-            total_revenue: revenue,
-            sales_rate: (sold / total) * 100
-          })
-        }
-      })
-
-      setProjectStats(Array.from(projectStatsMap.values()))
-
-      const last6Months = []
-      for (let i = 5; i >= 0; i--) {
-        const monthDate = subMonths(new Date(), i)
-        const monthStart = startOfMonth(monthDate)
-        const monthEnd = endOfMonth(monthDate)
-
-        const monthPayments = payments.filter(p => {
-          const paymentDate = new Date(p.payment_date)
-          return paymentDate >= monthStart && paymentDate <= monthEnd
-        })
-
-        const monthSales = sales.filter(s => {
-          const saleDate = new Date(s.sale_date)
-          return saleDate >= monthStart && saleDate <= monthEnd
-        })
-
-        last6Months.push({
-          month: format(monthDate, 'MMM'),
-          sales_count: monthSales.length,
-          revenue: monthPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-        })
-      }
-
-      setMonthlyTrends(last6Months)
-
-      const paymentBreakdown: {[key: string]: number} = {}
-      sales.forEach(sale => {
-        paymentBreakdown[sale.payment_method] = (paymentBreakdown[sale.payment_method] || 0) + 1
-      })
-      setPaymentMethodBreakdown(paymentBreakdown)
-
-      const recentSalesWithDetails = await Promise.all(
-        sales.slice(-10).reverse().map(async (sale) => {
-          const [aptData, custData] = await Promise.all([
-            supabase.from('apartments').select('number, project_id').eq('id', sale.apartment_id).maybeSingle(),
-            supabase.from('customers').select('name, surname').eq('id', sale.customer_id).maybeSingle()
-          ])
-
-          const apt = aptData.data
-          const cust = custData.data
-
-          let projectName = 'Unknown'
-          if (apt) {
-            const projData = await supabase.from('projects').select('name').eq('id', apt.project_id).maybeSingle()
-            if (projData.data) projectName = projData.data.name
-          }
-
-          return {
-            ...sale,
-            apartment_number: apt?.number || 'N/A',
-            project_name: projectName,
-            customer_name: cust ? `${cust.name} ${cust.surname}` : 'Unknown'
-          }
-        })
-      )
-
-      setRecentSales(recentSalesWithDetails)
-
+      const { stats: s, projectStats: ps, monthlyTrends: mt, paymentMethodBreakdown: pm, recentSales: rs } =
+        await salesService.fetchSalesDashboardData()
+      setStats(s)
+      setProjectStats(ps)
+      setMonthlyTrends(mt)
+      setPaymentMethodBreakdown(pm)
+      setRecentSales(rs)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {

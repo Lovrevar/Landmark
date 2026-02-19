@@ -1,122 +1,35 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
 import { LoadingSpinner } from '../ui'
 import { BarChart3, MapPin, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
+import { fetchRetailDashboardData } from './services/retailDashboardService'
 
-interface DashboardStats {
-  total_plots: number
-  total_area: number
-  total_invested: number
-  total_customers: number
-  total_revenue: number
-  total_paid: number
-  total_remaining: number
-  profit: number
-}
-
-interface OverdueInvoice {
-  id: string
-  invoice_number: string
-  customer_name: string
-  contract_number: string
-  remaining_amount: number
-  due_date: string
-  days_overdue: number
+const defaultStats: DashboardStats = {
+  total_plots: 0,
+  total_area: 0,
+  total_invested: 0,
+  total_customers: 0,
+  total_revenue: 0,
+  total_paid: 0,
+  total_remaining: 0,
+  profit: 0
 }
 
 const RetailDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>({
-    total_plots: 0,
-    total_area: 0,
-    total_invested: 0,
-    total_customers: 0,
-    total_revenue: 0,
-    total_paid: 0,
-    total_remaining: 0,
-    profit: 0
-  })
+  const [stats, setStats] = useState<DashboardStats>(defaultStats)
   const [overdueInvoices, setOverdueInvoices] = useState<OverdueInvoice[]>([])
 
   useEffect(() => {
-    fetchDashboardData()
+    loadAll()
   }, [])
 
-  const fetchDashboardData = async () => {
+  const loadAll = async () => {
     try {
       setLoading(true)
-
-      // Fetch land plots (investments)
-      const { data: plots } = await supabase
-        .from('retail_land_plots')
-        .select('id, purchased_area_m2, total_price')
-
-      // Fetch customers
-      const { data: customers } = await supabase
-        .from('retail_customers')
-        .select('id')
-
-      // Fetch sales contracts (contracts with customer_id)
-      const { data: salesContracts } = await supabase
-        .from('retail_contracts')
-        .select('id, contract_number, contract_amount, customer_id')
-        .not('customer_id', 'is', null)
-
-      // Fetch sales invoices
-      const { data: salesInvoices } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          total_amount,
-          paid_amount,
-          remaining_amount,
-          status,
-          due_date,
-          retail_contract_id,
-          retail_customer_id,
-          retail_contracts (
-            contract_number,
-            customer_id
-          ),
-          retail_customers (
-            name
-          )
-        `)
-        .eq('invoice_type', 'OUTGOING_SALES')
-        .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
-
-      const total_invested = (plots || []).reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0)
-      const total_revenue = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
-      const total_paid = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
-      const total_remaining = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
-
-      const today = new Date()
-      const overdue = (salesInvoices || [])
-        .filter(inv => inv.status !== 'PAID' && inv.due_date && new Date(inv.due_date) < today)
-        .map(inv => ({
-          id: inv.id,
-          invoice_number: inv.invoice_number,
-          customer_name: (inv.retail_customers as any)?.name || 'N/A',
-          contract_number: (inv.retail_contracts as any)?.contract_number || 'N/A',
-          remaining_amount: parseFloat(inv.remaining_amount || 0),
-          due_date: inv.due_date || '',
-          days_overdue: Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24))
-        }))
-        .sort((a, b) => b.days_overdue - a.days_overdue)
-
-      setStats({
-        total_plots: (plots || []).length,
-        total_area: (plots || []).reduce((sum, p) => sum + parseFloat(p.purchased_area_m2 || 0), 0),
-        total_invested,
-        total_customers: (customers || []).length,
-        total_revenue,
-        total_paid,
-        total_remaining,
-        profit: total_paid - total_invested
-      })
-
+      const { stats: s, overdueInvoices: overdue } = await fetchRetailDashboardData()
+      setStats(s)
       setOverdueInvoices(overdue)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -164,10 +77,10 @@ const RetailDashboard: React.FC = () => {
           <p className="text-sm text-gray-600 mt-1">Kupovina zemljišta</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 border border-teal-200">
           <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="w-8 h-8 text-purple-600" />
-            <span className="text-sm font-medium text-purple-700">Prihod</span>
+            <TrendingUp className="w-8 h-8 text-teal-600" />
+            <span className="text-sm font-medium text-teal-700">Prihod</span>
           </div>
           <p className="text-3xl font-bold text-gray-900">€{stats.total_revenue.toLocaleString()}</p>
           <p className="text-sm text-gray-600 mt-1">Ukupne prodaje</p>

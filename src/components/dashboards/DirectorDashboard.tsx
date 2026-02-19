@@ -1,525 +1,82 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
-import { LoadingSpinner, StatGrid, Button, Badge } from '../ui'
+import { LoadingSpinner, StatGrid, Button } from '../ui'
 import {
-  Building2,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Users,
   Home,
   Banknote,
-  AlertTriangle,
+  HardHat,
   CheckCircle,
   Clock,
-  Target,
-  PieChart,
-  Activity,
-  Wallet,
-  CreditCard,
-  HardHat,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
   Package,
-  Percent
+  Percent,
+  Users,
+  Building2,
+  Target,
+  Calendar
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, parseISO } from 'date-fns'
+import { format } from 'date-fns'
+import type { ProjectStats, FinancialMetrics, SalesMetrics, ConstructionMetrics, FundingMetrics, Alert } from './types/directorTypes'
+import * as directorService from './services/directorService'
+import DirectorAlertsSection from './sections/DirectorAlertsSection'
+import DirectorFinancialSection from './sections/DirectorFinancialSection'
+import DirectorProjectsTable from './sections/DirectorProjectsTable'
 
-interface ProjectStats {
-  id: string
-  name: string
-  location: string
-  status: string
-  budget: number
-  total_expenses: number
-  apartment_sales: number
-  total_investment: number
-  total_debt: number
-  profit_margin: number
-  completion_percentage: number
+const defaultFinancial: FinancialMetrics = {
+  total_revenue: 0, total_expenses: 0, total_profit: 0, profit_margin: 0,
+  total_debt: 0, total_equity: 0, debt_to_equity_ratio: 0,
+  cash_flow_current_month: 0, outstanding_receivables: 0, outstanding_payables: 0
 }
-
-interface FinancialMetrics {
-  total_revenue: number
-  total_expenses: number
-  total_profit: number
-  profit_margin: number
-  total_debt: number
-  total_equity: number
-  debt_to_equity_ratio: number
-  cash_flow_current_month: number
-  outstanding_receivables: number
-  outstanding_payables: number
+const defaultSales: SalesMetrics = {
+  total_units: 0, sold_units: 0, reserved_units: 0, available_units: 0,
+  sales_rate: 0, total_sales_revenue: 0, avg_price_per_unit: 0,
+  monthly_sales_count: 0, monthly_sales_revenue: 0
 }
-
-interface SalesMetrics {
-  total_units: number
-  sold_units: number
-  reserved_units: number
-  available_units: number
-  sales_rate: number
-  total_sales_revenue: number
-  avg_price_per_unit: number
-  monthly_sales_count: number
-  monthly_sales_revenue: number
+const defaultConstruction: ConstructionMetrics = {
+  total_subcontractors: 0, active_subcontractors: 0, completed_contracts: 0,
+  total_contract_value: 0, total_paid: 0, pending_payments: 0,
+  overdue_tasks: 0, critical_deadlines: 0
 }
-
-interface ConstructionMetrics {
-  total_subcontractors: number
-  active_subcontractors: number
-  completed_contracts: number
-  total_contract_value: number
-  total_paid: number
-  pending_payments: number
-  overdue_tasks: number
-  critical_deadlines: number
-}
-
-interface FundingMetrics {
-  total_investors: number
-  total_banks: number
-  total_bank_credit: number
-  outstanding_debt: number
-  credit_paid_out: number
-  avg_interest_rate: number
-  monthly_debt_service: number
-  upcoming_maturities: number
-}
-
-interface Alert {
-  type: 'critical' | 'warning' | 'info'
-  title: string
-  message: string
-  date?: string
+const defaultFunding: FundingMetrics = {
+  total_investors: 0, total_banks: 0, total_bank_credit: 0,
+  outstanding_debt: 0, credit_paid_out: 0, avg_interest_rate: 0,
+  monthly_debt_service: 0, upcoming_maturities: 0
 }
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<ProjectStats[]>([])
-  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics>({
-    total_revenue: 0,
-    total_expenses: 0,
-    total_profit: 0,
-    profit_margin: 0,
-    total_debt: 0,
-    total_equity: 0,
-    debt_to_equity_ratio: 0,
-    cash_flow_current_month: 0,
-    outstanding_receivables: 0,
-    outstanding_payables: 0
-  })
-  const [salesMetrics, setSalesMetrics] = useState<SalesMetrics>({
-    total_units: 0,
-    sold_units: 0,
-    reserved_units: 0,
-    available_units: 0,
-    sales_rate: 0,
-    total_sales_revenue: 0,
-    avg_price_per_unit: 0,
-    monthly_sales_count: 0,
-    monthly_sales_revenue: 0
-  })
-  const [constructionMetrics, setConstructionMetrics] = useState<ConstructionMetrics>({
-    total_subcontractors: 0,
-    active_subcontractors: 0,
-    completed_contracts: 0,
-    total_contract_value: 0,
-    total_paid: 0,
-    pending_payments: 0,
-    overdue_tasks: 0,
-    critical_deadlines: 0
-  })
-  const [fundingMetrics, setFundingMetrics] = useState<FundingMetrics>({
-    total_investors: 0,
-    total_banks: 0,
-    total_bank_credit: 0,
-    outstanding_debt: 0,
-    credit_paid_out: 0,
-    avg_interest_rate: 0,
-    monthly_debt_service: 0,
-    upcoming_maturities: 0
-  })
+  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics>(defaultFinancial)
+  const [salesMetrics, setSalesMetrics] = useState<SalesMetrics>(defaultSales)
+  const [constructionMetrics, setConstructionMetrics] = useState<ConstructionMetrics>(defaultConstruction)
+  const [fundingMetrics, setFundingMetrics] = useState<FundingMetrics>(defaultFunding)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchAllDashboardData()
+    loadAll()
   }, [])
 
-  const fetchAllDashboardData = async () => {
+  const loadAll = async () => {
     setLoading(true)
     try {
-      await Promise.all([
-        fetchProjectsData(),
-        fetchFinancialData(),
-        fetchSalesData(),
-        fetchConstructionData(),
-        fetchFundingData(),
-        generateAlerts()
+      const [projectsData, financial, sales, construction, funding] = await Promise.all([
+        directorService.fetchProjectsData(),
+        directorService.fetchFinancialMetrics(),
+        directorService.fetchSalesMetrics(),
+        directorService.fetchConstructionMetrics(),
+        directorService.fetchFundingMetrics()
       ])
+      setProjects(projectsData)
+      setFinancialMetrics(financial)
+      setSalesMetrics(sales)
+      setConstructionMetrics(construction)
+      setFundingMetrics(funding)
+      const alertsData = await directorService.fetchAlerts(financial, sales)
+      setAlerts(alertsData)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchProjectsData = async () => {
-    try {
-      const [
-        { data: projectsData, error: projectsError },
-        { data: apartments },
-        { data: contracts },
-        { data: accountingInvoices },
-        { data: creditAllocations },
-        { data: bankCredits }
-      ] = await Promise.all([
-        supabase.from('projects').select('*').order('created_at', { ascending: false }),
-        supabase.from('apartments').select('id, project_id, price, status'),
-        supabase.from('contracts').select('id, project_id, total_amount'),
-        supabase.from('accounting_invoices').select('id, contract_id, project_id, invoice_type, total_amount'),
-        supabase.from('credit_allocations').select('project_id, allocated_amount'),
-        supabase.from('bank_credits').select('project_id, outstanding_balance')
-      ])
-
-      if (projectsError) throw projectsError
-
-      const apartmentsArray = apartments || []
-      const contractsArray = contracts || []
-      const invoicesArray = accountingInvoices || []
-      const allocationsArray = creditAllocations || []
-      const creditsArray = bankCredits || []
-
-      const projectsWithStats = (projectsData || []).map((project) => {
-        const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
-        const projectContracts = contractsArray.filter(c => c.project_id === project.id)
-
-        const contractExpenses = projectContracts.map(c => {
-          const contractInvoices = invoicesArray.filter(
-            inv => inv.contract_id === c.id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-          )
-          const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-          return Math.max(c.total_amount || 0, invoicedTotal)
-        })
-
-        const invoicesWithoutContract = invoicesArray
-          .filter(inv =>
-            inv.project_id === project.id &&
-            !inv.contract_id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-          )
-          .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-        const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
-
-        const soldApts = projectApartments.filter(a => a.status === 'Sold')
-        const apartmentSales = soldApts.reduce((sum, a) => sum + a.price, 0)
-
-        const totalInvestment = allocationsArray
-          .filter(alloc => alloc.project_id === project.id)
-          .reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
-
-        const totalDebt = creditsArray
-          .filter(bc => bc.project_id === project.id)
-          .reduce((sum, bc) => sum + bc.outstanding_balance, 0)
-
-        const totalUnits = projectApartments.length
-        const soldUnits = soldApts.length
-        const completionPercentage = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-
-        const profit = apartmentSales - totalExpenses
-        const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
-
-        return {
-          id: project.id,
-          name: project.name,
-          location: project.location,
-          status: project.status,
-          budget: project.budget,
-          total_expenses: totalExpenses,
-          apartment_sales: apartmentSales,
-          total_investment: totalInvestment,
-          total_debt: totalDebt,
-          profit_margin: profitMargin,
-          completion_percentage: completionPercentage
-        }
-      })
-
-      setProjects(projectsWithStats)
-    } catch (error) {
-      console.error('Error fetching projects data:', error)
-    }
-  }
-
-  const fetchFinancialData = async () => {
-    try {
-      const { data: sales } = await supabase.from('sales').select('sale_price')
-      const { data: invoices } = await supabase.from('accounting_invoices').select('paid_amount, invoice_category')
-      const { data: accountingPayments } = await supabase.from('accounting_payments').select('amount, payment_date, invoice_id')
-      const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('id, invoice_category')
-      const apartmentPayments = accountingPayments?.filter(p => {
-        const invoice = accountingInvoices?.find(inv => inv.id === p.invoice_id)
-        return invoice?.invoice_category === 'CUSTOMER'
-      }) || []
-      const { data: bankCredits } = await supabase.from('bank_credits').select('outstanding_balance')
-      const { data: creditAllocations } = await supabase.from('credit_allocations').select('allocated_amount')
-
-      const totalRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
-      const totalExpenses = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
-      const totalProfit = totalRevenue - totalExpenses
-      const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
-      const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
-      const totalEquity = creditAllocations?.reduce((sum, alloc) => sum + Number(alloc.allocated_amount), 0) || 0
-      const debtToEquityRatio = totalEquity > 0 ? totalDebt / totalEquity : 0
-
-      const currentMonth = startOfMonth(new Date())
-      const currentMonthPayments = apartmentPayments?.filter(p =>
-        p.payment_date && new Date(p.payment_date) >= currentMonth
-      ) || []
-      const cashFlowCurrentMonth = currentMonthPayments.reduce((sum, p) => sum + p.amount, 0)
-
-      const { data: apartmentsData } = await supabase
-        .from('apartments')
-        .select('price, status')
-        .in('status', ['Sold', 'Reserved'])
-
-      const outstandingReceivables = apartmentsData?.reduce((sum, apt) => {
-        if (apt.status === 'Reserved') return sum + apt.price
-        return sum
-      }, 0) || 0
-
-      const outstandingPayables = totalDebt
-
-      setFinancialMetrics({
-        total_revenue: totalRevenue,
-        total_expenses: totalExpenses,
-        total_profit: totalProfit,
-        profit_margin: profitMargin,
-        total_debt: totalDebt,
-        total_equity: totalEquity,
-        debt_to_equity_ratio: debtToEquityRatio,
-        cash_flow_current_month: cashFlowCurrentMonth,
-        outstanding_receivables: outstandingReceivables,
-        outstanding_payables: outstandingPayables
-      })
-    } catch (error) {
-      console.error('Error fetching financial data:', error)
-    }
-  }
-
-  const fetchSalesData = async () => {
-    try {
-      const { data: apartments } = await supabase.from('apartments').select('id, status, price')
-      const { data: sales } = await supabase.from('sales').select('sale_price, sale_date')
-
-      const totalUnits = apartments?.length || 0
-      const soldUnits = apartments?.filter(a => a.status === 'Sold').length || 0
-      const reservedUnits = apartments?.filter(a => a.status === 'Reserved').length || 0
-      const availableUnits = apartments?.filter(a => a.status === 'Available').length || 0
-      const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-
-      const totalSalesRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
-      const avgPricePerUnit = soldUnits > 0 ? totalSalesRevenue / soldUnits : 0
-
-      const currentMonth = startOfMonth(new Date())
-      const monthlySales = sales?.filter(s => new Date(s.sale_date) >= currentMonth) || []
-      const monthlySalesCount = monthlySales.length
-      const monthlySalesRevenue = monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
-
-      setSalesMetrics({
-        total_units: totalUnits,
-        sold_units: soldUnits,
-        reserved_units: reservedUnits,
-        available_units: availableUnits,
-        sales_rate: salesRate,
-        total_sales_revenue: totalSalesRevenue,
-        avg_price_per_unit: avgPricePerUnit,
-        monthly_sales_count: monthlySalesCount,
-        monthly_sales_revenue: monthlySalesRevenue
-      })
-    } catch (error) {
-      console.error('Error fetching sales data:', error)
-    }
-  }
-
-  const fetchConstructionData = async () => {
-    try {
-      const { data: contracts } = await supabase
-        .from('contracts')
-        .select('id, contract_amount, budget_realized, status')
-
-      const { data: subcontractors } = await supabase
-        .from('subcontractors')
-        .select('id, name')
-
-      const { data: milestones } = await supabase
-        .from('subcontractor_milestones')
-        .select('id, due_date, status, contract_id')
-
-      const { data: invoices } = await supabase
-        .from('accounting_invoices')
-        .select('total_amount, paid_amount, invoice_category, contract_id')
-        .eq('invoice_category', 'SUBCONTRACTOR')
-
-      const totalSubcontractors = subcontractors?.length || 0
-      const completedContracts = contracts?.filter(c => c.status === 'completed').length || 0
-      const activeContracts = contracts?.filter(c => c.status === 'active').length || 0
-
-      const totalContractValue = contracts?.reduce((sum, c) => sum + Number(c.contract_amount), 0) || 0
-      const totalPaid = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
-      const pendingPayments = invoices?.reduce((sum, inv) => sum + Number(inv.total_amount - inv.paid_amount), 0) || 0
-
-      const today = new Date()
-      const overdueTasks = milestones?.filter(m =>
-        m.due_date && new Date(m.due_date) < today && m.status !== 'completed'
-      ).length || 0
-
-      const criticalDeadlines = milestones?.filter(m => {
-        if (!m.due_date || m.status === 'completed') return false
-        const daysUntil = differenceInDays(new Date(m.due_date), today)
-        return daysUntil >= 0 && daysUntil <= 7
-      }).length || 0
-
-      setConstructionMetrics({
-        total_subcontractors: totalSubcontractors,
-        active_subcontractors: activeContracts,
-        completed_contracts: completedContracts,
-        total_contract_value: totalContractValue,
-        total_paid: totalPaid,
-        pending_payments: pendingPayments,
-        overdue_tasks: overdueTasks,
-        critical_deadlines: criticalDeadlines
-      })
-    } catch (error) {
-      console.error('Error fetching construction data:', error)
-    }
-  }
-
-  const fetchFundingData = async () => {
-    try {
-      const { data: companies } = await supabase.from('banks').select('*')
-      const { data: bankCredits } = await supabase
-        .from('bank_credits')
-        .select('amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date, bank_id')
-      const { data: creditAllocations } = await supabase
-        .from('credit_allocations')
-        .select('bank_credits(bank_id)')
-      const totalBanks = companies?.length || 0
-
-      const activeFunderIds = new Set(
-        (creditAllocations || [])
-          .map(alloc => (alloc.bank_credits as any)?.project_id)
-          .filter(Boolean)
-      )
-      const totalInvestors = activeFunderIds.size
-
-      const totalBankCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.amount), 0) || 0
-      const totalInvestments = totalBankCredit
-
-      const outstandingDebt = bankCredits?.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0) || 0
-
-      const totalUsedCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0) || 0
-      const totalRepaidCredit = bankCredits?.reduce((sum, bc) => sum + Number(bc.repaid_amount || 0), 0) || 0
-      const creditPaidOut = totalBankCredit > 0 ? (totalUsedCredit / totalBankCredit) * 100 : 0
-
-      const avgInterestRate = bankCredits?.length
-        ? bankCredits.reduce((sum, bc) => sum + Number(bc.interest_rate || 0), 0) / bankCredits.length
-        : 0
-
-      const monthlyDebtService = 0
-
-      const upcomingMaturities = bankCredits?.filter(bc => {
-        if (!bc.maturity_date) return false
-        const daysUntil = differenceInDays(new Date(bc.maturity_date), new Date())
-        return daysUntil >= 0 && daysUntil <= 90
-      }).length || 0
-
-      setFundingMetrics({
-        total_investors: totalInvestors,
-        total_banks: totalBanks,
-        total_bank_credit: totalInvestments,
-        outstanding_debt: outstandingDebt,
-        credit_paid_out: creditPaidOut,
-        avg_interest_rate: avgInterestRate,
-        monthly_debt_service: monthlyDebtService,
-        upcoming_maturities: upcomingMaturities
-      })
-    } catch (error) {
-      console.error('Error fetching funding data:', error)
-    }
-  }
-
-  const generateAlerts = async () => {
-    const newAlerts: Alert[] = []
-
-    try {
-      const { data: milestones } = await supabase
-        .from('subcontractor_milestones')
-        .select('milestone_name, due_date, status, contracts(job_description)')
-
-      const today = new Date()
-
-      milestones?.forEach(milestone => {
-        if (milestone.due_date && milestone.status !== 'completed') {
-          const daysUntil = differenceInDays(new Date(milestone.due_date), today)
-          if (daysUntil < 0) {
-            newAlerts.push({
-              type: 'critical',
-              title: 'Overdue Milestone',
-              message: `${milestone.milestone_name || 'Milestone'} is ${Math.abs(daysUntil)} days overdue`,
-              date: milestone.due_date
-            })
-          } else if (daysUntil <= 3) {
-            newAlerts.push({
-              type: 'warning',
-              title: 'Urgent Deadline',
-              message: `${milestone.milestone_name || 'Milestone'} due in ${daysUntil} days`,
-              date: milestone.due_date
-            })
-          }
-        }
-      })
-
-      const { data: bankCredits } = await supabase
-        .from('bank_credits')
-        .select('maturity_date, amount, credit_name, company:accounting_companies(name)')
-
-      bankCredits?.forEach(credit => {
-        if (credit.maturity_date) {
-          const daysUntil = differenceInDays(new Date(credit.maturity_date), today)
-          if (daysUntil >= 0 && daysUntil <= 30) {
-            newAlerts.push({
-              type: 'warning',
-              title: 'Credit Maturity',
-              message: `${credit.credit_name || credit.company?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
-              date: credit.maturity_date
-            })
-          }
-        }
-      })
-
-      if (financialMetrics.debt_to_equity_ratio > 2) {
-        newAlerts.push({
-          type: 'warning',
-          title: 'High Leverage',
-          message: `Debt-to-Equity ratio is ${financialMetrics.debt_to_equity_ratio.toFixed(2)}x (recommended < 2x)`
-        })
-      }
-
-      if (salesMetrics.sales_rate < 30 && salesMetrics.total_units > 0) {
-        newAlerts.push({
-          type: 'info',
-          title: 'Low Sales Rate',
-          message: `Only ${salesMetrics.sales_rate.toFixed(1)}% of units sold. Consider sales strategy review.`
-        })
-      }
-
-      setAlerts(newAlerts.slice(0, 10))
-    } catch (error) {
-      console.error('Error generating alerts:', error)
     }
   }
 
@@ -540,171 +97,16 @@ const DirectorDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Critical Alerts Section */}
-      {alerts.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Critical Alerts ({alerts.length})</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {alerts.slice(0, 6).map((alert, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg border ${
-                  alert.type === 'critical'
-                    ? 'bg-red-50 border-red-200'
-                    : alert.type === 'warning'
-                    ? 'bg-orange-50 border-orange-200'
-                    : 'bg-blue-50 border-blue-200'
-                }`}
-              >
-                <div className="flex items-start">
-                  {alert.type === 'critical' ? (
-                    <AlertTriangle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
-                  ) : alert.type === 'warning' ? (
-                    <Clock className="w-5 h-5 text-orange-600 mr-2 mt-0.5" />
-                  ) : (
-                    <Activity className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <p className={`font-semibold text-sm ${
-                      alert.type === 'critical' ? 'text-red-900' :
-                      alert.type === 'warning' ? 'text-orange-900' : 'text-blue-900'
-                    }`}>
-                      {alert.title}
-                    </p>
-                    <p className={`text-xs mt-1 ${
-                      alert.type === 'critical' ? 'text-red-700' :
-                      alert.type === 'warning' ? 'text-orange-700' : 'text-blue-700'
-                    }`}>
-                      {alert.message}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <DirectorAlertsSection alerts={alerts} />
+      <DirectorFinancialSection metrics={financialMetrics} />
 
-      {/* Financial Overview - Top Priority */}
-      <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl shadow-lg border border-blue-200 p-6">
-        <div className="flex items-center mb-6">
-          <DollarSign className="w-6 h-6 text-blue-600 mr-2" />
-          <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
-        </div>
-        <StatGrid columns={5}>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-            <p className="text-3xl font-bold text-green-600">
-              €{(financialMetrics.total_revenue / 1000000).toFixed(2)}M
-            </p>
-            <p className="text-xs text-gray-500 mt-1">From all sales</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Total Expenses</p>
-              <TrendingDown className="w-5 h-5 text-red-600" />
-            </div>
-            <p className="text-3xl font-bold text-red-600">
-              €{(financialMetrics.total_expenses / 1000000).toFixed(2)}M
-            </p>
-            <p className="text-xs text-gray-500 mt-1">All payments made</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Net Profit</p>
-              <Wallet className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className={`text-3xl font-bold ${financialMetrics.total_profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              €{(financialMetrics.total_profit / 1000000).toFixed(2)}M
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {financialMetrics.profit_margin.toFixed(1)}% margin
-            </p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Total Debt</p>
-              <CreditCard className="w-5 h-5 text-orange-600" />
-            </div>
-            <p className="text-3xl font-bold text-orange-600">
-              €{(financialMetrics.total_debt / 1000000).toFixed(2)}M
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Outstanding balance</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Cash Flow (Month)</p>
-              <Activity className="w-5 h-5 text-teal-600" />
-            </div>
-            <p className="text-3xl font-bold text-teal-600">
-              €{(financialMetrics.cash_flow_current_month / 1000).toFixed(0)}K
-            </p>
-            <p className="text-xs text-gray-500 mt-1">{format(new Date(), 'MMMM')}</p>
-          </div>
-        </StatGrid>
-
-        <StatGrid columns={3} className="mt-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs text-gray-600">Debt/Equity Ratio</p>
-                <p className={`text-xl font-bold ${
-                  financialMetrics.debt_to_equity_ratio > 2 ? 'text-red-600' :
-                  financialMetrics.debt_to_equity_ratio > 1 ? 'text-orange-600' : 'text-green-600'
-                }`}>
-                  {financialMetrics.debt_to_equity_ratio.toFixed(2)}x
-                </p>
-              </div>
-              <PieChart className="w-8 h-8 text-gray-400" />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs text-gray-600">Receivables</p>
-                <p className="text-xl font-bold text-blue-600">
-                  €{(financialMetrics.outstanding_receivables / 1000).toFixed(0)}K
-                </p>
-              </div>
-              <ArrowUpRight className="w-8 h-8 text-blue-400" />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs text-gray-600">Payables</p>
-                <p className="text-xl font-bold text-orange-600">
-                  €{(financialMetrics.outstanding_payables / 1000000).toFixed(3)}M
-                </p>
-              </div>
-              <ArrowDownRight className="w-8 h-8 text-orange-400" />
-            </div>
-          </div>
-        </StatGrid>
-      </div>
-
-      {/* Sales Performance */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Home className="w-6 h-6 text-green-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Sales Performance</h2>
           </div>
-          <Button variant="success" onClick={() => navigate('/sales-projects')}>
-            View Details
-          </Button>
+          <Button variant="success" onClick={() => navigate('/sales-projects')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
@@ -722,9 +124,9 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-3xl font-bold text-blue-600">{salesMetrics.available_units}</p>
             <p className="text-sm text-gray-600">Available</p>
           </div>
-          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <Percent className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{salesMetrics.sales_rate.toFixed(1)}%</p>
+          <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
+            <Percent className="w-8 h-8 text-teal-600 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-teal-600">{salesMetrics.sales_rate.toFixed(1)}%</p>
             <p className="text-sm text-gray-600">Sales Rate</p>
           </div>
         </div>
@@ -746,16 +148,13 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      {/* Construction & Site Management */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Construction & Site Management</h2>
           </div>
-          <Button variant="amber" onClick={() => navigate('/site-management')}>
-            View Details
-          </Button>
+          <Button variant="amber" onClick={() => navigate('/site-management')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -795,16 +194,13 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      {/* Funding & Investment */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Banknote className="w-6 h-6 text-purple-600 mr-2" />
+            <Banknote className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900">Funding & Investment</h2>
           </div>
-          <Button variant="primary" onClick={() => navigate('/funding-overview')}>
-            View Details
-          </Button>
+          <Button variant="primary" onClick={() => navigate('/funding-overview')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -817,9 +213,9 @@ const DirectorDashboard: React.FC = () => {
             <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
             <p className="text-sm text-gray-600">Investors</p>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-            <Target className="w-6 h-6 text-purple-600 mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{fundingMetrics.credit_paid_out.toFixed(0)}%</p>
+          <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+            <Target className="w-6 h-6 text-teal-600 mb-2" />
+            <p className="text-3xl font-bold text-teal-600">{fundingMetrics.credit_paid_out.toFixed(0)}%</p>
             <p className="text-sm text-gray-600">Credit Paid Out</p>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
@@ -848,94 +244,7 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      {/* Projects Overview Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Projects Portfolio</h2>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-blue-600">{projects.length}</p>
-              <p className="text-sm text-gray-600">Total Projects</p>
-            </div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Profit Margin</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Completion</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {projects.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No projects available</p>
-                  </td>
-                </tr>
-              ) : (
-                projects.map((project) => (
-                  <tr key={project.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/projects/${project.id}`)}>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{project.name}</p>
-                        <p className="text-sm text-gray-500">{project.location}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant={
-                        project.status === 'Completed' ? 'green' :
-                        project.status === 'In Progress' ? 'blue' :
-                        project.status === 'On Hold' ? 'red' : 'gray'
-                      }>
-                        {project.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      €{(project.budget / 1000000).toFixed(2)}M
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-red-600">
-                      €{(project.total_expenses / 1000000).toFixed(2)}M
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-green-600">
-                      €{(project.apartment_sales / 1000000).toFixed(2)}M
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center text-sm font-semibold ${
-                        project.profit_margin >= 20 ? 'text-green-600' :
-                        project.profit_margin >= 10 ? 'text-blue-600' :
-                        project.profit_margin >= 0 ? 'text-orange-600' : 'text-red-600'
-                      }`}>
-                        {project.profit_margin >= 0 ? '+' : ''}{project.profit_margin.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${project.completion_percentage}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {project.completion_percentage.toFixed(0)}%
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DirectorProjectsTable projects={projects} />
     </div>
   )
 }
