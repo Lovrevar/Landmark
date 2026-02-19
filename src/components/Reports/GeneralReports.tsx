@@ -321,21 +321,12 @@ const GeneralReports: React.FC = () => {
       .filter(a => a.status === 'Sold')
       .reduce((sum, a) => sum + (a.price || 0), 0)
 
-    const contractExpenses = contractsArray.map(c => {
-      const contractInvoices = accountingInvoicesArray.filter(
-        inv => inv.contract_id === c.id &&
-        (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-      )
-      const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-      return Math.max(c.total_amount || 0, invoicedTotal)
-    })
-
-    const invoicesWithoutContract = accountingInvoicesArray.filter(
-      inv => !inv.contract_id &&
-      (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-    ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-    const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
+    const totalExpenses = accountingPaymentsArray
+      .filter(p => {
+        const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
+        return invoice?.invoice_type === 'INCOMING_SUPPLIER' || invoice?.invoice_type === 'INCOMING_OFFICE'
+      })
+      .reduce((sum, p) => sum + (p.amount || 0), 0)
     const totalProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -422,22 +413,18 @@ const GeneralReports: React.FC = () => {
         const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
         const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
 
-        const projectContractExpenses = projectContracts.map(c => {
-          const contractInvoices = accountingInvoicesArray.filter(
-            inv => inv.contract_id === c.id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-          )
-          const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-          return Math.max(c.total_amount || 0, invoicedTotal)
-        })
+        const projectInvoiceIds = new Set(
+          accountingInvoicesArray
+            .filter(inv =>
+              inv.project_id === project.id &&
+              (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+            )
+            .map(inv => inv.id)
+        )
 
-        const projectInvoicesWithoutContract = accountingInvoicesArray.filter(
-          inv => inv.project_id === project.id &&
-          !inv.contract_id &&
-          (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-        ).reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-        const projectExpenses = projectContractExpenses.reduce((sum, exp) => sum + exp, 0) + projectInvoicesWithoutContract
+        const projectExpenses = accountingPaymentsArray
+          .filter(p => projectInvoiceIds.has(p.invoice_id))
+          .reduce((sum, p) => sum + (p.amount || 0), 0)
 
         const soldApts = projectApartments.filter(a => a.status === 'Sold')
         // Calculate project revenue including linked garages and storages
@@ -1313,15 +1300,15 @@ const GeneralReports: React.FC = () => {
       pdf.setFontSize(12)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(225, 29, 72)
-      pdf.text('COMPANY CREDITS', margin + 5, yPosition + 10)
+      pdf.text('COMPANY INVESTMENTS', margin + 5, yPosition + 10)
 
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(0, 0, 0)
 
       const creditsData = [
-        ['Total Credits:', report.company_credits.total_credits.toString()],
-        ['Credit Value:', '€' + report.company_credits.total_credit_value.toLocaleString()],
+        ['Total Investments:', report.company_credits.total_credits.toString()],
+        ['Investment Value:', '€' + report.company_credits.total_credit_value.toLocaleString()],
         ['Available:', '€' + report.company_credits.credits_available.toLocaleString()],
         ['Used:', '€' + report.company_credits.credits_used.toLocaleString()],
         ['Cesija Payments:', report.company_credits.cesija_payments.toString()],
@@ -2011,23 +1998,23 @@ const GeneralReports: React.FC = () => {
         <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl shadow-sm border border-rose-200 p-6">
           <div className="flex items-center mb-4">
             <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
-            <h2 className="text-xl font-bold text-rose-900">COMPANY CREDITS</h2>
+            <h2 className="text-xl font-bold text-rose-900">COMPANY INVESTMENTS</h2>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Credits:</span>
+              <span className="font-bold text-gray-700">Total Investments:</span>
               <span className="font-bold text-gray-900">{report.company_credits.total_credits}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Total Credit Value:</span>
+              <span className="font-bold text-gray-700">Total Investment Value:</span>
               <span className="font-bold text-gray-900">€{report.company_credits.total_credit_value.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Credits Available:</span>
+              <span className="font-bold text-gray-700">Available:</span>
               <span className="font-bold text-green-600">€{report.company_credits.credits_available.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Credits Used:</span>
+              <span className="font-bold text-gray-700">Used:</span>
               <span className="font-bold text-gray-900">€{report.company_credits.credits_used.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
@@ -2039,11 +2026,11 @@ const GeneralReports: React.FC = () => {
               <span className="font-bold text-gray-900">€{report.company_credits.cesija_value.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Credit Allocations:</span>
+              <span className="font-bold text-gray-700">Investment Allocations:</span>
               <span className="font-bold text-gray-900">{report.company_credits.total_allocations}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-700">Allocated Amount:</span>
+              <span className="font-bold text-gray-700">Total Allocated:</span>
               <span className="font-bold text-gray-900">€{report.company_credits.allocated_amount.toLocaleString()}</span>
             </div>
           </div>
