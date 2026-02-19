@@ -235,6 +235,7 @@ export const useSiteData = () => {
       name?: string
       contact?: string
       job_description: string
+      start_date?: string
       deadline: string
       cost: number
       base_amount?: number
@@ -276,6 +277,7 @@ export const useSiteData = () => {
           vat_amount: hasContract ? data.vat_amount : 0,
           total_amount: hasContract ? data.total_amount : 0,
           budget_realized: 0,
+          start_date: data.start_date || null,
           end_date: data.deadline || null,
           status: 'active',
           contract_type_id: data.contract_type_id || 0,
@@ -320,6 +322,7 @@ export const useSiteData = () => {
           vat_amount: hasContract ? data.vat_amount : 0,
           total_amount: hasContract ? data.total_amount : 0,
           budget_realized: 0,
+          start_date: data.start_date || null,
           end_date: data.deadline || null,
           status: 'active',
           contract_type_id: data.contract_type_id || 0,

@@ -121,6 +121,7 @@ const SiteManagement: React.FC = () => {
       name: data.name,
       contact: data.contact,
       job_description: data.job_description,
+      start_date: data.start_date,
       deadline: data.deadline,
       cost: data.cost,
       base_amount: data.base_amount,

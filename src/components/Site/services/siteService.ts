@@ -491,6 +491,7 @@ export const createContract = async (data: {
   vat_amount?: number
   total_amount?: number
   budget_realized: number
+  start_date?: string | null
   end_date: string | null
   status: string
   contract_type_id?: number

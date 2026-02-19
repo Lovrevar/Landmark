@@ -36,6 +36,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     name: '',
     contact: '',
     job_description: '',
+    start_date: '',
     deadline: '',
     cost: 0,
     base_amount: 0,
@@ -350,6 +351,15 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                     <label className="text-xs text-gray-600">Ukupno</label>
                     <p className="text-lg font-bold text-blue-600">€{formData.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="Datum Ugovora">
+                    <Input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                  </FormField>
                   <FormField label="Deadline" required>
                     <Input
                       type="date"
@@ -451,7 +461,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                     </Select>
                   </FormField>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg">
                   <div>
                     <label className="text-xs text-gray-600">Iznos PDV</label>
                     <p className="text-lg font-semibold text-gray-900">€{formData.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
@@ -460,6 +470,15 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                     <label className="text-xs text-gray-600">Ukupno</label>
                     <p className="text-lg font-bold text-blue-600">€{formData.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="Datum Ugovora">
+                    <Input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                  </FormField>
                   <FormField label="Deadline">
                     <Input
                       type="date"

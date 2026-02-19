@@ -58,6 +58,7 @@ export interface SubcontractorFormData {
   name: string
   contact: string
   job_description: string
+  start_date: string
   deadline: string
   cost: number
   base_amount: number
