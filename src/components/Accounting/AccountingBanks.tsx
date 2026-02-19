@@ -77,8 +77,8 @@ const AccountingBanks: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Banke"
-        description="Pregled svih bankovnih kredita"
+        title="Investicije"
+        description="Pregled svih investicija"
         actions={
           <Button variant="success" icon={Plus} onClick={() => setShowCreditForm(true)}>
             Add Credit
