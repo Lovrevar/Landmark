@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Company, Project, CreditWithCompany, Credit, CreditFormData } from '../types/creditTypes'
 import { fetchAllData, createCredit, updateCredit, deleteCredit } from '../services/creditService'
+import { useModalOverflow } from '../../../hooks/useModalOverflow'
 
 const initialFormData: CreditFormData = {
   company_id: '',
@@ -28,16 +29,7 @@ export const useCredits = () => {
     fetchData()
   }, [])
 
-  useEffect(() => {
-    if (showModal) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showModal])
+  useModalOverflow(showModal)
 
   const fetchData = async () => {
     try {

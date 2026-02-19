@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { CustomerStats, TotalStats } from '../types/customerTypes'
 import { fetchCustomers, buildCustomerStats } from '../services/customerService'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 
 export const useAccountingCustomers = () => {
   const [customers, setCustomers] = useState<CustomerStats[]>([])
@@ -37,12 +38,12 @@ export const useAccountingCustomers = () => {
 
   const handleOpenDetails = (customer: CustomerStats) => {
     setSelectedCustomer(customer)
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowDetailsModal(true)
   }
 
   const handleCloseDetails = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowDetailsModal(false)
     setSelectedCustomer(null)
   }

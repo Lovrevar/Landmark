@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SupplierSummary, SupplierFormData, Project, Phase } from '../types/supplierTypes'
 import * as supplierService from '../services/supplierService'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 
 export const useSuppliers = () => {
   const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
@@ -92,12 +93,12 @@ export const useSuppliers = () => {
       })
       loadProjects()
     }
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowAddModal(true)
   }
 
   const handleCloseAddModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowAddModal(false)
     setEditingSupplier(null)
   }
@@ -148,7 +149,7 @@ export const useSuppliers = () => {
     try {
       const { contracts, invoices } = await supplierService.fetchSupplierDetails(supplier)
       setSelectedSupplier({ ...supplier, contracts, invoices })
-      document.body.style.overflow = 'hidden'
+      lockBodyScroll()
       setShowDetailsModal(true)
     } catch (error) {
       console.error('Error loading supplier details:', error)
@@ -157,18 +158,18 @@ export const useSuppliers = () => {
   }
 
   const handleCloseDetailsModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowDetailsModal(false)
     setSelectedSupplier(null)
   }
 
   const handleOpenLinkModal = () => {
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowLinkModal(true)
   }
 
   const handleCloseLinkModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowLinkModal(false)
   }
 

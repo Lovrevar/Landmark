@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CompanyStats, CompanyFormData } from '../types/companyTypes'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 import {
   fetchCompaniesWithStats,
   fetchBankAccountsForCompany,
@@ -62,13 +63,13 @@ export const useCompanies = () => {
         bankAccounts: [{ bank_name: '', current_balance: 0 }]
       })
     }
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowAddModal(true)
   }
 
   const handleCloseAddModal = () => {
     setFormData({ name: '', oib: '', accountCount: 1, bankAccounts: [{ bank_name: '', current_balance: 0 }] })
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowAddModal(false)
     setEditingCompany(null)
   }
@@ -119,7 +120,7 @@ export const useCompanies = () => {
       }
 
       setSelectedCompany(companyWithDetails)
-      document.body.style.overflow = 'hidden'
+      lockBodyScroll()
       setShowDetailsModal(true)
     } catch (error) {
       console.error('Error loading company details:', error)
@@ -128,7 +129,7 @@ export const useCompanies = () => {
   }
 
   const handleCloseDetailsModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowDetailsModal(false)
     setSelectedCompany(null)
   }

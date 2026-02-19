@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types/invoiceTypes'
 import * as invoiceService from '../services/invoiceService'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 import { useInvoiceColumns } from './useInvoiceColumns'
 import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../utils/invoiceFormDefaults'
 
@@ -155,7 +156,7 @@ export const useInvoices = () => {
           refund_id: invoice.refund_id ? String(invoice.refund_id) : '',
           description: invoice.description
         })
-        document.body.style.overflow = 'hidden'
+        lockBodyScroll()
         setShowRetailInvoiceModal(true)
         return
       }
@@ -193,12 +194,12 @@ export const useInvoices = () => {
       setIsOfficeInvoice(false)
       setFormData(getDefaultInvoiceFormData())
     }
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowInvoiceModal(true)
   }
 
   const handleCloseModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowInvoiceModal(false)
     setEditingInvoice(null)
     setIsOfficeInvoice(false)
@@ -234,24 +235,24 @@ export const useInvoices = () => {
       amount: invoice.remaining_amount
     })
     setCreditAllocations([])
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowPaymentModal(true)
   }
 
   const handleClosePaymentModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowPaymentModal(false)
     setPayingInvoice(null)
   }
 
   const handleViewInvoice = (invoice: Invoice) => {
     setViewingInvoice(invoice)
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
   }
 
   const handleCloseViewModal = () => {
     setViewingInvoice(null)
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
   }
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {

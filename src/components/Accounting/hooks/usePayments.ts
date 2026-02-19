@@ -20,6 +20,7 @@ import {
   updatePayment,
   deletePayment
 } from '../services/paymentService'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 
 export const usePayments = () => {
   const [payments, setPayments] = useState<Payment[]>([])
@@ -172,12 +173,12 @@ export const usePayments = () => {
         description: ''
       })
     }
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowPaymentModal(true)
   }
 
   const handleCloseModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowPaymentModal(false)
     setEditingPayment(null)
   }

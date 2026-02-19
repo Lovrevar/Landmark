@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { OfficeSupplier, OfficeSupplierWithStats, Invoice, OfficeSupplierFormData } from '../types/officeSupplierTypes'
+import { lockBodyScroll, unlockBodyScroll } from '../../../hooks/useModalOverflow'
 import {
   fetchSuppliersWithStats,
   createSupplier,
@@ -66,12 +67,12 @@ export const useOfficeSuppliers = () => {
         vat_id: ''
       })
     }
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
     setShowModal(true)
   }
 
   const handleCloseModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowModal(false)
     setEditingSupplier(null)
   }
@@ -110,7 +111,7 @@ export const useOfficeSuppliers = () => {
     setSelectedSupplier(supplier)
     setShowInvoicesModal(true)
     setLoadingInvoices(true)
-    document.body.style.overflow = 'hidden'
+    lockBodyScroll()
 
     try {
       const invoices = await fetchSupplierInvoices(supplier.id)
@@ -124,7 +125,7 @@ export const useOfficeSuppliers = () => {
   }
 
   const handleCloseInvoicesModal = () => {
-    document.body.style.overflow = 'unset'
+    unlockBodyScroll()
     setShowInvoicesModal(false)
     setSelectedSupplier(null)
     setSupplierInvoices([])

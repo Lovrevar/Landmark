@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '../types/bankTypes'
 import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../services/bankService'
+import { useModalOverflow } from '../../../hooks/useModalOverflow'
 
 export const useBanks = () => {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
@@ -52,16 +53,7 @@ export const useBanks = () => {
     fetchData()
   }, [])
 
-  useEffect(() => {
-    if (showCreditForm) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [showCreditForm])
+  useModalOverflow(showCreditForm)
 
   const addCredit = async () => {
     if (editingCredit) {
