@@ -136,14 +136,14 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       <Modal.Body>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Tip računa" required>
+            <FormField label="Tip" required>
               <Select
                 value={formData.invoice_type}
                 onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as any })}
                 required
               >
-                <option value="INCOMING_BANK">Ulazni</option>
-                <option value="OUTGOING_BANK">Izlazni</option>
+                <option value="INCOMING_BANK">Odljev</option>
+                <option value="OUTGOING_BANK">Priljev</option>
               </Select>
             </FormField>
 
