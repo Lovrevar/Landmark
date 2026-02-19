@@ -268,7 +268,7 @@ const DirectorDashboard: React.FC = () => {
       const { data: creditAllocations } = await supabase.from('credit_allocations').select('allocated_amount')
 
       const totalRevenue = sales?.reduce((sum, s) => sum + s.sale_price, 0) || 0
-      const totalExpenses = invoices?.filter(inv => inv.invoice_category === 'SUBCONTRACTOR').reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
+      const totalExpenses = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0
       const totalProfit = totalRevenue - totalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
       const totalDebt = bankCredits?.reduce((sum, bc) => sum + bc.outstanding_balance, 0) || 0
