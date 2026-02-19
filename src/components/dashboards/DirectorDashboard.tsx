@@ -411,7 +411,7 @@ const DirectorDashboard: React.FC = () => {
 
       const activeFunderIds = new Set(
         (creditAllocations || [])
-          .map(alloc => (alloc.bank_credits as any)?.bank_id)
+          .map(alloc => (alloc.bank_credits as any)?.project_id)
           .filter(Boolean)
       )
       const totalInvestors = activeFunderIds.size
@@ -810,12 +810,12 @@ const DirectorDashboard: React.FC = () => {
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <Users className="w-6 h-6 text-green-600 mb-2" />
             <p className="text-3xl font-bold text-green-600">{fundingMetrics.total_investors}</p>
-            <p className="text-sm text-gray-600">Active Funders</p>
+            <p className="text-sm text-gray-600">Funded Projects</p>
           </div>
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <Building2 className="w-6 h-6 text-blue-600 mb-2" />
             <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
-            <p className="text-sm text-gray-600">Banks</p>
+            <p className="text-sm text-gray-600">Investors</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <Target className="w-6 h-6 text-purple-600 mb-2" />
