@@ -263,12 +263,12 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     if (projectType === 'projects') {
       const { data } = await supabase
         .from('contracts')
-        .select('id, contract_number, contract_amount, base_amount, start_date')
+        .select('id, contract_number, contract_amount, base_amount, signed_date')
         .eq('subcontractor_id', formData.supplier_id)
         .eq('project_id', formData.project_id)
         .eq('phase_id', formData.phase_id)
         .gt('base_amount', 0)
-        .order('start_date', { ascending: false })
+        .order('signed_date', { ascending: false })
 
       if (data) {
         const contracts = data.map(c => ({
@@ -276,7 +276,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           contract_number: c.contract_number,
           contract_amount: c.contract_amount,
           base_amount: c.base_amount,
-          contract_date: c.start_date || new Date().toISOString().split('T')[0]
+          contract_date: c.signed_date || new Date().toISOString().split('T')[0]
         }))
         setAvailableContracts(contracts)
       } else {
