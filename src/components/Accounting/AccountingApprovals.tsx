@@ -12,7 +12,7 @@ import {
   EmptyState,
   ConfirmDialog
 } from '../ui'
-import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
+import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface ApprovedInvoice {
@@ -40,6 +40,7 @@ const AccountingApprovals: React.FC = () => {
   const [invoices, setInvoices] = useState<ApprovedInvoice[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [hideConfirmDialog, setHideConfirmDialog] = useState<{
     isOpen: boolean
     invoiceId: string | null
@@ -49,6 +50,7 @@ const AccountingApprovals: React.FC = () => {
     invoiceId: null,
     invoiceNumber: null
   })
+  const [bulkHideConfirmOpen, setBulkHideConfirmOpen] = useState(false)
   const [stats, setStats] = useState({
     totalInvoices: 0,
     totalAmount: 0,
@@ -131,6 +133,7 @@ const AccountingApprovals: React.FC = () => {
         }))
 
       setInvoices(formattedInvoices)
+      setSelectedIds(new Set())
 
       const totalAmount = formattedInvoices.reduce((sum, inv) => sum + inv.total_amount, 0)
       const oldestInvoice =
@@ -148,58 +151,41 @@ const AccountingApprovals: React.FC = () => {
     }
   }
 
+  const hideInvoiceById = async (invoiceId: string) => {
+    if (!user?.id) return
+    const { error } = await supabase.from('hidden_approved_invoices').insert({
+      invoice_id: invoiceId,
+      hidden_by: user.id
+    })
+    if (error && error.code !== '23505') throw error
+  }
+
   const handleHideInvoice = async () => {
-    console.log('=== handleHideInvoice called ===')
-    console.log('Invoice ID:', hideConfirmDialog.invoiceId)
-    console.log('User object:', user)
-    console.log('User ID:', user?.id)
-
-    if (!hideConfirmDialog.invoiceId) {
-      console.error('No invoice ID')
-      alert('Greška: ID računa nije pronađen.')
+    if (!hideConfirmDialog.invoiceId || !user?.id) {
+      alert('Greška: Korisnik ili ID računa nisu pronađeni.')
       return
     }
-
-    if (!user?.id) {
-      console.error('User ID not found')
-      alert('Greška: Korisnik nije pronađen. Pokušajte se ponovno prijaviti.')
-      return
-    }
-
-    console.log('Attempting to insert into hidden_approved_invoices...')
-    console.log('Data:', { invoice_id: hideConfirmDialog.invoiceId, hidden_by: user.id })
-
     try {
-      const { data, error } = await supabase.from('hidden_approved_invoices').insert({
-        invoice_id: hideConfirmDialog.invoiceId,
-        hidden_by: user.id
-      }).select()
-
-      console.log('Insert result - data:', data)
-      console.log('Insert result - error:', error)
-
-      if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        })
-
-        if (error.code === '23505') {
-          alert('Ovaj račun je već sakriven.')
-        } else {
-          alert(`Greška pri skrivanju računa:\n${error.message}\nKod: ${error.code}`)
-        }
-        return
-      }
-
-      console.log('Successfully inserted, refreshing invoices...')
+      await hideInvoiceById(hideConfirmDialog.invoiceId)
       await fetchApprovedInvoices()
-
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
     } catch (error: any) {
-      console.error('Caught error:', error)
+      alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
+    }
+  }
+
+  const handleBulkHide = async () => {
+    if (!user?.id) {
+      alert('Greška: Korisnik nije pronađen.')
+      return
+    }
+    try {
+      for (const id of selectedIds) {
+        await hideInvoiceById(id)
+      }
+      await fetchApprovedInvoices()
+      setBulkHideConfirmOpen(false)
+    } catch (error: any) {
       alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
     }
   }
@@ -211,6 +197,40 @@ const AccountingApprovals: React.FC = () => {
       invoice.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const allFilteredSelected =
+    filteredInvoices.length > 0 &&
+    filteredInvoices.every((inv) => selectedIds.has(inv.id))
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        filteredInvoices.forEach((inv) => next.delete(inv.id))
+        return next
+      })
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        filteredInvoices.forEach((inv) => next.add(inv.id))
+        return next
+      })
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectedCount = selectedIds.size
+  const selectedTotal = invoices
+    .filter((inv) => selectedIds.has(inv.id))
+    .reduce((sum, inv) => sum + inv.total_amount, 0)
 
   if (loading) {
     return <LoadingSpinner size="lg" message="Učitavanje odobrenih računa..." />
@@ -253,13 +273,36 @@ const AccountingApprovals: React.FC = () => {
       </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4">
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}
             placeholder="Pretraži račune..."
             className="max-w-md"
           />
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                Odabrano: <span className="font-semibold text-gray-900">{selectedCount}</span>
+                {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Poništi odabir
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => setBulkHideConfirmOpen(true)}
+              >
+                <EyeOff className="w-4 h-4 mr-1" />
+                Sakrij odabrane ({selectedCount})
+              </Button>
+            </div>
+          )}
         </div>
 
         {filteredInvoices.length === 0 ? (
@@ -275,6 +318,14 @@ const AccountingApprovals: React.FC = () => {
             <table className="w-full min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>
@@ -290,7 +341,18 @@ const AccountingApprovals: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
+                  <tr
+                    key={invoice.id}
+                    className={`hover:bg-gray-50 transition-colors ${selectedIds.has(invoice.id) ? 'bg-blue-50' : ''}`}
+                  >
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(invoice.id)}
+                        onChange={() => toggleSelect(invoice.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>
                     <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
                     <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>
@@ -374,6 +436,17 @@ const AccountingApprovals: React.FC = () => {
         title="Sakrij račun"
         message={`Jeste li sigurni da želite sakriti račun ${hideConfirmDialog.invoiceNumber}? Račun će biti uklonjen s ove stranice, ali će ostati vidljiv u ostalim dijelovima sustava.`}
         confirmLabel="Sakrij"
+        cancelLabel="Odustani"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        show={bulkHideConfirmOpen}
+        onCancel={() => setBulkHideConfirmOpen(false)}
+        onConfirm={handleBulkHide}
+        title="Sakrij odabrane račune"
+        message={`Jeste li sigurni da želite sakriti ${selectedCount} odabranih računa (ukupno €${selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})? Računi će biti uklonjeni s ove stranice, ali će ostati vidljivi u ostalim dijelovima sustava.`}
+        confirmLabel={`Sakrij (${selectedCount})`}
         cancelLabel="Odustani"
         variant="danger"
       />
