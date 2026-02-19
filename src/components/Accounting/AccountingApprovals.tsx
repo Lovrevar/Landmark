@@ -14,6 +14,35 @@ import {
 } from '../ui'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
+import { ColumnMenuDropdown } from './views/ColumnMenuDropdown'
+
+const COLUMN_LABELS: Record<string, string> = {
+  invoice_number: 'Broj računa',
+  supplier_name: 'Dobavljač',
+  project_name: 'Projekt',
+  phase_name: 'Faza',
+  contract_number: 'Ugovor',
+  issue_date: 'Datum izdavanja',
+  due_date: 'Dospijeće',
+  base_amount: 'Osnovica',
+  vat_amount: 'PDV',
+  total_amount: 'Ukupno',
+  status: 'Status',
+}
+
+const DEFAULT_VISIBLE: Record<string, boolean> = {
+  invoice_number: true,
+  supplier_name: true,
+  project_name: true,
+  phase_name: true,
+  contract_number: false,
+  issue_date: true,
+  due_date: true,
+  base_amount: true,
+  vat_amount: true,
+  total_amount: true,
+  status: true,
+}
 
 interface ApprovedInvoice {
   id: string
@@ -41,6 +70,8 @@ const AccountingApprovals: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(DEFAULT_VISIBLE)
+  const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [hideConfirmDialog, setHideConfirmDialog] = useState<{
     isOpen: boolean
     invoiceId: string | null
@@ -60,6 +91,20 @@ const AccountingApprovals: React.FC = () => {
   useEffect(() => {
     fetchApprovedInvoices()
   }, [])
+
+  useEffect(() => {
+    if (!showColumnMenu) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.column-menu-container')) setShowColumnMenu(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showColumnMenu])
+
+  const toggleColumn = (col: string) => {
+    setVisibleColumns((prev) => ({ ...prev, [col]: !prev[col] }))
+  }
 
   const fetchApprovedInvoices = async () => {
     setLoading(true)
@@ -280,29 +325,38 @@ const AccountingApprovals: React.FC = () => {
             placeholder="Pretraži račune..."
             className="max-w-md"
           />
-          {selectedCount > 0 && (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">
-                Odabrano: <span className="font-semibold text-gray-900">{selectedCount}</span>
-                {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
-              </span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setSelectedIds(new Set())}
-              >
-                Poništi odabir
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => setBulkHideConfirmOpen(true)}
-              >
-                <EyeOff className="w-4 h-4 mr-1" />
-                Sakrij odabrane ({selectedCount})
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {selectedCount > 0 && (
+              <>
+                <span className="text-sm text-gray-600">
+                  Odabrano: <span className="font-semibold text-gray-900">{selectedCount}</span>
+                  {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
+                </span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Poništi odabir
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setBulkHideConfirmOpen(true)}
+                >
+                  <EyeOff className="w-4 h-4 mr-1" />
+                  Sakrij odabrane ({selectedCount})
+                </Button>
+              </>
+            )}
+            <ColumnMenuDropdown
+              showColumnMenu={showColumnMenu}
+              visibleColumns={visibleColumns}
+              columnLabels={COLUMN_LABELS}
+              onToggleMenu={() => setShowColumnMenu((v) => !v)}
+              onToggleColumn={toggleColumn}
+            />
+          </div>
         </div>
 
         {filteredInvoices.length === 0 ? (
@@ -326,16 +380,17 @@ const AccountingApprovals: React.FC = () => {
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Faza</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Datum izdavanja</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dospijeće</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Osnovica</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDV</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ukupno</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                  {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>}
+                  {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>}
+                  {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>}
+                  {visibleColumns.phase_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Faza</th>}
+                  {visibleColumns.contract_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ugovor</th>}
+                  {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Datum izdavanja</th>}
+                  {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dospijeće</th>}
+                  {visibleColumns.base_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Osnovica</th>}
+                  {visibleColumns.vat_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDV</th>}
+                  {visibleColumns.total_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ukupno</th>}
+                  {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Akcije</th>
                 </tr>
               </thead>
@@ -353,46 +408,38 @@ const AccountingApprovals: React.FC = () => {
                         className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.phase_name}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
-                      €{invoice.base_amount.toLocaleString('hr-HR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
-                      €{invoice.vat_amount.toLocaleString('hr-HR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
-                      €{invoice.total_amount.toLocaleString('hr-HR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            invoice.status === 'PAID'
-                              ? 'success'
-                              : invoice.status === 'UNPAID'
-                              ? 'warning'
-                              : 'default'
-                          }
-                        >
-                          {invoice.status}
-                        </Badge>
-                        <Badge variant="success">Odobreno</Badge>
-                      </div>
-                    </td>
+                    {visibleColumns.invoice_number && <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>}
+                    {visibleColumns.supplier_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>}
+                    {visibleColumns.project_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>}
+                    {visibleColumns.phase_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.phase_name}</td>}
+                    {visibleColumns.contract_number && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.contract_number}</td>}
+                    {visibleColumns.issue_date && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.due_date && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.base_amount && (
+                      <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                        €{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    )}
+                    {visibleColumns.vat_amount && (
+                      <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                        €{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    )}
+                    {visibleColumns.total_amount && (
+                      <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                        €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    )}
+                    {visibleColumns.status && (
+                      <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
+                            {invoice.status}
+                          </Badge>
+                          <Badge variant="success">Odobreno</Badge>
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
                       <Button
                         size="sm"
