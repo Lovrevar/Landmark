@@ -35,7 +35,7 @@ interface AllocationInvoice {
   paid_amount: number
   status: string
   description: string | null
-  company_name: string | null
+  supplier_name: string | null
 }
 
 interface AllocationRowProps {
@@ -83,7 +83,9 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
             paid_amount,
             status,
             description,
-            company:accounting_companies(name)
+            supplier:subcontractors(name),
+            office_supplier:office_suppliers(name),
+            retail_supplier:retail_suppliers(name)
           )
         `)
         .eq('credit_allocation_id', allocation.id)
@@ -101,7 +103,11 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
         paid_amount: p.invoice?.paid_amount ?? 0,
         status: p.invoice?.status ?? 'UNKNOWN',
         description: p.invoice?.description ?? null,
-        company_name: p.invoice?.company?.name ?? null,
+        supplier_name:
+          p.invoice?.supplier?.name ??
+          p.invoice?.office_supplier?.name ??
+          p.invoice?.retail_supplier?.name ??
+          null,
       }))
 
       setInvoices(mapped)
@@ -276,7 +282,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                             Broj računa
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Firma
+                            Dobavljac
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Datum plaćanja
@@ -301,7 +307,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 {inv.invoice_number}
                               </td>
                               <td className="px-4 py-2.5 text-gray-700">
-                                {inv.company_name ?? '-'}
+                                {inv.supplier_name ?? '-'}
                               </td>
                               <td className="px-4 py-2.5 text-gray-600">
                                 {format(new Date(inv.payment_date), 'dd.MM.yyyy')}
