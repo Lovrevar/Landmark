@@ -1,9 +1,6 @@
 import { format } from 'date-fns'
 import type { Project, Company, CreditAllocation, BankCredit, FinancialSummary } from '../../types/investment'
-
-const formatEuropean = (value: number): string => {
-  return value.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+import { formatEuropean } from '../../utils/formatters'
 
 const addHeader = (doc: any, yPos: number) => {
   doc.setFillColor(15, 23, 42)
