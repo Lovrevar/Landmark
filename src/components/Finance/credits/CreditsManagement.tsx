@@ -4,6 +4,7 @@ import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 
 import { format } from 'date-fns'
 import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
 import AllocationRow from './AllocationRow'
+import CreditDisbursements from './CreditDisbursements'
 
 interface BankCredit {
   id: string
@@ -543,6 +544,8 @@ const CreditsManagement: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    <CreditDisbursements creditId={credit.id} />
 
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
