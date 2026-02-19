@@ -79,11 +79,6 @@ const AccountingBanks: React.FC = () => {
       <PageHeader
         title="Investicije"
         description="Pregled svih investicija"
-        actions={
-          <Button variant="success" icon={Plus} onClick={() => setShowCreditForm(true)}>
-            Add Credit
-          </Button>
-        }
       />
 
       <StatGrid columns={4}>
