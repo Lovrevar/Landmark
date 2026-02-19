@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LoadingSpinner, StatGrid, Button } from '../ui'
+import StatCard from '../ui/StatCard'
 import {
   Home,
   Banknote,
@@ -109,42 +110,21 @@ const DirectorDashboard: React.FC = () => {
           <Button variant="success" onClick={() => navigate('/sales-projects')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-            <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">{salesMetrics.sold_units}</p>
-            <p className="text-sm text-gray-600">Sold Units</p>
-          </div>
-          <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <Clock className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-yellow-600">{salesMetrics.reserved_units}</p>
-            <p className="text-sm text-gray-600">Reserved</p>
-          </div>
-          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{salesMetrics.available_units}</p>
-            <p className="text-sm text-gray-600">Available</p>
-          </div>
-          <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
-            <Percent className="w-8 h-8 text-teal-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-teal-600">{salesMetrics.sales_rate.toFixed(1)}%</p>
-            <p className="text-sm text-gray-600">Sales Rate</p>
-          </div>
+          <StatCard label="Sold Units" value={salesMetrics.sold_units} icon={CheckCircle} color="green" size="lg" />
+          <StatCard label="Reserved" value={salesMetrics.reserved_units} icon={Clock} color="yellow" size="lg" />
+          <StatCard label="Available" value={salesMetrics.available_units} icon={Package} color="blue" size="lg" />
+          <StatCard label="Sales Rate" value={`${salesMetrics.sales_rate.toFixed(1)}%`} icon={Percent} color="teal" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Total Sales Revenue</p>
-            <p className="text-2xl font-bold text-gray-900">€{(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Avg Price per Unit</p>
-            <p className="text-2xl font-bold text-gray-900">€{(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Monthly Sales ({format(new Date(), 'MMM')})</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {salesMetrics.monthly_sales_count} units / €{(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K
-            </p>
-          </div>
+          <StatCard label="Total Sales Revenue" value={`€${(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label="Avg Price per Unit" value={`€${(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard
+            label={`Monthly Sales (${format(new Date(), 'MMM')})`}
+            value={`${salesMetrics.monthly_sales_count} units`}
+            subtitle={`€${(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K revenue`}
+            color="gray"
+            size="md"
+          />
         </StatGrid>
       </div>
 
@@ -157,40 +137,21 @@ const DirectorDashboard: React.FC = () => {
           <Button variant="amber" onClick={() => navigate('/site-management')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <p className="text-sm text-gray-600 mb-1">Total Subcontractors</p>
-            <p className="text-3xl font-bold text-blue-600">{constructionMetrics.total_subcontractors}</p>
-            <p className="text-xs text-gray-500 mt-1">{constructionMetrics.active_subcontractors} active contracts</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-gray-600 mb-1">Completed Contracts</p>
-            <p className="text-3xl font-bold text-green-600">{constructionMetrics.completed_contracts}</p>
-            <p className="text-xs text-gray-500 mt-1">Finished work</p>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-            <p className="text-sm text-gray-600 mb-1">Overdue Tasks</p>
-            <p className="text-3xl font-bold text-red-600">{constructionMetrics.overdue_tasks}</p>
-            <p className="text-xs text-gray-500 mt-1">Need attention</p>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <p className="text-sm text-gray-600 mb-1">Critical Deadlines</p>
-            <p className="text-3xl font-bold text-orange-600">{constructionMetrics.critical_deadlines}</p>
-            <p className="text-xs text-gray-500 mt-1">Within 7 days</p>
-          </div>
+          <StatCard
+            label="Total Subcontractors"
+            value={constructionMetrics.total_subcontractors}
+            subtitle={`${constructionMetrics.active_subcontractors} active contracts`}
+            color="blue"
+            size="lg"
+          />
+          <StatCard label="Completed Contracts" value={constructionMetrics.completed_contracts} subtitle="Finished work" color="green" size="lg" />
+          <StatCard label="Overdue Tasks" value={constructionMetrics.overdue_tasks} subtitle="Need attention" color="red" size="lg" />
+          <StatCard label="Critical Deadlines" value={constructionMetrics.critical_deadlines} subtitle="Within 7 days" color="orange" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Total Contract Value</p>
-            <p className="text-2xl font-bold text-gray-900">€{(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Total Paid</p>
-            <p className="text-2xl font-bold text-green-600">€{(constructionMetrics.total_paid / 1000000).toFixed(2)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Pending Payments</p>
-            <p className="text-2xl font-bold text-orange-600">€{(constructionMetrics.pending_payments / 1000000).toFixed(2)}M</p>
-          </div>
+          <StatCard label="Total Contract Value" value={`€${(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label="Total Paid" value={`€${(constructionMetrics.total_paid / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label="Pending Payments" value={`€${(constructionMetrics.pending_payments / 1000000).toFixed(2)}M`} color="gray" size="md" />
         </StatGrid>
       </div>
 
@@ -203,44 +164,16 @@ const DirectorDashboard: React.FC = () => {
           <Button variant="primary" onClick={() => navigate('/funding-overview')}>View Details</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <Users className="w-6 h-6 text-green-600 mb-2" />
-            <p className="text-3xl font-bold text-green-600">{fundingMetrics.total_investors}</p>
-            <p className="text-sm text-gray-600">Funded Projects</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <Building2 className="w-6 h-6 text-blue-600 mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{fundingMetrics.total_banks}</p>
-            <p className="text-sm text-gray-600">Investors</p>
-          </div>
-          <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-            <Target className="w-6 h-6 text-teal-600 mb-2" />
-            <p className="text-3xl font-bold text-teal-600">{fundingMetrics.credit_paid_out.toFixed(0)}%</p>
-            <p className="text-sm text-gray-600">Credit Paid Out</p>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <Calendar className="w-6 h-6 text-orange-600 mb-2" />
-            <p className="text-3xl font-bold text-orange-600">{fundingMetrics.upcoming_maturities}</p>
-            <p className="text-sm text-gray-600">Upcoming Maturities</p>
-          </div>
+          <StatCard label="Funded Projects" value={fundingMetrics.total_investors} icon={Users} color="green" size="lg" />
+          <StatCard label="Investors" value={fundingMetrics.total_banks} icon={Building2} color="blue" size="lg" />
+          <StatCard label="Credit Paid Out" value={`${fundingMetrics.credit_paid_out.toFixed(0)}%`} icon={Target} color="teal" size="lg" />
+          <StatCard label="Upcoming Maturities" value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
         </div>
         <StatGrid columns={4}>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Total Investments</p>
-            <p className="text-xl font-bold text-gray-900">€{(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Avg Interest Rate</p>
-            <p className="text-xl font-bold text-blue-600">{fundingMetrics.avg_interest_rate.toFixed(2)}%</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Outstanding Debt</p>
-            <p className="text-xl font-bold text-red-600">€{(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Monthly Debt Service</p>
-            <p className="text-xl font-bold text-orange-600">€{(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K</p>
-          </div>
+          <StatCard label="Total Investments" value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label="Avg Interest Rate" value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
+          <StatCard label="Outstanding Debt" value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label="Monthly Debt Service" value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />
         </StatGrid>
       </div>
 

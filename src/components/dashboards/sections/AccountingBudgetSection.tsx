@@ -1,6 +1,7 @@
 import React from 'react'
 import { Calendar } from 'lucide-react'
 import { StatGrid } from '../../ui'
+import StatCard from '../../ui/StatCard'
 import { format } from 'date-fns'
 import type { CashFlowStats, MonthlyBudget } from '../types/accountingDashboardTypes'
 
@@ -26,40 +27,36 @@ const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats
         </h2>
       </div>
       <StatGrid columns={4} className="gap-6">
-        <div className="bg-white rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Planirani budžet</p>
-          <p className="text-2xl font-bold text-blue-600">
-            €{budgetAmount.toLocaleString('en-US')}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Maksimalni troškovi</p>
-        </div>
-        <div className="bg-white rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Trenutno potrošeno</p>
-          <p className="text-2xl font-bold text-gray-900">
-            €{cashFlowStats.currentMonthOutgoing.toLocaleString('en-US')}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Ukupni troškovi ovog mjeseca</p>
-        </div>
-        <div className="bg-white rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">
-            {remaining >= 0 ? 'Preostalo u budžetu' : 'Prekoračenje budžeta'}
-          </p>
-          <p className={`text-2xl font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            €{Math.abs(remaining).toLocaleString('en-US')}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {remaining >= 0 ? 'Još možeš potrošiti' : 'Preko limita'}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Status budžeta</p>
+        <StatCard
+          label="Planirani budžet"
+          value={`€${budgetAmount.toLocaleString('en-US')}`}
+          subtitle="Maksimalni troškovi"
+          color="white"
+          size="md"
+        />
+        <StatCard
+          label="Trenutno potrošeno"
+          value={`€${cashFlowStats.currentMonthOutgoing.toLocaleString('en-US')}`}
+          subtitle="Ukupni troškovi ovog mjeseca"
+          color="white"
+          size="md"
+        />
+        <StatCard
+          label={remaining >= 0 ? 'Preostalo u budžetu' : 'Prekoračenje budžeta'}
+          value={`€${Math.abs(remaining).toLocaleString('en-US')}`}
+          subtitle={remaining >= 0 ? 'Još možeš potrošiti' : 'Preko limita'}
+          color="white"
+          size="md"
+        />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <p className="text-sm font-medium text-gray-600 mb-1">Status budžeta</p>
           <div className="flex items-center mt-2">
             <div className={`w-3 h-3 rounded-full mr-2 animate-pulse ${withinBudget ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className={`text-lg font-bold ${withinBudget ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`text-xl font-bold ${withinBudget ? 'text-green-600' : 'text-red-600'}`}>
               {withinBudget ? 'U redu' : 'Prekoračenje'}
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-1">{usagePercent}% budžeta iskorišteno</p>
+          <p className="text-xs mt-1 text-gray-600 opacity-75">{usagePercent}% budžeta iskorišteno</p>
         </div>
       </StatGrid>
     </div>

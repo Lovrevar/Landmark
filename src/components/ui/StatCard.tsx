@@ -1,7 +1,7 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 
-type StatColorScheme = 'white' | 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'teal'
+type StatColorScheme = 'white' | 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'teal' | 'orange'
 
 const containerStyles: Record<StatColorScheme, string> = {
   white: 'bg-white border border-gray-200',
@@ -11,6 +11,7 @@ const containerStyles: Record<StatColorScheme, string> = {
   yellow: 'bg-yellow-50 border border-yellow-200',
   gray: 'bg-gray-50 border border-gray-200',
   teal: 'bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200',
+  orange: 'bg-orange-50 border border-orange-200',
 }
 
 const iconBgStyles: Record<StatColorScheme, string> = {
@@ -21,6 +22,7 @@ const iconBgStyles: Record<StatColorScheme, string> = {
   yellow: 'bg-yellow-200',
   gray: 'bg-gray-200',
   teal: 'bg-teal-200',
+  orange: 'bg-orange-200',
 }
 
 const labelStyles: Record<StatColorScheme, string> = {
@@ -31,6 +33,7 @@ const labelStyles: Record<StatColorScheme, string> = {
   yellow: 'text-yellow-700',
   gray: 'text-gray-600',
   teal: 'text-teal-700',
+  orange: 'text-orange-700',
 }
 
 const valueStyles: Record<StatColorScheme, string> = {
@@ -41,6 +44,7 @@ const valueStyles: Record<StatColorScheme, string> = {
   yellow: 'text-yellow-900',
   gray: 'text-gray-900',
   teal: 'text-teal-900',
+  orange: 'text-orange-900',
 }
 
 interface StatCardProps {

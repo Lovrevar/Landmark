@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import StatCard from '../ui/StatCard'
 import {
   ClipboardCheck,
   Users,
@@ -28,13 +29,13 @@ const defaultStats: WeeklyStats = {
 }
 
 const statCards = [
-  { key: 'completed_this_week', label: 'Completed', sub: 'This week', Icon: CheckCircle2, color: 'green' },
-  { key: 'active_crews', label: 'Active Crews', sub: 'In progress', Icon: Users, color: 'blue' },
-  { key: 'active_sites', label: 'Active Sites', sub: 'Phases with work', Icon: Wrench, color: 'teal' },
-  { key: 'work_logs_this_week', label: 'Work Logs', sub: 'This week', Icon: ClipboardCheck, color: 'teal' },
-  { key: 'overdue_tasks', label: 'Overdue', sub: 'Need action', Icon: AlertTriangle, color: 'red' },
-  { key: 'critical_deadlines', label: 'Critical', sub: 'Due this week', Icon: Clock, color: 'orange' }
-] as const
+  { key: 'completed_this_week', label: 'Completed', sub: 'This week', Icon: CheckCircle2, color: 'green' as const },
+  { key: 'active_crews', label: 'Active Crews', sub: 'In progress', Icon: Users, color: 'blue' as const },
+  { key: 'active_sites', label: 'Active Sites', sub: 'Phases with work', Icon: Wrench, color: 'teal' as const },
+  { key: 'work_logs_this_week', label: 'Work Logs', sub: 'This week', Icon: ClipboardCheck, color: 'teal' as const },
+  { key: 'overdue_tasks', label: 'Overdue', sub: 'Need action', Icon: AlertTriangle, color: 'red' as const },
+  { key: 'critical_deadlines', label: 'Critical', sub: 'Due this week', Icon: Clock, color: 'orange' as const }
+]
 
 const SupervisionDashboard: React.FC = () => {
   const [weekLogs, setWeekLogs] = useState<WorkLog[]>([])
@@ -101,18 +102,15 @@ const SupervisionDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         {statCards.map(({ key, label, sub, Icon, color }) => (
-          <div key={key} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">{label}</p>
-                <p className={`text-2xl font-bold text-${color}-600`}>{stats[key]}</p>
-              </div>
-              <div className={`p-2 bg-${color}-100 rounded-lg`}>
-                <Icon className={`w-6 h-6 text-${color}-600`} />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">{sub}</p>
-          </div>
+          <StatCard
+            key={key}
+            label={label}
+            value={stats[key]}
+            subtitle={sub}
+            icon={Icon}
+            color={color}
+            size="md"
+          />
         ))}
       </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import StatCard from '../ui/StatCard'
 import {
   Home,
   DollarSign,
@@ -63,57 +64,38 @@ const SalesDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">€{(stats.totalRevenue / 1000000).toFixed(2)}M</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.soldUnits} units sold</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Sales Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.salesRate.toFixed(1)}%</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.soldUnits} of {stats.totalUnits}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Avg Sale Price</p>
-              <p className="text-2xl font-bold text-gray-900">€{(stats.avgSalePrice / 1000).toFixed(0)}K</p>
-              <p className="text-xs text-gray-500 mt-1">Per unit</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Home className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Active Leads</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeLeads}</p>
-              <p className="text-xs text-gray-500 mt-1">Of {stats.totalCustomers} customers</p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <Users className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
+        <StatCard
+          label="Total Revenue"
+          value={`€${(stats.totalRevenue / 1000000).toFixed(2)}M`}
+          subtitle={`${stats.soldUnits} units sold`}
+          icon={DollarSign}
+          color="green"
+          size="lg"
+        />
+        <StatCard
+          label="Sales Rate"
+          value={`${stats.salesRate.toFixed(1)}%`}
+          subtitle={`${stats.soldUnits} of ${stats.totalUnits}`}
+          icon={TrendingUp}
+          color="blue"
+          size="lg"
+        />
+        <StatCard
+          label="Avg Sale Price"
+          value={`€${(stats.avgSalePrice / 1000).toFixed(0)}K`}
+          subtitle="Per unit"
+          icon={Home}
+          color="teal"
+          size="lg"
+        />
+        <StatCard
+          label="Active Leads"
+          value={stats.activeLeads}
+          subtitle={`Of ${stats.totalCustomers} customers`}
+          icon={Users}
+          color="orange"
+          size="lg"
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -167,48 +149,30 @@ const SalesDashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Inventory Status</h2>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                <div>
-                  <p className="font-medium text-gray-900">Sold</p>
-                  <p className="text-sm text-gray-600">{stats.soldUnits} units</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-green-600">{stats.salesRate.toFixed(1)}%</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-              <div className="flex items-center">
-                <Calendar className="w-5 h-5 text-yellow-600 mr-3" />
-                <div>
-                  <p className="font-medium text-gray-900">Reserved</p>
-                  <p className="text-sm text-gray-600">{stats.reservedUnits} units</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-yellow-600">
-                  {stats.totalUnits > 0 ? ((stats.reservedUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center">
-                <Home className="w-5 h-5 text-blue-600 mr-3" />
-                <div>
-                  <p className="font-medium text-gray-900">Available</p>
-                  <p className="text-sm text-gray-600">{stats.availableUnits} units</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-blue-600">
-                  {stats.totalUnits > 0 ? ((stats.availableUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%
-                </p>
-              </div>
-            </div>
+            <StatCard
+              label="Sold"
+              value={`${stats.salesRate.toFixed(1)}%`}
+              subtitle={`${stats.soldUnits} units`}
+              icon={CheckCircle}
+              color="green"
+              size="md"
+            />
+            <StatCard
+              label="Reserved"
+              value={`${stats.totalUnits > 0 ? ((stats.reservedUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%`}
+              subtitle={`${stats.reservedUnits} units`}
+              icon={Calendar}
+              color="yellow"
+              size="md"
+            />
+            <StatCard
+              label="Available"
+              value={`${stats.totalUnits > 0 ? ((stats.availableUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%`}
+              subtitle={`${stats.availableUnits} units`}
+              icon={Home}
+              color="blue"
+              size="md"
+            />
           </div>
         </div>
       </div>

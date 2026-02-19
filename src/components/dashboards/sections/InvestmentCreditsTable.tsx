@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CreditCard, Calendar, Clock } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { Button, Badge } from '../../ui'
+import StatCard from '../../ui/StatCard'
 import { formatEuro } from '../../../utils/formatters'
 import type { BankCredit } from '../../../types/investment'
 
@@ -66,28 +67,16 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-xs text-blue-700">Used</p>
-                      <p className="text-lg font-bold text-blue-900">{formatEuro(Number(credit.used_amount || 0))}</p>
-                    </div>
-                    <div className="bg-teal-50 p-3 rounded-lg">
-                      <p className="text-xs text-teal-700">Repaid</p>
-                      <p className="text-lg font-bold text-teal-900">{formatEuro(Number(credit.repaid_amount || 0))}</p>
-                    </div>
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      <p className="text-xs text-green-700">Available</p>
-                      <p className="text-lg font-bold text-green-900">
-                        {formatEuro(Number(credit.amount) - Number(credit.used_amount || 0))}
-                      </p>
-                    </div>
-                    <div className="bg-red-50 p-3 rounded-lg">
-                      <p className="text-xs text-red-700">Outstanding</p>
-                      <p className="text-lg font-bold text-red-900">{formatEuro(Number(credit.outstanding_balance || 0))}</p>
-                    </div>
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <p className="text-xs text-orange-700">Interest Rate</p>
-                      <p className="text-lg font-bold text-orange-900">{Number(credit.interest_rate || 0).toFixed(2)}%</p>
-                    </div>
+                    <StatCard label="Used" value={formatEuro(Number(credit.used_amount || 0))} color="blue" size="sm" />
+                    <StatCard label="Repaid" value={formatEuro(Number(credit.repaid_amount || 0))} color="teal" size="sm" />
+                    <StatCard
+                      label="Available"
+                      value={formatEuro(Number(credit.amount) - Number(credit.used_amount || 0))}
+                      color="green"
+                      size="sm"
+                    />
+                    <StatCard label="Outstanding" value={formatEuro(Number(credit.outstanding_balance || 0))} color="red" size="sm" />
+                    <StatCard label="Interest Rate" value={`${Number(credit.interest_rate || 0).toFixed(2)}%`} color="orange" size="sm" />
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">

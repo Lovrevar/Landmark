@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import StatCard from '../ui/StatCard'
 import { BarChart3, MapPin, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
@@ -50,41 +51,38 @@ const RetailDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-3">
-            <MapPin className="w-8 h-8 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">Zemljišta</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.total_plots}</p>
-          <p className="text-sm text-gray-600 mt-1">{stats.total_area.toLocaleString()} m²</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-          <div className="flex items-center justify-between mb-3">
-            <Users className="w-8 h-8 text-green-600" />
-            <span className="text-sm font-medium text-green-700">Kupci</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.total_customers}</p>
-          <p className="text-sm text-gray-600 mt-1">Aktivnih kupaca</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
-          <div className="flex items-center justify-between mb-3">
-            <DollarSign className="w-8 h-8 text-orange-600" />
-            <span className="text-sm font-medium text-orange-700">Investirano</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">€{stats.total_invested.toLocaleString()}</p>
-          <p className="text-sm text-gray-600 mt-1">Kupovina zemljišta</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 border border-teal-200">
-          <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="w-8 h-8 text-teal-600" />
-            <span className="text-sm font-medium text-teal-700">Prihod</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">€{stats.total_revenue.toLocaleString()}</p>
-          <p className="text-sm text-gray-600 mt-1">Ukupne prodaje</p>
-        </div>
+        <StatCard
+          label="Zemljišta"
+          value={stats.total_plots}
+          subtitle={`${stats.total_area.toLocaleString()} m²`}
+          icon={MapPin}
+          color="blue"
+          size="lg"
+        />
+        <StatCard
+          label="Kupci"
+          value={stats.total_customers}
+          subtitle="Aktivnih kupaca"
+          icon={Users}
+          color="green"
+          size="lg"
+        />
+        <StatCard
+          label="Investirano"
+          value={`€${stats.total_invested.toLocaleString()}`}
+          subtitle="Kupovina zemljišta"
+          icon={DollarSign}
+          color="orange"
+          size="lg"
+        />
+        <StatCard
+          label="Prihod"
+          value={`€${stats.total_revenue.toLocaleString()}`}
+          subtitle="Ukupne prodaje"
+          icon={TrendingUp}
+          color="teal"
+          size="lg"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
