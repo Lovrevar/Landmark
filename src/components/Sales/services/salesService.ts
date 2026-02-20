@@ -84,6 +84,62 @@ export const fetchSales = async () => {
   return data || []
 }
 
+export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): Promise<Map<string, number>> => {
+  if (apartmentIds.length === 0) return new Map()
+
+  const { data: invoicesData } = await supabase
+    .from('accounting_invoices')
+    .select('id, apartment_id')
+    .in('apartment_id', apartmentIds)
+    .eq('invoice_type', 'OUTGOING_SALES')
+
+  const paidMap = new Map<string, number>()
+  if (!invoicesData || invoicesData.length === 0) return paidMap
+
+  const invoiceIds = invoicesData.map(inv => inv.id)
+  const { data: paymentsData } = await supabase
+    .from('accounting_payments')
+    .select('invoice_id, amount')
+    .in('invoice_id', invoiceIds)
+
+  for (const payment of paymentsData || []) {
+    const invoice = invoicesData.find(inv => inv.id === payment.invoice_id)
+    if (!invoice?.apartment_id) continue
+    const current = paidMap.get(invoice.apartment_id) || 0
+    paidMap.set(invoice.apartment_id, current + parseFloat(payment.amount))
+  }
+
+  return paidMap
+}
+
+export const updateLinkedUnitsAfterSale = async (apartmentId: string, buyerName: string) => {
+  const { data: garageLinks } = await supabase
+    .from('apartment_garages')
+    .select('garage_id')
+    .eq('apartment_id', apartmentId)
+
+  if (garageLinks && garageLinks.length > 0) {
+    const garageIds = garageLinks.map(l => l.garage_id)
+    await supabase
+      .from('garages')
+      .update({ status: 'Sold', buyer_name: buyerName })
+      .in('id', garageIds)
+  }
+
+  const { data: repoLinks } = await supabase
+    .from('apartment_repositories')
+    .select('repository_id')
+    .eq('apartment_id', apartmentId)
+
+  if (repoLinks && repoLinks.length > 0) {
+    const repoIds = repoLinks.map(l => l.repository_id)
+    await supabase
+      .from('repositories')
+      .update({ status: 'Sold', buyer_name: buyerName })
+      .in('id', repoIds)
+  }
+}
+
 export const createBulkBuildings = async (projectId: string, quantity: number) => {
   const buildingsToCreate = []
   for (let i = 1; i <= quantity; i++) {

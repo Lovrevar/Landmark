@@ -23,16 +23,22 @@ export const useSalesData = () => {
       const customersData = await salesService.fetchCustomers()
       const salesData = await salesService.fetchSales()
 
+      const soldApartmentIds = apartmentsData
+        .filter(apt => apt.status === 'Sold')
+        .map(apt => apt.id)
+      const actualPaidMap = await salesService.fetchActualTotalPaidByApartment(soldApartmentIds)
+
       const enhancedApartments = apartmentsData.map(apartment => {
         const sale = salesData.find(s => s.apartment_id === apartment.id)
         if (sale && apartment.status === 'Sold') {
+          const actualTotalPaid = actualPaidMap.get(apartment.id) || 0
           return {
             ...apartment,
             sale_info: {
               sale_price: sale.sale_price,
               payment_method: sale.payment_method,
               down_payment: sale.down_payment,
-              total_paid: sale.total_paid,
+              total_paid: actualTotalPaid,
               remaining_amount: sale.remaining_amount,
               monthly_payment: sale.monthly_payment,
               sale_date: sale.sale_date,
