@@ -209,6 +209,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null)
       setIsAuthenticated(false)
       localStorage.removeItem('currentProfile')
+      sessionStorage.removeItem('cashflow_unlocked')
 
       window.location.href = '/'
     } catch (error) {
