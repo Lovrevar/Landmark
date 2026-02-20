@@ -80,13 +80,13 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
-        <FormField label="Office Dobavljač" required>
+        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? 'Office kupac' : 'Office Dobavljač'} required>
           <Select
             value={formData.office_supplier_id}
             onChange={(e) => onFormChange({ ...formData, office_supplier_id: e.target.value })}
             required
           >
-            <option value="">Odaberi office dobavljača</option>
+            <option value="">{formData.invoice_type === 'OUTGOING_OFFICE' ? 'Odaberi office kupca' : 'Odaberi office dobavljača'}</option>
             {officeSuppliers.map(supplier => (
               <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
             ))}
@@ -123,13 +123,13 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SUPPLIER' && (
-        <FormField label="Dobavljač" required>
+        <FormField label="Kupac" required>
           <Select
             value={formData.supplier_id}
             onChange={(e) => onFormChange({ ...formData, supplier_id: e.target.value })}
             required
           >
-            <option value="">Odaberi dobavljača</option>
+            <option value="">Odaberi kupca</option>
             {suppliers.map(supplier => (
               <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
             ))}

@@ -5,12 +5,14 @@ import { SearchInput, Select, Button } from '../../ui'
 
 interface InvoiceFiltersProps {
   searchTerm: string
-  filterType: string
+  filterDirection: 'INCOMING' | 'OUTGOING'
+  filterCategory: string
   filterStatus: string
   filterCompany: string
   companies: Company[]
   onSearchChange: (value: string) => void
-  onTypeChange: (value: string) => void
+  onDirectionChange: (value: 'INCOMING' | 'OUTGOING') => void
+  onCategoryChange: (value: string) => void
   onStatusChange: (value: string) => void
   onCompanyChange: (value: string) => void
   onClearFilters: () => void
@@ -18,20 +20,53 @@ interface InvoiceFiltersProps {
 
 export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
   searchTerm,
-  filterType,
+  filterDirection,
+  filterCategory,
   filterStatus,
   filterCompany,
   companies,
   onSearchChange,
-  onTypeChange,
+  onDirectionChange,
+  onCategoryChange,
   onStatusChange,
   onCompanyChange,
   onClearFilters
 }) => {
-  const hasActiveFilters = searchTerm || filterType !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL'
+  const hasActiveFilters =
+    searchTerm ||
+    filterCategory !== 'ALL' ||
+    filterStatus !== 'ALL' ||
+    filterCompany !== 'ALL'
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => onDirectionChange('INCOMING')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              filterDirection === 'INCOMING'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Ulazni
+          </button>
+          <button
+            type="button"
+            onClick={() => onDirectionChange('OUTGOING')}
+            className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+              filterDirection === 'OUTGOING'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Izlazni
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SearchInput
           value={searchTerm}
@@ -41,18 +76,15 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
         />
 
         <Select
-          value={filterType}
-          onChange={(e) => onTypeChange(e.target.value)}
+          value={filterCategory}
+          onChange={(e) => onCategoryChange(e.target.value)}
         >
-          <option value="ALL">Svi tipovi</option>
-          <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
-          <option value="INCOMING_OFFICE">Ulazni (Ured)</option>
-          <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
-          <option value="INCOMING_BANK">Ulazni (Banka)</option>
-          <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
-          <option value="OUTGOING_OFFICE">Izlazni (Ured)</option>
-          <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
-          <option value="OUTGOING_BANK">Izlazni (Banka)</option>
+          <option value="ALL">Sve kategorije</option>
+          <option value="SUPPLIER">Dobavljač</option>
+          <option value="OFFICE">Ured</option>
+          <option value="INVESTMENT">Investicije</option>
+          <option value="BANK">Banka</option>
+          <option value="SALES">Prodaja</option>
         </Select>
 
         <Select

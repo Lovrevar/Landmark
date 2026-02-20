@@ -53,7 +53,8 @@ const AccountingInvoices: React.FC = () => {
     totalUnpaidAmount,
     pageSize,
     searchTerm,
-    filterType,
+    filterDirection,
+    filterCategory,
     filterStatus,
     filterCompany,
     sortField,
@@ -72,7 +73,8 @@ const AccountingInvoices: React.FC = () => {
     paymentFormData,
     visibleColumns,
     setSearchTerm,
-    setFilterType,
+    setFilterDirection,
+    setFilterCategory,
     setFilterStatus,
     setFilterCompany,
     setSortField,
@@ -186,17 +188,19 @@ const AccountingInvoices: React.FC = () => {
 
       <InvoiceFilters
         searchTerm={searchTerm}
-        filterType={filterType}
+        filterDirection={filterDirection}
+        filterCategory={filterCategory}
         filterStatus={filterStatus}
         filterCompany={filterCompany}
         companies={companies}
         onSearchChange={setSearchTerm}
-        onTypeChange={(value) => setFilterType(value as any)}
+        onDirectionChange={setFilterDirection}
+        onCategoryChange={setFilterCategory}
         onStatusChange={(value) => setFilterStatus(value as any)}
         onCompanyChange={setFilterCompany}
         onClearFilters={() => {
           setSearchTerm('')
-          setFilterType('ALL')
+          setFilterCategory('ALL')
           setFilterStatus('ALL')
           setFilterCompany('ALL')
           setSortField(null)

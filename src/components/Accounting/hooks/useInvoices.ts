@@ -32,7 +32,11 @@ export const useInvoices = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'>('ALL')
+  const [filterDirection, setFilterDirection] = useState<'INCOMING' | 'OUTGOING'>('INCOMING')
+  const [filterCategory, setFilterCategory] = useState<string>('ALL')
+  const filterType = filterCategory === 'ALL'
+    ? (filterDirection === 'INCOMING' ? 'INCOMING' : 'OUTGOING')
+    : `${filterDirection}_${filterCategory}`
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
   const [sortField, setSortField] = useState<'due_date' | null>(null)
@@ -62,11 +66,11 @@ export const useInvoices = () => {
 
   useEffect(() => {
     fetchData()
-  }, [currentPage, filterType, filterStatus, filterCompany, debouncedSearchTerm])
+  }, [currentPage, filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm])
+  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
 
   useEffect(() => {
     const loadMilestones = async () => {
@@ -309,6 +313,8 @@ export const useInvoices = () => {
     searchTerm,
     debouncedSearchTerm,
     filterType,
+    filterDirection,
+    filterCategory,
     filterStatus,
     filterCompany,
     sortField,
@@ -328,7 +334,8 @@ export const useInvoices = () => {
     visibleColumns,
     setInvoices,
     setSearchTerm,
-    setFilterType,
+    setFilterDirection,
+    setFilterCategory,
     setFilterStatus,
     setFilterCompany,
     setSortField,
