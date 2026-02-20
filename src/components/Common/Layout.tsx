@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react'
+import React, { ReactNode, useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import {
@@ -42,7 +42,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [passwordError, setPasswordError] = useState('')
   const [pendingProfile, setPendingProfile] = useState<Profile | null>(null)
   const [cashflowUnlocked, setCashflowUnlocked] = useState(() => sessionStorage.getItem('cashflow_unlocked') === 'true')
+  const profileDropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
+        setShowProfileDropdown(false)
+      }
+    }
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showProfileDropdown])
 
   const getMenuItems = () => {
     if (user?.role === 'Supervision') {
@@ -161,7 +174,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="flex items-center space-x-4">
               {user?.role !== 'Supervision' && (
-                <div className="relative">
+                <div className="relative" ref={profileDropdownRef}>
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                     className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
