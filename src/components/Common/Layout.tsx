@@ -203,8 +203,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className="flex relative">
         <aside
-          className={`relative bg-white shadow-sm border-r border-gray-200 min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex-shrink-0`}
-        >
+  className={`
+    relative bg-white shadow-sm border-r border-gray-200 min-h-screen
+    transition-all duration-300 ease-in-out overflow-hidden
+    ${sidebarOpen ? 'w-64' : 'w-16'}
+    flex-shrink-0
+  `}
+>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm flex items-center justify-center text-gray-500 hover:text-blue-600 transition-colors z-10"
