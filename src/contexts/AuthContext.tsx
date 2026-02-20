@@ -192,6 +192,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (userData) {
           setUser(userData)
           setIsAuthenticated(true)
+          setCurrentProfile('General')
+          localStorage.setItem('currentProfile', 'General')
           return true
         }
       }
