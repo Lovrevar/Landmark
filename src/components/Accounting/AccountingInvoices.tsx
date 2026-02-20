@@ -213,6 +213,7 @@ const AccountingInvoices: React.FC = () => {
         visibleColumns={visibleColumns}
         sortField={sortField}
         sortDirection={sortDirection}
+        filterDirection={filterDirection}
         onSort={handleSort}
         onView={handleViewInvoice}
         onEdit={handleOpenModal}

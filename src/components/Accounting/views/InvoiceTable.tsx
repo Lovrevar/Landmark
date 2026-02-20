@@ -10,6 +10,7 @@ interface InvoiceTableProps {
   visibleColumns: any
   sortField: 'due_date' | null
   sortDirection: 'asc' | 'desc'
+  filterDirection: 'INCOMING' | 'OUTGOING'
   onSort: (field: 'due_date') => void
   onView: (invoice: Invoice) => void
   onEdit: (invoice: Invoice) => void
@@ -27,6 +28,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   visibleColumns,
   sortField,
   sortDirection,
+  filterDirection,
   onSort,
   onView,
   onEdit,
@@ -46,7 +48,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
           {visibleColumns.type && <Table.Th>Tip</Table.Th>}
           {visibleColumns.invoice_number && <Table.Th>Broj računa</Table.Th>}
           {visibleColumns.company && <Table.Th>Firma</Table.Th>}
-          {visibleColumns.supplier_customer && <Table.Th>Dobavljač/Kupac</Table.Th>}
+          {visibleColumns.supplier_customer && <Table.Th>{filterDirection === 'OUTGOING' ? 'Kupac' : 'Dobavljač'}</Table.Th>}
           {visibleColumns.category && <Table.Th>Kategorija</Table.Th>}
           {visibleColumns.issue_date && <Table.Th>Datum izdavanja</Table.Th>}
           {visibleColumns.due_date && (
