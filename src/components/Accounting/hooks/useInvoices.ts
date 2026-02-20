@@ -39,7 +39,7 @@ export const useInvoices = () => {
     : `${filterDirection}_${filterCategory}`
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
-  const [sortField, setSortField] = useState<'due_date' | null>(null)
+  const [sortField, setSortField] = useState<'due_date' | 'invoice_number' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)

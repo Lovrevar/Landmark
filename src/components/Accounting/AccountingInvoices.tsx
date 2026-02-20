@@ -110,7 +110,7 @@ const AccountingInvoices: React.FC = () => {
     }))
   }
 
-  const handleSort = (field: 'due_date') => {
+  const handleSort = (field: 'due_date' | 'invoice_number') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -126,6 +126,14 @@ const AccountingInvoices: React.FC = () => {
       const dateA = new Date(a.due_date).getTime()
       const dateB = new Date(b.due_date).getTime()
       return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
+    }
+
+    if (sortField === 'invoice_number') {
+      const numA = a.invoice_number || ''
+      const numB = b.invoice_number || ''
+      return sortDirection === 'asc'
+        ? numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' })
+        : numB.localeCompare(numA, undefined, { numeric: true, sensitivity: 'base' })
     }
 
     return 0

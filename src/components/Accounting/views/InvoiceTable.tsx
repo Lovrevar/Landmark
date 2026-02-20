@@ -8,10 +8,10 @@ import type { Invoice } from '../types/invoiceTypes'
 interface InvoiceTableProps {
   invoices: Invoice[]
   visibleColumns: any
-  sortField: 'due_date' | null
+  sortField: 'due_date' | 'invoice_number' | null
   sortDirection: 'asc' | 'desc'
   filterDirection: 'INCOMING' | 'OUTGOING'
-  onSort: (field: 'due_date') => void
+  onSort: (field: 'due_date' | 'invoice_number') => void
   onView: (invoice: Invoice) => void
   onEdit: (invoice: Invoice) => void
   onDelete: (id: string) => void
@@ -46,7 +46,22 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
         <tr>
           {visibleColumns.approved && <Table.Th>Odobreno</Table.Th>}
           {visibleColumns.type && <Table.Th>Tip</Table.Th>}
-          {visibleColumns.invoice_number && <Table.Th>Broj računa</Table.Th>}
+          {visibleColumns.invoice_number && (
+            <Table.Th sortable onClick={() => onSort('invoice_number')}>
+              <div className="flex items-center gap-1">
+                <span>Broj računa</span>
+                {sortField === 'invoice_number' ? (
+                  sortDirection === 'asc' ? (
+                    <ArrowUp className="w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="w-4 h-4" />
+                  )
+                ) : (
+                  <ArrowUpDown className="w-4 h-4 opacity-40" />
+                )}
+              </div>
+            </Table.Th>
+          )}
           {visibleColumns.company && <Table.Th>Firma</Table.Th>}
           {visibleColumns.supplier_customer && <Table.Th>{filterDirection === 'OUTGOING' ? 'Kupac' : 'Dobavljač'}</Table.Th>}
           {visibleColumns.category && <Table.Th>Kategorija</Table.Th>}
