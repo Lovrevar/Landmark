@@ -80,7 +80,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
-        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? 'Office kupac' : 'Office Dobavljač'} required>
+        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? 'Office Kupac' : 'Office Dobavljač'} required>
           <Select
             value={formData.office_supplier_id}
             onChange={(e) => onFormChange({ ...formData, office_supplier_id: e.target.value })}
