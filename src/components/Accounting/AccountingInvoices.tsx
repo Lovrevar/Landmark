@@ -184,6 +184,7 @@ const AccountingInvoices: React.FC = () => {
         filteredTotalCount={filteredTotalCount}
         filteredUnpaidAmount={filteredUnpaidAmount}
         totalUnpaidAmount={totalUnpaidAmount}
+        filterDirection={filterDirection}
       />
 
       <InvoiceFilters

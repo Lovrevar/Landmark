@@ -1,18 +1,28 @@
 import React from 'react'
-import { FileText, DollarSign } from 'lucide-react'
+import { FileText, TrendingUp, DollarSign } from 'lucide-react'
 import { StatCard, StatGrid } from '../../ui'
+
+const formatAmount = (amount: number) =>
+  `€${new Intl.NumberFormat('hr-HR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}`
 
 interface InvoiceStatsProps {
   filteredTotalCount: number
   filteredUnpaidAmount: number
   totalUnpaidAmount: number
+  filterDirection: 'INCOMING' | 'OUTGOING'
 }
 
 export const InvoiceStats: React.FC<InvoiceStatsProps> = ({
   filteredTotalCount,
   filteredUnpaidAmount,
-  totalUnpaidAmount
+  totalUnpaidAmount,
+  filterDirection
 }) => {
+  const isOutgoing = filterDirection === 'OUTGOING'
+
   return (
     <StatGrid columns={3}>
       <StatCard
@@ -22,22 +32,16 @@ export const InvoiceStats: React.FC<InvoiceStatsProps> = ({
         color="white"
       />
       <StatCard
-        label="Neplaćeno"
-        value={`€${new Intl.NumberFormat('hr-HR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(filteredUnpaidAmount)}`}
-        icon={DollarSign}
-        color="red"
+        label={isOutgoing ? 'Priljev' : 'Neplaćeno'}
+        value={formatAmount(filteredUnpaidAmount)}
+        icon={isOutgoing ? TrendingUp : DollarSign}
+        color={isOutgoing ? 'green' : 'red'}
       />
       <StatCard
-        label="Ukupno Neplaćeno"
-        value={`€${new Intl.NumberFormat('hr-HR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(totalUnpaidAmount)}`}
-        icon={DollarSign}
-        color="yellow"
+        label={isOutgoing ? 'Ukupni Priljev' : 'Ukupno Neplaćeno'}
+        value={formatAmount(totalUnpaidAmount)}
+        icon={isOutgoing ? TrendingUp : DollarSign}
+        color={isOutgoing ? 'teal' : 'yellow'}
       />
     </StatGrid>
   )
