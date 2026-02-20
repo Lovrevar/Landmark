@@ -1,5 +1,5 @@
 import React, { ReactNode, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import {
   Building2,
@@ -34,6 +34,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
+  const location = useLocation()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -202,53 +203,53 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className="flex relative">
         <aside
-          className={`
-            bg-white shadow-sm border-r border-gray-200 min-h-screen
-            transition-all duration-300 ease-in-out
-            ${sidebarOpen ? 'w-64' : 'w-16'}
-            flex-shrink-0
-          `}
+          className={`relative bg-white shadow-sm border-r border-gray-200 min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex-shrink-0`}
         >
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm flex items-center justify-center text-gray-500 hover:text-blue-600 transition-colors z-10"
+            title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
+          >
+            {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          </button>
+
           <div className="flex flex-col h-full">
-            <div className="p-4 border-b border-gray-200 flex justify-end">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
-              >
-                {sidebarOpen ? (
-                  <ChevronLeft className="w-5 h-5" />
-                ) : (
-                  <ChevronRight className="w-5 h-5" />
-                )}
-              </button>
+            <div className={`px-4 pt-5 pb-3 ${sidebarOpen ? 'block' : 'hidden'}`}>
+              <span className="font-semibold text-gray-800 text-base tracking-tight">Menu</span>
             </div>
-            <nav className="p-4 flex-1">
-              <ul className="space-y-2">
-                {menuItems.map((item) => (
-                  <li key={item.name}>
-                    <Link
-                      to={item.path}
-                      className="flex items-center px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200 group relative"
-                      title={!sidebarOpen ? item.name : undefined}
-                    >
-                      <item.icon className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? 'mr-3' : ''}`} />
-                      <span
-                        className={`
-                          whitespace-nowrap overflow-hidden transition-all duration-300
-                          ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
-                        `}
+            <div className={sidebarOpen ? 'hidden' : 'h-14'} />
+
+            <nav className="p-2 flex-1">
+              <ul className="space-y-1">
+                {menuItems.map((item) => {
+                  const isActive = location.pathname === item.path
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center py-2 rounded-lg transition-colors duration-200 group relative
+                          ${sidebarOpen ? 'px-3' : 'justify-center px-0'}
+                          ${isActive
+                            ? 'bg-blue-50 text-blue-600 font-medium'
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }`}
+                        title={!sidebarOpen ? item.name : undefined}
                       >
-                        {item.name}
-                      </span>
-                      {!sidebarOpen && (
-                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        <span
+                          className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarOpen ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
+                        >
                           {item.name}
-                        </div>
-                      )}
-                    </Link>
-                  </li>
-                ))}
+                        </span>
+                        {!sidebarOpen && (
+                          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
+                            {item.name}
+                          </div>
+                        )}
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             </nav>
           </div>
