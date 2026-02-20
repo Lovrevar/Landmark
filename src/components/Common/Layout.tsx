@@ -40,6 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [pendingProfile, setPendingProfile] = useState<Profile | null>(null)
+  const [cashflowUnlocked, setCashflowUnlocked] = useState(() => sessionStorage.getItem('cashflow_unlocked') === 'true')
   const navigate = useNavigate()
 
   const getMenuItems = () => {
@@ -113,7 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = getMenuItems()
 
   const handleProfileChange = (profile: Profile) => {
-    if (profile === 'Cashflow') {
+    if (profile === 'Cashflow' && !cashflowUnlocked) {
       setPendingProfile(profile)
       setShowPasswordModal(true)
       setShowProfileDropdown(false)
@@ -128,6 +129,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     e.preventDefault()
 
     if (password === 'admin') {
+      setCashflowUnlocked(true)
+      sessionStorage.setItem('cashflow_unlocked', 'true')
       setCurrentProfile(pendingProfile!)
       setShowPasswordModal(false)
       setPassword('')
