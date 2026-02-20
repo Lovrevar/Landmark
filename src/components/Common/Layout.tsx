@@ -227,15 +227,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <li key={item.name}>
                       <Link
                         to={item.path}
-                        className={`flex items-center py-2 rounded-lg transition-colors duration-200 group relative
-                          ${sidebarOpen ? 'px-3' : 'justify-center px-0'}
+                        className={`flex items-center py-2 px-3 rounded-lg transition-colors duration-200 group relative
                           ${isActive
                             ? 'bg-blue-50 text-blue-600 font-medium'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                           }`}
                         title={!sidebarOpen ? item.name : undefined}
                       >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        <item.icon className="w-5 h-5 flex-shrink-0 min-w-[1.25rem]" />
                         <span
                           className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarOpen ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
                         >
