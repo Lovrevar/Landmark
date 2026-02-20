@@ -51,6 +51,7 @@ const useBankeCredits = () => {
   const [banks, setBanks] = useState<BankeBank[]>([])
   const [credits, setCredits] = useState<BankeCredit[]>([])
   const [allocations, setAllocations] = useState<Map<string, BankeCreditAllocation[]>>(new Map())
+  const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -93,8 +94,29 @@ const useBankeCredits = () => {
     setCredits(data || [])
 
     if (data) {
-      await Promise.all(data.map((c) => fetchAllocationsForCredit(c.id)))
+      const creditIds = data.map((c) => c.id)
+      await Promise.all([
+        ...data.map((c) => fetchAllocationsForCredit(c.id)),
+        fetchDisbursedAmounts(creditIds)
+      ])
     }
+  }
+
+  const fetchDisbursedAmounts = async (creditIds: string[]) => {
+    const { data, error } = await supabase
+      .from('accounting_invoices')
+      .select('bank_credit_id, total_amount')
+      .eq('invoice_type', 'OUTGOING_BANK')
+      .in('bank_credit_id', creditIds)
+
+    if (error) throw error
+
+    const map = new Map<string, number>()
+    for (const row of data || []) {
+      if (!row.bank_credit_id) continue
+      map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+    }
+    setDisbursedAmounts(map)
   }
 
   const fetchAllocationsForCredit = async (creditId: string) => {
@@ -139,7 +161,7 @@ const useBankeCredits = () => {
   const creditsByBank = (bankId: string) =>
     credits.filter((c) => c.bank_id === bankId)
 
-  return { banks, credits, allocations, loading, creditsByBank, refetch: fetchAll }
+  return { banks, credits, allocations, disbursedAmounts, loading, creditsByBank, refetch: fetchAll }
 }
 
 export default useBankeCredits
