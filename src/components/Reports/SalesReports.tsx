@@ -138,33 +138,37 @@ const SalesReports: React.FC = () => {
       if (apartmentsError) throw apartmentsError
 
       const apartments = apartmentsData || []
+      const apartmentIds = apartments.map(apt => apt.id)
 
-      // Get all linked garage and storage IDs
-      const garageIds = apartments.map(apt => apt.garage_id).filter(Boolean)
-      const storageIds = apartments.map(apt => apt.repository_id).filter(Boolean)
+      // Fetch linked garages via junction table
+      const { data: aptGaragesData } = await supabase
+        .from('apartment_garages')
+        .select('apartment_id, garage_id, garages(id, price)')
+        .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
 
-      // Fetch garages and storages data
-      const { data: garagesData } = await supabase
-        .from('garages')
-        .select('id, price')
-        .in('id', garageIds.length > 0 ? garageIds : [''])
+      // Fetch linked repositories via junction table
+      const { data: aptReposData } = await supabase
+        .from('apartment_repositories')
+        .select('apartment_id, repository_id, repositories(id, price)')
+        .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
 
-      const { data: storagesData } = await supabase
-        .from('repositories')
-        .select('id, price')
-        .in('id', storageIds.length > 0 ? storageIds : [''])
+      // Build maps: apartment_id -> total linked garage/repo price
+      const aptGaragePriceMap = new Map<string, number>()
+      for (const row of (aptGaragesData || [])) {
+        const price = (row.garages as any)?.price || 0
+        aptGaragePriceMap.set(row.apartment_id, (aptGaragePriceMap.get(row.apartment_id) || 0) + price)
+      }
 
-      // Create maps for quick lookup
-      const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
-      const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+      const aptRepoPriceMap = new Map<string, number>()
+      for (const row of (aptReposData || [])) {
+        const price = (row.repositories as any)?.price || 0
+        aptRepoPriceMap.set(row.apartment_id, (aptRepoPriceMap.get(row.apartment_id) || 0) + price)
+      }
 
       // Fetch sales data
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
-        .select(`
-          *,
-          apartments!inner(project_id, garage_id, repository_id)
-        `)
+        .select('*, apartments!inner(project_id)')
         .eq('apartments.project_id', selectedProject)
         .gte('sale_date', dateRange.start)
         .lte('sale_date', dateRange.end)
@@ -175,19 +179,9 @@ const SalesReports: React.FC = () => {
 
       // Calculate total revenue including linked units
       const total_revenue = sales.reduce((sum, sale) => {
-        let saleTotal = sale.sale_price
-
-        // Add garage price if linked
-        if (sale.apartments?.garage_id) {
-          saleTotal += garageMap.get(sale.apartments.garage_id) || 0
-        }
-
-        // Add storage price if linked
-        if (sale.apartments?.repository_id) {
-          saleTotal += storageMap.get(sale.apartments.repository_id) || 0
-        }
-
-        return sum + saleTotal
+        const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
+        const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
+        return sum + sale.sale_price + garagePrice + repoPrice
       }, 0)
 
       // Calculate project statistics
@@ -198,10 +192,7 @@ const SalesReports: React.FC = () => {
 
       // Calculate average price including linked units
       const totalValue = apartments.reduce((sum, apt) => {
-        let aptTotal = apt.price
-        if (apt.garage_id) aptTotal += garageMap.get(apt.garage_id) || 0
-        if (apt.repository_id) aptTotal += storageMap.get(apt.repository_id) || 0
-        return sum + aptTotal
+        return sum + apt.price + (aptGaragePriceMap.get(apt.id) || 0) + (aptRepoPriceMap.get(apt.id) || 0)
       }, 0)
       const average_price = total_units > 0 ? totalValue / total_units : 0
       const sales_rate = total_units > 0 ? (sold_units / total_units) * 100 : 0
@@ -210,7 +201,7 @@ const SalesReports: React.FC = () => {
       const startDate = new Date(dateRange.start)
       const endDate = new Date(dateRange.end)
       const months = eachMonthOfInterval({ start: startDate, end: endDate })
-      
+
       const monthly_sales: SalesData[] = months.map(month => {
         const monthStart = startOfMonth(month)
         const monthEnd = endOfMonth(month)
@@ -220,16 +211,10 @@ const SalesReports: React.FC = () => {
           return saleDate >= monthStart && saleDate <= monthEnd
         })
 
-        // Calculate revenue including linked units
         const monthRevenue = monthSales.reduce((sum, sale) => {
-          let saleTotal = sale.sale_price
-          if (sale.apartments?.garage_id) {
-            saleTotal += garageMap.get(sale.apartments.garage_id) || 0
-          }
-          if (sale.apartments?.repository_id) {
-            saleTotal += storageMap.get(sale.apartments.repository_id) || 0
-          }
-          return sum + saleTotal
+          const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
+          const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
+          return sum + sale.sale_price + garagePrice + repoPrice
         }, 0)
 
         return {
