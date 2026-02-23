@@ -376,6 +376,7 @@ const BanksManagement: React.FC = () => {
           ...newCredit,
           company_id: newCredit.company_id || null,
           project_id: newCredit.project_id || null,
+          usage_expiration_date: newCredit.usage_expiration_date || null,
           disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null,
           credit_type: actualCreditType,
           credit_seniority: seniority,
