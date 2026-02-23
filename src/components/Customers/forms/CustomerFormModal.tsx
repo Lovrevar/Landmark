@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Customer } from '../../../lib/supabase'
 import { CustomerWithApartments, CustomerCategory } from '../types/customerTypes'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../ui'
+import { Alert } from '../../ui'
 
 interface CustomerFormModalProps {
   show: boolean
@@ -18,6 +19,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onClose,
   onSave
 }) => {
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<Partial<Customer>>({
     name: '',
     surname: '',
@@ -42,6 +44,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   })
 
   useEffect(() => {
+    setError(null)
     if (editingCustomer) {
       setFormData(editingCustomer)
     } else {
@@ -71,11 +74,32 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   }, [editingCustomer, activeCategory])
 
   const handleSubmit = async () => {
+    setError(null)
+    if (!formData.name?.trim() || !formData.surname?.trim()) {
+      setError('First name and last name are required.')
+      return
+    }
+    if (!formData.email?.trim()) {
+      setError('Email is required.')
+      return
+    }
+    if (!formData.phone?.trim()) {
+      setError('Phone is required.')
+      return
+    }
+    if (!formData.status) {
+      setError('Status is required.')
+      return
+    }
     try {
       await onSave(formData, editingCustomer?.id)
       onClose()
-    } catch (error) {
-      alert('Error saving customer')
+    } catch (err: any) {
+      if (err?.code === '23505') {
+        setError('A customer with this email already exists.')
+      } else {
+        setError(err?.message || 'An error occurred while saving the customer.')
+      }
     }
   }
 
@@ -90,6 +114,11 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-6">
+          {error && (
+            <Alert variant="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <FormField label="First Name" required>
               <Input

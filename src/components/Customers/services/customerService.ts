@@ -32,7 +32,7 @@ export const customerService = {
               if (sale.apartment_id) {
                 const { data: aptData } = await supabase
                   .from('apartments')
-                  .select('id, number, floor, size_m2, price, project_id, garage_id, repository_id')
+                  .select('id, number, floor, size_m2, price, project_id')
                   .eq('id', sale.apartment_id)
                   .maybeSingle()
 
@@ -46,20 +46,32 @@ export const customerService = {
                   let garageData = null
                   let repositoryData = null
 
-                  if (aptData.garage_id) {
+                  const { data: garageLink } = await supabase
+                    .from('apartment_garages')
+                    .select('garage_id')
+                    .eq('apartment_id', aptData.id)
+                    .maybeSingle()
+
+                  if (garageLink?.garage_id) {
                     const { data: gData } = await supabase
                       .from('garages')
                       .select('id, number, price')
-                      .eq('id', aptData.garage_id)
+                      .eq('id', garageLink.garage_id)
                       .maybeSingle()
                     garageData = gData
                   }
 
-                  if (aptData.repository_id) {
+                  const { data: repoLink } = await supabase
+                    .from('apartment_repositories')
+                    .select('repository_id')
+                    .eq('apartment_id', aptData.id)
+                    .maybeSingle()
+
+                  if (repoLink?.repository_id) {
                     const { data: rData } = await supabase
                       .from('repositories')
                       .select('id, number, price')
-                      .eq('id', aptData.repository_id)
+                      .eq('id', repoLink.repository_id)
                       .maybeSingle()
                     repositoryData = rData
                   }
