@@ -28,7 +28,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     address: '',
     bank_account: '',
     id_number: '',
-    status: activeCategory,
+    status: activeCategory ?? 'interested',
     priority: 'warm',
     notes: '',
     preferences: {
@@ -56,7 +56,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         address: '',
         bank_account: '',
         id_number: '',
-        status: activeCategory,
+        status: activeCategory ?? 'interested',
         priority: 'warm',
         notes: '',
         preferences: {
