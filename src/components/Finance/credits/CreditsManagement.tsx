@@ -6,6 +6,7 @@ import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, 
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
+import CreditExpenses from './CreditExpenses'
 
 interface BankCredit {
   id: string
@@ -601,6 +602,7 @@ const CreditsManagement: React.FC = () => {
 
                     <CreditDisbursements creditId={credit.id} />
                     <CreditRepayments creditId={credit.id} />
+                    <CreditExpenses creditId={credit.id} />
 
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200">

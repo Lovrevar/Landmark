@@ -29,7 +29,7 @@ export interface InvoiceCategory {
 }
 
 export interface BankInvoiceFormData {
-  invoice_type: 'INCOMING_BANK' | 'OUTGOING_BANK'
+  invoice_type: 'INCOMING_BANK' | 'OUTGOING_BANK' | 'INCOMING_BANK_EXPENSES'
   company_id: string
   bank_id: string
   bank_credit_id: string

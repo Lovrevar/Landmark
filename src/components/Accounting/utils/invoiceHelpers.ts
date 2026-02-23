@@ -10,7 +10,7 @@ export const getStatusColor = (status: string): string => {
 }
 
 export const getTypeColor = (type: string): string => {
-  if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK') {
+  if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK' || type === 'INCOMING_BANK_EXPENSES') {
     return 'text-red-600'
   }
   return 'text-green-600'
@@ -22,6 +22,7 @@ export const getTypeLabel = (type: string): string => {
     case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
     case 'INCOMING_OFFICE': return 'ULAZNI (URED)'
     case 'INCOMING_BANK': return 'ULAZNI (BANKA)'
+    case 'INCOMING_BANK_EXPENSES': return 'ULAZNI (TROŠ.KRED)'
     case 'OUTGOING_OFFICE': return 'IZLAZNI (URED)'
     case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
     case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'

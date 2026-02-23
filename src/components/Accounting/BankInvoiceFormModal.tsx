@@ -144,6 +144,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               >
                 <option value="INCOMING_BANK">Odljev</option>
                 <option value="OUTGOING_BANK">Priljev</option>
+                <option value="INCOMING_BANK_EXPENSES">Troškovi kredita</option>
               </Select>
             </FormField>
 
@@ -178,13 +179,14 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
             </FormField>
 
             <FormField
-              label="Investicija (opcionalno)"
+              label={formData.invoice_type === 'INCOMING_BANK_EXPENSES' ? 'Investicija' : 'Investicija (opcionalno)'}
               helperText={formData.bank_id && credits.length === 0 ? 'Nema dostupnih investicija za ovog investitora' : undefined}
             >
               <Select
                 value={formData.bank_credit_id}
                 onChange={(e) => setFormData({ ...formData, bank_credit_id: e.target.value })}
                 disabled={!formData.bank_id || credits.length === 0}
+                required={formData.invoice_type === 'INCOMING_BANK_EXPENSES'}
               >
                 <option value="">Bez kredita</option>
                 {credits.map((credit) => (
