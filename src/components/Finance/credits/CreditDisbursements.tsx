@@ -15,6 +15,7 @@ interface DisbursementInvoice {
   payment_date: string | null
   payment_amount: number | null
   description: string | null
+  allocation_label: string | null
 }
 
 interface CreditDisbursementsProps {
@@ -48,7 +49,12 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
           description,
           company:accounting_companies(name),
           bank:banks(name),
-          payments:accounting_payments(payment_date, amount)
+          payments:accounting_payments(payment_date, amount),
+          credit_allocation:credit_allocations(
+            id,
+            allocation_type,
+            project:projects(name)
+          )
         `)
         .eq('invoice_type', 'OUTGOING_BANK')
         .eq('bank_credit_id', creditId)
@@ -61,6 +67,18 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
           (a: any, b: any) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
         )[0]
         const totalPaid = (inv.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+
+        let allocation_label: string | null = null
+        if (inv.credit_allocation) {
+          if (inv.credit_allocation.allocation_type === 'project') {
+            allocation_label = inv.credit_allocation.project?.name ?? 'Projekt'
+          } else if (inv.credit_allocation.allocation_type === 'opex') {
+            allocation_label = 'OPEX'
+          } else {
+            allocation_label = 'Refinanciranje'
+          }
+        }
+
         return {
           id: inv.id,
           invoice_number: inv.invoice_number,
@@ -72,6 +90,7 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
           bank_name: inv.bank?.name ?? null,
           payment_date: latestPayment?.payment_date ?? null,
           payment_amount: totalPaid || null,
+          allocation_label,
         }
       })
 
@@ -143,6 +162,9 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
                       Investitor
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Namjena
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Datum izdavanja
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -173,6 +195,15 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
                         <td className="px-4 py-2.5 text-gray-700">
                           {inv.bank_name ?? '-'}
                         </td>
+                        <td className="px-4 py-2.5">
+                          {inv.allocation_label ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {inv.allocation_label}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2.5 text-gray-600">
                           {format(new Date(inv.issue_date), 'dd.MM.yyyy')}
                         </td>
@@ -200,7 +231,7 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
                 </tbody>
                 <tfoot>
                   <tr className="bg-emerald-50 border-t border-gray-200">
-                    <td colSpan={5} className="px-4 py-2.5 text-sm font-semibold text-gray-700">
+                    <td colSpan={6} className="px-4 py-2.5 text-sm font-semibold text-gray-700">
                       Ukupno
                     </td>
                     <td className="px-4 py-2.5 text-right font-bold text-emerald-700">

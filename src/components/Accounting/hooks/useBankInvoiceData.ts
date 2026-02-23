@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import type { BankCompany, BankCredit, MyCompany, InvoiceCategory } from '../types/bankInvoiceTypes'
+import type { BankCompany, BankCredit, CreditAllocation, MyCompany, InvoiceCategory } from '../types/bankInvoiceTypes'
 
-export const useBankInvoiceData = (bankId: string) => {
+export const useBankInvoiceData = (bankId: string, creditId?: string) => {
   const [banks, setBanks] = useState<BankCompany[]>([])
   const [credits, setCredits] = useState<BankCredit[]>([])
+  const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<InvoiceCategory[]>([])
 
@@ -77,17 +78,43 @@ export const useBankInvoiceData = (bankId: string) => {
     fetchInvoiceCategories()
   }, [])
 
+  const fetchAllocations = async (cId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('credit_allocations')
+        .select('id, credit_id, project_id, allocated_amount, used_amount, description, allocation_type, project:projects(id, name)')
+        .eq('credit_id', cId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setCreditAllocations((data || []) as CreditAllocation[])
+    } catch (error) {
+      console.error('Error fetching credit allocations:', error)
+      setCreditAllocations([])
+    }
+  }
+
   useEffect(() => {
     if (bankId) {
       fetchCredits(bankId)
     } else {
       setCredits([])
+      setCreditAllocations([])
     }
   }, [bankId])
+
+  useEffect(() => {
+    if (creditId) {
+      fetchAllocations(creditId)
+    } else {
+      setCreditAllocations([])
+    }
+  }, [creditId])
 
   return {
     banks,
     credits,
+    creditAllocations,
     myCompanies,
     invoiceCategories,
     fetchMyCompanies

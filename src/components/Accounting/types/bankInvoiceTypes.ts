@@ -18,6 +18,17 @@ export interface BankCredit {
   outstanding_balance: number
 }
 
+export interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  allocation_type: 'project' | 'opex' | 'refinancing'
+  project?: { id: string; name: string }
+}
+
 export interface MyCompany {
   id: string
   name: string
@@ -33,6 +44,7 @@ export interface BankInvoiceFormData {
   company_id: string
   bank_id: string
   bank_credit_id: string
+  credit_allocation_id: string
   invoice_number: string
   reference_number: string
   iban: string

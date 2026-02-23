@@ -386,11 +386,12 @@ const CreditsManagement: React.FC = () => {
             const isExpanded = expandedCredits.has(credit.id)
             const creditAllocations = allocations.get(credit.id) || []
             const totalAllocated = creditAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
+            const totalUsedInAllocations = creditAllocations.reduce((sum, alloc) => sum + (alloc.used_amount || 0), 0)
             const paidOut = disbursedAmounts.get(credit.id) || 0
-            const unallocatedAmount = credit.amount - totalAllocated - paidOut
+            const unallocatedAmount = credit.amount - totalAllocated
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
-            const paidOutPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
-            const totalUsagePercentage = allocationPercentage + paidOutPercentage
+            const usedPercentage = credit.amount > 0 ? (totalUsedInAllocations / credit.amount) * 100 : 0
+            const totalUsagePercentage = allocationPercentage
             const netUsed = credit.used_amount + paidOut - credit.repaid_amount
 
             return (
@@ -449,22 +450,22 @@ const CreditsManagement: React.FC = () => {
                       <p className="text-sm text-blue-700">Investment Amount</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                     </div>
-                    <div className="bg-violet-50 p-3 rounded-lg">
-                      <p className="text-sm text-violet-700">Allocated</p>
-                      <p className="text-lg font-bold text-violet-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <p className="text-sm text-slate-700">Alocirano</p>
+                      <p className="text-lg font-bold text-slate-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
-                      <p className="text-sm text-orange-700">Paid Out</p>
-                      <p className="text-lg font-bold text-orange-900">€{paidOut.toLocaleString('hr-HR')}</p>
+                      <p className="text-sm text-orange-700">Iskorišteno</p>
+                      <p className="text-lg font-bold text-orange-900">€{totalUsedInAllocations.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                      <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Debt</p>
+                      <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Dug</p>
                       <p className={`text-lg font-bold ${netUsed > 0 ? 'text-red-900' : 'text-gray-900'}`}>
                         €{netUsed.toLocaleString('hr-HR')}
                       </p>
                     </div>
                     <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>Unallocated</p>
+                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>Nealocirano</p>
                       <p className={`text-lg font-bold ${unallocatedAmount < 0 ? 'text-red-900' : 'text-green-900'}`}>
                         €{unallocatedAmount.toLocaleString('hr-HR')}
                       </p>
@@ -486,33 +487,33 @@ const CreditsManagement: React.FC = () => {
                       <>
                         <div className="flex justify-between mb-2">
                           <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span className="font-medium text-gray-700">Credit Usage</span>
+                            <span className="font-medium text-gray-700">Korištenje investicije</span>
                             <span className="flex items-center gap-1">
-                              <span className="inline-block w-3 h-3 rounded-sm bg-violet-600"></span>
-                              Allocated {allocationPercentage.toFixed(1)}%
+                              <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
+                              Alocirano {allocationPercentage.toFixed(1)}%
                             </span>
-                            {paidOutPercentage > 0 && (
+                            {usedPercentage > 0 && (
                               <span className="flex items-center gap-1">
                                 <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
-                                Paid Out {paidOutPercentage.toFixed(1)}%
+                                Iskorišteno {usedPercentage.toFixed(1)}%
                               </span>
                             )}
                           </div>
-                          <span className="text-sm font-semibold text-gray-800">{totalUsagePercentage.toFixed(1)}%</span>
+                          <span className="text-sm font-semibold text-gray-800">{allocationPercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
                           <div
-                            className={`h-3 transition-all duration-300 ${totalUsagePercentage > 100 ? 'bg-red-600' : 'bg-violet-600'}`}
+                            className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
                             style={{ width: `${Math.min(100, allocationPercentage)}%` }}
                           />
                           <div
-                            className={`h-3 transition-all duration-300 ${totalUsagePercentage > 100 ? 'bg-red-400' : 'bg-orange-500'}`}
-                            style={{ width: `${Math.min(100 - Math.min(100, allocationPercentage), paidOutPercentage)}%` }}
+                            className="h-3 bg-orange-500 transition-all duration-300"
+                            style={{ width: `${Math.min(100 - Math.min(100, allocationPercentage), usedPercentage)}%` }}
                           />
                         </div>
-                        {totalUsagePercentage > 100 && (
+                        {allocationPercentage > 100 && (
                           <p className="text-xs text-red-600 mt-1">
-                            Over-allocated by €{(totalAllocated + paidOut - credit.amount).toLocaleString('hr-HR')}
+                            Prekoračeno za €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
                           </p>
                         )}
                       </>

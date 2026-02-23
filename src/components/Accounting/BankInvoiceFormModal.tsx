@@ -14,6 +14,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     company_id: '',
     bank_id: '',
     bank_credit_id: '',
+    credit_allocation_id: '',
     invoice_number: '',
     reference_number: '',
     iban: '',
@@ -29,7 +30,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     description: ''
   })
 
-  const { banks, credits, myCompanies, invoiceCategories, fetchMyCompanies } = useBankInvoiceData(formData.bank_id)
+  const { banks, credits, creditAllocations, myCompanies, invoiceCategories, fetchMyCompanies } = useBankInvoiceData(formData.bank_id, formData.bank_credit_id || undefined)
 
   useEffect(() => {
     const initializeCompany = async () => {
@@ -43,9 +44,13 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
   useEffect(() => {
     if (!formData.bank_id) {
-      setFormData(prev => ({ ...prev, bank_credit_id: '' }))
+      setFormData(prev => ({ ...prev, bank_credit_id: '', credit_allocation_id: '' }))
     }
   }, [formData.bank_id])
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, credit_allocation_id: '' }))
+  }, [formData.bank_credit_id])
 
   const calculateTotal = (): CalculatedTotals => {
     const base1 = formData.base_amount_1 || 0
@@ -97,6 +102,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
         company_id: formData.company_id,
         bank_id: formData.bank_id,
         bank_credit_id: formData.bank_credit_id || null,
+        credit_allocation_id: (formData.invoice_type === 'OUTGOING_BANK' && formData.credit_allocation_id) ? formData.credit_allocation_id : null,
         invoice_number: formData.invoice_number,
         reference_number: formData.reference_number || null,
         iban: formData.iban || null,
@@ -196,6 +202,35 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 ))}
               </Select>
             </FormField>
+
+            {formData.invoice_type === 'OUTGOING_BANK' && formData.bank_credit_id && (
+              <FormField
+                label="Namjena investicije (alokacija)"
+                helperText={creditAllocations.length === 0 ? 'Nema definiranih namjena za ovu investiciju' : undefined}
+              >
+                <Select
+                  value={formData.credit_allocation_id}
+                  onChange={(e) => setFormData({ ...formData, credit_allocation_id: e.target.value })}
+                  disabled={creditAllocations.length === 0}
+                >
+                  <option value="">Bez namjene</option>
+                  {creditAllocations.map((alloc) => {
+                    const available = alloc.allocated_amount - alloc.used_amount
+                    const label =
+                      alloc.allocation_type === 'project'
+                        ? alloc.project?.name ?? 'Projekt'
+                        : alloc.allocation_type === 'opex'
+                        ? 'OPEX'
+                        : 'Refinanciranje'
+                    return (
+                      <option key={alloc.id} value={alloc.id}>
+                        {label} — dostupno: €{available.toLocaleString('hr-HR')}
+                      </option>
+                    )
+                  })}
+                </Select>
+              </FormField>
+            )}
 
             <FormField label="Broj računa" required>
               <Input
