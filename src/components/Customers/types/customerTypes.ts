@@ -12,7 +12,7 @@ export interface CustomerWithApartments extends Customer {
   }>
 }
 
-export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out'
+export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out' | null
 
 export interface CategoryInfo {
   id: CustomerCategory

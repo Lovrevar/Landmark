@@ -3,7 +3,7 @@ import { customerService } from '../services/customerService'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types/customerTypes'
 import { Customer } from '../../../lib/supabase'
 
-export const useCustomerData = (activeCategory: CustomerCategory) => {
+export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   const [customers, setCustomers] = useState<CustomerWithApartments[]>([])
   const [counts, setCounts] = useState<CustomerCounts>({
     interested: 0,

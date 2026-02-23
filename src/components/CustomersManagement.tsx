@@ -10,7 +10,7 @@ import { CustomerDetailModal } from './Customers/forms/CustomerDetailModal'
 import { CustomerWithApartments } from './Customers/types/customerTypes'
 
 const CustomersManagement: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState<CustomerCategory>('interested')
+  const [activeCategory, setActiveCategory] = useState<CustomerCategory | null>(null)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithApartments | null>(null)

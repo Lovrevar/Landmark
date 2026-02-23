@@ -3,12 +3,17 @@ import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../typ
 
 export const customerService = {
   async fetchCustomers(category: CustomerCategory): Promise<CustomerWithApartments[]> {
-    const { data: customersData, error } = await supabase
+    let query = supabase
       .from('customers')
       .select('*')
-      .eq('status', category)
       .order('last_contact_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
+
+    if (category !== null) {
+      query = query.eq('status', category)
+    }
+
+    const { data: customersData, error } = await query
 
     if (error) throw error
 
