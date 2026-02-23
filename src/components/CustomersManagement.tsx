@@ -16,6 +16,7 @@ const CustomersManagement: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithApartments | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<CustomerWithApartments | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const {
     customers,
@@ -31,6 +32,22 @@ const CustomersManagement: React.FC = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   )
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredCustomers.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredCustomers.map(c => c.id)))
+    }
+  }
 
   const handleAddCustomer = () => {
     setEditingCustomer(null)
@@ -67,12 +84,16 @@ const CustomersManagement: React.FC = () => {
   }
 
   const handleExportEmails = () => {
-    const emails = filteredCustomers
+    const targets = selectedIds.size > 0
+      ? filteredCustomers.filter(c => selectedIds.has(c.id))
+      : filteredCustomers
+
+    const emails = targets
       .map(c => c.email)
       .filter(email => email && email.trim() !== '')
 
     if (emails.length === 0) {
-      alert('No email addresses found for customers in this category.')
+      alert('No email addresses found for the selected customers.')
       return
     }
 
@@ -88,7 +109,9 @@ const CustomersManagement: React.FC = () => {
         actions={
           <>
             <Button variant="success" icon={Mail} onClick={handleExportEmails}>
-              Email All ({filteredCustomers.filter(c => c.email).length})
+              {selectedIds.size > 0
+                ? `Email Selected (${selectedIds.size})`
+                : `Email All (${filteredCustomers.filter(c => c.email).length})`}
             </Button>
             <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
               Add Customer
@@ -116,6 +139,9 @@ const CustomersManagement: React.FC = () => {
         customers={filteredCustomers}
         activeCategory={activeCategory}
         loading={loading}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onSelectAll={handleSelectAll}
         onViewDetails={handleViewDetails}
         onEdit={handleEditCustomer}
         onDelete={handleDeleteCustomer}

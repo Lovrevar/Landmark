@@ -7,6 +7,8 @@ import { Button } from '../../ui'
 interface CustomerCardProps {
   customer: CustomerWithApartments
   activeCategory: CustomerCategory
+  isSelected: boolean
+  onToggleSelect: (id: string) => void
   onViewDetails: (customer: CustomerWithApartments) => void
   onEdit: (customer: CustomerWithApartments) => void
   onDelete: (id: string) => void
@@ -16,6 +18,8 @@ interface CustomerCardProps {
 export const CustomerCard: React.FC<CustomerCardProps> = ({
   customer,
   activeCategory,
+  isSelected,
+  onToggleSelect,
   onViewDetails,
   onEdit,
   onDelete,
@@ -40,18 +44,38 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div
+      className={`bg-white rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all ${
+        isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200'
+      }`}
+    >
       <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {customer.name} {customer.surname}
-          </h3>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <button
+            onClick={() => onToggleSelect(customer.id)}
+            className={`mt-1 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+              isSelected
+                ? 'bg-blue-600 border-blue-600'
+                : 'bg-white border-gray-300 hover:border-blue-400'
+            }`}
+          >
+            {isSelected && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {customer.name} {customer.surname}
+            </h3>
           {customer.priority && (
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${getPriorityColor(customer.priority)}`}>
               {getPriorityIcon(customer.priority)}
               <span className="ml-1 capitalize">{customer.priority}</span>
             </span>
           )}
+          </div>
         </div>
         <div className="flex space-x-1">
           <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title="View details" />
