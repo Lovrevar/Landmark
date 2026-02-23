@@ -486,27 +486,27 @@ const CreditsManagement: React.FC = () => {
                         <div className="flex justify-between mb-2">
                           <div className="flex items-center gap-4 text-sm text-gray-600">
                             <span className="font-medium text-gray-700">Korištenje investicije</span>
-                            <span className="flex items-center gap-1">
-                              <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                              Alocirano {allocationPercentage.toFixed(1)}%
-                            </span>
                             {usedPercentage > 0 && (
                               <span className="flex items-center gap-1">
                                 <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
                                 Iskorišteno {usedPercentage.toFixed(1)}%
                               </span>
                             )}
+                            <span className="flex items-center gap-1">
+                              <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
+                              Alocirano {allocationPercentage.toFixed(1)}%
+                            </span>
                           </div>
                           <span className="text-sm font-semibold text-gray-800">{allocationPercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
                           <div
-                            className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
-                            style={{ width: `${Math.min(100, allocationPercentage)}%` }}
+                            className="h-3 bg-orange-500 transition-all duration-300"
+                            style={{ width: `${Math.min(100, usedPercentage)}%` }}
                           />
                           <div
-                            className="h-3 bg-orange-500 transition-all duration-300"
-                            style={{ width: `${Math.min(100 - Math.min(100, allocationPercentage), usedPercentage)}%` }}
+                            className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
+                            style={{ width: `${Math.min(100 - Math.min(100, usedPercentage), allocationPercentage - usedPercentage)}%` }}
                           />
                         </div>
                         {allocationPercentage > 100 && (
