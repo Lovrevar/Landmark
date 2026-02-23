@@ -304,9 +304,22 @@ const SalesReports: React.FC = () => {
       const contentWidth = pageWidth - (margin * 2)
       let yPosition = margin
 
-      // Helper function to check page break
+      const footerHeight = 15
+
+      const addFooter = () => {
+        const totalPages = pdf.getNumberOfPages()
+        for (let i = 1; i <= totalPages; i++) {
+          pdf.setPage(i)
+          pdf.setFontSize(8)
+          pdf.setFont('helvetica', 'normal')
+          pdf.setTextColor(107, 114, 128)
+          pdf.text('LANDMARK GROUP - Sales Report', margin, pageHeight - 10)
+          pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 25, pageHeight - 10)
+        }
+      }
+
       const checkPageBreak = (requiredHeight: number) => {
-        if (yPosition + requiredHeight > pageHeight - margin) {
+        if (yPosition + requiredHeight > pageHeight - footerHeight - margin) {
           pdf.addPage()
           yPosition = margin
           return true
@@ -379,17 +392,16 @@ const SalesReports: React.FC = () => {
           ['Average Price', `$${projectReport.average_price.toLocaleString('hr-HR')}`]
         ]
 
-        overviewData.forEach(([label, value], index) => {
-          const y = yPosition + (index * 6)
+        overviewData.forEach(([label, value]) => {
           checkPageBreak(6)
-          
           pdf.setFont('helvetica', 'bold')
-          pdf.text(`${label}:`, margin + 5, y)
+          pdf.text(`${label}:`, margin + 5, yPosition)
           pdf.setFont('helvetica', 'normal')
-          pdf.text(value, margin + 60, y)
+          pdf.text(value, margin + 60, yPosition)
+          yPosition += 6
         })
 
-        yPosition += (overviewData.length * 6) + 15
+        yPosition += 15
 
         // Monthly Sales Data
         checkPageBreak(40)
@@ -403,15 +415,15 @@ const SalesReports: React.FC = () => {
         pdf.setFontSize(10)
         pdf.setFont('helvetica', 'normal')
 
-        projectReport.monthly_sales.forEach((month, index) => {
+        projectReport.monthly_sales.forEach((month) => {
           checkPageBreak(6)
-          const y = yPosition + (index * 6)
-          pdf.text(`${month.month}:`, margin + 5, y)
-          pdf.text(`${month.units_sold} units sold`, margin + 40, y)
-          pdf.text(`$${month.revenue.toLocaleString('hr-HR')} revenue`, margin + 80, y)
+          pdf.text(`${month.month}:`, margin + 5, yPosition)
+          pdf.text(`${month.units_sold} units sold`, margin + 40, yPosition)
+          pdf.text(`$${month.revenue.toLocaleString('hr-HR')} revenue`, margin + 80, yPosition)
+          yPosition += 6
         })
 
-        yPosition += (projectReport.monthly_sales.length * 6) + 15
+        yPosition += 15
 
         // Apartment Details
         checkPageBreak(40)
@@ -425,24 +437,24 @@ const SalesReports: React.FC = () => {
         pdf.setFontSize(9)
         pdf.setFont('helvetica', 'normal')
 
-        projectReport.apartments.forEach((apt, index) => {
+        projectReport.apartments.forEach((apt) => {
           checkPageBreak(8)
-          const y = yPosition + (index * 8)
           const statusColor = apt.status === 'Sold' ? [34, 197, 94] : apt.status === 'Reserved' ? [245, 158, 11] : [59, 130, 246]
-          
-          pdf.text(`Unit ${apt.number} (Floor ${apt.floor}):`, margin + 5, y)
-          pdf.text(`${apt.size_m2}m²`, margin + 50, y)
-          pdf.text(`$${apt.price.toLocaleString('hr-HR')}`, margin + 80, y)
-          
+
+          pdf.text(`Unit ${apt.number} (Floor ${apt.floor}):`, margin + 5, yPosition)
+          pdf.text(`${apt.size_m2}m²`, margin + 50, yPosition)
+          pdf.text(`$${apt.price.toLocaleString('hr-HR')}`, margin + 80, yPosition)
+
           pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])
           pdf.setFont('helvetica', 'bold')
-          pdf.text(apt.status, margin + 120, y)
+          pdf.text(apt.status, margin + 120, yPosition)
           pdf.setTextColor(0, 0, 0)
           pdf.setFont('helvetica', 'normal')
-          
+
           if (apt.buyer_name) {
-            pdf.text(`(${apt.buyer_name})`, margin + 145, y)
+            pdf.text(`(${apt.buyer_name})`, margin + 145, yPosition)
           }
+          yPosition += 8
         })
 
       } else if (reportType === 'customer' && customerReport) {
@@ -485,20 +497,19 @@ const SalesReports: React.FC = () => {
           ['Conversion Rate', `${customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}%`]
         ]
 
-        customerOverviewData.forEach(([label, value], index) => {
-          const y = yPosition + (index * 6)
+        customerOverviewData.forEach(([label, value]) => {
           checkPageBreak(6)
-          
           pdf.setFont('helvetica', 'bold')
-          pdf.text(`${label}:`, margin + 5, y)
+          pdf.text(`${label}:`, margin + 5, yPosition)
           pdf.setFont('helvetica', 'normal')
-          pdf.text(value, margin + 60, y)
+          pdf.text(value, margin + 60, yPosition)
+          yPosition += 6
         })
 
-        yPosition += (customerOverviewData.length * 6) + 15
+        yPosition += 15
 
         // Customer Details
-        checkPageBreak(40)
+        checkPageBreak(20)
         pdf.setFontSize(14)
         pdf.setFont('helvetica', 'bold')
         pdf.setTextColor(37, 99, 235)
@@ -509,30 +520,24 @@ const SalesReports: React.FC = () => {
         pdf.setFontSize(9)
         pdf.setFont('helvetica', 'normal')
 
-        customerReport.customers.forEach((customer, index) => {
+        customerReport.customers.forEach((customer) => {
           checkPageBreak(8)
-          const y = yPosition + (index * 8)
           const statusColor = customer.status === 'buyer' ? [34, 197, 94] : customer.status === 'interested' ? [59, 130, 246] : [245, 158, 11]
-          
-          pdf.text(`${customer.name} ${customer.surname}`, margin + 5, y)
-          pdf.text(customer.email, margin + 60, y)
-          pdf.text(customer.phone || 'No phone', margin + 120, y)
-          
+
+          pdf.text(`${customer.name} ${customer.surname}`, margin + 5, yPosition)
+          pdf.text(customer.email, margin + 60, yPosition)
+          pdf.text(customer.phone || 'No phone', margin + 120, yPosition)
+
           pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])
           pdf.setFont('helvetica', 'bold')
-          pdf.text(customer.status.toUpperCase(), margin + 160, y)
+          pdf.text(customer.status.toUpperCase(), margin + 160, yPosition)
           pdf.setTextColor(0, 0, 0)
           pdf.setFont('helvetica', 'normal')
+          yPosition += 8
         })
       }
 
-      // Footer
-      const footerY = pageHeight - 15
-      pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(107, 114, 128)
-      pdf.text('LANDMARK GROUP - Sales Report', margin, footerY)
-      pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
+      addFooter()
 
       // Save the PDF
       const fileName = `${reportType === 'project' ? 'Sales' : 'Customer'}_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
