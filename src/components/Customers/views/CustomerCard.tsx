@@ -45,39 +45,24 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all ${
-        isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200'
+      onClick={() => onToggleSelect(customer.id)}
+      className={`bg-white rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer ${
+        isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200 hover:border-gray-300'
       }`}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <button
-            onClick={() => onToggleSelect(customer.id)}
-            className={`mt-1 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-              isSelected
-                ? 'bg-blue-600 border-blue-600'
-                : 'bg-white border-gray-300 hover:border-blue-400'
-            }`}
-          >
-            {isSelected && (
-              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
-                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {customer.name} {customer.surname}
-            </h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {customer.name} {customer.surname}
+          </h3>
           {customer.priority && (
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${getPriorityColor(customer.priority)}`}>
               {getPriorityIcon(customer.priority)}
               <span className="ml-1 capitalize">{customer.priority}</span>
             </span>
           )}
-          </div>
         </div>
-        <div className="flex space-x-1">
+        <div className="flex space-x-1" onClick={e => e.stopPropagation()}>
           <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title="View details" />
           <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title="Edit" />
           <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title="Delete" />
@@ -219,16 +204,18 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
       )}
 
-      <Button
-        variant="secondary"
-        size="sm"
-        fullWidth
-        icon={Calendar}
-        onClick={() => onUpdateContact(customer.id)}
-        className="mt-4"
-      >
-        Update Contact Date
-      </Button>
+      <div onClick={e => e.stopPropagation()}>
+        <Button
+          variant="secondary"
+          size="sm"
+          fullWidth
+          icon={Calendar}
+          onClick={() => onUpdateContact(customer.id)}
+          className="mt-4"
+        >
+          Update Contact Date
+        </Button>
+      </div>
     </div>
   )
 }

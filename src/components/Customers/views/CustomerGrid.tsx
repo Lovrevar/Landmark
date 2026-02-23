@@ -78,7 +78,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
         </label>
         {selectedIds.size > 0 && (
           <span className="text-xs text-blue-600 font-medium">
-            {selectedIds.size} of {customers.length} selected for email
+            {selectedIds.size} of {customers.length} selected
           </span>
         )}
       </div>
