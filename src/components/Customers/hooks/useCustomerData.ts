@@ -53,7 +53,6 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
       await fetchCustomers()
       await fetchCounts()
     } catch (error) {
-      console.error('Error saving customer:', error)
       throw error
     }
   }
