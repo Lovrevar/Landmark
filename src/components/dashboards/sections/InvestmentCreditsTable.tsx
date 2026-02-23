@@ -19,7 +19,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Active Investments & Expiration Dates</h2>
-          <Button variant="primary" onClick={() => navigate('/accounting-credits')}>
+          <Button variant="primary" onClick={() => navigate('/funding-credits')}>
             View All Credits
           </Button>
         </div>
