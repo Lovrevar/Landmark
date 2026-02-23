@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { customerService } from '../services/customerService'
+import { cache } from '../services/customerCache'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types/customerTypes'
 import { Customer } from '../../../lib/supabase'
 
@@ -14,10 +15,20 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   })
   const [loading, setLoading] = useState(true)
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = cache.getCustomers(activeCategory)
+      if (cached) {
+        setCustomers(cached)
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       setLoading(true)
       const data = await customerService.fetchCustomers(activeCategory)
+      cache.setCustomers(activeCategory, data)
       setCustomers(data)
     } catch (error) {
       console.error('Error fetching customers:', error)
@@ -26,9 +37,18 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
     }
   }
 
-  const fetchCounts = async () => {
+  const fetchCounts = async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = cache.getCounts()
+      if (cached) {
+        setCounts(cached)
+        return
+      }
+    }
+
     try {
       const countsData = await customerService.fetchCustomerCounts()
+      cache.setCounts(countsData)
       setCounts(countsData)
     } catch (error) {
       console.error('Error fetching customer counts:', error)
@@ -50,8 +70,9 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
       } else {
         await customerService.createCustomer(customerData)
       }
-      await fetchCustomers()
-      await fetchCounts()
+      cache.invalidate()
+      await fetchCustomers(true)
+      await fetchCounts(true)
     } catch (error) {
       throw error
     }
@@ -60,8 +81,9 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   const deleteCustomer = async (id: string) => {
     try {
       await customerService.deleteCustomer(id)
-      await fetchCustomers()
-      await fetchCounts()
+      cache.invalidate()
+      await fetchCustomers(true)
+      await fetchCounts(true)
     } catch (error) {
       console.error('Error deleting customer:', error)
       throw error
@@ -71,7 +93,8 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   const updateLastContact = async (customerId: string) => {
     try {
       await customerService.updateLastContact(customerId)
-      await fetchCustomers()
+      cache.invalidate()
+      await fetchCustomers(true)
     } catch (error) {
       console.error('Error updating contact date:', error)
       throw error
