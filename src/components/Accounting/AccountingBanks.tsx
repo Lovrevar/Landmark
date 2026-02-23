@@ -10,6 +10,7 @@ import useBankeCredits from './hooks/useBankeCredits'
 import BankCreditFormModal from './forms/BankCreditFormModal'
 import AllocationRow from '../Finance/credits/AllocationRow'
 import CreditDisbursements from '../Finance/credits/CreditDisbursements'
+import CreditRepayments from '../Finance/credits/CreditRepayments'
 
 const AccountingBanks: React.FC = () => {
   const {
@@ -355,6 +356,7 @@ const AccountingBanks: React.FC = () => {
                               )}
 
                               <CreditDisbursements creditId={credit.id} />
+                              <CreditRepayments creditId={credit.id} />
 
                               {credit.purpose && (
                                 <div className="mt-6 pt-6 border-t border-gray-200">
