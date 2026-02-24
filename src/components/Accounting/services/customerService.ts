@@ -39,10 +39,12 @@ export const fetchCustomerProperties = async (customerId: string) => {
       apartment_id,
       apartments!inner (
         price,
-        garage_id,
-        repository_id,
-        garages (price),
-        repositories (price)
+        apartment_garages (
+          garages (price)
+        ),
+        apartment_repositories (
+          repositories (price)
+        )
       )
     `)
     .eq('customer_id', customerId)
@@ -63,15 +65,19 @@ export const buildCustomerStats = async (customer: Customer): Promise<CustomerSt
   let totalApartments = 0
   if (propertyData && propertyData.length > 0) {
     totalApartments = propertyData.length
-    propertyData.forEach((sale) => {
+    propertyData.forEach((sale: any) => {
       if (sale.apartments) {
         const apt = sale.apartments
         propertyPrice += Number(apt.price || 0)
-        if (apt.garages) {
-          propertyPrice += Number(apt.garages.price || 0)
+        if (apt.apartment_garages) {
+          apt.apartment_garages.forEach((ag: any) => {
+            propertyPrice += Number(ag.garages?.price || 0)
+          })
         }
-        if (apt.repositories) {
-          propertyPrice += Number(apt.repositories.price || 0)
+        if (apt.apartment_repositories) {
+          apt.apartment_repositories.forEach((ar: any) => {
+            propertyPrice += Number(ar.repositories?.price || 0)
+          })
         }
       }
     })
