@@ -105,7 +105,7 @@ const useBankeCredits = () => {
   const fetchDisbursedAmounts = async (creditIds: string[]) => {
     const { data, error } = await supabase
       .from('accounting_invoices')
-      .select('bank_credit_id, total_amount')
+      .select('bank_credit_id, total_amount, credit_allocation_id')
       .eq('invoice_type', 'OUTGOING_BANK')
       .in('bank_credit_id', creditIds)
 
@@ -114,7 +114,9 @@ const useBankeCredits = () => {
     const map = new Map<string, number>()
     for (const row of data || []) {
       if (!row.bank_credit_id) continue
-      map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+      if (!row.credit_allocation_id) {
+        map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+      }
     }
     setDisbursedAmounts(map)
   }
