@@ -196,7 +196,7 @@ const CreditsManagement: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('accounting_invoices')
-        .select('bank_credit_id, total_amount')
+        .select('bank_credit_id, total_amount, credit_allocation_id')
         .eq('invoice_type', 'OUTGOING_BANK')
         .in('bank_credit_id', creditIds)
 
@@ -205,7 +205,9 @@ const CreditsManagement: React.FC = () => {
       const map = new Map<string, number>()
       for (const row of data || []) {
         if (!row.bank_credit_id) continue
-        map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+        if (!row.credit_allocation_id) {
+          map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
+        }
       }
       setDisbursedAmounts(map)
     } catch (error) {
@@ -385,12 +387,14 @@ const CreditsManagement: React.FC = () => {
             const creditAllocations = allocations.get(credit.id) || []
             const totalAllocated = creditAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
             const totalUsedInAllocations = creditAllocations.reduce((sum, alloc) => sum + (alloc.used_amount || 0), 0)
-            const paidOut = disbursedAmounts.get(credit.id) || 0
+            const unallocatedDisbursements = disbursedAmounts.get(credit.id) || 0
+            const totalIskorišteno = totalUsedInAllocations + unallocatedDisbursements
+            const paidOut = totalIskorišteno
             const unallocatedAmount = credit.amount - totalAllocated
-            const remainingAllocated = Math.max(0, totalAllocated - paidOut)
+            const remainingAllocated = Math.max(0, totalAllocated - totalUsedInAllocations)
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
             const remainingAllocatedPercentage = credit.amount > 0 ? (remainingAllocated / credit.amount) * 100 : 0
-            const usedPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
+            const usedPercentage = credit.amount > 0 ? (totalIskorišteno / credit.amount) * 100 : 0
             const totalUsagePercentage = usedPercentage + remainingAllocatedPercentage
             const netUsed = credit.used_amount + paidOut - credit.repaid_amount
 
