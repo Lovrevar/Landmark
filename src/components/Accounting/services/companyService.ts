@@ -22,7 +22,7 @@ export const fetchCompaniesWithStats = async (): Promise<CompanyStats[]> => {
     total_expense_amount: stats.total_expense_amount,
     total_expense_paid: stats.total_expense_paid,
     total_expense_unpaid: stats.total_expense_unpaid,
-    current_balance: stats.total_bank_balance + stats.total_credits_available,
+    current_balance: stats.total_bank_balance,
     profit: stats.total_income_paid - stats.total_expense_paid,
     revenue: stats.total_income_amount,
     bank_accounts: [],

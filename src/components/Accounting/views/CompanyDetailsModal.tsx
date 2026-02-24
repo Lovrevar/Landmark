@@ -23,7 +23,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
       <Modal.Body>
         <StatGrid columns={4}>
           <StatCard
-            label="Trenutno stanje s kreditima"
+            label="Trenutno stanje"
             value={`€${company.current_balance.toLocaleString('hr-HR')}`}
             color={company.current_balance >= 0 ? 'green' : 'red'}
           />
