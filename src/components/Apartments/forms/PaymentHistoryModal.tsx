@@ -105,7 +105,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                   <Home className="w-3 h-3 mr-1 text-blue-600" />
                   Apartment
                 </p>
-                <p className="text-sm font-bold text-blue-600">€{aptPaid.toLocaleString('hr-HR')}</p>
+                <p className="text-sm font-bold text-blue-600">€{apartment.price.toLocaleString('hr-HR')}</p>
               </div>
               {linkedGarages.length > 0 && (
                 <div className="bg-orange-50 p-2 rounded">
@@ -113,7 +113,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                     <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                     Garages ({linkedGarages.length})
                   </p>
-                  <p className="text-sm font-bold text-orange-600">€{garagePaid.toLocaleString('hr-HR')}</p>
+                  <p className="text-sm font-bold text-orange-600">€{garagesTotalPrice.toLocaleString('hr-HR')}</p>
                 </div>
               )}
               {linkedStorages.length > 0 && (
@@ -122,7 +122,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                     <Package className="w-3 h-3 mr-1 text-gray-600" />
                     Storages ({linkedStorages.length})
                   </p>
-                  <p className="text-sm font-bold text-gray-600">€{storagePaid.toLocaleString('hr-HR')}</p>
+                  <p className="text-sm font-bold text-gray-600">€{storagesTotalPrice.toLocaleString('hr-HR')}</p>
                 </div>
               )}
             </div>
