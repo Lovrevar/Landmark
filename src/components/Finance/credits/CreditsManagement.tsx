@@ -388,7 +388,7 @@ const CreditsManagement: React.FC = () => {
             const paidOut = disbursedAmounts.get(credit.id) || 0
             const unallocatedAmount = credit.amount - totalAllocated
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
-            const usedPercentage = credit.amount > 0 ? (totalUsedInAllocations / credit.amount) * 100 : 0
+            const usedPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
             const totalUsagePercentage = allocationPercentage
             const netUsed = credit.used_amount + paidOut - credit.repaid_amount
 
@@ -454,7 +454,7 @@ const CreditsManagement: React.FC = () => {
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
                       <p className="text-sm text-orange-700">Iskorišteno</p>
-                      <p className="text-lg font-bold text-orange-900">€{totalUsedInAllocations.toLocaleString('hr-HR')}</p>
+                      <p className="text-lg font-bold text-orange-900">€{paidOut.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
                       <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Dug</p>
