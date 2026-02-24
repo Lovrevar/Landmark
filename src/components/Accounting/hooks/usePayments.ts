@@ -13,6 +13,7 @@ import {
 import {
   fetchPayments,
   fetchInvoices,
+  fetchInvoiceById,
   fetchCompanies,
   fetchBankAccounts,
   fetchCredits,
@@ -139,23 +140,35 @@ export const usePayments = () => {
     }))
   }
 
-  const handleOpenModal = (payment?: Payment) => {
+  const handleOpenModal = async (payment?: Payment) => {
     if (payment) {
       setEditingPayment(payment)
       setFormData({
         invoice_id: payment.invoice_id,
-        payment_source_type: 'bank_account',
-        company_bank_account_id: '',
-        credit_id: '',
-        is_cesija: false,
-        cesija_company_id: '',
-        cesija_bank_account_id: '',
+        payment_source_type: payment.is_cesija ? 'bank_account' : (payment.payment_source_type || 'bank_account'),
+        company_bank_account_id: payment.company_bank_account_id || '',
+        credit_id: payment.credit_id || '',
+        is_cesija: payment.is_cesija || false,
+        cesija_company_id: payment.cesija_company_id || '',
+        cesija_bank_account_id: payment.cesija_bank_account_id || '',
         payment_date: payment.payment_date,
         amount: payment.amount,
         payment_method: payment.payment_method,
         reference_number: payment.reference_number || '',
         description: payment.description
       })
+
+      const alreadyInList = invoices.some(inv => inv.id === payment.invoice_id)
+      if (!alreadyInList) {
+        try {
+          const invoice = await fetchInvoiceById(payment.invoice_id)
+          if (invoice) {
+            setInvoices(prev => [invoice, ...prev])
+          }
+        } catch (error) {
+          console.error('Error fetching invoice for edit:', error)
+        }
+      }
     } else {
       setEditingPayment(null)
       setFormData({

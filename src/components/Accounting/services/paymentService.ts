@@ -53,6 +53,31 @@ export const fetchInvoices = async () => {
   return result.data as Invoice[]
 }
 
+export const fetchInvoiceById = async (id: string): Promise<Invoice | null> => {
+  const result = await supabase
+    .from('accounting_invoices')
+    .select(`
+      id,
+      invoice_number,
+      invoice_type,
+      total_amount,
+      paid_amount,
+      remaining_amount,
+      company_id,
+      companies:company_id (name),
+      subcontractors:supplier_id (name),
+      customers:customer_id (name, surname),
+      office_suppliers:office_supplier_id (name),
+      bank_company:bank_id (name),
+      retail_suppliers:retail_supplier_id (name)
+    `)
+    .eq('id', id)
+    .maybeSingle()
+
+  if (result.error) throw result.error
+  return result.data as Invoice | null
+}
+
 export const fetchCompanies = async () => {
   const result = await supabase
     .from('accounting_companies')
