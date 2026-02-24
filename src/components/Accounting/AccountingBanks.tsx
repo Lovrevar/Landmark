@@ -150,10 +150,15 @@ const AccountingBanks: React.FC = () => {
                       const totalAllocated = creditAllocations.reduce((sum, a) => sum + a.allocated_amount, 0)
                       const totalUsedInAllocations = creditAllocations.reduce((sum, a) => sum + (a.used_amount || 0), 0)
                       const unallocatedDisbursements = disbursedAmounts.get(credit.id) || 0
-                      const totalIskorišteno = totalUsedInAllocations + unallocatedDisbursements
+                      const directlyDisbursed = credit.disbursed_to_account ? credit.amount : 0
+                      const totalIskorišteno = credit.disbursed_to_account
+                        ? directlyDisbursed
+                        : totalUsedInAllocations + unallocatedDisbursements
                       const paidOut = totalIskorišteno
-                      const remainingAllocated = Math.max(0, totalAllocated - totalUsedInAllocations)
-                      const unallocatedAmount = credit.amount - totalAllocated
+                      const remainingAllocated = credit.disbursed_to_account ? 0 : Math.max(0, totalAllocated - totalUsedInAllocations)
+                      const unallocatedAmount = credit.disbursed_to_account
+                        ? 0
+                        : Math.max(0, credit.amount - totalAllocated - unallocatedDisbursements)
                       const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
                       const remainingAllocatedPercentage = credit.amount > 0 ? (remainingAllocated / credit.amount) * 100 : 0
                       const paidOutPercentage = credit.amount > 0 ? (totalIskorišteno / credit.amount) * 100 : 0
@@ -231,52 +236,38 @@ const AccountingBanks: React.FC = () => {
                             </div>
 
                             <div className="mt-4">
-                              {credit.disbursed_to_account ? (
-                                <>
-                                  <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-medium text-gray-700">Allocation Progress</span>
-                                    <span className="text-sm font-semibold text-green-700">100% paid out</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                    <div className="h-3 bg-green-500 w-full transition-all duration-300" />
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="flex justify-between mb-2">
-                                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                                      <span className="font-medium text-gray-700">Allocation Progress</span>
-                                      {paidOutPercentage > 0 && (
-                                        <span className="flex items-center gap-1">
-                                          <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
-                                          Iskorišteno {paidOutPercentage.toFixed(1)}%
-                                        </span>
-                                      )}
-                                      {remainingAllocatedPercentage > 0 && (
-                                        <span className="flex items-center gap-1">
-                                          <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                                          Alocirano {remainingAllocatedPercentage.toFixed(1)}%
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-800">{totalUsagePercentage.toFixed(1)}%</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
-                                    <div
-                                      className="h-3 bg-orange-500 transition-all duration-300"
-                                      style={{ width: `${Math.min(100, paidOutPercentage)}%` }}
-                                    />
-                                    <div
-                                      className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
-                                      style={{ width: `${Math.min(100 - Math.min(100, paidOutPercentage), remainingAllocatedPercentage)}%` }}
-                                    />
-                                  </div>
-                                  {totalUsagePercentage > 100 && (
-                                    <p className="text-xs text-red-600 mt-1">
-                                      Over-allocated by €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
-                                    </p>
+                              <div className="flex justify-between mb-2">
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <span className="font-medium text-gray-700">Allocation Progress</span>
+                                  {paidOutPercentage > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
+                                      Iskorišteno {paidOutPercentage.toFixed(1)}%
+                                    </span>
                                   )}
-                                </>
+                                  {remainingAllocatedPercentage > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
+                                      Alocirano {remainingAllocatedPercentage.toFixed(1)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-sm font-semibold text-gray-800">{totalUsagePercentage.toFixed(1)}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
+                                <div
+                                  className="h-3 bg-orange-500 transition-all duration-300"
+                                  style={{ width: `${Math.min(100, paidOutPercentage)}%` }}
+                                />
+                                <div
+                                  className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
+                                  style={{ width: `${Math.min(100 - Math.min(100, paidOutPercentage), remainingAllocatedPercentage)}%` }}
+                                />
+                              </div>
+                              {totalUsagePercentage > 100 && (
+                                <p className="text-xs text-red-600 mt-1">
+                                  Over-allocated by €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
+                                </p>
                               )}
                             </div>
                           </div>
