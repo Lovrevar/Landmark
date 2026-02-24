@@ -387,9 +387,11 @@ const CreditsManagement: React.FC = () => {
             const totalUsedInAllocations = creditAllocations.reduce((sum, alloc) => sum + (alloc.used_amount || 0), 0)
             const paidOut = disbursedAmounts.get(credit.id) || 0
             const unallocatedAmount = credit.amount - totalAllocated
+            const remainingAllocated = Math.max(0, totalAllocated - paidOut)
             const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
+            const remainingAllocatedPercentage = credit.amount > 0 ? (remainingAllocated / credit.amount) * 100 : 0
             const usedPercentage = credit.amount > 0 ? (paidOut / credit.amount) * 100 : 0
-            const totalUsagePercentage = allocationPercentage
+            const totalUsagePercentage = usedPercentage + remainingAllocatedPercentage
             const netUsed = credit.used_amount + paidOut - credit.repaid_amount
 
             return (
@@ -492,12 +494,14 @@ const CreditsManagement: React.FC = () => {
                                 Iskorišteno {usedPercentage.toFixed(1)}%
                               </span>
                             )}
-                            <span className="flex items-center gap-1">
-                              <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                              Alocirano {allocationPercentage.toFixed(1)}%
-                            </span>
+                            {remainingAllocatedPercentage > 0 && (
+                              <span className="flex items-center gap-1">
+                                <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
+                                Alocirano {remainingAllocatedPercentage.toFixed(1)}%
+                              </span>
+                            )}
                           </div>
-                          <span className="text-sm font-semibold text-gray-800">{allocationPercentage.toFixed(1)}%</span>
+                          <span className="text-sm font-semibold text-gray-800">{totalUsagePercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
                           <div
@@ -506,7 +510,7 @@ const CreditsManagement: React.FC = () => {
                           />
                           <div
                             className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
-                            style={{ width: `${Math.min(100 - Math.min(100, usedPercentage), allocationPercentage - usedPercentage)}%` }}
+                            style={{ width: `${Math.min(100 - Math.min(100, usedPercentage), remainingAllocatedPercentage)}%` }}
                           />
                         </div>
                         {allocationPercentage > 100 && (
