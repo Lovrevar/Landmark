@@ -5,6 +5,7 @@ import { Subcontractor } from '../../../lib/supabase'
 import { CommentWithUser } from '../types/siteTypes'
 import { supabase } from '../../../lib/supabase'
 import { Modal, FormField, Select, Textarea, Button, Badge } from '../../ui'
+import { ContractDocumentViewer } from '../components/ContractDocumentViewer'
 
 interface ContractData {
   contract_number: string
@@ -219,6 +220,20 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   </span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Contract Documents */}
+          {subcontractor.has_contract !== false && (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
+              </div>
+              <ContractDocumentViewer
+                contractId={(subcontractor as any).contract_id || subcontractor.id}
+                readOnly
+              />
             </div>
           )}
 

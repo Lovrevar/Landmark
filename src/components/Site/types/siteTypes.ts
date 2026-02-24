@@ -79,6 +79,16 @@ export interface ContractType {
   is_active: boolean
 }
 
+export interface ContractDocument {
+  id: string
+  contract_id: string
+  file_name: string
+  file_path: string
+  file_size: number
+  uploaded_at: string
+  uploaded_by: string | null
+}
+
 export interface MilestoneFormData {
   contract_id: string
   milestone_name: string

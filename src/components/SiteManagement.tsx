@@ -113,7 +113,7 @@ const SiteManagement: React.FC = () => {
     setShowEditPhaseModal(true)
   }
 
-  const handleAddSubcontractor = async (data: SubcontractorFormData, useExisting: boolean) => {
+  const handleAddSubcontractor = async (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => {
     if (!selectedPhase) return
     const success = await addSubcontractorToPhase(selectedPhase, {
       useExisting,
@@ -133,7 +133,7 @@ const SiteManagement: React.FC = () => {
       financed_by_type: data.financed_by_type,
       financed_by_investor_id: data.financed_by_investor_id,
       financed_by_bank_id: data.financed_by_bank_id
-    })
+    }, pendingFiles)
     if (success) {
       setShowSubcontractorForm(false)
       setSelectedPhase(null)

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../lib/supabase'
 import { supabase } from '../../../lib/supabase'
 import { ContractType } from '../types/siteTypes'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
+import { ContractDocumentUpload } from '../components/ContractDocumentUpload'
+import { ContractDocumentViewer } from '../components/ContractDocumentViewer'
+import { uploadContractDocuments } from '../services/siteService'
 
 interface Phase {
   id: string
@@ -17,6 +21,9 @@ interface EditSubcontractorModalProps {
   onChange: (updated: Subcontractor) => void
   onSubmit: (updated: Subcontractor) => void
 }
+
+const getContractId = (subcontractor: Subcontractor | null) =>
+  subcontractor ? ((subcontractor as any).contract_id || subcontractor.id) : null
 
 export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   visible,
@@ -41,6 +48,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [vatRate, setVatRate] = useState(0)
   const [vatAmount, setVatAmount] = useState(0)
   const [totalAmount, setTotalAmount] = useState(0)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [docViewerKey, setDocViewerKey] = useState(0)
 
   useEffect(() => {
     if (visible && subcontractor) {
@@ -158,6 +168,22 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       }
     } catch (error) {
       console.error('Error loading contract VAT data:', error)
+    }
+  }
+
+  const handleUploadFiles = async () => {
+    const contractId = getContractId(subcontractor)
+    if (!contractId || pendingFiles.length === 0) return
+
+    try {
+      setUploadingFiles(true)
+      await uploadContractDocuments(contractId, pendingFiles)
+      setPendingFiles([])
+      setDocViewerKey(k => k + 1)
+    } catch (error: any) {
+      alert(error.message || 'Greška pri uploadu dokumenata')
+    } finally {
+      setUploadingFiles(false)
     }
   }
 
@@ -353,6 +379,41 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
           )}
 
+        {hasContract && (
+          <div className="border-t border-gray-200 pt-4 mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-gray-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Postojeći dokumenti</p>
+              <ContractDocumentViewer
+                key={docViewerKey}
+                contractId={getContractId(subcontractor)!}
+              />
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Dodaj nove dokumente</p>
+              <ContractDocumentUpload
+                files={pendingFiles}
+                onChange={setPendingFiles}
+              />
+              {pendingFiles.length > 0 && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleUploadFiles}
+                  loading={uploadingFiles}
+                  className="mt-3"
+                >
+                  Učitaj {pendingFiles.length} {pendingFiles.length === 1 ? 'dokument' : 'dokumenata'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </Modal.Body>
 

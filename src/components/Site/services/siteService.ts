@@ -898,3 +898,82 @@ export const fetchContractTypes = async () => {
 
   return data || []
 }
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024
+
+export const uploadContractDocuments = async (contractId: string, files: File[]) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const results = []
+
+  for (const file of files) {
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File "${file.name}" exceeds the 25MB limit`)
+    }
+
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const timestamp = Date.now()
+    const filePath = `contracts/${contractId}/${timestamp}_${sanitizedName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('contract-documents')
+      .upload(filePath, file, { contentType: 'application/pdf' })
+
+    if (uploadError) throw uploadError
+
+    const { error: dbError } = await supabase
+      .from('contract_documents')
+      .insert({
+        contract_id: contractId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        uploaded_by: user.id
+      })
+
+    if (dbError) {
+      await supabase.storage.from('contract-documents').remove([filePath])
+      throw dbError
+    }
+
+    results.push({ filePath, fileName: file.name })
+  }
+
+  return results
+}
+
+export const fetchContractDocuments = async (contractId: string) => {
+  const { data, error } = await supabase
+    .from('contract_documents')
+    .select('*')
+    .eq('contract_id', contractId)
+    .order('uploaded_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export const deleteContractDocument = async (documentId: string, filePath: string) => {
+  const { error: storageError } = await supabase.storage
+    .from('contract-documents')
+    .remove([filePath])
+
+  if (storageError) throw storageError
+
+  const { error: dbError } = await supabase
+    .from('contract_documents')
+    .delete()
+    .eq('id', documentId)
+
+  if (dbError) throw dbError
+}
+
+export const getContractDocumentSignedUrl = async (filePath: string) => {
+  const { data, error } = await supabase.storage
+    .from('contract-documents')
+    .createSignedUrl(filePath, 3600)
+
+  if (error) throw error
+  return data.signedUrl
+}

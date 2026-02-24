@@ -21,10 +21,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       has_contract?: boolean
       financed_by_type?: 'bank' | null
       financed_by_bank_id?: string | null
-    }
+    },
+    pendingFiles?: File[]
   ) => {
     try {
       const hasContract = data.has_contract !== false
+
+      let newContractId: string | null = null
 
       if (data.useExisting) {
         if (!data.existing_subcontractor_id) {
@@ -37,7 +40,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
         const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
-        await siteService.createContract({
+        const newContract = await siteService.createContract({
           contract_number: contractNumber,
           project_id: phaseData.project_id,
           phase_id: phase.id,
@@ -55,6 +58,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           contract_type_id: data.contract_type_id || 0,
           has_contract: hasContract
         })
+        newContractId = newContract.id
         if (hasContract) {
           await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
         }
@@ -75,7 +79,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           financed_by_type: data.financed_by_type || null,
           financed_by_bank_id: data.financed_by_bank_id || null
         })
-        await siteService.createContract({
+        const newContract = await siteService.createContract({
           contract_number: contractNumber,
           project_id: phaseData.project_id,
           phase_id: phase.id,
@@ -93,8 +97,18 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           contract_type_id: data.contract_type_id || 0,
           has_contract: hasContract
         })
+        newContractId = newContract.id
         if (hasContract) {
           await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
+        }
+      }
+
+      if (newContractId && pendingFiles && pendingFiles.length > 0 && hasContract) {
+        try {
+          await siteService.uploadContractDocuments(newContractId, pendingFiles)
+        } catch (uploadError) {
+          console.error('Error uploading contract documents:', uploadError)
+          alert('Subcontractor added but some documents failed to upload. You can add them later from the edit form.')
         }
       }
 

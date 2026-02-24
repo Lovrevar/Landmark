@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Briefcase, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Users, Briefcase, AlertCircle, Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge, SearchInput, Button, Input, FormField, ConfirmDialog } from '../ui'
 import { format, differenceInDays } from 'date-fns'
+import { ContractDocumentViewer } from '../Site/components/ContractDocumentViewer'
 
 interface Subcontractor {
   id: string
@@ -56,6 +57,7 @@ const SubcontractorManagement: React.FC = () => {
     contact: '',
     notes: ''
   })
+  const [viewingContractDocuments, setViewingContractDocuments] = useState<{ contractId: string; label: string } | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -505,17 +507,34 @@ const SubcontractorManagement: React.FC = () => {
                           )}
                           <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
                         </div>
-                        {hasValidContract && (
-                          <Badge
-                            variant={
-                              contract.progress >= 100 ? 'green' :
-                              contract.progress > 0 ? 'blue' :
-                              'gray'
-                            }
-                          >
-                            {contract.progress}% Complete
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {hasValidContract && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setViewingContractDocuments({
+                                  contractId: contract.id,
+                                  label: `${contract.project_name}${contract.phase_name ? ` · ${contract.phase_name}` : ''}`
+                                })
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Prikaži dokumente ugovora"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
+                          {hasValidContract && (
+                            <Badge
+                              variant={
+                                contract.progress >= 100 ? 'green' :
+                                contract.progress > 0 ? 'blue' :
+                                'gray'
+                              }
+                            >
+                              {contract.progress}% Complete
+                            </Badge>
+                          )}
+                        </div>
                       </div>
 
                       {hasValidContract ? (
@@ -575,6 +594,28 @@ const SubcontractorManagement: React.FC = () => {
                   )
                 })}
               </div>
+            </Modal.Body>
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        show={!!viewingContractDocuments}
+        onClose={() => setViewingContractDocuments(null)}
+        size="md"
+      >
+        {viewingContractDocuments && (
+          <>
+            <Modal.Header
+              title="Dokumenti ugovora"
+              subtitle={viewingContractDocuments.label}
+              onClose={() => setViewingContractDocuments(null)}
+            />
+            <Modal.Body>
+              <ContractDocumentViewer
+                contractId={viewingContractDocuments.contractId}
+                readOnly
+              />
             </Modal.Body>
           </>
         )}

@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, Plus } from 'lucide-react'
+import { Building2, Plus, FileText } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { SubcontractorFormData, ContractType } from '../types/siteTypes'
 import { fetchProjectFunders } from '../services/siteService'
 import { supabase } from '../../../lib/supabase'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
+import { ContractDocumentUpload } from '../components/ContractDocumentUpload'
 
 interface SubcontractorFormModalProps {
   visible: boolean
   onClose: () => void
   phase: ProjectPhase | null
   existingSubcontractors: Subcontractor[]
-  onSubmit: (data: SubcontractorFormData, useExisting: boolean) => void
+  onSubmit: (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => void
   projectId: string
 }
 
@@ -58,6 +59,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [newCategoryDescription, setNewCategoryDescription] = useState('')
   const [savingCategory, setSavingCategory] = useState(false)
   const [categoryError, setCategoryError] = useState<string | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   useEffect(() => {
     if (!hasContract) {
@@ -195,7 +197,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const getFunderValue = () => formData.financed_by_bank_id || ''
 
   const handleSubmit = () => {
-    onSubmit(formData, useExistingSubcontractor)
+    onSubmit(formData, useExistingSubcontractor, pendingFiles)
   }
 
   if (!visible || !phase) return null
@@ -527,6 +529,19 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                 </FormField>
               </div>
             )}
+          </div>
+        )}
+        {hasContract && (
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-gray-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
+              <span className="text-xs text-gray-500">(opcionalno)</span>
+            </div>
+            <ContractDocumentUpload
+              files={pendingFiles}
+              onChange={setPendingFiles}
+            />
           </div>
         )}
       </Modal.Body>
