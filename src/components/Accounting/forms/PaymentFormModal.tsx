@@ -66,7 +66,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     value={paymentFormData.payment_source_type}
                     onChange={(e) => onFormChange({
                       ...paymentFormData,
-                      payment_source_type: e.target.value as 'bank_account' | 'credit' | 'kompenzacija',
+                      payment_source_type: e.target.value as 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina',
                       company_bank_account_id: '',
                       credit_id: ''
                     })}
@@ -75,6 +75,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     <option value="bank_account">Bankovni račun</option>
                     <option value="credit">Kredit</option>
                     <option value="kompenzacija">Kompenzacija</option>
+                    <option value="gotovina">Gotovina</option>
                   </Select>
                 </FormField>
 
