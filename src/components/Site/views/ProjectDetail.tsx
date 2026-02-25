@@ -294,7 +294,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           {canManagePayments && (
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {project.subcontractors.filter(s => s.budget_realized >= s.cost).length}
+                {project.subcontractors.filter(s => {
+                  const sub = s as any
+                  if (sub.has_contract) {
+                    return sub.budget_realized >= sub.cost && sub.cost > 0
+                  }
+                  return (sub.invoice_total_owed ?? 0) === 0 && (sub.invoice_total_paid ?? 0) > 0
+                }).length}
               </div>
               <div className="text-sm text-gray-600">Fully Paid</div>
             </div>
