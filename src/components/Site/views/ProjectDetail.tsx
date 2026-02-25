@@ -308,7 +308,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div className="text-2xl font-bold text-teal-600">
                 €{project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString('hr-HR')}
               </div>
-              <div className="text-sm text-gray-600">Total Paid</div>
+              <div className="text-sm text-gray-600">Total Paid</div> €{totalUnpaid.toLocaleString('hr-HR')}
             </div>
           )}
         </div>
