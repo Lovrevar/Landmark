@@ -310,7 +310,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
               <div className="text-sm text-gray-600">Total Paid</div>
             </div>
-          )}e
+          )}
         </div>
       </div>
     </div>
