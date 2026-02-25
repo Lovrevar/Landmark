@@ -25,7 +25,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
         due_date,
         retail_contract_id,
         retail_customer_id,
-        retail_contracts (contract_number),
+        retail_contracts (contract_number, retail_customers (name), retail_suppliers (name)),
         retail_customers (name)
       `)
       .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
@@ -64,7 +64,10 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     .map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
-      customer_name: (inv.retail_customers as any)?.name || 'N/A',
+      customer_name: (inv.retail_customers as any)?.name
+        || (inv.retail_contracts as any)?.retail_customers?.name
+        || (inv.retail_contracts as any)?.retail_suppliers?.name
+        || inv.invoice_number,
       contract_number: (inv.retail_contracts as any)?.contract_number || 'N/A',
       remaining_amount: parseFloat(inv.remaining_amount || 0),
       due_date: inv.due_date || '',
