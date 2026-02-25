@@ -39,6 +39,7 @@ import RetailCustomers from './components/Retail/RetailCustomers'
 import RetailSales from './components/Retail/RetailSales'
 import RetailReports from './components/Retail/RetailReports'
 import RetailProjects from './components/Retail/Projects/RetailProjects'
+import RetailInvoicesManagement from './components/Retail/RetailInvoicesManagement'
 import TICManagement from './components/Finance/TIC/TICManagement'
 import CreditsManagement from './components/Finance/credits/CreditsManagement'
 
@@ -378,6 +379,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <RetailSalesPaymentsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/retail-invoices"
+          element={
+            <ProtectedRoute>
+              <RetailInvoicesManagement />
             </ProtectedRoute>
           }
         />
