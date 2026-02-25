@@ -71,9 +71,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 {visibleColumns.invoice_type && (
                   <Table.Td>
                     <span className={`text-xs font-semibold ${
-                      invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK'
+                      invoice.invoice_type.startsWith('INCOMING_')
                       ? 'text-red-600' : 'text-green-600'}`}>
-                      {invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK'
+                      {invoice.invoice_type.startsWith('INCOMING_')
                       ? 'RASHOD' : 'PRIHOD'}
                     </span>
                   </Table.Td>

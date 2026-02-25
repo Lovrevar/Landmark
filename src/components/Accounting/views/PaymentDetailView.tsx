@@ -54,10 +54,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
     )
   }
 
-  const isExpense = invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
-    invoice?.invoice_type === 'OUTGOING_SUPPLIER' ||
-    invoice?.invoice_type === 'INCOMING_OFFICE' ||
-    invoice?.invoice_type === 'OUTGOING_BANK'
+  const isExpense = invoice?.invoice_type.startsWith('INCOMING_') ?? false
 
   const getPaymentSourceTypeLabel = () => {
     if (payment.is_cesija) return 'Cesija'

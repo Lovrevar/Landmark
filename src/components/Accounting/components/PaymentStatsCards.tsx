@@ -23,7 +23,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   const vatInAmount = payments
     .filter(p => {
       const invoice = p.accounting_invoices
-      return invoice && (invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE')
+      return invoice && invoice.invoice_type.startsWith('INCOMING_')
     })
     .reduce((sum, p) => {
       const invoice = p.accounting_invoices
@@ -36,7 +36,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   const vatOutAmount = payments
     .filter(p => {
       const invoice = p.accounting_invoices
-      return invoice && (invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES' || invoice.invoice_type === 'OUTGOING_OFFICE')
+      return invoice && invoice.invoice_type.startsWith('OUTGOING_')
     })
     .reduce((sum, p) => {
       const invoice = p.accounting_invoices
@@ -49,7 +49,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   const totalExpense = payments
     .filter(p => {
       const invoice = p.accounting_invoices
-      return invoice && (invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE' || invoice.invoice_type === 'OUTGOING_BANK')
+      return invoice && invoice.invoice_type.startsWith('INCOMING_')
     })
     .reduce((sum, p) => sum + p.amount, 0)
     .toLocaleString('hr-HR')
@@ -57,7 +57,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   const totalIncome = payments
     .filter(p => {
       const invoice = p.accounting_invoices
-      return invoice && (invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES' || invoice.invoice_type === 'OUTGOING_OFFICE')
+      return invoice && invoice.invoice_type.startsWith('OUTGOING_')
     })
     .reduce((sum, p) => sum + p.amount, 0)
     .toLocaleString('hr-HR')
