@@ -93,7 +93,7 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
     if (account.id) {
       const now = new Date().toISOString()
       const resetAt = account.balance_reset_at
-        ? new Date(`${account.balance_reset_at}T00:00:00`).toISOString()
+        ? `${account.balance_reset_at}T00:00:00+00:00`
         : now
       const { error: updateError } = await supabase
         .from('company_bank_accounts')
