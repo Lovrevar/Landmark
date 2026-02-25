@@ -20,6 +20,16 @@ export const fetchPayments = async () => {
         office_suppliers:office_supplier_id (name),
         bank_company:bank_id (name),
         retail_suppliers:retail_supplier_id (name)
+      ),
+      company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey (
+        id,
+        bank_name,
+        iban
+      ),
+      bank_credit:bank_credits!accounting_payments_credit_id_fkey (
+        id,
+        credit_name,
+        company:accounting_companies (name)
       )
     `)
     .order('payment_date', { ascending: false })

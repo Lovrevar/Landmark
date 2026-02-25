@@ -38,6 +38,18 @@ export interface Company {
   name: string
 }
 
+export interface PaymentBankAccount {
+  id: string
+  bank_name: string
+  iban?: string | null
+}
+
+export interface PaymentBankCredit {
+  id: string
+  credit_name: string
+  company?: { name: string } | null
+}
+
 export interface Payment {
   id: string
   invoice_id: string
@@ -50,6 +62,11 @@ export interface Payment {
   is_cesija: boolean
   cesija_company_id: string | null
   cesija_company_name?: string
+  payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | null
+  company_bank_account_id?: string | null
+  credit_id?: string | null
+  company_bank_account?: PaymentBankAccount | null
+  bank_credit?: PaymentBankCredit | null
   accounting_invoices?: Invoice
 }
 

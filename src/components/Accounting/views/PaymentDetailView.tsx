@@ -1,5 +1,6 @@
 import React from 'react'
 import { format } from 'date-fns'
+import { Building2, CreditCard, Banknote, ArrowLeftRight } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from '../types/paymentTypes'
 import { Modal, Button } from '../../ui'
@@ -141,6 +142,57 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
                 <p className="text-sm font-medium text-gray-900">{getSupplierCustomerName()}</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {(payment.payment_source_type || payment.company_bank_account || payment.bank_credit) && (
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-600 mb-3">Izvor plaćanja</h3>
+            {payment.payment_source_type === 'kompenzacija' ? (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <ArrowLeftRight className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">Kompenzacija</p>
+                  <p className="text-xs text-amber-600">Plaćanje putem kompenzacije</p>
+                </div>
+              </div>
+            ) : payment.payment_source_type === 'credit' && payment.bank_credit ? (
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <CreditCard className="w-5 h-5 text-blue-600 shrink-0" />
+                <div>
+                  <p className="text-xs text-blue-500 uppercase tracking-wide font-medium mb-0.5">Kredit</p>
+                  <p className="text-sm font-semibold text-blue-900">{payment.bank_credit.credit_name}</p>
+                  {payment.bank_credit.company?.name && (
+                    <p className="text-xs text-blue-600">{payment.bank_credit.company.name}</p>
+                  )}
+                </div>
+              </div>
+            ) : payment.payment_source_type === 'bank_account' && payment.company_bank_account ? (
+              <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-lg p-3">
+                <Building2 className="w-5 h-5 text-teal-600 shrink-0" />
+                <div>
+                  <p className="text-xs text-teal-500 uppercase tracking-wide font-medium mb-0.5">Bankovni račun</p>
+                  <p className="text-sm font-semibold text-teal-900">{payment.company_bank_account.bank_name}</p>
+                  {payment.company_bank_account.iban && (
+                    <p className="text-xs text-teal-600 font-mono">{payment.company_bank_account.iban}</p>
+                  )}
+                </div>
+              </div>
+            ) : payment.payment_source_type === 'bank_account' && !payment.company_bank_account ? (
+              <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-lg p-3">
+                <Building2 className="w-5 h-5 text-teal-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-teal-900">Bankovni račun</p>
+                </div>
+              </div>
+            ) : payment.payment_source_type === 'credit' && !payment.bank_credit ? (
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <CreditCard className="w-5 h-5 text-blue-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">Kredit</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
