@@ -45,13 +45,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
 
   const total_supplier_paid = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
 
-  const total_remaining = invoices
-    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL' || inv.status === 'PARTIALLY_PAID')
-    .reduce((sum, inv) => {
-      const total = parseFloat(inv.total_amount || 0) + parseFloat(inv.vat_amount || 0)
-      const paid = parseFloat(inv.paid_amount || 0)
-      return sum + Math.max(0, total - paid)
-    }, 0)
+  const total_remaining = invoices.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
 
   const paymentsResult = await supabase
     .from('accounting_payments')
