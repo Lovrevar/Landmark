@@ -1,8 +1,8 @@
 export interface DashboardStats {
-  total_plots: number
-  total_area: number
-  total_invested: number
+  total_projects: number
   total_customers: number
+  total_invested: number
+  total_costs: number
   total_revenue: number
   total_paid: number
   total_remaining: number

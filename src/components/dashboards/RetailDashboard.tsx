@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
 import StatCard from '../ui/StatCard'
-import { BarChart3, MapPin, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
+import { BarChart3, FolderOpen, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
 
 const defaultStats: DashboardStats = {
-  total_plots: 0,
-  total_area: 0,
-  total_invested: 0,
+  total_projects: 0,
   total_customers: 0,
+  total_invested: 0,
+  total_costs: 0,
   total_revenue: 0,
   total_paid: 0,
   total_remaining: 0,
@@ -39,6 +39,8 @@ const RetailDashboard: React.FC = () => {
     }
   }
 
+  const fmt = (n: number) => `€${n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
   if (loading) {
     return <LoadingSpinner size="lg" message="Učitavanje..." />
   }
@@ -47,15 +49,15 @@ const RetailDashboard: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Retail Dashboard</h1>
-        <p className="text-sm text-gray-600 mt-1">Pregled poslovanja sa zemljištima</p>
+        <p className="text-sm text-gray-600 mt-1">Pregled poslovanja</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="Zemljišta"
-          value={stats.total_plots}
-          subtitle={`${stats.total_area.toLocaleString()} m²`}
-          icon={MapPin}
+          label="Projekti"
+          value={stats.total_projects}
+          subtitle="Aktivnih projekata"
+          icon={FolderOpen}
           color="blue"
           size="lg"
         />
@@ -69,15 +71,15 @@ const RetailDashboard: React.FC = () => {
         />
         <StatCard
           label="Investirano"
-          value={`€${stats.total_invested.toLocaleString()}`}
-          subtitle="Kupovina zemljišta"
+          value={fmt(stats.total_invested)}
+          subtitle="Razvoj i gradnja (s PDV)"
           icon={DollarSign}
           color="orange"
           size="lg"
         />
         <StatCard
           label="Prihod"
-          value={`€${stats.total_revenue.toLocaleString()}`}
+          value={fmt(stats.total_revenue)}
           subtitle="Ukupne prodaje"
           icon={TrendingUp}
           color="teal"
@@ -94,15 +96,15 @@ const RetailDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Plaćeno:</span>
-              <span className="font-semibold text-green-600">€{stats.total_paid.toLocaleString()}</span>
+              <span className="font-semibold text-green-600">{fmt(stats.total_paid)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Za naplatu:</span>
-              <span className="font-semibold text-orange-600">€{stats.total_remaining.toLocaleString()}</span>
+              <span className="font-semibold text-orange-600">{fmt(stats.total_remaining)}</span>
             </div>
             <div className="pt-3 border-t flex justify-between">
               <span className="text-sm font-medium text-gray-700">Ukupno:</span>
-              <span className="font-bold text-gray-900">€{stats.total_revenue.toLocaleString()}</span>
+              <span className="font-bold text-gray-900">{fmt(stats.total_revenue)}</span>
             </div>
           </div>
         </div>
@@ -115,16 +117,16 @@ const RetailDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Naplata:</span>
-              <span className="font-semibold text-green-600">€{stats.total_paid.toLocaleString()}</span>
+              <span className="font-semibold text-green-600">{fmt(stats.total_paid)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Troškovi:</span>
-              <span className="font-semibold text-red-600">€{stats.total_invested.toLocaleString()}</span>
+              <span className="font-semibold text-red-600">{fmt(stats.total_costs)}</span>
             </div>
             <div className="pt-3 border-t flex justify-between">
               <span className="text-sm font-medium text-gray-700">Profit:</span>
               <span className={`font-bold text-lg ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.profit >= 0 ? '+' : ''}€{stats.profit.toLocaleString()}
+                {stats.profit >= 0 ? '+' : ''}{fmt(stats.profit)}
               </span>
             </div>
           </div>
@@ -137,21 +139,21 @@ const RetailDashboard: React.FC = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Cijena/m²:</span>
+              <span className="text-sm text-gray-600">Trošak/projekt:</span>
               <span className="font-semibold text-gray-900">
-                €{stats.total_area > 0 ? (stats.total_invested / stats.total_area).toFixed(2) : 0}
+                {stats.total_projects > 0 ? fmt(stats.total_costs / stats.total_projects) : '€0'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Po parceli:</span>
+              <span className="text-sm text-gray-600">Prihod/projekt:</span>
               <span className="font-semibold text-gray-900">
-                €{stats.total_plots > 0 ? (stats.total_invested / stats.total_plots).toLocaleString() : 0}
+                {stats.total_projects > 0 ? fmt(stats.total_revenue / stats.total_projects) : '€0'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Po kupcu:</span>
               <span className="font-semibold text-gray-900">
-                €{stats.total_customers > 0 ? (stats.total_revenue / stats.total_customers).toLocaleString() : 0}
+                {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : '€0'}
               </span>
             </div>
           </div>
@@ -183,7 +185,7 @@ const RetailDashboard: React.FC = () => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-red-600">€{invoice.remaining_amount.toLocaleString()}</p>
+                        <p className="font-bold text-red-600">{fmt(invoice.remaining_amount)}</p>
                         <p className="text-xs text-gray-500">za naplatu</p>
                       </div>
                     </div>
