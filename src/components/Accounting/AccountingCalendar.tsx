@@ -102,8 +102,15 @@ const AccountingCalendar: React.FC = () => {
           <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ulazni računi:</span>
+          <span className="text-gray-600">Ulazni računi (plaćeno):</span>
           <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Ulazni računi (neplaćeno):</span>
+          <div className="text-right">
+            <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
+            <span className="text-xs text-gray-500 ml-1">({monthStats.incomingUnpaidCount} rač.)</span>
+          </div>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
