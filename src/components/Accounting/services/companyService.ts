@@ -43,7 +43,10 @@ export const fetchBankAccountsForCompany = async (companyId: string) => {
   return (bankAccountsData || []).map(acc => ({
     id: acc.id,
     bank_name: acc.bank_name,
-    current_balance: acc.initial_balance
+    current_balance: acc.initial_balance,
+    balance_reset_at: acc.balance_reset_at
+      ? acc.balance_reset_at.split('T')[0]
+      : null
   }))
 }
 
@@ -88,14 +91,17 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 
   for (const account of formData.bankAccounts) {
     if (account.id) {
-      const resetAt = new Date().toISOString()
+      const now = new Date().toISOString()
+      const resetAt = account.balance_reset_at
+        ? new Date(`${account.balance_reset_at}T00:00:00`).toISOString()
+        : now
       const { error: updateError } = await supabase
         .from('company_bank_accounts')
         .update({
           initial_balance: account.current_balance,
           current_balance: account.current_balance,
           balance_reset_at: resetAt,
-          updated_at: resetAt
+          updated_at: now
         })
         .eq('id', account.id)
 

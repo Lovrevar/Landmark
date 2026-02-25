@@ -9,7 +9,7 @@ interface CompanyFormModalProps {
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   onAccountCountChange: (count: number) => void
-  onBankAccountChange: (index: number, field: 'bank_name' | 'current_balance', value: string | number) => void
+  onBankAccountChange: (index: number, field: 'bank_name' | 'current_balance' | 'balance_reset_at', value: string | number | null) => void
   onFormDataChange: (field: keyof CompanyFormData, value: any) => void
 }
 
@@ -95,6 +95,16 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                     placeholder="0.00"
                   />
                 </FormField>
+                {editingCompany && (
+                  <FormField label="Datum stanja" compact helperText="Plaćanja od ovog datuma ulaze u obračun stanja">
+                    <Input
+                      type="date"
+                      compact
+                      value={account.balance_reset_at || ''}
+                      onChange={(e) => onBankAccountChange(index, 'balance_reset_at', e.target.value || null)}
+                    />
+                  </FormField>
+                )}
               </div>
             ))}
           </div>

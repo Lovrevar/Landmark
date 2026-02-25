@@ -12,6 +12,7 @@ export interface BankAccount {
   account_number?: string | null
   initial_balance: number
   current_balance: number
+  balance_reset_at?: string | null
 }
 
 export interface Credit {
@@ -93,5 +94,6 @@ export interface CompanyFormData {
     id?: string
     bank_name: string
     current_balance: number
+    balance_reset_at?: string | null
   }>
 }
