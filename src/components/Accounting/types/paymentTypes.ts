@@ -44,9 +44,6 @@ export interface Payment {
   payment_date: string
   amount: number
   payment_method: 'WIRE' | 'CASH' | 'CHECK' | 'CARD'
-  payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | null
-  company_bank_account_id?: string | null
-  credit_id?: string | null
   reference_number: string | null
   description: string
   created_at: string
@@ -54,8 +51,6 @@ export interface Payment {
   cesija_company_id: string | null
   cesija_company_name?: string
   accounting_invoices?: Invoice
-  company_bank_accounts?: { id: string; bank_name: string; current_balance: number } | null
-  bank_credits?: { id: string; credit_name: string; outstanding_balance: number } | null
 }
 
 export interface PaymentFormData {
