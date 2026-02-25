@@ -115,22 +115,42 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: string) => {
   const resetDate = resetAt.split('T')[0]
 
-  const { data: payments } = await supabase
-    .from('accounting_payments')
-    .select(`
-      amount,
-      payment_date,
-      is_cesija,
-      cesija_bank_account_id,
-      company_bank_account_id,
-      accounting_invoices!inner(invoice_type)
-    `)
-    .or(`company_bank_account_id.eq.${bankAccountId},cesija_bank_account_id.eq.${bankAccountId}`)
-    .gte('payment_date', resetDate)
+  const [paymentsResult, loansFromResult, loansToResult, accountResult] = await Promise.all([
+    supabase
+      .from('accounting_payments')
+      .select(`
+        amount,
+        payment_date,
+        is_cesija,
+        cesija_bank_account_id,
+        company_bank_account_id,
+        accounting_invoices!inner(invoice_type)
+      `)
+      .or(`company_bank_account_id.eq.${bankAccountId},cesija_bank_account_id.eq.${bankAccountId}`)
+      .gte('payment_date', resetDate),
+
+    supabase
+      .from('company_loans')
+      .select('amount, loan_date')
+      .eq('from_bank_account_id', bankAccountId)
+      .gte('loan_date', resetDate),
+
+    supabase
+      .from('company_loans')
+      .select('amount, loan_date')
+      .eq('to_bank_account_id', bankAccountId)
+      .gte('loan_date', resetDate),
+
+    supabase
+      .from('company_bank_accounts')
+      .select('initial_balance')
+      .eq('id', bankAccountId)
+      .maybeSingle()
+  ])
 
   let delta = 0
 
-  for (const p of payments || []) {
+  for (const p of paymentsResult.data || []) {
     const invoiceType = (p.accounting_invoices as any)?.invoice_type as string
 
     if (p.company_bank_account_id === bankAccountId) {
@@ -145,13 +165,15 @@ const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: str
     }
   }
 
-  const { data: accountData } = await supabase
-    .from('company_bank_accounts')
-    .select('initial_balance')
-    .eq('id', bankAccountId)
-    .maybeSingle()
+  for (const loan of loansFromResult.data || []) {
+    delta -= loan.amount
+  }
 
-  const initialBalance = accountData?.initial_balance ?? 0
+  for (const loan of loansToResult.data || []) {
+    delta += loan.amount
+  }
+
+  const initialBalance = accountResult.data?.initial_balance ?? 0
 
   await supabase
     .from('company_bank_accounts')
