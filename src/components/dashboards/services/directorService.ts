@@ -178,7 +178,12 @@ export async function fetchConstructionMetrics(): Promise<ConstructionMetrics> {
   ])
 
   const today = new Date()
-  const completedContracts = (contracts || []).filter(c => c.status === 'completed').length
+  const completedContracts = (contracts || []).filter(c => {
+    const amount = Number(c.contract_amount)
+    const realized = Number(c.budget_realized)
+    if (amount > 0) return realized >= amount
+    return realized > 0
+  }).length
   const activeContracts = (contracts || []).filter(c => c.status === 'active').length
   const totalContractValue = (contracts || []).reduce((sum, c) => sum + Number(c.contract_amount), 0)
   const totalPaid = (invoices || []).reduce((sum, inv) => sum + Number(inv.paid_amount), 0)
