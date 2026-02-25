@@ -265,7 +265,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <div className="mt-4">
                 {!newCredit.company_id ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste videli dostupne bankovne račune.</p>
+                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste vidjeli dostupne bankovne račune.</p>
                   </div>
                 ) : loadingAccounts ? (
                   <div className="text-center py-4">
