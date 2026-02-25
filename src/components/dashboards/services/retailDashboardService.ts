@@ -46,7 +46,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
   const total_supplier_paid = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
 
   const total_remaining = invoices
-    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL')
+    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL' || inv.status === 'PARTIALLY_PAID')
     .reduce((sum, inv) => {
       const total = parseFloat(inv.total_amount || 0) + parseFloat(inv.vat_amount || 0)
       const paid = parseFloat(inv.paid_amount || 0)
@@ -66,7 +66,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
 
   const overdueInvoices: OverdueInvoice[] = invoices
-    .filter(inv => inv.status !== 'PAID' && inv.due_date && new Date(inv.due_date) < today)
+    .filter(inv => (inv.status === 'UNPAID' || inv.status === 'PARTIAL' || inv.status === 'PARTIALLY_PAID') && inv.due_date && new Date(inv.due_date) < today)
     .map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
