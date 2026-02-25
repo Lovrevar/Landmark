@@ -4,6 +4,7 @@ import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from '../types/paymentTypes'
 import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../utils/paymentHelpers'
+import { Building2, CreditCard, ArrowLeftRight } from 'lucide-react'
 
 interface PaymentDetailViewProps {
   payment: Payment | null
@@ -144,16 +145,46 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
           </div>
         )}
 
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-semibold text-gray-600 mb-2">Izvor plaćanja</h3>
+          {payment.payment_source_type === 'bank_account' && payment.company_bank_accounts ? (
+            <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-lg p-3">
+              <Building2 className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-blue-900">Bankovni račun</p>
+                <p className="text-sm text-blue-700">{payment.company_bank_accounts.bank_name}</p>
+              </div>
+            </div>
+          ) : payment.payment_source_type === 'credit' && payment.bank_credits ? (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-lg p-3">
+              <CreditCard className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Kredit</p>
+                <p className="text-sm text-amber-700">{payment.bank_credits.credit_name}</p>
+              </div>
+            </div>
+          ) : payment.payment_source_type === 'kompenzacija' ? (
+            <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <ArrowLeftRight className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Kompenzacija</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 italic">Izvor plaćanja nije definiran</p>
+          )}
+        </div>
+
         {payment.is_cesija && payment.cesija_company_name && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 mb-2">Cesija</h3>
-            <div className="bg-purple-50 p-3 rounded">
+            <div className="bg-teal-50 border border-teal-100 p-3 rounded-lg">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-purple-700 font-medium">Ovo je cesija plaćanje</span>
+                <span className="text-sm text-teal-700 font-medium">Ovo je cesija plaćanje</span>
               </div>
               <div className="mt-2">
-                <span className="text-sm text-purple-600">Cesija firma:</span>
-                <p className="text-sm font-medium text-purple-900">{payment.cesija_company_name}</p>
+                <span className="text-sm text-teal-600">Cesija firma:</span>
+                <p className="text-sm font-medium text-teal-900">{payment.cesija_company_name}</p>
               </div>
             </div>
           </div>
