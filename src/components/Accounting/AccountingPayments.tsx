@@ -123,7 +123,7 @@ const AccountingPayments: React.FC = () => {
             <label className="text-xs text-gray-600 mb-1">Datum OD</label>
             <DateInput
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={setDateFrom}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -132,7 +132,7 @@ const AccountingPayments: React.FC = () => {
             <label className="text-xs text-gray-600 mb-1">Datum DO</label>
             <DateInput
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={setDateTo}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
