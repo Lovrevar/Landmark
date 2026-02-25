@@ -5,17 +5,18 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
   const [
     { data: projects },
     { data: customers },
-    { data: contracts },
-    { data: salesInvoices }
+    contractsResult,
+    invoicesResult
   ] = await Promise.all([
     supabase.from('retail_projects').select('id'),
     supabase.from('retail_customers').select('id'),
-    supabase.from('retail_contracts').select('id, budget_realized, phase_id, retail_phases(phase_type)'),
+    supabase.from('retail_contracts').select('budget_realized'),
     supabase
       .from('accounting_invoices')
       .select(`
         id,
         invoice_number,
+        invoice_type,
         total_amount,
         paid_amount,
         remaining_amount,
@@ -23,38 +24,43 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
         due_date,
         retail_contract_id,
         retail_customer_id,
-        retail_contracts (contract_number, customer_id),
+        retail_contracts (contract_number),
         retail_customers (name)
       `)
-      .eq('invoice_type', 'OUTGOING_SALES')
       .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
   ])
 
+  const contracts = contractsResult.data || []
+  const invoices = invoicesResult.data || []
   const today = new Date()
 
-  const total_invested = (contracts || [])
-    .filter(c => {
-      const phaseType = (c.retail_phases as any)?.phase_type
-      return phaseType === 'development' || phaseType === 'construction'
-    })
-    .reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
-
+  const total_invested = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
   const total_costs = total_invested
 
-  const { data: payments } = await supabase
-    .from('accounting_payments')
-    .select('amount, invoice_id, accounting_invoices!inner(retail_contract_id)')
-    .not('accounting_invoices.retail_contract_id', 'is', null)
+  const outgoingInvoices = invoices.filter(
+    inv => inv.invoice_type === 'OUTGOING_SALES' || inv.invoice_type === 'OUTGOING'
+  )
+  const total_revenue = outgoingInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
 
-  const total_paid = (payments || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+  const total_supplier_paid = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
 
-  const total_remaining = (salesInvoices || [])
+  const total_remaining = invoices
     .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIAL')
     .reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
 
-  const total_revenue = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
+  const paymentsResult = await supabase
+    .from('accounting_payments')
+    .select('amount, accounting_invoices!inner(invoice_type, retail_contract_id, retail_customer_id)')
+    .or('accounting_invoices.retail_contract_id.not.is.null,accounting_invoices.retail_customer_id.not.is.null')
 
-  const overdueInvoices: OverdueInvoice[] = (salesInvoices || [])
+  const total_paid = (paymentsResult.data || [])
+    .filter(p => {
+      const inv = p.accounting_invoices as any
+      return inv?.invoice_type === 'OUTGOING_SALES' || inv?.invoice_type === 'OUTGOING'
+    })
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+  const overdueInvoices: OverdueInvoice[] = invoices
     .filter(inv => inv.status !== 'PAID' && inv.due_date && new Date(inv.due_date) < today)
     .map(inv => ({
       id: inv.id,
@@ -74,6 +80,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     total_costs,
     total_revenue,
     total_paid,
+    total_supplier_paid,
     total_remaining,
     profit: total_paid - total_costs
   }

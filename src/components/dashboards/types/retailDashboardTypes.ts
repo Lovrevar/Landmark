@@ -5,6 +5,7 @@ export interface DashboardStats {
   total_costs: number
   total_revenue: number
   total_paid: number
+  total_supplier_paid: number
   total_remaining: number
   profit: number
 }

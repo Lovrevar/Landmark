@@ -96,15 +96,15 @@ const RetailDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Plaćeno:</span>
-              <span className="font-semibold text-green-600">{fmt(stats.total_paid)}</span>
+              <span className="font-semibold text-green-600">{fmt(stats.total_supplier_paid)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Za naplatu:</span>
               <span className="font-semibold text-orange-600">{fmt(stats.total_remaining)}</span>
             </div>
             <div className="pt-3 border-t flex justify-between">
-              <span className="text-sm font-medium text-gray-700">Ukupno:</span>
-              <span className="font-bold text-gray-900">{fmt(stats.total_revenue)}</span>
+              <span className="text-sm font-medium text-gray-700">Ukupno fakturirano:</span>
+              <span className="font-bold text-gray-900">{fmt(stats.total_supplier_paid + stats.total_remaining)}</span>
             </div>
           </div>
         </div>
