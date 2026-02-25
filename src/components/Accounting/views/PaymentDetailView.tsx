@@ -59,6 +59,27 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
     invoice?.invoice_type === 'INCOMING_OFFICE' ||
     invoice?.invoice_type === 'OUTGOING_BANK'
 
+  const getPaymentSourceTypeLabel = () => {
+    if (payment.is_cesija) return 'Cesija'
+    switch (payment.payment_source_type) {
+      case 'bank_account': return 'Bankovni račun'
+      case 'credit': return 'Kredit'
+      case 'kompenzacija': return 'Kompenzacija'
+      default: return '-'
+    }
+  }
+
+  const getPaymentSourceName = () => {
+    if (payment.is_cesija) return payment.cesija_company_name || '-'
+    if (payment.payment_source_type === 'bank_account') {
+      return payment.company_bank_accounts?.bank_name || '-'
+    }
+    if (payment.payment_source_type === 'credit') {
+      return payment.bank_credits?.credit_name || '-'
+    }
+    return '-'
+  }
+
   return (
     <Modal show={!!payment} onClose={onClose} size="lg">
       <Modal.Header title="Detalji plaćanja" onClose={onClose} />
@@ -92,6 +113,16 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
                   &euro;{formatCurrency(payment.amount)}
                 </p>
               </div>
+              <div>
+                <span className="text-sm text-gray-500">Način izvora plaćanja:</span>
+                <p className="text-sm font-medium text-gray-900">{getPaymentSourceTypeLabel()}</p>
+              </div>
+              {payment.payment_source_type !== 'kompenzacija' && !payment.is_cesija && (
+                <div>
+                  <span className="text-sm text-gray-500">Izvor plaćanja:</span>
+                  <p className="text-sm font-medium text-gray-900">{getPaymentSourceName()}</p>
+                </div>
+              )}
             </div>
           </div>
 

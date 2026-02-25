@@ -50,6 +50,11 @@ export interface Payment {
   is_cesija: boolean
   cesija_company_id: string | null
   cesija_company_name?: string
+  payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | null
+  credit_id?: string | null
+  company_bank_account_id?: string | null
+  company_bank_accounts?: { bank_name: string; account_number?: string } | null
+  bank_credits?: { credit_name: string } | null
   accounting_invoices?: Invoice
 }
 

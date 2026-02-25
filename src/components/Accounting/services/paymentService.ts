@@ -6,6 +6,8 @@ export const fetchPayments = async () => {
     .from('accounting_payments')
     .select(`
       *,
+      company_bank_accounts:company_bank_account_id (bank_name, account_number),
+      bank_credits:credit_id (credit_name),
       accounting_invoices (
         id,
         invoice_number,
