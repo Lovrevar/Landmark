@@ -252,9 +252,6 @@ export const generateInvestmentReportPDF = async (
   }).length
 
   const insights = []
-  if (highUtilizationCredits > 0) {
-    insights.push(`⚠ ${highUtilizationCredits} investment(s) with high utilization (>80%)`)
-  }
   insights.push(`Total Investment Lines: €${formatEuropean(financialSummary.total_credit_lines)}`)
   insights.push(`Active Investments: ${activeCredits} of ${bankCredits.length}`)
   insights.push(`Average Interest Rate: ${financialSummary.weighted_avg_interest.toFixed(2)}%`)
@@ -262,7 +259,7 @@ export const generateInvestmentReportPDF = async (
     insights.push(`⚠ ${financialSummary.upcoming_maturities} investment(s) maturing within 90 days`)
   }
   if (highUtilizationCredits > 0) {
-    insights.push(`⚠ ${highUtilizationCredits} investment(s) with high utilization (>80%)`)
+    insights.push(`⚠  investment(s) with high utilization (>80%)`)
   }
 
   const insightBoxHeight = insights.length * 6 + 8
