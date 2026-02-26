@@ -81,12 +81,6 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => (
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Budget Used</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {sub.cost > 0 ? ((sub.budget_realized / sub.cost) * 100).toFixed(0) : 0}%
-                  </p>
-                </div>
-                <div>
                   <p className="text-xs text-gray-600">Last Activity</p>
                   <p className="text-sm font-medium text-gray-900">
                     {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : 'No logs'}
