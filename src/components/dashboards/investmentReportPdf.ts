@@ -259,7 +259,7 @@ export const generateInvestmentReportPDF = async (
     insights.push(`⚠ ${financialSummary.upcoming_maturities} investment(s) maturing within 90 days`)
   }
   if (highUtilizationCredits > 0) {
-    insights.push(`⚠ ${highUtilizationCredits} investment(s) with high utilization (>80%)`)
+    insights.push(`⚠  investment(s) with high utilization (>80%)`)
   }
 
   const insightBoxHeight = insights.length * 6 + 8
