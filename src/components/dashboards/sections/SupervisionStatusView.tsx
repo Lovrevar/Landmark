@@ -73,9 +73,9 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => (
                     sub.days_until_deadline <= 7 ? 'text-orange-600' :
                     'text-gray-900'
                   }`}>
-                    {format(parseISO(sub.deadline), 'MMM dd')}
+                    {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd') : 'N/A'}
                     {sub.is_overdue && <span className="ml-1">({Math.abs(sub.days_until_deadline)}d over)</span>}
-                    {!sub.is_overdue && sub.days_until_deadline <= 7 && (
+                    {!sub.is_overdue && sub.deadline && sub.days_until_deadline <= 7 && (
                       <span className="ml-1">({sub.days_until_deadline}d left)</span>
                     )}
                   </p>
