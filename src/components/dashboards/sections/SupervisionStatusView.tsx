@@ -54,7 +54,7 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => (
                   <div className={`text-2xl font-bold ${getProgressTextColor(sub)}`}>
                     {sub.progress}%
                   </div>
-                  <p className="text-xs text-gray-500">Complete</p>
+                  <p className="text-xs text-gray-500">Paid Out</p>
                 </div>
               </div>
 
