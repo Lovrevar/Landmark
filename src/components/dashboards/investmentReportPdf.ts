@@ -278,7 +278,7 @@ if (highUtilizationCredits > 0) {
     yPos += 5
   })
 
-  yPos += 100
+  yPos += 10
 
   yPos = addSectionTitle(doc, 'INVESTMENT DISTRIBUTION BY PROJECT', yPos)
 
