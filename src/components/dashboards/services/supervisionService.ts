@@ -91,8 +91,8 @@ export async function fetchSubcontractorStatus(contracts: any[]): Promise<Subcon
 
   return contracts.map((sub, i) => {
     const recentLogs = recentLogsResults[i].data || []
-    const daysUntilDeadline = differenceInDays(parseISO(sub.deadline), new Date())
-    const isOverdue = daysUntilDeadline < 0 && sub.progress < 100
+    const daysUntilDeadline = sub.deadline ? differenceInDays(parseISO(sub.deadline), new Date()) : 999
+    const isOverdue = sub.deadline ? daysUntilDeadline < 0 && sub.progress < 100 : false
     const lastActivity = recentLogs.length > 0 ? recentLogs[0].date : null
 
     return {
