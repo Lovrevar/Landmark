@@ -9,6 +9,7 @@ export interface ProjectWithPhases extends Project {
   has_phases: boolean
   total_budget_allocated: number
   total_paid_out: number
+  total_contracted: number
 }
 
 export interface SubcontractorWithPhase extends Subcontractor {

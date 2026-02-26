@@ -77,18 +77,18 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-gray-600">Budget Allocation</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {project.budget > 0 ? ((project.total_budget_allocated / project.budget) * 100).toFixed(0) : 0}%
+                      {project.budget > 0 ? ((project.total_contracted / project.budget) * 100).toFixed(0) : 0}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                     {(() => {
-                      const allocPct = project.budget > 0 ? Math.min((project.total_budget_allocated / project.budget) * 100, 100) : 0
+                      const contractedPct = project.budget > 0 ? Math.min((project.total_contracted / project.budget) * 100, 100) : 0
                       const paidPct = project.budget > 0 ? Math.min((project.total_paid_out / project.budget) * 100, 100) : 0
-                      const remainingAllocPct = Math.max(allocPct - paidPct, 0)
+                      const remainingContractedPct = Math.max(contractedPct - paidPct, 0)
                       return (
                         <div className="h-full flex rounded-full overflow-hidden">
                           <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${paidPct}%` }} />
-                          <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${remainingAllocPct}%` }} />
+                          <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${remainingContractedPct}%` }} />
                         </div>
                       )
                     })()}
@@ -100,7 +100,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                      Allocated
+                      Contracted
                     </span>
                   </div>
                 </div>

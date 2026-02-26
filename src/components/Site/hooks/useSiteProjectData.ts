@@ -49,6 +49,10 @@ export const useSiteProjectData = () => {
         }).length
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
+        const total_contracted = projectSubcontractors.reduce((sum, sub) => {
+          const hasContract = (sub as any).has_contract === true
+          return sum + (hasContract ? (sub.cost || 0) : ((sub as any).invoice_total_paid || 0))
+        }, 0)
 
         return {
           ...project,
@@ -59,7 +63,8 @@ export const useSiteProjectData = () => {
           overdue_subcontractors,
           has_phases,
           total_budget_allocated,
-          total_paid_out
+          total_paid_out,
+          total_contracted
         }
       })
 
