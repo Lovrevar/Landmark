@@ -8,7 +8,7 @@ const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
   maximumFractionDigits: 0
 }).format(n)
 
-async function loadUnicodeFont(pdf: any): Promise<{ regular: string; bold: string }> {
+async function loadUnicodeFont(pdf: any): Promise<void> {
   const toBase64 = (buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer)
     let binary = ''
@@ -18,26 +18,24 @@ async function loadUnicodeFont(pdf: any): Promise<{ regular: string; bold: strin
     return btoa(binary)
   }
 
+  // Direct TTF links from Google Fonts CDN (Noto Sans supports Latin Extended including Croatian)
   const [regularRes, boldRes] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2'),
-    fetch('https://fonts.gstatic.com/s/roboto/v32/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.woff2')
+    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf'),
+    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf')
   ])
+
+  if (!regularRes.ok || !boldRes.ok) throw new Error('Font fetch failed')
 
   const [regularBuffer, boldBuffer] = await Promise.all([
     regularRes.arrayBuffer(),
     boldRes.arrayBuffer()
   ])
 
-  const regularBase64 = toBase64(regularBuffer)
-  const boldBase64 = toBase64(boldBuffer)
+  pdf.addFileToVFS('NotoSans-Regular.ttf', toBase64(regularBuffer))
+  pdf.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
 
-  pdf.addFileToVFS('Roboto-Regular.ttf', regularBase64)
-  pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal')
-
-  pdf.addFileToVFS('Roboto-Bold.ttf', boldBase64)
-  pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold')
-
-  return { regular: 'Roboto', bold: 'Roboto' }
+  pdf.addFileToVFS('NotoSans-Bold.ttf', toBase64(boldBuffer))
+  pdf.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold')
 }
 
 export async function generateRetailReportPdf(data: RetailReportData) {
@@ -47,7 +45,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   let fontFamily = 'helvetica'
   try {
     await loadUnicodeFont(pdf)
-    fontFamily = 'Roboto'
+    fontFamily = 'NotoSans'
   } catch {
     // fall back to helvetica if font load fails
   }
