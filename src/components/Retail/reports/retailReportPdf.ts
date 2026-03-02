@@ -8,9 +8,49 @@ const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
   maximumFractionDigits: 0
 }).format(n)
 
+async function loadUnicodeFont(pdf: any): Promise<{ regular: string; bold: string }> {
+  const toBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    return btoa(binary)
+  }
+
+  const [regularRes, boldRes] = await Promise.all([
+    fetch('https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2'),
+    fetch('https://fonts.gstatic.com/s/roboto/v32/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.woff2')
+  ])
+
+  const [regularBuffer, boldBuffer] = await Promise.all([
+    regularRes.arrayBuffer(),
+    boldRes.arrayBuffer()
+  ])
+
+  const regularBase64 = toBase64(regularBuffer)
+  const boldBase64 = toBase64(boldBuffer)
+
+  pdf.addFileToVFS('Roboto-Regular.ttf', regularBase64)
+  pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal')
+
+  pdf.addFileToVFS('Roboto-Bold.ttf', boldBase64)
+  pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold')
+
+  return { regular: 'Roboto', bold: 'Roboto' }
+}
+
 export async function generateRetailReportPdf(data: RetailReportData) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF('p', 'mm', 'a4')
+
+  let fontFamily = 'helvetica'
+  try {
+    await loadUnicodeFont(pdf)
+    fontFamily = 'Roboto'
+  } catch {
+    // fall back to helvetica if font load fails
+  }
 
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
@@ -29,7 +69,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     checkPage(20)
     y += 5
     pdf.setFontSize(13)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.setTextColor(37, 99, 235)
     pdf.text(title, margin, y)
     y += 3
@@ -39,14 +79,14 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     y += 7
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(9)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(fontFamily, 'normal')
   }
 
   const row = (label: string, value: string, indent = 0) => {
     checkPage(6)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.text(label, margin + 5 + indent, y)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(fontFamily, 'normal')
     pdf.text(value, margin + contentWidth - 5, y, { align: 'right' })
     y += 5.5
   }
@@ -59,7 +99,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     pdf.setFillColor(240, 240, 240)
     pdf.rect(margin, y - 4, contentWidth, 7, 'F')
     pdf.setFontSize(8)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
 
     let xPos = margin + 2
     headers.forEach((h, i) => {
@@ -68,7 +108,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     })
     y += 6
 
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(fontFamily, 'normal')
     data.projects.forEach(proj => {
       checkPage(7)
       xPos = margin + 2
@@ -94,10 +134,10 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   pdf.rect(0, 0, pageWidth, 32, 'F')
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(18)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Retail izvjestaj', margin, 17)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text('Retail izvještaj', margin, 17)
   pdf.setFontSize(10)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.text(`Generirano: ${format(new Date(), 'dd.MM.yyyy HH:mm')}`, margin, 26)
   pdf.setTextColor(0, 0, 0)
   y = 42
@@ -106,34 +146,34 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   sectionTitle('Portfelj - Pregled')
   const p = data.portfolio
   row('Ukupno projekata', `${p.total_projects} (${p.active_projects} aktivnih)`)
-  row('Zemljista', `${p.total_land_plots} parcela, ${p.total_land_area.toLocaleString('hr-HR')} m2`)
+  row('Zemljišta', `${p.total_land_plots} parcela, ${p.total_land_area.toLocaleString('hr-HR')} m2`)
   row('Kupci', p.total_customers.toString())
-  row('Dobavljaci', p.total_suppliers.toString())
+  row('Dobavljači', p.total_suppliers.toString())
   y += 3
 
   sectionTitle('Financijski pregled')
-  row('Investicija u zemljista', fmt(p.total_land_investment))
-  row('Troskovi razvoja', fmt(p.total_development_cost))
-  row('Troskovi gradnje', fmt(p.total_construction_cost))
-  row('UKUPNI TROSKOVI', fmt(p.total_costs))
+  row('Investicija u zemljišta', fmt(p.total_land_investment))
+  row('Troškovi razvoja', fmt(p.total_development_cost))
+  row('Troškovi gradnje', fmt(p.total_construction_cost))
+  row('UKUPNI TROŠKOVI', fmt(p.total_costs))
   y += 2
   row('Ugovoreni prihod', fmt(p.total_sales_revenue))
-  row('Naplaceno', fmt(p.total_collected))
+  row('Naplaćeno', fmt(p.total_collected))
   row('Za naplatu', fmt(p.total_outstanding))
   y += 2
   row('PROFIT', `${p.profit >= 0 ? '+' : ''}${fmt(p.profit)}`)
   row('ROI', `${p.roi.toFixed(1)}%`)
-  row('Prosjecna cijena/m2', fmt(p.avg_price_per_m2))
+  row('Prosječna cijena/m2', fmt(p.avg_price_per_m2))
   y += 3
 
   // Invoices
-  sectionTitle('Racuni')
+  sectionTitle('Računi')
   const inv = data.invoices
-  row('Ukupno racuna', inv.total.toString())
-  row('Placeno', `${inv.paid} (${fmt(inv.paid_amount)})`)
-  row('Na cekanju', `${inv.pending} (${fmt(inv.remaining_amount - inv.overdue_amount)})`)
+  row('Ukupno računa', inv.total.toString())
+  row('Plaćeno', `${inv.paid} (${fmt(inv.paid_amount)})`)
+  row('Na čekanju', `${inv.pending} (${fmt(inv.remaining_amount - inv.overdue_amount)})`)
   if (inv.overdue > 0) {
-    row('U kasnjenju', `${inv.overdue} (${fmt(inv.overdue_amount)})`)
+    row('U kašnjenju', `${inv.overdue} (${fmt(inv.overdue_amount)})`)
   }
   y += 3
 
@@ -146,7 +186,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   data.customers.forEach(c => {
     checkPage(12)
     row(c.name, fmt(c.total_amount))
-    row('  Placeno / Neplaceno', `${fmt(c.total_paid)} / ${fmt(c.total_remaining)}`, 5)
+    row('  Plaćeno / Neplaćeno', `${fmt(c.total_paid)} / ${fmt(c.total_remaining)}`, 5)
   })
   if (data.customers.length === 0) {
     pdf.text('Nema podataka o kupcima', margin + 5, y)
@@ -155,20 +195,20 @@ export async function generateRetailReportPdf(data: RetailReportData) {
   y += 3
 
   // Suppliers
-  sectionTitle('Dobavljaci po tipu')
+  sectionTitle('Dobavljači po tipu')
   data.supplier_types.forEach(st => {
     checkPage(8)
     const unpaid = st.total_amount - st.total_paid
     row(`${st.type} (${st.count} ugovora)`, `${fmt(st.total_amount)} / Plac. ${fmt(st.total_paid)}${unpaid > 0 ? ` / Nepl. ${fmt(unpaid)}` : ''}`)
   })
   if (data.supplier_types.length === 0) {
-    pdf.text('Nema podataka o dobavljacima', margin + 5, y)
+    pdf.text('Nema podataka o dobavljačima', margin + 5, y)
     y += 6
   }
   y += 3
 
   // Top suppliers
-  sectionTitle('Top dobavljaci')
+  sectionTitle('Top dobavljači')
   data.suppliers.slice(0, 10).forEach(s => {
     checkPage(6)
     row(`${s.name} (${s.supplier_type})`, `${fmt(s.total_amount)} / Plac. ${fmt(s.total_paid)}`)
@@ -181,7 +221,7 @@ export async function generateRetailReportPdf(data: RetailReportData) {
     pdf.setFontSize(7)
     pdf.setTextColor(150, 150, 150)
     pdf.text(`Stranica ${i} od ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' })
-    pdf.text('Retail izvjestaj - Povjerljivo', margin, pageHeight - 8)
+    pdf.text('Retail izvještaj - Povjerljivo', margin, pageHeight - 8)
   }
 
   pdf.save(`retail-izvjestaj-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
