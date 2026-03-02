@@ -75,7 +75,7 @@ const RetailReports: React.FC = () => {
     return (
       <EmptyState
         title="Greska pri ucitavanju podataka."
-        action={<Button onClick={loadData}>Pokusaj ponovo</Button>}
+        action={<Button onClick={loadData}>Pokušaj ponovo</Button>}
       />
     )
   }
@@ -88,7 +88,7 @@ const RetailReports: React.FC = () => {
         actions={
           <>
             <Button variant="secondary" icon={RefreshCw} onClick={loadData} loading={loading}>Osvjezi</Button>
-            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvjestaj</Button>
+            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvještaj</Button>
           </>
         }
       />
