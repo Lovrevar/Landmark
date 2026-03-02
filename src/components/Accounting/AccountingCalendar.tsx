@@ -102,8 +102,15 @@ const AccountingCalendar: React.FC = () => {
           <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ulazni računi:</span>
+          <span className="text-gray-600">Ulazni računi (plaćeno):</span>
           <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Ulazni računi (neplaćeno):</span>
+          <div className="text-right">
+            <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
+            <span className="text-xs text-gray-500 ml-1">({monthStats.incomingUnpaidCount} rač.)</span>
+          </div>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
@@ -283,7 +290,7 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel(invoice)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || 'N/A'}
+                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as any).retail_supplier?.name || (invoice as any).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
@@ -291,7 +298,7 @@ const AccountingCalendar: React.FC = () => {
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
                       <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
                       <td className={`px-4 py-3 text-right text-sm font-semibold ${
-                        invoice.invoice_type.startsWith('OUTGOING') || invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
+                        invoice.invoice_type.startsWith('INCOMING_')
                           ? 'text-red-600'
                           : 'text-green-600'
                       }`}>

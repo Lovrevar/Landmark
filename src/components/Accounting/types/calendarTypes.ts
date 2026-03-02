@@ -19,6 +19,8 @@ export interface Invoice {
   customer?: { name: string }
   office_supplier?: { name: string }
   bank_company?: { name: string }
+  retail_supplier?: { name: string }
+  retail_contracts?: { retail_suppliers?: { name: string } }
 }
 
 export interface MonthlyBudget {

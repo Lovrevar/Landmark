@@ -149,7 +149,7 @@ export const useCompanies = () => {
     }
   }
 
-  const handleBankAccountChange = (index: number, field: 'bank_name' | 'current_balance', value: string | number) => {
+  const handleBankAccountChange = (index: number, field: 'bank_name' | 'current_balance' | 'balance_reset_at', value: string | number | null) => {
     const newAccounts = [...formData.bankAccounts]
     newAccounts[index] = { ...newAccounts[index], [field]: value }
     setFormData({ ...formData, bankAccounts: newAccounts })

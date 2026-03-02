@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { ColumnMenuDropdown } from './views/ColumnMenuDropdown'
 
 const COLUMN_LABELS: Record<string, string> = {
+  category: 'Kategorija',
   invoice_number: 'Broj računa',
   supplier_name: 'Dobavljač',
   project_name: 'Projekt',
@@ -31,6 +32,7 @@ const COLUMN_LABELS: Record<string, string> = {
 }
 
 const DEFAULT_VISIBLE: Record<string, boolean> = {
+  category: true,
   invoice_number: true,
   supplier_name: true,
   project_name: true,
@@ -62,6 +64,7 @@ interface ApprovedInvoice {
   project_name?: string
   phase_name?: string
   contract_number?: string
+  is_retail?: boolean
 }
 
 const AccountingApprovals: React.FC = () => {
@@ -109,34 +112,36 @@ const AccountingApprovals: React.FC = () => {
   const fetchApprovedInvoices = async () => {
     setLoading(true)
     try {
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          *,
-          supplier:subcontractors!accounting_invoices_supplier_id_fkey(
-            id,
-            name
-          ),
-          company:accounting_companies!accounting_invoices_company_id_fkey(
-            id,
-            name
-          ),
-          project:projects!accounting_invoices_project_id_fkey(
-            id,
-            name
-          ),
-          contract:contracts!accounting_invoices_contract_id_fkey(
-            id,
-            contract_number,
-            phase_id
-          )
-        `)
-        .eq('invoice_category', 'SUBCONTRACTOR')
-        .eq('approved', true)
-        .not('project_id', 'is', null)
-        .order('issue_date', { ascending: true })
+      const [{ data: subcontractorData, error: subError }, { data: retailData, error: retailError }] = await Promise.all([
+        supabase
+          .from('accounting_invoices')
+          .select(`
+            *,
+            supplier:subcontractors!accounting_invoices_supplier_id_fkey(id, name),
+            company:accounting_companies!accounting_invoices_company_id_fkey(id, name),
+            project:projects!accounting_invoices_project_id_fkey(id, name),
+            contract:contracts!accounting_invoices_contract_id_fkey(id, contract_number, phase_id)
+          `)
+          .eq('invoice_category', 'SUBCONTRACTOR')
+          .eq('approved', true)
+          .not('project_id', 'is', null)
+          .order('issue_date', { ascending: true }),
+        supabase
+          .from('accounting_invoices')
+          .select(`
+            *,
+            retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey(id, name),
+            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey(id, name),
+            retail_project:retail_projects!accounting_invoices_retail_project_id_fkey(id, name),
+            company:accounting_companies!accounting_invoices_company_id_fkey(id, name)
+          `)
+          .eq('invoice_category', 'RETAIL')
+          .eq('approved', true)
+          .order('issue_date', { ascending: true })
+      ])
 
-      if (invoicesError) throw invoicesError
+      if (subError) throw subError
+      if (retailError) throw retailError
 
       const { data: hiddenInvoices, error: hiddenError } = await supabase
         .from('hidden_approved_invoices')
@@ -152,7 +157,7 @@ const AccountingApprovals: React.FC = () => {
 
       const phasesMap = new Map(phasesData?.map((p) => [p.id, p.phase_name]) || [])
 
-      const formattedInvoices: ApprovedInvoice[] = (invoicesData || [])
+      const formattedSubcontractor: ApprovedInvoice[] = (subcontractorData || [])
         .filter((inv) => !hiddenIds.has(inv.id))
         .map((inv) => ({
           id: inv.id,
@@ -174,18 +179,45 @@ const AccountingApprovals: React.FC = () => {
             inv.contract && (inv.contract as any).phase_id
               ? phasesMap.get((inv.contract as any).phase_id) || 'N/A'
               : 'N/A',
-          contract_number: (inv.contract as any)?.contract_number || 'N/A'
+          contract_number: (inv.contract as any)?.contract_number || 'N/A',
+          is_retail: false
         }))
 
-      setInvoices(formattedInvoices)
+      const formattedRetail: ApprovedInvoice[] = (retailData || [])
+        .filter((inv) => !hiddenIds.has(inv.id))
+        .map((inv) => ({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          invoice_type: inv.invoice_type,
+          invoice_category: inv.invoice_category,
+          issue_date: inv.issue_date,
+          due_date: inv.due_date,
+          total_amount: parseFloat(inv.total_amount || '0'),
+          base_amount: parseFloat(inv.base_amount || '0'),
+          vat_amount: parseFloat(inv.vat_amount || '0'),
+          status: inv.status,
+          description: inv.description || '',
+          approved: inv.approved,
+          supplier_name: (inv.retail_supplier as any)?.name || (inv.retail_customer as any)?.name || 'N/A',
+          company_name: (inv.company as any)?.name || 'N/A',
+          project_name: (inv.retail_project as any)?.name || 'N/A',
+          phase_name: 'N/A',
+          contract_number: 'N/A',
+          is_retail: true
+        }))
+
+      const allInvoices = [...formattedSubcontractor, ...formattedRetail].sort(
+        (a, b) => new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime()
+      )
+
+      setInvoices(allInvoices)
       setSelectedIds(new Set())
 
-      const totalAmount = formattedInvoices.reduce((sum, inv) => sum + inv.total_amount, 0)
-      const oldestInvoice =
-        formattedInvoices.length > 0 ? formattedInvoices[0].issue_date : null
+      const totalAmount = allInvoices.reduce((sum, inv) => sum + inv.total_amount, 0)
+      const oldestInvoice = allInvoices.length > 0 ? allInvoices[0].issue_date : null
 
       setStats({
-        totalInvoices: formattedInvoices.length,
+        totalInvoices: allInvoices.length,
         totalAmount,
         oldestInvoice
       })
@@ -380,6 +412,7 @@ const AccountingApprovals: React.FC = () => {
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                     />
                   </th>
+                  {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Kategorija</th>}
                   {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>}
                   {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>}
                   {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>}
@@ -408,6 +441,13 @@ const AccountingApprovals: React.FC = () => {
                         className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                       />
                     </td>
+                    {visibleColumns.category && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <Badge variant={invoice.is_retail ? 'teal' : 'blue'} size="sm">
+                          {invoice.is_retail ? 'Retail' : 'Podizvodjač'}
+                        </Badge>
+                      </td>
+                    )}
                     {visibleColumns.invoice_number && <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>}
                     {visibleColumns.supplier_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>}
                     {visibleColumns.project_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>}

@@ -3,41 +3,71 @@ import type { DashboardStats, OverdueInvoice } from '../types/retailDashboardTyp
 
 export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStats; overdueInvoices: OverdueInvoice[] }> {
   const [
-    { data: plots },
+    { data: projects },
     { data: customers },
-    { data: salesInvoices }
+    contractsResult,
+    invoicesResult
   ] = await Promise.all([
-    supabase.from('retail_land_plots').select('id, purchased_area_m2, total_price'),
+    supabase.from('retail_projects').select('id'),
     supabase.from('retail_customers').select('id'),
-    supabase.from('accounting_invoices').select(`
-      id,
-      invoice_number,
-      total_amount,
-      paid_amount,
-      remaining_amount,
-      status,
-      due_date,
-      retail_contract_id,
-      retail_customer_id,
-      retail_contracts (contract_number, customer_id),
-      retail_customers (name)
-    `)
-    .eq('invoice_type', 'OUTGOING_SALES')
-    .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
+    supabase.from('retail_contracts').select('budget_realized'),
+    supabase
+      .from('accounting_invoices')
+      .select(`
+        id,
+        invoice_number,
+        invoice_type,
+        total_amount,
+        vat_amount,
+        paid_amount,
+        remaining_amount,
+        status,
+        due_date,
+        retail_contract_id,
+        retail_customer_id,
+        retail_contracts (contract_number, retail_customers (name), retail_suppliers (name)),
+        retail_customers (name)
+      `)
+      .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
   ])
 
-  const total_invested = (plots || []).reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0)
-  const total_revenue = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
-  const total_paid = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
-  const total_remaining = (salesInvoices || []).reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
+  const contracts = contractsResult.data || []
+  const invoices = invoicesResult.data || []
   const today = new Date()
 
-  const overdueInvoices: OverdueInvoice[] = (salesInvoices || [])
-    .filter(inv => inv.status !== 'PAID' && inv.due_date && new Date(inv.due_date) < today)
+  const total_invested = contracts.reduce((sum, c) => sum + parseFloat(c.budget_realized || 0), 0)
+  const total_costs = total_invested
+
+  const outgoingInvoices = invoices.filter(
+    inv => inv.invoice_type === 'OUTGOING_SALES' || inv.invoice_type === 'OUTGOING'
+  )
+  const total_revenue = outgoingInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
+
+  const total_supplier_paid = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+
+  const total_remaining = invoices.reduce((sum, inv) => sum + parseFloat(inv.remaining_amount || 0), 0)
+
+  const paymentsResult = await supabase
+    .from('accounting_payments')
+    .select('amount, accounting_invoices!inner(invoice_type, retail_contract_id, retail_customer_id)')
+    .or('accounting_invoices.retail_contract_id.not.is.null,accounting_invoices.retail_customer_id.not.is.null')
+
+  const total_paid = (paymentsResult.data || [])
+    .filter(p => {
+      const inv = p.accounting_invoices as any
+      return inv?.invoice_type === 'OUTGOING_SALES' || inv?.invoice_type === 'OUTGOING'
+    })
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+  const overdueInvoices: OverdueInvoice[] = invoices
+    .filter(inv => (inv.status === 'UNPAID' || inv.status === 'PARTIAL' || inv.status === 'PARTIALLY_PAID') && inv.due_date && new Date(inv.due_date) < today)
     .map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
-      customer_name: (inv.retail_customers as any)?.name || 'N/A',
+      customer_name: (inv.retail_customers as any)?.name
+        || (inv.retail_contracts as any)?.retail_customers?.name
+        || (inv.retail_contracts as any)?.retail_suppliers?.name
+        || inv.invoice_number,
       contract_number: (inv.retail_contracts as any)?.contract_number || 'N/A',
       remaining_amount: parseFloat(inv.remaining_amount || 0),
       due_date: inv.due_date || '',
@@ -46,14 +76,15 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     .sort((a, b) => b.days_overdue - a.days_overdue)
 
   const stats: DashboardStats = {
-    total_plots: (plots || []).length,
-    total_area: (plots || []).reduce((sum, p) => sum + parseFloat(p.purchased_area_m2 || 0), 0),
-    total_invested,
+    total_projects: (projects || []).length,
     total_customers: (customers || []).length,
+    total_invested,
+    total_costs,
     total_revenue,
     total_paid,
+    total_supplier_paid,
     total_remaining,
-    profit: total_paid - total_invested
+    profit: total_paid - total_costs
   }
 
   return { stats, overdueInvoices }

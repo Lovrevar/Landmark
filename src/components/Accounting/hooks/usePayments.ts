@@ -255,8 +255,8 @@ export const usePayments = () => {
 
     const matchesMethod = filterMethod === 'ALL' || payment.payment_method === filterMethod
 
-    const isExpense = invoice.invoice_type === 'INCOMING_SUPPLIER' || invoice.invoice_type === 'OUTGOING_SUPPLIER' || invoice.invoice_type === 'INCOMING_OFFICE'
-    const isIncome = invoice.invoice_type === 'INCOMING_INVESTMENT' || invoice.invoice_type === 'OUTGOING_SALES' || invoice.invoice_type === 'OUTGOING_OFFICE'
+    const isExpense = invoice.invoice_type.startsWith('INCOMING_')
+    const isIncome = invoice.invoice_type.startsWith('OUTGOING_')
 
     const matchesInvoiceType = filterInvoiceType === 'ALL' ||
                                (filterInvoiceType === 'EXPENSE' && isExpense) ||

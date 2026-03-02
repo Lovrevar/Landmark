@@ -43,7 +43,10 @@ export const fetchBankAccountsForCompany = async (companyId: string) => {
   return (bankAccountsData || []).map(acc => ({
     id: acc.id,
     bank_name: acc.bank_name,
-    current_balance: acc.initial_balance
+    current_balance: acc.initial_balance,
+    balance_reset_at: acc.balance_reset_at
+      ? acc.balance_reset_at.split('T')[0]
+      : null
   }))
 }
 
@@ -88,20 +91,94 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 
   for (const account of formData.bankAccounts) {
     if (account.id) {
-      const resetAt = new Date().toISOString()
+      const now = new Date().toISOString()
+      const resetAt = account.balance_reset_at
+        ? `${account.balance_reset_at}T00:00:00+00:00`
+        : now
       const { error: updateError } = await supabase
         .from('company_bank_accounts')
         .update({
           initial_balance: account.current_balance,
           current_balance: account.current_balance,
           balance_reset_at: resetAt,
-          updated_at: resetAt
+          updated_at: now
         })
         .eq('id', account.id)
 
       if (updateError) throw updateError
+
+      await recalculateBankAccountBalance(account.id, resetAt)
     }
   }
+}
+
+const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: string) => {
+  const resetDate = resetAt.split('T')[0]
+
+  const [paymentsResult, loansFromResult, loansToResult, accountResult] = await Promise.all([
+    supabase
+      .from('accounting_payments')
+      .select(`
+        amount,
+        payment_date,
+        is_cesija,
+        cesija_bank_account_id,
+        company_bank_account_id,
+        accounting_invoices!inner(invoice_type)
+      `)
+      .or(`company_bank_account_id.eq.${bankAccountId},cesija_bank_account_id.eq.${bankAccountId}`)
+      .gte('payment_date', resetDate),
+
+    supabase
+      .from('company_loans')
+      .select('amount, loan_date')
+      .eq('from_bank_account_id', bankAccountId)
+      .gte('loan_date', resetDate),
+
+    supabase
+      .from('company_loans')
+      .select('amount, loan_date')
+      .eq('to_bank_account_id', bankAccountId)
+      .gte('loan_date', resetDate),
+
+    supabase
+      .from('company_bank_accounts')
+      .select('initial_balance')
+      .eq('id', bankAccountId)
+      .maybeSingle()
+  ])
+
+  let delta = 0
+
+  for (const p of paymentsResult.data || []) {
+    const invoiceType = (p.accounting_invoices as any)?.invoice_type as string
+
+    if (p.company_bank_account_id === bankAccountId) {
+      const outgoing = ['OUTGOING_SALES', 'OUTGOING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_BANK', 'OUTGOING_RETAIL_DEVELOPMENT', 'OUTGOING_RETAIL_CONSTRUCTION']
+      const incoming = ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'INCOMING_INVESTMENT', 'INCOMING_BANK', 'INCOMING_BANK_EXPENSES']
+      if (outgoing.includes(invoiceType)) delta += p.amount
+      else if (incoming.includes(invoiceType)) delta -= p.amount
+    }
+
+    if (p.cesija_bank_account_id === bankAccountId && p.is_cesija) {
+      delta -= p.amount
+    }
+  }
+
+  for (const loan of loansFromResult.data || []) {
+    delta -= loan.amount
+  }
+
+  for (const loan of loansToResult.data || []) {
+    delta += loan.amount
+  }
+
+  const initialBalance = accountResult.data?.initial_balance ?? 0
+
+  await supabase
+    .from('company_bank_accounts')
+    .update({ current_balance: initialBalance + delta, updated_at: new Date().toISOString() })
+    .eq('id', bankAccountId)
 }
 
 export const deleteCompany = async (companyId: string) => {

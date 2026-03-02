@@ -256,7 +256,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <div className="flex-1">
                 <span className="font-medium text-gray-900">Isplata na račun</span>
                 <p className="text-sm text-gray-600 mt-1">
-                  Kada je označeno, ceo iznos kredita će automatski biti isplaćen na odabrani bankovni račun firme.
+                  Kada je označeno, cijeli iznos kredita će automatski biti isplaćen na odabrani bankovni račun firme.
                 </p>
               </div>
             </label>
@@ -265,7 +265,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <div className="mt-4">
                 {!newCredit.company_id ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste videli dostupne bankovne račune.</p>
+                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste vidjeli dostupne bankovne račune.</p>
                   </div>
                 ) : loadingAccounts ? (
                   <div className="text-center py-4">

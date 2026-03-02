@@ -33,7 +33,7 @@ export const useAccountingCustomers = () => {
   }
 
   const isIncomeInvoice = (invoiceType: string) => {
-    return invoiceType === 'INCOMING_INVESTMENT' || invoiceType === 'OUTGOING_SALES'
+    return invoiceType.startsWith('OUTGOING_')
   }
 
   const handleOpenDetails = (customer: CustomerStats) => {

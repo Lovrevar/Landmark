@@ -258,8 +258,8 @@ export const generateInvestmentReportPDF = async (
   if (financialSummary.upcoming_maturities > 0) {
     insights.push(`⚠ ${financialSummary.upcoming_maturities} investment(s) maturing within 90 days`)
   }
-  if (highUtilizationCredits > 0) {
-    insights.push(`⚠ ${highUtilizationCredits} investment(s) with high utilization (≥80%)`)
+if (highUtilizationCredits > 0) {
+    insights.push(`${highUtilizationCredits} investment(s) with high utilization (>80%)`)
   }
 
   const insightBoxHeight = insights.length * 6 + 8
@@ -278,7 +278,7 @@ export const generateInvestmentReportPDF = async (
     yPos += 5
   })
 
-  yPos += 8
+  yPos += 15
 
   yPos = addSectionTitle(doc, 'INVESTMENT DISTRIBUTION BY PROJECT', yPos)
 

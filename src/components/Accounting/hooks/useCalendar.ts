@@ -79,6 +79,8 @@ export const useCalendar = () => {
     )
 
     const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
+    const incomingUnpaid = incomingInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.remaining_amount, 0)
+    const incomingUnpaidCount = incomingInvoices.filter(inv => inv.status !== 'PAID').length
     const outgoingPaid = outgoingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
     const netAmount = outgoingPaid - incomingPaid
 
@@ -96,6 +98,8 @@ export const useCalendar = () => {
       paidAmount: monthInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
       unpaidAmount: monthInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
       incomingPaid,
+      incomingUnpaid,
+      incomingUnpaidCount,
       outgoingPaid,
       netAmount
     }

@@ -11,7 +11,9 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
         supplier:subcontractors(name),
         customer:customers(name),
         office_supplier:office_suppliers(name),
-        bank_company:bank_id(name)
+        bank_company:bank_id(name),
+        retail_supplier:retail_suppliers(name),
+        retail_contracts(retail_suppliers(name))
       `)
       .not('due_date', 'is', null)
       .order('due_date', { ascending: true })

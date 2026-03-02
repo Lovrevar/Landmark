@@ -54,7 +54,7 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => (
                   <div className={`text-2xl font-bold ${getProgressTextColor(sub)}`}>
                     {sub.progress}%
                   </div>
-                  <p className="text-xs text-gray-500">Complete</p>
+                  <p className="text-xs text-gray-500">Paid Out</p>
                 </div>
               </div>
 
@@ -73,17 +73,11 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => (
                     sub.days_until_deadline <= 7 ? 'text-orange-600' :
                     'text-gray-900'
                   }`}>
-                    {format(parseISO(sub.deadline), 'MMM dd')}
+                    {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd') : 'N/A'}
                     {sub.is_overdue && <span className="ml-1">({Math.abs(sub.days_until_deadline)}d over)</span>}
-                    {!sub.is_overdue && sub.days_until_deadline <= 7 && (
+                    {!sub.is_overdue && sub.deadline && sub.days_until_deadline <= 7 && (
                       <span className="ml-1">({sub.days_until_deadline}d left)</span>
                     )}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Budget Used</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {sub.cost > 0 ? ((sub.budget_realized / sub.cost) * 100).toFixed(0) : 0}%
                   </p>
                 </div>
                 <div>

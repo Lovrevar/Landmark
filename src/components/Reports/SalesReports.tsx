@@ -650,10 +650,6 @@ const SalesReports: React.FC = () => {
                     <span className="text-gray-600">Budget:</span>
                     <span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Funders:</span>
-                    <span className="font-medium">{projectReport.project.investor || 'N/A'}</span>
-                  </div>
                 </div>
               </div>
               
