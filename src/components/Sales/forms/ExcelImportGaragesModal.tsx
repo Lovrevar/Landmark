@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import * as XLSX from 'xlsx'
+import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, AlertCircle, Warehouse } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { Modal, Button, LoadingSpinner } from '../../ui'
