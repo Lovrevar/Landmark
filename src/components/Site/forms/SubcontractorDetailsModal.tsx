@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { MessageSquare, Send, Calendar, Building2, FileText, Clock, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../lib/supabase'
+
+type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string }
 import { CommentWithUser } from '../types/siteTypes'
 import { supabase } from '../../../lib/supabase'
 import { Modal, FormField, Select, Textarea, Button, Badge } from '../../ui'
@@ -231,7 +233,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
               </div>
               <ContractDocumentViewer
-                contractId={(subcontractor as any).contract_id || subcontractor.id}
+                subcontractorId={(subcontractor as SubcontractorWithIds).subcontractor_id || subcontractor.id}
                 readOnly
               />
             </div>

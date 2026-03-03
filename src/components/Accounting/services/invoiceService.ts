@@ -159,7 +159,7 @@ export const fetchData = async (
     console.error('Error loading companies:', companiesResult.error)
     throw companiesResult.error
   }
-  console.log('Loaded companies:', companiesResult.data)
+  //console.log('Loaded companies:', companiesResult.data)
 
   if (bankAccountsResult.error) {
     console.error('Error loading bank accounts:', bankAccountsResult.error)
@@ -173,19 +173,19 @@ export const fetchData = async (
     console.error('Error loading suppliers:', suppliersResult.error)
     throw suppliersResult.error
   }
-  console.log('Loaded suppliers:', suppliersResult.data)
+  //console.log('Loaded suppliers:', suppliersResult.data)
 
   if (officeSuppliersResult.error) {
     console.error('Error loading office suppliers:', officeSuppliersResult.error)
     throw officeSuppliersResult.error
   }
-  console.log('Loaded office suppliers:', officeSuppliersResult.data)
+  //console.log('Loaded office suppliers:', officeSuppliersResult.data)
 
   if (customersResult.error) {
     console.error('Error loading customers:', customersResult.error)
     throw customersResult.error
   }
-  console.log('Loaded customers:', customersResult.data)
+  //console.log('Loaded customers:', customersResult.data)
 
   if (banksResult.error) throw banksResult.error
 
@@ -193,7 +193,7 @@ export const fetchData = async (
     console.error('Error loading projects:', projectsResult.error)
     throw projectsResult.error
   }
-  console.log('Loaded projects:', projectsResult.data)
+  //console.log('Loaded projects:', projectsResult.data)
 
   if (contractsResult.error) throw contractsResult.error
 

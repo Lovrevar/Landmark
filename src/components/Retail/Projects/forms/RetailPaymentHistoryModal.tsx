@@ -78,10 +78,10 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
       }
 
       const invoiceIds = (invoicesData || []).map(inv => inv.id)
-      console.log('Invoice IDs:', invoiceIds)
+      //console.log('Invoice IDs:', invoiceIds)
 
       if (invoiceIds.length === 0) {
-        console.log('No invoices found for this contract')
+        //console.log('No invoices found for this contract')
         setPayments([])
         return
       }
@@ -119,7 +119,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         .in('invoice_id', invoiceIds)
         .order('payment_date', { ascending: false })
 
-      console.log('Payments Query Result:', { data, error })
+      //console.log('Payments Query Result:', { data, error })
 
       if (error) {
         console.error('Payments Error:', error)
@@ -151,8 +151,8 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         }
       })
 
-      console.log('Formatted Payments:', formattedPayments)
-      console.log('=== END DEBUG ===')
+      //console.log('Formatted Payments:', formattedPayments)
+      //console.log('=== END DEBUG ===')
 
       setPayments(formattedPayments)
     } catch (error) {

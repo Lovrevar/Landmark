@@ -6,7 +6,7 @@ import { ContractType } from '../types/siteTypes'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
 import { ContractDocumentUpload } from '../components/ContractDocumentUpload'
 import { ContractDocumentViewer } from '../components/ContractDocumentViewer'
-import { uploadContractDocuments } from '../services/siteService'
+import { uploadSubcontractorDocuments } from '../services/siteService'
 
 interface Phase {
   id: string
@@ -22,8 +22,13 @@ interface EditSubcontractorModalProps {
   onSubmit: (updated: Subcontractor) => void
 }
 
+type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string; contract_id?: string }
+
 const getContractId = (subcontractor: Subcontractor | null) =>
-  subcontractor ? ((subcontractor as any).contract_id || subcontractor.id) : null
+  subcontractor ? ((subcontractor as SubcontractorWithIds).contract_id || subcontractor.id) : null
+
+const getTrueSubcontractorId = (subcontractor: Subcontractor | null) =>
+  subcontractor ? ((subcontractor as SubcontractorWithIds).subcontractor_id || subcontractor.id) : ''
 
 export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   visible,
@@ -173,11 +178,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
   const handleUploadFiles = async () => {
     const contractId = getContractId(subcontractor)
-    if (!contractId || pendingFiles.length === 0) return
+    if (!subcontractor || pendingFiles.length === 0) return
 
     try {
       setUploadingFiles(true)
-      await uploadContractDocuments(contractId, pendingFiles)
+      await uploadSubcontractorDocuments(getTrueSubcontractorId(subcontractor), contractId, pendingFiles)
       setPendingFiles([])
       setDocViewerKey(k => k + 1)
     } catch (error: any) {
@@ -390,7 +395,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Postojeći dokumenti</p>
               <ContractDocumentViewer
                 key={docViewerKey}
-                contractId={getContractId(subcontractor)!}
+                subcontractorId={getTrueSubcontractorId(subcontractor)}
               />
             </div>
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Users, Briefcase, AlertCircle, Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Users, Briefcase, AlertCircle, Plus, Pencil, Trash2, Eye, FileText } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, Badge, SearchInput, Button, Input, FormField, ConfirmDialog } from '../ui'
 import { format, differenceInDays } from 'date-fns'
 import { ContractDocumentViewer } from '../Site/components/ContractDocumentViewer'
+import { ContractDocumentUpload } from '../Site/components/ContractDocumentUpload'
+import { uploadSubcontractorDocuments } from '../Site/services/siteService'
 
 interface Subcontractor {
   id: string
@@ -57,7 +59,10 @@ const SubcontractorManagement: React.FC = () => {
     contact: '',
     notes: ''
   })
-  const [viewingContractDocuments, setViewingContractDocuments] = useState<{ contractId: string; label: string } | null>(null)
+  const [viewingContractDocuments, setViewingContractDocuments] = useState<{ subcontractorId: string; contractId: string; label: string } | null>(null)
+  const [pendingDocFiles, setPendingDocFiles] = useState<File[]>([])
+  const [uploadingDocs, setUploadingDocs] = useState(false)
+  const [docViewerKey, setDocViewerKey] = useState(0)
 
   useEffect(() => {
     fetchData()
@@ -274,6 +279,20 @@ const SubcontractorManagement: React.FC = () => {
     ? `${filteredSubcontractors.length} / ${subcontractorsList.length}`
     : subcontractorsList.length
 
+  const handleUploadSubcontractorDocs = async (subcontractorId: string) => {
+    if (pendingDocFiles.length === 0) return
+    try {
+      setUploadingDocs(true)
+      await uploadSubcontractorDocuments(subcontractorId, null, pendingDocFiles)
+      setPendingDocFiles([])
+      setDocViewerKey(k => k + 1)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Greška pri uploadu dokumenata')
+    } finally {
+      setUploadingDocs(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -449,13 +468,13 @@ const SubcontractorManagement: React.FC = () => {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={!!selectedSubcontractor} onClose={() => setSelectedSubcontractor(null)} size="xl">
+      <Modal show={!!selectedSubcontractor} onClose={() => { setSelectedSubcontractor(null); setPendingDocFiles([]) }} size="xl">
         {selectedSubcontractor && (
           <>
             <Modal.Header
               title={selectedSubcontractor.name}
               subtitle={selectedSubcontractor.contact}
-              onClose={() => setSelectedSubcontractor(null)}
+              onClose={() => { setSelectedSubcontractor(null); setPendingDocFiles([]) }}
             />
 
             <Modal.Body>
@@ -513,6 +532,7 @@ const SubcontractorManagement: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setViewingContractDocuments({
+                                  subcontractorId: selectedSubcontractor!.id,
                                   contractId: contract.id,
                                   label: `${contract.project_name}${contract.phase_name ? ` · ${contract.phase_name}` : ''}`
                                 })
@@ -594,6 +614,37 @@ const SubcontractorManagement: React.FC = () => {
                   )
                 })}
               </div>
+
+              <div className="mt-6 border-t border-gray-200 pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Dokumenti</h3>
+                </div>
+                <ContractDocumentViewer
+                  key={docViewerKey}
+                  subcontractorId={selectedSubcontractor.id}
+                />
+                <div className="mt-4 border-t border-gray-200 pt-4">
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
+                    Dodaj dokumente
+                  </p>
+                  <ContractDocumentUpload
+                    files={pendingDocFiles}
+                    onChange={setPendingDocFiles}
+                  />
+                  {pendingDocFiles.length > 0 && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="mt-3"
+                      loading={uploadingDocs}
+                      onClick={() => handleUploadSubcontractorDocs(selectedSubcontractor.id)}
+                    >
+                      Spremi dokumente
+                    </Button>
+                  )}
+                </div>
+              </div>
             </Modal.Body>
           </>
         )}
@@ -613,6 +664,7 @@ const SubcontractorManagement: React.FC = () => {
             />
             <Modal.Body>
               <ContractDocumentViewer
+                subcontractorId={viewingContractDocuments.subcontractorId}
                 contractId={viewingContractDocuments.contractId}
                 readOnly
               />

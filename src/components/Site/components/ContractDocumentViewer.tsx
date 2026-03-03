@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { ContractDocument } from '../types/siteTypes'
-import { fetchContractDocuments, deleteContractDocument, getContractDocumentSignedUrl } from '../services/siteService'
+import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from '../services/siteService'
 
 interface ContractDocumentViewerProps {
-  contractId: string
+  subcontractorId: string
+  contractId?: string
   readOnly?: boolean
 }
 
@@ -16,6 +17,7 @@ const formatSize = (bytes: number) => {
 }
 
 export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
+  subcontractorId,
   contractId,
   readOnly = false
 }) => {
@@ -26,16 +28,18 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (contractId) {
+    if (contractId || subcontractorId) {
       loadDocuments()
     }
-  }, [contractId])
+  }, [subcontractorId, contractId])
 
   const loadDocuments = async () => {
     try {
       setLoading(true)
       setError(null)
-      const docs = await fetchContractDocuments(contractId)
+      const docs = contractId
+        ? await fetchDocumentsByContract(contractId)
+        : await fetchSubcontractorDocuments(subcontractorId)
       setDocuments(docs)
     } catch {
       setError('Greška pri učitavanju dokumenata')
@@ -61,7 +65,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 
     try {
       setDeletingId(doc.id)
-      await deleteContractDocument(doc.id, doc.file_path)
+      await deleteSubcontractorDocument(doc.id, doc.file_path)
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
     } catch {
       alert('Greška pri brisanju dokumenta')
