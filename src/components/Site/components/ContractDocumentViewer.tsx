@@ -2,20 +2,17 @@ import React, { useState, useEffect } from 'react'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { ContractDocument } from '../types/siteTypes'
-import { fetchContractDocuments, deleteContractDocument, getContractDocumentSignedUrl } from '../services/siteService'
+import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from '../services/siteService'
+import { formatFileSize } from '../../../utils/formatters'
 
 interface ContractDocumentViewerProps {
-  contractId: string
+  subcontractorId: string
+  contractId?: string
   readOnly?: boolean
 }
 
-const formatSize = (bytes: number) => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
 export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
+  subcontractorId,
   contractId,
   readOnly = false
 }) => {
@@ -26,16 +23,18 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (contractId) {
+    if (contractId || subcontractorId) {
       loadDocuments()
     }
-  }, [contractId])
+  }, [subcontractorId, contractId])
 
   const loadDocuments = async () => {
     try {
       setLoading(true)
       setError(null)
-      const docs = await fetchContractDocuments(contractId)
+      const docs = contractId
+        ? await fetchDocumentsByContract(contractId)
+        : await fetchSubcontractorDocuments(subcontractorId)
       setDocuments(docs)
     } catch {
       setError('Greška pri učitavanju dokumenata')
@@ -61,7 +60,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 
     try {
       setDeletingId(doc.id)
-      await deleteContractDocument(doc.id, doc.file_path)
+      await deleteSubcontractorDocument(doc.id, doc.file_path)
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
     } catch {
       alert('Greška pri brisanju dokumenta')
@@ -108,7 +107,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name}</p>
             <p className="text-xs text-gray-500">
-              {formatSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
+              {formatFileSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">

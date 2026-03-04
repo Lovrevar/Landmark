@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
-import { Table, Badge } from '../../ui'
+import { Table, Badge } from '../ui'
 import type { ProjectReportData } from './retailReportTypes'
 
 interface Props {

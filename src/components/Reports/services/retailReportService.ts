@@ -7,7 +7,7 @@ import type {
   SupplierReportData,
   SupplierTypeSummary,
   InvoiceSummary
-} from './retailReportTypes'
+} from '../retailReportTypes'
 
 const emptyPhase = (): PhaseReportData => ({
   budget_allocated: 0,

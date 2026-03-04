@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../lib/supabase'
 import { supabase } from '../../../lib/supabase'
-import { ContractType } from '../types/siteTypes'
+import { VAT_RATE_OPTIONS } from '../types/siteTypes'
+import { useContractTypes } from '../hooks/useContractTypes'
+import { useVATCalculation } from '../hooks/useVATCalculation'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../ui'
 import { ContractDocumentUpload } from '../components/ContractDocumentUpload'
 import { ContractDocumentViewer } from '../components/ContractDocumentViewer'
-import { uploadContractDocuments } from '../services/siteService'
+import { uploadSubcontractorDocuments } from '../services/siteService'
+import { formatEuro } from '../../../utils/formatters'
 
 interface Phase {
   id: string
@@ -22,8 +25,13 @@ interface EditSubcontractorModalProps {
   onSubmit: (updated: Subcontractor) => void
 }
 
+type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string; contract_id?: string }
+
 const getContractId = (subcontractor: Subcontractor | null) =>
-  subcontractor ? ((subcontractor as any).contract_id || subcontractor.id) : null
+  subcontractor ? ((subcontractor as SubcontractorWithIds).contract_id || subcontractor.id) : null
+
+const getTrueSubcontractorId = (subcontractor: Subcontractor | null) =>
+  subcontractor ? ((subcontractor as SubcontractorWithIds).subcontractor_id || subcontractor.id) : ''
 
 export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   visible,
@@ -32,25 +40,23 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   onChange,
   onSubmit
 }) => {
+  const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
   const [loadingPhases, setLoadingPhases] = useState(false)
-  const [contractTypes, setContractTypes] = useState<ContractType[]>([])
   const [contractTypeId, setContractTypeId] = useState(0)
-  const [loadingContractTypes, setLoadingContractTypes] = useState(false)
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   const [jobDescription, setJobDescription] = useState('')
   const [deadline, setDeadline] = useState('')
-  const [cost, setCost] = useState(0)
   const [baseAmount, setBaseAmount] = useState(0)
   const [vatRate, setVatRate] = useState(0)
-  const [vatAmount, setVatAmount] = useState(0)
-  const [totalAmount, setTotalAmount] = useState(0)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [docViewerKey, setDocViewerKey] = useState(0)
+
+  const { vatAmount, totalAmount } = useVATCalculation(baseAmount, vatRate)
 
   useEffect(() => {
     if (visible && subcontractor) {
@@ -60,7 +66,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setContact(subcontractor.contact)
       setJobDescription(subcontractor.job_description)
       setDeadline(subcontractor.deadline)
-      setCost(subcontractor.cost || 0)
 
       loadPhases()
       loadContractTypes()
@@ -68,14 +73,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       loadContractVATData()
     }
   }, [visible, subcontractor])
-
-  useEffect(() => {
-    const calculatedVatAmount = Math.round(baseAmount * vatRate) / 100
-    const calculatedTotalAmount = baseAmount + calculatedVatAmount
-    setVatAmount(calculatedVatAmount)
-    setTotalAmount(calculatedTotalAmount)
-    setCost(calculatedTotalAmount)
-  }, [baseAmount, vatRate])
 
   const loadPhases = async () => {
     if (!subcontractor) return
@@ -106,24 +103,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       console.error('Error loading phases:', error)
     } finally {
       setLoadingPhases(false)
-    }
-  }
-
-  const loadContractTypes = async () => {
-    try {
-      setLoadingContractTypes(true)
-      const { data, error } = await supabase
-        .from('contract_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('id')
-
-      if (error) throw error
-      setContractTypes(data || [])
-    } catch (error) {
-      console.error('Error loading contract types:', error)
-    } finally {
-      setLoadingContractTypes(false)
     }
   }
 
@@ -173,11 +152,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
   const handleUploadFiles = async () => {
     const contractId = getContractId(subcontractor)
-    if (!contractId || pendingFiles.length === 0) return
+    if (!subcontractor || pendingFiles.length === 0) return
 
     try {
       setUploadingFiles(true)
-      await uploadContractDocuments(contractId, pendingFiles)
+      await uploadSubcontractorDocuments(getTrueSubcontractorId(subcontractor), contractId, pendingFiles)
       setPendingFiles([])
       setDocViewerKey(k => k + 1)
     } catch (error: any) {
@@ -310,10 +289,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                     onChange={(e) => setVatRate(parseFloat(e.target.value))}
                     required
                   >
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="13">13%</option>
-                    <option value="25">25%</option>
+                    {VAT_RATE_OPTIONS.map(r => (
+                      <option key={r} value={r}>{r}%</option>
+                    ))}
                   </Select>
                 </FormField>
               </div>
@@ -321,11 +299,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <div className="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
                 <div>
                   <label className="text-xs text-gray-600">Iznos PDV</label>
-                  <p className="text-lg font-semibold text-gray-900">€{vatAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-lg font-semibold text-gray-900">{formatEuro(vatAmount)}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-600">Ukupno</label>
-                  <p className="text-lg font-bold text-blue-600">€{totalAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-lg font-bold text-blue-600">{formatEuro(totalAmount)}</p>
                 </div>
                 <FormField label="Deadline" required>
                   <Input
@@ -344,19 +322,19 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Paid (Base):</span>
-                  <span className="font-medium text-gray-900">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+                  <span className="font-medium text-gray-900">{formatEuro(subcontractor.budget_realized)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Remaining:</span>
                   <span className="font-medium text-orange-600">
-                    €{Math.max(0, cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
+                    {formatEuro(Math.max(0, totalAmount - subcontractor.budget_realized))}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
                   <span className="text-gray-600">Progress:</span>
                   <span className="font-medium text-gray-900">
-                    {cost > 0
-                      ? Math.min(100, ((subcontractor.budget_realized / cost) * 100)).toFixed(1)
+                    {totalAmount > 0
+                      ? Math.min(100, ((subcontractor.budget_realized / totalAmount) * 100)).toFixed(1)
                       : 0}%
                   </span>
                 </div>
@@ -366,8 +344,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
-                      width: `${cost > 0
-                        ? Math.min(100, (subcontractor.budget_realized / cost) * 100)
+                      width: `${totalAmount > 0
+                        ? Math.min(100, (subcontractor.budget_realized / totalAmount) * 100)
                         : 0}%`
                     }}
                   />
@@ -390,7 +368,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Postojeći dokumenti</p>
               <ContractDocumentViewer
                 key={docViewerKey}
-                contractId={getContractId(subcontractor)!}
+                subcontractorId={getTrueSubcontractorId(subcontractor)}
               />
             </div>
 

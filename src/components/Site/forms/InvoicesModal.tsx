@@ -58,12 +58,12 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
     const contractId = (subcontractor as any).contract_id || subcontractor.id
 
-    console.log('🔍 InvoicesModal - Fetching invoices for CONTRACT:', {
+    /*console.log('🔍 InvoicesModal - Fetching invoices for CONTRACT:', {
       contract_id: contractId,
       subcontractor_name: (subcontractor as any).company_name || subcontractor.name,
       contract_title: (subcontractor as any).contract_title,
       full_subcontractor_object: subcontractor
-    })
+    })*/
 
     setLoading(true)
     try {
@@ -90,12 +90,12 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
         .eq('contract_id', contractId)
         .order('issue_date', { ascending: false })
 
-      console.log('📦 InvoicesModal - Supabase response:', {
+      /*console.log('📦 InvoicesModal - Supabase response:', {
         data,
         error,
         count: data?.length,
         rawData: JSON.stringify(data, null, 2)
-      })
+      })*/
 
       if (error) throw error
 
@@ -116,7 +116,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
         contract_id: inv.contracts?.id || ''
       }))
 
-      console.log('✅ InvoicesModal - Formatted invoices:', formattedInvoices)
+      //console.log('✅ InvoicesModal - Formatted invoices:', formattedInvoices)
 
       setInvoices(formattedInvoices)
     } catch (error) {

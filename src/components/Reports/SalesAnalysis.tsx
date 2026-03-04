@@ -1,6 +1,6 @@
 import React from 'react'
 import { DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react'
-import { Table, EmptyState } from '../../ui'
+import { Table, EmptyState } from '../ui'
 import type { CustomerReportData, InvoiceSummary } from './retailReportTypes'
 
 interface Props {

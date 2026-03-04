@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-console.log('Supabase config:', {
+/*console.log('Supabase config:', {
   url: supabaseUrl,
   key: supabaseAnonKey ? 'Present' : 'Missing'
-})
+})*/
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -399,7 +399,6 @@ export type ProjectMilestone = {
   name: string
   due_date: string | null
   completed: boolean
-  order_index: number
   order_index: number
   created_at: string
 }

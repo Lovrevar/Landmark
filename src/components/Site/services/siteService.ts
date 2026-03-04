@@ -360,7 +360,7 @@ export const updateSubcontractor = async (
     has_contract?: boolean
   }
 ) => {
-  console.log('updateSubcontractor service called with:', { contractId, updates })
+  //console.log('updateSubcontractor service called with:', { contractId, updates })
 
   // First, get the contract to find the subcontractor
   const { data: contract, error: contractError } = await supabase
@@ -374,7 +374,7 @@ export const updateSubcontractor = async (
     throw contractError
   }
 
-  console.log('Current contract data:', contract)
+  //console.log('Current contract data:', contract)
 
   // Update contract-specific fields in contracts table
   const contractUpdateData: any = {
@@ -412,7 +412,7 @@ export const updateSubcontractor = async (
     contractUpdateData.has_contract = updates.has_contract
   }
 
-  console.log('Updating contract with data:', contractUpdateData)
+  //console.log('Updating contract with data:', contractUpdateData)
 
   const { error: contractUpdateError } = await supabase
     .from('contracts')
@@ -424,7 +424,7 @@ export const updateSubcontractor = async (
     throw contractUpdateError
   }
 
-  console.log('Contract updated successfully')
+  //console.log('Contract updated successfully')
 
   // Update subcontractor fields (name, contact) in subcontractors table
   const subcontractorUpdateData: any = {
@@ -432,7 +432,7 @@ export const updateSubcontractor = async (
     contact: updates.contact
   }
 
-  console.log('Updating subcontractor with data:', subcontractorUpdateData)
+  //console.log('Updating subcontractor with data:', subcontractorUpdateData)
 
   const { error: subError } = await supabase
     .from('subcontractors')
@@ -444,7 +444,7 @@ export const updateSubcontractor = async (
     throw subError
   }
 
-  console.log('Subcontractor updated successfully')
+  //console.log('Subcontractor updated successfully')
 
   // If phase was changed, recalculate budgets for both old and new phases
   if (updates.phase_id && updates.phase_id !== contract.phase_id) {
@@ -901,7 +901,7 @@ export const fetchContractTypes = async () => {
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 
-export const uploadContractDocuments = async (contractId: string, files: File[]) => {
+export const uploadSubcontractorDocuments = async (subcontractorId: string, contractId: string | null, files: File[]) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
@@ -914,7 +914,7 @@ export const uploadContractDocuments = async (contractId: string, files: File[])
 
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
     const timestamp = Date.now()
-    const filePath = `contracts/${contractId}/${timestamp}_${sanitizedName}`
+    const filePath = `subcontractors/${subcontractorId}/${timestamp}_${sanitizedName}`
 
     const { error: uploadError } = await supabase.storage
       .from('contract-documents')
@@ -923,9 +923,10 @@ export const uploadContractDocuments = async (contractId: string, files: File[])
     if (uploadError) throw uploadError
 
     const { error: dbError } = await supabase
-      .from('contract_documents')
+      .from('subcontractor_documents')
       .insert({
-        contract_id: contractId,
+        subcontractor_id: subcontractorId,
+        contract_id: contractId ?? null,
         file_name: file.name,
         file_path: filePath,
         file_size: file.size,
@@ -943,9 +944,20 @@ export const uploadContractDocuments = async (contractId: string, files: File[])
   return results
 }
 
-export const fetchContractDocuments = async (contractId: string) => {
+export const fetchSubcontractorDocuments = async (subcontractorId: string) => {
   const { data, error } = await supabase
-    .from('contract_documents')
+    .from('subcontractor_documents')
+    .select('*')
+    .eq('subcontractor_id', subcontractorId)
+    .order('uploaded_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export const fetchDocumentsByContract = async (contractId: string) => {
+  const { data, error } = await supabase
+    .from('subcontractor_documents')
     .select('*')
     .eq('contract_id', contractId)
     .order('uploaded_at', { ascending: false })
@@ -954,7 +966,7 @@ export const fetchContractDocuments = async (contractId: string) => {
   return data || []
 }
 
-export const deleteContractDocument = async (documentId: string, filePath: string) => {
+export const deleteSubcontractorDocument = async (documentId: string, filePath: string) => {
   const { error: storageError } = await supabase.storage
     .from('contract-documents')
     .remove([filePath])
@@ -962,7 +974,7 @@ export const deleteContractDocument = async (documentId: string, filePath: strin
   if (storageError) throw storageError
 
   const { error: dbError } = await supabase
-    .from('contract_documents')
+    .from('subcontractor_documents')
     .delete()
     .eq('id', documentId)
 

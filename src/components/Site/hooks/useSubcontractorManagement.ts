@@ -28,6 +28,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       const hasContract = data.has_contract !== false
 
       let newContractId: string | null = null
+      let newSubcontractorId: string | null = null
 
       if (data.useExisting) {
         if (!data.existing_subcontractor_id) {
@@ -59,6 +60,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           has_contract: hasContract
         })
         newContractId = newContract.id
+        newSubcontractorId = data.existing_subcontractor_id
         if (hasContract) {
           await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
         }
@@ -98,14 +100,15 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           has_contract: hasContract
         })
         newContractId = newContract.id
+        newSubcontractorId = newSubcontractor.id
         if (hasContract) {
           await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
         }
       }
 
-      if (newContractId && pendingFiles && pendingFiles.length > 0 && hasContract) {
+      if (newSubcontractorId && pendingFiles && pendingFiles.length > 0 && hasContract) {
         try {
-          await siteService.uploadContractDocuments(newContractId, pendingFiles)
+          await siteService.uploadSubcontractorDocuments(newSubcontractorId, newContractId, pendingFiles)
         } catch (uploadError) {
           console.error('Error uploading contract documents:', uploadError)
           alert('Subcontractor added but some documents failed to upload. You can add them later from the edit form.')

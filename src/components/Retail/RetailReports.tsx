@@ -7,13 +7,13 @@ import {
   DollarSign,
   Briefcase
 } from 'lucide-react'
-import { PortfolioOverview } from './reports/PortfolioOverview'
-import { ProjectPerformanceTable } from './reports/ProjectPerformanceTable'
-import { SalesAnalysis } from './reports/SalesAnalysis'
-import { CostAnalysis } from './reports/CostAnalysis'
-import { generateRetailReportPdf } from './reports/retailReportPdf'
-import { fetchRetailReportData } from './reports/retailReportService'
-import type { RetailReportData } from './reports/retailReportTypes'
+import { PortfolioOverview } from '../Reports/PortfolioOverview'
+import { ProjectPerformanceTable } from '../Reports/ProjectPerformanceTable'
+import { SalesAnalysis } from '../Reports/SalesAnalysis'
+import { CostAnalysis } from '../Reports/CostAnalysis'
+import { generateRetailReportPdf } from '../Reports/pdf/retailReportPdf'
+import { fetchRetailReportData } from '../Reports/services/retailReportService'
+import type { RetailReportData } from '../Reports/retailReportTypes'
 import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
@@ -22,7 +22,7 @@ const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Pregled', icon: <BarChart3 className="w-4 h-4" /> },
   { id: 'projects', label: 'Projekti', icon: <Briefcase className="w-4 h-4" /> },
   { id: 'sales', label: 'Prodaja', icon: <TrendingUp className="w-4 h-4" /> },
-  { id: 'costs', label: 'Troskovi', icon: <DollarSign className="w-4 h-4" /> }
+  { id: 'costs', label: 'Troškovi', icon: <DollarSign className="w-4 h-4" /> }
 ]
 
 const RetailReports: React.FC = () => {
@@ -68,14 +68,14 @@ const RetailReports: React.FC = () => {
     }).format(amount)
 
   if (loading) {
-    return <LoadingSpinner message="Ucitavanje izvjestaja..." />
+    return <LoadingSpinner message="Učitavanje izvještaja..." />
   }
 
   if (!data) {
     return (
       <EmptyState
-        title="Greska pri ucitavanju podataka."
-        action={<Button onClick={loadData}>Pokusaj ponovo</Button>}
+        title="Greška pri učitavanju podataka."
+        action={<Button onClick={loadData}>Pokušaj ponovo</Button>}
       />
     )
   }
@@ -83,12 +83,12 @@ const RetailReports: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Retail izvjestaji"
-        description={`${data.portfolio.total_projects} projekata \u00B7 ${data.portfolio.total_customers} kupaca \u00B7 ${data.portfolio.total_suppliers} dobavljaca`}
+        title="Retail izvještaji"
+        description={`${data.portfolio.total_projects} projekata \u00B7 ${data.portfolio.total_customers} kupaca \u00B7 ${data.portfolio.total_suppliers} dobavljača`}
         actions={
           <>
             <Button variant="secondary" icon={RefreshCw} onClick={loadData} loading={loading}>Osvjezi</Button>
-            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvjestaj</Button>
+            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvještaj</Button>
           </>
         }
       />

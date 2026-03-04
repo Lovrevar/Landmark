@@ -57,10 +57,10 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   const fetchInvoices = async () => {
     if (!contract) return
 
-    console.log('🔍 RetailInvoicesModal - Fetching invoices for CONTRACT:', {
+    /*console.log('🔍 RetailInvoicesModal - Fetching invoices for CONTRACT:', {
       retail_contract_id: contract.id,
       contract_number: contract.contract_number
-    })
+    })*/
 
     setLoading(true)
     try {
@@ -86,7 +86,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
         .eq('retail_contract_id', contract.id)
         .order('issue_date', { ascending: false })
 
-      console.log('📦 RetailInvoicesModal - Supabase response:', { data, error, count: data?.length })
+      //console.log('📦 RetailInvoicesModal - Supabase response:', { data, error, count: data?.length })
 
       if (error) throw error
 
@@ -108,7 +108,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
         customer_name: inv.retail_customers?.name || null
       }))
 
-      console.log('✅ RetailInvoicesModal - Formatted invoices:', formattedInvoices)
+      //console.log('✅ RetailInvoicesModal - Formatted invoices:', formattedInvoices)
 
       setInvoices(formattedInvoices)
     } catch (error) {

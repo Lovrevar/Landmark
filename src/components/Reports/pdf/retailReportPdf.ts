@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import type { RetailReportData } from './retailReportTypes'
+import type { RetailReportData } from '../retailReportTypes'
 
 const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
   style: 'currency',

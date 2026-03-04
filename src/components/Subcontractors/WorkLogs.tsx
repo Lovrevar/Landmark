@@ -176,7 +176,7 @@ const WorkLogs: React.FC = () => {
         throw error
       }
 
-      console.log('Fetched contracts for phase:', phaseId, 'Count:', data?.length)
+      //console.log('Fetched contracts for phase:', phaseId, 'Count:', data?.length)
       setContracts(data || [])
     } catch (error) {
       console.error('Error fetching contracts:', error)

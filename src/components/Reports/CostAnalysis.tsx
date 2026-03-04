@@ -1,6 +1,6 @@
 import React from 'react'
 import { Briefcase, Hammer, Users } from 'lucide-react'
-import { Table, Badge, EmptyState } from '../../ui'
+import { Table, Badge, EmptyState } from '../ui'
 import type { SupplierReportData, SupplierTypeSummary, RetailReportData } from './retailReportTypes'
 
 interface Props {

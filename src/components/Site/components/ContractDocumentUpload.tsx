@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { Upload, X, FileText, AlertCircle } from 'lucide-react'
+import { formatFileSize } from '../../../utils/formatters'
 
 interface ContractDocumentUploadProps {
   files: File[]
@@ -16,12 +17,6 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
   error
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
 
   const handleFileSelect = (selected: FileList | null) => {
     if (!selected) return
@@ -112,7 +107,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
               <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                <p className="text-xs text-gray-500">{formatSize(file.size)}</p>
+                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
               </div>
               <button
                 type="button"
