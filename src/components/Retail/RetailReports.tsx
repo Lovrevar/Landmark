@@ -7,13 +7,13 @@ import {
   DollarSign,
   Briefcase
 } from 'lucide-react'
-import { PortfolioOverview } from './reports/PortfolioOverview'
-import { ProjectPerformanceTable } from './reports/ProjectPerformanceTable'
-import { SalesAnalysis } from './reports/SalesAnalysis'
-import { CostAnalysis } from './reports/CostAnalysis'
-import { generateRetailReportPdf } from './reports/retailReportPdf'
-import { fetchRetailReportData } from './reports/retailReportService'
-import type { RetailReportData } from './reports/retailReportTypes'
+import { PortfolioOverview } from '../Reports/PortfolioOverview'
+import { ProjectPerformanceTable } from '../Reports/ProjectPerformanceTable'
+import { SalesAnalysis } from '../Reports/SalesAnalysis'
+import { CostAnalysis } from '../Reports/CostAnalysis'
+import { generateRetailReportPdf } from '../Reports/pdf/retailReportPdf'
+import { fetchRetailReportData } from '../Reports/services/retailReportService'
+import type { RetailReportData } from '../Reports/retailReportTypes'
 import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
