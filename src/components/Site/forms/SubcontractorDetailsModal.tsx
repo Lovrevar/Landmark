@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { MessageSquare, Send, Calendar, Building2, FileText, Clock, DollarSign } from 'lucide-react'
+import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Subcontractor } from '../../../lib/supabase'
-
-type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string }
-import { CommentWithUser } from '../types/siteTypes'
+import { CommentWithUser, SubcontractorWithPhase } from '../types/siteTypes'
 import { supabase } from '../../../lib/supabase'
 import { Modal, FormField, Select, Textarea, Button, Badge } from '../../ui'
 import { ContractDocumentViewer } from '../components/ContractDocumentViewer'
+import { formatEuro } from '../../../utils/formatters'
 
 interface ContractData {
   contract_number: string
@@ -23,7 +21,7 @@ interface ContractData {
 interface SubcontractorDetailsModalProps {
   visible: boolean
   onClose: () => void
-  subcontractor: Subcontractor | null
+  subcontractor: SubcontractorWithPhase | null
   comments: CommentWithUser[]
   newComment: string
   commentType: 'completed' | 'issue' | 'general'
@@ -127,14 +125,22 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
     }
   }
 
-  const getVariant = (status: string): 'red' | 'green' | 'blue' | 'gray' => {
-    if (subcontractor.budget_realized > subcontractor.cost) return 'red'
-    if (subcontractor.budget_realized === subcontractor.cost) return 'green'
-    if (subcontractor.budget_realized > 0) return 'blue'
+  if (!visible || !subcontractor) return null
+
+  const realized = subcontractor.budget_realized ?? 0
+  const contractCost = subcontractor.cost ?? 0
+
+  const getBudgetStatus = () =>
+    realized > contractCost ? 'Over Budget' :
+    realized === contractCost ? 'Fully Paid' :
+    realized > 0 ? 'Partial Payment' : 'Unpaid'
+
+  const getBudgetVariant = (): 'red' | 'green' | 'blue' | 'gray' => {
+    if (realized > contractCost) return 'red'
+    if (realized === contractCost) return 'green'
+    if (realized > 0) return 'blue'
     return 'gray'
   }
-
-  if (!visible || !subcontractor) return null
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
@@ -146,17 +152,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </Badge>
           )}
           {subcontractor.has_contract !== false && (
-            <Badge
-              variant={getVariant(
-                subcontractor.budget_realized > subcontractor.cost ? 'Over Budget' :
-                subcontractor.budget_realized === subcontractor.cost ? 'Fully Paid' :
-                subcontractor.budget_realized > 0 ? 'Partial Payment' : 'Unpaid'
-              )}
-              size="sm"
-            >
-              {subcontractor.budget_realized > subcontractor.cost ? 'Over Budget' :
-               subcontractor.budget_realized === subcontractor.cost ? 'Fully Paid' :
-               subcontractor.budget_realized > 0 ? 'Partial Payment' : 'Unpaid'}
+            <Badge variant={getBudgetVariant()} size="sm">
+              {getBudgetStatus()}
             </Badge>
           )}
         </div>
@@ -206,19 +203,19 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">Osnovica</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    €{contractData.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                    {formatEuro(contractData.base_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">PDV ({contractData.vat_rate}%)</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    €{contractData.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                    {formatEuro(contractData.vat_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-sm font-semibold text-gray-900">Ukupno</span>
                   <span className="text-lg font-bold text-blue-600">
-                    €{contractData.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                    {formatEuro(contractData.total_amount)}
                   </span>
                 </div>
               </div>
@@ -233,7 +230,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
               </div>
               <ContractDocumentViewer
-                subcontractorId={(subcontractor as SubcontractorWithIds).subcontractor_id || subcontractor.id}
+                subcontractorId={subcontractor.subcontractor_id || subcontractor.id}
                 readOnly
               />
             </div>
@@ -248,7 +245,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   <p className="text-xs text-gray-600">Ugovoreno (osnova)</p>
                 </div>
                 <p className="text-xl font-bold text-gray-900">
-                  €{(contractData?.base_amount || subcontractor.cost).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                  {formatEuro(contractData?.base_amount ?? contractCost)}
                 </p>
               </div>
 
@@ -258,31 +255,31 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   <p className="text-xs text-teal-700">Plaćeno (osnova)</p>
                 </div>
                 <p className="text-xl font-bold text-teal-900">
-                  €{subcontractor.budget_realized.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                  {formatEuro(realized)}
                 </p>
               </div>
 
               <div className={`p-4 rounded-lg border ${
-                subcontractor.budget_realized > (contractData?.base_amount || subcontractor.cost) ? 'bg-red-50 border-red-200' :
-                subcontractor.budget_realized < (contractData?.base_amount || subcontractor.cost) ? 'bg-green-50 border-green-200' :
+                realized > (contractData?.base_amount ?? contractCost) ? 'bg-red-50 border-red-200' :
+                realized < (contractData?.base_amount ?? contractCost) ? 'bg-green-50 border-green-200' :
                 'bg-gray-50 border-gray-200'
               }`}>
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 mr-1" />
                   <p className={`text-xs ${
-                    subcontractor.budget_realized > (contractData?.base_amount || subcontractor.cost) ? 'text-red-700' :
-                    subcontractor.budget_realized < (contractData?.base_amount || subcontractor.cost) ? 'text-green-700' :
+                    realized > (contractData?.base_amount ?? contractCost) ? 'text-red-700' :
+                    realized < (contractData?.base_amount ?? contractCost) ? 'text-green-700' :
                     'text-gray-600'
                   }`}>Gain/Loss</p>
                 </div>
                 <p className={`text-xl font-bold ${
-                  subcontractor.budget_realized > (contractData?.base_amount || subcontractor.cost) ? 'text-red-900' :
-                  subcontractor.budget_realized < (contractData?.base_amount || subcontractor.cost) ? 'text-green-900' :
+                  realized > (contractData?.base_amount ?? contractCost) ? 'text-red-900' :
+                  realized < (contractData?.base_amount ?? contractCost) ? 'text-green-900' :
                   'text-gray-900'
                 }`}>
-                  {subcontractor.budget_realized > (contractData?.base_amount || subcontractor.cost) ? '-' :
-                   subcontractor.budget_realized < (contractData?.base_amount || subcontractor.cost) ? '+' : ''}
-                  €{Math.abs(subcontractor.budget_realized - (contractData?.base_amount || subcontractor.cost)).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                  {realized > (contractData?.base_amount ?? contractCost) ? '-' :
+                   realized < (contractData?.base_amount ?? contractCost) ? '+' : ''}
+                  {formatEuro(Math.abs(realized - (contractData?.base_amount ?? contractCost)))}
                 </p>
               </div>
             </div>
@@ -295,7 +292,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               <div className="bg-white p-3 rounded-lg mt-3">
                 <p className="text-xs text-yellow-700 mb-1">Plaćeno ukupno</p>
                 <p className="text-2xl font-bold text-yellow-900">
-                  €{subcontractor.budget_realized.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                  {formatEuro(realized)}
                 </p>
               </div>
               <p className="text-xs text-yellow-700 mt-3">

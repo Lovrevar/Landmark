@@ -3,17 +3,12 @@ import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-rea
 import { format } from 'date-fns'
 import { ContractDocument } from '../types/siteTypes'
 import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from '../services/siteService'
+import { formatFileSize } from '../../../utils/formatters'
 
 interface ContractDocumentViewerProps {
   subcontractorId: string
   contractId?: string
   readOnly?: boolean
-}
-
-const formatSize = (bytes: number) => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
@@ -112,7 +107,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name}</p>
             <p className="text-xs text-gray-500">
-              {formatSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
+              {formatFileSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">

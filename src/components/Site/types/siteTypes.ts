@@ -127,3 +127,5 @@ export type OnPhaseActionCallback = (phase: ProjectPhase) => void
 export type OnSubcontractorActionCallback = (subcontractor: Subcontractor) => void
 export type OnPaymentActionCallback = (payment: WirePayment) => void
 export type OnMilestoneActionCallback = (milestone: SubcontractorMilestone) => void
+
+export const VAT_RATE_OPTIONS = [0, 5, 13, 25]
