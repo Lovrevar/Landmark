@@ -1,193 +1,42 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, Bank, BankCredit } from '../../lib/supabase'
 import {
   Building2,
-  DollarSign,
-  Users,
-  PieChart,
-  AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
   Target,
   Eye,
-  Banknote
+  PieChart
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, Modal } from '../ui'
-import { format, differenceInDays } from 'date-fns'
+import { LoadingSpinner, PageHeader, StatGrid, Badge, Button } from '../ui'
+import { format } from 'date-fns'
+import type { ProjectWithFinancials } from './types'
+import { fetchInvestmentProjects } from './services/investmentService'
+import InvestmentProjectModal from './views/InvestmentProjectModal'
 
-interface CreditAllocation {
-  id: string
-  credit_id: string
-  project_id: string | null
-  allocated_amount: number
-  used_amount: number
-  description: string | null
-  created_at: string
-  credit?: {
-    id: string
-    credit_name: string
-    credit_type: string
-    interest_rate: number
-    start_date: string
-    maturity_date: string
-    usage_expiration_date: string | null
-    outstanding_balance: number
-    monthly_payment: number
-    repayment_type: string
-    bank?: Bank
-  }
-}
-
-interface ProjectWithFinancials extends Project {
-  total_investment: number
-  total_debt: number
-  debt_allocations: CreditAllocation[]
-  banks: Bank[]
-  funding_ratio: number
-  debt_to_equity: number
-  expected_roi: number
-  risk_level: 'Low' | 'Medium' | 'High'
+const getFundingColor = (ratio: number) => {
+  if (ratio >= 100) return 'text-green-600'
+  if (ratio >= 80) return 'text-blue-600'
+  return 'text-orange-600'
 }
 
 const InvestmentProjects: React.FC = () => {
   const [projects, setProjects] = useState<ProjectWithFinancials[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithFinancials | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'funding'>('overview')
-  const [fundingUtilization, setFundingUtilization] = useState<any[]>([])
 
   useEffect(() => {
-    fetchData()
+    loadData()
   }, [])
 
-  const fetchData = async () => {
+  const loadData = async () => {
     setLoading(true)
     try {
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('start_date', { ascending: false })
-
-      if (projectsError) throw projectsError
-
-      // Fetch credit allocations with bank credit and bank details
-      const { data: allocationsData, error: allocationsError } = await supabase
-        .from('credit_allocations')
-        .select(`
-          *,
-          credit:bank_credits(
-            id,
-            credit_name,
-            credit_type,
-            interest_rate,
-            start_date,
-            maturity_date,
-            usage_expiration_date,
-            outstanding_balance,
-            monthly_payment,
-            repayment_type,
-            bank:banks(*)
-          )
-        `)
-
-      if (allocationsError) throw allocationsError
-
-      // Process projects with financial data
-      const projectsWithFinancials = (projectsData || []).map(project => {
-        const projectAllocations = (allocationsData || []).filter(alloc => alloc.project_id === project.id)
-
-        const total_debt = projectAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
-        const total_investment = total_debt
-        const funding_ratio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
-        const debt_to_equity = 0
-        const expected_roi = projectAllocations.length > 0
-          ? projectAllocations.reduce((sum, alloc) => sum + (alloc.credit?.interest_rate || 0), 0) / projectAllocations.length
-          : 0
-
-        const uniqueBanks = projectAllocations
-          .filter(alloc => alloc.credit?.bank)
-          .map(alloc => alloc.credit.bank)
-          .filter((bank, index, self) =>
-            index === self.findIndex(b => b.id === bank.id)
-          )
-
-        // Calculate risk level
-        const debtRatio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
-        const timeOverrun = project.end_date ? differenceInDays(new Date(), new Date(project.end_date)) : 0
-
-        let risk_level: 'Low' | 'Medium' | 'High' = 'Low'
-        if (debtRatio > 70 || timeOverrun > 30 || funding_ratio < 80) risk_level = 'High'
-        else if (debtRatio > 50 || timeOverrun > 0 || funding_ratio < 90) risk_level = 'Medium'
-
-        return {
-          ...project,
-          total_investment,
-          total_debt,
-          debt_allocations: projectAllocations,
-          banks: uniqueBanks,
-          funding_ratio,
-          debt_to_equity,
-          expected_roi,
-          risk_level
-        }
-      })
-
-      setProjects(projectsWithFinancials)
+      const data = await fetchInvestmentProjects()
+      setProjects(data)
     } catch (error) {
       console.error('Error fetching investment projects:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getFundingColor = (ratio: number) => {
-    if (ratio >= 100) return 'text-green-600'
-    if (ratio >= 80) return 'text-blue-600'
-    return 'text-orange-600'
-  }
-
-  const fetchFundingUtilization = async (projectId: string) => {
-    try {
-      const { data: allocationsData, error: allocationsError } = await supabase
-        .from('credit_allocations')
-        .select(`
-          *,
-          credit:bank_credits(
-            id,
-            credit_name,
-            credit_type,
-            interest_rate,
-            start_date,
-            maturity_date,
-            usage_expiration_date,
-            bank:banks(*)
-          )
-        `)
-        .eq('project_id', projectId)
-
-      if (allocationsError) throw allocationsError
-
-      const utilization: any[] = []
-
-      allocationsData?.forEach(allocation => {
-        if (!allocation.credit?.bank) return
-
-        utilization.push({
-          id: allocation.id,
-          type: 'bank',
-          name: `${allocation.credit.bank.name} - ${allocation.credit.credit_name}`,
-          totalAmount: allocation.allocated_amount,
-          spentAmount: allocation.used_amount,
-          availableAmount: allocation.allocated_amount - allocation.used_amount,
-          usageExpirationDate: allocation.credit.usage_expiration_date,
-          investmentDate: allocation.credit.start_date
-        })
-      })
-
-      setFundingUtilization(utilization)
-    } catch (error) {
-      console.error('Error fetching funding utilization:', error)
     }
   }
 
@@ -203,14 +52,12 @@ const InvestmentProjects: React.FC = () => {
         className="mb-6"
       />
 
-      {/* Projects Grid */}
       <div className="space-y-6">
         {projects.map((project) => (
           <div
             key={project.id}
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
           >
-            {/* Project Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
@@ -232,7 +79,7 @@ const InvestmentProjects: React.FC = () => {
                 </div>
                 <p className="text-gray-600 mb-1">{project.location}</p>
                 <p className="text-sm text-gray-500">
-                  {format(new Date(project.start_date), 'MMM dd, yyyy')} - 
+                  {format(new Date(project.start_date), 'MMM dd, yyyy')} -&nbsp;
                   {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : 'TBD'}
                 </p>
               </div>
@@ -245,7 +92,6 @@ const InvestmentProjects: React.FC = () => {
               </div>
             </div>
 
-            {/* Financial Overview */}
             <StatGrid columns={4} className="mb-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -292,16 +138,15 @@ const InvestmentProjects: React.FC = () => {
               </div>
             </StatGrid>
 
-            {/* Funding Progress Bar */}
             <div className="mb-4">
               <div className="flex justify-between mb-2">
                 <span className="text-sm text-gray-600">Total Funding Progress</span>
                 <span className="text-sm font-medium">{project.funding_ratio.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
+                <div
                   className={`h-3 rounded-full transition-all duration-300 ${
-                    project.funding_ratio >= 100 ? 'bg-green-600' : 
+                    project.funding_ratio >= 100 ? 'bg-green-600' :
                     project.funding_ratio >= 80 ? 'bg-blue-600' : 'bg-orange-600'
                   }`}
                   style={{ width: `${Math.min(100, project.funding_ratio)}%` }}
@@ -309,7 +154,6 @@ const InvestmentProjects: React.FC = () => {
               </div>
             </div>
 
-            {/* Funders Summary */}
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Funders</span>
@@ -319,10 +163,8 @@ const InvestmentProjects: React.FC = () => {
                 {project.banks.length === 0 ? (
                   <p className="text-xs text-gray-500">No financing sources</p>
                 ) : (
-                  project.banks.slice(0, 3).map((bank, index) => (
-                    <p key={bank.id} className="text-xs text-gray-700">
-                      • {bank.name}
-                    </p>
+                  project.banks.slice(0, 3).map((bank) => (
+                    <p key={bank.id} className="text-xs text-gray-700">• {bank.name}</p>
                   ))
                 )}
                 {project.banks.length > 3 && (
@@ -334,407 +176,11 @@ const InvestmentProjects: React.FC = () => {
         ))}
       </div>
 
-      {/* Project Details Modal */}
       {selectedProject && (
-        <Modal show={true} onClose={() => setSelectedProject(null)} size="xl">
-          <Modal.Header
-            title={selectedProject.name}
-            subtitle={`${selectedProject.location} | Budget: €${selectedProject.budget.toLocaleString('hr-HR')}`}
-            onClose={() => setSelectedProject(null)}
-          />
-
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <div className="flex space-x-8 px-6">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === 'overview'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={async () => {
-                    setActiveTab('funding')
-                    await fetchFundingUtilization(selectedProject.id)
-                  }}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === 'funding'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Funding Utilization
-                </button>
-              </div>
-            </div>
-
-          <Modal.Body>
-              {activeTab === 'overview' && (
-                <>
-              {/* Financial Summary */}
-              <StatGrid columns={4} className="mb-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-blue-700">Total Budget</span>
-                    <DollarSign className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <p className="text-xl font-bold text-blue-900">€{selectedProject.budget.toLocaleString('hr-HR')}</p>
-                  <p className="text-xs text-blue-600">Project value</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-green-700">Active Funders</span>
-                    <Users className="w-4 h-4 text-green-600" />
-                  </div>
-                  <p className="text-xl font-bold text-green-900">{selectedProject.banks.length}</p>
-                  <p className="text-xs text-green-600">Financing banks</p>
-                </div>
-
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-red-700">Debt Financing</span>
-                    <ArrowDownRight className="w-4 h-4 text-red-600" />
-                  </div>
-                  <p className="text-xl font-bold text-red-900">€{selectedProject.total_debt.toLocaleString('hr-HR')}</p>
-                  <p className="text-xs text-red-600">
-                    {selectedProject.budget > 0 ? ((selectedProject.total_debt / selectedProject.budget) * 100).toFixed(1) : '0'}% of budget
-                  </p>
-                </div>
-
-                <div className="bg-teal-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-teal-700">Avg Interest Rate</span>
-                    <Target className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <p className="text-xl font-bold text-teal-900">{selectedProject.expected_roi.toFixed(1)}%</p>
-                  <p className="text-xs text-teal-600">Weighted average</p>
-                </div>
-              </StatGrid>
-
-              {/* Funding Breakdown */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4">Funding Breakdown</h4>
-                  {/* Debt Financing */}
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h5 className="font-medium text-red-900 mb-3 flex items-center">
-                      <Banknote className="w-4 h-4 mr-2" />
-                      Debt Financing
-                    </h5>
-                    {selectedProject.debt_allocations.length === 0 ? (
-                      <p className="text-sm text-red-700">No debt financing</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedProject.debt_allocations.map((allocation) => (
-                          <div key={allocation.id} className="bg-white p-3 rounded border border-red-200">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {allocation.credit?.bank?.name || 'Unknown Bank'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {allocation.credit?.credit_name} • {allocation.credit?.credit_type.replace(/_/g, ' ')} • {allocation.credit?.interest_rate}% APR
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-red-600">€{allocation.allocated_amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-xs text-gray-500">Allocated to Project</p>
-                              </div>
-                            </div>
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-xs text-gray-600">Used Amount:</p>
-                              <p className="text-xs font-medium text-orange-600">€{allocation.used_amount.toLocaleString('hr-HR')}</p>
-                            </div>
-                            <div className="flex justify-between items-center mb-2">
-                              <p className="text-xs text-gray-600">Available:</p>
-                              <p className={`text-xs font-medium ${allocation.allocated_amount - allocation.used_amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
-                              </p>
-                            </div>
-                            {allocation.description && (
-                              <p className="text-xs text-gray-600 mt-2 italic">
-                                {allocation.description}
-                              </p>
-                            )}
-                            {allocation.credit?.maturity_date && (
-                              <p className="text-xs text-gray-600 mt-1">
-                                Credit Matures: {format(new Date(allocation.credit.maturity_date), 'MMM dd, yyyy')}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-              </div>
-
-              {/* Key Metrics */}
-              <StatGrid columns={3} className="mb-6">
-                <div className="bg-white border border-gray-200 p-4 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-3">Leverage Analysis</h5>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Debt-to-Equity:</span>
-                      <span className={`font-medium ${
-                        selectedProject.debt_to_equity > 2 ? 'text-red-600' :
-                        selectedProject.debt_to_equity > 1 ? 'text-orange-600' :
-                        'text-green-600'
-                      }`}>
-                        {selectedProject.debt_to_equity.toFixed(2)}x
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Equity Ratio:</span>
-                      <span className="font-medium text-gray-900">
-                        {selectedProject.budget > 0 ? ((selectedProject.total_investment / selectedProject.budget) * 100).toFixed(1) : '0'}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Debt Ratio:</span>
-                      <span className="font-medium text-gray-900">
-                        {selectedProject.budget > 0 ? ((selectedProject.total_debt / selectedProject.budget) * 100).toFixed(1) : '0'}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 p-4 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-3">Return Analysis</h5>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Expected ROI:</span>
-                      <span className="font-medium text-green-600">{selectedProject.expected_roi.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Investment Period:</span>
-                      <span className="font-medium text-gray-900">
-                        {selectedProject.end_date 
-                          ? `${differenceInDays(new Date(selectedProject.end_date), new Date(selectedProject.start_date)) / 365 | 0} years`
-                          : 'TBD'
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Risk Level:</span>
-                      <span className={`font-medium ${
-                        selectedProject.risk_level === 'High' ? 'text-red-600' :
-                        selectedProject.risk_level === 'Medium' ? 'text-orange-600' :
-                        'text-green-600'
-                      }`}>
-                        {selectedProject.risk_level}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 p-4 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-3">Timeline</h5>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Start Date:</span>
-                      <span className="font-medium text-gray-900">
-                        {format(new Date(selectedProject.start_date), 'MMM dd, yyyy')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Target End:</span>
-                      <span className="font-medium text-gray-900">
-                        {selectedProject.end_date ? format(new Date(selectedProject.end_date), 'MMM dd, yyyy') : 'TBD'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Days Remaining:</span>
-                      <span className={`font-medium ${
-                        selectedProject.end_date && differenceInDays(new Date(selectedProject.end_date), new Date()) < 0 
-                          ? 'text-red-600' : 'text-gray-900'
-                      }`}>
-                        {selectedProject.end_date 
-                          ? differenceInDays(new Date(selectedProject.end_date), new Date())
-                          : 'N/A'
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </StatGrid>
-
-              {/* Risk Factors */}
-              {selectedProject.risk_level !== 'Low' && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h5 className="font-medium text-orange-900 mb-3 flex items-center">
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Risk Factors
-                  </h5>
-                  <div className="space-y-2">
-                    {selectedProject.debt_to_equity > 2 && (
-                      <div className="flex items-center text-orange-800">
-                        <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
-                        High leverage ratio ({selectedProject.debt_to_equity.toFixed(2)}x)
-                      </div>
-                    )}
-                    {selectedProject.funding_ratio < 90 && (
-                      <div className="flex items-center text-orange-800">
-                        <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
-                        Underfunded project ({selectedProject.funding_ratio.toFixed(1)}%)
-                      </div>
-                    )}
-                    {selectedProject.end_date && differenceInDays(new Date(selectedProject.end_date), new Date()) < 0 && (
-                      <div className="flex items-center text-orange-800">
-                        <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
-                        Project timeline overrun
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-                </>
-              )}
-
-              {/* Funding Utilization Tab */}
-              {activeTab === 'funding' && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">Funding Sources Utilization</h4>
-
-                  {fundingUtilization.length === 0 ? (
-                    <EmptyState icon={DollarSign} title="No funding sources for this project" />
-                  ) : (
-                    <div className="space-y-4">
-                      {fundingUtilization.map((source) => {
-                        const utilizationRate = source.totalAmount > 0 ? (source.spentAmount / source.totalAmount) * 100 : 0
-                        const isExpiringSoon = source.usageExpirationDate && differenceInDays(new Date(source.usageExpirationDate), new Date()) <= 30
-
-                        return (
-                          <div key={`${source.type}-${source.id}`} className="bg-white border border-gray-200 rounded-lg p-5">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3 mb-2">
-                                  <Banknote className="w-5 h-5 text-green-600" />
-                                  <h5 className="text-lg font-semibold text-gray-900">{source.name}</h5>
-                                  <Badge variant="green" size="sm">
-                                    BANK
-                                  </Badge>
-                                  {isExpiringSoon && (
-                                    <Badge variant="orange" size="sm">
-                                      EXPIRING SOON
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600">
-                                  Received: {format(new Date(source.investmentDate), 'MMM dd, yyyy')}
-                                  {source.usageExpirationDate && (
-                                    <> • Expires: <span className={isExpiringSoon ? 'text-orange-600 font-medium' : ''}>
-                                      {format(new Date(source.usageExpirationDate), 'MMM dd, yyyy')}
-                                    </span></>
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-4 gap-4 mb-4">
-                              <div className="bg-blue-50 p-3 rounded-lg">
-                                <p className="text-xs text-blue-700 mb-1">Total Committed</p>
-                                <p className="text-lg font-bold text-blue-900">€{source.totalAmount.toLocaleString('hr-HR')}</p>
-                              </div>
-                              <div className="bg-red-50 p-3 rounded-lg">
-                                <p className="text-xs text-red-700 mb-1">Spent</p>
-                                <p className="text-lg font-bold text-red-900">€{source.spentAmount.toLocaleString('hr-HR')}</p>
-                              </div>
-                              <div className="bg-green-50 p-3 rounded-lg">
-                                <p className="text-xs text-green-700 mb-1">Available</p>
-                                <p className="text-lg font-bold text-green-900">€{source.availableAmount.toLocaleString('hr-HR')}</p>
-                              </div>
-                              <div className="bg-gray-50 p-3 rounded-lg">
-                                <p className="text-xs text-gray-700 mb-1">Utilization</p>
-                                <p className={`text-lg font-bold ${
-                                  utilizationRate >= 80 ? 'text-orange-600' :
-                                  utilizationRate >= 50 ? 'text-blue-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {utilizationRate.toFixed(1)}%
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Progress Bar */}
-                            <div className="mb-3">
-                              <div className="flex justify-between mb-1">
-                                <span className="text-xs text-gray-600">Funding Utilization</span>
-                                <span className="text-xs font-medium text-gray-900">
-                                  €{source.spentAmount.toLocaleString('hr-HR')} / €{source.totalAmount.toLocaleString('hr-HR')}
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-3">
-                                <div
-                                  className={`h-3 rounded-full transition-all duration-300 ${
-                                    utilizationRate >= 90 ? 'bg-red-600' :
-                                    utilizationRate >= 80 ? 'bg-orange-600' :
-                                    utilizationRate >= 50 ? 'bg-blue-600' :
-                                    'bg-green-600'
-                                  }`}
-                                  style={{ width: `${Math.min(100, utilizationRate)}%` }}
-                                ></div>
-                              </div>
-                            </div>
-
-                            {/* Warnings */}
-                            {(utilizationRate >= 80 || isExpiringSoon || source.availableAmount <= 0) && (
-                              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                <div className="flex items-center mb-2">
-                                  <AlertTriangle className="w-4 h-4 text-orange-600 mr-2" />
-                                  <span className="text-sm font-medium text-orange-900">Warnings</span>
-                                </div>
-                                <div className="space-y-1">
-                                  {source.availableAmount <= 0 && (
-                                    <p className="text-sm text-orange-800">• Funds fully depleted</p>
-                                  )}
-                                  {utilizationRate >= 80 && source.availableAmount > 0 && (
-                                    <p className="text-sm text-orange-800">• High utilization rate ({utilizationRate.toFixed(0)}%)</p>
-                                  )}
-                                  {isExpiringSoon && (
-                                    <p className="text-sm text-orange-800">
-                                      • Usage period expires in {differenceInDays(new Date(source.usageExpirationDate!), new Date())} days
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {/* Summary Stats */}
-                  {fundingUtilization.length > 0 && (
-                    <StatGrid columns={3} className="mt-6">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-700 mb-1">Total Committed</p>
-                        <p className="text-2xl font-bold text-blue-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.totalAmount, 0).toLocaleString('hr-HR')}
-                        </p>
-                      </div>
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-sm text-red-700 mb-1">Total Spent</p>
-                        <p className="text-2xl font-bold text-red-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.spentAmount, 0).toLocaleString('hr-HR')}
-                        </p>
-                      </div>
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <p className="text-sm text-green-700 mb-1">Total Available</p>
-                        <p className="text-2xl font-bold text-green-900">
-                          €{fundingUtilization.reduce((sum, s) => sum + s.availableAmount, 0).toLocaleString('hr-HR')}
-                        </p>
-                      </div>
-                    </StatGrid>
-                  )}
-                </div>
-              )}
-          </Modal.Body>
-        </Modal>
+        <InvestmentProjectModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
       )}
     </div>
   )

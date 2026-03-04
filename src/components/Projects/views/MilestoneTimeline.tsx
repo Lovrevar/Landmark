@@ -1,15 +1,8 @@
 import React from 'react'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2 } from 'lucide-react'
-import { Badge, Button, EmptyState } from '../ui'
+import { Badge, Button, EmptyState } from '../../ui'
 import { format, parseISO, isPast } from 'date-fns'
-
-interface Milestone {
-  id: string
-  name: string
-  due_date: string | null
-  completed: boolean
-  created_at?: string
-}
+import type { Milestone } from '../types'
 
 interface MilestoneTimelineProps {
   milestones: Milestone[]

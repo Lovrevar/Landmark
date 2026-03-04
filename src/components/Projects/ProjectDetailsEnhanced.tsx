@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import {
   Building2,
   ArrowLeft,
@@ -16,86 +15,24 @@ import {
 } from 'lucide-react'
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
-import MilestoneTimeline from './MilestoneTimeline'
+import MilestoneTimeline from './views/MilestoneTimeline'
 import ProjectFormModal from './ProjectFormModal'
-
-interface Project {
-  id: string
-  name: string
-  location: string
-  start_date: string
-  end_date: string | null
-  budget: number
-  investor: string | null
-  status: string
-  created_at: string
-}
-
-interface Milestone {
-  id: string
-  name: string
-  due_date: string | null
-  completed: boolean
-}
-
-interface Phase {
-  id: string
-  phase_number: number
-  phase_name: string
-  budget_allocated: number
-  budget_used: number
-  start_date: string | null
-  end_date: string | null
-  status: string
-}
-
-interface Contract {
-  id: string
-  contract_number: string
-  subcontractor: { id: string; name: string; contact: string }
-  job_description: string
-  contract_amount: number
-  budget_realized: number
-  status: string
-  start_date: string | null
-  end_date: string | null
-  phase: { phase_name: string } | null
-}
-
-interface Apartment {
-  id: string
-  number: string
-  floor: number
-  size_m2: number
-  price: number
-  status: string
-  buyer_name: string | null
-}
-
-interface CreditAllocationItem {
-  id: string
-  allocated_amount: number
-  used_amount: number
-  description: string | null
-  created_at: string
-  bank_credits?: {
-    credit_name: string
-    credit_type: string
-    start_date: string | null
-    banks?: { name: string }
-  }
-}
-
-type TabType = 'overview' | 'phases' | 'apartments' | 'subcontractors' | 'financing' | 'milestones'
+import { fetchProjectDataEnhanced } from './services/projectDetailsService'
+import {
+  addMilestone as svcAddMilestone,
+  toggleMilestoneCompletion as svcToggleMilestone,
+  deleteMilestone as svcDeleteMilestone
+} from './services/milestoneService'
+import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType } from './types'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<Project | null>(null)
+  const [project, setProject] = useState<any | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [apartments, setApartments] = useState<Apartment[]>([])
+  const [contracts, setContracts] = useState<ContractWithDetails[]>([])
+  const [apartments, setApartments] = useState<ApartmentItem[]>([])
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
@@ -104,76 +41,20 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
 
   useEffect(() => {
-    if (id) {
-      fetchProjectData()
-    }
+    if (id) loadData()
   }, [id])
 
-  const fetchProjectData = async () => {
+  const loadData = async () => {
     if (!id) return
-
     try {
       setLoading(true)
-
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (projectError) throw projectError
-      setProject(projectData)
-
-      const { data: milestonesData } = await supabase
-        .from('project_milestones')
-        .select('*')
-        .eq('project_id', id)
-        .order('due_date', { ascending: true })
-
-      setMilestones(milestonesData || [])
-
-      const { data: phasesData } = await supabase
-        .from('project_phases')
-        .select('*')
-        .eq('project_id', id)
-        .order('phase_number', { ascending: true })
-
-      setPhases(phasesData || [])
-
-      const { data: contractsData } = await supabase
-        .from('contracts')
-        .select(`
-          *,
-          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-          phase:project_phases!contracts_phase_id_fkey(phase_name)
-        `)
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-
-      setContracts(contractsData || [])
-
-      const { data: apartmentsData } = await supabase
-        .from('apartments')
-        .select('*')
-        .eq('project_id', id)
-        .order('floor', { ascending: true })
-
-      setApartments(apartmentsData || [])
-
-      const { data: investmentsData } = await supabase
-        .from('credit_allocations')
-        .select(`
-          id,
-          allocated_amount,
-          used_amount,
-          description,
-          created_at,
-          bank_credits(credit_name, credit_type, start_date, banks(name))
-        `)
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-
-      setInvestments((investmentsData || []) as CreditAllocationItem[])
+      const data = await fetchProjectDataEnhanced(id)
+      setProject(data.project)
+      setMilestones(data.milestones)
+      setPhases(data.phases)
+      setContracts(data.contracts)
+      setApartments(data.apartments)
+      setInvestments(data.investments)
     } catch (error) {
       console.error('Error fetching project:', error)
     } finally {
@@ -181,70 +62,40 @@ const ProjectDetailsEnhanced: React.FC = () => {
     }
   }
 
-  const addMilestone = async () => {
-    if (!newMilestone.name.trim() || !id) {
-      alert('Please enter milestone name')
-      return
-    }
-
+  const handleAddMilestone = async () => {
+    if (!newMilestone.name.trim() || !id) { alert('Please enter milestone name'); return }
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .insert({
-          project_id: id,
-          name: newMilestone.name,
-          due_date: newMilestone.due_date || null,
-          completed: false
-        })
-
-      if (error) throw error
-
+      await svcAddMilestone(id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
       setNewMilestone({ name: '', due_date: '', completed: false })
       setShowMilestoneForm(false)
-      fetchProjectData()
+      loadData()
     } catch (error) {
       console.error('Error adding milestone:', error)
       alert('Error adding milestone')
     }
   }
 
-  const toggleMilestoneCompletion = async (milestoneId: string, completed: boolean) => {
+  const handleToggleMilestone = async (milestoneId: string, completed: boolean) => {
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .update({ completed: !completed })
-        .eq('id', milestoneId)
-
-      if (error) throw error
-      fetchProjectData()
+      await svcToggleMilestone(milestoneId, completed)
+      loadData()
     } catch (error) {
       console.error('Error updating milestone:', error)
     }
   }
 
-  const deleteMilestone = async (milestoneId: string) => {
+  const handleDeleteMilestone = async (milestoneId: string) => {
     if (!confirm('Are you sure you want to delete this milestone?')) return
-
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .delete()
-        .eq('id', milestoneId)
-
-      if (error) throw error
-      fetchProjectData()
+      await svcDeleteMilestone(milestoneId)
+      loadData()
     } catch (error) {
       console.error('Error deleting milestone:', error)
     }
   }
 
-  if (loading) {
-    return <LoadingSpinner message="Loading project..." />
-  }
-
-  if (!project) {
-    return <EmptyState icon={Building2} title="Project not found" />
-  }
+  if (loading) return <LoadingSpinner message="Loading project..." />
+  if (!project) return <EmptyState icon={Building2} title="Project not found" />
 
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
@@ -267,9 +118,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/projects')}>
           Back to Projects
         </Button>
-        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>
-          Edit Project
-        </Button>
+        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>Edit Project</Button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -281,8 +130,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
           <Badge variant={
             project.status === 'Completed' ? 'green'
               : project.status === 'In Progress' ? 'blue'
-              : project.status === 'On Hold' ? 'yellow'
-              : 'gray'
+              : project.status === 'On Hold' ? 'yellow' : 'gray'
           }>
             {project.status}
           </Badge>
@@ -295,9 +143,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <DollarSign className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Spent: €{totalSpent.toLocaleString('hr-HR')}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Spent: €{totalSpent.toLocaleString('hr-HR')}</p>
           </div>
 
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -306,13 +152,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <Calendar className="w-5 h-5 text-blue-400" />
             </div>
             <p className="text-2xl font-bold text-blue-900">
-              {project.end_date
-                ? `${differenceInDays(parseISO(project.end_date), new Date())} days`
-                : 'Ongoing'}
+              {project.end_date ? `${differenceInDays(parseISO(project.end_date), new Date())} days` : 'Ongoing'}
             </p>
-            <p className="text-xs text-blue-600 mt-1">
-              {format(parseISO(project.start_date), 'MMM dd, yyyy')}
-            </p>
+            <p className="text-xs text-blue-600 mt-1">{format(parseISO(project.start_date), 'MMM dd, yyyy')}</p>
           </div>
 
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -322,10 +164,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
             </div>
             <p className="text-2xl font-bold text-green-900">{completionPercentage}%</p>
             <div className="w-full bg-green-200 rounded-full h-2 mt-2">
-              <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${completionPercentage}%` }}
-              />
+              <div className="bg-green-600 h-2 rounded-full transition-all duration-300" style={{ width: `${completionPercentage}%` }} />
             </div>
           </div>
 
@@ -376,9 +215,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <span className="text-sm text-gray-600">Start Date</span>
-                    <p className="text-gray-900 font-medium mt-1">
-                      {format(parseISO(project.start_date), 'MMMM dd, yyyy')}
-                    </p>
+                    <p className="text-gray-900 font-medium mt-1">{format(parseISO(project.start_date), 'MMMM dd, yyyy')}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <span className="text-sm text-gray-600">End Date</span>
@@ -395,7 +232,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <span className="text-sm text-blue-700">Total Investment</span>
                     <p className="text-2xl font-bold text-blue-900 mt-1">
-                      €{investments.reduce((sum, inv) => sum + Number(inv.amount), 0).toLocaleString('hr-HR')}
+                      €{investments.reduce((sum, inv) => sum + Number((inv as any).amount || inv.allocated_amount), 0).toLocaleString('hr-HR')}
                     </p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-4 border border-red-200">
@@ -412,14 +249,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-lg font-semibold text-gray-900">Recent Milestones</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('milestones')}>
-                    View all
-                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('milestones')}>View all</Button>
                 </div>
-                <MilestoneTimeline
-                  milestones={milestones.slice(0, 3)}
-                  editable={false}
-                />
+                <MilestoneTimeline milestones={milestones.slice(0, 3)} editable={false} />
               </div>
             </div>
           )}
@@ -440,45 +272,29 @@ const ProjectDetailsEnhanced: React.FC = () => {
                           <h4 className="text-lg font-semibold text-gray-900">
                             Phase {phase.phase_number}: {phase.phase_name}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Status: <span className="font-medium">{phase.status}</span>
-                          </p>
+                          <p className="text-sm text-gray-600 mt-1">Status: <span className="font-medium">{phase.status}</span></p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-600">Budget</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            €{phase.budget_allocated.toLocaleString('hr-HR')}
-                          </p>
-                          <p className="text-sm text-blue-600">
-                            Used: €{phase.budget_used.toLocaleString('hr-HR')}
-                          </p>
+                          <p className="text-lg font-semibold text-gray-900">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
+                          <p className="text-sm text-blue-600">Used: €{phase.budget_used.toLocaleString('hr-HR')}</p>
                         </div>
                       </div>
-
                       <div className="border-t border-gray-200 pt-4 mt-4">
                         <h5 className="font-medium text-gray-900 mb-3">Contracts in this phase</h5>
                         <div className="space-y-2">
-                          {contracts
-                            .filter((c) => c.phase?.phase_name === phase.phase_name)
-                            .map((contract) => (
-                              <div
-                                key={contract.id}
-                                className="bg-gray-50 rounded-lg p-3 flex justify-between items-center"
-                              >
-                                <div>
-                                  <p className="font-medium text-gray-900">{contract.subcontractor.name}</p>
-                                  <p className="text-sm text-gray-600">{contract.job_description}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    €{contract.contract_amount.toLocaleString('hr-HR')}
-                                  </p>
-                                  <p className="text-xs text-gray-600">
-                                    Realized: €{contract.budget_realized.toLocaleString('hr-HR')}
-                                  </p>
-                                </div>
+                          {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).map((contract) => (
+                            <div key={contract.id} className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                              <div>
+                                <p className="font-medium text-gray-900">{contract.subcontractor.name}</p>
+                                <p className="text-sm text-gray-600">{contract.job_description}</p>
                               </div>
-                            ))}
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-gray-900">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
+                                <p className="text-xs text-gray-600">Realized: €{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                              </div>
+                            </div>
+                          ))}
                           {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).length === 0 && (
                             <p className="text-sm text-gray-500 italic">No contracts in this phase</p>
                           )}
@@ -496,24 +312,17 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                   <span className="text-sm text-green-700">Sold</span>
-                  <p className="text-2xl font-bold text-green-900 mt-1">
-                    {apartments.filter((a) => a.status === 'Sold').length}
-                  </p>
+                  <p className="text-2xl font-bold text-green-900 mt-1">{apartments.filter((a) => a.status === 'Sold').length}</p>
                 </div>
                 <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                   <span className="text-sm text-yellow-700">Reserved</span>
-                  <p className="text-2xl font-bold text-yellow-900 mt-1">
-                    {apartments.filter((a) => a.status === 'Reserved').length}
-                  </p>
+                  <p className="text-2xl font-bold text-yellow-900 mt-1">{apartments.filter((a) => a.status === 'Reserved').length}</p>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <span className="text-sm text-blue-700">Available</span>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">
-                    {apartments.filter((a) => a.status === 'Available').length}
-                  </p>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">{apartments.filter((a) => a.status === 'Available').length}</p>
                 </div>
               </div>
-
               <Table>
                 <Table.Head>
                   <Table.Tr>
@@ -533,11 +342,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <Table.Td>{apt.size_m2}</Table.Td>
                       <Table.Td className="font-semibold text-gray-900">€{apt.price.toLocaleString('hr-HR')}</Table.Td>
                       <Table.Td>
-                        <Badge variant={
-                          apt.status === 'Sold' ? 'green'
-                            : apt.status === 'Reserved' ? 'yellow'
-                            : 'blue'
-                        } size="sm">
+                        <Badge variant={apt.status === 'Sold' ? 'green' : apt.status === 'Reserved' ? 'yellow' : 'blue'} size="sm">
                           {apt.status}
                         </Badge>
                       </Table.Td>
@@ -567,26 +372,19 @@ const ProjectDetailsEnhanced: React.FC = () => {
                           )}
                         </div>
                         <Badge variant={
-                          contract.status === 'active' ? 'green'
-                            : contract.status === 'completed' ? 'gray'
-                            : 'yellow'
+                          contract.status === 'active' ? 'green' : contract.status === 'completed' ? 'gray' : 'yellow'
                         } size="sm">
                           {contract.status}
                         </Badge>
                       </div>
-
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                           <p className="text-sm text-gray-600">Contract Amount</p>
-                          <p className="text-lg font-semibold text-gray-900 mt-1">
-                            €{contract.contract_amount.toLocaleString('hr-HR')}
-                          </p>
+                          <p className="text-lg font-semibold text-gray-900 mt-1">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Budget Realized</p>
-                          <p className="text-lg font-semibold text-blue-600 mt-1">
-                            €{contract.budget_realized.toLocaleString('hr-HR')}
-                          </p>
+                          <p className="text-lg font-semibold text-blue-600 mt-1">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Remaining</p>
@@ -644,9 +442,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Project Milestones</h3>
-                <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>
-                  Add Milestone
-                </Button>
+                <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>Add Milestone</Button>
               </div>
 
               {showMilestoneForm && (
@@ -669,16 +465,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       />
                     </FormField>
                     <div className="flex space-x-3">
-                      <Button onClick={addMilestone}>
-                        Add Milestone
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setShowMilestoneForm(false)
-                          setNewMilestone({ name: '', due_date: '', completed: false })
-                        }}
-                      >
+                      <Button onClick={handleAddMilestone}>Add Milestone</Button>
+                      <Button variant="secondary" onClick={() => {
+                        setShowMilestoneForm(false)
+                        setNewMilestone({ name: '', due_date: '', completed: false })
+                      }}>
                         Cancel
                       </Button>
                     </div>
@@ -688,8 +479,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
               <MilestoneTimeline
                 milestones={milestones}
-                onToggleComplete={toggleMilestoneCompletion}
-                onDelete={deleteMilestone}
+                onToggleComplete={handleToggleMilestone}
+                onDelete={handleDeleteMilestone}
                 editable={true}
               />
             </div>
@@ -703,7 +494,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
           onClose={() => setShowEditModal(false)}
           onSuccess={() => {
             setShowEditModal(false)
-            fetchProjectData()
+            loadData()
           }}
         />
       )}
