@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Project, Subcontractor, Contract, WirePayment, ProjectPhase } from '../../lib/supabase'
 import {
   TrendingUp,
   Users,
@@ -8,56 +7,12 @@ import {
   Activity,
   ClipboardCheck
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { format, subMonths } from 'date-fns'
 import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard, EmptyState } from '../ui'
-
-interface MonthlyData {
-  month: string
-  contracts: number
-  payments: number
-  subcontractors_paid: string
-}
-
-interface WorkLog {
-  id: string
-  date: string
-  subcontractor_id: string
-  work_description: string
-  status: string
-  color: string
-  notes: string | null
-  blocker_details: string | null
-  created_at: string
-  subcontractors?: {
-    name: string
-  }
-  contracts?: {
-    contract_number: string
-    job_description: string
-  }
-}
-
-interface ProjectSupervisionReport {
-  project: Project
-  total_budget: number
-  budget_used: number
-  remaining_budget: number
-  total_contracts: number
-  active_contracts: number
-  completed_contracts: number
-  total_phases: number
-  completed_phases: number
-  total_subcontractors: number
-  total_payments: number
-  total_work_logs: number
-  monthly_data: MonthlyData[]
-  contracts: Contract[]
-  phases: ProjectPhase[]
-  subcontractors: Subcontractor[]
-  payments: WirePayment[]
-  work_logs: WorkLog[]
-  investors: string
-}
+import type { Project } from '../../lib/supabase'
+import type { ProjectSupervisionReport } from './types'
+import { fetchProjects, generateProjectReport } from './services/supervisionReportService'
+import { generateSupervisionReportPDF } from './pdf/supervisionReportPdf'
 
 const SupervisionReports: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
@@ -71,28 +26,22 @@ const SupervisionReports: React.FC = () => {
   const [generatingReport, setGeneratingReport] = useState(false)
 
   useEffect(() => {
-    fetchProjects()
+    loadProjects()
   }, [])
 
   useEffect(() => {
     if (selectedProject) {
-      generateProjectReport()
+      loadProjectReport()
     }
   }, [selectedProject, dateRange])
 
-  const fetchProjects = async () => {
+  const loadProjects = async () => {
     setLoading(true)
     try {
-      const { data: projectsData, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-      setProjects(projectsData || [])
-
-      if (projectsData && projectsData.length > 0) {
-        setSelectedProject(projectsData[0].id)
+      const data = await fetchProjects()
+      setProjects(data)
+      if (data.length > 0) {
+        setSelectedProject(data[0].id)
       }
     } catch (error) {
       console.error('Error fetching projects:', error)
@@ -101,179 +50,12 @@ const SupervisionReports: React.FC = () => {
     }
   }
 
-  const generateProjectReport = async () => {
+  const loadProjectReport = async () => {
     if (!selectedProject) return
-
     setGeneratingReport(true)
     try {
-      const project = projects.find(p => p.id === selectedProject)
-      if (!project) return
-
-      const { data: contractsData, error: contractsError } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('project_id', selectedProject)
-
-      if (contractsError) throw contractsError
-
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('*')
-        .eq('project_id', selectedProject)
-
-      if (phasesError) throw phasesError
-
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('subcontractor_payments')
-        .select(`
-          *,
-          contracts!inner(project_id)
-        `)
-        .eq('contracts.project_id', selectedProject)
-
-      if (paymentsError) throw paymentsError
-
-      const { data: subcontractorsData, error: subcontractorsError } = await supabase
-        .from('subcontractors')
-        .select('*')
-
-      if (subcontractorsError) throw subcontractorsError
-
-      const { data: workLogsData, error: workLogsError } = await supabase
-        .from('work_logs')
-        .select(`
-          *,
-          subcontractors!work_logs_subcontractor_id_fkey (name),
-          contracts!work_logs_contract_id_fkey (contract_number, job_description)
-        `)
-        .eq('project_id', selectedProject)
-        .gte('date', dateRange.start)
-        .lte('date', dateRange.end)
-        .order('date', { ascending: false })
-
-      if (workLogsError) throw workLogsError
-
-      // Fetch bank credits
-      const { data: bankCreditsData, error: bankCreditsError } = await supabase
-        .from('bank_credits')
-        .select('*, banks(name)')
-        .eq('project_id', selectedProject)
-
-      if (bankCreditsError) throw bankCreditsError
-
-      // Fetch credit allocations for this project (new funding model)
-      const { data: allocationsData, error: allocationsError } = await supabase
-        .from('credit_allocations')
-        .select('*, bank_credits(banks(name))')
-        .eq('project_id', selectedProject)
-
-      if (allocationsError) throw allocationsError
-
-      const contracts = contractsData || []
-      const phases = phasesData || []
-      const payments = paymentsData || []
-      const subcontractors = subcontractorsData || []
-      const work_logs = workLogsData || []
-
-      const contractSubcontractorIds = contracts.map(c => c.subcontractor_id)
-      const projectSubcontractors = subcontractors.filter(s =>
-        contractSubcontractorIds.includes(s.id)
-      )
-
-      const total_budget = project.budget
-      const budget_used = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
-      const remaining_budget = total_budget - budget_used
-      const total_contracts = contracts.length
-      const active_contracts = contracts.filter(c => c.status === 'active').length
-      const completed_contracts = contracts.filter(c => c.status === 'completed').length
-      const total_phases = phases.length
-      const completed_phases = phases.filter(p => p.status === 'completed').length
-      const total_subcontractors = projectSubcontractors.length
-      const total_payments = payments.reduce((sum, p) => sum + p.amount, 0)
-      const total_work_logs = work_logs.length
-
-      // Build investors list
-      const investorNames: string[] = []
-      if (bankCreditsData && bankCreditsData.length > 0) {
-        bankCreditsData.forEach(bc => {
-          if (bc.banks?.name && !investorNames.includes(bc.banks.name)) {
-            investorNames.push(bc.banks.name)
-          }
-        })
-      }
-      if (allocationsData && allocationsData.length > 0) {
-        allocationsData.forEach(alloc => {
-          const bankName = (alloc.bank_credits as any)?.banks?.name
-          if (bankName && !investorNames.includes(bankName)) {
-            investorNames.push(bankName)
-          }
-        })
-      }
-      const investorsString = investorNames.length > 0 ? investorNames.join(', ') : 'N/A'
-
-      const startDate = new Date(dateRange.start)
-      const endDate = new Date(dateRange.end)
-      const months = eachMonthOfInterval({ start: startDate, end: endDate })
-
-      const monthly_data: MonthlyData[] = months.map(month => {
-        const monthStart = startOfMonth(month)
-        const monthEnd = endOfMonth(month)
-
-        const monthPayments = payments.filter(payment => {
-          if (!payment.payment_date) return false
-          const paymentDate = new Date(payment.payment_date)
-          return paymentDate >= monthStart && paymentDate <= monthEnd &&
-                 paymentDate >= startDate && paymentDate <= endDate
-        })
-
-        // Count contracts that are active in this month (deadline is at or after the start of this month)
-        const activeContracts = contracts.filter(contract => {
-          const subcontractor = subcontractors.find(s => s.id === contract.subcontractor_id)
-          if (!subcontractor || !subcontractor.deadline) return false
-          const deadline = new Date(subcontractor.deadline)
-          // Contract is active if deadline is at or after the start of this month
-          return deadline >= monthStart
-        })
-
-        // Get unique subcontractor names that were paid in this month
-        const paidSubcontractorIds = new Set(
-          monthPayments.map(p => p.subcontractor_id).filter(Boolean)
-        )
-        const paidSubcontractorNames = projectSubcontractors
-          .filter(s => paidSubcontractorIds.has(s.id))
-          .map(s => s.name)
-          .filter((name, index, self) => self.indexOf(name) === index) // unique names
-          .join(', ')
-
-        return {
-          month: format(month, 'MMM yyyy'),
-          contracts: activeContracts.length,
-          payments: monthPayments.reduce((sum, p) => sum + p.amount, 0),
-          subcontractors_paid: paidSubcontractorNames || 'None'
-        }
-      })
-
-      setProjectReport({
-        project,
-        total_budget,
-        budget_used,
-        remaining_budget,
-        total_contracts,
-        active_contracts,
-        completed_contracts,
-        total_phases,
-        completed_phases,
-        total_subcontractors,
-        total_payments,
-        total_work_logs,
-        monthly_data,
-        contracts,
-        phases,
-        subcontractors: projectSubcontractors,
-        payments,
-        work_logs,
-        investors: investorsString
-      })
+      const report = await generateProjectReport(selectedProject, projects, dateRange)
+      setProjectReport(report)
     } catch (error) {
       console.error('Error generating project report:', error)
     } finally {
@@ -281,219 +63,10 @@ const SupervisionReports: React.FC = () => {
     }
   }
 
-  const generatePDFReport = async () => {
+  const handleGeneratePDF = async () => {
     if (!projectReport) return
-
     try {
-      const { jsPDF } = await import('jspdf')
-      const pdf = new jsPDF('p', 'mm', 'a4')
-
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      const margin = 20
-      const contentWidth = pageWidth - (margin * 2)
-      let yPosition = margin
-
-      const checkPageBreak = (requiredHeight: number) => {
-        if (yPosition + requiredHeight > pageHeight - margin) {
-          pdf.addPage()
-          yPosition = margin
-          return true
-        }
-        return false
-      }
-
-      const addText = (text: string, x: number, y: number, options: any = {}) => {
-        const fontSize = options.fontSize || 10
-        const maxWidth = options.maxWidth || contentWidth
-        const lineHeight = options.lineHeight || fontSize * 0.35
-
-        pdf.setFontSize(fontSize)
-        if (options.style) pdf.setFont('helvetica', options.style)
-        if (options.color) pdf.setTextColor(options.color[0], options.color[1], options.color[2])
-
-        const lines = pdf.splitTextToSize(text, maxWidth)
-        for (let i = 0; i < lines.length; i++) {
-          checkPageBreak(lineHeight)
-          pdf.text(lines[i], x, y + (i * lineHeight))
-        }
-        return y + (lines.length * lineHeight)
-      }
-
-      pdf.setFillColor(37, 99, 235)
-      pdf.rect(0, 0, pageWidth, 35, 'F')
-
-      pdf.setTextColor(255, 255, 255)
-      pdf.setFontSize(20)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('LANDMARK GROUP Supervision Report', margin, 20)
-
-      pdf.setFontSize(12)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(projectReport.project.name, margin, 28)
-
-      pdf.setTextColor(0, 0, 0)
-      yPosition = 45
-
-      pdf.setFontSize(10)
-      pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, margin, yPosition)
-      pdf.text(`Report Period: ${format(new Date(dateRange.start), 'MMM dd, yyyy')} - ${format(new Date(dateRange.end), 'MMM dd, yyyy')}`, margin, yPosition + 5)
-      yPosition += 20
-
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(37, 99, 235)
-      yPosition = addText('Project Overview', margin, yPosition, { fontSize: 14, style: 'bold', color: [37, 99, 235] })
-      yPosition += 5
-
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-
-      const overviewData = [
-        ['Location', projectReport.project.location],
-        ['Status', projectReport.project.status],
-        ['Start Date', format(new Date(projectReport.project.start_date), 'MMMM dd, yyyy')],
-        ['Total Budget', `€${projectReport.total_budget.toLocaleString()}`],
-        ['Budget Used', `€${projectReport.total_payments.toLocaleString()}`],
-        ['Remaining Budget', `€${projectReport.remaining_budget.toLocaleString()}`],
-        ['Budget Utilization', `${projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%`],
-        ['Total Contracts', projectReport.total_contracts.toString()],
-        ['Active Contracts', projectReport.active_contracts.toString()],
-        ['Completed Contracts', projectReport.completed_contracts.toString()],
-        ['Total Phases', projectReport.total_phases.toString()],
-        ['Completed Phases', projectReport.completed_phases.toString()],
-        ['Total Subcontractors', projectReport.total_subcontractors.toString()],
-        ['Total Payments', `€${projectReport.total_payments.toLocaleString()}`],
-        ['Work Logs', projectReport.total_work_logs.toString()]
-      ]
-
-      overviewData.forEach(([label, value], index) => {
-        const y = yPosition + (index * 6)
-        checkPageBreak(6)
-
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(`${label}:`, margin + 5, y)
-        pdf.setFont('helvetica', 'normal')
-        pdf.text(value, margin + 60, y)
-      })
-
-      yPosition += (overviewData.length * 6) + 15
-
-      checkPageBreak(40)
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(37, 99, 235)
-      yPosition = addText('Monthly Budget Performance', margin, yPosition, { fontSize: 14, style: 'bold', color: [37, 99, 235] })
-      yPosition += 10
-
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-
-      projectReport.monthly_data.forEach((month, index) => {
-        checkPageBreak(8)
-        const y = yPosition + (index * 8)
-        pdf.text(`${month.month}:`, margin + 5, y)
-        pdf.text(`${month.contracts} contracts`, margin + 40, y)
-        pdf.text(`€${month.payments.toLocaleString()} paid`, margin + 80, y)
-        if (month.subcontractors_paid !== 'None') {
-          pdf.setFontSize(8)
-          pdf.text(`Paid: ${month.subcontractors_paid}`, margin + 5, y + 4)
-          pdf.setFontSize(10)
-        }
-      })
-
-      yPosition += (projectReport.monthly_data.length * 6) + 15
-
-      checkPageBreak(40)
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(37, 99, 235)
-      yPosition = addText('Contract Details', margin, yPosition, { fontSize: 14, style: 'bold', color: [37, 99, 235] })
-      yPosition += 10
-
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'normal')
-
-      projectReport.contracts.forEach((contract, index) => {
-        checkPageBreak(8)
-        const y = yPosition + (index * 8)
-        const statusColor = contract.status === 'completed' ? [34, 197, 94] :
-                          contract.status === 'active' ? [59, 130, 246] :
-                          [156, 163, 175]
-
-        pdf.text(`${contract.contract_number}:`, margin + 5, y)
-        pdf.text(`€${contract.contract_amount.toLocaleString()}`, margin + 50, y)
-        pdf.text(`Spent: €${contract.budget_realized.toLocaleString()}`, margin + 90, y)
-
-        pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(contract.status.toUpperCase(), margin + 140, y)
-        pdf.setTextColor(0, 0, 0)
-        pdf.setFont('helvetica', 'normal')
-      })
-
-      yPosition += (projectReport.contracts.length * 8) + 15
-
-      checkPageBreak(40)
-      pdf.setFontSize(14)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(37, 99, 235)
-      yPosition = addText('Work Logs Summary', margin, yPosition, { fontSize: 14, style: 'bold', color: [37, 99, 235] })
-      yPosition += 10
-
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'normal')
-
-      if (projectReport.work_logs.length === 0) {
-        pdf.text('No work logs recorded during this period', margin + 5, yPosition)
-        yPosition += 10
-      } else {
-        projectReport.work_logs.slice(0, 10).forEach((log, index) => {
-          checkPageBreak(12)
-          const y = yPosition + (index * 12)
-
-          pdf.setFont('helvetica', 'bold')
-          pdf.text(`${format(new Date(log.date), 'MMM dd, yyyy')} - ${log.subcontractors?.name || 'Unknown'}`, margin + 5, y)
-
-          pdf.setFont('helvetica', 'normal')
-          const descriptionLines = pdf.splitTextToSize(log.work_description, contentWidth - 10)
-          pdf.text(descriptionLines[0], margin + 5, y + 4)
-
-          if (log.contracts) {
-            pdf.setFontSize(8)
-            pdf.setTextColor(100, 100, 100)
-            pdf.text(`Contract: ${log.contracts.contract_number}`, margin + 5, y + 8)
-            pdf.setTextColor(0, 0, 0)
-            pdf.setFontSize(9)
-          }
-        })
-
-        if (projectReport.work_logs.length > 10) {
-          yPosition += (10 * 12) + 5
-          checkPageBreak(6)
-          pdf.setFont('helvetica', 'italic')
-          pdf.setTextColor(100, 100, 100)
-          pdf.text(`... and ${projectReport.work_logs.length - 10} more work logs`, margin + 5, yPosition)
-          pdf.setTextColor(0, 0, 0)
-          yPosition += 10
-        } else {
-          yPosition += (projectReport.work_logs.length * 12) + 10
-        }
-      }
-
-      const footerY = pageHeight - 15
-      pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(107, 114, 128)
-      pdf.text('LANDMARK GROUP - Supervision Report', margin, footerY)
-      pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
-
-      const fileName = `Supervision_Report_${projectReport.project.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
-      pdf.save(fileName)
+      await generateSupervisionReportPDF(projectReport, dateRange)
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert('Error generating PDF report. Please try again.')
@@ -511,7 +84,7 @@ const SupervisionReports: React.FC = () => {
         description="Generate comprehensive supervision and construction reports"
         actions={
           projectReport ? (
-            <Button icon={Download} onClick={generatePDFReport}>
+            <Button icon={Download} onClick={handleGeneratePDF}>
               Export Report
             </Button>
           ) : undefined
@@ -609,7 +182,6 @@ const SupervisionReports: React.FC = () => {
                     <span className="text-gray-600">Utilization:</span>
                     <span className="font-medium">{projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%</span>
                   </div>
-                  
                 </div>
               </div>
             </div>
@@ -654,30 +226,23 @@ const SupervisionReports: React.FC = () => {
 
               <div>
                 <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-600">Completed</span>
-                      <span className="text-sm font-medium">{projectReport.total_contracts > 0 ? ((projectReport.completed_contracts / projectReport.total_contracts) * 100).toFixed(1) : '0'}%</span>
+                  {[
+                    { label: 'Completed', count: projectReport.completed_contracts, color: 'bg-green-500' },
+                    { label: 'Active', count: projectReport.active_contracts, color: 'bg-blue-500' }
+                  ].map(({ label, count, color }) => (
+                    <div key={label}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-gray-600">{label}</span>
+                        <span className="text-sm font-medium">{projectReport.total_contracts > 0 ? ((count / projectReport.total_contracts) * 100).toFixed(1) : '0'}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`${color} h-2 rounded-full`}
+                          style={{ width: `${projectReport.total_contracts > 0 ? (count / projectReport.total_contracts) * 100 : 0}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-green-500 h-2 rounded-full"
-                        style={{ width: `${projectReport.total_contracts > 0 ? (projectReport.completed_contracts / projectReport.total_contracts) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-600">Active</span>
-                      <span className="text-sm font-medium">{projectReport.total_contracts > 0 ? ((projectReport.active_contracts / projectReport.total_contracts) * 100).toFixed(1) : '0'}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full"
-                        style={{ width: `${projectReport.total_contracts > 0 ? (projectReport.active_contracts / projectReport.total_contracts) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
