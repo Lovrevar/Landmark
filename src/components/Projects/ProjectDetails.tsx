@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, Project, Subcontractor, Invoice, Apartment, ProjectMilestone } from '../../lib/supabase'
-import { useAuth } from '../../contexts/AuthContext'
+import type { ProjectMilestone } from '../../lib/supabase'
 import {
   Building2,
   Calendar,
@@ -15,176 +14,39 @@ import {
   Target,
   CheckCircle,
   Circle,
-  Clock,
   AlertTriangle
 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../ui'
 import { format, differenceInDays } from 'date-fns'
-
-interface ProjectWithDetails extends Project {
-  subcontractors: Subcontractor[]
-  invoices: Invoice[]
-  apartments: Apartment[]
-  milestones: ProjectMilestone[]
-  total_spent: number
-  total_revenue: number
-  pending_invoices: number
-  investors: string
-}
+import { fetchProjectDetails } from './services/projectDetailsService'
+import {
+  addMilestone as svcAddMilestone,
+  updateMilestone as svcUpdateMilestone,
+  deleteMilestone as svcDeleteMilestone,
+  toggleMilestoneCompletion as svcToggleMilestone
+} from './services/milestoneService'
+import type { ProjectWithDetails } from './types'
 
 const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
-  const [newMilestone, setNewMilestone] = useState({
-    name: '',
-    due_date: '',
-    completed: false
-  })
+  const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (id) {
-      fetchProjectDetails()
-    }
+    if (id) loadProject()
   }, [id])
 
-  const fetchProjectDetails = async () => {
+  const loadProject = async () => {
     if (!id) return
-
     setLoading(true)
     try {
-      // Fetch project
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (projectError) throw projectError
-
-      // Fetch contracts (subcontractors) for this project
-      const { data: contractsData, error: subError } = await supabase
-        .from('contracts')
-        .select(`
-          *,
-          subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-          phase:project_phases!contracts_phase_id_fkey(phase_name)
-        `)
-        .eq('project_id', id)
-        .in('status', ['draft', 'active'])
-        .order('end_date', { ascending: true })
-
-      // Map contracts to subcontractor format for backwards compatibility
-      const subcontractorsData = contractsData?.map((c: any) => {
-        const cost = parseFloat(c.contract_amount || 0)
-        const budgetRealized = parseFloat(c.budget_realized || 0)
-        const progress = cost > 0 ? Math.min(100, (budgetRealized / cost) * 100) : 0
-
-        return {
-          id: c.id,
-          subcontractor_id: c.subcontractor.id,
-          name: c.subcontractor.name,
-          contact: c.subcontractor.contact,
-          job_description: c.job_description,
-          deadline: c.end_date,
-          cost,
-          budget_realized: budgetRealized,
-          progress,
-          phase_name: c.phase?.phase_name
-        }
-      }) || []
-
-      if (subError) throw subError
-
-      // Fetch invoices
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('project_id', id)
-        .order('due_date', { ascending: true })
-
-      if (invoicesError) throw invoicesError
-
-      // Fetch apartments
-      const { data: apartmentsData, error: apartmentsError } = await supabase
-        .from('apartments')
-        .select('*')
-        .eq('project_id', id)
-        .order('floor', { ascending: true })
-        .order('number', { ascending: true })
-
-      if (apartmentsError) throw apartmentsError
-
-      // Fetch milestones
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('project_milestones')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: true })
-
-      if (milestonesError) throw milestonesError
-
-      // Fetch bank credits
-      const { data: bankCreditsData, error: bankCreditsError } = await supabase
-        .from('bank_credits')
-        .select('*, banks(name)')
-        .eq('project_id', id)
-
-      if (bankCreditsError) throw bankCreditsError
-
-      // Fetch credit allocations for this project
-      const { data: allocationsData, error: allocationsError } = await supabase
-        .from('credit_allocations')
-        .select('*, bank_credits(banks(name))')
-        .eq('project_id', id)
-
-      if (allocationsError) throw allocationsError
-
-      // Calculate project statistics
-      const subcontractors = subcontractorsData || []
-      const invoices = invoicesData || []
-      const apartments = apartmentsData || []
-      const milestones = milestonesData || []
-
-      const total_spent = invoices.filter(inv => inv.paid).reduce((sum, inv) => sum + inv.amount, 0)
-      const total_revenue = apartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + apt.price, 0)
-      const pending_invoices = invoices.filter(inv => !inv.paid).length
-
-      // Build funders list from bank_credits and credit_allocations
-      const investorNames: string[] = []
-      if (bankCreditsData && bankCreditsData.length > 0) {
-        bankCreditsData.forEach(bc => {
-          if (bc.banks?.name && !investorNames.includes(bc.banks.name)) {
-            investorNames.push(bc.banks.name)
-          }
-        })
-      }
-      if (allocationsData && allocationsData.length > 0) {
-        allocationsData.forEach(alloc => {
-          const bankName = (alloc.bank_credits as any)?.banks?.name
-          if (bankName && !investorNames.includes(bankName)) {
-            investorNames.push(bankName)
-          }
-        })
-      }
-      const investorsString = investorNames.length > 0 ? investorNames.join(', ') : 'N/A'
-
-      setProject({
-        ...projectData,
-        subcontractors,
-        invoices,
-        apartments,
-        milestones,
-        total_spent,
-        total_revenue,
-        pending_invoices,
-        investors: investorsString
-      })
+      const data = await fetchProjectDetails(id)
+      setProject(data)
     } catch (error) {
       console.error('Error fetching project details:', error)
     } finally {
@@ -192,103 +54,59 @@ const ProjectDetails: React.FC = () => {
     }
   }
 
-  const addMilestone = async () => {
-    if (!newMilestone.name.trim() || !id) {
-      alert('Please enter milestone name')
-      return
-    }
-
+  const handleAddMilestone = async () => {
+    if (!newMilestone.name.trim() || !id) { alert('Please enter milestone name'); return }
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .insert({
-          project_id: id,
-          name: newMilestone.name,
-          due_date: newMilestone.due_date || null,
-          completed: newMilestone.completed
-        })
-
-      if (error) throw error
-
+      await svcAddMilestone(id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
       resetMilestoneForm()
-      fetchProjectDetails()
+      loadProject()
     } catch (error) {
       console.error('Error adding milestone:', error)
       alert('Error adding milestone. Please try again.')
     }
   }
 
-  const updateMilestone = async () => {
+  const handleUpdateMilestone = async () => {
     if (!editingMilestone || !newMilestone.name.trim()) return
-
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .update({
-          name: newMilestone.name,
-          due_date: newMilestone.due_date || null,
-          completed: newMilestone.completed
-        })
-        .eq('id', editingMilestone.id)
-
-      if (error) throw error
-
+      await svcUpdateMilestone(editingMilestone.id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
       resetMilestoneForm()
-      fetchProjectDetails()
+      loadProject()
     } catch (error) {
       console.error('Error updating milestone:', error)
       alert('Error updating milestone.')
     }
   }
 
-  const deleteMilestone = async (milestoneId: string) => {
+  const handleDeleteMilestone = async (milestoneId: string) => {
     if (!confirm('Are you sure you want to delete this milestone?')) return
-
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .delete()
-        .eq('id', milestoneId)
-
-      if (error) throw error
-      fetchProjectDetails()
+      await svcDeleteMilestone(milestoneId)
+      loadProject()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       alert('Error deleting milestone.')
     }
   }
 
-  const toggleMilestoneCompletion = async (milestoneId: string, completed: boolean) => {
+  const handleToggleMilestone = async (milestoneId: string, completed: boolean) => {
     try {
-      const { error } = await supabase
-        .from('project_milestones')
-        .update({ completed: !completed })
-        .eq('id', milestoneId)
-
-      if (error) throw error
-      fetchProjectDetails()
+      await svcToggleMilestone(milestoneId, completed)
+      loadProject()
     } catch (error) {
       console.error('Error updating milestone:', error)
     }
   }
 
   const resetMilestoneForm = () => {
-    setNewMilestone({
-      name: '',
-      due_date: '',
-      completed: false
-    })
+    setNewMilestone({ name: '', due_date: '', completed: false })
     setEditingMilestone(null)
     setShowMilestoneForm(false)
   }
 
   const handleEditMilestone = (milestone: ProjectMilestone) => {
     setEditingMilestone(milestone)
-    setNewMilestone({
-      name: milestone.name,
-      due_date: milestone.due_date || '',
-      completed: milestone.completed
-    })
+    setNewMilestone({ name: milestone.name, due_date: milestone.due_date || '', completed: milestone.completed })
     setShowMilestoneForm(true)
   }
 
@@ -300,64 +118,42 @@ const ProjectDetails: React.FC = () => {
     return { status: 'In Progress', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
   }
 
-  if (loading) {
-    return <LoadingSpinner message="Loading project details..." />
-  }
-
-  if (!project) {
-    return <div className="text-center py-12">Project not found</div>
-  }
+  if (loading) return <LoadingSpinner message="Loading project details..." />
+  if (!project) return <div className="text-center py-12">Project not found</div>
 
   const milestoneStats = {
     total: project.milestones.length,
     completed: project.milestones.filter(m => m.completed).length,
-    overdue: project.milestones.filter(m => 
-      !m.completed && m.due_date && new Date(m.due_date) < new Date()
-    ).length
+    overdue: project.milestones.filter(m => !m.completed && m.due_date && new Date(m.due_date) < new Date()).length
   }
-
-  const milestoneProgress = milestoneStats.total > 0 
-    ? (milestoneStats.completed / milestoneStats.total) * 100 
-    : 0
+  const milestoneProgress = milestoneStats.total > 0 ? (milestoneStats.completed / milestoneStats.total) * 100 : 0
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/')} className="mb-4">
           Back to Dashboard
         </Button>
-        
-        <PageHeader
-          title={project.name}
-          description={project.location}
-        />
+        <PageHeader title={project.name} description={project.location} />
         <div className="flex items-center space-x-4 mt-3">
           <Badge variant={
             project.status === 'Completed' ? 'green'
               : project.status === 'In Progress' ? 'blue'
-              : project.status === 'On Hold' ? 'red'
-              : 'gray'
+              : project.status === 'On Hold' ? 'red' : 'gray'
           }>
             {project.status}
           </Badge>
-          <span className="text-sm text-gray-500">
-            Budget: €{project.budget.toLocaleString('hr-HR')}
-          </span>
-          <span className="text-sm text-gray-500">
-            Investor: {project.investors}
-          </span>
+          <span className="text-sm text-gray-500">Budget: €{project.budget.toLocaleString('hr-HR')}</span>
+          <span className="text-sm text-gray-500">Investor: {project.investors}</span>
         </div>
       </div>
 
-      {/* Stats Overview */}
       <StatGrid columns={3} className="mb-6">
         <StatCard label="Revenue" value={`€${(project.total_revenue / 1000000).toFixed(1)}M`} subtitle="From sales" icon={DollarSign} color="green" />
         <StatCard label="Subcontractors" value={project.subcontractors.length} subtitle="Active contracts" icon={Users} color="orange" />
         <StatCard label="Milestones" value={`${milestoneStats.completed}/${milestoneStats.total}`} subtitle={`${milestoneProgress.toFixed(0)}% complete`} icon={Target} />
       </StatGrid>
 
-      {/* Tabs */}
       <div className="mb-6">
         <nav className="flex space-x-8">
           {[
@@ -370,9 +166,7 @@ const ProjectDetails: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                activeTab === tab.id
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
@@ -382,14 +176,10 @@ const ProjectDetails: React.FC = () => {
         </nav>
       </div>
 
-      {/* Tab Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Project Overview</h2>
-            
-            {/* Project Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Project Details</h3>
@@ -418,7 +208,6 @@ const ProjectDetails: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Progress Summary</h3>
                 <div className="space-y-4">
@@ -428,13 +217,9 @@ const ProjectDetails: React.FC = () => {
                       <span className="font-medium">{milestoneProgress.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${milestoneProgress}%` }}
-                      ></div>
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${milestoneProgress}%` }}></div>
                     </div>
                   </div>
-
                   <div className="text-center mt-4">
                     <p className="text-2xl font-bold text-orange-600">{project.pending_invoices}</p>
                     <p className="text-xs text-gray-600">Pending Invoices</p>
@@ -445,17 +230,13 @@ const ProjectDetails: React.FC = () => {
           </div>
         )}
 
-        {/* Milestones Tab */}
         {activeTab === 'milestones' && (
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Project Milestones</h2>
-              <Button icon={Plus} onClick={() => setShowMilestoneForm(true)}>
-                Add Milestone
-              </Button>
+              <Button icon={Plus} onClick={() => setShowMilestoneForm(true)}>Add Milestone</Button>
             </div>
 
-            {/* Milestone Overview */}
             <StatGrid columns={3} className="mb-6">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -464,7 +245,6 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <p className="text-2xl font-bold text-blue-900">{milestoneStats.total}</p>
               </div>
-
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-green-700">Completed</span>
@@ -472,7 +252,6 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <p className="text-2xl font-bold text-green-900">{milestoneStats.completed}</p>
               </div>
-
               <div className="bg-red-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-red-700">Overdue</span>
@@ -482,21 +261,16 @@ const ProjectDetails: React.FC = () => {
               </div>
             </StatGrid>
 
-            {/* Overall Progress */}
             <div className="mb-6">
               <div className="flex justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Overall Milestone Progress</span>
                 <span className="text-sm font-medium text-gray-900">{milestoneProgress.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${milestoneProgress}%` }}
-                ></div>
+                <div className="bg-blue-600 h-3 rounded-full transition-all duration-300" style={{ width: `${milestoneProgress}%` }}></div>
               </div>
             </div>
 
-            {/* Milestone Form */}
             {showMilestoneForm && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -527,70 +301,46 @@ const ProjectDetails: React.FC = () => {
                       onChange={(e) => setNewMilestone({ ...newMilestone, completed: e.target.checked })}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="completed" className="ml-2 text-sm text-gray-700">
-                      Mark as completed
-                    </label>
+                    <label htmlFor="completed" className="ml-2 text-sm text-gray-700">Mark as completed</label>
                   </div>
                 </div>
-                
                 <div className="flex justify-end space-x-3 mt-6">
-                  <Button variant="secondary" onClick={resetMilestoneForm}>
-                    Cancel
-                  </Button>
-                  <Button onClick={editingMilestone ? updateMilestone : addMilestone}>
+                  <Button variant="secondary" onClick={resetMilestoneForm}>Cancel</Button>
+                  <Button onClick={editingMilestone ? handleUpdateMilestone : handleAddMilestone}>
                     {editingMilestone ? 'Update' : 'Add'} Milestone
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Milestones List */}
             {project.milestones.length === 0 ? (
               <EmptyState
                 icon={Target}
                 title="No Milestones Yet"
                 description="Start tracking your project progress by adding milestones"
-                action={
-                  <Button onClick={() => setShowMilestoneForm(true)}>
-                    Add First Milestone
-                  </Button>
-                }
+                action={<Button onClick={() => setShowMilestoneForm(true)}>Add First Milestone</Button>}
               />
             ) : (
               <div className="space-y-4">
                 {project.milestones.map((milestone, index) => {
                   const status = getMilestoneStatus(milestone)
                   const isOverdue = milestone.due_date && new Date(milestone.due_date) < new Date() && !milestone.completed
-                  
                   return (
-                    <div
-                      key={milestone.id}
-                      className={`p-6 rounded-lg border-2 transition-all duration-200 ${status.bg} ${status.border}`}
-                    >
+                    <div key={milestone.id} className={`p-6 rounded-lg border-2 transition-all duration-200 ${status.bg} ${status.border}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4 flex-1">
-                          {/* Milestone Number Circle */}
                           <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                            milestone.completed ? 'bg-green-600' : 
-                            isOverdue ? 'bg-red-600' : 'bg-blue-600'
+                            milestone.completed ? 'bg-green-600' : isOverdue ? 'bg-red-600' : 'bg-blue-600'
                           }`}>
-                            {milestone.completed ? (
-                              <CheckCircle className="w-6 h-6" />
-                            ) : (
-                              <span>{index + 1}</span>
-                            )}
+                            {milestone.completed ? <CheckCircle className="w-6 h-6" /> : <span>{index + 1}</span>}
                           </div>
-                          
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
-                              <Badge variant={
-                                milestone.completed ? 'green' : isOverdue ? 'red' : 'blue'
-                              } size="sm">
+                              <Badge variant={milestone.completed ? 'green' : isOverdue ? 'red' : 'blue'} size="sm">
                                 {status.status}
                               </Badge>
                             </div>
-                            
                             <div className="flex items-center space-x-4 text-sm text-gray-600">
                               {milestone.due_date && (
                                 <div className="flex items-center">
@@ -607,31 +357,19 @@ const ProjectDetails: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        
                         <div className="flex items-center space-x-2">
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            icon={milestone.completed ? Circle : CheckCircle}
-                            onClick={() => toggleMilestoneCompletion(milestone.id, milestone.completed)}
+                          <Button size="icon-sm" variant="ghost" icon={milestone.completed ? Circle : CheckCircle}
+                            onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
                             title={milestone.completed ? 'Mark as incomplete' : 'Mark as complete'}
                             className={milestone.completed ? 'text-gray-600 hover:bg-gray-200' : 'text-green-600 hover:bg-green-200'}
                           />
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            icon={Edit2}
+                          <Button size="icon-sm" variant="ghost" icon={Edit2}
                             onClick={() => handleEditMilestone(milestone)}
-                            title="Edit milestone"
-                            className="text-blue-600 hover:bg-blue-200"
+                            title="Edit milestone" className="text-blue-600 hover:bg-blue-200"
                           />
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            icon={Trash2}
-                            onClick={() => deleteMilestone(milestone.id)}
-                            title="Delete milestone"
-                            className="text-red-600 hover:bg-red-200"
+                          <Button size="icon-sm" variant="ghost" icon={Trash2}
+                            onClick={() => handleDeleteMilestone(milestone.id)}
+                            title="Delete milestone" className="text-red-600 hover:bg-red-200"
                           />
                         </div>
                       </div>
@@ -659,12 +397,8 @@ const ProjectDetails: React.FC = () => {
                           <h3 className="font-medium text-gray-900 mb-2">{sub.name}</h3>
                           <p className="text-sm text-gray-600 mb-2">{sub.job_description}</p>
                           <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600">
-                              Contact: {sub.contact}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              Cost: €{sub.cost.toLocaleString('hr-HR')}
-                            </span>
+                            <span className="text-sm text-gray-600">Contact: {sub.contact}</span>
+                            <span className="text-sm text-gray-600">Cost: €{sub.cost.toLocaleString('hr-HR')}</span>
                             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                               Due: {format(new Date(sub.deadline), 'MMM dd, yyyy')}
                             </span>
@@ -673,10 +407,8 @@ const ProjectDetails: React.FC = () => {
                         <div className="text-right">
                           <div className="flex items-center space-x-2">
                             <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
-                                }`}
+                              <div
+                                className={`h-2 rounded-full ${sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'}`}
                                 style={{ width: `${sub.progress}%` }}
                               ></div>
                             </div>
@@ -692,7 +424,6 @@ const ProjectDetails: React.FC = () => {
           </div>
         )}
 
-        {/* Apartments Tab */}
         {activeTab === 'apartments' && (
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Apartments</h2>
@@ -708,9 +439,7 @@ const ProjectDetails: React.FC = () => {
                         <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
                       </div>
                       <Badge variant={
-                        apartment.status === 'Sold' ? 'green'
-                          : apartment.status === 'Reserved' ? 'yellow'
-                          : 'blue'
+                        apartment.status === 'Sold' ? 'green' : apartment.status === 'Reserved' ? 'yellow' : 'blue'
                       } size="sm">
                         {apartment.status}
                       </Badge>

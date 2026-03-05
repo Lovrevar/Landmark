@@ -18,7 +18,7 @@ export interface User {
   assignedProjects?: ProjectAssignment[]
 }
 
-export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding' | 'Accounting' | 'Retail'
+export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding' | 'Cashflow' | 'Retail'
 
 interface AuthContextType {
   user: User | null
@@ -208,12 +208,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
       setUser(null)
       setIsAuthenticated(false)
       localStorage.removeItem('currentProfile')
       sessionStorage.removeItem('cashflow_unlocked')
-    } catch (error) {
-      console.error('Logout error:', error)
     }
   }
 
