@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { retailProjectService } from '../services/retailProjectService'
+import { retailProjectService } from '../Services/retailProjectService'
 import type { RetailProjectWithPhases } from '../../../../types/retail'
 
 export const useRetailProjects = () => {
