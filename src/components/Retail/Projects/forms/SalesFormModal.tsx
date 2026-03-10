@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../../components/ui'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../Ui'
 
 interface RetailCustomer {
   id: string

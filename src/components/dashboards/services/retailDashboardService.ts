@@ -50,12 +50,12 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
   const paymentsResult = await supabase
     .from('accounting_payments')
     .select('amount, accounting_invoices!inner(invoice_type, retail_contract_id, retail_customer_id)')
-    .or('accounting_invoices.retail_contract_id.not.is.null,accounting_invoices.retail_customer_id.not.is.null')
 
   const total_paid = (paymentsResult.data || [])
     .filter(p => {
       const inv = p.accounting_invoices as any
-      return inv?.invoice_type === 'OUTGOING_SALES' || inv?.invoice_type === 'OUTGOING'
+      return (inv?.retail_contract_id != null || inv?.retail_customer_id != null) &&
+        (inv?.invoice_type === 'OUTGOING_SALES' || inv?.invoice_type === 'OUTGOING')
     })
     .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
 

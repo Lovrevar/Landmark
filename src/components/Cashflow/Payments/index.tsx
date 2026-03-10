@@ -1,0 +1,193 @@
+import React from 'react'
+import { Plus, Columns, Check, X } from 'lucide-react'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../../Ui'
+import DateInput from '../../Common/DateInput'
+import { usePayments } from './Hooks/usePayments'
+import AccountingPaymentFormModal from './Forms/AccountingPaymentFormModal'
+import PaymentStatsCards from './PaymentStatsCards'
+import PaymentTable from './PaymentTable'
+import { PaymentDetailView } from './PaymentDetailView'
+import { columnLabels } from '../Services/paymentHelpers'
+
+const AccountingPayments: React.FC = () => {
+  const {
+    payments,
+    invoices,
+    companies,
+    companyBankAccounts,
+    companyCredits,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filterMethod,
+    setFilterMethod,
+    filterInvoiceType,
+    setFilterInvoiceType,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    showColumnMenu,
+    setShowColumnMenu,
+    showPaymentModal,
+    editingPayment,
+    viewingPayment,
+    formData,
+    setFormData,
+    visibleColumns,
+    toggleColumn,
+    handleOpenModal,
+    handleCloseModal,
+    handleViewPayment,
+    handleCloseDetailView,
+    handleSubmit,
+    handleDelete,
+    filteredPayments,
+    resetDateFilters
+  } = usePayments()
+
+  if (loading) {
+    return <LoadingSpinner message="Učitavanje..." />
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Plaćanja"
+        description="Pregled svih izvršenih plaćanja"
+        actions={
+          <>
+            <div className="relative column-menu-container">
+              <Button variant="secondary" icon={Columns} onClick={() => setShowColumnMenu(!showColumnMenu)}>
+                Polja
+              </Button>
+              {showColumnMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-700">Prikaži kolone</p>
+                  </div>
+                  {Object.entries(columnLabels).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => toggleColumn(key)}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between"
+                    >
+                      <span className="text-gray-700">{label}</span>
+                      {visibleColumns[key] && <Check className="w-4 h-4 text-blue-600" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Button variant="primary" icon={Plus} onClick={() => handleOpenModal()}>
+              Novo plaćanje
+            </Button>
+          </>
+        }
+      />
+
+      <PaymentStatsCards payments={payments} />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            placeholder="Pretraži po broju računa, firmi, dobavljaču..."
+          />
+
+          <Select
+            value={filterMethod}
+            onChange={(e) => setFilterMethod(e.target.value as any)}
+          >
+            <option value="ALL">Svi načini plaćanja</option>
+            <option value="WIRE">Virman</option>
+            <option value="CASH">Gotovina</option>
+            <option value="CHECK">Ček</option>
+            <option value="CARD">Kartica</option>
+          </Select>
+
+          <Select
+            value={filterInvoiceType}
+            onChange={(e) => setFilterInvoiceType(e.target.value as any)}
+          >
+            <option value="ALL">Svi tipovi računa</option>
+            <option value="EXPENSE">Ulazni</option>
+            <option value="INCOME">Izlazni</option>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-600 mb-1">Datum OD</label>
+            <DateInput
+              value={dateFrom}
+              onChange={setDateFrom}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-600 mb-1">Datum DO</label>
+            <DateInput
+              value={dateTo}
+              onChange={setDateTo}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex items-end">
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" icon={X} onClick={resetDateFilters}>
+                Resetuj datume
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <PaymentTable
+        payments={filteredPayments}
+        visibleColumns={visibleColumns}
+        onView={handleViewPayment}
+        onEdit={handleOpenModal}
+        onDelete={handleDelete}
+      />
+
+      <PaymentDetailView
+        payment={viewingPayment}
+        onClose={handleCloseDetailView}
+      />
+
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Prikazano: {filteredPayments.length} od {payments.length} plaćanja</span>
+          <div className="flex items-center space-x-6 text-sm">
+            <div>
+              <span className="text-gray-600">Ukupan iznos filtriranih: </span>
+              <span className="font-semibold text-green-600">
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AccountingPaymentFormModal
+        showModal={showPaymentModal}
+        editingPayment={editingPayment}
+        formData={formData}
+        setFormData={setFormData}
+        invoices={invoices}
+        companies={companies}
+        companyBankAccounts={companyBankAccounts}
+        companyCredits={companyCredits}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmit}
+      />
+    </div>
+  )
+}
+
+export default AccountingPayments
