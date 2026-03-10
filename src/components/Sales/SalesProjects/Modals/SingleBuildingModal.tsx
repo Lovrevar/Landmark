@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BuildingFormData } from '../types'
-import { Button, Modal, FormField, Input, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
 
 interface SingleBuildingModalProps {
   visible: boolean

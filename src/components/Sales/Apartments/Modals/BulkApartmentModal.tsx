@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BulkApartmentData } from '../types'
-import { Modal, FormField, Select, Input, Button, Alert } from '../../../Ui'
+import { Modal, FormField, Select, Input, Button, Alert } from '../../../ui'
 
 interface BulkApartmentModalProps {
   visible: boolean

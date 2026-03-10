@@ -1,7 +1,7 @@
 import React from 'react'
 import { Briefcase, FileText } from 'lucide-react'
 import { SupplierSummary } from '../types'
-import { Modal, Badge, Button, StatCard, StatGrid } from '../../../Ui'
+import { Modal, Badge, Button, StatCard, StatGrid } from '../../../ui'
 
 interface SupplierDetailsModalProps {
   showModal: boolean

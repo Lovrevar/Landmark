@@ -2,7 +2,7 @@ import React from 'react'
 import { Warehouse, Package } from 'lucide-react'
 import { Apartment, Garage, Repository } from '../../../../lib/supabase'
 import { BuildingWithUnits } from '../types'
-import { Button, Modal } from '../../../Ui'
+import { Button, Modal } from '../../../ui'
 
 interface LinkingModalProps {
   visible: boolean

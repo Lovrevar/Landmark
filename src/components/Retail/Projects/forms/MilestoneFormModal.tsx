@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
-import { Button, Modal, FormField, Input, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
 
 interface MilestoneFormData {
   contract_id: string

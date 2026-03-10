@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { Building2, MapPin, Calendar, DollarSign, Users } from 'lucide-react'
-import { Modal, FormField, Input, Select, Button, Alert } from '../../../Ui'
+import { Modal, FormField, Input, Select, Button, Alert } from '../../../ui'
 
 interface ProjectFormModalProps {
   projectId?: string | null

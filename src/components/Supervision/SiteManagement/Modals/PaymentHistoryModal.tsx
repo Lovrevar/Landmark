@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment, supabase } from '../../../../lib/supabase'
-import { Modal, Button, Badge, EmptyState } from '../../../Ui'
+import { Modal, Button, Badge, EmptyState } from '../../../ui'
 
 interface AccountingPayment {
   id: string

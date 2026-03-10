@@ -2,7 +2,7 @@ import React from 'react'
 import { Users } from 'lucide-react'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { CustomerCard } from './CustomerCard'
-import { LoadingSpinner, EmptyState } from '../../Ui'
+import { LoadingSpinner, EmptyState } from '../../ui'
 
 interface CustomerGridProps {
   customers: CustomerWithApartments[]

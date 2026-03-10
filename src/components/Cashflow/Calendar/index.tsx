@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
-import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../../Ui'
+import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../../ui'
 import { useCalendar } from './Hooks/useCalendar'
 import { handleSaveBudgets } from './Services/calendarService'
 import BudgetModal from './Forms/BudgetModal'

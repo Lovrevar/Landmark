@@ -2,7 +2,7 @@ import React from 'react'
 import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from './types'
-import { Modal, Button } from '../../Ui'
+import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../Services/paymentHelpers'
 
 interface PaymentDetailViewProps {

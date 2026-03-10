@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
-import { LoadingSpinner, Badge, Button, EmptyState } from '../../Ui'
+import { LoadingSpinner, Badge, Button, EmptyState } from '../../ui'
 import {
   fetchPaymentNotifications,
   calculateNotificationStats,

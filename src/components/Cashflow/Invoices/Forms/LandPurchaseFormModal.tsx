@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { Button, Modal } from '../../../Ui'
+import { Button, Modal } from '../../../ui'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 

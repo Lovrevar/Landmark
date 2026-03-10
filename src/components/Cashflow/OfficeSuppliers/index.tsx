@@ -3,7 +3,7 @@ import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar 
 import { format } from 'date-fns'
 import { useOfficeSuppliers } from './Hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './Forms/OfficeSupplierFormModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge } from '../../Ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge } from '../../ui'
 
 const OfficeSuppliers: React.FC = () => {
   const {

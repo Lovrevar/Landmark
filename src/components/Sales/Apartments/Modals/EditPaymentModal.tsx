@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { PaymentWithCustomer } from '../types'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../Ui'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 
 interface EditPaymentModalProps {
   visible: boolean

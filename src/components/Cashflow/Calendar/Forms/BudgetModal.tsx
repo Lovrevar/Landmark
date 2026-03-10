@@ -1,6 +1,6 @@
 import React from 'react'
 import { MonthlyBudget } from '../types'
-import { Modal, Button, Select, Input, FormField } from '../../../Ui'
+import { Modal, Button, Select, Input, FormField } from '../../../ui'
 
 interface BudgetModalProps {
   showBudgetModal: boolean

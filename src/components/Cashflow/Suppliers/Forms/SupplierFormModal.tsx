@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Button, Input, Select, FormField, Alert } from '../../../Ui'
+import { Modal, Button, Input, Select, FormField, Alert } from '../../../ui'
 import { SupplierFormData, Project, Phase } from '../types'
 
 interface SupplierFormModalProps {

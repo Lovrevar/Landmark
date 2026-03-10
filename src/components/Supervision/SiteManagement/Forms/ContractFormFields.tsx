@@ -1,6 +1,6 @@
 import React from 'react'
 import { SubcontractorFormData, VAT_RATE_OPTIONS } from '../types'
-import { FormField, Input, Select } from '../../../Ui'
+import { FormField, Input, Select } from '../../../ui'
 import { formatEuro } from '../../../../utils/formatters'
 
 interface Props {

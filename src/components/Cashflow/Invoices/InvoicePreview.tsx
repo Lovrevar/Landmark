@@ -1,6 +1,6 @@
 import React from 'react'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Card } from '../../Ui'
+import { Card } from '../../ui'
 import type { BankInvoiceFormData, CalculatedTotals } from '../Banks/bankInvoiceTypes'
 
 interface InvoicePreviewProps {

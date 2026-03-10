@@ -1,6 +1,6 @@
 import React from 'react'
 import { MapPin, ArrowRight, DollarSign, Layers, Link, Edit2 } from 'lucide-react'
-import { Button, Badge, EmptyState } from '../../Ui'
+import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectWithPhases } from '../../../types/retail'
 
 interface ProjectsGridProps {

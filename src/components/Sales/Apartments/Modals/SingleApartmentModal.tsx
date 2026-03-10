@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentFormData } from '../types'
-import { Modal, FormField, Select, Input, Button } from '../../../Ui'
+import { Modal, FormField, Select, Input, Button } from '../../../ui'
 import {
   ContractedSection,
   ContractFields,

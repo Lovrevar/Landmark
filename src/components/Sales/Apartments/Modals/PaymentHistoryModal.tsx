@@ -2,7 +2,7 @@ import React from 'react'
 import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
-import { Modal, Button, EmptyState } from '../../../Ui'
+import { Modal, Button, EmptyState } from '../../../ui'
 
 interface PaymentHistoryModalProps {
   visible: boolean

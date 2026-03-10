@@ -1,6 +1,6 @@
 import React from 'react'
 import { ProjectWithBuildings, OnSelectProjectCallback } from './types'
-import { Badge } from '../../Ui'
+import { Badge } from '../../ui'
 
 interface ProjectsGridProps {
   projects: ProjectWithBuildings[]

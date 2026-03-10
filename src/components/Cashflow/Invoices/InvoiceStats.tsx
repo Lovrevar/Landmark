@@ -1,6 +1,6 @@
 import React from 'react'
 import { FileText, TrendingUp, DollarSign } from 'lucide-react'
-import { StatCard, StatGrid } from '../../Ui'
+import { StatCard, StatGrid } from '../../ui'
 
 const formatAmount = (amount: number) =>
   `€${new Intl.NumberFormat('hr-HR', {

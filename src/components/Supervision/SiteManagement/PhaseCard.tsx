@@ -3,7 +3,7 @@ import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDow
 import { format, differenceInDays } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from './types'
-import { Button, Badge, EmptyState } from '../../Ui'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface PhaseCardProps {
   phase: ProjectPhase

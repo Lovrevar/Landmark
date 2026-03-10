@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button } from '../../Ui'
+import { PageHeader, SearchInput, Button } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './Hooks/useCustomerData'
 import { CategoryTabs } from './CategoryTabs'

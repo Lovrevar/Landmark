@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { FileText } from 'lucide-react'
-import { Button } from '../../Ui'
+import { Button } from '../../ui'
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { ContractDocumentUpload } from '../SiteManagement/ContractDocumentUpload'
 import { uploadSubcontractorDocuments } from '../SiteManagement/Services/siteService'

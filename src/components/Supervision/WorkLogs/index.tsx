@@ -16,7 +16,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState } from '../../Ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState } from '../../ui'
 import { format } from 'date-fns'
 
 interface WorkLog {

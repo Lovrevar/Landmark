@@ -1,6 +1,6 @@
 import React from 'react'
 import { Plus, ShoppingCart, DollarSign, Landmark } from 'lucide-react'
-import { Button } from '../../Ui'
+import { Button } from '../../ui'
 
 interface InvoiceActionButtonsProps {
   onNewOfficeInvoice: () => void

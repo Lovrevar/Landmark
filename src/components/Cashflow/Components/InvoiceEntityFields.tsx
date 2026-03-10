@@ -1,6 +1,6 @@
 import React from 'react'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Select, FormField } from '../../Ui'
+import { Select, FormField } from '../../ui'
 import type { Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../Invoices/types'
 
 interface InvoiceEntityFieldsProps {

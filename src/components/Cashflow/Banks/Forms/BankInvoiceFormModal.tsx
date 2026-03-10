@@ -5,7 +5,7 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import { useBankInvoiceData } from '../Hooks/useBankInvoiceData'
 import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false)

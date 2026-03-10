@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, Receipt } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
-import { Badge, LoadingSpinner } from '../../Ui'
+import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
 
 interface ExpenseInvoice {

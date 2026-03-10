@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase, Bank, BankCredit, Project } from '../../../lib/supabase'
 import { Plus, Phone, Mail, CreditCard as Edit2, Trash2, Eye, CreditCard } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../Ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
 
 interface BankWithCredits extends Bank {
   credits: BankCredit[]

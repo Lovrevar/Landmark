@@ -1,6 +1,6 @@
 import React from 'react'
 import { WirePayment } from '../../../../lib/supabase'
-import { Modal, FormField, Input, Textarea, Button } from '../../../Ui'
+import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
 interface EditPaymentModalProps {
   visible: boolean

@@ -3,7 +3,7 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lu
 import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import type { RetailContract } from '../../../../types/retail'
-import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../Ui'
+import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
 
 interface Invoice {
   id: string

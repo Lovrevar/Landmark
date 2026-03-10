@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Building2, FileUp, Warehouse } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button } from '../../Ui'
+import { LoadingSpinner, PageHeader, Button } from '../../ui'
 import { Apartment } from '../../../lib/supabase'
 import { useSalesData } from './Hooks/useSalesData'
 import * as salesService from './Services/salesService'

@@ -1,6 +1,6 @@
 import React from 'react'
 import { ApartmentWithDetails } from '../types'
-import { Modal, Badge, Button } from '../../../Ui'
+import { Modal, Badge, Button } from '../../../ui'
 
 interface ApartmentDetailsModalProps {
   visible: boolean

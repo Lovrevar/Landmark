@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { FolderKanban, Plus } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../Ui'
+import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
 import { fetchProjectsWithStats } from './Services/projectService'
 import type { ProjectWithStats } from './types'
 import ProjectCard from './ProjectCard'

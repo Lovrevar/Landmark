@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailSupplier, RetailSupplierType } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
 
 interface SupplierFormModalProps {
   onClose: () => void

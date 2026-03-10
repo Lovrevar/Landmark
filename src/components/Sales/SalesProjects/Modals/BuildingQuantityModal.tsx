@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Modal, FormField, Input } from '../../../Ui'
+import { Button, Modal, FormField, Input } from '../../../ui'
 
 interface BuildingQuantityModalProps {
   visible: boolean

@@ -3,7 +3,7 @@ import { Check, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Invoice } from './types'
-import { Modal, Button, Badge } from '../../Ui'
+import { Modal, Button, Badge } from '../../ui'
 
 interface InvoiceDetailViewProps {
   invoice: Invoice | null

@@ -7,7 +7,7 @@ import {
   Eye,
   PieChart
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, Badge, Button } from '../../Ui'
+import { LoadingSpinner, PageHeader, StatGrid, Badge, Button } from '../../ui'
 import { format } from 'date-fns'
 import type { ProjectWithFinancials } from '../../General/Projects/types'
 import { fetchInvestmentProjects } from './Services/investmentService'

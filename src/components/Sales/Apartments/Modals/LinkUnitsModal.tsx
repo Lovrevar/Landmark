@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Warehouse, Package, X } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
 import { ApartmentWithDetails } from '../types'
-import { Modal, Button, LoadingSpinner } from '../../../Ui'
+import { Modal, Button, LoadingSpinner } from '../../../ui'
 
 interface LinkUnitsModalProps {
   visible: boolean

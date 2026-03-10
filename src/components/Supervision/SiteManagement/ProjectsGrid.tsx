@@ -2,7 +2,7 @@ import React from 'react'
 import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
-import { Button, Badge, EmptyState } from '../../Ui'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]

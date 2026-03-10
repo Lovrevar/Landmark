@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Customer } from '../../../../lib/supabase'
 import { CustomerWithApartments, CustomerCategory } from '../types'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../Ui'
-import { Alert } from '../../../Ui'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
+import { Alert } from '../../../ui'
 
 interface CustomerFormModalProps {
   show: boolean

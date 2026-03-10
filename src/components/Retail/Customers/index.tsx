@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
 import type { RetailCustomer, RetailSale } from '../../../types/retail'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard } from '../../Ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard } from '../../ui'
 
 interface CustomerWithSales extends RetailCustomer {
   sales?: RetailSale[]

@@ -1,7 +1,7 @@
 import React from 'react'
 import DateInput from '../../../Common/DateInput'
 import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
-import { Modal, Button, Select, Input, Textarea, FormField } from '../../../Ui'
+import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
 
 interface AccountingPaymentFormModalProps {
   showModal: boolean

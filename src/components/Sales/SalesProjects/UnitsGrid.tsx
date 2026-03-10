@@ -10,7 +10,7 @@ import {
   OnLinkApartmentCallback
 } from './types'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
-import { Button, Badge } from '../../Ui'
+import { Button, Badge } from '../../ui'
 
 interface UnitsGridProps {
   building: BuildingWithUnits

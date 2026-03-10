@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Plus } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
-import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, SearchInput, Button, ConfirmDialog } from '../../Ui'
+import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, SearchInput, Button, ConfirmDialog } from '../../ui'
 import { formatEuropean } from '../../../utils/formatters'
 import { useSubcontractorData } from './Hooks/useSubcontractorData'
 import { SubcontractorCard } from './SubcontractorCard'

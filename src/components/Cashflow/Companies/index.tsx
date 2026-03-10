@@ -3,7 +3,7 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './Hooks/useCompanies'
 import CompanyFormModal from './Forms/CompanyFormModal'
 import CompanyDetailsModal from './Modals/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Card } from '../../Ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Card } from '../../ui'
 
 const AccountingCompanies: React.FC = () => {
   const {

@@ -3,7 +3,7 @@ import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet, 
 import { useDebtStatus } from './Hooks/useDebtStatus'
 import { formatEuropeanNumber } from './Services/debtService'
 import { exportToExcel, exportToPDF } from './Services/debtExport'
-import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../../Ui'
+import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../../ui'
 
 const DebtStatus: React.FC = () => {
   const {

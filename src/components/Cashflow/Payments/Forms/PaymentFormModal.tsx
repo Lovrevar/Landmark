@@ -2,7 +2,7 @@ import React from 'react'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput, { formatCurrency } from '../../../Common/CurrencyInput'
 import { CesijaPaymentFields } from '../../Components/CesijaPaymentFields'
-import { Modal, Button, Input, Select, Textarea, FormField, Alert } from '../../../Ui'
+import { Modal, Button, Input, Select, Textarea, FormField, Alert } from '../../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../../Invoices/types'
 
 interface PaymentFormModalProps {

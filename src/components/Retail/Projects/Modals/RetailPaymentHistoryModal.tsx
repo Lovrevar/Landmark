@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FileText, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
-import { Button, Badge, Modal, LoadingSpinner } from '../../../Ui'
+import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
 import { supabase } from '../../../../lib/supabase'
 import type { RetailContract } from '../../../../types/retail'
 
