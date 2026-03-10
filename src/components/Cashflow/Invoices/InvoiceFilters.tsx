@@ -1,7 +1,7 @@
 import React from 'react'
 import { X } from 'lucide-react'
 import type { Company } from './types'
-import { SearchInput, Select, Button } from '../../Ui'
+import { SearchInput, Select, Button } from '../../ui'
 
 interface InvoiceFiltersProps {
   searchTerm: string

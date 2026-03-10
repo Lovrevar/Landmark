@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pagination } from '../../Ui'
+import { Pagination } from '../../ui'
 
 interface InvoicePaginationProps {
   currentPage: number

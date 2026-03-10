@@ -2,7 +2,7 @@ import React from 'react'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import { InvoiceEntityFields } from '../../Components/InvoiceEntityFields'
-import { Select, Input, Textarea, FormField } from '../../../Ui'
+import { Select, Input, Textarea, FormField } from '../../../ui'
 import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
 
 interface InvoiceFormFieldsProps {

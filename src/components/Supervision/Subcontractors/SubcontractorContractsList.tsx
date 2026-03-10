@@ -1,7 +1,7 @@
 import React from 'react'
 import { Eye } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { Card, Badge } from '../../Ui'
+import { Card, Badge } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
 import { SubcontractorContract } from '../types'
 

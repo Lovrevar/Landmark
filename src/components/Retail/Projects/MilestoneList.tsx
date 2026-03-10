@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../Ui'
+import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './Forms/MilestoneFormModal'
 import { retailProjectService } from './Services/retailProjectService'

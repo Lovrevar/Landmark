@@ -1,7 +1,7 @@
 import React from 'react'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../Invoices/types'
-import { Select, FormField } from '../../Ui'
+import { Select, FormField } from '../../ui'
 
 interface CesijaPaymentFieldsProps {
   paymentFormData: any

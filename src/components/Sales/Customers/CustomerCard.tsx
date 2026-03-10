@@ -2,7 +2,7 @@ import React from 'react'
 import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Flame, TrendingUp, AlertCircle, Star } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
-import { Button } from '../../Ui'
+import { Button } from '../../ui'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments

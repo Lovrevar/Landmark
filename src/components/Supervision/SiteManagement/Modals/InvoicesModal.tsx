@@ -3,7 +3,7 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-r
 import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
-import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../Ui'
+import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
 
 interface Invoice {
   id: string

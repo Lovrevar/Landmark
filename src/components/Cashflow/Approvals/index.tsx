@@ -11,7 +11,7 @@ import {
   Badge,
   EmptyState,
   ConfirmDialog
-} from '../../Ui'
+} from '../../ui'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'

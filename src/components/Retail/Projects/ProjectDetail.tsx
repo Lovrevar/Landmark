@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
-import { Button, Badge, LoadingSpinner, EmptyState } from '../../Ui'
+import { Button, Badge, LoadingSpinner, EmptyState } from '../../ui'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'

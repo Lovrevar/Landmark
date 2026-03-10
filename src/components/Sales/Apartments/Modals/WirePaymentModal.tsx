@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../Ui'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 
 interface WirePaymentModalProps {
   visible: boolean

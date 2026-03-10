@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../Services/siteService'
-import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../Ui'
+import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../ui'
 
 interface MilestoneFormModalProps {
   visible: boolean

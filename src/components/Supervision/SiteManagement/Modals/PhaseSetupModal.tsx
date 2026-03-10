@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
-import { Modal, FormField, Input, Select, Button } from '../../../Ui'
+import { Modal, FormField, Input, Select, Button } from '../../../ui'
 
 interface PhaseSetupModalProps {
   visible: boolean

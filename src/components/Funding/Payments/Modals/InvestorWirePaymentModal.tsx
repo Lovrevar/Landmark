@@ -1,7 +1,7 @@
 import React from 'react'
 import { ProjectInvestment } from '../../../../lib/supabase'
 import { format } from 'date-fns'
-import { Modal, FormField, Input, Textarea, Button } from '../../../Ui'
+import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
 interface InvestorWirePaymentModalProps {
   visible: boolean

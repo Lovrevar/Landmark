@@ -1,7 +1,7 @@
 import React from 'react'
 import { DollarSign, TrendingUp } from 'lucide-react'
 import { CompanyStats } from '../types'
-import { Modal, Button, Badge, StatCard, StatGrid } from '../../../Ui'
+import { Modal, Button, Badge, StatCard, StatGrid } from '../../../ui'
 
 interface CompanyDetailsModalProps {
   show: boolean

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Subcontractor, SubcontractorMilestone } from '../../../../lib/supabase'
 import { fetchMilestonesBySubcontractor, fetchProjectFunders } from '../Services/siteService'
-import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../../Ui'
+import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../../ui'
 
 interface Funder {
   id: string

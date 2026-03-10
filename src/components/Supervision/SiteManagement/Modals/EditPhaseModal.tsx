@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, EditPhaseFormData } from '../types'
-import { Modal, FormField, Input, Select, Button } from '../../../Ui'
+import { Modal, FormField, Input, Select, Button } from '../../../ui'
 
 interface EditPhaseModalProps {
   visible: boolean

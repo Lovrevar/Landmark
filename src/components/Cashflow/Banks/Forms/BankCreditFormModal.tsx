@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
 import { calculatePayments } from '../Services/bankService'
-import { Modal, Button, Select, Input, Textarea, FormField } from '../../../Ui'
+import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
 import { supabase } from '../../../../lib/supabase'
 
 interface BankCreditFormModalProps {

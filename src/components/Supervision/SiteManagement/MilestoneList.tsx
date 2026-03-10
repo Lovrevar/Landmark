@@ -12,7 +12,7 @@ import {
   getMilestoneStatsForContract
 } from './Services/siteService'
 import { MilestoneStats } from './types'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../Ui'
+import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
 
 interface MilestoneListProps {
   contractId: string

@@ -1,7 +1,7 @@
 import React from 'react'
 import { InvoiceFormFields } from './InvoiceFormFields'
 import { InvoiceVATSummary } from './InvoiceVATSummary'
-import { Modal, Button } from '../../../Ui'
+import { Modal, Button } from '../../../ui'
 import type { Invoice, Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
 
 interface InvoiceFormModalProps {

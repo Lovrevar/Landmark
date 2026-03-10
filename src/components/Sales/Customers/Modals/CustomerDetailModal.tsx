@@ -2,7 +2,7 @@ import React from 'react'
 import { Mail, Phone, MapPin, Clock, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments } from '../types'
-import { Modal } from '../../../Ui'
+import { Modal } from '../../../ui'
 
 interface CustomerDetailModalProps {
   show: boolean

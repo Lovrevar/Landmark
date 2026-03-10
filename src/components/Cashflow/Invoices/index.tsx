@@ -1,5 +1,5 @@
 import React from 'react'
-import { LoadingSpinner, PageHeader } from '../../Ui'
+import { LoadingSpinner, PageHeader } from '../../ui'
 import { RetailInvoiceFormModal } from './Forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/Forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './Forms/LandPurchaseFormModal'

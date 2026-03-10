@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, FormField, Input, Button } from '../../../Ui'
+import { Modal, FormField, Input, Button } from '../../../ui'
 
 interface Props {
   visible: boolean

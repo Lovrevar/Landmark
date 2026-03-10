@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LoadingSpinner, Modal } from '../../Ui'
+import { LoadingSpinner, Modal } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './types'

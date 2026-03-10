@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Customer } from '../../../../lib/supabase'
 import { SaleFormData, UnitForSale, CustomerMode } from '../types'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
 
 interface SaleFormModalProps {
   visible: boolean

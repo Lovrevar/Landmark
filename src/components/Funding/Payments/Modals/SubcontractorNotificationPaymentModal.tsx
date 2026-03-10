@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { PaymentNotification } from '../Services/paymentNotificationService'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../Ui'
+import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 
 interface Funder {
   id: string

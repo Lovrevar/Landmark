@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link2 } from 'lucide-react'
-import { Modal, FormField, Select, Button, Alert } from '../../../Ui'
+import { Modal, FormField, Select, Button, Alert } from '../../../ui'
 import { supabase } from '../../../../lib/supabase'
 
 interface LinkSupplierToProjectModalProps {

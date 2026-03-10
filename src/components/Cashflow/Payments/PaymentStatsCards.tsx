@@ -1,6 +1,6 @@
 import React from 'react'
 import { Payment } from './types'
-import { StatCard } from '../../Ui'
+import { StatCard } from '../../ui'
 
 interface PaymentStatsCardsProps {
   payments: Payment[]

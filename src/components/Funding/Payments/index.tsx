@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, BankCreditPayment } from '../../../lib/supabase'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../Ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
 
 interface BankPaymentWithDetails extends BankCreditPayment {

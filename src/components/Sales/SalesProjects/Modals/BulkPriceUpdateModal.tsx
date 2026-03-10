@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
-import { Button, Modal, FormField, Input, Alert } from '../../../Ui'
+import { Button, Modal, FormField, Input, Alert } from '../../../ui'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean

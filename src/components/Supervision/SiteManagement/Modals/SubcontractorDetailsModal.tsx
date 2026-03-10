@@ -3,7 +3,7 @@ import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from '
 import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../Ui'
+import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../ui'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
 import { formatEuro } from '../../../../utils/formatters'
 

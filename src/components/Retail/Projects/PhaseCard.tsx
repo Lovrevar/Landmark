@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Building2, Plus, Edit2, Trash2, DollarSign, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { Button, Badge, EmptyState } from '../../Ui'
+import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../types/retail'
 
 interface PhaseCardProps {

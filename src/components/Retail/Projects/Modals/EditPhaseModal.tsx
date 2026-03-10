@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../Ui'
+import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
 
 interface EditPhaseModalProps {
   phase: RetailProjectPhase

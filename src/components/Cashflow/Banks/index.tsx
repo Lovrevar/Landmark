@@ -4,7 +4,7 @@ import {
   Plus, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, Button, Badge, StatCard, EmptyState } from '../../Ui'
+import { LoadingSpinner, PageHeader, StatGrid, Button, Badge, StatCard, EmptyState } from '../../ui'
 import { useBanks } from './Hooks/useBanks'
 import useBankeCredits from './Hooks/useBankeCredits'
 import BankCreditFormModal from './Forms/BankCreditFormModal'

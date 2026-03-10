@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { FormField, Input, Select } from '../../Ui'
+import { FormField, Input, Select } from '../../ui'
 
 export interface ContractFields {
   datum_potpisa_predugovora: string

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, AlertCircle, Home } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, Button, LoadingSpinner } from '../../../Ui'
+import { Modal, Button, LoadingSpinner } from '../../../ui'
 
 interface ParsedApartmentRow {
   rowIndex: number

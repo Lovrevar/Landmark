@@ -2,7 +2,7 @@ import React from 'react'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Table, Button, EmptyState } from '../../Ui'
+import { Table, Button, EmptyState } from '../../ui'
 import type { Invoice } from './types'
 
 interface InvoiceTableProps {

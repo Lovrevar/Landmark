@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BulkCreateData, UnitType, BulkPreview } from '../types'
-import { Button, Modal, FormField, Input } from '../../../Ui'
+import { Button, Modal, FormField, Input } from '../../../ui'
 
 interface BulkUnitsModalProps {
   visible: boolean

@@ -13,7 +13,7 @@ import {
   Plus,
   Target
 } from 'lucide-react'
-import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../Ui'
+import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './Forms/ProjectFormModal'

@@ -5,7 +5,7 @@ import SupplierFormModal from './Forms/SupplierFormModal'
 import SupplierDetailsModal from './Modals/SupplierDetailsModal'
 import { LinkSupplierToProjectModal } from './Forms/LinkSupplierToProjectModal'
 import { useSuppliers } from './Hooks/useSuppliers'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge } from '../../Ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge } from '../../ui'
 
 const AccountingSuppliers: React.FC = () => {
   const {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Trash2, ArrowLeft } from 'lucide-react'
 import { ProjectWithBuildings, OnSelectBuildingCallback, OnDeleteBuildingCallback } from './types'
-import { Button } from '../../Ui'
+import { Button } from '../../ui'
 
 interface BuildingsGridProps {
   project: ProjectWithBuildings

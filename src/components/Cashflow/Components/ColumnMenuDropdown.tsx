@@ -1,6 +1,6 @@
 import React from 'react'
 import { Columns, Check } from 'lucide-react'
-import { Button } from '../../Ui'
+import { Button } from '../../ui'
 
 interface ColumnMenuDropdownProps {
   showColumnMenu: boolean

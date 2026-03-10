@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, Button, Input, Select, FormField, Alert } from '../../../Ui'
+import { Modal, Button, Input, Select, FormField, Alert } from '../../../ui'
 
 interface RetailProject {
   id: string

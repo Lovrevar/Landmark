@@ -16,7 +16,7 @@ import {
   Circle,
   AlertTriangle
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../../Ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../../ui'
 import { format, differenceInDays } from 'date-fns'
 import { fetchProjectDetails } from './Services/projectDetailsService'
 import {

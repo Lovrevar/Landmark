@@ -1,6 +1,6 @@
 import React from 'react'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../../Ui'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../../ui'
 import DateInput from '../../Common/DateInput'
 import { usePayments } from './Hooks/usePayments'
 import AccountingPaymentFormModal from './Forms/AccountingPaymentFormModal'

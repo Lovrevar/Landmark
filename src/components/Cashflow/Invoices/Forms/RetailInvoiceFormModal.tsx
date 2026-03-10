@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, Button, Textarea, FormField, Alert } from '../../../Ui'
+import { Modal, Button, Textarea, FormField, Alert } from '../../../ui'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './RetailInvoiceCalculationSummary'
 import { useRetailInvoiceData } from '../Hooks/useRetailInvoiceData'

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { UnitFormData, UnitType } from '../types'
-import { Button, Modal, FormField, Input } from '../../../Ui'
+import { Button, Modal, FormField, Input } from '../../../ui'
 
 interface SingleUnitModalProps {
   visible: boolean

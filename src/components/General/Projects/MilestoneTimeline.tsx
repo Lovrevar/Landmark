@@ -1,6 +1,6 @@
 import React from 'react'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2 } from 'lucide-react'
-import { Badge, Button, EmptyState } from '../../Ui'
+import { Badge, Button, EmptyState } from '../../ui'
 import { format, parseISO, isPast } from 'date-fns'
 import type { Milestone } from '../types'
 

@@ -5,7 +5,7 @@ import { ProjectDetail } from './ProjectDetail'
 import { ProjectFormModal } from './Forms/ProjectFormModal'
 import { useRetailProjects } from './Hooks/useRetailProjects'
 import type { RetailProjectWithPhases } from '../../../types/retail'
-import { LoadingSpinner, PageHeader, Button } from '../../Ui'
+import { LoadingSpinner, PageHeader, Button } from '../../ui'
 
 const RetailProjects: React.FC = () => {
   const { projects, loading, refetch } = useRetailProjects()

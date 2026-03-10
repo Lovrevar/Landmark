@@ -3,7 +3,7 @@ import { FileDown, FileSpreadsheet, Save, AlertCircle } from 'lucide-react'
 import { exportToExcel, exportToPDF } from './Services/TICExport'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
-import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState } from '../../Ui'
+import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState } from '../../ui'
 
 interface LineItem {
   name: string

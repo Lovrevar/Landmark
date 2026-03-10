@@ -4,7 +4,7 @@ import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from './types'
 import { PhaseCard } from './PhaseCard'
 import { supabase } from '../../../lib/supabase'
-import { Button, Badge, EmptyState } from '../../Ui'
+import { Button, Badge, EmptyState } from '../../ui'
 
 interface Company {
   id: string

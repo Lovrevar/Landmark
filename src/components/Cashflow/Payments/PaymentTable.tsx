@@ -3,7 +3,7 @@ import { CreditCard, Edit, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Payment, VisibleColumns } from './types'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '../Services/paymentHelpers'
-import { Table, Button, EmptyState } from '../../Ui'
+import { Table, Button, EmptyState } from '../../ui'
 
 interface PaymentTableProps {
   payments: Payment[]
