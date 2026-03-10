@@ -62,10 +62,10 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
     if (visible && subcontractor) {
       setHasContract((subcontractor as any).has_contract !== false)
       setSelectedPhaseId((subcontractor as any).phase_id || '')
-      setName(subcontractor.name)
-      setContact(subcontractor.contact)
-      setJobDescription(subcontractor.job_description)
-      setDeadline(subcontractor.deadline)
+      setName(subcontractor.name || '')
+      setContact(subcontractor.contact || '')
+      setJobDescription(subcontractor.job_description || '')
+      setDeadline(subcontractor.deadline || '')
 
       loadPhases()
       loadContractTypes()
@@ -142,8 +142,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       if (data) {
         setBaseAmount(data.base_amount || 0)
         setVatRate(data.vat_rate || 0)
-        setVatAmount(data.vat_amount || 0)
-        setTotalAmount(data.total_amount || 0)
       }
     } catch (error) {
       console.error('Error loading contract VAT data:', error)
