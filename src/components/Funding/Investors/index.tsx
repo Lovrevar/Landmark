@@ -81,6 +81,13 @@ const [companies, setCompanies] = useState<Company[]>([])
   }, [])
 
   useEffect(() => {
+    if (selectedBank) {
+      const refreshed = banks.find(b => b.id === selectedBank.id)
+      if (refreshed) setSelectedBank(refreshed)
+    }
+  }, [banks])
+
+  useEffect(() => {
     if (newCredit.company_id && newCredit.disbursed_to_account) {
       fetchCompanyBankAccounts(newCredit.company_id)
     } else {
@@ -161,9 +168,10 @@ const [companies, setCompanies] = useState<Company[]>([])
         // Calculate available funds (limit - utilized)
         const available_funds = bank.total_credit_limit - credit_utilized
 
-        // Calculate utilization based on utilized credit
-        const credit_utilization = bank.total_credit_limit > 0
-          ? (credit_utilized / bank.total_credit_limit) * 100
+        // Calculate utilization as drawn amount vs total granted credit
+        const total_used = bankCredits.reduce((sum, credit) => sum + Number(credit.used_amount || 0), 0)
+        const credit_utilization = credit_utilized > 0
+          ? (total_used / credit_utilized) * 100
           : 0
 
         return {
@@ -372,7 +380,7 @@ const [companies, setCompanies] = useState<Company[]>([])
           disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null,
           credit_type: actualCreditType,
           credit_seniority: seniority,
-          outstanding_balance: newCredit.outstanding_balance || newCredit.amount,
+          outstanding_balance: 0,
           monthly_payment: calculateRateAmount(),
           principal_repayment_type: newCredit.principal_repayment_type,
           interest_repayment_type: newCredit.interest_repayment_type
@@ -436,8 +444,8 @@ const [companies, setCompanies] = useState<Company[]>([])
       credit_type: `${credit.credit_type}_${credit.credit_seniority}`,
       amount: credit.amount,
       interest_rate: credit.interest_rate,
-      start_date: credit.start_date,
-      maturity_date: credit.maturity_date,
+      start_date: credit.start_date || '',
+      maturity_date: credit.maturity_date || '',
       outstanding_balance: credit.outstanding_balance,
       monthly_payment: credit.monthly_payment,
       purpose: credit.purpose || '',
@@ -475,7 +483,7 @@ const [companies, setCompanies] = useState<Company[]>([])
   const handleUpdateCredit = async () => {
     if (!editingCredit) return
 
-    if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
+    if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
       alert('Please fill in all required fields')
       return
     }
@@ -598,13 +606,15 @@ const [companies, setCompanies] = useState<Company[]>([])
     const principalFreq = getPaymentFrequency(newCredit.principal_repayment_type)
     const interestFreq = getPaymentFrequency(newCredit.interest_repayment_type)
 
-    const totalPrincipalPayments = Math.floor(totalYears * principalFreq)
-    const totalInterestPayments = Math.floor(totalYears * interestFreq)
+    const totalPrincipalPayments = Math.max(1, Math.floor(totalYears * principalFreq))
+    const totalInterestPayments = Math.max(1, Math.floor(totalYears * interestFreq))
 
-    const principalPerPayment = totalPrincipalPayments > 0 ? newCredit.amount / totalPrincipalPayments : 0
+    const principalPerPayment = newCredit.amount / totalPrincipalPayments
 
     const annualInterest = newCredit.amount * (newCredit.interest_rate / 100)
-    const interestPerPayment = totalInterestPayments > 0 ? annualInterest / interestFreq : 0
+    const interestPerPayment = annualInterest / interestFreq
+
+    const freqLabel = (type: string) => ({ monthly: 'month', quarterly: 'quarter', biyearly: '6 months', yearly: 'year' }[type] || type)
 
     return {
       principalPerPayment,
@@ -612,8 +622,8 @@ const [companies, setCompanies] = useState<Company[]>([])
       totalPrincipalPayments,
       totalInterestPayments,
       paymentStartDate,
-      principalFrequency: newCredit.principal_repayment_type,
-      interestFrequency: newCredit.interest_repayment_type
+      principalFrequency: freqLabel(newCredit.principal_repayment_type),
+      interestFrequency: freqLabel(newCredit.interest_repayment_type)
     }
   }
 
@@ -1071,7 +1081,7 @@ const [companies, setCompanies] = useState<Company[]>([])
                   <div className="space-y-3">
                     {selectedBank.credits.map((credit) => {
                       const isMaturing = credit.maturity_date && differenceInDays(new Date(credit.maturity_date), new Date()) <= 90
-                      const paymentRatio = credit.amount > 0 ? ((credit.amount - credit.outstanding_balance) / credit.amount) * 100 : 0
+                      const paymentRatio = credit.amount > 0 ? ((credit.repaid_amount || 0) / credit.amount) * 100 : 0
                       
                       return (
                         <div key={credit.id} className="border border-gray-200 rounded-lg p-4">

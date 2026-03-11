@@ -166,7 +166,7 @@ export const createCredit = async (credit: NewCreditForm): Promise<void> => {
       start_date: credit.start_date || null,
       maturity_date: credit.maturity_date || null,
       usage_expiration_date: credit.usage_expiration_date || null,
-      outstanding_balance: credit.outstanding_balance || credit.amount,
+      outstanding_balance: 0,
       monthly_payment: calculateRateAmount(credit),
       purpose: credit.purpose || null,
       grace_period: credit.grace_period,
