@@ -5,7 +5,6 @@ import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
 import SubcontractorManagement from './components/Supervision/Subcontractors/index'
-import ProjectDetails from './components/General/Projects/ProjectDetails'
 import ProjectDetailsEnhanced from './components/General/Projects/ProjectDetailsEnhanced'
 import ProjectsManagement from './components/General/Projects/index'
 import SiteManagement from './components/Supervision/SiteManagement/index'
@@ -43,7 +42,7 @@ import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading, user } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
     return (

@@ -19,7 +19,8 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       total_amount?: number
       contract_type_id?: number
       has_contract?: boolean
-      financed_by_type?: 'bank' | null
+      financed_by_type?: 'investor' | 'bank' | null
+      financed_by_investor_id?: string | null
       financed_by_bank_id?: string | null
     },
     pendingFiles?: File[]
@@ -118,9 +119,9 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       await siteService.recalculatePhaseBudget(phase.id)
       await fetchProjects()
       return true
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding subcontractor:', error)
-      if (error.message?.includes('duplicate key value violates unique constraint')) {
+      if (error instanceof Error && error.message?.includes('duplicate key value violates unique constraint')) {
         alert('Contract number already exists. Please try again.')
       } else {
         alert('Error adding subcontractor to phase.')
@@ -131,7 +132,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   const updateSubcontractor = async (subcontractor: Subcontractor) => {
     try {
-      const subData = subcontractor as any
+      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number; has_contract?: boolean }
       await siteService.updateSubcontractor(subcontractor.id, {
         name: subcontractor.name,
         contact: subcontractor.contact,
@@ -174,15 +175,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     }
   }
 
-  const addPaymentToSubcontractor = async (
-    _subcontractor: Subcontractor,
-    _amount: number,
-    _paymentDate: string,
-    _notes: string,
-    _userId: string,
-    _milestoneId?: string,
-    _paidByBankId?: string | null
-  ) => {
+  const addPaymentToSubcontractor = async () => {
     alert('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
     return false
   }
@@ -196,12 +189,14 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     }
   }
 
-  const updateWirePayment = async (..._args: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const updateWirePayment = async (..._args: unknown[]) => {
     alert('Payment updates have moved to Accounting module. Please go to Accounting → Payments to edit payments.')
     return false
   }
 
-  const deleteWirePayment = async (..._args: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const deleteWirePayment = async (..._args: unknown[]) => {
     alert('Payment deletion has moved to Accounting module. Please go to Accounting → Payments to delete payments.')
     return false
   }

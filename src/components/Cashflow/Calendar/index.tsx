@@ -16,7 +16,6 @@ const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
 const AccountingCalendar: React.FC = () => {
   const {
     currentDate,
-    invoices,
     loading,
     selectedDate,
     selectedInvoices,
@@ -290,7 +289,7 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel(invoice)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as any).retail_supplier?.name || (invoice as any).retail_contracts?.retail_suppliers?.name || 'N/A'}
+                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as unknown as { retail_supplier?: { name: string } }).retail_supplier?.name || (invoice as unknown as { retail_contracts?: { retail_suppliers?: { name: string } } }).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>

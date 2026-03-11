@@ -66,8 +66,9 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
 
 interface ModalHeaderProps {
   title: string
-  subtitle?: string
+  subtitle?: string | null
   onClose: () => void
+  children?: React.ReactNode
 }
 
 function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {

@@ -39,7 +39,7 @@ export async function fetchSalesDashboardData(): Promise<{
   const sales = salesData.data || []
   const customers = customersData.data || []
   const projects = projectsData.data || []
-  const payments = paymentsData.data || []
+  const payments = (paymentsData.data || []) as unknown as Array<{ amount: string | number; payment_date: string; invoice?: { apartment_id: string | null; invoice_type: string } | null }>
 
   const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
   const totalSalesValue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price), 0)
@@ -127,7 +127,7 @@ export async function fetchSalesDashboardData(): Promise<{
   return { stats, projectStats: Array.from(projectStatsMap.values()), monthlyTrends, paymentMethodBreakdown, recentSales }
 }
 
-export async function fetchRecentSales(sales: any[]): Promise<RecentSale[]> {
+export async function fetchRecentSales(sales: Array<{ apartment_id?: string; customer_id?: string; sale_price: string | number; sale_date?: string }>): Promise<RecentSale[]> {
   const recentSalesSlice = sales.slice(-10).reverse()
   if (recentSalesSlice.length === 0) return []
 

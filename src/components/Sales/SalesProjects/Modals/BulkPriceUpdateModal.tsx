@@ -5,7 +5,7 @@ import { Button, Modal, FormField, Input, Alert } from '../../../ui'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
-  selectedUnits: any[]
+  selectedUnits: { id: string; price: number; size_m2: number; price_per_m2?: number }[]
   unitType: UnitType
   onClose: () => void
   onSubmit: (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => void
@@ -15,7 +15,6 @@ interface BulkPriceUpdateModalProps {
 export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   visible,
   selectedUnits,
-  unitType,
   onClose,
   onSubmit,
   loading = false
@@ -75,11 +74,6 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
     onSubmit(adjustmentType, adjustment)
   }
 
-  const getUnitLabel = () => {
-    if (unitType === 'apartment') return 'Apartments'
-    if (unitType === 'garage') return 'Garages'
-    return 'Repositories'
-  }
 
   return (
     <Modal show={true} onClose={onClose} size="lg">

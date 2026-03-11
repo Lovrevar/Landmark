@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Building2, FileUp, Warehouse } from 'lucide-react'
+import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button } from '../../ui'
 import { Apartment } from '../../../lib/supabase'
 import { useSalesData } from './Hooks/useSalesData'
@@ -214,7 +214,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
-  const handleSellUnit = (unit: any, unitType: UnitType) => {
+  const handleSellUnit = (unit: { id: string; number: string; price: number; [key: string]: unknown }, unitType: UnitType) => {
     setUnitForSale({ unit, type: unitType })
     setShowSaleForm(true)
   }
@@ -231,7 +231,7 @@ const SalesProjectsEnhanced: React.FC = () => {
 
   const handleSelectAllUnits = () => {
     if (!selectedBuilding) return
-    let units: any[] = []
+    let units: { id: string }[] = []
     if (activeUnitType === 'apartment') units = selectedBuilding.apartments
     else if (activeUnitType === 'garage') units = selectedBuilding.garages
     else if (activeUnitType === 'repository') units = selectedBuilding.repositories

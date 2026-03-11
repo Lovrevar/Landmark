@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 export interface ColumnVisibility {
+  [key: string]: boolean
   approved: boolean
   type: boolean
   invoice_number: boolean

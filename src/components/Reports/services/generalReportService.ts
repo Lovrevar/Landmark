@@ -30,7 +30,7 @@ export async function fetchGeneralReportData(
   const { data: garages } = await supabase.from('garages').select('*')
   const { data: repositories } = await supabase.from('repositories').select('*')
   const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
-  const { data: contractTypes } = await supabase.from('contract_types').select('*')
+  await supabase.from('contract_types').select('*')
 
   const { data: retailProjects } = await supabase.from('retail_projects').select('*')
   const { data: retailContracts } = await supabase.from('retail_contracts').select('*')
@@ -63,7 +63,6 @@ export async function fetchGeneralReportData(
   const garagesArray = garages || []
   const repositoriesArray = repositories || []
   const subcontractorMilestonesArray = subcontractorMilestones || []
-  const contractTypesArray = contractTypes || []
 
   const retailProjectsArray = retailProjects || []
   const retailContractsArray = retailContracts || []
@@ -357,7 +356,7 @@ export async function fetchGeneralReportData(
 
   const contractTypeCounts: { [key: string]: number } = {}
   contractsArray.forEach(c => {
-    const typeName = (c as any).contract_types?.name || 'Uncategorized'
+    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || 'Uncategorized'
     contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
   })
   const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))

@@ -200,7 +200,7 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
             <FormField label="Status">
               <Select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Completed' | 'Cancelled' })}
               >
                 <option value="Active">Active</option>
                 <option value="Completed">Completed</option>

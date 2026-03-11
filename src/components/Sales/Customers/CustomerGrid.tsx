@@ -6,7 +6,7 @@ import { LoadingSpinner, EmptyState } from '../../ui'
 
 interface CustomerGridProps {
   customers: CustomerWithApartments[]
-  activeCategory: CustomerCategory
+  activeCategory: CustomerCategory | null
   loading: boolean
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void

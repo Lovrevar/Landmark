@@ -24,7 +24,7 @@ export const emptyContractFields = (): ContractFields => ({
   kredit_etaziranje_90: null
 })
 
-export const contractFieldsFromData = (data: any): ContractFields => ({
+export const contractFieldsFromData = (data: Record<string, unknown>): ContractFields => ({
   datum_potpisa_predugovora: data?.datum_potpisa_predugovora || '',
   contract_payment_type: data?.contract_payment_type || '',
   kapara_10_posto: data?.kapara_10_posto != null ? Number(data.kapara_10_posto) : null,

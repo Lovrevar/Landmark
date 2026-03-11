@@ -2,13 +2,9 @@ import React, { useState, useEffect } from 'react'
 import {
   Download,
   Building2,
-  DollarSign,
-  TrendingUp,
-  Users,
   FileText,
   AlertTriangle,
   Target,
-  PieChart,
   Activity,
   Wallet,
   CreditCard,
@@ -23,8 +19,8 @@ import type { ComprehensiveReport } from './types'
 
 const GeneralReports: React.FC = () => {
   const [report, setReport] = useState<ComprehensiveReport | null>(null)
-  const [selectedProject, setSelectedProject] = useState<string>('all')
-  const [dateRange, setDateRange] = useState({
+  const [selectedProject] = useState<string>('all')
+  const [dateRange] = useState({
     start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   })

@@ -5,8 +5,8 @@ export interface ApartmentFormData {
   floor: number
   size_m2: number
   price: number
-  ulaz?: string
-  tip_stana?: string
+  ulaz?: string | null
+  tip_stana?: string | null
   sobnost?: number | null
   povrsina_otvoreno?: number | null
   povrsina_ot_sa_koef?: number | null

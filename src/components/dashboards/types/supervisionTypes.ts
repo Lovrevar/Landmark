@@ -36,4 +36,5 @@ export interface WeeklyStats {
   work_logs_this_week: number
   overdue_tasks: number
   critical_deadlines: number
+  [key: string]: number
 }

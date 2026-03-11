@@ -37,7 +37,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 }) => {
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('')
-  const [loading, setLoading] = useState(false)
+  const [, setLoading] = useState(false)
   const [banks, setBanks] = useState<Funder[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [paidByBankId, setPaidByBankId] = useState<string | null>(null)
@@ -85,7 +85,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
     if (milestoneId) {
       const milestone = milestones.find(m => m.id === milestoneId)
       if (milestone && subcontractor) {
-        onAmountChange((subcontractor.cost * milestone.percentage) / 100)
+        onAmountChange(((subcontractor.cost ?? 0) * milestone.percentage) / 100)
       }
     } else {
       onAmountChange(0)
@@ -94,8 +94,8 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
 
   if (!visible || !subcontractor) return null
 
-  const newTotalPaid = subcontractor.budget_realized + amount
-  const wouldBeOverBudget = newTotalPaid > subcontractor.cost
+  const newTotalPaid = (subcontractor.budget_realized ?? 0) + amount
+  const wouldBeOverBudget = newTotalPaid > (subcontractor.cost ?? 0)
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
@@ -109,16 +109,16 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
         <div className="mb-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between mb-2">
             <span className="text-sm text-gray-600">Contract Amount:</span>
-            <span className="text-sm font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
+            <span className="text-sm font-medium text-gray-900">€{(subcontractor.cost ?? 0).toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-sm text-gray-600">Already Paid:</span>
-            <span className="text-sm font-medium text-teal-600">€{subcontractor.budget_realized.toLocaleString('hr-HR')}</span>
+            <span className="text-sm font-medium text-teal-600">€{(subcontractor.budget_realized ?? 0).toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between pt-2 border-t border-gray-200">
             <span className="text-sm font-medium text-gray-700">Remaining:</span>
             <span className="text-sm font-bold text-orange-600">
-              €{Math.max(0, subcontractor.cost - subcontractor.budget_realized).toLocaleString('hr-HR')}
+              €{Math.max(0, (subcontractor.cost ?? 0) - (subcontractor.budget_realized ?? 0)).toLocaleString('hr-HR')}
             </span>
           </div>
         </div>
@@ -134,7 +134,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
             >
               <option value="">Manual Payment (No Milestone)</option>
               {milestones.map((milestone) => {
-                const milestoneAmount = (subcontractor.cost * milestone.percentage) / 100
+                const milestoneAmount = ((subcontractor.cost ?? 0) * milestone.percentage) / 100
                 return (
                   <option key={milestone.id} value={milestone.id}>
                     {milestone.milestone_number}. {milestone.milestone_name} - {milestone.percentage}% (€{milestoneAmount.toLocaleString('hr-HR')})
@@ -213,7 +213,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               <span className="font-medium">New Total Paid:</span> €{newTotalPaid.toLocaleString('hr-HR')}
             </p>
             <p className="text-sm mt-1">
-              <span className="font-medium">Loss:</span> €{(newTotalPaid - subcontractor.cost).toLocaleString('hr-HR')}
+              <span className="font-medium">Loss:</span> €{(newTotalPaid - (subcontractor.cost ?? 0)).toLocaleString('hr-HR')}
             </p>
           </Alert>
         )}

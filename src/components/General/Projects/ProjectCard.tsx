@@ -2,8 +2,8 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Calendar, TrendingUp, CheckCircle, Clock, Pause, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
-import { format, differenceInDays, parseISO } from 'date-fns'
-import type { ProjectWithStats } from '../types'
+import { differenceInDays, parseISO } from 'date-fns'
+import type { ProjectWithStats } from './types'
 
 interface Props {
   project: ProjectWithStats

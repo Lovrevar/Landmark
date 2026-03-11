@@ -15,8 +15,6 @@ import {
   ClipboardCheck,
   TrendingUp,
   FileText,
-  Menu,
-  X,
   FolderKanban,
   CreditCard,
   Lock,

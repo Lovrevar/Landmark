@@ -44,9 +44,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onManageMilestones
 }) => {
   const [funderName, setFunderName] = useState<string | null>(null)
-  const [loadingFunder, setLoadingFunder] = useState(false)
+  const [, setLoadingFunder] = useState(false)
   const [contractData, setContractData] = useState<ContractData | null>(null)
-  const [loadingContract, setLoadingContract] = useState(false)
+  const [, setLoadingContract] = useState(false)
 
   useEffect(() => {
     if (visible && subcontractor) {
@@ -61,7 +61,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   const loadContractData = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = subcontractor.contract_id || subcontractor.id
 
     try {
       setLoadingContract(true)
@@ -88,7 +88,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           vat_amount: data.vat_amount || 0,
           total_amount: data.total_amount || 0,
           end_date: data.end_date,
-          contract_type_name: (data.contract_types as any)?.name,
+          contract_type_name: (data.contract_types as { name: string } | null)?.name,
           status: data.status
         })
       }

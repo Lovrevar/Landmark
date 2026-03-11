@@ -3,7 +3,7 @@ import { Eye } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { Card, Badge } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
-import { SubcontractorContract } from '../types'
+import { SubcontractorContract } from './types'
 
 interface Props {
   contracts: SubcontractorContract[]

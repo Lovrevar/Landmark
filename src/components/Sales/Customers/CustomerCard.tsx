@@ -90,7 +90,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs font-semibold text-green-800 mb-2">Purchased Units</p>
           <div className="space-y-2">
-            {customer.apartments.map((unit: any) => {
+            {customer.apartments.map((unit: Record<string, unknown> & { id: string; type?: string; number?: string; price?: number; project_name?: string; garage?: { number: string; price: number } | null; repository?: { number: string; price: number } | null; total_paid?: number }) => {
               const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
               const garagePrice = (unit.garage?.price || 0)
               const repositoryPrice = (unit.repository?.price || 0)
@@ -142,8 +142,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           </div>
 
           {(() => {
-            const totalPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
-            const totalPrice = customer.apartments.reduce((sum: number, unit: any) => {
+            const totalPaid = customer.apartments.reduce((sum: number, unit: { total_paid?: number; type?: string; price?: number; garage?: { price: number } | null; repository?: { price: number } | null }) => sum + (unit.total_paid || 0), 0)
+            const totalPrice = customer.apartments.reduce((sum: number, unit: { type?: string; price?: number; garage?: { price: number } | null; repository?: { price: number } | null }) => {
               const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
               const garPrice = unit.garage?.price || 0
               const repPrice = unit.repository?.price || 0

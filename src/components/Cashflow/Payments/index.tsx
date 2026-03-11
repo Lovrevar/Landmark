@@ -8,6 +8,7 @@ import PaymentStatsCards from './PaymentStatsCards'
 import PaymentTable from './PaymentTable'
 import { PaymentDetailView } from './PaymentDetailView'
 import { columnLabels } from '../Services/paymentHelpers'
+import type { FilterMethod, FilterInvoiceType } from './types'
 
 const AccountingPayments: React.FC = () => {
   const {
@@ -99,7 +100,7 @@ const AccountingPayments: React.FC = () => {
 
           <Select
             value={filterMethod}
-            onChange={(e) => setFilterMethod(e.target.value as any)}
+            onChange={(e) => setFilterMethod(e.target.value as FilterMethod)}
           >
             <option value="ALL">Svi načini plaćanja</option>
             <option value="WIRE">Virman</option>
@@ -110,7 +111,7 @@ const AccountingPayments: React.FC = () => {
 
           <Select
             value={filterInvoiceType}
-            onChange={(e) => setFilterInvoiceType(e.target.value as any)}
+            onChange={(e) => setFilterInvoiceType(e.target.value as FilterInvoiceType)}
           >
             <option value="ALL">Svi tipovi računa</option>
             <option value="EXPENSE">Ulazni</option>

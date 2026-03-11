@@ -92,9 +92,9 @@ export interface SubcontractorMapped {
 
 export interface ProjectWithDetails extends Project {
   subcontractors: SubcontractorMapped[]
-  invoices: any[]
+  invoices: Record<string, unknown>[]
   apartments: Apartment[]
-  milestones: any[]
+  milestones: Record<string, unknown>[]
   total_spent: number
   total_revenue: number
   pending_invoices: number

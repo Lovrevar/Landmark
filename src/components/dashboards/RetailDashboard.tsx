@@ -13,6 +13,7 @@ const defaultStats: DashboardStats = {
   total_costs: 0,
   total_revenue: 0,
   total_paid: 0,
+  total_supplier_paid: 0,
   total_remaining: 0,
   profit: 0
 }

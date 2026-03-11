@@ -9,7 +9,23 @@ export const fetchCompaniesWithStats = async (): Promise<CompanyStats[]> => {
 
   if (statsError) throw statsError
 
-  const companiesWithStats = (statsData || []).map((stats: any) => ({
+  interface CompanyStatRow {
+    id: string
+    name: string
+    oib: string
+    initial_balance: number
+    total_income_invoices: number
+    total_income_amount: number
+    total_income_paid: number
+    total_income_unpaid: number
+    total_expense_invoices: number
+    total_expense_amount: number
+    total_expense_paid: number
+    total_expense_unpaid: number
+    total_bank_balance: number
+  }
+
+  const companiesWithStats = (statsData || []).map((stats: CompanyStatRow) => ({
     id: stats.id,
     name: stats.name,
     oib: stats.oib,
@@ -151,7 +167,7 @@ const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: str
   let delta = 0
 
   for (const p of paymentsResult.data || []) {
-    const invoiceType = (p.accounting_invoices as any)?.invoice_type as string
+    const invoiceType = (p.accounting_invoices as { invoice_type?: string } | null)?.invoice_type ?? ''
 
     if (p.company_bank_account_id === bankAccountId) {
       const outgoing = ['OUTGOING_SALES', 'OUTGOING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_BANK', 'OUTGOING_RETAIL_DEVELOPMENT', 'OUTGOING_RETAIL_CONSTRUCTION']
@@ -249,7 +265,7 @@ export const fetchCompanyDetails = async (companyId: string) => {
   const credits = creditsResult.data || []
   const creditIds = credits.map(c => c.id)
 
-  let cesijaPaidInvoices: any[] = []
+  let cesijaPaidInvoices: Array<{ id: string; [key: string]: unknown }> = []
 
   const orConditions = [`cesija_company_id.eq.${companyId}`]
   if (creditIds.length > 0) {

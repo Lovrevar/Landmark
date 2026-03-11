@@ -8,6 +8,7 @@ interface CurrencyInputProps {
   className?: string
   disabled?: boolean
   min?: number
+  required?: boolean
 }
 
 const hrFormatter = new Intl.NumberFormat('hr-HR', {

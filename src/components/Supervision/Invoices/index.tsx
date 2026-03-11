@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -26,7 +26,7 @@ interface InvoiceWithDetails {
 }
 
 const InvoicesManagement: React.FC = () => {
-  const { user } = useAuth()
+  useAuth()
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -79,7 +79,7 @@ const InvoicesManagement: React.FC = () => {
         .from('project_phases')
         .select('id, phase_name')
 
-      const enrichedInvoices = (invoicesData || []).map((invoice: any) => {
+      const enrichedInvoices = (invoicesData || []).map((invoice: Record<string, unknown> & { id: string; invoice_number: string; invoice_type: string; invoice_category: string; issue_date: string; due_date: string; total_amount: string; base_amount: string; vat_amount: string; status: string; approved?: boolean; supplier?: { name?: string } | null; company?: { name?: string } | null; project?: { name?: string } | null; contract?: { phase_id?: string } | null }) => {
         const supplierName = invoice.supplier?.name || '-'
         const companyName = invoice.company?.name || '-'
         const projectName = invoice.project?.name || '-'
@@ -235,7 +235,7 @@ const InvoicesManagement: React.FC = () => {
 
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as 'all' | 'recent' | 'large')}
           >
             <option value="all">All Invoices</option>
             <option value="recent">Recent (7 days)</option>
@@ -244,7 +244,7 @@ const InvoicesManagement: React.FC = () => {
 
           <Select
             value={filterApproved}
-            onChange={(e) => setFilterApproved(e.target.value as any)}
+            onChange={(e) => setFilterApproved(e.target.value as 'all' | 'approved' | 'not_approved')}
           >
             <option value="all">All Status</option>
             <option value="approved">Approved</option>

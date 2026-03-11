@@ -1,12 +1,14 @@
 import React from 'react'
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value'> {
   compact?: boolean
+  value?: string | number | readonly string[] | null
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(({
   compact = false,
   className = '',
+  value,
   ...props
 }, ref) => {
   const baseClasses = [
@@ -16,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
     className,
   ].filter(Boolean).join(' ')
 
-  return <input ref={ref} className={baseClasses} {...props} />
+  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} />
 })
 
 Input.displayName = 'Input'

@@ -67,6 +67,20 @@ export type Subcontractor = {
   completed_at?: string | null
   active_contracts_count?: number
   notes?: string
+  // SubcontractorWithPhase fields (optional on base type)
+  job_description?: string
+  deadline?: string
+  cost: number
+  budget_realized: number
+  phase_id?: string
+  contract_id?: string
+  subcontractor_id?: string
+  has_contract?: boolean
+  invoice_total_paid?: number
+  invoice_total_owed?: number
+  contract_type_id?: number | null
+  contract_type_name?: string | null
+  phase_name?: string
 }
 
 export type Contract = {
@@ -325,14 +339,18 @@ export type BankCredit = {
   id: string
   bank_id: string
   project_id: string | null
-  credit_type: 'term_loan' | 'line_of_credit' | 'construction_loan' | 'bridge_loan'
+  company_id?: string | null
+  credit_name?: string
+  credit_type: 'term_loan' | 'line_of_credit' | 'construction_loan' | 'bridge_loan' | string
   amount: number
+  used_amount?: number
+  repaid_amount?: number
   interest_rate: number
   start_date: string
   maturity_date: string | null
   outstanding_balance: number
   monthly_payment: number
-  status: 'active' | 'paid' | 'defaulted'
+  status: 'active' | 'paid' | 'defaulted' | string
   purpose: string
   created_at: string
   usage_expiration_date: string | null
@@ -341,6 +359,11 @@ export type BankCredit = {
   repayment_type: 'monthly' | 'yearly'
   principal_repayment_type?: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
   interest_repayment_type?: 'monthly' | 'quarterly' | 'biyearly' | 'yearly'
+  credit_allocations?: Array<{ id: string; allocated_amount: number; used_amount: number; project?: { name: string } | null }>
+  company?: { name: string } | null
+  disbursed_to_account?: boolean | null
+  disbursed_to_bank_account_id?: string | null
+  accounting_companies?: { name: string } | null
 }
 
 export type Investor = {

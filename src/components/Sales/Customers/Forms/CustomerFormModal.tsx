@@ -7,7 +7,7 @@ import { Alert } from '../../../ui'
 interface CustomerFormModalProps {
   show: boolean
   editingCustomer: CustomerWithApartments | null
-  activeCategory: CustomerCategory
+  activeCategory: CustomerCategory | null
   onClose: () => void
   onSave: (formData: Partial<Customer>, editingId?: string) => Promise<void>
 }
@@ -94,11 +94,12 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     try {
       await onSave(formData, editingCustomer?.id)
       onClose()
-    } catch (err: any) {
-      if (err?.code === '23505') {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string }
+      if (error?.code === '23505') {
         setError('A customer with this email already exists.')
       } else {
-        setError(err?.message || 'An error occurred while saving the customer.')
+        setError(error?.message || 'An error occurred while saving the customer.')
       }
     }
   }
@@ -157,7 +158,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             <FormField label="Status" required>
               <Select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out' })}
               >
                 <option value="interested">Interested</option>
                 <option value="hot_lead">Hot Lead</option>
@@ -169,7 +170,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             <FormField label="Priority">
               <Select
                 value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'hot' | 'warm' | 'cold' })}
               >
                 <option value="hot">Hot</option>
                 <option value="warm">Warm</option>

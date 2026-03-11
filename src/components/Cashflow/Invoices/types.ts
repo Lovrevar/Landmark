@@ -1,8 +1,9 @@
 export interface Company {
   id: string
   name: string
-  tax_id: string
-  vat_id: string
+  oib?: string
+  tax_id?: string
+  vat_id?: string
 }
 
 export interface CompanyBankAccount {
@@ -21,6 +22,7 @@ export interface CompanyCredit {
   outstanding_balance: number
   used_amount: number
   repaid_amount: number
+  disbursed_to_account?: boolean
 }
 
 export interface CreditAllocation {
@@ -30,10 +32,7 @@ export interface CreditAllocation {
   allocated_amount: number
   used_amount: number
   description: string | null
-  project?: {
-    id: string
-    name: string
-  }
+  project?: { id: string; name: string }
 }
 
 export interface Supplier {
@@ -134,7 +133,7 @@ export interface Invoice {
   total_amount: number
   category: string
   project_id: string | null
-  refund_id: number | null
+  refund_id?: number | null
   description: string
   status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'
   paid_amount: number

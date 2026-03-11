@@ -23,7 +23,7 @@ export async function generateSupervisionReportPDF(
     return false
   }
 
-  const addText = (text: string, x: number, y: number, options: any = {}) => {
+  const addText = (text: string, x: number, y: number, options: { fontSize?: number; maxWidth?: number; lineHeight?: number; style?: string; color?: number[] } = {}) => {
     const fontSize = options.fontSize || 10
     const maxWidth = options.maxWidth || contentWidth
     const lineHeight = options.lineHeight || fontSize * 0.35

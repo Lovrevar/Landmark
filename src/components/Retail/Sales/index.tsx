@@ -94,7 +94,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
       // Fetch bank accounts separately
       const bankAccountIds = [...new Set(paymentsData?.map(p => p.company_bank_account_id).filter(Boolean) || [])]
 
-      let bankAccountsData: any[] = []
+      let bankAccountsData: { id: string; bank_name: string | null }[] = []
       if (bankAccountIds.length > 0) {
         const { data: accounts } = await supabase
           .from('company_bank_accounts')
@@ -108,16 +108,23 @@ const RetailSalesPaymentsManagement: React.FC = () => {
         const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
         const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
 
+        type InvoiceJoin = typeof invoice & {
+          retail_contracts?: { contract_number?: string; retail_project_phases?: { retail_projects?: { name?: string } } } | null
+          retail_projects?: { name?: string } | null
+          retail_customers?: { name?: string } | null
+        }
+        const inv = invoice as InvoiceJoin | undefined
+
         let projectName = 'N/A'
-        if ((invoice?.retail_contracts as any)?.retail_project_phases?.retail_projects?.name) {
-          projectName = (invoice.retail_contracts as any).retail_project_phases.retail_projects.name
-        } else if ((invoice?.retail_projects as any)?.name) {
-          projectName = (invoice.retail_projects as any).name
+        if (inv?.retail_contracts?.retail_project_phases?.retail_projects?.name) {
+          projectName = inv.retail_contracts.retail_project_phases.retail_projects.name
+        } else if (inv?.retail_projects?.name) {
+          projectName = inv.retail_projects.name
         }
 
         let customerName = 'N/A'
-        if ((invoice?.retail_customers as any)?.name) {
-          customerName = (invoice.retail_customers as any).name
+        if (inv?.retail_customers?.name) {
+          customerName = inv.retail_customers.name
         }
 
         return {
@@ -130,7 +137,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           invoice_number: invoice?.invoice_number || 'N/A',
           issue_date: invoice?.issue_date || '',
           invoice_total_amount: invoice?.total_amount || 0,
-          contract_number: (invoice?.retail_contracts as any)?.contract_number || 'N/A',
+          contract_number: inv?.retail_contracts?.contract_number || 'N/A',
           project_name: projectName,
           customer_name: customerName,
           bank_account_name: bankAccount?.bank_name || 'N/A'
@@ -234,7 +241,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             />
           </div>
 
-          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="all">All Payments</option>
             <option value="recent">Recent (7 days)</option>
             <option value="large">Large (&gt; €10k)</option>

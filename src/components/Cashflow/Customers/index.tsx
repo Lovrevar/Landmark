@@ -1,5 +1,5 @@
 import React from 'react'
-import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye, X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { useAccountingCustomers } from './Hooks/useAccountingCustomers'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, StatCard, EmptyState, Button, Badge, Modal } from '../../ui'
 

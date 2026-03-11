@@ -36,7 +36,7 @@ const CustomersManagement: React.FC = () => {
   const handleToggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
       return next
     })
   }
@@ -68,7 +68,7 @@ const CustomersManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this customer?')) return
     try {
       await deleteCustomer(id)
-    } catch (error) {
+    } catch {
       alert('Error deleting customer')
     }
   }

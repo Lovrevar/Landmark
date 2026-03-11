@@ -63,8 +63,8 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
       const uniqueBanks = Array.from(
         new Map(
           (allocationsData || [])
-            .filter((alloc: any) => alloc.bank_credits?.banks)
-            .map((alloc: any) => [alloc.bank_credits.banks.id, { id: alloc.bank_credits.banks.id, name: alloc.bank_credits.banks.name }])
+            .filter((alloc: { bank_credits?: { banks?: { id: string; name: string } | null } | null }) => alloc.bank_credits?.banks)
+            .map((alloc: { bank_credits: { banks: { id: string; name: string } } }) => [alloc.bank_credits.banks.id, { id: alloc.bank_credits.banks.id, name: alloc.bank_credits.banks.name }])
         ).values()
       )
 

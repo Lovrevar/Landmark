@@ -3,7 +3,7 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './Hooks/useCompanies'
 import CompanyFormModal from './Forms/CompanyFormModal'
 import CompanyDetailsModal from './Modals/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Card } from '../../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState } from '../../ui'
 
 const AccountingCompanies: React.FC = () => {
   const {
@@ -30,8 +30,6 @@ const AccountingCompanies: React.FC = () => {
     totalRevenue,
     totalProfit
   } = useCompanies()
-
-  const totalExpensePaid = companies.reduce((sum, c) => sum + c.total_expense_paid, 0)
 
   if (loading) {
     return <LoadingSpinner message="Učitavanje..." />

@@ -86,9 +86,9 @@ export const useCompanies = () => {
 
       await fetchData()
       handleCloseAddModal()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving company:', error)
-      if (error.code === '23505') {
+      if ((error as { code?: string })?.code === '23505') {
         alert('OIB već postoji u sustavu!')
       } else {
         alert('Greška prilikom spremanja firme')
@@ -164,7 +164,7 @@ export const useCompanies = () => {
   const totalRevenue = companies.reduce((sum, c) => sum + c.revenue, 0)
   const totalProfit = companies.reduce((sum, c) => sum + c.profit, 0)
 
-  const handleFormDataChange = (field: keyof typeof formData, value: any) => {
+  const handleFormDataChange = (field: keyof CompanyFormData, value: CompanyFormData[keyof CompanyFormData]) => {
     setFormData({ ...formData, [field]: value })
   }
 

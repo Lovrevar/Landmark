@@ -5,17 +5,35 @@ import { CesijaPaymentFields } from '../../Components/CesijaPaymentFields'
 import { Modal, Button, Input, Select, Textarea, FormField, Alert } from '../../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../../Invoices/types'
 
+interface PaymentModalFormData {
+  payment_source_type: string
+  company_bank_account_id: string
+  credit_id: string
+  credit_allocation_id?: string
+  is_cesija: boolean
+  cesija_company_id: string
+  cesija_bank_account_id: string
+  cesija_credit_id?: string
+  cesija_credit_allocation_id?: string
+  payment_date: string
+  amount: number
+  payment_method: string
+  reference_number: string
+  description: string
+  [key: string]: unknown
+}
+
 interface PaymentFormModalProps {
   show: boolean
   payingInvoice: Invoice | null
-  paymentFormData: any
+  paymentFormData: PaymentModalFormData
   companies: Company[]
   companyBankAccounts: CompanyBankAccount[]
   companyCredits: CompanyCredit[]
   creditAllocations: CreditAllocation[]
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
-  onFormChange: (data: any) => void
+  onFormChange: (data: PaymentModalFormData) => void
   onCreditChange: (creditId: string) => void
 }
 
@@ -227,7 +245,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             <FormField label="Način plaćanja" required>
               <Select
                 value={paymentFormData.payment_method}
-                onChange={(e) => onFormChange({ ...paymentFormData, payment_method: e.target.value as any })}
+                onChange={(e) => onFormChange({ ...paymentFormData, payment_method: e.target.value })}
                 required
               >
                 <option value="WIRE">Virman</option>

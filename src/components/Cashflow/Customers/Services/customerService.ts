@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import { Customer, CustomerStats } from '../types'
+import { Customer, CustomerStats, Invoice } from '../types'
 
 export const fetchCustomers = async () => {
   const { data: customersData, error: customersError } = await supabase
@@ -29,7 +29,7 @@ export const fetchCustomerInvoices = async (customerId: string) => {
     .eq('customer_id', customerId)
     .order('issue_date', { ascending: false })
 
-  return invoicesData || []
+  return (invoicesData || []) as unknown as Invoice[]
 }
 
 export const fetchCustomerProperties = async (customerId: string) => {
@@ -65,17 +65,17 @@ export const buildCustomerStats = async (customer: Customer): Promise<CustomerSt
   let totalApartments = 0
   if (propertyData && propertyData.length > 0) {
     totalApartments = propertyData.length
-    propertyData.forEach((sale: any) => {
+    propertyData.forEach((sale: { apartments?: { price?: number; apartment_garages?: Array<{ garages?: { price?: number } }>; apartment_repositories?: Array<{ repositories?: { price?: number } }> } }) => {
       if (sale.apartments) {
         const apt = sale.apartments
         propertyPrice += Number(apt.price || 0)
         if (apt.apartment_garages) {
-          apt.apartment_garages.forEach((ag: any) => {
+          apt.apartment_garages.forEach((ag) => {
             propertyPrice += Number(ag.garages?.price || 0)
           })
         }
         if (apt.apartment_repositories) {
-          apt.apartment_repositories.forEach((ar: any) => {
+          apt.apartment_repositories.forEach((ar) => {
             propertyPrice += Number(ar.repositories?.price || 0)
           })
         }

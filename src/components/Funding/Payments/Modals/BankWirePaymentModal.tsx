@@ -1,5 +1,3 @@
-import React from 'react'
-import { DollarSign, Calendar, FileText } from 'lucide-react'
 import { BankCredit } from '../../../../lib/supabase'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 

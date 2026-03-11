@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
 import { MilestoneFormModal } from './Modals/MilestoneFormModal'
@@ -56,7 +56,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: any) => {
+  const handleAddMilestone = async (data: Record<string, unknown>) => {
     try {
       const milestoneNumber = await getNextMilestoneNumber(contractId)
       await createMilestone({
@@ -71,7 +71,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleEditMilestone = async (data: any) => {
+  const handleEditMilestone = async (data: { milestone_name: string; description: string; percentage: number; due_date: string }) => {
     if (!editingMilestone) return
 
     try {

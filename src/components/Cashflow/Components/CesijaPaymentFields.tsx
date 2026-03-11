@@ -3,13 +3,23 @@ import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../Invoices/types'
 import { Select, FormField } from '../../ui'
 
+interface CesijaFormData {
+  is_cesija: boolean
+  cesija_company_id: string
+  cesija_bank_account_id: string
+  cesija_credit_id?: string
+  cesija_credit_allocation_id?: string
+  payment_source_type: string
+  [key: string]: unknown
+}
+
 interface CesijaPaymentFieldsProps {
-  paymentFormData: any
+  paymentFormData: CesijaFormData
   companies: Company[]
   companyBankAccounts: CompanyBankAccount[]
   companyCredits: CompanyCredit[]
   creditAllocations: CreditAllocation[]
-  onFormChange: (data: any) => void
+  onFormChange: (data: CesijaFormData) => void
   onCreditChange: (creditId: string) => void
 }
 

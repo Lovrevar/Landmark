@@ -25,7 +25,7 @@ export const fetchProjects = async () => {
 }
 
 export const fetchDebtData = async (projectId?: string): Promise<DebtSummary[]> => {
-  let invoicesQuery = supabase
+  const invoicesQuery = supabase
     .from('accounting_invoices')
     .select(`
       id,

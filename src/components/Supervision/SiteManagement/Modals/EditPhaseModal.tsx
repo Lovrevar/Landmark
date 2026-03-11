@@ -74,7 +74,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
                 ? `Warning: Budget is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')})`
                 : `Available after update: €${(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}`
             }
-            error={formData.budget_allocated < phase.budget_used}
+            error={formData.budget_allocated < phase.budget_used ? 'Budget less than allocated' : undefined}
           >
             <Input
               type="number"
@@ -105,7 +105,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
           <FormField label="Status">
             <Select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'planning' | 'active' | 'completed' | 'on_hold' })}
             >
               <option value="planning">Planning</option>
               <option value="active">Active</option>

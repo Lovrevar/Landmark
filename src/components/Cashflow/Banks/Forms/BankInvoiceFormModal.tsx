@@ -94,7 +94,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     setLoading(true)
 
     try {
-      const { total } = calculateTotal()
+      calculateTotal()
 
       const invoiceData = {
         invoice_type: formData.invoice_type,
@@ -125,9 +125,9 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
       onSuccess()
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating invoice:', error)
-      alert('Greška pri kreiranju računa: ' + error.message)
+      alert('Greška pri kreiranju računa: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setLoading(false)
     }
@@ -145,7 +145,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
             <FormField label="Tip" required>
               <Select
                 value={formData.invoice_type}
-                onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as BankInvoiceFormData['invoice_type'] })}
                 required
               >
                 <option value="INCOMING_BANK">Odljev</option>

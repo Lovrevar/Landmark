@@ -118,20 +118,20 @@ export interface RetailSupplier {
 export interface RetailContract {
   id: string
   phase_id: string
-  supplier_id: string | null
-  customer_id: string | null
+  supplier_id?: string | null
+  customer_id?: string | null
   contract_number: string
   contract_amount: number
   budget_realized: number
   status: 'Active' | 'Completed' | 'Cancelled'
   start_date: string | null
   end_date: string | null
-  land_area_m2: number | null
-  contract_date: string | null
-  building_surface_m2: number | null
-  total_surface_m2: number | null
-  price_per_m2: number | null
-  has_contract: boolean
+  land_area_m2?: number | null
+  contract_date?: string | null
+  building_surface_m2?: number | null
+  total_surface_m2?: number | null
+  price_per_m2?: number | null
+  has_contract?: boolean
   notes: string | null
   created_at: string
   updated_at: string

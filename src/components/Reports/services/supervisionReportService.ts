@@ -109,7 +109,7 @@ export async function generateProjectReport(
   }
   if (allocationsData && allocationsData.length > 0) {
     allocationsData.forEach(alloc => {
-      const bankName = (alloc.bank_credits as any)?.banks?.name
+      const bankName = (alloc.bank_credits as { banks?: { name?: string } | null } | null)?.banks?.name
       if (bankName && !investorNames.includes(bankName)) {
         investorNames.push(bankName)
       }

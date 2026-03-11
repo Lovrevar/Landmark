@@ -211,7 +211,7 @@ const RetailCustomers: React.FC = () => {
 
       setSelectedCustomer({
         ...customer,
-        sales: contractsWithPayments as any
+        sales: contractsWithPayments as RetailSale[]
       })
       document.body.style.overflow = 'hidden'
       setShowDetailsModal(true)
@@ -405,7 +405,7 @@ const RetailCustomers: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-3">Prodaje ({selectedCustomer.sales?.length || 0})</h3>
                 {selectedCustomer.sales && selectedCustomer.sales.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedCustomer.sales.map((sale: any) => (
+                    {selectedCustomer.sales.map((sale) => (
                       <div key={sale.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>

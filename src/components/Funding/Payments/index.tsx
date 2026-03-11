@@ -170,7 +170,7 @@ const FundingPaymentsManagement: React.FC = () => {
             />
           </div>
 
-          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="all">All Payments</option>
             <option value="recent">Recent (7 days)</option>
             <option value="large">Large (&gt; €50k)</option>

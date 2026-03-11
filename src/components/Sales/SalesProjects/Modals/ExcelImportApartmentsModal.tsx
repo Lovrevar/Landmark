@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import * as XLSX from '@e965/xlsx'
-import { Upload, CheckCircle, AlertCircle, Home } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, Button, LoadingSpinner } from '../../../ui'
+import { Modal, Button } from '../../../ui'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -40,7 +40,7 @@ interface ParsedApartmentRow {
 interface ExcelImportApartmentsModalProps {
   visible: boolean
   onClose: () => void
-  selectedProject: any
+  selectedProject: { id: string; name?: string; buildings?: { id: string; name: string }[] } | null
   onComplete: () => void
 }
 
@@ -67,13 +67,13 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     }
   }
 
-  const parseNumber = (value: any): number => {
+  const parseNumber = (value: unknown): number => {
     if (value === null || value === undefined || value === '') return 0
     const str = String(value).replace(/\./g, '').replace(',', '.')
     return parseFloat(str) || 0
   }
 
-  const parseDate = (value: any): string | null => {
+  const parseDate = (value: unknown): string | null => {
     if (value === null || value === undefined || value === '') return null
     if (typeof value === 'number') {
       const date = new Date(Math.round((value - 25569) * 86400 * 1000))
@@ -91,7 +91,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     return null
   }
 
-  const detectPaymentType = (row: any[]): 'credit' | 'installments' | null => {
+  const detectPaymentType = (row: unknown[]): 'credit' | 'installments' | null => {
     const hasInstallments = row[21] || row[22] || row[23] || row[24]
     const hasCredit = row[25]
     if (hasInstallments) return 'installments'
@@ -106,12 +106,13 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data, { type: 'array' })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
       const dataRows = rows.slice(1).filter(row => row[3])
 
       const buildingsMap = new Map()
-      selectedProject?.buildings?.forEach((b: any) => {
+      selectedProject?.buildings?.forEach((b: { id: string; name: string }) => {
         buildingsMap.set(b.name.toLowerCase().trim(), b.id)
       })
 

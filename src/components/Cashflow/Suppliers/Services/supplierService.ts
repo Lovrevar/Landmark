@@ -46,9 +46,10 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
 
   const siteContractInvoiceTotals = new Map<string, number>()
   ;(invoicesData || []).forEach(inv => {
-    if ((inv as any).contract_id) {
-      const current = siteContractInvoiceTotals.get((inv as any).contract_id) || 0
-      siteContractInvoiceTotals.set((inv as any).contract_id, current + parseFloat(inv.base_amount?.toString() || '0'))
+    const contractId = (inv as { contract_id?: string }).contract_id
+    if (contractId) {
+      const current = siteContractInvoiceTotals.get(contractId) || 0
+      siteContractInvoiceTotals.set(contractId, current + parseFloat(inv.base_amount?.toString() || '0'))
     }
   })
 
@@ -56,7 +57,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     const s = siteStats.get(c.subcontractor_id)
     if (s) {
       s.contractCount++
-      if ((c as any).has_contract === false) {
+      if ((c as { has_contract?: boolean }).has_contract === false) {
         s.contractValue += siteContractInvoiceTotals.get(c.id) || 0
       } else {
         s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
@@ -77,9 +78,10 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
 
   const retailContractInvoiceTotals = new Map<string, number>()
   ;(retailInvoicesData || []).forEach(inv => {
-    if ((inv as any).retail_contract_id) {
-      const current = retailContractInvoiceTotals.get((inv as any).retail_contract_id) || 0
-      retailContractInvoiceTotals.set((inv as any).retail_contract_id, current + parseFloat(inv.base_amount?.toString() || '0'))
+    const retailContractId = (inv as { retail_contract_id?: string }).retail_contract_id
+    if (retailContractId) {
+      const current = retailContractInvoiceTotals.get(retailContractId) || 0
+      retailContractInvoiceTotals.set(retailContractId, current + parseFloat(inv.base_amount?.toString() || '0'))
     }
   })
 
@@ -87,7 +89,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     const s = retailStats.get(c.supplier_id)
     if (s) {
       s.contractCount++
-      if ((c as any).has_contract === false) {
+      if ((c as { has_contract?: boolean }).has_contract === false) {
         s.contractValue += retailContractInvoiceTotals.get(c.id) || 0
       } else {
         s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
@@ -104,9 +106,11 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     }
   })
 
+  interface SupplierStatsEntry { contractCount: number; contractValue: number; totalPaid: number; totalRemaining: number; invoiceCount: number }
+  interface RawSupplier { id: string; name: string; contact?: string; contact_person?: string; contact_phone?: string; contact_email?: string; supplier_type?: { name: string } }
   const mapToSummary = (
-    data: any[],
-    statsMap: Map<string, any>,
+    data: RawSupplier[],
+    statsMap: Map<string, SupplierStatsEntry>,
     source: 'site' | 'retail'
   ): SupplierSummary[] =>
     data.map(supplier => {
@@ -253,7 +257,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       .in('id', (rContracts || []).map(c => c.phase_id).filter(Boolean) as string[])
 
     const phaseProjectMap = new Map<string, string>()
-    ;(rPhases || []).forEach((p: any) => {
+    ;(rPhases || []).forEach((p: { id: string; retail_projects?: { name: string } }) => {
       phaseProjectMap.set(p.id, p.retail_projects?.name || 'N/A')
     })
 
@@ -277,13 +281,14 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
     const contractPayMap = new Map<string, number>()
     const contractInvoiceTotalMap = new Map<string, number>()
     invoicesWithPayments.forEach(inv => {
-      if ((inv as any).retail_contract_id) {
-        contractPayMap.set((inv as any).retail_contract_id, (contractPayMap.get((inv as any).retail_contract_id) || 0) + (inv.actual_paid || 0))
-        contractInvoiceTotalMap.set((inv as any).retail_contract_id, (contractInvoiceTotalMap.get((inv as any).retail_contract_id) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
+      const rContractId = (inv as { retail_contract_id?: string }).retail_contract_id
+      if (rContractId) {
+        contractPayMap.set(rContractId, (contractPayMap.get(rContractId) || 0) + ((inv as { actual_paid?: number }).actual_paid || 0))
+        contractInvoiceTotalMap.set(rContractId, (contractInvoiceTotalMap.get(rContractId) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
       }
     })
 
-    contractsWithPayments = (rContracts || []).map((c: any) => ({
+    contractsWithPayments = (rContracts || []).map((c: Record<string, unknown>) => ({
       id: c.id,
       contract_number: c.contract_number,
       project_id: '',
@@ -326,9 +331,10 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
     const contractPayMap = new Map<string, number>()
     const contractInvoiceTotalMap = new Map<string, number>()
     invoicesWithPayments.forEach(inv => {
-      if ((inv as any).contract_id) {
-        contractPayMap.set((inv as any).contract_id, (contractPayMap.get((inv as any).contract_id) || 0) + (inv.actual_paid || 0))
-        contractInvoiceTotalMap.set((inv as any).contract_id, (contractInvoiceTotalMap.get((inv as any).contract_id) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
+      const contractId = (inv as { contract_id?: string }).contract_id
+      if (contractId) {
+        contractPayMap.set(contractId, (contractPayMap.get(contractId) || 0) + ((inv as { actual_paid?: number }).actual_paid || 0))
+        contractInvoiceTotalMap.set(contractId, (contractInvoiceTotalMap.get(contractId) || 0) + parseFloat(inv.base_amount?.toString() || '0'))
       }
     })
 
@@ -336,7 +342,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       ...c,
       actual_paid: contractPayMap.get(c.id) || 0,
       total_invoiced: contractInvoiceTotalMap.get(c.id) || 0
-    }))
+    })) as unknown as Contract[]
   }
 
   return { contracts: contractsWithPayments, invoices: invoicesWithPayments }

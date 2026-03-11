@@ -6,6 +6,7 @@ import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormF
 
 interface LandPlotWithSales extends RetailLandPlot {
   sales?: RetailSale[]
+  connectedProject?: { id: string; land_plot_id: string | null; name: string } | null
 }
 
 const RetailLandPlots: React.FC = () => {
@@ -60,7 +61,7 @@ const RetailLandPlots: React.FC = () => {
         }
       })
 
-      setLandPlots(plotsWithProjects as any)
+      setLandPlots(plotsWithProjects)
     } catch (error) {
       console.error('Error fetching land plots:', error)
       alert('Greška pri učitavanju zemljišta')
@@ -283,7 +284,7 @@ const RetailLandPlots: React.FC = () => {
                     <Badge variant={plot.payment_status === 'paid' ? 'green' : plot.payment_status === 'partial' ? 'yellow' : 'gray'}>
                       {plot.payment_status === 'paid' ? 'Plaćeno' : plot.payment_status === 'partial' ? 'Djelomično' : 'Pending'}
                     </Badge>
-                    {(plot as any).connectedProject && (
+                    {plot.connectedProject && (
                       <Badge variant="green" className="flex items-center">
                         <Link className="w-3 h-3 mr-1" />
                         U projektu
@@ -334,7 +335,7 @@ const RetailLandPlots: React.FC = () => {
                 <Input type="date" value={formData.payment_date} onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })} />
               </FormField>
               <FormField label="Status plaćanja *">
-                <Select value={formData.payment_status} onChange={(e) => setFormData({ ...formData, payment_status: e.target.value as any })}>
+                <Select value={formData.payment_status} onChange={(e) => setFormData({ ...formData, payment_status: e.target.value as 'paid' | 'pending' | 'partial' })}>
                   <option value="pending">Pending</option>
                   <option value="partial">Djelomično</option>
                   <option value="paid">Plaćeno</option>
@@ -407,7 +408,7 @@ const RetailLandPlots: React.FC = () => {
                       <div key={sale.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium">{(sale.customer as any)?.name || 'N/A'}</p>
+                            <p className="font-medium">{sale.customer?.name || 'N/A'}</p>
                             <p className="text-sm text-gray-600">{sale.sale_area_m2} m² x €{sale.sale_price_per_m2} = €{sale.total_sale_price.toLocaleString()}</p>
                           </div>
                           <Badge variant={

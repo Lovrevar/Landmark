@@ -16,8 +16,8 @@ export interface SubcontractorWithPhase extends Subcontractor {
   phase_name?: string
   job_description?: string
   deadline?: string
-  cost?: number
-  budget_realized?: number
+  cost: number
+  budget_realized: number
   phase_id?: string
   contract_id?: string
   subcontractor_id?: string
@@ -49,17 +49,19 @@ export interface PhaseFormInput {
 export interface EditPhaseFormData {
   phase_name: string
   budget_allocated: number
-  start_date: string
-  end_date: string
+  budget_used?: number
+  start_date: string | null
+  end_date: string | null
   status: 'planning' | 'active' | 'completed' | 'on_hold'
 }
 
 export interface SubcontractorFormData {
   existing_subcontractor_id: string
-  name: string
-  contact: string
+  useExisting?: boolean
+  name?: string
+  contact?: string
   job_description: string
-  start_date: string
+  start_date?: string
   deadline: string
   cost: number
   base_amount: number
@@ -68,8 +70,9 @@ export interface SubcontractorFormData {
   total_amount: number
   phase_id: string
   contract_type_id: number
-  financed_by_type?: 'bank' | null
+  financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
+  financed_by_investor_id?: string | null
   has_contract?: boolean
 }
 

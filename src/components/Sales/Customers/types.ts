@@ -1,3 +1,4 @@
+import { ComponentType } from 'react'
 import { Customer } from '../../../lib/supabase'
 
 export interface CustomerWithApartments extends Customer {
@@ -12,12 +13,12 @@ export interface CustomerWithApartments extends Customer {
   }>
 }
 
-export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out' | null
+export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out'
 
 export interface CategoryInfo {
   id: CustomerCategory
   label: string
-  icon: any
+  icon: ComponentType<{ className?: string }>
   color: string
   count: number
 }

@@ -1,4 +1,4 @@
-import { Project, Building, Apartment, Garage, Repository, Customer } from '../../../lib/supabase'
+import { Project, Building, Apartment, Garage, Repository } from '../../../lib/supabase'
 
 export interface BuildingWithUnits extends Building {
   apartments: Apartment[]

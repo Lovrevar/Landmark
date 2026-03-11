@@ -21,7 +21,16 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
     .order('end_date', { ascending: true })
   if (subError) throw subError
 
-  const subcontractors = (contractsData || []).map((c: any) => {
+  type RawContract = {
+    id: string
+    contract_amount: string | number | null
+    budget_realized: string | number | null
+    job_description: string | null
+    end_date: string | null
+    subcontractor: { id: string; name: string; contact: string | null }
+    phase?: { phase_name: string } | null
+  }
+  const subcontractors = (contractsData || []).map((c: RawContract) => {
     const cost = parseFloat(c.contract_amount || 0)
     const budgetRealized = parseFloat(c.budget_realized || 0)
     return {
@@ -83,7 +92,7 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
     if (bc.banks?.name && !investorNames.includes(bc.banks.name)) investorNames.push(bc.banks.name)
   })
   ;(allocationsData || []).forEach(alloc => {
-    const bankName = (alloc.bank_credits as any)?.banks?.name
+    const bankName = (alloc.bank_credits as { banks?: { name?: string } | null } | null)?.banks?.name
     if (bankName && !investorNames.includes(bankName)) investorNames.push(bankName)
   })
 
@@ -101,7 +110,7 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
 }
 
 export async function fetchProjectDataEnhanced(id: string): Promise<{
-  project: any
+  project: Record<string, unknown>
   milestones: Milestone[]
   phases: Phase[]
   contracts: ContractWithDetails[]
@@ -162,6 +171,6 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
     phases: phasesData || [],
     contracts: contractsData || [],
     apartments: apartmentsData || [],
-    investments: (investmentsData || []) as CreditAllocationItem[]
+    investments: (investmentsData || []) as unknown as CreditAllocationItem[]
   }
 }

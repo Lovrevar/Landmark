@@ -62,9 +62,10 @@ export interface Company {
 export interface CompanyBankAccount {
   id: string
   company_id: string
-  bank_id: string
-  account_number: string
+  bank_id?: string
+  account_number?: string
   current_balance: number
+  bank_name?: string
   bank?: {
     id: string
     name: string

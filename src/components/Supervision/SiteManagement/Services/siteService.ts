@@ -1,4 +1,4 @@
-import { supabase, ProjectPhase, Subcontractor, WirePayment } from '../../../../lib/supabase'
+import { supabase, ProjectPhase } from '../../../../lib/supabase'
 import { PhaseFormInput } from '../types'
 
 export const fetchAllProjects = async () => {
@@ -62,6 +62,7 @@ export const fetchSubcontractorsWithPhases = async () => {
     throw contractError
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subcontractorsWithPhaseData = (contractsData || []).map((contract: any) => {
     const cost = parseFloat(contract.contract_amount || 0)
     const budgetRealized = parseFloat(contract.budget_realized || 0)
@@ -253,11 +254,12 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
 export const updatePhase = async (
   phaseId: string,
   updates: {
-    phase_name: string
-    budget_allocated: number
-    start_date: string | null
-    end_date: string | null
-    status: 'planning' | 'active' | 'completed' | 'on_hold'
+    phase_name?: string
+    budget_allocated?: number
+    budget_used?: number
+    start_date?: string | null
+    end_date?: string | null
+    status?: 'planning' | 'active' | 'completed' | 'on_hold'
   }
 ) => {
   const { error } = await supabase
@@ -295,7 +297,7 @@ export const resequencePhases = async (phases: ProjectPhase[]) => {
 export const createSubcontractor = async (data: {
   name: string
   contact: string
-  financed_by_type?: 'bank' | null
+  financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
   const { error } = await supabase
@@ -308,7 +310,7 @@ export const createSubcontractor = async (data: {
 export const createSubcontractorWithReturn = async (data: {
   name: string
   contact: string
-  financed_by_type?: 'bank' | null
+  financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
   const { data: newSubcontractor, error } = await supabase
@@ -347,9 +349,9 @@ export const updateSubcontractor = async (
   updates: {
     name: string
     contact: string
-    job_description: string
-    deadline: string
-    cost: number
+    job_description?: string
+    deadline?: string
+    cost?: number
     progress: number
     base_amount?: number
     vat_rate?: number
@@ -377,7 +379,7 @@ export const updateSubcontractor = async (
   //console.log('Current contract data:', contract)
 
   // Update contract-specific fields in contracts table
-  const contractUpdateData: any = {
+  const contractUpdateData: Record<string, unknown> = {
     job_description: updates.job_description,
     end_date: updates.deadline,
     contract_amount: updates.cost
@@ -427,7 +429,7 @@ export const updateSubcontractor = async (
   //console.log('Contract updated successfully')
 
   // Update subcontractor fields (name, contact) in subcontractors table
-  const subcontractorUpdateData: any = {
+  const subcontractorUpdateData: Record<string, unknown> = {
     name: updates.name,
     contact: updates.contact
   }
@@ -747,7 +749,7 @@ export const updateMilestoneStatus = async (
   status: 'pending' | 'completed' | 'paid',
   dateField?: { completed_date?: string | null; paid_date?: string | null }
 ) => {
-  const updates: any = { status }
+  const updates: Record<string, string | null | undefined> = { status }
   if (dateField) {
     Object.assign(updates, dateField)
   }
@@ -832,11 +834,11 @@ export const fetchProjectFunders = async (projectId: string) => {
   const banks = Array.from(
     new Map(
       (data || [])
-        .filter(alloc => alloc.bank_credits?.banks)
-        .map(alloc => [
-          (alloc.bank_credits as any).banks.id,
-          (alloc.bank_credits as any).banks
-        ])
+        .filter(alloc => (alloc.bank_credits as { banks?: { id: string; name: string } } | null)?.banks)
+        .map(alloc => {
+          const bc = alloc.bank_credits as { banks: { id: string; name: string } }
+          return [bc.banks.id, bc.banks]
+        })
     ).values()
   )
 

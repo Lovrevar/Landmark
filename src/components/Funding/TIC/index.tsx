@@ -16,13 +16,6 @@ interface Project {
   name: string
 }
 
-interface TICData {
-  id?: string
-  project_id: string
-  investor_name: string
-  document_date: string
-  line_items: LineItem[]
-}
 
 const defaultLineItems: LineItem[] = [
   { name: 'Priprema projekta', vlastita: 0, kreditna: 0 },

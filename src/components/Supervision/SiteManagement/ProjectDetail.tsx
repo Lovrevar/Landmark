@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Building2, Settings, CreditCard, DollarSign, Percent } from 'lucide-react'
+import { ArrowLeft, Building2, Settings, CreditCard } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases } from './types'
+import { ProjectWithPhases, SubcontractorWithPhase } from './types'
 import { PhaseCard } from './PhaseCard'
 import { supabase } from '../../../lib/supabase'
 import { Button, Badge, EmptyState } from '../../ui'
@@ -71,7 +71,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onToggleContractType
 }) => {
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
-  const [loadingCredits, setLoadingCredits] = useState(false)
+  const [, setLoadingCredits] = useState(false)
 
   useEffect(() => {
     fetchProjectCreditAllocations()
@@ -102,7 +102,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         .eq('project_id', project.id)
 
       if (error) throw error
-      setCreditAllocations(data || [])
+      setCreditAllocations((data || []) as unknown as CreditAllocation[])
     } catch (error) {
       console.error('Error fetching project credit allocations:', error)
     } finally {
@@ -295,7 +295,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {project.subcontractors.filter(s => {
-                  const sub = s as any
+                  const sub = s as SubcontractorWithPhase
                   if (sub.has_contract) {
                     return sub.budget_realized >= sub.cost && sub.cost > 0
                   }

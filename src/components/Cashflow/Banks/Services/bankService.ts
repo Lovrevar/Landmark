@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import { BankWithCredits, Project, Company, NewCreditForm, BankCredit } from '../bankTypes'
+import { BankWithCredits, Project, Company, NewCreditForm } from '../bankTypes'
 
 export const fetchProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase

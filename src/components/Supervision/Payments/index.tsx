@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, WirePayment, Contract } from '../../../lib/supabase'
+import { supabase, Contract } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
-import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2, User } from 'lucide-react'
+import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
 
@@ -22,7 +22,7 @@ interface PaymentWithDetails {
 }
 
 const PaymentsManagement: React.FC = () => {
-  const { user } = useAuth()
+  useAuth()
   const [payments, setPayments] = useState<PaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -94,7 +94,8 @@ const PaymentsManagement: React.FC = () => {
       if (subError) throw subError
 
       // Fetch contracts with phase info
-      const { data: contractsData, error: contractsError } = await supabase
+      type ContractWithPhase = { id: string; contract_number: string; subcontractor_id: string; phase_id: string | null; project_phases?: { id: string; phase_name: string } | null }
+      const { data: contractsRaw, error: contractsError } = await supabase
         .from('contracts')
         .select(`
           id,
@@ -103,6 +104,7 @@ const PaymentsManagement: React.FC = () => {
           phase_id,
           project_phases(id, phase_name)
         `)
+      const contractsData = contractsRaw as unknown as ContractWithPhase[] | null
 
       if (contractsError) throw contractsError
 
@@ -114,7 +116,7 @@ const PaymentsManagement: React.FC = () => {
       if (projectsError) throw projectsError
 
       // Enrich payments with names
-      const enrichedPayments = (paymentsData || []).map((payment: any) => {
+      const enrichedPayments = (paymentsData || []).map((payment: Record<string, unknown> & { id: string; amount: string; payment_date: string; created_at: string; description?: string; company_bank_account_id?: string; cesija_company_id?: string; is_cesija?: boolean; invoice?: { supplier_id?: string; project_id?: string; contract_id?: string } | null; cesija_company?: { name: string } | null; credit?: { company?: { name: string } } | null; company_bank_account?: { company?: { name: string } } | null }) => {
         const invoice = payment.invoice
         if (!invoice) return null
 
@@ -159,7 +161,7 @@ const PaymentsManagement: React.FC = () => {
             contract_number: contract.contract_number,
             subcontractor_id: contract.subcontractor_id,
             phase_id: contract.phase_id
-          } as any : null,
+          } as Contract : null,
           paid_by_company_name: paidByCompanyName
         }
       }).filter(Boolean) as PaymentWithDetails[]
@@ -259,7 +261,7 @@ const PaymentsManagement: React.FC = () => {
             />
           </div>
 
-          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'recent' | 'large')}>
             <option value="all">All Payments</option>
             <option value="recent">Recent (7 days)</option>
             <option value="large">Large (&gt; €10k)</option>

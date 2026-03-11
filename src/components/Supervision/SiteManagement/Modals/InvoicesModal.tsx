@@ -22,6 +22,13 @@ interface Invoice {
   contract_id: string
 }
 
+type SubcontractorWithContractInfo = Subcontractor & {
+  contract_id?: string
+  company_name?: string
+  contract_title?: string
+  contract_number?: string
+}
+
 interface InvoicesModalProps {
   isOpen: boolean
   onClose: () => void
@@ -56,7 +63,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const fetchInvoices = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as SubcontractorWithContractInfo).contract_id || subcontractor.id
 
     /*console.log('🔍 InvoicesModal - Fetching invoices for CONTRACT:', {
       contract_id: contractId,
@@ -99,7 +106,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
       if (error) throw error
 
-      const formattedInvoices = (data || []).map((inv: any) => ({
+      type RawInvoice = { id: string; invoice_number: string; invoice_type: string; status: string; base_amount: number; vat_amount: number; total_amount: number; paid_amount: number; remaining_amount: number; issue_date: string; due_date: string; description: string; accounting_companies?: { name: string } | null; contracts?: { id: string } | null }
+      const formattedInvoices = (data || []).map((inv: RawInvoice) => ({
         id: inv.id,
         invoice_number: inv.invoice_number,
         invoice_type: inv.invoice_type,
@@ -162,8 +170,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="full">
       <Modal.Header
-        title={`Invoices - ${(subcontractor as any).company_name || subcontractor.name}`}
-        subtitle={`Contract: ${(subcontractor as any).contract_title || (subcontractor as any).contract_number || 'N/A'}`}
+        title={`Invoices - ${(subcontractor as SubcontractorWithContractInfo).company_name || subcontractor.name}`}
+        subtitle={`Contract: ${(subcontractor as SubcontractorWithContractInfo).contract_title || (subcontractor as SubcontractorWithContractInfo).contract_number || 'N/A'}`}
         onClose={onClose}
       />
 

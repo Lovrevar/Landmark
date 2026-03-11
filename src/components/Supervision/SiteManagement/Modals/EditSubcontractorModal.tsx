@@ -37,7 +37,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   visible,
   onClose,
   subcontractor,
-  onChange,
   onSubmit
 }) => {
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
@@ -60,8 +59,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
   useEffect(() => {
     if (visible && subcontractor) {
-      setHasContract((subcontractor as any).has_contract !== false)
-      setSelectedPhaseId((subcontractor as any).phase_id || '')
+      setHasContract((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).has_contract !== false)
+      setSelectedPhaseId((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).phase_id || '')
       setName(subcontractor.name || '')
       setContact(subcontractor.contact || '')
       setJobDescription(subcontractor.job_description || '')
@@ -77,7 +76,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const loadPhases = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     try {
       setLoadingPhases(true)
@@ -109,7 +108,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const loadContractTypeId = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     try {
       const { data, error } = await supabase
@@ -129,7 +128,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const loadContractVATData = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     try {
       const { data, error } = await supabase
@@ -157,8 +156,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       await uploadSubcontractorDocuments(getTrueSubcontractorId(subcontractor), contractId, pendingFiles)
       setPendingFiles([])
       setDocViewerKey(k => k + 1)
-    } catch (error: any) {
-      alert(error.message || 'Greška pri uploadu dokumenata')
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Greška pri uploadu dokumenata')
     } finally {
       setUploadingFiles(false)
     }
@@ -418,7 +417,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               phase_id: selectedPhaseId,
               contract_type_id: contractTypeId,
               has_contract: hasContract
-            } as any
+            } as unknown as Subcontractor
 
             onSubmit(updatedSubcontractor)
           }}

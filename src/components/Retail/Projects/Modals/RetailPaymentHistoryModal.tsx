@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FileText, Calendar } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
 import { supabase } from '../../../../lib/supabase'
@@ -126,7 +126,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         throw error
       }
 
-      const formattedPayments = (data || []).map((payment: any) => {
+      const formattedPayments = (data || []).map((payment) => {
         const paymentAmount = parseFloat(payment.amount)
         const invoice = payment.accounting_invoices
         let baseAmountPaid = paymentAmount

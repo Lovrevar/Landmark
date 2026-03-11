@@ -14,7 +14,7 @@ import { EditPaymentModal } from './Modals/EditPaymentModal'
 import { LinkUnitsModal } from './Modals/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
-  const { user } = useAuth()
+  useAuth()
   const [apartments, setApartments] = useState<ApartmentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -38,8 +38,8 @@ const ApartmentManagement: React.FC = () => {
   const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
   const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
   const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
-  const [linkedGarages, setLinkedGarages] = useState<Record<string, any[]>>({})
-  const [linkedStorages, setLinkedStorages] = useState<Record<string, any[]>>({})
+  const [linkedGarages, setLinkedGarages] = useState<Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]>>({})
+  const [linkedStorages, setLinkedStorages] = useState<Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]>>({})
 
   useEffect(() => {
     fetchData()
@@ -68,8 +68,8 @@ const ApartmentManagement: React.FC = () => {
       setProjects(allProjects || [])
       setBuildings(allBuildings || [])
 
-      const projectIds = [...new Set(apartmentsData?.map((a: any) => a.project_id) || [])]
-      const buildingIds = [...new Set(apartmentsData?.map((a: any) => a.building_id).filter(Boolean) || [])]
+      const projectIds = [...new Set(apartmentsData?.map((a: { project_id: string }) => a.project_id) || [])]
+      const buildingIds = [...new Set(apartmentsData?.map((a: { building_id: string | null }) => a.building_id).filter(Boolean) || [])]
 
       const { data: projectsData } = await supabase
         .from('projects')
@@ -97,7 +97,7 @@ const ApartmentManagement: React.FC = () => {
       const storPaymentTotals: Record<string, number> = {}
 
       if (paymentsData) {
-        paymentsData.forEach((payment: any) => {
+        paymentsData.forEach((payment: { amount: string; invoice?: { apartment_id: string } | null }) => {
           const apartmentId = payment.invoice?.apartment_id
           if (apartmentId) {
             if (!aptPaymentTotals[apartmentId]) {
@@ -111,11 +111,11 @@ const ApartmentManagement: React.FC = () => {
       setGaragePaymentTotals(garPaymentTotals)
       setStoragePaymentTotals(storPaymentTotals)
 
-      const garagesMap: Record<string, any[]> = {}
-      const storagesMap: Record<string, any[]> = {}
+      const garagesMap: Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]> = {}
+      const storagesMap: Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]> = {}
 
       if (apartmentsData && apartmentsData.length > 0) {
-        const apartmentIds = apartmentsData.map((a: any) => a.id)
+        const apartmentIds = apartmentsData.map((a: { id: string }) => a.id)
 
         const { data: garageLinks } = await supabase
           .from('apartment_garages')
@@ -126,7 +126,7 @@ const ApartmentManagement: React.FC = () => {
           .in('apartment_id', apartmentIds)
 
         if (garageLinks) {
-          garageLinks.forEach((link: any) => {
+          garageLinks.forEach((link: { apartment_id: string; garage: { id: string; number: string; size_m2: number; price: number; status: string } | null }) => {
             if (!garagesMap[link.apartment_id]) {
               garagesMap[link.apartment_id] = []
             }
@@ -145,7 +145,7 @@ const ApartmentManagement: React.FC = () => {
           .in('apartment_id', apartmentIds)
 
         if (repositoryLinks) {
-          repositoryLinks.forEach((link: any) => {
+          repositoryLinks.forEach((link: { apartment_id: string; repository: { id: string; number: string; size_m2: number; price: number; status: string } | null }) => {
             if (!storagesMap[link.apartment_id]) {
               storagesMap[link.apartment_id] = []
             }
@@ -159,7 +159,7 @@ const ApartmentManagement: React.FC = () => {
       setLinkedGarages(garagesMap)
       setLinkedStorages(storagesMap)
 
-      const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: any) => {
+      const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: Record<string, unknown>) => {
         const project = projectsData?.find(p => p.id === apt.project_id)
         const building = buildingsData?.find(b => b.id === apt.building_id)
 

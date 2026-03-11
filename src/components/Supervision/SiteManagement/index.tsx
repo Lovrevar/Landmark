@@ -31,7 +31,6 @@ const SiteManagement: React.FC = () => {
     addSubcontractorToPhase,
     updateSubcontractor,
     deleteSubcontractor,
-    addPaymentToSubcontractor,
     fetchWirePayments,
     updateWirePayment,
     deleteWirePayment,
@@ -155,7 +154,7 @@ const SiteManagement: React.FC = () => {
 
   const openPaymentHistory = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractorForPayment(subcontractor)
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
     const payments = await fetchWirePayments(contractId)
     setWirePayments(payments)
     setShowPaymentHistory(true)

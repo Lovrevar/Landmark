@@ -95,11 +95,11 @@ export interface RetailInvoiceFormModalProps {
     id: string
     invoice_type: string
     company_id: string
-    retail_supplier_id?: string
-    retail_customer_id?: string
-    retail_project_id?: string
-    retail_contract_id?: string
-    retail_milestone_id?: string
+    retail_supplier_id?: string | null
+    retail_customer_id?: string | null
+    retail_project_id?: string | null
+    retail_contract_id?: string | null
+    retail_milestone_id?: string | null
     refund_id?: number
     invoice_number: string
     reference_number?: string
@@ -114,5 +114,5 @@ export interface RetailInvoiceFormModalProps {
     vat_rate: number
     category?: string
     description?: string
-  }
+  } | null
 }

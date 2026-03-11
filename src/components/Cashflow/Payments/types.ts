@@ -1,7 +1,7 @@
 export interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK' | 'INCOMING_BANK_EXPENSES'
   total_amount: number
   paid_amount: number
   remaining_amount: number
@@ -50,6 +50,7 @@ export interface Payment {
   is_cesija: boolean
   cesija_company_id: string | null
   cesija_company_name?: string
+  cesija_bank_account_id?: string | null
   payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | null
   credit_id?: string | null
   company_bank_account_id?: string | null
@@ -60,7 +61,7 @@ export interface Payment {
 
 export interface PaymentFormData {
   invoice_id: string
-  payment_source_type: 'bank_account' | 'credit' | 'kompenzacija'
+  payment_source_type: 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina'
   company_bank_account_id: string
   credit_id: string
   is_cesija: boolean
@@ -74,6 +75,7 @@ export interface PaymentFormData {
 }
 
 export interface VisibleColumns {
+  [key: string]: boolean
   payment_date: boolean
   invoice_number: boolean
   my_company: boolean

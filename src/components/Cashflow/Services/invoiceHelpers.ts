@@ -45,7 +45,7 @@ export const getSupplierCustomerName = (invoice: Invoice): string => {
 export const getCustomerProjects = (
   customerId: string,
   projects: Project[],
-  customerSales: any[]
+  customerSales: Array<{ customer_id?: string; apartments?: { project_id?: string } }>
 ): Project[] => {
   if (!customerId) return projects
 
@@ -62,8 +62,8 @@ export const getCustomerProjects = (
 export const getCustomerApartmentsByProject = (
   customerId: string,
   projectId: string,
-  customerApartments: any[]
-): any[] => {
+  customerApartments: Array<{ customer_id?: string; project_id?: string }>
+): Array<{ customer_id?: string; project_id?: string }> => {
   if (!customerId) return []
 
   return customerApartments.filter(apt =>

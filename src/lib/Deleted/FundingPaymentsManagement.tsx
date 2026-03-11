@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, BankCreditPayment } from '../lib/supabase'
+import { supabase, BankCreditPayment } from '../supabase'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput } from './ui'
 import { format } from 'date-fns'
@@ -205,7 +205,7 @@ const FundingPaymentsManagement: React.FC = () => {
           <div>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'recent' | 'large')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Payments</option>

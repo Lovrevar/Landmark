@@ -12,7 +12,7 @@ import {
   EmptyState,
   ConfirmDialog
 } from '../../ui'
-import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2, CheckSquare } from 'lucide-react'
+import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
 
@@ -172,14 +172,14 @@ const AccountingApprovals: React.FC = () => {
           status: inv.status,
           description: inv.description || '',
           approved: inv.approved,
-          supplier_name: (inv.supplier as any)?.name || 'N/A',
-          company_name: (inv.company as any)?.name || 'N/A',
-          project_name: (inv.project as any)?.name || 'N/A',
+          supplier_name: (inv.supplier as { name?: string } | null)?.name || 'N/A',
+          company_name: (inv.company as { name?: string } | null)?.name || 'N/A',
+          project_name: (inv.project as { name?: string } | null)?.name || 'N/A',
           phase_name:
-            inv.contract && (inv.contract as any).phase_id
-              ? phasesMap.get((inv.contract as any).phase_id) || 'N/A'
+            inv.contract && (inv.contract as { phase_id?: string } | null)?.phase_id
+              ? phasesMap.get((inv.contract as { phase_id?: string }).phase_id!) || 'N/A'
               : 'N/A',
-          contract_number: (inv.contract as any)?.contract_number || 'N/A',
+          contract_number: (inv.contract as { contract_number?: string } | null)?.contract_number || 'N/A',
           is_retail: false
         }))
 
@@ -198,9 +198,9 @@ const AccountingApprovals: React.FC = () => {
           status: inv.status,
           description: inv.description || '',
           approved: inv.approved,
-          supplier_name: (inv.retail_supplier as any)?.name || (inv.retail_customer as any)?.name || 'N/A',
-          company_name: (inv.company as any)?.name || 'N/A',
-          project_name: (inv.retail_project as any)?.name || 'N/A',
+          supplier_name: (inv.retail_supplier as { name?: string } | null)?.name || (inv.retail_customer as { name?: string } | null)?.name || 'N/A',
+          company_name: (inv.company as { name?: string } | null)?.name || 'N/A',
+          project_name: (inv.retail_project as { name?: string } | null)?.name || 'N/A',
           phase_name: 'N/A',
           contract_number: 'N/A',
           is_retail: true
@@ -246,8 +246,8 @@ const AccountingApprovals: React.FC = () => {
       await hideInvoiceById(hideConfirmDialog.invoiceId)
       await fetchApprovedInvoices()
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
-    } catch (error: any) {
-      alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
+    } catch (error: unknown) {
+      alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
 
@@ -262,8 +262,8 @@ const AccountingApprovals: React.FC = () => {
       }
       await fetchApprovedInvoices()
       setBulkHideConfirmOpen(false)
-    } catch (error: any) {
-      alert(`Došlo je do greške pri skrivanju računa: ${error.message || 'Nepoznata greška'}`)
+    } catch (error: unknown) {
+      alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
 
@@ -353,7 +353,7 @@ const AccountingApprovals: React.FC = () => {
         <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4">
           <SearchInput
             value={searchTerm}
-            onChange={setSearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Pretraži račune..."
             className="max-w-md"
           />

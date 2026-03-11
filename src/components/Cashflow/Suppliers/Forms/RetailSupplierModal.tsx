@@ -156,12 +156,12 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
       }
 
       onSuccess()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving retail supplier:', err)
-      if (err?.code === '23505') {
+      if ((err as { code?: string })?.code === '23505') {
         setError('Dobavljac s tim podacima vec postoji. Pokušajte ponovo.')
       } else {
-        setError(err?.message || 'Greška prilikom spremanja dobavljača')
+        setError((err as { message?: string })?.message || 'Greška prilikom spremanja dobavljača')
       }
     } finally {
       setSubmitting(false)

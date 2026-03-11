@@ -87,7 +87,7 @@ export const useBankInvoiceData = (bankId: string, creditId?: string) => {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      setCreditAllocations((data || []) as CreditAllocation[])
+      setCreditAllocations((data || []) as unknown as CreditAllocation[])
     } catch (error) {
       console.error('Error fetching credit allocations:', error)
       setCreditAllocations([])

@@ -88,7 +88,7 @@ const SalesPaymentsManagement: React.FC = () => {
       // Fetch bank accounts separately
       const bankAccountIds = [...new Set(paymentsData?.map(p => p.company_bank_account_id).filter(Boolean) || [])]
 
-      let bankAccountsData: any[] = []
+      let bankAccountsData: { id: string; bank_name: string }[] = []
       if (bankAccountIds.length > 0) {
         const { data: accounts } = await supabase
           .from('company_bank_accounts')
@@ -112,10 +112,10 @@ const SalesPaymentsManagement: React.FC = () => {
           invoice_number: invoice?.invoice_number || 'N/A',
           issue_date: invoice?.issue_date || '',
           invoice_total_amount: invoice?.total_amount || 0,
-          apartment_number: (invoice?.apartments as any)?.number || 'N/A',
-          project_name: (invoice?.apartments as any)?.projects?.name || 'N/A',
+          apartment_number: (invoice?.apartments as { number?: string; projects?: { name?: string } } | null)?.number || 'N/A',
+          project_name: (invoice?.apartments as { number?: string; projects?: { name?: string } } | null)?.projects?.name || 'N/A',
           customer_name: invoice?.customers
-            ? `${(invoice.customers as any).name} ${(invoice.customers as any).surname}`
+            ? `${(invoice.customers as { name: string; surname: string }).name} ${(invoice.customers as { name: string; surname: string }).surname}`
             : 'N/A',
           bank_account_name: bankAccount?.bank_name || 'N/A'
         }
@@ -218,7 +218,7 @@ const SalesPaymentsManagement: React.FC = () => {
             />
           </div>
 
-          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'recent' | 'large')}>
             <option value="all">All Payments</option>
             <option value="recent">Recent (7 days)</option>
             <option value="large">Large (&gt; €10k)</option>

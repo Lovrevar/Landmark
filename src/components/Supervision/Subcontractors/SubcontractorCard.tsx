@@ -2,7 +2,7 @@ import React from 'react'
 import { Briefcase, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '../../ui'
 import { formatEuropean } from '../../../utils/formatters'
-import { SubcontractorSummary } from '../types'
+import { SubcontractorSummary } from './types'
 
 interface Props {
   sub: SubcontractorSummary

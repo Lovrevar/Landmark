@@ -93,7 +93,23 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
 
       if (error) throw error
 
-      const mapped: AllocationInvoice[] = (data || []).map((p: any) => ({
+      type RawPaymentRow = {
+        id: string
+        payment_date: string
+        amount: number
+        invoice?: {
+          id?: string
+          invoice_number?: string
+          total_amount?: number
+          paid_amount?: number
+          status?: string
+          description?: string | null
+          supplier?: { name?: string } | null
+          office_supplier?: { name?: string } | null
+          retail_supplier?: { name?: string } | null
+        } | null
+      }
+      const mapped: AllocationInvoice[] = (data || []).map((p: RawPaymentRow) => ({
         payment_id: p.id,
         payment_date: p.payment_date,
         payment_amount: p.amount,

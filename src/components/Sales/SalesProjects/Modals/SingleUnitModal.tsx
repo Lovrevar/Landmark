@@ -15,7 +15,6 @@ interface SingleUnitModalProps {
 export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
   visible,
   buildingId,
-  unitType,
   selectedBuilding,
   onClose,
   onSubmit,
@@ -43,11 +42,6 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
 
   if (!visible) return null
 
-  const getUnitLabel = () => {
-    if (unitType === 'apartment') return 'Apartment'
-    if (unitType === 'garage') return 'Garage'
-    return 'Repository'
-  }
 
   const handleSubmit = () => {
     if (!formData.number.trim()) {

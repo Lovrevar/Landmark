@@ -1,5 +1,5 @@
 import React from 'react'
-import { TrendingUp, Plus, Trash2, X, Building2, Calendar } from 'lucide-react'
+import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
 import { useLoans } from './Hooks/useLoans'

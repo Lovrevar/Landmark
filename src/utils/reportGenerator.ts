@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-fns'
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 
@@ -23,7 +22,7 @@ const checkPageBreak = (requiredHeight: number) => {
 }
 
 // Helper function to add text with word wrap
-const addText = (text: string, x: number, y: number, options: any = {}) => {
+const addText = (text: string, x: number, y: number, options: { fontSize?: number; maxWidth?: number; lineHeight?: number; style?: string; color?: number[]; align?: string } = {}) => {
   const fontSize = options.fontSize || 10
   const maxWidth = options.maxWidth || contentWidth
   const lineHeight = options.lineHeight || fontSize * 0.35
@@ -314,7 +313,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.save(fileName)
 }
 
-export const generateProjectDetailReport = async (project: any) => {
+export const generateProjectDetailReport = async (project: Project) => {
   pdf = new jsPDF('p', 'mm', 'a4')
   pageWidth = pdf.internal.pageSize.getWidth()
   pageHeight = pdf.internal.pageSize.getHeight()
@@ -421,29 +420,31 @@ export const generateProjectDetailReport = async (project: any) => {
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
     
-    project.subcontractors.forEach((sub: Subcontractor, index: number) => {
+    project.subcontractors.forEach((sub: Subcontractor) => {
       checkPageBreak(15)
       
-      const isOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
-      
+      const progress = sub.progress ?? 0
+      const isOverdue = sub.deadline ? new Date(sub.deadline) < new Date() && progress < 100 : false
+
       pdf.setFont('helvetica', 'bold')
       pdf.text(sub.name, margin + 5, yPosition)
-      
+
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)
-      pdf.text(`Progress: ${sub.progress}%`, margin + 5, yPosition + 5)
-      pdf.text(`Cost: $${sub.cost.toLocaleString()}`, margin + 50, yPosition + 5)
-      pdf.text(`Deadline: ${format(new Date(sub.deadline), 'MMM dd, yyyy')}`, margin + 100, yPosition + 5)
-      
+      pdf.text(`Progress: ${progress}%`, margin + 5, yPosition + 5)
+      pdf.text(`Cost: $${(sub.cost ?? 0).toLocaleString()}`, margin + 50, yPosition + 5)
+      pdf.text(`Deadline: ${sub.deadline ? format(new Date(sub.deadline), 'MMM dd, yyyy') : 'N/A'}`, margin + 100, yPosition + 5)
+
       if (isOverdue) {
         pdf.setTextColor(239, 68, 68)
         pdf.setFont('helvetica', 'bold')
         pdf.text('OVERDUE', margin + 150, yPosition + 5)
         pdf.setTextColor(0, 0, 0)
       }
-      
+
       pdf.setFontSize(8)
-      pdf.text(sub.job_description.substring(0, 80) + (sub.job_description.length > 80 ? '...' : ''), margin + 5, yPosition + 10)
+      const jobDesc = sub.job_description ?? ''
+      pdf.text(jobDesc.substring(0, 80) + (jobDesc.length > 80 ? '...' : ''), margin + 5, yPosition + 10)
       
       yPosition += 18
     })
@@ -500,8 +501,8 @@ export const generateProjectDetailReport = async (project: any) => {
   }
   
   if (project.subcontractors?.some((s: Subcontractor) => {
-    const progress = s.cost > 0 ? Math.min(100, (s.budget_realized / s.cost) * 100) : 0
-    return new Date(s.deadline) < new Date() && progress < 100
+    const progress = (s.cost ?? 0) > 0 ? Math.min(100, ((s.budget_realized ?? 0) / (s.cost ?? 1)) * 100) : 0
+    return s.deadline ? new Date(s.deadline) < new Date() && progress < 100 : false
   })) {
     recommendations.push('• Follow up with overdue subcontractors')
   }
@@ -515,7 +516,7 @@ export const generateProjectDetailReport = async (project: any) => {
     recommendations.push('• Consider opportunities for cost optimization')
   }
 
-  recommendations.forEach((rec, index) => {
+  recommendations.forEach((rec) => {
     yPosition = addText(rec, margin + 5, yPosition + 6, { maxWidth: contentWidth - 10 })
   })
 

@@ -5,24 +5,62 @@ import { InvoiceEntityFields } from '../../Components/InvoiceEntityFields'
 import { Select, Input, Textarea, FormField } from '../../../ui'
 import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
 
+interface Bank {
+  id: string
+  name: string
+}
+
+interface Apartment {
+  id: string
+  number: string
+  price: number
+  project_id?: string
+}
+
+interface InvoiceFieldFormData {
+  invoice_type: string
+  company_id: string
+  supplier_id: string
+  office_supplier_id: string
+  customer_id: string
+  bank_id: string
+  project_id: string
+  contract_id: string
+  milestone_id: string
+  apartment_id: string
+  refund_id: string
+  invoice_number: string
+  reference_number: string
+  iban: string
+  issue_date: string
+  due_date: string
+  base_amount_1: number
+  base_amount_2: number
+  base_amount_3: number
+  base_amount_4: number
+  category: string
+  description: string
+  [key: string]: unknown
+}
+
 interface InvoiceFormFieldsProps {
-  formData: any
+  formData: InvoiceFieldFormData
   isOfficeInvoice: boolean
-  editingInvoice: any
+  editingInvoice: Invoice | null
   companies: Company[]
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  banks: any[]
+  banks: Bank[]
   projects: Project[]
   contracts: Contract[]
   milestones: Milestone[]
   refunds: Refund[]
   invoiceCategories: { id: string; name: string }[]
-  customerApartments: any[]
-  onFormChange: (data: any) => void
+  customerApartments: Apartment[]
+  onFormChange: (data: InvoiceFieldFormData) => void
   getCustomerProjects: (customerId: string) => Project[]
-  getCustomerApartmentsByProject: (customerId: string, projectId: string) => any[]
+  getCustomerApartmentsByProject: (customerId: string, projectId: string) => Apartment[]
   getSupplierProjects: (supplierId: string) => Project[]
   getSupplierContractsByProject: (supplierId: string, projectId: string) => Contract[]
   getMilestonesByContract: (contractId: string) => Milestone[]

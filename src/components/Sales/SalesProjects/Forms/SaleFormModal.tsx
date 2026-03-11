@@ -178,7 +178,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
             <FormField label="Payment Method">
               <Select
                 value={formData.payment_method}
-                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'credit' | 'bank_loan' | 'installments' })}
               >
                 <option value="cash">Cash</option>
                 <option value="credit">Credit</option>

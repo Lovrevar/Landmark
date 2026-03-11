@@ -1,6 +1,6 @@
 import React from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from './types'
 import { Button, Badge, EmptyState } from '../../ui'
@@ -58,10 +58,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
     return a.localeCompare(b)
   })
 
-  const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
-  const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
+  const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && (sub.cost ?? 0) > 0)
+  const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || (sub.cost ?? 0) === 0)
 
-  const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + sub.cost, 0)
+  const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + (sub.cost ?? 0), 0)
 
   const totalPaidWithContract = subcontractorsWithContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
   const totalPaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
@@ -69,7 +69,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   const totalUnpaidWithContract = subcontractorsWithContract.reduce((sum, sub) => {
     const paid = sub.invoice_total_paid || 0
-    return sum + Math.max(0, sub.cost - paid)
+    return sum + Math.max(0, (sub.cost ?? 0) - paid)
   }, 0)
   const totalUnpaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_owed || 0), 0)
   const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
@@ -220,7 +220,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
               const actualPaid = subcontractor.invoice_total_paid || 0
               const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
-              const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
+
               const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
               const isPaid = hasValidContract && actualPaid >= subcontractor.cost
               const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0

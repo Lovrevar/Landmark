@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import type { Invoice } from '../types'
+import type { Invoice, CreditAllocation, Contract } from '../types'
 
 export const fetchData = async (
   filterType: string,
@@ -126,7 +126,7 @@ export const fetchData = async (
   ])
 
   if (invoicesResult.error) throw invoicesResult.error
-  const transformedInvoices = (invoicesResult.data || []).map((inv: any) => ({
+  const transformedInvoices = (invoicesResult.data || []).map((inv) => ({
     ...inv,
     companies: inv.company_name ? { name: inv.company_name } : null,
     subcontractors: inv.supplier_name ? { name: inv.supplier_name } : null,
@@ -216,7 +216,7 @@ export const fetchData = async (
     customers: customersResult.data || [],
     banks: banksResult.data || [],
     projects: projectsResult.data || [],
-    contracts: contractsResult.data || [],
+    contracts: (contractsResult.data || []) as unknown as Contract[],
     sales: salesResult.data || [],
     apartments: aptList,
     invoiceCategories: invoiceCategoriesResult.error ? [] : (invoiceCategoriesResult.data || []),
@@ -225,9 +225,10 @@ export const fetchData = async (
 }
 
 export const handleSubmit = async (
-  formData: any,
+  formData: Record<string, unknown>,
   editingInvoice: Invoice | null,
-  isOfficeInvoice: boolean
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _isOfficeInvoice?: boolean
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -309,7 +310,7 @@ export const handleSubmit = async (
 }
 
 export const handlePaymentSubmit = async (
-  paymentFormData: any,
+  paymentFormData: Record<string, unknown>,
   payingInvoice: Invoice
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
@@ -367,7 +368,7 @@ export const fetchCreditAllocations = async (creditId: string) => {
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return (data || []) as unknown as CreditAllocation[]
 }
 
 export const fetchMilestones = async (contractId: string) => {

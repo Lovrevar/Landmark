@@ -28,7 +28,7 @@ import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, M
 const ProjectDetailsEnhanced: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<any | null>(null)
+  const [project, setProject] = useState<Record<string, unknown> | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [contracts, setContracts] = useState<ContractWithDetails[]>([])
@@ -232,7 +232,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <span className="text-sm text-blue-700">Total Investment</span>
                     <p className="text-2xl font-bold text-blue-900 mt-1">
-                      €{investments.reduce((sum, inv) => sum + Number((inv as any).amount || inv.allocated_amount), 0).toLocaleString('hr-HR')}
+                      €{investments.reduce((sum, inv) => sum + Number(inv.allocated_amount), 0).toLocaleString('hr-HR')}
                     </p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-4 border border-red-200">

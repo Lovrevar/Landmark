@@ -205,7 +205,7 @@ const AccountingInvoices: React.FC = () => {
         onSearchChange={setSearchTerm}
         onDirectionChange={setFilterDirection}
         onCategoryChange={setFilterCategory}
-        onStatusChange={(value) => setFilterStatus(value as any)}
+        onStatusChange={(value) => setFilterStatus(value as 'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL')}
         onCompanyChange={setFilterCompany}
         onClearFilters={() => {
           setSearchTerm('')

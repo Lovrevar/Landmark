@@ -120,13 +120,13 @@ export const useSuppliers = () => {
 
       await fetchData()
       handleCloseAddModal()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving supplier:', error)
-
-      if (error?.code === '23505' && error?.message?.includes('contract_number')) {
+      const err = error as { code?: string; message?: string }
+      if (err?.code === '23505' && err?.message?.includes('contract_number')) {
         alert('Greška: Dupliran broj ugovora. Molimo pokušajte ponovo.')
-      } else if (error?.message) {
-        alert(`Greška: ${error.message}`)
+      } else if (err?.message) {
+        alert(`Greška: ${err.message}`)
       } else {
         alert('Greška prilikom spremanja dobavljača')
       }

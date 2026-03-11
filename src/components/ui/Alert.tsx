@@ -23,6 +23,7 @@ interface AlertProps {
   title?: string
   children: React.ReactNode
   onDismiss?: () => void
+  onClose?: () => void
   className?: string
 }
 

@@ -35,7 +35,7 @@ const InvestmentDashboard: React.FC = () => {
 
   const handleExportPDF = async () => {
     try {
-      await generateInvestmentReportPDF(financialSummary, bankCredits, [], companies)
+      await generateInvestmentReportPDF(financialSummary, bankCredits, [])
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert('Failed to generate PDF report')

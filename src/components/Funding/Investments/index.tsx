@@ -302,7 +302,15 @@ const CreditsManagement: React.FC = () => {
     if (!selectedCredit) return
 
     try {
-      const payload: any = {
+      const payload: {
+        credit_id: string
+        allocation_type: string
+        allocated_amount: number
+        description: string
+        project_id: string | null
+        refinancing_entity_type: string | null
+        refinancing_entity_id: string | null
+      } = {
         credit_id: selectedCredit.id,
         allocation_type: allocationForm.allocation_type,
         allocated_amount: allocationForm.allocated_amount,
@@ -350,18 +358,6 @@ const CreditsManagement: React.FC = () => {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'closed':
-        return 'bg-gray-100 text-gray-800'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      default:
-        return 'bg-blue-100 text-blue-800'
-    }
-  }
 
   if (loading) {
     return <LoadingSpinner message="Loading credits..." />

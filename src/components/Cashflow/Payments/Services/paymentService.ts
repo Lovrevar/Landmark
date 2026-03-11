@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
+import { Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
 
 export const fetchPayments = async () => {
   const result = await supabase
@@ -52,7 +52,7 @@ export const fetchInvoices = async () => {
     .order('invoice_number')
 
   if (result.error) throw result.error
-  return result.data as Invoice[]
+  return result.data as unknown as Invoice[]
 }
 
 export const fetchInvoiceById = async (id: string): Promise<Invoice | null> => {

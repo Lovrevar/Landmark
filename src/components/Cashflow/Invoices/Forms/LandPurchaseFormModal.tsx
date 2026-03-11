@@ -184,9 +184,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('subcontractor_id', supplierId)
 
       if (data) {
+        const rows = data as Array<{ projects?: { id: string; name: string } }>
         const uniqueProjects = Array.from(
           new Map(
-            data
+            rows
               .filter(c => c.projects)
               .map(c => [c.projects!.id, { id: c.projects!.id, name: c.projects!.name }])
           ).values()
@@ -200,15 +201,16 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('supplier_id', supplierId)
 
       if (data) {
+        const rows = data as Array<{ retail_project_phases?: { project_id: string; retail_projects?: { id: string; name: string } } }>
         const uniqueProjects = Array.from(
           new Map(
-            data
+            rows
               .filter(c => c.retail_project_phases?.retail_projects)
               .map(c => [
-                c.retail_project_phases!.retail_projects!.id,
+                c.retail_project_phases.retail_projects.id,
                 {
-                  id: c.retail_project_phases!.retail_projects!.id,
-                  name: c.retail_project_phases!.retail_projects!.name
+                  id: c.retail_project_phases.retail_projects.id,
+                  name: c.retail_project_phases.retail_projects.name
                 }
               ])
           ).values()
@@ -227,9 +229,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('project_id', projectId)
 
       if (data) {
+        const rows = data as Array<{ project_phases?: { id: string; phase_name: string } }>
         const uniquePhases = Array.from(
           new Map(
-            data
+            rows
               .filter(c => c.project_phases)
               .map(c => [c.project_phases!.id, { id: c.project_phases!.id, phase_name: c.project_phases!.phase_name }])
           ).values()
@@ -243,7 +246,8 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('supplier_id', supplierId)
 
       if (data) {
-        const filteredPhases = data.filter(c =>
+        const rows = data as Array<{ retail_project_phases?: { id: string; phase_name: string; project_id: string } }>
+        const filteredPhases = rows.filter(c =>
           c.retail_project_phases &&
           c.retail_project_phases.project_id === projectId
         )
@@ -251,7 +255,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         const uniquePhases = Array.from(
           new Map(
             filteredPhases
-              .map(c => [c.retail_project_phases!.id, { id: c.retail_project_phases!.id, phase_name: c.retail_project_phases!.phase_name }])
+              .map((c) => [c.retail_project_phases!.id, { id: c.retail_project_phases!.id, phase_name: c.retail_project_phases!.phase_name }])
           ).values()
         )
         setPhases(uniquePhases as Phase[])
@@ -795,7 +799,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         <Button
           type="submit"
           variant="primary"
-          disabled={loading || !selectedContract || amountMismatch}
+          disabled={loading || !selectedContract || !!amountMismatch}
         >
           {loading ? 'Spremanje...' : 'Kreiraj Račune'}
         </Button>

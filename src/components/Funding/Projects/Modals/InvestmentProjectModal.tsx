@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   DollarSign,
   Users,
@@ -7,7 +7,7 @@ import {
   ArrowDownRight,
   Banknote
 } from 'lucide-react'
-import { Modal, Badge, Button, StatGrid, EmptyState } from '../../../ui'
+import { Modal, Badge, StatGrid, EmptyState } from '../../../ui'
 import { format, differenceInDays } from 'date-fns'
 import type { ProjectWithFinancials, FundingUtilizationItem } from '../../../General/Projects/types'
 import { fetchFundingUtilization } from '../Services/investmentService'

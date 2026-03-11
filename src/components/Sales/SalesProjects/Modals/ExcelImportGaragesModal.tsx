@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import * as XLSX from '@e965/xlsx'
-import { Upload, CheckCircle, AlertCircle, Warehouse } from 'lucide-react'
+import { Upload, CheckCircle } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
-import { Modal, Button, LoadingSpinner } from '../../../ui'
+import { Modal, Button } from '../../../ui'
 
 interface ParsedGarageRow {
   rowIndex: number
@@ -15,7 +15,7 @@ interface ParsedGarageRow {
 interface ExcelImportGaragesModalProps {
   visible: boolean
   onClose: () => void
-  selectedBuilding: any
+  selectedBuilding: { id: string; name: string } | null
   onComplete: () => void
 }
 
@@ -48,6 +48,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data, { type: 'array' })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
       const { data: existingGarages } = await supabase

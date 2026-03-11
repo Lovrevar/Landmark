@@ -4,27 +4,65 @@ import { InvoiceVATSummary } from './InvoiceVATSummary'
 import { Modal, Button } from '../../../ui'
 import type { Invoice, Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
 
+interface Bank {
+  id: string
+  name: string
+}
+
+interface Apartment {
+  id: string
+  number: string
+  price: number
+  project_id?: string
+}
+
+interface InvoiceModalFormData {
+  invoice_type: string
+  company_id: string
+  supplier_id: string
+  office_supplier_id: string
+  customer_id: string
+  bank_id: string
+  project_id: string
+  contract_id: string
+  milestone_id: string
+  apartment_id: string
+  refund_id: string
+  invoice_number: string
+  reference_number: string
+  iban: string
+  issue_date: string
+  due_date: string
+  base_amount_1: number
+  base_amount_2: number
+  base_amount_3: number
+  base_amount_4: number
+  category: string
+  description: string
+  [key: string]: unknown
+}
+
 interface InvoiceFormModalProps {
   show: boolean
   editingInvoice: Invoice | null
   isOfficeInvoice: boolean
-  formData: any
+  formData: InvoiceModalFormData
   companies: Company[]
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  banks: any[]
+  banks: Bank[]
   projects: Project[]
   contracts: Contract[]
   milestones: Milestone[]
   refunds: Refund[]
   invoiceCategories: { id: string; name: string }[]
-  customerApartments: any[]
+  customerApartments: Apartment[]
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
-  onFormChange: (data: any) => void
+  onFormChange: (data: InvoiceModalFormData) => void
   getCustomerProjects: (customerId: string) => Project[]
-  getCustomerApartmentsByProject: (customerId: string, projectId: string) => any[]
+  getCustomerApartmentsByProject: (customerId: string, projectId: string) => Apartment[]
   getSupplierProjects: (supplierId: string) => Project[]
   getSupplierContractsByProject: (supplierId: string, projectId: string) => Contract[]
   getMilestonesByContract: (contractId: string) => Milestone[]

@@ -56,11 +56,23 @@ const CreditRepayments: React.FC<CreditRepaymentsProps> = ({ creditId }) => {
 
       if (error) throw error
 
-      const mapped: RepaymentInvoice[] = (data || []).map((inv: any) => {
+      type RawPaymentEntry = { payment_date: string; amount: number }
+      type RawRepaymentInvoice = {
+        id: string
+        invoice_number: string
+        issue_date: string
+        total_amount: number
+        status: string
+        description?: string | null
+        company?: { name?: string } | null
+        bank?: { name?: string } | null
+        payments?: RawPaymentEntry[]
+      }
+      const mapped: RepaymentInvoice[] = (data || []).map((inv: RawRepaymentInvoice) => {
         const latestPayment = (inv.payments || []).sort(
-          (a: any, b: any) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
+          (a: RawPaymentEntry, b: RawPaymentEntry) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
         )[0]
-        const totalPaid = (inv.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+        const totalPaid = (inv.payments || []).reduce((sum: number, p: RawPaymentEntry) => sum + (p.amount || 0), 0)
         return {
           id: inv.id,
           invoice_number: inv.invoice_number,

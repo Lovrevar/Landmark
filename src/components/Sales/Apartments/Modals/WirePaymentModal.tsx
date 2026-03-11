@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { DollarSign, Home, Warehouse, Package } from 'lucide-react'
+import React from 'react'
+import { Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 
@@ -33,14 +33,14 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   notes,
   linkedGarage,
   linkedStorage,
-  paymentUnitType,
+  paymentUnitType: _paymentUnitType,  // eslint-disable-line @typescript-eslint/no-unused-vars
   onAmountChange,
   onDateChange,
   onPaymentTypeChange,
   onNotesChange,
-  onPaymentUnitTypeChange,
+  onPaymentUnitTypeChange: _onPaymentUnitTypeChange,  // eslint-disable-line @typescript-eslint/no-unused-vars
   onSubmit,
-  onMultiUnitSubmit
+  onMultiUnitSubmit: _onMultiUnitSubmit  // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
   if (!visible || !apartment) return null
 

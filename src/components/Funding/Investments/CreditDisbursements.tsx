@@ -62,11 +62,28 @@ const CreditDisbursements: React.FC<CreditDisbursementsProps> = ({ creditId }) =
 
       if (error) throw error
 
-      const mapped: DisbursementInvoice[] = (data || []).map((inv: any) => {
+      type RawPaymentEntry = { payment_date: string; amount: number }
+      type RawDisbursementInvoice = {
+        id: string
+        invoice_number: string
+        issue_date: string
+        total_amount: number
+        status: string
+        description?: string | null
+        company?: { name?: string } | null
+        bank?: { name?: string } | null
+        payments?: RawPaymentEntry[]
+        credit_allocation?: {
+          id?: string
+          allocation_type?: string
+          project?: { name?: string } | null
+        } | null
+      }
+      const mapped: DisbursementInvoice[] = (data || []).map((inv: RawDisbursementInvoice) => {
         const latestPayment = (inv.payments || []).sort(
-          (a: any, b: any) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
+          (a: RawPaymentEntry, b: RawPaymentEntry) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
         )[0]
-        const totalPaid = (inv.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+        const totalPaid = (inv.payments || []).reduce((sum: number, p: RawPaymentEntry) => sum + (p.amount || 0), 0)
 
         let allocation_label: string | null = null
         if (inv.credit_allocation) {

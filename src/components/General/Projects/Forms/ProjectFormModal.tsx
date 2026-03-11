@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { Building2, MapPin, Calendar, DollarSign, Users } from 'lucide-react'
 import { Modal, FormField, Input, Select, Button, Alert } from '../../../ui'
 
 interface ProjectFormModalProps {
@@ -118,9 +117,9 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
       }
 
       onSuccess()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving project:', error)
-      setError(error.message || 'Failed to save project')
+      setError(error instanceof Error ? error.message : 'Failed to save project')
     } finally {
       setLoading(false)
     }
@@ -144,9 +143,9 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
       if (error) throw error
 
       onSuccess()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting project:', error)
-      setError(error.message || 'Failed to delete project')
+      setError(error instanceof Error ? error.message : 'Failed to delete project')
     } finally {
       setLoading(false)
     }

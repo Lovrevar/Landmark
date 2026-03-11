@@ -64,18 +64,14 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   }, [])
 
   const saveCustomer = async (customerData: Partial<Customer>, editingId?: string) => {
-    try {
-      if (editingId) {
-        await customerService.updateCustomer(editingId, customerData)
-      } else {
-        await customerService.createCustomer(customerData)
-      }
-      cache.invalidate()
-      await fetchCustomers(true)
-      await fetchCounts(true)
-    } catch (error) {
-      throw error
+    if (editingId) {
+      await customerService.updateCustomer(editingId, customerData)
+    } else {
+      await customerService.createCustomer(customerData)
     }
+    cache.invalidate()
+    await fetchCustomers(true)
+    await fetchCounts(true)
   }
 
   const deleteCustomer = async (id: string) => {

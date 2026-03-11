@@ -11,12 +11,6 @@ interface Totals {
   kreditna: number
 }
 
-const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('de-DE', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(num)
-}
 
 const formatNumberForExcel = (num: number): string => {
   return new Intl.NumberFormat('de-DE', {

@@ -7,7 +7,7 @@ import type { Invoice } from './types'
 
 interface InvoiceTableProps {
   invoices: Invoice[]
-  visibleColumns: any
+  visibleColumns: Record<string, boolean>
   sortField: 'due_date' | 'invoice_number' | null
   sortDirection: 'asc' | 'desc'
   filterDirection: 'INCOMING' | 'OUTGOING'

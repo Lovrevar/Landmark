@@ -2,7 +2,7 @@ import { supabase, Customer } from '../../../../lib/supabase'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
 
 export const customerService = {
-  async fetchCustomers(category: CustomerCategory): Promise<CustomerWithApartments[]> {
+  async fetchCustomers(category: CustomerCategory | null): Promise<CustomerWithApartments[]> {
     let query = supabase
       .from('customers')
       .select('*')
@@ -26,7 +26,7 @@ export const customerService = {
             .eq('customer_id', customer.id)
 
           if (salesData && salesData.length > 0) {
-            const purchasedUnits: any[] = []
+            const purchasedUnits: Record<string, unknown>[] = []
 
             for (const sale of salesData) {
               if (sale.apartment_id) {

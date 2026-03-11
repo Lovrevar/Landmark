@@ -17,8 +17,8 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   apartment,
   onLink
 }) => {
-  const [availableGarages, setAvailableGarages] = useState<any[]>([])
-  const [availableStorages, setAvailableStorages] = useState<any[]>([])
+  const [availableGarages, setAvailableGarages] = useState<{ id: string; number: string; floor: number; size_m2: number; price: number; status: string }[]>([])
+  const [availableStorages, setAvailableStorages] = useState<{ id: string; number: string; floor: number; size_m2: number; price: number; status: string }[]>([])
   const [selectedGarageIds, setSelectedGarageIds] = useState<string[]>([])
   const [selectedStorageIds, setSelectedStorageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)

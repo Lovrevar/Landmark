@@ -94,7 +94,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
         .order('contract_number')
 
       if (error) throw error
-      setContracts(data || [])
+      setContracts((data || []) as unknown as RetailContract[])
     } catch (err) {
       console.error('Error loading contracts:', err)
       setError('Greška pri učitavanju ugovora')

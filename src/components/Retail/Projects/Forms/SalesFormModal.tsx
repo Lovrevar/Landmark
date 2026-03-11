@@ -72,7 +72,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 
   const generateContractNumber = async () => {
     try {
-      const number = await retailProjectService.generateContractNumber()
+      const number = await retailProjectService.generateContractNumber(phase.project_id)
       setFormData(prev => ({ ...prev, contract_number: number }))
     } catch (err) {
       console.error('Error generating contract number:', err)
@@ -242,7 +242,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
             <FormField label="Status">
               <Select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Completed' | 'Cancelled' })}
               >
                 <option value="Active">Active</option>
                 <option value="Completed">Completed</option>

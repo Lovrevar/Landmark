@@ -62,7 +62,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   const fetchInvoiceTotals = async () => {
     if (!subcontractor) return
 
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     setLoading(true)
     try {
@@ -185,7 +185,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                             <Building2 className="w-4 h-4 text-green-600" />
                             <span className="text-sm text-gray-700">
                               Paid by: <span className="font-medium text-green-600">
-                                {(payment as any).bank?.name || 'Bank'}
+                                {(payment as WirePayment & { bank?: { name: string } }).bank?.name || 'Bank'}
                               </span>
                             </span>
                           </div>

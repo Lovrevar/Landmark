@@ -295,7 +295,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
             <FormField label="Način plaćanja" required>
               <Select
                 value={formData.payment_method}
-                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'WIRE' | 'CASH' | 'CHECK' | 'CARD' })}
                 required
               >
                 <option value="WIRE">Virman</option>

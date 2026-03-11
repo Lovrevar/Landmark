@@ -38,8 +38,8 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     updates: {
       phase_name: string
       budget_allocated: number
-      start_date: string
-      end_date: string
+      start_date: string | null
+      end_date: string | null
       status: 'planning' | 'active' | 'completed' | 'on_hold'
     },
     project: ProjectWithPhases

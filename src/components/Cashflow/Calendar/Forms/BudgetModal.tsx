@@ -22,7 +22,8 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
   showBudgetModal,
   budgetYear,
   budgetFormData,
-  budgets,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  budgets: _budgets,
   onClose,
   onSave,
   onYearChange,

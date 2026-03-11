@@ -57,7 +57,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: any) => {
+  const handleAddMilestone = async (data: { milestone_name: string; description?: string; percentage?: number; due_date?: string }) => {
     try {
       const milestoneNumber = await retailProjectService.getNextMilestoneNumber(contractId)
       await retailProjectService.createMilestone({
@@ -72,7 +72,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleEditMilestone = async (data: any) => {
+  const handleEditMilestone = async (data: { milestone_name: string; description?: string; percentage?: number; due_date?: string }) => {
     if (!editingMilestone) return
 
     try {

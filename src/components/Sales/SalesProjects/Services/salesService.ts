@@ -33,10 +33,10 @@ export const fetchApartments = async () => {
 
   if (error) throw error
 
-  return (data || []).map((apt: any) => ({
+  return (data || []).map((apt: Record<string, unknown> & { apartment_garages?: { garage: unknown }[]; apartment_repositories?: { repository: unknown }[] }) => ({
     ...apt,
-    linked_garages: (apt.apartment_garages || []).map((ag: any) => ag.garage).filter(Boolean),
-    linked_repositories: (apt.apartment_repositories || []).map((ar: any) => ar.repository).filter(Boolean),
+    linked_garages: (apt.apartment_garages || []).map((ag: { garage: unknown }) => ag.garage).filter(Boolean),
+    linked_repositories: (apt.apartment_repositories || []).map((ar: { repository: unknown }) => ar.repository).filter(Boolean),
     apartment_garages: undefined,
     apartment_repositories: undefined,
   }))
@@ -196,7 +196,7 @@ export const createUnit = async (
 
   const totalPrice = sizeM2 * pricePerM2
 
-  const unitData: any = {
+  const unitData: Record<string, unknown> = {
     building_id: buildingId,
     number,
     floor,
@@ -243,7 +243,7 @@ export const bulkCreateUnits = async (
       const pricePerM2 = bulkData.base_price_per_m2 + (floorPremium / size)
       const price = Math.round(size * pricePerM2)
 
-      const unitData: any = {
+      const unitData: Record<string, unknown> = {
         building_id: buildingId,
         number: `${prefix}${floor}${unit.toString().padStart(2, '0')}`,
         floor: floor,
@@ -510,7 +510,7 @@ export const bulkUpdateUnitPrice = async (
   if (fetchError) throw fetchError
   if (!units || units.length === 0) return
 
-  const updates = units.map((unit: any) => {
+  const updates = units.map((unit: { id: string; size_m2: number; price_per_m2: number | null }) => {
     const currentPricePerM2 = unit.price_per_m2 || 0
     const newPricePerM2 = adjustmentType === 'increase'
       ? currentPricePerM2 + adjustmentValue

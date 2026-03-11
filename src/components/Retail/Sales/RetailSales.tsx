@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { ShoppingCart, Plus, Edit, Trash2, DollarSign, Calendar } from 'lucide-react'
+import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
 import type { RetailSale, RetailLandPlot, RetailCustomer } from '../../../types/retail'
 import { format } from 'date-fns'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../../ui'

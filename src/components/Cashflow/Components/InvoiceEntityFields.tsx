@@ -3,18 +3,46 @@ import { formatCurrency } from '../../Common/CurrencyInput'
 import { Select, FormField } from '../../ui'
 import type { Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../Invoices/types'
 
+interface Bank {
+  id: string
+  name: string
+}
+
+interface InvoiceFormData {
+  invoice_type: string
+  supplier_id: string
+  office_supplier_id: string
+  customer_id: string
+  bank_id: string
+  project_id: string
+  contract_id: string
+  milestone_id: string
+  apartment_id: string
+  refund_id: string
+  [key: string]: unknown
+}
+
+interface Apartment {
+  id: string
+  number: string
+  price: number
+  project_id?: string
+  projects?: { name: string }
+  buildings?: { name: string }
+}
+
 interface InvoiceEntityFieldsProps {
-  formData: any
+  formData: InvoiceFormData
   isOfficeInvoice: boolean
   suppliers: Supplier[]
   officeSuppliers: OfficeSupplier[]
   customers: Customer[]
-  banks: any[]
+  banks: Bank[]
   projects: Project[]
   refunds: Refund[]
-  onFormChange: (data: any) => void
+  onFormChange: (data: InvoiceFormData) => void
   getCustomerProjects: (customerId: string) => Project[]
-  getCustomerApartmentsByProject: (customerId: string, projectId: string) => any[]
+  getCustomerApartmentsByProject: (customerId: string, projectId: string) => Apartment[]
   getSupplierProjects: (supplierId: string) => Project[]
   getSupplierContractsByProject: (supplierId: string, projectId: string) => Contract[]
   getMilestonesByContract: (contractId: string) => Milestone[]

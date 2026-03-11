@@ -90,7 +90,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
 
       if (error) throw error
 
-      const formattedInvoices = (data || []).map((inv: any) => ({
+      const formattedInvoices = (data || []).map((inv) => ({
         id: inv.id,
         invoice_number: inv.invoice_number,
         invoice_type: inv.invoice_type,

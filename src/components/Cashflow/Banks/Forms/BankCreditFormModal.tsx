@@ -141,7 +141,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           <FormField label="Loan Type">
             <Select
               value={newCredit.credit_type}
-              onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
+              onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as NewCreditForm['credit_type'] })}
             >
               <option value="construction_loan_senior">Construction Loan</option>
               <option value="term_loan_senior">Term Loan</option>
@@ -181,7 +181,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           <FormField label="Principal Repayment Type" helperText="How often to repay principal">
             <Select
               value={newCredit.principal_repayment_type}
-              onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as any })}
+              onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as NewCreditForm['principal_repayment_type'] })}
             >
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
@@ -193,7 +193,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           <FormField label="Interest Repayment Type" helperText="How often to pay interest">
             <Select
               value={newCredit.interest_repayment_type}
-              onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as any })}
+              onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as NewCreditForm['interest_repayment_type'] })}
             >
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>

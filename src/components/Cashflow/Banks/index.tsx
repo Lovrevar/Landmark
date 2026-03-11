@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import {
   Building2, CreditCard, DollarSign, TrendingUp, TrendingDown,
-  Plus, ChevronDown, ChevronUp
+  ChevronDown, ChevronUp
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, Button, Badge, StatCard, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, Badge, StatCard, EmptyState } from '../../ui'
 import { useBanks } from './Hooks/useBanks'
 import useBankeCredits from './Hooks/useBankeCredits'
 import BankCreditFormModal from './Forms/BankCreditFormModal'
@@ -16,11 +16,9 @@ import CreditExpenses from '../../Funding/Investments/CreditExpenses'
 const AccountingBanks: React.FC = () => {
   const {
     banks: banksMeta,
-    projects,
     companies,
     loading: banksLoading,
     showCreditForm,
-    setShowCreditForm,
     editingCredit,
     newCredit,
     setNewCredit,

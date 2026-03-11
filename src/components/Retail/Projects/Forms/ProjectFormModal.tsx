@@ -7,7 +7,7 @@ import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog } from
 interface ProjectFormModalProps {
   onClose: () => void
   onSuccess: () => void
-  project?: any
+  project?: Record<string, unknown>
 }
 
 export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
@@ -81,8 +81,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       const dataToSubmit = {
         ...formData,
         land_plot_id: formData.land_plot_id || null,
-        total_area_m2: parseFloat(formData.total_area_m2 as any),
-        purchase_price: parseFloat(formData.purchase_price as any),
+        total_area_m2: parseFloat(String(formData.total_area_m2)),
+        purchase_price: parseFloat(String(formData.purchase_price)),
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         notes: formData.notes || null

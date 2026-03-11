@@ -69,7 +69,8 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
               </h3>
 
               {(() => {
-                const projectGroups = customer.apartments.reduce((groups: any, unit: any) => {
+                type UnitItem = { id: string; type?: string; price?: number; project_name?: string; total_paid?: number; garage?: { price: number; number: string } | null; repository?: { price: number; number: string } | null; floor?: number; size_m2?: number; number?: string; sale_date?: string }
+                const projectGroups = customer.apartments.reduce((groups: Record<string, UnitItem[]>, unit: UnitItem) => {
                   const projectName = unit.project_name || 'Standalone Units'
                   if (!groups[projectName]) {
                     groups[projectName] = []
@@ -80,8 +81,8 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                 return (
                   <div className="space-y-6">
-                    {Object.entries(projectGroups).map(([projectName, units]: [string, any]) => {
-                      const projectTotal = units.reduce((sum: number, u: any) => {
+                    {Object.entries(projectGroups).map(([projectName, units]: [string, UnitItem[]]) => {
+                      const projectTotal = units.reduce((sum: number, u: UnitItem) => {
                         const aptPrice = u.type === 'apartment' ? (u.price || 0) : 0
                         const garPrice = u.garage?.price || 0
                         const repPrice = u.repository?.price || 0
@@ -89,7 +90,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                         return sum + aptPrice + garPrice + repPrice + standalonePrice
                       }, 0)
 
-                      const projectPaid = units.reduce((sum: number, u: any) => sum + (u.total_paid || 0), 0)
+                      const projectPaid = units.reduce((sum: number, u: UnitItem) => sum + (u.total_paid || 0), 0)
                       const projectRemaining = projectTotal - projectPaid
 
                       return (
@@ -100,7 +101,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                           </div>
 
                           <div className="space-y-3">
-                            {units.map((unit: any) => {
+                            {units.map((unit: UnitItem) => {
                               const apartmentPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
                               const garagePrice = unit.garage?.price || 0
                               const repositoryPrice = unit.repository?.price || 0
@@ -184,14 +185,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                     })}
 
                     {Object.keys(projectGroups).length > 1 && (() => {
-                      const grandTotal = customer.apartments.reduce((sum: number, unit: any) => {
+                      const grandTotal = customer.apartments.reduce((sum: number, unit: UnitItem) => {
                         const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
                         const garPrice = unit.garage?.price || 0
                         const repPrice = unit.repository?.price || 0
                         const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
                         return sum + aptPrice + garPrice + repPrice + standalonePrice
                       }, 0)
-                      const grandPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
+                      const grandPaid = customer.apartments.reduce((sum: number, unit: UnitItem) => sum + (unit.total_paid || 0), 0)
                       const grandRemaining = grandTotal - grandPaid
 
                       return (

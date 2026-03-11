@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, Bank, BankCredit, Project } from '../../../lib/supabase'
+import { supabase, Bank, BankCredit } from '../../../lib/supabase'
 import { Plus, Phone, Mail, CreditCard as Edit2, Trash2, Eye, CreditCard } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
@@ -20,8 +20,7 @@ interface Company {
 
 const BanksManagement: React.FC = () => {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
+const [companies, setCompanies] = useState<Company[]>([])
   const [selectedBank, setSelectedBank] = useState<BankWithCredits | null>(null)
   const [showBankForm, setShowBankForm] = useState(false)
   const [showCreditForm, setShowCreditForm] = useState(false)
@@ -39,24 +38,24 @@ const BanksManagement: React.FC = () => {
     company_id: '',
     project_id: '',
     credit_name: '',
-    credit_type: 'construction_loan_senior' as const,
+    credit_type: 'construction_loan_senior' as string,
     amount: 0,
     interest_rate: 0,
     start_date: '',
-    maturity_date: '',
+    maturity_date: '' as string | null,
     outstanding_balance: 0,
     monthly_payment: 0,
     purpose: '',
     usage_expiration_date: '',
     grace_period: 0,
-    repayment_type: 'monthly' as const,
-    credit_seniority: 'senior' as const,
+    repayment_type: 'monthly' as 'monthly' | 'yearly',
+    credit_seniority: 'senior' as 'junior' | 'senior',
     principal_repayment_type: 'yearly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
     interest_repayment_type: 'monthly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
     disbursed_to_account: false,
     disbursed_to_bank_account_id: ''
   })
-  const [companyBankAccounts, setCompanyBankAccounts] = useState<any[]>([])
+  const [companyBankAccounts, setCompanyBankAccounts] = useState<{ id: string; bank_name: string | null; account_number: string | null; current_balance: number }[]>([])
   const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [loading, setLoading] = useState(true)
   const [newEquity, setNewEquity] = useState({
@@ -125,14 +124,6 @@ const BanksManagement: React.FC = () => {
 
       if (banksError) throw banksError
 
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('name')
-
-      if (projectsError) throw projectsError
-
       // Fetch companies
       const { data: companiesData, error: companiesError } = await supabase
         .from('accounting_companies')
@@ -188,7 +179,6 @@ const BanksManagement: React.FC = () => {
       })
 
       setBanks(banksWithCredits)
-      setProjects(projectsData || [])
       setCompanies(companiesData || [])
     } catch (error) {
       console.error('Error fetching banks data:', error)
@@ -438,7 +428,7 @@ const BanksManagement: React.FC = () => {
     setEditingCredit(credit)
     setNewCredit({
       bank_id: credit.bank_id,
-      company_id: (credit as any).company_id || '',
+      company_id: credit.company_id || '',
       project_id: credit.project_id || '',
       credit_name: credit.credit_name || '',
       credit_type: `${credit.credit_type}_${credit.credit_seniority}`,
@@ -455,8 +445,8 @@ const BanksManagement: React.FC = () => {
       credit_seniority: credit.credit_seniority,
       principal_repayment_type: credit.principal_repayment_type || 'yearly',
       interest_repayment_type: credit.interest_repayment_type || 'monthly',
-      disbursed_to_account: (credit as any).disbursed_to_account || false,
-      disbursed_to_bank_account_id: (credit as any).disbursed_to_bank_account_id || ''
+      disbursed_to_account: credit.disbursed_to_account || false,
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || ''
     })
     setSelectedBank(null)
     setShowCreditForm(true)
@@ -834,7 +824,7 @@ const BanksManagement: React.FC = () => {
             <FormField label="Loan Type">
               <Select
                 value={newCredit.credit_type}
-                onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as any })}
+                onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value })}
               >
                 <option value="construction_loan_senior">Construction Loan</option>
                 <option value="term_loan_senior">Term Loan</option>
@@ -869,7 +859,7 @@ const BanksManagement: React.FC = () => {
             <FormField label="Principal Repayment Type" helperText="How often to repay principal">
               <Select
                 value={newCredit.principal_repayment_type}
-                onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as any })}
+                onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as 'monthly' | 'quarterly' | 'biyearly' | 'yearly' })}
               >
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
@@ -880,7 +870,7 @@ const BanksManagement: React.FC = () => {
             <FormField label="Interest Repayment Type" helperText="How often to pay interest">
               <Select
                 value={newCredit.interest_repayment_type}
-                onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as any })}
+                onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as 'monthly' | 'quarterly' | 'biyearly' | 'yearly' })}
               >
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
@@ -967,7 +957,7 @@ const BanksManagement: React.FC = () => {
                         required={newCredit.disbursed_to_account}
                       >
                         <option value="">Odaberite račun</option>
-                        {companyBankAccounts.map((account: any) => (
+                        {companyBankAccounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.bank_name || 'Nepoznata banka'} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{Number(account.current_balance).toLocaleString('hr-HR')})
                           </option>
@@ -1110,12 +1100,12 @@ const BanksManagement: React.FC = () => {
                                   <Badge variant="orange" size="sm">MATURING SOON</Badge>
                                 )}
                               </div>
-                              {(credit as any).credit_name && (
-                                <p className="text-base font-semibold text-gray-900 mb-1">{(credit as any).credit_name}</p>
+                              {credit.credit_name && (
+                                <p className="text-base font-semibold text-gray-900 mb-1">{credit.credit_name}</p>
                               )}
                               <p className="text-sm text-gray-600 mb-2">{credit.purpose}</p>
-                              {(credit as any).accounting_companies && (
-                                <p className="text-xs text-gray-500 mb-1">Company: {(credit as any).accounting_companies.name}</p>
+                              {credit.accounting_companies && (
+                                <p className="text-xs text-gray-500 mb-1">Company: {credit.accounting_companies.name}</p>
                               )}
                               
                             </div>
@@ -1128,14 +1118,14 @@ const BanksManagement: React.FC = () => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                             <div>
                               <p className="text-xs text-gray-500">Used Amount</p>
-                              <p className="text-sm font-medium text-blue-600">€{((credit as any).used_amount || 0).toLocaleString('hr-HR')}</p>
+                              <p className="text-sm font-medium text-blue-600">€{(credit.used_amount || 0).toLocaleString('hr-HR')}</p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {credit.amount > 0 ? (((credit as any).used_amount || 0) / credit.amount * 100).toFixed(1) : 0}% drawn
+                                {credit.amount > 0 ? ((credit.used_amount || 0) / credit.amount * 100).toFixed(1) : 0}% drawn
                               </p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Repaid to Bank</p>
-                              <p className="text-sm font-medium text-green-600">€{((credit as any).repaid_amount || 0).toLocaleString('hr-HR')}</p>
+                              <p className="text-sm font-medium text-green-600">€{(credit.repaid_amount || 0).toLocaleString('hr-HR')}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Outstanding Debt</p>
@@ -1144,7 +1134,7 @@ const BanksManagement: React.FC = () => {
                             <div>
                               <p className="text-xs text-gray-500">Available to Use</p>
                               <p className="text-sm font-medium text-gray-900">
-                                €{(credit.amount - ((credit as any).used_amount || 0)).toLocaleString('hr-HR')}
+                                €{(credit.amount - (credit.used_amount || 0)).toLocaleString('hr-HR')}
                               </p>
                             </div>
                           </div>

@@ -10,7 +10,7 @@ interface CompanyFormModalProps {
   onSubmit: (e: React.FormEvent) => void
   onAccountCountChange: (count: number) => void
   onBankAccountChange: (index: number, field: 'bank_name' | 'current_balance' | 'balance_reset_at', value: string | number | null) => void
-  onFormDataChange: (field: keyof CompanyFormData, value: any) => void
+  onFormDataChange: (field: keyof CompanyFormData, value: CompanyFormData[keyof CompanyFormData]) => void
 }
 
 const CompanyFormModal: React.FC<CompanyFormModalProps> = ({

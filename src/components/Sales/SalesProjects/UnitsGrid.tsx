@@ -9,7 +9,7 @@ import {
   OnSellUnitCallback,
   OnLinkApartmentCallback
 } from './types'
-import { Apartment, Garage, Repository } from '../../../lib/supabase'
+import { Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 
 interface UnitsGridProps {
@@ -42,8 +42,6 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   building,
   activeUnitType,
   filterStatus,
-  garages,
-  repositories,
   onSetActiveUnitType,
   onSetFilterStatus,
   onDeleteUnit,
@@ -72,7 +70,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   }
 
   const getFilteredUnits = () => {
-    let units: any[] = []
+    let units: { id: string; status: string; [key: string]: unknown }[] = []
     if (activeUnitType === 'apartment') units = building.apartments
     else if (activeUnitType === 'garage') units = building.garages
     else if (activeUnitType === 'repository') units = building.repositories
@@ -178,15 +176,15 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredUnits.map((unit: any) => {
-          const linkedGarages: any[] = activeUnitType === 'apartment' ? (unit.linked_garages || []) : []
-          const linkedRepositories: any[] = activeUnitType === 'apartment' ? (unit.linked_repositories || []) : []
+        {filteredUnits.map((unit: { id: string; status: string; number?: string; floor?: number; size_m2?: number; price?: number; price_per_m2?: number; linked_garages?: { id: string; number: string; price: number }[]; linked_repositories?: { id: string; number: string; price: number }[]; sale_info?: { buyer_name: string; sale_price: number; down_payment: number; total_paid: number; remaining_amount: number; monthly_payment: number } }) => {
+          const linkedGarages: { id: string; number: string; price: number }[] = activeUnitType === 'apartment' ? (unit.linked_garages || []) : []
+          const linkedRepositories: { id: string; number: string; price: number }[] = activeUnitType === 'apartment' ? (unit.linked_repositories || []) : []
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
           const apartmentPrice = unit.price || 0
-          const garagesPrice = linkedGarages.reduce((sum: number, g: any) => sum + (g?.price || 0), 0)
-          const repositoriesPrice = linkedRepositories.reduce((sum: number, r: any) => sum + (r?.price || 0), 0)
+          const garagesPrice = linkedGarages.reduce((sum: number, g: { price: number }) => sum + (g?.price || 0), 0)
+          const repositoriesPrice = linkedRepositories.reduce((sum: number, r: { price: number }) => sum + (r?.price || 0), 0)
           const totalPackagePrice = apartmentPrice + garagesPrice + repositoriesPrice
           const hasLinkedUnits = linkedGarages.length > 0 || linkedRepositories.length > 0
 
@@ -304,7 +302,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   </>
                 )}
 
-                {linkedGarages.map((garage: any) => (
+                {linkedGarages.map((garage: { id: string; number: string; price: number }) => (
                   <div key={garage.id} className="bg-orange-50 border border-orange-200 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-orange-700">Garage: {garage.number}</span>
@@ -322,7 +320,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   </div>
                 ))}
 
-                {linkedRepositories.map((repository: any) => (
+                {linkedRepositories.map((repository: { id: string; number: string; price: number }) => (
                   <div key={repository.id} className="bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-gray-700">Repository: {repository.number}</span>

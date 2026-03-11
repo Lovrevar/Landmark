@@ -38,9 +38,11 @@ export const useSubcontractorData = () => {
 
       const grouped = new Map<string, SubcontractorSummary>()
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subcontractorsData?.forEach((sub: any) => {
         const subContracts = contractsData?.filter(c => c.subcontractor_id === sub.id) || []
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contracts: SubcontractorContract[] = subContracts.map((contractData: any) => {
           const phase = contractData.phase
           const cost = parseFloat(contractData.contract_amount || 0)
@@ -72,6 +74,7 @@ export const useSubcontractorData = () => {
         let totalPaid = 0
         let totalValue = 0
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         subContracts.forEach((contractData: any) => {
           const contractInvoices = allInvoicesForSub.filter(inv => inv.contract_id === contractData.id)
 

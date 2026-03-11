@@ -113,7 +113,7 @@ export const useBanks = () => {
       company_id: credit.company_id || '',
       project_id: credit.project_id || '',
       credit_name: credit.credit_name || '',
-      credit_type: `${credit.credit_type}_${credit.credit_seniority}` as any,
+      credit_type: `${credit.credit_type}_${credit.credit_seniority}` as NewCreditForm['credit_type'],
       amount: credit.amount,
       interest_rate: credit.interest_rate,
       start_date: credit.start_date,
@@ -123,10 +123,10 @@ export const useBanks = () => {
       purpose: credit.purpose || '',
       usage_expiration_date: credit.usage_expiration_date || '',
       grace_period: credit.grace_period || 0,
-      repayment_type: credit.repayment_type as any,
-      credit_seniority: credit.credit_seniority as any,
-      principal_repayment_type: credit.principal_repayment_type || 'yearly',
-      interest_repayment_type: credit.interest_repayment_type || 'monthly'
+      repayment_type: credit.repayment_type as NewCreditForm['repayment_type'],
+      credit_seniority: credit.credit_seniority as NewCreditForm['credit_seniority'],
+      principal_repayment_type: (credit.principal_repayment_type || 'yearly') as NewCreditForm['principal_repayment_type'],
+      interest_repayment_type: (credit.interest_repayment_type || 'monthly') as NewCreditForm['interest_repayment_type']
     })
     setShowCreditForm(true)
   }

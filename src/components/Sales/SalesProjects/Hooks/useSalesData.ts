@@ -53,10 +53,10 @@ export const useSalesData = () => {
       })
 
       const linkedGarageIds = new Set(
-        apartmentsData.flatMap(apt => (apt.linked_garages || []).map((g: any) => g.id))
+        apartmentsData.flatMap(apt => (apt.linked_garages || []).map((g: { id: string }) => g.id))
       )
       const linkedRepositoryIds = new Set(
-        apartmentsData.flatMap(apt => (apt.linked_repositories || []).map((r: any) => r.id))
+        apartmentsData.flatMap(apt => (apt.linked_repositories || []).map((r: { id: string }) => r.id))
       )
 
       const enhancedGarages = garagesData.map(garage => {

@@ -95,7 +95,7 @@ export const usePayments = () => {
       setCompanyCredits(creditsResult)
 
       const companiesMap = new Map(companiesResult.map(c => [c.id, c.name]))
-      const paymentsWithCesija = paymentsResult.map((payment: any) => ({
+      const paymentsWithCesija = paymentsResult.map((payment: Record<string, unknown>) => ({
         ...payment,
         cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id) : null
       }))

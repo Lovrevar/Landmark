@@ -198,7 +198,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         throw new Error('Morate unijeti barem jednu osnovicu')
       }
 
-      const { totalAmount } = calculateVatAndTotal()
+      calculateVatAndTotal()
 
       let invoiceType: string
       if (formData.invoice_type === 'incoming' && formData.entity_type === 'supplier') {
@@ -213,7 +213,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         throw new Error('Nevalidna kombinacija tipa računa i entiteta')
       }
 
-      const invoiceData: any = {
+      const invoiceData: Record<string, unknown> = {
         invoice_type: invoiceType,
         company_id: formData.company_id,
         invoice_category: 'RETAIL',
@@ -258,9 +258,9 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
       onSuccess()
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating retail invoice:', err)
-      setError(err.message || 'Greška pri kreiranju računa')
+      setError(err instanceof Error ? err.message : 'Greška pri kreiranju računa')
     } finally {
       setLoading(false)
     }
