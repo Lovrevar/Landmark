@@ -202,8 +202,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
       `Budget: $${project.budget.toLocaleString()}`,
       `Expenses: $${project.total_expenses.toLocaleString()}`,
       `Revenue: $${project.apartment_sales.toLocaleString()}`,
-      `Completion: ${project.task_completion}%`,
-      `Investor: ${project.investor || 'N/A'}`
+      `Completion: ${project.task_completion}%`
     ]
 
     const infoY = yPosition
@@ -346,7 +345,6 @@ export const generateProjectDetailReport = async (project: Project) => {
     ['Status', project.status],
     ['Start Date', format(new Date(project.start_date), 'MMMM dd, yyyy')],
     ['End Date', project.end_date ? format(new Date(project.end_date), 'MMMM dd, yyyy') : 'TBD'],
-    ['Investor', project.investor || 'N/A'],
     ['Total Budget', `$${project.budget.toLocaleString()}`],
     ['Amount Spent', `$${project.total_spent.toLocaleString()}`],
     ['Revenue Generated', `$${project.total_revenue.toLocaleString()}`],

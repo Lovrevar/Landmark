@@ -14,7 +14,6 @@ interface ProjectForm {
   start_date: string
   end_date: string
   budget: string
-  investor: string
   status: string
   description: string
 }
@@ -26,7 +25,6 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     start_date: new Date().toISOString().split('T')[0],
     end_date: '',
     budget: '',
-    investor: '',
     status: 'Planning',
     description: ''
   })
@@ -58,7 +56,6 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
           start_date: data.start_date || '',
           end_date: data.end_date || '',
           budget: data.budget?.toString() || '',
-          investor: data.investor || '',
           status: data.status || 'Planning',
           description: ''
         })
@@ -97,7 +94,6 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         start_date: form.start_date,
         end_date: form.end_date || null,
         budget: parseFloat(form.budget),
-        investor: form.investor.trim() || null,
         status: form.status
       }
 
@@ -227,14 +223,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               </Select>
             </FormField>
 
-            <FormField label="Investor (Optional)" className="md:col-span-2">
-              <Input
-                type="text"
-                value={form.investor}
-                onChange={(e) => setForm({ ...form, investor: e.target.value })}
-                placeholder="e.g., ABC Investment Group"
-              />
-            </FormField>
+
           </div>
         </form>
       </Modal.Body>

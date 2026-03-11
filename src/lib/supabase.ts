@@ -27,7 +27,6 @@ export type Project = {
   start_date: string
   end_date: string | null
   budget: number
-  investor: string | null
   status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold'
   created_at: string
 }

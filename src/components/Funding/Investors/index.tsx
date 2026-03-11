@@ -366,6 +366,8 @@ const [companies, setCompanies] = useState<Company[]>([])
           ...newCredit,
           company_id: newCredit.company_id || null,
           project_id: newCredit.project_id || null,
+          start_date: newCredit.start_date || null,
+          maturity_date: newCredit.maturity_date || null,
           usage_expiration_date: newCredit.usage_expiration_date || null,
           disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null,
           credit_type: actualCreditType,
