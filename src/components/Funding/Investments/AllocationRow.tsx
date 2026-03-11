@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
+import { INVOICE_STATUS_CONFIG } from './constants'
 
 interface CreditAllocation {
   id: string
@@ -47,11 +48,6 @@ interface AllocationRowProps {
   onDelete: (allocationId: string, creditId: string) => void
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'green' | 'yellow' | 'red' | 'gray' }> = {
-  PAID: { label: 'Plaćeno', variant: 'green' },
-  PARTIALLY_PAID: { label: 'Djelomično', variant: 'yellow' },
-  UNPAID: { label: 'Neplaćeno', variant: 'red' },
-}
 
 const AllocationRow: React.FC<AllocationRowProps> = ({
   allocation,
@@ -150,9 +146,12 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onToggle(allocationKey)}
-        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+        onKeyDown={(e) => e.key === 'Enter' && onToggle(allocationKey)}
+        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between cursor-pointer"
       >
         <div className="flex items-center space-x-3">
           {isExpanded ? (
@@ -208,7 +207,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
-      </button>
+      </div>
 
       {isExpanded && (
         <div className="px-4 py-3 bg-white border-t border-gray-200 space-y-4">
@@ -316,7 +315,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {invoices.map((inv) => {
-                          const statusCfg = STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
+                          const statusCfg = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
                           return (
                             <tr key={inv.payment_id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-4 py-2.5 font-medium text-gray-900">
