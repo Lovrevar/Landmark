@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabase, Apartment } from '../../../../lib/supabase'
 import { UnitType, BulkCreateData } from '../types'
 
 export const fetchProjects = async () => {
@@ -21,7 +21,7 @@ export const fetchBuildings = async () => {
   return data || []
 }
 
-export const fetchApartments = async () => {
+export const fetchApartments = async (): Promise<Apartment[]> => {
   const { data, error } = await supabase
     .from('apartments')
     .select(`
@@ -39,7 +39,7 @@ export const fetchApartments = async () => {
     linked_repositories: (apt.apartment_repositories || []).map((ar: { repository: unknown }) => ar.repository).filter(Boolean),
     apartment_garages: undefined,
     apartment_repositories: undefined,
-  }))
+  })) as unknown as Apartment[]
 }
 
 export const fetchGarages = async () => {

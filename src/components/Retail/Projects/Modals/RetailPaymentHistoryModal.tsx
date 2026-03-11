@@ -126,12 +126,20 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         throw error
       }
 
-      const formattedPayments = (data || []).map((payment) => {
+      type RawPayment = {
+        id: string; amount: string; payment_date: string | null; payment_method: string | null
+        reference_number: string | null; description: string | null; is_cesija: boolean; created_at: string
+        invoice_id: string; company_bank_account_id: string | null; cesija_credit_id: string | null
+        accounting_invoices?: { id: string; invoice_number: string; invoice_type: string; base_amount: string; total_amount: string; status: string } | null
+        company_bank_account?: { bank_name: string; account_number: string } | null
+        cesija_credit?: { credit_name: string } | null
+      }
+      const formattedPayments = (data as unknown as RawPayment[] || []).map((payment: RawPayment) => {
         const paymentAmount = parseFloat(payment.amount)
         const invoice = payment.accounting_invoices
         let baseAmountPaid = paymentAmount
 
-        if (invoice && invoice.total_amount > 0) {
+        if (invoice && parseFloat(invoice.total_amount) > 0) {
           baseAmountPaid = (paymentAmount / parseFloat(invoice.total_amount)) * parseFloat(invoice.base_amount)
         }
 
@@ -145,9 +153,9 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
           description: payment.description,
           is_cesija: payment.is_cesija,
           created_at: payment.created_at,
-          invoice: invoice,
-          company_bank_account: payment.company_bank_account,
-          credit: payment.cesija_credit
+          invoice: invoice ? { ...invoice, base_amount: parseFloat(invoice.base_amount), total_amount: parseFloat(invoice.total_amount) } : undefined,
+          company_bank_account: payment.company_bank_account ?? undefined,
+          credit: payment.cesija_credit ?? undefined
         }
       })
 

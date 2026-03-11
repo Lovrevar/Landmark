@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button } from '../../ui'
-import { Apartment } from '../../../lib/supabase'
+import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { useSalesData } from './Hooks/useSalesData'
 import * as salesService from './Services/salesService'
 import {
@@ -214,7 +214,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
-  const handleSellUnit = (unit: { id: string; number: string; price: number; [key: string]: unknown }, unitType: UnitType) => {
+  const handleSellUnit = (unit: Apartment | Garage | Repository, unitType: UnitType) => {
     setUnitForSale({ unit, type: unitType })
     setShowSaleForm(true)
   }

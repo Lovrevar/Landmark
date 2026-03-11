@@ -109,7 +109,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           retail_supplier?: { name?: string } | null
         } | null
       }
-      const mapped: AllocationInvoice[] = (data || []).map((p: RawPaymentRow) => ({
+      const mapped: AllocationInvoice[] = (data as unknown as RawPaymentRow[] || []).map((p: RawPaymentRow) => ({
         payment_id: p.id,
         payment_date: p.payment_date,
         payment_amount: p.amount,

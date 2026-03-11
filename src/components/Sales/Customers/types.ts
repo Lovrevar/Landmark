@@ -10,6 +10,11 @@ export interface CustomerWithApartments extends Customer {
     project_name: string
     sale_price: number
     sale_date: string
+    type?: string
+    price?: number
+    total_paid?: number
+    garage?: { number: string; price: number } | null
+    repository?: { number: string; price: number } | null
   }>
 }
 

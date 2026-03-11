@@ -79,7 +79,7 @@ const InvoicesManagement: React.FC = () => {
         .from('project_phases')
         .select('id, phase_name')
 
-      const enrichedInvoices = (invoicesData || []).map((invoice: Record<string, unknown> & { id: string; invoice_number: string; invoice_type: string; invoice_category: string; issue_date: string; due_date: string; total_amount: string; base_amount: string; vat_amount: string; status: string; approved?: boolean; supplier?: { name?: string } | null; company?: { name?: string } | null; project?: { name?: string } | null; contract?: { phase_id?: string } | null }) => {
+      const enrichedInvoices = (invoicesData || []).map((invoice: Record<string, unknown> & { id: string; invoice_number: string; invoice_type: string; invoice_category: string; issue_date: string; due_date: string; total_amount: string; base_amount: string; vat_amount: string; status: string; created_at: string; approved?: boolean; supplier?: { name?: string } | null; company?: { name?: string } | null; project?: { name?: string } | null; contract?: { phase_id?: string; contract_number?: string } | null }) => {
         const supplierName = invoice.supplier?.name || '-'
         const companyName = invoice.company?.name || '-'
         const projectName = invoice.project?.name || '-'

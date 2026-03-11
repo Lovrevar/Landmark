@@ -107,16 +107,16 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
       if (error) throw error
 
       type RawInvoice = { id: string; invoice_number: string; invoice_type: string; status: string; base_amount: number; vat_amount: number; total_amount: number; paid_amount: number; remaining_amount: number; issue_date: string; due_date: string; description: string; accounting_companies?: { name: string } | null; contracts?: { id: string } | null }
-      const formattedInvoices = (data || []).map((inv: RawInvoice) => ({
+      const formattedInvoices = (data as unknown as RawInvoice[] || []).map((inv: RawInvoice) => ({
         id: inv.id,
         invoice_number: inv.invoice_number,
         invoice_type: inv.invoice_type,
         status: inv.status,
-        base_amount: parseFloat(inv.base_amount),
-        vat_amount: parseFloat(inv.vat_amount),
-        total_amount: parseFloat(inv.total_amount),
-        paid_amount: parseFloat(inv.paid_amount),
-        remaining_amount: parseFloat(inv.remaining_amount),
+        base_amount: Number(inv.base_amount),
+        vat_amount: Number(inv.vat_amount),
+        total_amount: Number(inv.total_amount),
+        paid_amount: Number(inv.paid_amount),
+        remaining_amount: Number(inv.remaining_amount),
         issue_date: inv.issue_date,
         due_date: inv.due_date,
         description: inv.description || '',

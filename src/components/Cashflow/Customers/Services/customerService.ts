@@ -65,7 +65,7 @@ export const buildCustomerStats = async (customer: Customer): Promise<CustomerSt
   let totalApartments = 0
   if (propertyData && propertyData.length > 0) {
     totalApartments = propertyData.length
-    propertyData.forEach((sale: { apartments?: { price?: number; apartment_garages?: Array<{ garages?: { price?: number } }>; apartment_repositories?: Array<{ repositories?: { price?: number } }> } }) => {
+    ;(propertyData as unknown as Array<{ apartments?: { price?: number; apartment_garages?: Array<{ garages?: { price?: number } }>; apartment_repositories?: Array<{ repositories?: { price?: number } }> } }>).forEach((sale) => {
       if (sale.apartments) {
         const apt = sale.apartments
         propertyPrice += Number(apt.price || 0)

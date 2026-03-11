@@ -100,10 +100,10 @@ export interface RetailInvoiceFormModalProps {
     retail_project_id?: string | null
     retail_contract_id?: string | null
     retail_milestone_id?: string | null
-    refund_id?: number
+    refund_id?: number | null
     invoice_number: string
-    reference_number?: string
-    iban?: string
+    reference_number?: string | null
+    iban?: string | null
     issue_date: string
     due_date: string
     base_amount: number

@@ -68,7 +68,7 @@ const CreditRepayments: React.FC<CreditRepaymentsProps> = ({ creditId }) => {
         bank?: { name?: string } | null
         payments?: RawPaymentEntry[]
       }
-      const mapped: RepaymentInvoice[] = (data || []).map((inv: RawRepaymentInvoice) => {
+      const mapped: RepaymentInvoice[] = (data as unknown as RawRepaymentInvoice[] || []).map((inv: RawRepaymentInvoice) => {
         const latestPayment = (inv.payments || []).sort(
           (a: RawPaymentEntry, b: RawPaymentEntry) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
         )[0]

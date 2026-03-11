@@ -220,7 +220,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               companyBankAccounts={companyBankAccounts}
               companyCredits={companyCredits}
               creditAllocations={creditAllocations}
-              onFormChange={onFormChange}
+              onFormChange={(data) => onFormChange({ ...paymentFormData, ...data } as PaymentModalFormData)}
               onCreditChange={onCreditChange}
             />
 

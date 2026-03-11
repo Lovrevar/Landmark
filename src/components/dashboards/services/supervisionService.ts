@@ -76,7 +76,7 @@ export async function fetchContractStatusData() {
   })
 }
 
-export async function fetchSubcontractorStatus(contracts: Array<{ id: string; name: string; progress: number; completed_at?: string }>): Promise<SubcontractorStatus[]> {
+export async function fetchSubcontractorStatus(contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; deadline?: string; project_name?: string; cost?: number; budget_realized?: number; phase_id?: string }>): Promise<SubcontractorStatus[]> {
   const sevenDaysAgo = format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
   const recentLogsResults = await Promise.all(
@@ -113,7 +113,7 @@ export async function fetchSubcontractorStatus(contracts: Array<{ id: string; na
 }
 
 export function buildWeeklyStats(
-  contracts: Array<{ id: string; name: string; progress: number; completed_at?: string }>,
+  contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; phase_id?: string }>,
   subcontractorStatus: SubcontractorStatus[],
   weekLogs: WorkLog[]
 ): WeeklyStats {

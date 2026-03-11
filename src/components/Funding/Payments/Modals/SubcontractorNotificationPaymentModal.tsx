@@ -60,11 +60,15 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
       if (allocationsError) throw allocationsError
 
+      type AllocWithBank = { bank_credits?: { banks?: { id: string; name: string } | null } | null }
       const uniqueBanks = Array.from(
         new Map(
-          (allocationsData || [])
-            .filter((alloc: { bank_credits?: { banks?: { id: string; name: string } | null } | null }) => alloc.bank_credits?.banks)
-            .map((alloc: { bank_credits: { banks: { id: string; name: string } } }) => [alloc.bank_credits.banks.id, { id: alloc.bank_credits.banks.id, name: alloc.bank_credits.banks.name }])
+          (allocationsData as unknown as AllocWithBank[] || [])
+            .filter((alloc) => alloc.bank_credits?.banks)
+            .map((alloc) => {
+              const bank = alloc.bank_credits!.banks!
+              return [bank.id, { id: bank.id, name: bank.name }] as [string, Funder]
+            })
         ).values()
       )
 

@@ -87,7 +87,7 @@ const RetailProjects: React.FC = () => {
             setEditingProject(null)
           }}
           onSuccess={handleProjectCreated}
-          project={editingProject || undefined}
+          project={editingProject as unknown as Record<string, unknown> | undefined}
         />
       )}
     </div>

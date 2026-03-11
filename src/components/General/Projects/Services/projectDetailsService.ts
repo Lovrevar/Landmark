@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import type { ProjectWithDetails, Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone } from '../types'
+import type { ProjectWithDetails, Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, ProjectDisplay } from '../types'
 
 export async function fetchProjectDetails(id: string): Promise<ProjectWithDetails> {
   const { data: projectData, error: projectError } = await supabase
@@ -31,8 +31,8 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
     phase?: { phase_name: string } | null
   }
   const subcontractors = (contractsData || []).map((c: RawContract) => {
-    const cost = parseFloat(c.contract_amount || 0)
-    const budgetRealized = parseFloat(c.budget_realized || 0)
+    const cost = Number(c.contract_amount || 0)
+    const budgetRealized = Number(c.budget_realized || 0)
     return {
       id: c.id,
       subcontractor_id: c.subcontractor.id,
@@ -101,7 +101,7 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
     subcontractors,
     invoices,
     apartments,
-    milestones: milestonesData || [],
+    milestones: (milestonesData || []) as unknown as Milestone[],
     total_spent,
     total_revenue,
     pending_invoices,
@@ -110,7 +110,7 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
 }
 
 export async function fetchProjectDataEnhanced(id: string): Promise<{
-  project: Record<string, unknown>
+  project: ProjectDisplay
   milestones: Milestone[]
   phases: Phase[]
   contracts: ContractWithDetails[]
@@ -166,11 +166,11 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
     .order('created_at', { ascending: false })
 
   return {
-    project: projectData,
-    milestones: milestonesData || [],
-    phases: phasesData || [],
-    contracts: contractsData || [],
-    apartments: apartmentsData || [],
+    project: projectData as unknown as ProjectDisplay,
+    milestones: (milestonesData || []) as unknown as Milestone[],
+    phases: (phasesData || []) as unknown as Phase[],
+    contracts: (contractsData || []) as unknown as ContractWithDetails[],
+    apartments: (apartmentsData || []) as unknown as ApartmentItem[],
     investments: (investmentsData || []) as unknown as CreditAllocationItem[]
   }
 }

@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           .eq('user_id', data.id)
 
         if (!projectError && projectData) {
-          assignedProjects = projectData.map((pm: { id: string; project_id: string; assigned_at: string; projects?: { name: string } | null }) => ({
+          assignedProjects = (projectData as unknown as Array<{ id: string; project_id: string; assigned_at: string; projects?: { name: string } | null }>).map((pm) => ({
             id: pm.id,
             project_id: pm.project_id,
             project_name: pm.projects?.name || 'Unknown Project',

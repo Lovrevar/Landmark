@@ -97,7 +97,7 @@ const ApartmentManagement: React.FC = () => {
       const storPaymentTotals: Record<string, number> = {}
 
       if (paymentsData) {
-        paymentsData.forEach((payment: { amount: string; invoice?: { apartment_id: string } | null }) => {
+        (paymentsData as unknown as Array<{ amount: string; invoice?: { apartment_id: string } | null }>).forEach((payment) => {
           const apartmentId = payment.invoice?.apartment_id
           if (apartmentId) {
             if (!aptPaymentTotals[apartmentId]) {
@@ -126,7 +126,7 @@ const ApartmentManagement: React.FC = () => {
           .in('apartment_id', apartmentIds)
 
         if (garageLinks) {
-          garageLinks.forEach((link: { apartment_id: string; garage: { id: string; number: string; size_m2: number; price: number; status: string } | null }) => {
+          (garageLinks as unknown as Array<{ apartment_id: string; garage: { id: string; number: string; size_m2: number; price: number; status: string } | null }>).forEach((link) => {
             if (!garagesMap[link.apartment_id]) {
               garagesMap[link.apartment_id] = []
             }
@@ -145,7 +145,7 @@ const ApartmentManagement: React.FC = () => {
           .in('apartment_id', apartmentIds)
 
         if (repositoryLinks) {
-          repositoryLinks.forEach((link: { apartment_id: string; repository: { id: string; number: string; size_m2: number; price: number; status: string } | null }) => {
+          (repositoryLinks as unknown as Array<{ apartment_id: string; repository: { id: string; number: string; size_m2: number; price: number; status: string } | null }>).forEach((link) => {
             if (!storagesMap[link.apartment_id]) {
               storagesMap[link.apartment_id] = []
             }
@@ -159,7 +159,7 @@ const ApartmentManagement: React.FC = () => {
       setLinkedGarages(garagesMap)
       setLinkedStorages(storagesMap)
 
-      const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: Record<string, unknown>) => {
+      const apartmentsWithDetails = ((apartmentsData || []).map((apt: Record<string, unknown>) => {
         const project = projectsData?.find(p => p.id === apt.project_id)
         const building = buildingsData?.find(b => b.id === apt.building_id)
 
@@ -189,7 +189,7 @@ const ApartmentManagement: React.FC = () => {
           rata_4_uporabna_20: apt.rata_4_uporabna_20 ?? null,
           kredit_etaziranje_90: apt.kredit_etaziranje_90 ?? null
         }
-      })
+      })) as unknown as ApartmentWithDetails[]
 
       setApartments(apartmentsWithDetails)
     } catch (error) {

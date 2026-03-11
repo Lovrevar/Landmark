@@ -323,7 +323,7 @@ const ProjectDetails: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {project.milestones.map((milestone, index) => {
-                  const status = getMilestoneStatus(milestone)
+                  const status = getMilestoneStatus(milestone as unknown as ProjectMilestone)
                   const isOverdue = milestone.due_date && new Date(milestone.due_date) < new Date() && !milestone.completed
                   return (
                     <div key={milestone.id} className={`p-6 rounded-lg border-2 transition-all duration-200 ${status.bg} ${status.border}`}>
@@ -352,7 +352,7 @@ const ProjectDetails: React.FC = () => {
                                 </div>
                               )}
                               <div className="flex items-center">
-                                <span>Created: {format(new Date(milestone.created_at), 'MMM dd')}</span>
+                                <span>Created: {milestone.created_at ? format(new Date(milestone.created_at), 'MMM dd') : ''}</span>
                               </div>
                             </div>
                           </div>
@@ -364,7 +364,7 @@ const ProjectDetails: React.FC = () => {
                             className={milestone.completed ? 'text-gray-600 hover:bg-gray-200' : 'text-green-600 hover:bg-green-200'}
                           />
                           <Button size="icon-sm" variant="ghost" icon={Edit2}
-                            onClick={() => handleEditMilestone(milestone)}
+                            onClick={() => handleEditMilestone(milestone as unknown as ProjectMilestone)}
                             title="Edit milestone" className="text-blue-600 hover:bg-blue-200"
                           />
                           <Button size="icon-sm" variant="ghost" icon={Trash2}
@@ -389,7 +389,7 @@ const ProjectDetails: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {project.subcontractors.map((sub) => {
-                  const isOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
+                  const isOverdue = sub.deadline != null && new Date(sub.deadline) < new Date() && sub.progress < 100
                   return (
                     <div key={sub.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">
@@ -400,7 +400,7 @@ const ProjectDetails: React.FC = () => {
                             <span className="text-sm text-gray-600">Contact: {sub.contact}</span>
                             <span className="text-sm text-gray-600">Cost: €{sub.cost.toLocaleString('hr-HR')}</span>
                             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
-                              Due: {format(new Date(sub.deadline), 'MMM dd, yyyy')}
+                              Due: {sub.deadline ? format(new Date(sub.deadline), 'MMM dd, yyyy') : 'N/A'}
                             </span>
                           </div>
                         </div>

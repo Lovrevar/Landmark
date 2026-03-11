@@ -57,12 +57,19 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: { milestone_name: string; description?: string; percentage?: number; due_date?: string }) => {
+  const handleAddMilestone = async (data: { contract_id: string; milestone_name: string; description: string; percentage: number; due_date: string | null }) => {
     try {
       const milestoneNumber = await retailProjectService.getNextMilestoneNumber(contractId)
       await retailProjectService.createMilestone({
-        ...data,
-        milestone_number: milestoneNumber
+        contract_id: data.contract_id,
+        milestone_number: milestoneNumber,
+        milestone_name: data.milestone_name,
+        description: data.description,
+        percentage: data.percentage,
+        due_date: data.due_date,
+        status: 'pending',
+        notes: null,
+        completed_date: null
       })
       setShowMilestoneModal(false)
       loadMilestones()
@@ -72,7 +79,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleEditMilestone = async (data: { milestone_name: string; description?: string; percentage?: number; due_date?: string }) => {
+  const handleEditMilestone = async (data: { contract_id: string; milestone_name: string; description: string; percentage: number; due_date: string | null }) => {
     if (!editingMilestone) return
 
     try {

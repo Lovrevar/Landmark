@@ -834,9 +834,9 @@ export const fetchProjectFunders = async (projectId: string) => {
   const banks = Array.from(
     new Map(
       (data || [])
-        .filter(alloc => (alloc.bank_credits as { banks?: { id: string; name: string } } | null)?.banks)
+        .filter(alloc => (alloc.bank_credits as unknown as { banks?: { id: string; name: string } } | null)?.banks)
         .map(alloc => {
-          const bc = alloc.bank_credits as { banks: { id: string; name: string } }
+          const bc = alloc.bank_credits as unknown as { banks: { id: string; name: string } }
           return [bc.banks.id, bc.banks]
         })
     ).values()

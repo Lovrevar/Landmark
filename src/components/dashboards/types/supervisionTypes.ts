@@ -18,11 +18,11 @@ export interface WorkLog {
 export interface SubcontractorStatus {
   id: string
   name: string
-  project_name: string
-  deadline: string
+  project_name: string | undefined
+  deadline: string | undefined
   progress: number
-  cost: number
-  budget_realized: number
+  cost: number | undefined
+  budget_realized: number | undefined
   days_until_deadline: number
   is_overdue: boolean
   recent_work_logs: number

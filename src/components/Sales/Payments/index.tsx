@@ -115,7 +115,7 @@ const SalesPaymentsManagement: React.FC = () => {
           apartment_number: (invoice?.apartments as { number?: string; projects?: { name?: string } } | null)?.number || 'N/A',
           project_name: (invoice?.apartments as { number?: string; projects?: { name?: string } } | null)?.projects?.name || 'N/A',
           customer_name: invoice?.customers
-            ? `${(invoice.customers as { name: string; surname: string }).name} ${(invoice.customers as { name: string; surname: string }).surname}`
+            ? `${(invoice.customers as unknown as { name: string; surname: string }).name} ${(invoice.customers as unknown as { name: string; surname: string }).surname}`
             : 'N/A',
           bank_account_name: bankAccount?.bank_name || 'N/A'
         }

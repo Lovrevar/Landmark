@@ -41,7 +41,7 @@ export async function fetchSalesDashboardData(): Promise<{
   const projects = projectsData.data || []
   const payments = (paymentsData.data || []) as unknown as Array<{ amount: string | number; payment_date: string; invoice?: { apartment_id: string | null; invoice_type: string } | null }>
 
-  const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+  const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0)
   const totalSalesValue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price), 0)
   const totalUnits = apartments.length
   const soldUnits = apartments.filter(a => a.status === 'Sold').length
@@ -54,7 +54,7 @@ export async function fetchSalesDashboardData(): Promise<{
   const currentMonth = startOfMonth(new Date())
   const monthlyRevenue = payments
     .filter(p => new Date(p.payment_date) >= currentMonth)
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0)
+    .reduce((sum, p) => sum + Number(p.amount), 0)
 
   const stats: SalesDashboardStats = {
     totalUnits,
@@ -77,7 +77,7 @@ export async function fetchSalesDashboardData(): Promise<{
       const apt = apartments.find(a => a.id === p.invoice?.apartment_id)
       return apt && apt.project_id === project.id
     })
-    const revenue = projectPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+    const revenue = projectPayments.reduce((sum, p) => sum + Number(p.amount), 0)
     const total = projectApartments.length
     const sold = projectApartments.filter(a => a.status === 'Sold').length
     const reserved = projectApartments.filter(a => a.status === 'Reserved').length
@@ -113,7 +113,7 @@ export async function fetchSalesDashboardData(): Promise<{
     monthlyTrends.push({
       month: format(monthDate, 'MMM'),
       sales_count: monthSales.length,
-      revenue: monthPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
+      revenue: monthPayments.reduce((sum, p) => sum + Number(p.amount), 0)
     })
   }
 
@@ -157,5 +157,5 @@ export async function fetchRecentSales(sales: Array<{ apartment_id?: string; cus
       project_name: proj?.name || 'Unknown',
       customer_name: cust ? `${cust.name} ${cust.surname}` : 'Unknown'
     }
-  })
+  }) as unknown as RecentSale[]
 }

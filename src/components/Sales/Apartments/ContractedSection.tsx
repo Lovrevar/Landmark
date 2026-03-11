@@ -25,8 +25,8 @@ export const emptyContractFields = (): ContractFields => ({
 })
 
 export const contractFieldsFromData = (data: Record<string, unknown>): ContractFields => ({
-  datum_potpisa_predugovora: data?.datum_potpisa_predugovora || '',
-  contract_payment_type: data?.contract_payment_type || '',
+  datum_potpisa_predugovora: (data?.datum_potpisa_predugovora as string) || '',
+  contract_payment_type: (data?.contract_payment_type as 'credit' | 'installments' | '') || '',
   kapara_10_posto: data?.kapara_10_posto != null ? Number(data.kapara_10_posto) : null,
   rata_1_ab_konstrukcija_30: data?.rata_1_ab_konstrukcija_30 != null ? Number(data.rata_1_ab_konstrukcija_30) : null,
   rata_2_postava_stolarije_20: data?.rata_2_postava_stolarije_20 != null ? Number(data.rata_2_postava_stolarije_20) : null,

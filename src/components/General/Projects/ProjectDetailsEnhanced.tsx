@@ -23,12 +23,12 @@ import {
   toggleMilestoneCompletion as svcToggleMilestone,
   deleteMilestone as svcDeleteMilestone
 } from './Services/milestoneService'
-import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType } from './types'
+import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<Record<string, unknown> | null>(null)
+  const [project, setProject] = useState<ProjectDisplay | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [contracts, setContracts] = useState<ContractWithDetails[]>([])

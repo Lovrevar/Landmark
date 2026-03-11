@@ -53,7 +53,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
 
   const total_paid = (paymentsResult.data || [])
     .filter(p => {
-      const inv = p.accounting_invoices as { retail_contract_id?: string | null; retail_customer_id?: string | null; invoice_type: string } | null
+      const inv = p.accounting_invoices as unknown as { retail_contract_id?: string | null; retail_customer_id?: string | null; invoice_type: string } | null
       return (inv?.retail_contract_id != null || inv?.retail_customer_id != null) &&
         (inv?.invoice_type === 'OUTGOING_SALES' || inv?.invoice_type === 'OUTGOING')
     })
@@ -64,11 +64,11 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     .map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
-      customer_name: (inv.retail_customers as { name: string } | null)?.name
-        || (inv.retail_contracts as { retail_customers?: { name: string } | null; retail_suppliers?: { name: string } | null; contract_number?: string } | null)?.retail_customers?.name
-        || (inv.retail_contracts as { retail_customers?: { name: string } | null; retail_suppliers?: { name: string } | null; contract_number?: string } | null)?.retail_suppliers?.name
+      customer_name: (inv.retail_customers as unknown as { name: string } | null)?.name
+        || (inv.retail_contracts as unknown as { retail_customers?: { name: string } | null; retail_suppliers?: { name: string } | null; contract_number?: string } | null)?.retail_customers?.name
+        || (inv.retail_contracts as unknown as { retail_customers?: { name: string } | null; retail_suppliers?: { name: string } | null; contract_number?: string } | null)?.retail_suppliers?.name
         || inv.invoice_number,
-      contract_number: (inv.retail_contracts as { contract_number?: string } | null)?.contract_number || 'N/A',
+      contract_number: (inv.retail_contracts as unknown as { contract_number?: string } | null)?.contract_number || 'N/A',
       remaining_amount: parseFloat(inv.remaining_amount || 0),
       due_date: inv.due_date || '',
       days_overdue: Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24))

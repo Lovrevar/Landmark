@@ -126,7 +126,8 @@ export const fetchData = async (
   ])
 
   if (invoicesResult.error) throw invoicesResult.error
-  const transformedInvoices = (invoicesResult.data || []).map((inv) => ({
+  type InvRow = { company_name?: string | null; supplier_name?: string | null; customer_name?: string | null; customer_surname?: string | null; bank_name?: string | null; project_name?: string | null; contract_number?: string | null; contract_job_description?: string | null; office_supplier_name?: string | null; retail_supplier_name?: string | null; retail_customer_name?: string | null; refund_name?: string | null; [key: string]: unknown }
+  const transformedInvoices = ((invoicesResult.data || []) as InvRow[]).map((inv) => ({
     ...inv,
     companies: inv.company_name ? { name: inv.company_name } : null,
     subcontractors: inv.supplier_name ? { name: inv.supplier_name } : null,
@@ -287,7 +288,7 @@ export const handleSubmit = async (
     base_amount_4: formData.base_amount_4 || 0,
     category: formData.category,
     project_id: formData.project_id || null,
-    refund_id: formData.refund_id ? parseInt(formData.refund_id) : null,
+    refund_id: formData.refund_id ? parseInt(String(formData.refund_id)) : null,
     description: formData.description,
     approved,
     created_by: user?.id

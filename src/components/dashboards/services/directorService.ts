@@ -288,7 +288,7 @@ export async function fetchAlerts(financialMetrics: FinancialMetrics, salesMetri
         newAlerts.push({
           type: 'warning',
           title: 'Credit Maturity',
-          message: `${credit.credit_name || (credit.company as { name: string } | null)?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
+          message: `${credit.credit_name || (credit.company as unknown as { name: string } | null)?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
           date: credit.maturity_date
         })
       }

@@ -117,7 +117,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
       const stats = statsMap.get(supplier.id) || { contractCount: 0, contractValue: 0, totalPaid: 0, totalRemaining: 0, invoiceCount: 0 }
       const contact = source === 'retail'
         ? [supplier.contact_person, supplier.contact_phone, supplier.contact_email].filter(Boolean).join(' | ') || '-'
-        : supplier.contact
+        : supplier.contact || ''
       return {
         id: supplier.id,
         name: supplier.name,
@@ -138,7 +138,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     })
 
   const siteSuppliers = mapToSummary(suppliersData || [], siteStats, 'site')
-  const retailSuppliers = mapToSummary(retailSuppliersData || [], retailStats, 'retail')
+  const retailSuppliers = mapToSummary((retailSuppliersData || []) as unknown as RawSupplier[], retailStats, 'retail')
   const all = [...siteSuppliers, ...retailSuppliers].sort((a, b) => a.name.localeCompare(b.name))
 
   return all
@@ -257,7 +257,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       .in('id', (rContracts || []).map(c => c.phase_id).filter(Boolean) as string[])
 
     const phaseProjectMap = new Map<string, string>()
-    ;(rPhases || []).forEach((p: { id: string; retail_projects?: { name: string } }) => {
+    ;((rPhases || []) as unknown as Array<{ id: string; retail_projects?: { name: string } }>).forEach((p) => {
       phaseProjectMap.set(p.id, p.retail_projects?.name || 'N/A')
     })
 
@@ -288,7 +288,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       }
     })
 
-    contractsWithPayments = (rContracts || []).map((c: Record<string, unknown>) => ({
+    contractsWithPayments = ((rContracts || []).map((c: Record<string, unknown>) => ({
       id: c.id,
       contract_number: c.contract_number,
       project_id: '',
@@ -298,12 +298,12 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       budget_realized: c.budget_realized,
       end_date: c.end_date,
       status: c.status,
-      projects: { name: phaseProjectMap.get(c.phase_id) || 'N/A' },
+      projects: { name: phaseProjectMap.get(c.phase_id as string) || 'N/A' },
       phases: c.phases,
-      actual_paid: contractPayMap.get(c.id) || 0,
+      actual_paid: contractPayMap.get(c.id as string) || 0,
       has_contract: c.has_contract,
-      total_invoiced: contractInvoiceTotalMap.get(c.id) || 0
-    }))
+      total_invoiced: contractInvoiceTotalMap.get(c.id as string) || 0
+    })) as unknown as Contract[])
   } else {
     const { data: contractsData } = await supabase
       .from('contracts')

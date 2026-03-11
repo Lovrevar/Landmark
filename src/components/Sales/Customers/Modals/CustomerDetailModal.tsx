@@ -128,7 +128,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                     </div>
                                     <div className="text-right">
                                       <p className="font-bold text-green-700">€{totalPackage.toLocaleString('hr-HR')}</p>
-                                      <p className="text-xs text-gray-500">{format(new Date(unit.sale_date), 'MMM dd, yyyy')}</p>
+                                      <p className="text-xs text-gray-500">{unit.sale_date ? format(new Date(unit.sale_date), 'MMM dd, yyyy') : ''}</p>
                                     </div>
                                   </div>
 

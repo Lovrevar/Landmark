@@ -97,9 +97,9 @@ export const usePayments = () => {
       const companiesMap = new Map(companiesResult.map(c => [c.id, c.name]))
       const paymentsWithCesija = paymentsResult.map((payment: Record<string, unknown>) => ({
         ...payment,
-        cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id) : null
+        cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id as string) : null
       }))
-      setPayments(paymentsWithCesija)
+      setPayments(paymentsWithCesija as unknown as Payment[])
 
     } catch (error) {
       console.error('Error fetching data:', error)

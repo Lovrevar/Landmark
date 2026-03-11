@@ -12,13 +12,36 @@ interface CustomerWithSales extends RetailCustomer {
   total_remaining?: number
 }
 
+interface RetailContractForDisplay {
+  id: string
+  contract_number: string
+  contract_amount: number | null
+  budget_realized: number | null
+  total_surface_m2: number | null
+  building_surface_m2: number | null
+  price_per_m2: number | null
+  status: string | null
+  phase?: { phase_name: string; project?: { name: string; plot_number: string } | null } | null
+  paid_amount: number
+  remaining_amount: number
+  payment_status: 'paid' | 'partial' | 'pending'
+}
+
+interface CustomerDetailView extends RetailCustomer {
+  sales?: RetailContractForDisplay[]
+  total_purchased_area?: number
+  total_spent?: number
+  total_paid?: number
+  total_remaining?: number
+}
+
 const RetailCustomers: React.FC = () => {
   const [customers, setCustomers] = useState<CustomerWithSales[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithSales | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetailView | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
@@ -211,7 +234,7 @@ const RetailCustomers: React.FC = () => {
 
       setSelectedCustomer({
         ...customer,
-        sales: contractsWithPayments as RetailSale[]
+        sales: contractsWithPayments as unknown as RetailContractForDisplay[]
       })
       document.body.style.overflow = 'hidden'
       setShowDetailsModal(true)

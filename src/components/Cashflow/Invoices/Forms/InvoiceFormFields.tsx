@@ -3,7 +3,7 @@ import DateInput from '../../../Common/DateInput'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import { InvoiceEntityFields } from '../../Components/InvoiceEntityFields'
 import { Select, Input, Textarea, FormField } from '../../../ui'
-import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
+import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund, Invoice } from '../types'
 
 interface Bank {
   id: string
@@ -131,7 +131,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           banks={banks}
           projects={projects}
           refunds={refunds}
-          onFormChange={onFormChange}
+          onFormChange={(data) => onFormChange({ ...formData, ...data } as InvoiceFieldFormData)}
           getCustomerProjects={getCustomerProjects}
           getCustomerApartmentsByProject={getCustomerApartmentsByProject}
           getSupplierProjects={getSupplierProjects}

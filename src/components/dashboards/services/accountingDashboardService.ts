@@ -15,10 +15,10 @@ const isOutgoingPaymentType = (invoiceType: string): boolean =>
   invoiceType !== 'INCOMING_INVESTOR'
 
 const sumVATAmounts = (invoice: { vat_amount_1?: string | number | null; vat_amount_2?: string | number | null; vat_amount_3?: string | number | null; vat_amount_4?: string | number | null }): number =>
-  parseFloat(invoice.vat_amount_1 || 0) +
-  parseFloat(invoice.vat_amount_2 || 0) +
-  parseFloat(invoice.vat_amount_3 || 0) +
-  parseFloat(invoice.vat_amount_4 || 0)
+  Number(invoice.vat_amount_1 || 0) +
+  Number(invoice.vat_amount_2 || 0) +
+  Number(invoice.vat_amount_3 || 0) +
+  Number(invoice.vat_amount_4 || 0)
 
 export async function fetchVATStats(): Promise<VATStats> {
   const currentMonthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd')
@@ -76,10 +76,10 @@ export async function fetchCashFlowStats(): Promise<CashFlowStats> {
   if (error) throw error
 
   const incomingPayments = (payments || []).filter(p =>
-    isIncomingPaymentType((p.accounting_invoices as { invoice_type: string }).invoice_type)
+    isIncomingPaymentType((p.accounting_invoices as unknown as { invoice_type: string }).invoice_type)
   )
   const outgoingPayments = (payments || []).filter(p =>
-    isOutgoingPaymentType((p.accounting_invoices as { invoice_type: string }).invoice_type)
+    isOutgoingPaymentType((p.accounting_invoices as unknown as { invoice_type: string }).invoice_type)
   )
 
   const sumByDateRange = (arr: Array<{ amount: string; payment_date: string }>, start: string, end: string) =>
@@ -141,8 +141,8 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
 
   const paymentsByCompany = new Map<string, { incoming: number; outgoing: number }>()
   for (const payment of paymentsResult.data || []) {
-    const companyId = (payment.accounting_invoices as { company_id: string; invoice_type: string }).company_id
-    const invoiceType = (payment.accounting_invoices as { company_id: string; invoice_type: string }).invoice_type
+    const companyId = (payment.accounting_invoices as unknown as { company_id: string; invoice_type: string }).company_id
+    const invoiceType = (payment.accounting_invoices as unknown as { company_id: string; invoice_type: string }).invoice_type
     if (!paymentsByCompany.has(companyId)) {
       paymentsByCompany.set(companyId, { incoming: 0, outgoing: 0 })
     }
@@ -186,7 +186,7 @@ export async function fetchMonthlyTrends(): Promise<MonthlyData[]> {
 
   for (const payment of payments || []) {
     const month = format(new Date(payment.payment_date), 'MMM yyyy')
-    const invoiceType = (payment.accounting_invoices as { invoice_type: string }).invoice_type
+    const invoiceType = (payment.accounting_invoices as unknown as { invoice_type: string }).invoice_type
 
     if (!monthlyMap.has(month)) monthlyMap.set(month, { incoming: 0, outgoing: 0 })
 

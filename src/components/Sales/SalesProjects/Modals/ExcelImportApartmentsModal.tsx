@@ -175,6 +175,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
   }
 
   const handleImport = async () => {
+    if (!selectedProject) return
     setImporting(true)
     let successCount = 0
     let failedCount = 0

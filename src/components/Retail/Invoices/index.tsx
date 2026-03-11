@@ -214,13 +214,13 @@ const RetailInvoicesManagement: React.FC = () => {
             />
           </div>
 
-          <Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <Select value={filterType} onChange={(e) => setFilterType(e.target.value as 'all' | 'incoming' | 'outgoing')}>
             <option value="all">Svi tipovi</option>
             <option value="incoming">Ulazni</option>
             <option value="outgoing">Izlazni</option>
           </Select>
 
-          <Select value={filterApproved} onChange={(e) => setFilterApproved(e.target.value)}>
+          <Select value={filterApproved} onChange={(e) => setFilterApproved(e.target.value as 'all' | 'approved' | 'not_approved')}>
             <option value="all">Sve</option>
             <option value="approved">Odobreno</option>
             <option value="not_approved">Nije odobreno</option>

@@ -11,7 +11,7 @@ import {
   deleteMilestone,
   getMilestoneStatsForContract
 } from './Services/siteService'
-import { MilestoneStats } from './types'
+import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
 
 interface MilestoneListProps {
@@ -56,12 +56,16 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: Record<string, unknown>) => {
+  const handleAddMilestone = async (data: MilestoneFormData) => {
     try {
       const milestoneNumber = await getNextMilestoneNumber(contractId)
       await createMilestone({
-        ...data,
-        milestone_number: milestoneNumber
+        contract_id: data.contract_id,
+        milestone_number: milestoneNumber,
+        milestone_name: data.milestone_name,
+        description: data.description,
+        percentage: data.percentage,
+        due_date: data.due_date
       })
       setShowMilestoneModal(false)
       loadMilestones()
@@ -71,7 +75,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleEditMilestone = async (data: { milestone_name: string; description: string; percentage: number; due_date: string }) => {
+  const handleEditMilestone = async (data: MilestoneFormData) => {
     if (!editingMilestone) return
 
     try {

@@ -184,7 +184,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('subcontractor_id', supplierId)
 
       if (data) {
-        const rows = data as Array<{ projects?: { id: string; name: string } }>
+        const rows = data as unknown as Array<{ projects?: { id: string; name: string } }>
         const uniqueProjects = Array.from(
           new Map(
             rows
@@ -201,16 +201,16 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('supplier_id', supplierId)
 
       if (data) {
-        const rows = data as Array<{ retail_project_phases?: { project_id: string; retail_projects?: { id: string; name: string } } }>
+        const rows = data as unknown as Array<{ retail_project_phases?: { project_id: string; retail_projects?: { id: string; name: string } } }>
         const uniqueProjects = Array.from(
           new Map(
             rows
               .filter(c => c.retail_project_phases?.retail_projects)
               .map(c => [
-                c.retail_project_phases.retail_projects.id,
+                c.retail_project_phases!.retail_projects!.id,
                 {
-                  id: c.retail_project_phases.retail_projects.id,
-                  name: c.retail_project_phases.retail_projects.name
+                  id: c.retail_project_phases!.retail_projects!.id,
+                  name: c.retail_project_phases!.retail_projects!.name
                 }
               ])
           ).values()
@@ -229,7 +229,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('project_id', projectId)
 
       if (data) {
-        const rows = data as Array<{ project_phases?: { id: string; phase_name: string } }>
+        const rows = data as unknown as Array<{ project_phases?: { id: string; phase_name: string } }>
         const uniquePhases = Array.from(
           new Map(
             rows
@@ -246,7 +246,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         .eq('supplier_id', supplierId)
 
       if (data) {
-        const rows = data as Array<{ retail_project_phases?: { id: string; phase_name: string; project_id: string } }>
+        const rows = data as unknown as Array<{ retail_project_phases?: { id: string; phase_name: string; project_id: string } }>
         const filteredPhases = rows.filter(c =>
           c.retail_project_phases &&
           c.retail_project_phases.project_id === projectId

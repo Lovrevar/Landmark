@@ -3,6 +3,16 @@ import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 
+type ProjectForReport = Project & {
+  total_spent?: number
+  total_revenue?: number
+  tasks?: Array<{ name: string; status: string; deadline: string }>
+  subcontractors?: Array<{ name: string; progress: number; cost: number; budget_realized: number; deadline?: string; job_description?: string }>
+  apartments?: Array<{ number: string; status: string; price: number; sale_price?: number; buyer_name?: string | null }>
+  total_expenses?: number
+  completion_percentage?: number
+}
+
 // Global helper functions for PDF generation
 let pdf: jsPDF
 let pageWidth: number
@@ -312,7 +322,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.save(fileName)
 }
 
-export const generateProjectDetailReport = async (project: Project) => {
+export const generateProjectDetailReport = async (project: ProjectForReport) => {
   pdf = new jsPDF('p', 'mm', 'a4')
   pageWidth = pdf.internal.pageSize.getWidth()
   pageHeight = pdf.internal.pageSize.getHeight()
@@ -346,9 +356,9 @@ export const generateProjectDetailReport = async (project: Project) => {
     ['Start Date', format(new Date(project.start_date), 'MMMM dd, yyyy')],
     ['End Date', project.end_date ? format(new Date(project.end_date), 'MMMM dd, yyyy') : 'TBD'],
     ['Total Budget', `$${project.budget.toLocaleString()}`],
-    ['Amount Spent', `$${project.total_spent.toLocaleString()}`],
-    ['Revenue Generated', `$${project.total_revenue.toLocaleString()}`],
-    ['Expected Profit', `$${(project.total_revenue - project.total_spent).toLocaleString()}`]
+    ['Amount Spent', `$${(project.total_spent ?? 0).toLocaleString()}`],
+    ['Revenue Generated', `$${(project.total_revenue ?? 0).toLocaleString()}`],
+    ['Expected Profit', `$${((project.total_revenue ?? 0) - (project.total_spent ?? 0)).toLocaleString()}`]
   ]
 
   pdf.setFontSize(10)
@@ -369,10 +379,10 @@ export const generateProjectDetailReport = async (project: Project) => {
     addSection('Tasks Summary')
     
     const tasksByStatus = {
-      'Completed': project.tasks.filter((t: Task) => t.status === 'Completed').length,
-      'In Progress': project.tasks.filter((t: Task) => t.status === 'In Progress').length,
-      'Pending': project.tasks.filter((t: Task) => t.status === 'Pending').length,
-      'Overdue': project.tasks.filter((t: Task) => new Date(t.deadline) < new Date() && t.status !== 'Completed').length
+      'Completed': project.tasks.filter((t) => t.status === 'Completed').length,
+      'In Progress': project.tasks.filter((t) => t.status === 'In Progress').length,
+      'Pending': project.tasks.filter((t) => t.status === 'Pending').length,
+      'Overdue': project.tasks.filter((t) => new Date(t.deadline) < new Date() && t.status !== 'Completed').length
     }
 
     pdf.setFontSize(10)
@@ -389,7 +399,7 @@ export const generateProjectDetailReport = async (project: Project) => {
     yPosition += 30
 
     // Critical tasks
-    const criticalTasks = project.tasks.filter((t: Task) => 
+    const criticalTasks = project.tasks.filter((t) =>
       new Date(t.deadline) < new Date() && t.status !== 'Completed'
     )
 
@@ -400,7 +410,7 @@ export const generateProjectDetailReport = async (project: Project) => {
       pdf.setTextColor(0, 0, 0)
       yPosition += 8
 
-      criticalTasks.forEach((task: Task) => {
+      criticalTasks.forEach((task) => {
         checkPageBreak(6)
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(9)
@@ -418,7 +428,7 @@ export const generateProjectDetailReport = async (project: Project) => {
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
     
-    project.subcontractors.forEach((sub: Subcontractor) => {
+    project.subcontractors.forEach((sub) => {
       checkPageBreak(15)
       
       const progress = sub.progress ?? 0
@@ -452,9 +462,9 @@ export const generateProjectDetailReport = async (project: Project) => {
   if (project.apartments && project.apartments.length > 0) {
     addSection('Sales Performance', [34, 197, 94])
     
-    const soldUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Sold').length
-    const availableUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Available').length
-    const reservedUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Reserved').length
+    const soldUnits = project.apartments.filter((apt) => apt.status === 'Sold').length
+    const availableUnits = project.apartments.filter((apt) => apt.status === 'Available').length
+    const reservedUnits = project.apartments.filter((apt) => apt.status === 'Reserved').length
     
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
@@ -464,8 +474,8 @@ export const generateProjectDetailReport = async (project: Project) => {
       ['Units Sold', `${soldUnits} (${((soldUnits / project.apartments.length) * 100).toFixed(1)}%)`],
       ['Available Units', availableUnits.toString()],
       ['Reserved Units', reservedUnits.toString()],
-      ['Average Price', `$${(project.apartments.reduce((sum: number, apt: Apartment) => sum + apt.price, 0) / project.apartments.length).toLocaleString()}`],
-      ['Total Revenue', `$${project.total_revenue.toLocaleString()}`]
+      ['Average Price', `$${(project.apartments.reduce((sum: number, apt) => sum + apt.price, 0) / project.apartments.length).toLocaleString()}`],
+      ['Total Revenue', `$${(project.total_revenue ?? 0).toLocaleString()}`]
     ]
 
     salesData.forEach(([label, value], index) => {
@@ -490,22 +500,22 @@ export const generateProjectDetailReport = async (project: Project) => {
   
   const recommendations = []
   
-  if ((project.total_expenses / project.budget) > 0.9) {
+  if (((project.total_expenses ?? 0) / project.budget) > 0.9) {
     recommendations.push('• Monitor budget closely - approaching limit')
   }
   
-  if (project.tasks?.some((t: Task) => new Date(t.deadline) < new Date() && t.status !== 'Completed')) {
+  if (project.tasks?.some((t) => new Date(t.deadline) < new Date() && t.status !== 'Completed')) {
     recommendations.push('• Address overdue tasks immediately')
   }
   
-  if (project.subcontractors?.some((s: Subcontractor) => {
+  if (project.subcontractors?.some((s) => {
     const progress = (s.cost ?? 0) > 0 ? Math.min(100, ((s.budget_realized ?? 0) / (s.cost ?? 1)) * 100) : 0
     return s.deadline ? new Date(s.deadline) < new Date() && progress < 100 : false
   })) {
     recommendations.push('• Follow up with overdue subcontractors')
   }
   
-  if (project.completion_percentage < 50 && project.status === 'In Progress') {
+  if ((project.completion_percentage ?? 0) < 50 && project.status === 'In Progress') {
     recommendations.push('• Accelerate project timeline to meet deadlines')
   }
   

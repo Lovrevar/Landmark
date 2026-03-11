@@ -104,7 +104,7 @@ export const useInvoices = () => {
         pageSize
       )
 
-      setInvoices(result.invoices)
+      setInvoices(result.invoices as unknown as Invoice[])
       setTotalCount(result.stats.filtered_count)
       setFilteredTotalCount(result.stats.filtered_count)
       setFilteredUnpaidAmount(result.stats.filtered_unpaid_sum)

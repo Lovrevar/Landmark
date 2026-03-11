@@ -257,12 +257,12 @@ const AccountingInvoices: React.FC = () => {
         milestones={milestones}
         refunds={refunds}
         invoiceCategories={invoiceCategories}
-        customerApartments={customerApartments}
+        customerApartments={customerApartments as unknown as { id: string; number: string; price: number }[]}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        onFormChange={setFormData}
+        onFormChange={(data) => setFormData(data as unknown as typeof formData)}
         getCustomerProjects={(customerId) => getCustomerProjects(customerId, projects, customerSales)}
-        getCustomerApartmentsByProject={(customerId, projectId) => getCustomerApartmentsByProject(customerId, projectId, customerApartments)}
+        getCustomerApartmentsByProject={(customerId, projectId) => getCustomerApartmentsByProject(customerId, projectId, customerApartments) as unknown as { id: string; number: string; price: number }[]}
         getSupplierProjects={(supplierId) => getSupplierProjects(supplierId, projects, contracts)}
         getSupplierContractsByProject={(supplierId, projectId) => getSupplierContractsByProject(supplierId, projectId, contracts)}
         getMilestonesByContract={(contractId) => getMilestonesByContract(contractId, milestones)}
@@ -278,7 +278,7 @@ const AccountingInvoices: React.FC = () => {
         creditAllocations={creditAllocations}
         onClose={handleClosePaymentModal}
         onSubmit={handlePaymentSubmit}
-        onFormChange={setPaymentFormData}
+        onFormChange={(data) => setPaymentFormData(data as unknown as typeof paymentFormData)}
         onCreditChange={fetchCreditAllocationsHandler}
       />
 

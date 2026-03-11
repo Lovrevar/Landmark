@@ -50,7 +50,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
         povrsina_otvoreno: apartment.povrsina_otvoreno ?? null,
         povrsina_ot_sa_koef: apartment.povrsina_ot_sa_koef ?? null
       })
-      setContractFields(contractFieldsFromData(apartment))
+      setContractFields(contractFieldsFromData(apartment as unknown as Record<string, unknown>))
     }
   }, [apartment])
 

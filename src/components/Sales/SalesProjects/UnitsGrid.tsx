@@ -9,7 +9,7 @@ import {
   OnSellUnitCallback,
   OnLinkApartmentCallback
 } from './types'
-import { Garage, Repository } from '../../../lib/supabase'
+import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 
 interface UnitsGridProps {
@@ -221,7 +221,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 <div className="flex space-x-1">
                   {activeUnitType === 'apartment' && (
                     <button
-                      onClick={() => onLinkApartment(unit)}
+                      onClick={() => onLinkApartment(unit as unknown as Apartment)}
                       className="p-1 text-gray-400 hover:text-blue-600"
                       title="Link garage/repository"
                     >
@@ -247,13 +247,13 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   <span className="text-sm font-medium text-blue-600">
                     €{(unit.price_per_m2 && unit.price_per_m2 > 0
                       ? unit.price_per_m2
-                      : unit.size_m2 > 0 ? Math.round(unit.price / unit.size_m2) : 0
+                      : (unit.size_m2 ?? 0) > 0 ? Math.round((unit.price ?? 0) / (unit.size_m2 ?? 1)) : 0
                     ).toLocaleString('hr-HR')}/m²
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? 'Apartment Price:' : 'Total Price:'}</span>
-                  <span className="text-sm font-bold text-green-600">€{unit.price.toLocaleString('hr-HR')}</span>
+                  <span className="text-sm font-bold text-green-600">€{(unit.price ?? 0).toLocaleString('hr-HR')}</span>
                 </div>
 
                 {activeUnitType === 'apartment' && hasLinkedUnits && (
@@ -357,7 +357,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                           Available
                         </Button>
                       )}
-                      <Button size="sm" variant="success" onClick={() => onSellUnit(unit, activeUnitType)}>
+                      <Button size="sm" variant="success" onClick={() => onSellUnit(unit as unknown as (Apartment | Garage | Repository), activeUnitType)}>
                         Sell
                       </Button>
                     </div>

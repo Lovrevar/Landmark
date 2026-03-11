@@ -88,7 +88,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           vat_amount: data.vat_amount || 0,
           total_amount: data.total_amount || 0,
           end_date: data.end_date,
-          contract_type_name: (data.contract_types as { name: string } | null)?.name,
+          contract_type_name: (data.contract_types as unknown as { name: string } | null)?.name,
           status: data.status
         })
       }

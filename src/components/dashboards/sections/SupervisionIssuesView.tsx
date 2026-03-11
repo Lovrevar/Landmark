@@ -36,7 +36,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                   <div className="text-right">
                     <p className="text-xs text-gray-600">Deadline was</p>
                     <p className="text-sm font-medium text-red-700">
-                      {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -68,7 +68,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                   <div className="text-right">
                     <p className="text-xs text-gray-600">Due</p>
                     <p className="text-sm font-medium text-orange-700">
-                      {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>

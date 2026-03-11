@@ -16,16 +16,16 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   project
 }) => {
   const [formData, setFormData] = useState({
-    land_plot_id: project?.land_plot_id || '',
-    name: project?.name || '',
-    location: project?.location || '',
-    plot_number: project?.plot_number || '',
-    total_area_m2: project?.total_area_m2 || '',
-    purchase_price: project?.purchase_price || '',
-    status: project?.status || 'Planning',
-    start_date: project?.start_date || '',
-    end_date: project?.end_date || '',
-    notes: project?.notes || ''
+    land_plot_id: String(project?.land_plot_id || ''),
+    name: String(project?.name || ''),
+    location: String(project?.location || ''),
+    plot_number: String(project?.plot_number || ''),
+    total_area_m2: String(project?.total_area_m2 || ''),
+    purchase_price: String(project?.purchase_price || ''),
+    status: String(project?.status || 'Planning'),
+    start_date: String(project?.start_date || ''),
+    end_date: String(project?.end_date || ''),
+    notes: String(project?.notes || '')
   })
   const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
   const [loading, setLoading] = useState(false)
@@ -89,9 +89,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       }
 
       if (project) {
-        await retailProjectService.updateProject(project.id, dataToSubmit)
+        await retailProjectService.updateProject(project.id as string, { ...dataToSubmit, status: dataToSubmit.status as 'Planning' | 'In Progress' | 'Completed' | 'On Hold' })
       } else {
-        const newProject = await retailProjectService.createProject(dataToSubmit)
+        const newProject = await retailProjectService.createProject({ ...dataToSubmit, status: dataToSubmit.status as 'Planning' | 'In Progress' | 'Completed' | 'On Hold' })
         await retailProjectService.createDefaultPhases(newProject.id)
       }
 
@@ -111,7 +111,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     setError(null)
 
     try {
-      await retailProjectService.deleteProject(project.id)
+      await retailProjectService.deleteProject(project.id as string)
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Greška pri brisanju projekta')
@@ -316,7 +316,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         title="Potvrda brisanja"
         message={
           <>
-            Jeste li sigurni da želite obrisati projekt "<strong>{project?.name}</strong>"?
+            Jeste li sigurni da želite obrisati projekt "<strong>{String(project?.name || '')}</strong>"?
             <br /><br />
             Ova akcija će obrisati projekt i sve povezane podatke (faze, ugovore, milestones). Ova akcija se ne može poništiti.
           </>
