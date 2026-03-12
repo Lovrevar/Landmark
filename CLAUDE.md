@@ -77,3 +77,8 @@ There is a shared component library at `src/components/ui/` with ~20 components 
 
 - `src/components/Site/` — canonical modular structure example
 - `src/components/Sales/` — well-organised feature module
+
+## Codebase Index
+Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
+When working in a specific module, read the relevant file in `docs/modules/` before making changes.
+After creating new files or doing major updates, update the relevant docs.
