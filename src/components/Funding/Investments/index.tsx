@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import React from 'react'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
@@ -7,357 +6,30 @@ import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
 import CreditExpenses from './CreditExpenses'
-
-interface BankCredit {
-  id: string
-  bank_id: string
-  project_id: string | null
-  company_id: string | null
-  credit_name: string
-  credit_type: string
-  amount: number
-  used_amount: number
-  repaid_amount: number
-  outstanding_balance: number
-  interest_rate: number
-  start_date: string
-  maturity_date: string
-  usage_expiration_date: string | null
-  status: string
-  purpose: string
-  disbursed_to_account?: boolean
-  disbursed_to_bank_account_id?: string
-  bank?: {
-    id: string
-    name: string
-  }
-  project?: {
-    id: string
-    name: string
-  }
-  company?: {
-    id: string
-    name: string
-  }
-}
-
-interface CreditAllocation {
-  id: string
-  credit_id: string
-  project_id: string | null
-  allocated_amount: number
-  used_amount: number
-  description: string | null
-  created_at: string
-  allocation_type: 'project' | 'opex' | 'refinancing'
-  refinancing_entity_type?: 'company' | 'bank' | null
-  refinancing_entity_id?: string | null
-  project?: {
-    id: string
-    name: string
-  }
-  refinancing_company?: {
-    id: string
-    name: string
-  }
-  refinancing_bank?: {
-    id: string
-    name: string
-  }
-}
-
-interface Project {
-  id: string
-  name: string
-}
-
-interface Company {
-  id: string
-  name: string
-}
-
-interface Bank {
-  id: string
-  name: string
-}
+import { useCreditManagement } from './hooks/useCreditManagement'
 
 const CreditsManagement: React.FC = () => {
-  const [credits, setCredits] = useState<BankCredit[]>([])
-  const [allocations, setAllocations] = useState<Map<string, CreditAllocation[]>>(new Map())
-  const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
-  const [expandedCredits, setExpandedCredits] = useState<Set<string>>(new Set())
-  const [expandedAllocations, setExpandedAllocations] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
-  const [showAllocationModal, setShowAllocationModal] = useState(false)
-  const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
-  const [projects, setProjects] = useState<Project[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-
-  const [allocationForm, setAllocationForm] = useState({
-    allocation_type: 'project' as 'project' | 'opex' | 'refinancing',
-    project_id: '',
-    refinancing_entity_type: 'company' as 'company' | 'bank',
-    refinancing_entity_id: '',
-    allocated_amount: 0,
-    description: ''
-  })
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      await Promise.all([fetchCredits(), fetchProjects(), fetchCompanies(), fetchBanks()])
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchCredits = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bank_credits')
-        .select(`
-          *,
-          bank:banks(id, name),
-          project:projects(id, name),
-          company:accounting_companies(id, name)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      setCredits(data || [])
-
-      if (data) {
-        const creditIds = data.map((c) => c.id)
-        await fetchDisbursedAmounts(creditIds)
-        for (const credit of data) {
-          await fetchAllocationsForCredit(credit.id)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching credits:', error)
-    }
-  }
-
-  const fetchAllocationsForCredit = async (creditId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('credit_allocations')
-        .select(`
-          *,
-          project:projects(id, name)
-        `)
-        .eq('credit_id', creditId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      const enrichedData = await Promise.all((data || []).map(async (allocation) => {
-        if (allocation.allocation_type === 'refinancing' && allocation.refinancing_entity_id) {
-          if (allocation.refinancing_entity_type === 'company') {
-            const { data: company } = await supabase
-              .from('accounting_companies')
-              .select('id, name')
-              .eq('id', allocation.refinancing_entity_id)
-              .maybeSingle()
-
-            return { ...allocation, refinancing_company: company }
-          } else if (allocation.refinancing_entity_type === 'bank') {
-            const { data: bank } = await supabase
-              .from('banks')
-              .select('id, name')
-              .eq('id', allocation.refinancing_entity_id)
-              .maybeSingle()
-
-            return { ...allocation, refinancing_bank: bank }
-          }
-        }
-        return allocation
-      }))
-
-      setAllocations(prev => {
-        const next = new Map(prev)
-        next.set(creditId, enrichedData)
-        return next
-      })
-    } catch (error) {
-      console.error('Error fetching allocations:', error)
-    }
-  }
-
-  const fetchDisbursedAmounts = async (creditIds: string[]) => {
-    try {
-      const { data, error } = await supabase
-        .from('accounting_invoices')
-        .select('bank_credit_id, total_amount, credit_allocation_id')
-        .eq('invoice_type', 'OUTGOING_BANK')
-        .in('bank_credit_id', creditIds)
-
-      if (error) throw error
-
-      const map = new Map<string, number>()
-      for (const row of data || []) {
-        if (!row.bank_credit_id) continue
-        if (!row.credit_allocation_id) {
-          map.set(row.bank_credit_id, (map.get(row.bank_credit_id) || 0) + Number(row.total_amount))
-        }
-      }
-      setDisbursedAmounts(map)
-    } catch (error) {
-      console.error('Error fetching disbursed amounts:', error)
-    }
-  }
-
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name', { ascending: true })
-
-      if (error) throw error
-
-      setProjects(data || [])
-    } catch (error) {
-      console.error('Error fetching projects:', error)
-    }
-  }
-
-  const fetchCompanies = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('accounting_companies')
-        .select('id, name')
-        .order('name', { ascending: true })
-
-      if (error) throw error
-
-      setCompanies(data || [])
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-    }
-  }
-
-  const fetchBanks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('banks')
-        .select('id, name')
-        .order('name', { ascending: true })
-
-      if (error) throw error
-
-      setBanks(data || [])
-    } catch (error) {
-      console.error('Error fetching banks:', error)
-    }
-  }
-
-  const toggleCredit = (creditId: string) => {
-    setExpandedCredits(prev => {
-      const next = new Set(prev)
-      if (next.has(creditId)) {
-        next.delete(creditId)
-      } else {
-        next.add(creditId)
-      }
-      return next
-    })
-  }
-
-  const toggleAllocation = (allocationKey: string) => {
-    setExpandedAllocations(prev => {
-      const next = new Set(prev)
-      if (next.has(allocationKey)) {
-        next.delete(allocationKey)
-      } else {
-        next.add(allocationKey)
-      }
-      return next
-    })
-  }
-
-  const openAllocationModal = (credit: BankCredit) => {
-    setSelectedCredit(credit)
-    setAllocationForm({
-      allocation_type: 'project',
-      project_id: '',
-      refinancing_entity_type: 'company',
-      refinancing_entity_id: '',
-      allocated_amount: 0,
-      description: ''
-    })
-    setShowAllocationModal(true)
-  }
-
-  const handleCreateAllocation = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedCredit) return
-
-    try {
-      const payload: {
-        credit_id: string
-        allocation_type: string
-        allocated_amount: number
-        description: string
-        project_id: string | null
-        refinancing_entity_type: string | null
-        refinancing_entity_id: string | null
-      } = {
-        credit_id: selectedCredit.id,
-        allocation_type: allocationForm.allocation_type,
-        allocated_amount: allocationForm.allocated_amount,
-        description: allocationForm.description,
-        project_id: null,
-        refinancing_entity_type: null,
-        refinancing_entity_id: null
-      }
-
-      if (allocationForm.allocation_type === 'project') {
-        payload.project_id = allocationForm.project_id || null
-      } else if (allocationForm.allocation_type === 'refinancing') {
-        payload.refinancing_entity_type = allocationForm.refinancing_entity_type
-        payload.refinancing_entity_id = allocationForm.refinancing_entity_id
-      }
-
-      const { error } = await supabase
-        .from('credit_allocations')
-        .insert(payload)
-
-      if (error) throw error
-
-      await fetchAllocationsForCredit(selectedCredit.id)
-      setShowAllocationModal(false)
-    } catch (error) {
-      console.error('Error creating allocation:', error)
-      alert('Error creating allocation')
-    }
-  }
-
-  const handleDeleteAllocation = async (allocationId: string, creditId: string) => {
-    if (!confirm('Are you sure you want to delete this allocation?')) return
-
-    try {
-      const { error } = await supabase
-        .from('credit_allocations')
-        .delete()
-        .eq('id', allocationId)
-
-      if (error) throw error
-
-      await fetchAllocationsForCredit(creditId)
-    } catch (error) {
-      console.error('Error deleting allocation:', error)
-    }
-  }
-
+  const {
+    credits,
+    allocations,
+    disbursedAmounts,
+    expandedCredits,
+    expandedAllocations,
+    loading,
+    projects,
+    companies,
+    banks,
+    showAllocationModal,
+    selectedCredit,
+    allocationForm,
+    setAllocationForm,
+    toggleCredit,
+    toggleAllocation,
+    openAllocationModal,
+    closeAllocationModal,
+    handleCreateAllocation,
+    handleDeleteAllocation,
+  } = useCreditManagement()
 
   if (loading) {
     return <LoadingSpinner message="Loading credits..." />
@@ -612,8 +284,8 @@ const CreditsManagement: React.FC = () => {
         </div>
       )}
 
-      <Modal show={showAllocationModal && !!selectedCredit} onClose={() => setShowAllocationModal(false)} size="sm">
-        <Modal.Header title="Nova namjena kredita" onClose={() => setShowAllocationModal(false)} />
+      <Modal show={showAllocationModal && !!selectedCredit} onClose={closeAllocationModal} size="sm">
+        <Modal.Header title="Nova namjena kredita" onClose={closeAllocationModal} />
 
         <form onSubmit={handleCreateAllocation}>
           <Modal.Body>
@@ -633,7 +305,7 @@ const CreditsManagement: React.FC = () => {
                   ...allocationForm,
                   allocation_type: e.target.value as 'project' | 'opex' | 'refinancing',
                   project_id: '',
-                  refinancing_entity_id: ''
+                  refinancing_entity_id: '',
                 })}
               >
                 <option value="project">Projekt</option>
@@ -651,9 +323,7 @@ const CreditsManagement: React.FC = () => {
                 >
                   <option value="">Odaberi projekt...</option>
                   {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
+                    <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
                 </Select>
               </FormField>
@@ -667,7 +337,7 @@ const CreditsManagement: React.FC = () => {
                     onChange={(e) => setAllocationForm({
                       ...allocationForm,
                       refinancing_entity_type: e.target.value as 'company' | 'bank',
-                      refinancing_entity_id: ''
+                      refinancing_entity_id: '',
                     })}
                   >
                     <option value="company">Firma</option>
@@ -683,16 +353,8 @@ const CreditsManagement: React.FC = () => {
                   >
                     <option value="">Odaberi {allocationForm.refinancing_entity_type === 'company' ? 'firmu' : 'banku'}...</option>
                     {allocationForm.refinancing_entity_type === 'company'
-                      ? companies.map((company) => (
-                          <option key={company.id} value={company.id}>
-                            {company.name}
-                          </option>
-                        ))
-                      : banks.map((bank) => (
-                          <option key={bank.id} value={bank.id}>
-                            {bank.name}
-                          </option>
-                        ))
+                      ? companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)
+                      : banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)
                     }
                   </Select>
                 </FormField>
@@ -719,7 +381,7 @@ const CreditsManagement: React.FC = () => {
           </Modal.Body>
 
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={() => setShowAllocationModal(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={closeAllocationModal}>Cancel</Button>
             <Button variant="primary" type="submit">Create Allocation</Button>
           </Modal.Footer>
         </form>

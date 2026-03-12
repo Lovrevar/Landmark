@@ -3,6 +3,7 @@ import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
 import { Modal, Button } from '../../../ui'
+import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -65,38 +66,6 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
     }
-  }
-
-  const parseNumber = (value: unknown): number => {
-    if (value === null || value === undefined || value === '') return 0
-    const str = String(value).replace(/\./g, '').replace(',', '.')
-    return parseFloat(str) || 0
-  }
-
-  const parseDate = (value: unknown): string | null => {
-    if (value === null || value === undefined || value === '') return null
-    if (typeof value === 'number') {
-      const date = new Date(Math.round((value - 25569) * 86400 * 1000))
-      return date.toISOString().split('T')[0]
-    }
-    const str = String(value).trim()
-    if (!str) return null
-    const parts = str.split('.')
-    if (parts.length === 3) {
-      const [d, m, y] = parts
-      return `${y.padStart(4, '20')}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
-    }
-    const parsed = new Date(str)
-    if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0]
-    return null
-  }
-
-  const detectPaymentType = (row: unknown[]): 'credit' | 'installments' | null => {
-    const hasInstallments = row[21] || row[22] || row[23] || row[24]
-    const hasCredit = row[25]
-    if (hasInstallments) return 'installments'
-    if (hasCredit) return 'credit'
-    return null
   }
 
   const parseFile = async () => {

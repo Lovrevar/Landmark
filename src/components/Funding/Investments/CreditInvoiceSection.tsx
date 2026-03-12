@@ -1,12 +1,11 @@
 import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { supabase } from '../../../lib/supabase'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
 import { useLazySection } from './hooks/useLazySection'
 import { INVOICE_STATUS_CONFIG } from './constants'
-import { mapCreditInvoice } from './types'
-import type { RawCreditInvoice, CreditInvoiceRow } from './types'
+import { fetchCreditInvoices } from './services/creditService'
+import type { CreditInvoiceRow } from './types'
 
 const COLOR_CLASSES = {
   emerald: { header: 'bg-emerald-50', text: 'text-emerald-700', bold: 'text-emerald-700', footer: 'bg-emerald-50' },
@@ -39,46 +38,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
 }) => {
   const colors = COLOR_CLASSES[accentColor]
 
-  const fetcher = async (): Promise<CreditInvoiceRow[]> => {
-    const selectFields = showAllocation
-      ? `
-          id,
-          invoice_number,
-          issue_date,
-          total_amount,
-          status,
-          description,
-          company:accounting_companies(name),
-          bank:banks(name),
-          payments:accounting_payments(payment_date, amount),
-          credit_allocation:credit_allocations(
-            allocation_type,
-            project:projects(name)
-          )
-        `
-      : `
-          id,
-          invoice_number,
-          issue_date,
-          total_amount,
-          status,
-          description,
-          company:accounting_companies(name),
-          bank:banks(name),
-          payments:accounting_payments(payment_date, amount)
-        `
-
-    const { data, error } = await supabase
-      .from('accounting_invoices')
-      .select(selectFields)
-      .eq('invoice_type', invoiceType)
-      .eq('bank_credit_id', creditId)
-      .order('issue_date', { ascending: false })
-
-    if (error) throw error
-
-    return (data as unknown as RawCreditInvoice[] || []).map(mapCreditInvoice)
-  }
+  const fetcher = () => fetchCreditInvoices(creditId, invoiceType, showAllocation)
 
   const { expanded, loading, fetched, items: invoices, toggle } = useLazySection(fetcher)
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
 import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader } from '../../ui'
@@ -115,13 +114,8 @@ const ApartmentManagement: React.FC = () => {
     if (!selectedApartment) return
 
     try {
-      const { data: sale } = await supabase
-        .from('sales')
-        .select('id')
-        .eq('apartment_id', selectedApartment.id)
-        .maybeSingle()
-
-      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, sale?.id || null)
+      const saleId = await apartmentService.fetchSaleIdForApartment(selectedApartment.id)
+      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, saleId)
       setShowEditPaymentModal(false)
       setEditingPayment(null)
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import {
   Bell,
   AlertTriangle,
@@ -11,117 +11,27 @@ import {
   EyeOff,
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
-import { supabase } from '../../../lib/supabase'
 import { LoadingSpinner, Badge, Button, EmptyState } from '../../ui'
-import {
-  fetchPaymentNotifications,
-  calculateNotificationStats,
-  dismissNotification,
-  dismissMilestoneNotification,
-  updateOverdueNotifications,
-  getNotificationUrgency,
-  PaymentNotification,
-  NotificationStats
-} from './Services/paymentNotificationService'
+import { getNotificationUrgency, type PaymentNotification } from './Services/paymentNotificationService'
+import { usePaymentNotifications } from './hooks/usePaymentNotifications'
 
 interface PaymentNotificationsProps {
   onPaymentClick?: (notification: PaymentNotification) => void
 }
 
 const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentClick }) => {
-  const [notifications, setNotifications] = useState<PaymentNotification[]>([])
-  const [filteredNotifications, setFilteredNotifications] = useState<PaymentNotification[]>([])
-  const [stats, setStats] = useState<NotificationStats>({
-    totalPending: 0,
-    totalOverdue: 0,
-    dueThisWeek: 0,
-    dueThisMonth: 0,
-    totalAmountDue: 0,
-    totalOverdueAmount: 0
-  })
-  const [loading, setLoading] = useState(true)
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'overdue' | 'week' | 'month'>('all')
-  const [showDismissed, setShowDismissed] = useState(false)
-  const [expandedNotification, setExpandedNotification] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadNotifications()
-    const interval = setInterval(() => {
-      updateOverdueNotifications()
-      loadNotifications()
-    }, 60000)
-
-    return () => clearInterval(interval)
-  }, [showDismissed])
-
-  useEffect(() => {
-    applyFilter()
-  }, [notifications, selectedFilter])
-
-  const loadNotifications = async () => {
-    setLoading(true)
-    try {
-      const data = await fetchPaymentNotifications({
-        status: showDismissed ? undefined : undefined
-      })
-
-      const filtered = showDismissed
-        ? data
-        : data.filter(n => n.status !== 'dismissed' && n.status !== 'completed')
-
-      setNotifications(filtered)
-      setStats(calculateNotificationStats(filtered))
-    } catch (error) {
-      console.error('Error loading notifications:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const applyFilter = () => {
-    let filtered = [...notifications]
-
-    switch (selectedFilter) {
-      case 'overdue':
-        filtered = filtered.filter(n => n.status === 'overdue')
-        break
-      case 'week':
-        filtered = filtered.filter(n => {
-          const urgency = getNotificationUrgency(n)
-          return urgency.daysRemaining <= 7 && urgency.daysRemaining >= 0
-        })
-        break
-      case 'month':
-        filtered = filtered.filter(n => {
-          const urgency = getNotificationUrgency(n)
-          return urgency.daysRemaining <= 30 && urgency.daysRemaining >= 0
-        })
-        break
-      default:
-        break
-    }
-
-    setFilteredNotifications(filtered)
-  }
-
-  const handleDismiss = async (notification: PaymentNotification) => {
-    try {
-      if (notification.payment_source === 'bank') {
-        const { data: userData } = await supabase.auth.getUser()
-        const userId = userData.user?.id
-        if (!userId) return
-        await dismissNotification(notification.id, userId)
-      } else {
-        // For subcontractor milestones, mark them as "completed" so they don't show in pending
-        await dismissMilestoneNotification(notification.milestone_id!)
-      }
-
-      await loadNotifications()
-    } catch (error) {
-      console.error('Error dismissing notification:', error)
-      alert('Failed to dismiss notification')
-    }
-  }
+  const {
+    loading,
+    stats,
+    filteredNotifications,
+    selectedFilter,
+    setSelectedFilter,
+    showDismissed,
+    setShowDismissed,
+    expandedNotification,
+    setExpandedNotification,
+    handleDismiss,
+  } = usePaymentNotifications()
 
   const getUrgencyColor = (level: string) => {
     switch (level) {

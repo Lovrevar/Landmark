@@ -1,3 +1,52 @@
+export interface BankCredit {
+  id: string
+  bank_id: string
+  project_id: string | null
+  company_id: string | null
+  credit_name: string
+  credit_type: string
+  amount: number
+  used_amount: number
+  repaid_amount: number
+  outstanding_balance: number
+  interest_rate: number
+  start_date: string
+  maturity_date: string
+  usage_expiration_date: string | null
+  status: string
+  purpose: string
+  disbursed_to_account?: boolean
+  disbursed_to_bank_account_id?: string
+  bank?: { id: string; name: string }
+  project?: { id: string; name: string }
+  company?: { id: string; name: string }
+}
+
+export interface CreditAllocation {
+  id: string
+  credit_id: string
+  project_id: string | null
+  allocated_amount: number
+  used_amount: number
+  description: string | null
+  created_at: string
+  allocation_type: 'project' | 'opex' | 'refinancing'
+  refinancing_entity_type?: 'company' | 'bank' | null
+  refinancing_entity_id?: string | null
+  project?: { id: string; name: string }
+  refinancing_company?: { id: string; name: string }
+  refinancing_bank?: { id: string; name: string }
+}
+
+export interface AllocationFormData {
+  allocation_type: 'project' | 'opex' | 'refinancing'
+  project_id: string
+  refinancing_entity_type: 'company' | 'bank'
+  refinancing_entity_id: string
+  allocated_amount: number
+  description: string
+}
+
 export interface RawPaymentEntry {
   payment_date: string
   amount: number

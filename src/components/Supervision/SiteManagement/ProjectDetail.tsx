@@ -3,31 +3,8 @@ import { ArrowLeft, Building2, Settings, CreditCard } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase } from './types'
 import { PhaseCard } from './PhaseCard'
-import { supabase } from '../../../lib/supabase'
+import { fetchCreditAllocations, type CreditAllocation } from './Services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
-
-interface Company {
-  id: string
-  name: string
-}
-
-interface CreditAllocation {
-  id: string
-  allocated_amount: number
-  used_amount: number
-  description: string | null
-  bank_credit: {
-    id: string
-    credit_name: string
-    amount: number
-    used_amount: number
-    repaid_amount: number
-    outstanding_balance: number
-    interest_rate: number
-    disbursed_to_account?: boolean
-    company: Company
-  }
-}
 
 interface ProjectDetailProps {
   project: ProjectWithPhases
@@ -74,41 +51,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [, setLoadingCredits] = useState(false)
 
   useEffect(() => {
-    fetchProjectCreditAllocations()
+    setLoadingCredits(true)
+    fetchCreditAllocations(project.id)
+      .then(setCreditAllocations)
+      .catch(err => console.error('Error fetching project credit allocations:', err))
+      .finally(() => setLoadingCredits(false))
   }, [project.id])
-
-  const fetchProjectCreditAllocations = async () => {
-    try {
-      setLoadingCredits(true)
-      const { data, error } = await supabase
-        .from('credit_allocations')
-        .select(`
-          id,
-          allocated_amount,
-          used_amount,
-          description,
-          bank_credit:bank_credits!credit_allocations_credit_id_fkey(
-            id,
-            credit_name,
-            amount,
-            used_amount,
-            repaid_amount,
-            outstanding_balance,
-            interest_rate,
-            disbursed_to_account,
-            company:accounting_companies(id, name)
-          )
-        `)
-        .eq('project_id', project.id)
-
-      if (error) throw error
-      setCreditAllocations((data || []) as unknown as CreditAllocation[])
-    } catch (error) {
-      console.error('Error fetching project credit allocations:', error)
-    } finally {
-      setLoadingCredits(false)
-    }
-  }
 
   return (
     <div>

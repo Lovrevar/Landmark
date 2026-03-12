@@ -1,238 +1,22 @@
-import React, { useState, useEffect } from 'react'
-import { supabase, Contract } from '../../../lib/supabase'
-import { useAuth } from '../../../contexts/AuthContext'
+import React from 'react'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
-
-interface PaymentWithDetails {
-  id: string
-  amount: number
-  payment_date: string
-  created_at: string
-  notes?: string
-  company_bank_account_id?: string
-  cesija_company_id?: string
-  is_cesija?: boolean
-  contract?: Contract
-  subcontractor_name?: string
-  project_name?: string
-  phase_name?: string
-  paid_by_company_name?: string
-}
+import { useSupervisionPayments } from './hooks/useSupervisionPayments'
 
 const PaymentsManagement: React.FC = () => {
-  useAuth()
-  const [payments, setPayments] = useState<PaymentWithDetails[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
-  const [stats, setStats] = useState({
-    totalPayments: 0,
-    totalAmount: 0,
-    paymentsThisMonth: 0,
-    amountThisMonth: 0
-  })
-
-  useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  const fetchPayments = async () => {
-    setLoading(true)
-    try {
-      // Fetch payments from accounting_payments with INCOMING_SUPPLIER invoices for SUBCONTRACTOR category
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          *,
-          invoice:accounting_invoices(
-            id,
-            invoice_number,
-            invoice_type,
-            invoice_category,
-            supplier_id,
-            project_id,
-            milestone_id,
-            total_amount,
-            status
-          ),
-          company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(
-            id,
-            bank_name,
-            company:accounting_companies(
-              id,
-              name
-            )
-          ),
-          cesija_company:accounting_companies!accounting_payments_cesija_company_id_fkey(
-            id,
-            name
-          ),
-          credit:bank_credits!accounting_payments_credit_id_fkey(
-            id,
-            credit_name,
-            company:accounting_companies(
-              id,
-              name
-            )
-          )
-        `)
-        .eq('invoice.invoice_type', 'INCOMING_SUPPLIER')
-        .eq('invoice.invoice_category', 'SUBCONTRACTOR')
-        .not('invoice.project_id', 'is', null)
-        .order('payment_date', { ascending: false })
-
-      if (paymentsError) throw paymentsError
-
-      // Fetch subcontractors (suppliers)
-      const { data: subcontractorsData, error: subError } = await supabase
-        .from('subcontractors')
-        .select('id, name')
-
-      if (subError) throw subError
-
-      // Fetch contracts with phase info
-      type ContractWithPhase = { id: string; contract_number: string; subcontractor_id: string; phase_id: string | null; project_phases?: { id: string; phase_name: string } | null }
-      const { data: contractsRaw, error: contractsError } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_number,
-          subcontractor_id,
-          phase_id,
-          project_phases(id, phase_name)
-        `)
-      const contractsData = contractsRaw as unknown as ContractWithPhase[] | null
-
-      if (contractsError) throw contractsError
-
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-
-      if (projectsError) throw projectsError
-
-      // Enrich payments with names
-      const enrichedPayments = (paymentsData || []).map((payment: Record<string, unknown> & { id: string; amount: string; payment_date: string; created_at: string; description?: string; company_bank_account_id?: string; cesija_company_id?: string; is_cesija?: boolean; invoice?: { supplier_id?: string; project_id?: string; contract_id?: string } | null; cesija_company?: { name: string } | null; credit?: { company?: { name: string } } | null; company_bank_account?: { company?: { name: string } } | null }) => {
-        const invoice = payment.invoice
-        if (!invoice) return null
-
-        const subcontractor = subcontractorsData?.find(s => s.id === invoice.supplier_id)
-        const project = projectsData?.find(p => p.id === invoice.project_id)
-
-        // Find contract either from invoice.contract_id or from contracts linked to this subcontractor
-        let contract = contractsData?.find(c => c.id === invoice.contract_id)
-        if (!contract) {
-          // Fallback: find any contract for this subcontractor on this project
-          contract = contractsData?.find(c =>
-            c.subcontractor_id === invoice.supplier_id
-          )
-        }
-
-        const phaseName = contract?.project_phases?.phase_name || null
-
-        // Determine paid by company name
-        let paidByCompanyName = '-'
-        if (payment.is_cesija && payment.cesija_company) {
-          paidByCompanyName = payment.cesija_company.name
-        } else if (payment.credit?.company) {
-          paidByCompanyName = payment.credit.company.name
-        } else if (payment.company_bank_account?.company) {
-          paidByCompanyName = payment.company_bank_account.company.name
-        }
-
-        return {
-          id: payment.id,
-          amount: parseFloat(payment.amount),
-          payment_date: payment.payment_date,
-          created_at: payment.created_at,
-          notes: payment.description,
-          company_bank_account_id: payment.company_bank_account_id,
-          cesija_company_id: payment.cesija_company_id,
-          is_cesija: payment.is_cesija,
-          subcontractor_name: subcontractor?.name || 'Unknown',
-          project_name: project?.name || 'No Project',
-          phase_name: phaseName,
-          contract: contract ? {
-            id: contract.id,
-            contract_number: contract.contract_number,
-            subcontractor_id: contract.subcontractor_id,
-            phase_id: contract.phase_id
-          } as Contract : null,
-          paid_by_company_name: paidByCompanyName
-        }
-      }).filter(Boolean) as PaymentWithDetails[]
-
-      setPayments(enrichedPayments)
-      calculateStats(enrichedPayments)
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-      alert('Failed to load payments')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const calculateStats = (paymentsData: PaymentWithDetails[]) => {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    const totalAmount = paymentsData.reduce((sum, p) => sum + p.amount, 0)
-    const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
-    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0)
-
-    setStats({
-      totalPayments: paymentsData.length,
-      totalAmount,
-      paymentsThisMonth: paymentsThisMonth.length,
-      amountThisMonth
-    })
-  }
-
-  const filteredPayments = payments.filter(payment => {
-    const matchesSearch =
-      payment.subcontractor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.contract?.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesDateRange =
-      (!dateRange.start || new Date(payment.payment_date || payment.created_at) >= new Date(dateRange.start)) &&
-      (!dateRange.end || new Date(payment.payment_date || payment.created_at) <= new Date(dateRange.end))
-
-    const matchesFilter =
-      filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-      (filterStatus === 'large' && payment.amount > 10000)
-
-    return matchesSearch && matchesDateRange && matchesFilter
-  })
-
-  const exportToCSV = () => {
-    const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => {
-      return [
-        format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
-        p.subcontractor_name,
-        p.project_name,
-        p.phase_name || '',
-        p.paid_by_company_name || '-',
-        p.amount.toString(),
-        p.notes || ''
-      ]
-    })
-
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-    a.click()
-  }
+  const {
+    loading,
+    stats,
+    filteredPayments,
+    searchTerm,
+    setSearchTerm,
+    filterStatus,
+    setFilterStatus,
+    dateRange,
+    setDateRange,
+    handleExportCSV,
+  } = useSupervisionPayments()
 
   if (loading) {
     return <LoadingSpinner message="Loading payments..." />
@@ -249,7 +33,6 @@ const PaymentsManagement: React.FC = () => {
         <StatCard label="Month Amount" value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
 
-      {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
@@ -267,7 +50,7 @@ const PaymentsManagement: React.FC = () => {
             <option value="large">Large (&gt; €10k)</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
+          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
             Export CSV
           </Button>
         </div>
@@ -340,7 +123,6 @@ const PaymentsManagement: React.FC = () => {
         </Table>
       )}
 
-      {/* Summary */}
       {filteredPayments.length > 0 && (
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-center justify-between">

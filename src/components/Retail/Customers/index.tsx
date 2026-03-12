@@ -1,267 +1,28 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import React from 'react'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
-import type { RetailCustomer, RetailSale } from '../../../types/retail'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard } from '../../ui'
-
-interface CustomerWithSales extends RetailCustomer {
-  sales?: RetailSale[]
-  total_purchased_area?: number
-  total_spent?: number
-  total_paid?: number
-  total_remaining?: number
-}
-
-interface RetailContractForDisplay {
-  id: string
-  contract_number: string
-  contract_amount: number | null
-  budget_realized: number | null
-  total_surface_m2: number | null
-  building_surface_m2: number | null
-  price_per_m2: number | null
-  status: string | null
-  phase?: { phase_name: string; project?: { name: string; plot_number: string } | null } | null
-  paid_amount: number
-  remaining_amount: number
-  payment_status: 'paid' | 'partial' | 'pending'
-}
-
-interface CustomerDetailView extends RetailCustomer {
-  sales?: RetailContractForDisplay[]
-  total_purchased_area?: number
-  total_spent?: number
-  total_paid?: number
-  total_remaining?: number
-}
+import { useRetailCustomers } from './hooks/useRetailCustomers'
 
 const RetailCustomers: React.FC = () => {
-  const [customers, setCustomers] = useState<CustomerWithSales[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showFormModal, setShowFormModal] = useState(false)
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetailView | null>(null)
-  const [editingCustomer, setEditingCustomer] = useState<string | null>(null)
-
-  const [formData, setFormData] = useState({
-    name: '',
-    contact_phone: '',
-    contact_email: '',
-    oib: '',
-    address: ''
-  })
-
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
-
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('retail_customers')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-
-      const customersWithStats = await Promise.all(
-        (data || []).map(async (customer) => {
-          const { data: contracts } = await supabase
-            .from('retail_contracts')
-            .select('id, contract_amount, budget_realized, total_surface_m2, building_surface_m2')
-            .eq('customer_id', customer.id)
-
-          const total_purchased_area = contracts?.reduce((sum, c) => sum + (c.total_surface_m2 || c.building_surface_m2 || 0), 0) || 0
-          const total_spent = contracts?.reduce((sum, c) => sum + (c.contract_amount || 0), 0) || 0
-
-          const contractIds = contracts?.map(c => c.id) || []
-          let total_paid = 0
-
-          if (contractIds.length > 0) {
-            const { data: invoices } = await supabase
-              .from('accounting_invoices')
-              .select('paid_amount')
-              .in('retail_contract_id', contractIds)
-
-            total_paid = invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0
-          }
-
-          const total_remaining = total_spent - total_paid
-
-          return {
-            ...customer,
-            total_purchased_area,
-            total_spent,
-            total_paid,
-            total_remaining
-          }
-        })
-      )
-
-      setCustomers(customersWithStats)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-      alert('Greška pri učitavanju kupaca')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOpenFormModal = (customer?: CustomerWithSales) => {
-    if (customer) {
-      setEditingCustomer(customer.id)
-      setFormData({
-        name: customer.name,
-        contact_phone: customer.contact_phone || '',
-        contact_email: customer.contact_email || '',
-        oib: customer.oib || '',
-        address: customer.address || ''
-      })
-    } else {
-      setEditingCustomer(null)
-      setFormData({
-        name: '',
-        contact_phone: '',
-        contact_email: '',
-        oib: '',
-        address: ''
-      })
-    }
-    document.body.style.overflow = 'hidden'
-    setShowFormModal(true)
-  }
-
-  const handleCloseFormModal = () => {
-    document.body.style.overflow = 'unset'
-    setShowFormModal(false)
-    setEditingCustomer(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      const payload = {
-        name: formData.name,
-        contact_phone: formData.contact_phone || null,
-        contact_email: formData.contact_email || null,
-        oib: formData.oib || null,
-        address: formData.address || null
-      }
-
-      if (editingCustomer) {
-        const { error } = await supabase
-          .from('retail_customers')
-          .update(payload)
-          .eq('id', editingCustomer)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('retail_customers')
-          .insert([payload])
-
-        if (error) throw error
-      }
-
-      await fetchCustomers()
-      handleCloseFormModal()
-    } catch (error) {
-      console.error('Error saving customer:', error)
-      alert('Greška pri spremanju kupca')
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovog kupca?')) return
-
-    try {
-      const { error } = await supabase
-        .from('retail_customers')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      await fetchCustomers()
-    } catch (error) {
-      console.error('Error deleting customer:', error)
-      alert('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
-    }
-  }
-
-  const handleViewDetails = async (customer: CustomerWithSales) => {
-    try {
-      const { data: contracts, error } = await supabase
-        .from('retail_contracts')
-        .select(`
-          id,
-          contract_number,
-          contract_amount,
-          budget_realized,
-          total_surface_m2,
-          building_surface_m2,
-          price_per_m2,
-          status,
-          phase:retail_project_phases!inner(
-            phase_name,
-            project:retail_projects(name, plot_number)
-          )
-        `)
-        .eq('customer_id', customer.id)
-
-      if (error) throw error
-
-      const contractsWithPayments = await Promise.all(
-        (contracts || []).map(async (contract) => {
-          const { data: invoices } = await supabase
-            .from('accounting_invoices')
-            .select('paid_amount, remaining_amount, status')
-            .eq('retail_contract_id', contract.id)
-
-          const paid_amount = invoices?.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0) || 0
-          const remaining_amount = (contract.contract_amount || 0) - paid_amount
-
-          return {
-            ...contract,
-            paid_amount,
-            remaining_amount,
-            payment_status: remaining_amount === 0 ? 'paid' : paid_amount > 0 ? 'partial' : 'pending'
-          }
-        })
-      )
-
-      setSelectedCustomer({
-        ...customer,
-        sales: contractsWithPayments as unknown as RetailContractForDisplay[]
-      })
-      document.body.style.overflow = 'hidden'
-      setShowDetailsModal(true)
-    } catch (error) {
-      console.error('Error loading customer details:', error)
-      alert('Greška pri učitavanju detalja')
-    }
-  }
-
-  const handleCloseDetailsModal = () => {
-    document.body.style.overflow = 'unset'
-    setShowDetailsModal(false)
-    setSelectedCustomer(null)
-  }
-
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (customer.oib && customer.oib.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (customer.contact_phone && customer.contact_phone.includes(searchTerm))
-  )
-
-  const totalStats = {
-    total_customers: customers.length,
-    total_area: customers.reduce((sum, c) => sum + (c.total_purchased_area || 0), 0),
-    total_revenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
-    total_remaining: customers.reduce((sum, c) => sum + (c.total_remaining || 0), 0)
-  }
+  const {
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filteredCustomers,
+    totalStats,
+    showFormModal,
+    showDetailsModal,
+    selectedCustomer,
+    editingCustomerId,
+    formData,
+    setFormData,
+    openFormModal,
+    closeFormModal,
+    handleSubmit,
+    handleDelete,
+    handleViewDetails,
+    closeDetailsModal,
+  } = useRetailCustomers()
 
   if (loading) {
     return <LoadingSpinner message="Učitavanje..." />
@@ -273,7 +34,7 @@ const RetailCustomers: React.FC = () => {
         title="Kupci"
         description="Upravljanje kupcima zemljišta"
         actions={
-          <Button icon={Plus} onClick={() => handleOpenFormModal()}>
+          <Button icon={Plus} onClick={() => openFormModal()}>
             Novi kupac
           </Button>
         }
@@ -332,19 +93,19 @@ const RetailCustomers: React.FC = () => {
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Površina:</span>
-                  <span className="font-medium text-gray-900">{customer.total_purchased_area?.toLocaleString() || 0} m²</span>
+                  <span className="font-medium text-gray-900">{customer.total_purchased_area.toLocaleString()} m²</span>
                 </div>
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                   <span className="text-gray-600">Ukupno:</span>
-                  <span className="font-bold text-gray-900">€{customer.total_spent?.toLocaleString('hr-HR') || 0}</span>
+                  <span className="font-bold text-gray-900">€{customer.total_spent.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Plaćeno:</span>
-                  <span className="font-medium text-green-600">€{customer.total_paid?.toLocaleString() || 0}</span>
+                  <span className="font-medium text-green-600">€{customer.total_paid.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Preostalo:</span>
-                  <span className="font-medium text-orange-600">€{customer.total_remaining?.toLocaleString() || 0}</span>
+                  <span className="font-medium text-orange-600">€{customer.total_remaining.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -352,7 +113,7 @@ const RetailCustomers: React.FC = () => {
                 <Button icon={Eye} size="sm" onClick={() => handleViewDetails(customer)} className="flex-1">
                   Detalji
                 </Button>
-                <Button icon={Edit} variant="ghost" size="icon-md" onClick={() => handleOpenFormModal(customer)} title="Uredi" />
+                <Button icon={Edit} variant="ghost" size="icon-md" onClick={() => openFormModal(customer)} title="Uredi" />
                 <Button icon={Trash2} variant="outline-danger" size="icon-md" onClick={() => handleDelete(customer.id)} title="Obriši" />
               </div>
             </div>
@@ -360,8 +121,8 @@ const RetailCustomers: React.FC = () => {
         </div>
       )}
 
-      <Modal show={showFormModal} onClose={handleCloseFormModal}>
-        <Modal.Header title={editingCustomer ? 'Uredi kupca' : 'Novi kupac'} onClose={handleCloseFormModal} />
+      <Modal show={showFormModal} onClose={closeFormModal}>
+        <Modal.Header title={editingCustomerId ? 'Uredi kupca' : 'Novi kupac'} onClose={closeFormModal} />
         <form onSubmit={handleSubmit}>
           <Modal.Body>
             <FormField label="Naziv / Ime i prezime *">
@@ -381,14 +142,14 @@ const RetailCustomers: React.FC = () => {
             </FormField>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={handleCloseFormModal}>Odustani</Button>
-            <Button type="submit">{editingCustomer ? 'Spremi' : 'Dodaj'}</Button>
+            <Button variant="secondary" type="button" onClick={closeFormModal}>Odustani</Button>
+            <Button type="submit">{editingCustomerId ? 'Spremi' : 'Dodaj'}</Button>
           </Modal.Footer>
         </form>
       </Modal>
 
-      <Modal show={showDetailsModal && !!selectedCustomer} onClose={handleCloseDetailsModal} size="xl">
-        <Modal.Header title={`Detalji kupca - ${selectedCustomer?.name || ''}`} onClose={handleCloseDetailsModal} />
+      <Modal show={showDetailsModal && !!selectedCustomer} onClose={closeDetailsModal} size="xl">
+        <Modal.Header title={`Detalji kupca - ${selectedCustomer?.name || ''}`} onClose={closeDetailsModal} />
         {selectedCustomer && (
           <>
             <Modal.Body>
@@ -442,8 +203,8 @@ const RetailCustomers: React.FC = () => {
                               {' = €'}{(sale.contract_amount || 0).toLocaleString()}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                              Plaćeno: €{(sale.paid_amount || 0).toLocaleString()} |
-                              Preostalo: €{(sale.remaining_amount || 0).toLocaleString()}
+                              Plaćeno: €{sale.paid_amount.toLocaleString()} |
+                              Preostalo: €{sale.remaining_amount.toLocaleString()}
                             </p>
                           </div>
                           <Badge variant={
@@ -465,7 +226,7 @@ const RetailCustomers: React.FC = () => {
               </div>
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onClick={handleCloseDetailsModal}>Zatvori</Button>
+              <Button variant="secondary" onClick={closeDetailsModal}>Zatvori</Button>
             </Modal.Footer>
           </>
         )}

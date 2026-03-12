@@ -116,6 +116,15 @@ export const fetchApartmentPayments = async (apartmentId: string) => {
   }))
 }
 
+export const fetchSaleIdForApartment = async (apartmentId: string): Promise<string | null> => {
+  const { data } = await supabase
+    .from('sales')
+    .select('id')
+    .eq('apartment_id', apartmentId)
+    .maybeSingle()
+  return data?.id || null
+}
+
 // DEPRECATED: Payment updates moved to Accounting module
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const updatePayment = async (_paymentId?: string, _amount?: number, _date?: string, _paymentType?: string, _notes?: string, _saleId?: string | null) => {

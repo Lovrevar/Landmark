@@ -1,219 +1,22 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import React from 'react'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
-
-interface RetailSalesPaymentWithDetails {
-  id: string
-  payment_date: string
-  amount: number
-  payment_method: string
-  description?: string
-  created_at: string
-  invoice_number: string
-  issue_date: string
-  invoice_total_amount: number
-  project_name?: string
-  customer_name?: string
-  contract_number?: string
-  bank_account_name?: string
-}
+import { useRetailSales } from './hooks/useRetailSales'
 
 const RetailSalesPaymentsManagement: React.FC = () => {
-  const [payments, setPayments] = useState<RetailSalesPaymentWithDetails[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
-  const [stats, setStats] = useState({
-    totalPayments: 0,
-    totalAmount: 0,
-    paymentsThisMonth: 0,
-    amountThisMonth: 0
-  })
-
-  useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  const fetchPayments = async () => {
-    setLoading(true)
-    try {
-      // Fetch only retail sales invoices (OUTGOING_SALES with retail_contract_id or retail_customer_id)
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          issue_date,
-          total_amount,
-          retail_customer_id,
-          retail_contract_id,
-          retail_project_id,
-          retail_customers (
-            name
-          ),
-          retail_contracts (
-            contract_number,
-            customer_id,
-            retail_project_phases (
-              retail_projects (
-                name
-              )
-            )
-          ),
-          retail_projects (
-            name
-          )
-        `)
-        .eq('invoice_type', 'OUTGOING_SALES')
-        .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
-        .order('issue_date', { ascending: false })
-
-      if (invoicesError) throw invoicesError
-
-      // Fetch all payments for these invoices
-      const invoiceIds = invoicesData?.map(inv => inv.id) || []
-
-      if (invoiceIds.length === 0) {
-        setPayments([])
-        calculateStats([])
-        setLoading(false)
-        return
-      }
-
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('accounting_payments')
-        .select('id, payment_date, amount, payment_method, description, created_at, invoice_id, company_bank_account_id')
-        .in('invoice_id', invoiceIds)
-        .order('payment_date', { ascending: false })
-
-      if (paymentsError) throw paymentsError
-
-      // Fetch bank accounts separately
-      const bankAccountIds = [...new Set(paymentsData?.map(p => p.company_bank_account_id).filter(Boolean) || [])]
-
-      let bankAccountsData: { id: string; bank_name: string | null }[] = []
-      if (bankAccountIds.length > 0) {
-        const { data: accounts } = await supabase
-          .from('company_bank_accounts')
-          .select('id, bank_name')
-          .in('id', bankAccountIds)
-        bankAccountsData = accounts || []
-      }
-
-      // Enrich payments with invoice details
-      const enrichedPayments: RetailSalesPaymentWithDetails[] = (paymentsData || []).map(payment => {
-        const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
-        const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
-
-        type InvoiceJoin = typeof invoice & {
-          retail_contracts?: { contract_number?: string; retail_project_phases?: { retail_projects?: { name?: string } } } | null
-          retail_projects?: { name?: string } | null
-          retail_customers?: { name?: string } | null
-        }
-        const inv = invoice as InvoiceJoin | undefined
-
-        let projectName = 'N/A'
-        if (inv?.retail_contracts?.retail_project_phases?.retail_projects?.name) {
-          projectName = inv.retail_contracts.retail_project_phases.retail_projects.name
-        } else if (inv?.retail_projects?.name) {
-          projectName = inv.retail_projects.name
-        }
-
-        let customerName = 'N/A'
-        if (inv?.retail_customers?.name) {
-          customerName = inv.retail_customers.name
-        }
-
-        return {
-          id: payment.id,
-          payment_date: payment.payment_date,
-          amount: parseFloat(payment.amount),
-          payment_method: payment.payment_method,
-          description: payment.description,
-          created_at: payment.created_at,
-          invoice_number: invoice?.invoice_number || 'N/A',
-          issue_date: invoice?.issue_date || '',
-          invoice_total_amount: invoice?.total_amount || 0,
-          contract_number: inv?.retail_contracts?.contract_number || 'N/A',
-          project_name: projectName,
-          customer_name: customerName,
-          bank_account_name: bankAccount?.bank_name || 'N/A'
-        }
-      })
-
-      setPayments(enrichedPayments)
-      calculateStats(enrichedPayments)
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-      alert('Failed to load payments')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const calculateStats = (paymentsData: RetailSalesPaymentWithDetails[]) => {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-    const paymentsThisMonth = paymentsData.filter(p => new Date(p.payment_date) >= firstDayOfMonth)
-    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
-
-    setStats({
-      totalPayments: paymentsData.length,
-      totalAmount,
-      paymentsThisMonth: paymentsThisMonth.length,
-      amountThisMonth
-    })
-  }
-
-  const filteredPayments = payments.filter(payment => {
-    const matchesSearch =
-      payment.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.description?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesDateRange =
-      (!dateRange.start || new Date(payment.payment_date) >= new Date(dateRange.start)) &&
-      (!dateRange.end || new Date(payment.payment_date) <= new Date(dateRange.end))
-
-    const matchesFilter =
-      filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-      (filterStatus === 'large' && Number(payment.amount) > 10000)
-
-    return matchesSearch && matchesDateRange && matchesFilter
-  })
-
-  const exportToCSV = () => {
-    const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Contract #', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
-    const rows = filteredPayments.map(p => [
-      format(new Date(p.payment_date), 'yyyy-MM-dd'),
-      p.invoice_number,
-      p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
-      p.contract_number,
-      p.project_name,
-      p.customer_name,
-      p.invoice_total_amount.toString(),
-      p.amount.toString(),
-      p.payment_method,
-      p.bank_account_name,
-      p.description || ''
-    ])
-
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `retail-sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-    a.click()
-  }
+  const {
+    loading,
+    stats,
+    filteredPayments,
+    searchTerm,
+    setSearchTerm,
+    filterStatus,
+    setFilterStatus,
+    dateRange,
+    setDateRange,
+    handleExportCSV,
+  } = useRetailSales()
 
   if (loading) {
     return <LoadingSpinner message="Loading payments..." />
@@ -247,7 +50,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <option value="large">Large (&gt; €10k)</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
+          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
             Export CSV
           </Button>
         </div>
@@ -308,7 +111,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td align="right" className="font-semibold text-green-600">
-                  €{Number(payment.amount).toLocaleString('hr-HR')}
+                  €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td>{payment.payment_method}</Table.Td>
                 <Table.Td className="text-gray-500">{payment.bank_account_name}</Table.Td>
@@ -328,7 +131,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <div className="text-sm text-blue-900">
               <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
               <span className="font-semibold">
-                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}
+                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
               </span>
             </div>
           </div>
