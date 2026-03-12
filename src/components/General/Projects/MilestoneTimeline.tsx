@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2 } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../ui'
 import { format, parseISO, isPast } from 'date-fns'
 import type { Milestone } from './types'
+import { getMilestoneStatus } from './utils'
 
 interface MilestoneTimelineProps {
   milestones: Milestone[]
@@ -19,47 +20,11 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
   onToggleComplete,
   editable = true
 }) => {
-  const sortedMilestones = [...milestones].sort((a, b) => {
+  const sortedMilestones = useMemo(() => [...milestones].sort((a, b) => {
     if (!a.due_date) return 1
     if (!b.due_date) return -1
     return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-  })
-
-  const getMilestoneStatus = (milestone: Milestone) => {
-    if (milestone.completed) {
-      return {
-        icon: CheckCircle,
-        color: 'text-green-600',
-        bg: 'bg-green-100',
-        border: 'border-green-300',
-        label: 'Completed',
-        lineColor: 'bg-green-300'
-      }
-    }
-
-    if (milestone.due_date) {
-      const dueDate = parseISO(milestone.due_date)
-      if (isPast(dueDate)) {
-        return {
-          icon: AlertTriangle,
-          color: 'text-red-600',
-          bg: 'bg-red-100',
-          border: 'border-red-300',
-          label: 'Overdue',
-          lineColor: 'bg-red-300'
-        }
-      }
-    }
-
-    return {
-      icon: Clock,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100',
-      border: 'border-blue-300',
-      label: 'In Progress',
-      lineColor: 'bg-blue-300'
-    }
-  }
+  }), [milestones])
 
   if (milestones.length === 0) {
     return (

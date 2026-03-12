@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Building2,
@@ -18,11 +18,7 @@ import { format, differenceInDays, parseISO } from 'date-fns'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './Forms/ProjectFormModal'
 import { fetchProjectDataEnhanced } from './Services/projectDetailsService'
-import {
-  addMilestone as svcAddMilestone,
-  toggleMilestoneCompletion as svcToggleMilestone,
-  deleteMilestone as svcDeleteMilestone
-} from './Services/milestoneService'
+import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 
 const ProjectDetailsEnhanced: React.FC = () => {
@@ -40,11 +36,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
 
-  useEffect(() => {
-    if (id) loadData()
-  }, [id])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return
     try {
       setLoading(true)
@@ -60,38 +52,18 @@ const ProjectDetailsEnhanced: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  const handleAddMilestone = async () => {
-    if (!newMilestone.name.trim() || !id) { alert('Please enter milestone name'); return }
-    try {
-      await svcAddMilestone(id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
-      setNewMilestone({ name: '', due_date: '', completed: false })
-      setShowMilestoneForm(false)
-      loadData()
-    } catch (error) {
-      console.error('Error adding milestone:', error)
-      alert('Error adding milestone')
-    }
-  }
+  const { handleAddMilestone, handleToggleMilestone, handleDeleteMilestone } = useMilestoneManagement(id, loadData)
 
-  const handleToggleMilestone = async (milestoneId: string, completed: boolean) => {
-    try {
-      await svcToggleMilestone(milestoneId, completed)
-      loadData()
-    } catch (error) {
-      console.error('Error updating milestone:', error)
-    }
-  }
+  useEffect(() => {
+    if (id) loadData()
+  }, [id, loadData])
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return
-    try {
-      await svcDeleteMilestone(milestoneId)
-      loadData()
-    } catch (error) {
-      console.error('Error deleting milestone:', error)
-    }
+  const handleSubmitMilestone = async () => {
+    await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
+    setNewMilestone({ name: '', due_date: '', completed: false })
+    setShowMilestoneForm(false)
   }
 
   if (loading) return <LoadingSpinner message="Loading project..." />
@@ -465,7 +437,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       />
                     </FormField>
                     <div className="flex space-x-3">
-                      <Button onClick={handleAddMilestone}>Add Milestone</Button>
+                      <Button onClick={handleSubmitMilestone}>Add Milestone</Button>
                       <Button variant="secondary" onClick={() => {
                         setShowMilestoneForm(false)
                         setNewMilestone({ name: '', due_date: '', completed: false })

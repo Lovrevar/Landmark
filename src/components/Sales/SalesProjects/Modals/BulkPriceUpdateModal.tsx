@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert } from '../../../ui'
+import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
@@ -29,34 +30,35 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
     }
   }, [visible])
 
-  if (!visible) return null
-
-  const priceRange = selectedUnits.length > 0
+  const priceRange = useMemo(() => selectedUnits.length > 0
     ? {
         min: Math.min(...selectedUnits.map(u => u.price_per_m2 || 0)),
         max: Math.max(...selectedUnits.map(u => u.price_per_m2 || 0))
       }
-    : { min: 0, max: 0 }
+    : { min: 0, max: 0 }, [selectedUnits])
 
   const adjustment = parseFloat(adjustmentValue) || 0
 
-  const newPriceRange = {
-    min: adjustmentType === 'increase' ? priceRange.min + adjustment : Math.max(0, priceRange.min - adjustment),
-    max: adjustmentType === 'increase' ? priceRange.max + adjustment : Math.max(0, priceRange.max - adjustment)
-  }
+  const newPriceRange = calculateAdjustedPriceRange(priceRange, adjustmentType, adjustment)
 
-  const totalCurrentValue = selectedUnits.reduce((sum, unit) => sum + (unit.price || 0), 0)
-  const totalNewValue = selectedUnits.reduce((sum, unit) => {
+  const totalCurrentValue = useMemo(
+    () => selectedUnits.reduce((sum, unit) => sum + (unit.price || 0), 0),
+    [selectedUnits]
+  )
+
+  const totalNewValue = useMemo(() => selectedUnits.reduce((sum, unit) => {
     const newPricePerM2 = adjustmentType === 'increase'
       ? (unit.price_per_m2 || 0) + adjustment
       : (unit.price_per_m2 || 0) - adjustment
     return sum + (unit.size_m2 * Math.max(0, newPricePerM2))
-  }, 0)
+  }, 0), [selectedUnits, adjustmentType, adjustment])
 
   const totalValueChange = totalNewValue - totalCurrentValue
 
   const wouldCreateNegativePrice = adjustmentType === 'decrease' &&
     selectedUnits.some(unit => (unit.price_per_m2 || 0) - adjustment < 0)
+
+  if (!visible) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

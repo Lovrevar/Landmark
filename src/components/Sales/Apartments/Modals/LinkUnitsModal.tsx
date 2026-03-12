@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Warehouse, Package, X } from 'lucide-react'
-import { supabase } from '../../../../lib/supabase'
 import { ApartmentWithDetails } from '../types'
 import { Modal, Button, LoadingSpinner } from '../../../ui'
+import { useLinkUnits } from '../hooks/useLinkUnits'
 
 interface LinkUnitsModalProps {
   visible: boolean
@@ -17,60 +17,21 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   apartment,
   onLink
 }) => {
-  const [availableGarages, setAvailableGarages] = useState<{ id: string; number: string; floor: number; size_m2: number; price: number; status: string }[]>([])
-  const [availableStorages, setAvailableStorages] = useState<{ id: string; number: string; floor: number; size_m2: number; price: number; status: string }[]>([])
-  const [selectedGarageIds, setSelectedGarageIds] = useState<string[]>([])
-  const [selectedStorageIds, setSelectedStorageIds] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (visible && apartment) {
-      fetchData()
-    }
-  }, [visible, apartment])
-
-  const fetchData = async () => {
-    if (!apartment?.building_id) return
-
-    setLoading(true)
-    try {
-      const { data: linkedGarageData } = await supabase
-        .from('apartment_garages')
-        .select('garage_id')
-        .eq('apartment_id', apartment.id)
-
-      const { data: linkedStorageData } = await supabase
-        .from('apartment_repositories')
-        .select('repository_id')
-        .eq('apartment_id', apartment.id)
-
-      const linkedGarageIds = linkedGarageData?.map(lg => lg.garage_id) || []
-      const linkedStorageIds = linkedStorageData?.map(ls => ls.repository_id) || []
-
-      setSelectedGarageIds(linkedGarageIds)
-      setSelectedStorageIds(linkedStorageIds)
-
-      const { data: garagesData } = await supabase
-        .from('garages')
-        .select('*')
-        .eq('building_id', apartment.building_id)
-        .order('number')
-
-      const { data: storagesData } = await supabase
-        .from('repositories')
-        .select('*')
-        .eq('building_id', apartment.building_id)
-        .order('number')
-
-      setAvailableGarages(garagesData || [])
-      setAvailableStorages(storagesData || [])
-    } catch (error) {
-      console.error('Error fetching units:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    availableGarages,
+    availableStorages,
+    selectedGarageIds,
+    selectedStorageIds,
+    loading,
+    saving,
+    setSelectedGarageIds,
+    setSelectedStorageIds,
+    save
+  } = useLinkUnits(
+    apartment?.id ?? null,
+    apartment?.building_id ?? null,
+    visible && apartment !== null
+  )
 
   const toggleGarage = (garageId: string) => {
     setSelectedGarageIds(prev =>
@@ -89,53 +50,13 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   }
 
   const handleSave = async () => {
-    if (!apartment) return
-
-    setSaving(true)
     try {
-      await supabase
-        .from('apartment_garages')
-        .delete()
-        .eq('apartment_id', apartment.id)
-
-      await supabase
-        .from('apartment_repositories')
-        .delete()
-        .eq('apartment_id', apartment.id)
-
-      if (selectedGarageIds.length > 0) {
-        const garageLinks = selectedGarageIds.map(garageId => ({
-          apartment_id: apartment.id,
-          garage_id: garageId
-        }))
-
-        const { error: garageError } = await supabase
-          .from('apartment_garages')
-          .insert(garageLinks)
-
-        if (garageError) throw garageError
-      }
-
-      if (selectedStorageIds.length > 0) {
-        const storageLinks = selectedStorageIds.map(storageId => ({
-          apartment_id: apartment.id,
-          repository_id: storageId
-        }))
-
-        const { error: storageError } = await supabase
-          .from('apartment_repositories')
-          .insert(storageLinks)
-
-        if (storageError) throw storageError
-      }
-
+      await save()
       onLink()
       onClose()
     } catch (error) {
       console.error('Error saving unit links:', error)
       alert('Error saving unit links. Please try again.')
-    } finally {
-      setSaving(false)
     }
   }
 

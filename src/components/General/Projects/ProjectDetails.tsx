@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { ProjectMilestone } from '../../../lib/supabase'
 import {
@@ -19,12 +19,7 @@ import {
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../../ui'
 import { format, differenceInDays } from 'date-fns'
 import { fetchProjectDetails } from './Services/projectDetailsService'
-import {
-  addMilestone as svcAddMilestone,
-  updateMilestone as svcUpdateMilestone,
-  deleteMilestone as svcDeleteMilestone,
-  toggleMilestoneCompletion as svcToggleMilestone
-} from './Services/milestoneService'
+import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import type { ProjectWithDetails } from './types'
 
 const ProjectDetails: React.FC = () => {
@@ -33,15 +28,10 @@ const ProjectDetails: React.FC = () => {
   const [project, setProject] = useState<ProjectWithDetails | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
-  const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (id) loadProject()
-  }, [id])
-
-  const loadProject = async () => {
+  const loadProject = useCallback(async () => {
     if (!id) return
     setLoading(true)
     try {
@@ -52,50 +42,21 @@ const ProjectDetails: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  const handleAddMilestone = async () => {
-    if (!newMilestone.name.trim() || !id) { alert('Please enter milestone name'); return }
-    try {
-      await svcAddMilestone(id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
-      resetMilestoneForm()
-      loadProject()
-    } catch (error) {
-      console.error('Error adding milestone:', error)
-      alert('Error adding milestone. Please try again.')
-    }
-  }
+  const { editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, handleToggleMilestone } = useMilestoneManagement(id, loadProject)
 
-  const handleUpdateMilestone = async () => {
-    if (!editingMilestone || !newMilestone.name.trim()) return
-    try {
-      await svcUpdateMilestone(editingMilestone.id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
-      resetMilestoneForm()
-      loadProject()
-    } catch (error) {
-      console.error('Error updating milestone:', error)
-      alert('Error updating milestone.')
-    }
-  }
+  useEffect(() => {
+    if (id) loadProject()
+  }, [id, loadProject])
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return
-    try {
-      await svcDeleteMilestone(milestoneId)
-      loadProject()
-    } catch (error) {
-      console.error('Error deleting milestone:', error)
-      alert('Error deleting milestone.')
+  const handleSubmitMilestone = async () => {
+    if (editingMilestone) {
+      await handleUpdateMilestone(editingMilestone.id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
+    } else {
+      await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
     }
-  }
-
-  const handleToggleMilestone = async (milestoneId: string, completed: boolean) => {
-    try {
-      await svcToggleMilestone(milestoneId, completed)
-      loadProject()
-    } catch (error) {
-      console.error('Error updating milestone:', error)
-    }
+    resetMilestoneForm()
   }
 
   const resetMilestoneForm = () => {
@@ -306,7 +267,7 @@ const ProjectDetails: React.FC = () => {
                 </div>
                 <div className="flex justify-end space-x-3 mt-6">
                   <Button variant="secondary" onClick={resetMilestoneForm}>Cancel</Button>
-                  <Button onClick={editingMilestone ? handleUpdateMilestone : handleAddMilestone}>
+                  <Button onClick={handleSubmitMilestone}>
                     {editingMilestone ? 'Update' : 'Add'} Milestone
                   </Button>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { Button, Badge, LoadingSpinner, EmptyState } from '../../ui'
+import { formatCurrency, getStatusBadgeVariant } from '../utils'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
@@ -11,6 +12,7 @@ import { EditPhaseModal } from './Modals/EditPhaseModal'
 import { RetailPaymentHistoryModal } from './Modals/RetailPaymentHistoryModal'
 import { RetailInvoicesModal } from './Modals/RetailInvoicesModal'
 import { retailProjectService } from './Services/retailProjectService'
+import { useProjectDetail } from './hooks/useProjectDetail'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -20,9 +22,8 @@ interface ProjectDetailProps {
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialProject, onBack, onRefresh }) => {
-  const [project, setProject] = useState(initialProject)
-  const [phaseContracts, setPhaseContracts] = useState<Record<string, RetailContract[]>>({})
-  const [loading, setLoading] = useState(false)
+  const { project: hookProject, contractsMap: phaseContracts, loading, refetch: loadProjectDetails } = useProjectDetail(initialProject.id)
+  const project = hookProject ?? initialProject
   const [refreshing, setRefreshing] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<RetailProjectPhase | null>(null)
@@ -43,43 +44,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     loadProjectDetails()
   }, [initialProject.id])
 
-  const loadProjectDetails = async () => {
-    try {
-      setLoading(true)
-      const data = await retailProjectService.fetchProjectById(initialProject.id)
-      if (data) {
-        setProject(data)
-
-        const contractsMap: Record<string, RetailContract[]> = {}
-        await Promise.all(
-          data.phases.map(async (phase) => {
-            const contracts = await retailProjectService.fetchContractsByPhase(phase.id)
-            contractsMap[phase.id] = contracts
-          })
-        )
-        setPhaseContracts(contractsMap)
-      }
-    } catch (error) {
-      console.error('Error loading project details:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleRefresh = async () => {
     setRefreshing(true)
     await loadProjectDetails()
     setRefreshing(false)
     onRefresh()
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount)
   }
 
   const handleEditPhase = (phase: RetailProjectPhase) => {
@@ -178,19 +147,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   const closeMilestoneManagement = () => {
     setShowMilestoneManagement(false)
     setMilestoneContext(null)
-  }
-
-  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
-    switch (status) {
-      case 'Completed':
-        return 'green'
-      case 'In Progress':
-        return 'blue'
-      case 'Planning':
-        return 'yellow'
-      default:
-        return 'gray'
-    }
   }
 
   return (

@@ -274,6 +274,20 @@ export const getNotificationUrgency = (notification: PaymentNotification): {
   }
 }
 
+export const dismissMilestoneNotification = async (milestoneId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('subcontractor_milestones')
+      .update({ status: 'completed' })
+      .eq('id', milestoneId)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error dismissing milestone notification:', error)
+    throw error
+  }
+}
+
 export const regeneratePaymentSchedule = async (creditId: string): Promise<void> => {
   try {
     const { error } = await supabase.rpc('generate_payment_schedule', { credit_id: creditId })

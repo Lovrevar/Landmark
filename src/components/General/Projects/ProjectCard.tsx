@@ -1,42 +1,12 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Calendar, TrendingUp, CheckCircle, Clock, Pause, Eye } from 'lucide-react'
+import { MapPin, Calendar, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
-import { differenceInDays, parseISO } from 'date-fns'
 import type { ProjectWithStats } from './types'
+import { getStatusConfig, getDaysInfo } from './utils'
 
 interface Props {
   project: ProjectWithStats
-}
-
-const getStatusConfig = (status: string) => {
-  const configs = {
-    'Planning': { icon: Clock, label: 'Planning' },
-    'In Progress': { icon: TrendingUp, label: 'In Progress' },
-    'Completed': { icon: CheckCircle, label: 'Completed' },
-    'On Hold': { icon: Pause, label: 'On Hold' }
-  }
-  return configs[status as keyof typeof configs] || configs['Planning']
-}
-
-const getDaysInfo = (startDate: string, endDate: string | null) => {
-  const start = parseISO(startDate)
-  const today = new Date()
-
-  if (endDate && parseISO(endDate) < today) {
-    return { text: 'Completed', color: 'text-green-600' }
-  }
-
-  const daysElapsed = differenceInDays(today, start)
-  if (endDate) {
-    const daysRemaining = differenceInDays(parseISO(endDate), today)
-    return {
-      text: daysRemaining > 0 ? `${daysRemaining} days left` : 'Overdue',
-      color: daysRemaining > 0 ? 'text-gray-600' : 'text-red-600'
-    }
-  }
-
-  return { text: `${daysElapsed} days elapsed`, color: 'text-gray-600' }
 }
 
 const ProjectCard: React.FC<Props> = ({ project }) => {

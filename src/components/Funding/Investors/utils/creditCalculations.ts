@@ -1,4 +1,4 @@
-import type { CreditFormData, EquityFormData } from '../types'
+import type { EquityFormData } from '../types'
 
 export function getPaymentFrequency(type: string): number {
   switch (type) {

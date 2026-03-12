@@ -1,109 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, BankCreditPayment } from '../../../lib/supabase'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
-
-interface BankPaymentWithDetails extends BankCreditPayment {
-  bank_name?: string
-  credit_type?: string
-  project_name?: string
-  payment_type: 'bank'
-}
-
-type CombinedPayment = BankPaymentWithDetails
+import { usePaymentsData } from './hooks/usePaymentsData'
 
 const FundingPaymentsManagement: React.FC = () => {
-  const [payments, setPayments] = useState<CombinedPayment[]>([])
-  const [loading, setLoading] = useState(true)
+  const { payments, stats, loading, refetch } = usePaymentsData()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
-  const [stats, setStats] = useState({
-    totalPayments: 0,
-    totalAmount: 0,
-    paymentsThisMonth: 0,
-    amountThisMonth: 0,
-    bankPayments: 0
-  })
 
   useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  const fetchPayments = async () => {
-    setLoading(true)
-    try {
-      // Fetch bank credit payments from accounting_payments
-      const { data: bankPaymentsData, error: bankError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          *,
-          invoice:accounting_invoices!inner(
-            bank_credit_id,
-            bank_credits(
-              credit_type,
-              project_id,
-              bank_id,
-              banks(name)
-            )
-          )
-        `)
-        .not('invoice.bank_credit_id', 'is', null)
-        .order('payment_date', { ascending: false })
-
-      if (bankError) throw bankError
-
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-
-      if (projectsError) throw projectsError
-
-      const enrichedBankPayments: BankPaymentWithDetails[] = (bankPaymentsData || []).map(payment => {
-        const bankCredit = payment.invoice?.bank_credits
-        const project = bankCredit?.project_id
-          ? projectsData?.find(p => p.id === bankCredit.project_id)
-          : undefined
-
-        return {
-          ...payment,
-          bank_name: bankCredit?.banks?.name || 'Unknown Bank',
-          credit_type: bankCredit?.credit_type || 'N/A',
-          project_name: project?.name || 'No Project',
-          payment_type: 'bank' as const,
-          created_at: payment.created_at,
-          notes: payment.description
-        }
-      })
-
-      setPayments(enrichedBankPayments)
-      calculateStats(enrichedBankPayments)
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-      alert('Failed to load payments')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const calculateStats = (paymentsData: CombinedPayment[]) => {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-    const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
-    const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
-    const bankPayments = paymentsData.length
-
-    setStats({
-      totalPayments: paymentsData.length,
-      totalAmount,
-      paymentsThisMonth: paymentsThisMonth.length,
-      amountThisMonth,
-      bankPayments
-    })
-  }
+    refetch()
+  }, [refetch])
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =

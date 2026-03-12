@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2, DollarSign, CheckSquare, Square, ArrowLeft } from 'lucide-react'
 import {
   BuildingWithUnits,
@@ -84,7 +84,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
     })
   }
 
-  const filteredUnits = getFilteredUnits()
+  const filteredUnits = useMemo(() => getFilteredUnits(), [activeUnitType, filterStatus, building])
   const allFilteredSelected = filteredUnits.length > 0 && filteredUnits.every(u => selectedUnitIds.includes(u.id))
 
   return (

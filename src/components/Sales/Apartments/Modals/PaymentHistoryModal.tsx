@@ -1,8 +1,29 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
 import { Modal, Button, EmptyState } from '../../../ui'
+
+const getPaymentUnitInfo = (
+  payment: PaymentWithCustomer,
+  apartment: ApartmentWithDetails,
+  linkedGarages: Array<{ id: string; number: string; price: number }>,
+  linkedStorages: Array<{ id: string; number: string; price: number }>
+) => {
+  if (payment.garage_id) {
+    const garage = linkedGarages.find(g => g.id === payment.garage_id)
+    if (garage) {
+      return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+    }
+  }
+  if (payment.storage_id) {
+    const storage = linkedStorages.find(s => s.id === payment.storage_id)
+    if (storage) {
+      return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600', bgColor: 'bg-gray-100' }
+    }
+  }
+  return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100' }
+}
 
 interface PaymentHistoryModalProps {
   visible: boolean
@@ -25,37 +46,25 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  const { totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice } = useMemo(() => {
+    if (!apartment) {
+      return { aptPaid: 0, totalPaid: 0, remainingBalance: 0, garagesTotalPrice: 0, storagesTotalPrice: 0, totalPrice: 0 }
+    }
+    const apartmentPayments = payments.filter(p => !p.garage_id && !p.storage_id)
+    const garagePayments = payments.filter(p => p.garage_id)
+    const storagePayments = payments.filter(p => p.storage_id)
+    const aptPaid = apartmentPayments.reduce((sum, p) => sum + p.amount, 0)
+    const garagePaid = garagePayments.reduce((sum, p) => sum + p.amount, 0)
+    const storagePaid = storagePayments.reduce((sum, p) => sum + p.amount, 0)
+    const totalPaid = aptPaid + garagePaid + storagePaid
+    const garagesTotalPrice = linkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
+    const storagesTotalPrice = linkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
+    const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+    const remainingBalance = totalPrice - totalPaid
+    return { aptPaid, totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice }
+  }, [payments, linkedGarages, linkedStorages, apartment])
+
   if (!visible || !apartment) return null
-
-  const apartmentPayments = payments.filter(p => !p.garage_id && !p.storage_id)
-  const garagePayments = payments.filter(p => p.garage_id)
-  const storagePayments = payments.filter(p => p.storage_id)
-
-  const aptPaid = apartmentPayments.reduce((sum, p) => sum + p.amount, 0)
-  const garagePaid = garagePayments.reduce((sum, p) => sum + p.amount, 0)
-  const storagePaid = storagePayments.reduce((sum, p) => sum + p.amount, 0)
-  const totalPaid = aptPaid + garagePaid + storagePaid
-
-  const garagesTotalPrice = linkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
-  const storagesTotalPrice = linkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
-  const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
-  const remainingBalance = totalPrice - totalPaid
-
-  const getPaymentUnitInfo = (payment: PaymentWithCustomer) => {
-    if (payment.garage_id) {
-      const garage = linkedGarages.find(g => g.id === payment.garage_id)
-      if (garage) {
-        return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100' }
-      }
-    }
-    if (payment.storage_id) {
-      const storage = linkedStorages.find(s => s.id === payment.storage_id)
-      if (storage) {
-        return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600', bgColor: 'bg-gray-100' }
-      }
-    }
-    return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100' }
-  }
 
   return (
     <Modal show={visible} onClose={onClose} size="xl">
@@ -138,7 +147,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             ) : (
               <div className="space-y-3">
                 {payments.map((payment) => {
-                  const unitInfo = getPaymentUnitInfo(payment)
+                  const unitInfo = getPaymentUnitInfo(payment, apartment, linkedGarages, linkedStorages)
                   const UnitIcon = unitInfo.icon
                   return (
                     <div

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
 import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader } from '../../ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './types'
 import * as apartmentService from './Services/apartmentService'
+import { useApartmentData } from './hooks/useApartmentData'
 import { BulkApartmentModal } from './Modals/BulkApartmentModal'
 import { SingleApartmentModal } from './Modals/SingleApartmentModal'
 import { EditApartmentModal } from './Modals/EditApartmentModal'
@@ -15,14 +16,23 @@ import { LinkUnitsModal } from './Modals/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
   useAuth()
-  const [apartments, setApartments] = useState<ApartmentWithDetails[]>([])
-  const [loading, setLoading] = useState(true)
+  const {
+    apartments,
+    projects,
+    buildings,
+    apartmentPaymentTotals,
+    garagePaymentTotals,
+    storagePaymentTotals,
+    linkedGarages,
+    linkedStorages,
+    loading,
+    refetch: fetchData
+  } = useApartmentData()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filterProject, setFilterProject] = useState<string>('all')
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
-  const [buildings, setBuildings] = useState<Array<{ id: string; name: string; project_id: string }>>([])
 
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [showSingleModal, setShowSingleModal] = useState(false)
@@ -35,169 +45,6 @@ const ApartmentManagement: React.FC = () => {
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
-  const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
-  const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
-  const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
-  const [linkedGarages, setLinkedGarages] = useState<Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]>>({})
-  const [linkedStorages, setLinkedStorages] = useState<Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]>>({})
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const { data: apartmentsData, error: apartmentsError } = await supabase
-        .from('apartments')
-        .select('*')
-        .order('number')
-
-      if (apartmentsError) throw apartmentsError
-
-      const { data: allProjects } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
-
-      const { data: allBuildings } = await supabase
-        .from('buildings')
-        .select('id, name, project_id')
-        .order('name')
-
-      setProjects(allProjects || [])
-      setBuildings(allBuildings || [])
-
-      const projectIds = [...new Set(apartmentsData?.map((a: { project_id: string }) => a.project_id) || [])]
-      const buildingIds = [...new Set(apartmentsData?.map((a: { building_id: string | null }) => a.building_id).filter(Boolean) || [])]
-
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('id, name')
-        .in('id', projectIds)
-
-      const { data: buildingsData } = await supabase
-        .from('buildings')
-        .select('id, name')
-        .in('id', buildingIds)
-
-      // Fetch payments from new accounting system
-      const { data: paymentsData } = await supabase
-        .from('accounting_payments')
-        .select(`
-          amount,
-          invoice:accounting_invoices!inner(
-            apartment_id
-          )
-        `)
-        .not('invoice.apartment_id', 'is', null)
-
-      const aptPaymentTotals: Record<string, number> = {}
-      const garPaymentTotals: Record<string, number> = {}
-      const storPaymentTotals: Record<string, number> = {}
-
-      if (paymentsData) {
-        (paymentsData as unknown as Array<{ amount: string; invoice?: { apartment_id: string } | null }>).forEach((payment) => {
-          const apartmentId = payment.invoice?.apartment_id
-          if (apartmentId) {
-            if (!aptPaymentTotals[apartmentId]) {
-              aptPaymentTotals[apartmentId] = 0
-            }
-            aptPaymentTotals[apartmentId] += parseFloat(payment.amount)
-          }
-        })
-      }
-      setApartmentPaymentTotals(aptPaymentTotals)
-      setGaragePaymentTotals(garPaymentTotals)
-      setStoragePaymentTotals(storPaymentTotals)
-
-      const garagesMap: Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]> = {}
-      const storagesMap: Record<string, { id: string; number: string; size_m2: number; price: number; status: string }[]> = {}
-
-      if (apartmentsData && apartmentsData.length > 0) {
-        const apartmentIds = apartmentsData.map((a: { id: string }) => a.id)
-
-        const { data: garageLinks } = await supabase
-          .from('apartment_garages')
-          .select(`
-            apartment_id,
-            garage:garages(id, number, size_m2, price, status)
-          `)
-          .in('apartment_id', apartmentIds)
-
-        if (garageLinks) {
-          (garageLinks as unknown as Array<{ apartment_id: string; garage: { id: string; number: string; size_m2: number; price: number; status: string } | null }>).forEach((link) => {
-            if (!garagesMap[link.apartment_id]) {
-              garagesMap[link.apartment_id] = []
-            }
-            if (link.garage) {
-              garagesMap[link.apartment_id].push(link.garage)
-            }
-          })
-        }
-
-        const { data: repositoryLinks } = await supabase
-          .from('apartment_repositories')
-          .select(`
-            apartment_id,
-            repository:repositories(id, number, size_m2, price, status)
-          `)
-          .in('apartment_id', apartmentIds)
-
-        if (repositoryLinks) {
-          (repositoryLinks as unknown as Array<{ apartment_id: string; repository: { id: string; number: string; size_m2: number; price: number; status: string } | null }>).forEach((link) => {
-            if (!storagesMap[link.apartment_id]) {
-              storagesMap[link.apartment_id] = []
-            }
-            if (link.repository) {
-              storagesMap[link.apartment_id].push(link.repository)
-            }
-          })
-        }
-      }
-
-      setLinkedGarages(garagesMap)
-      setLinkedStorages(storagesMap)
-
-      const apartmentsWithDetails = ((apartmentsData || []).map((apt: Record<string, unknown>) => {
-        const project = projectsData?.find(p => p.id === apt.project_id)
-        const building = buildingsData?.find(b => b.id === apt.building_id)
-
-        return {
-          id: apt.id,
-          number: apt.number,
-          floor: apt.floor,
-          size_m2: apt.size_m2,
-          price: apt.price,
-          status: apt.status,
-          buyer_name: apt.buyer_name,
-          project_name: project?.name || 'Unknown Project',
-          building_name: building?.name || 'No Building',
-          project_id: apt.project_id,
-          building_id: apt.building_id || '',
-          ulaz: apt.ulaz ?? null,
-          tip_stana: apt.tip_stana ?? null,
-          sobnost: apt.sobnost ?? null,
-          povrsina_otvoreno: apt.povrsina_otvoreno ?? null,
-          povrsina_ot_sa_koef: apt.povrsina_ot_sa_koef ?? null,
-          datum_potpisa_predugovora: apt.datum_potpisa_predugovora ?? null,
-          contract_payment_type: apt.contract_payment_type ?? null,
-          kapara_10_posto: apt.kapara_10_posto ?? null,
-          rata_1_ab_konstrukcija_30: apt.rata_1_ab_konstrukcija_30 ?? null,
-          rata_2_postava_stolarije_20: apt.rata_2_postava_stolarije_20 ?? null,
-          rata_3_obrtnicki_radovi_20: apt.rata_3_obrtnicki_radovi_20 ?? null,
-          rata_4_uporabna_20: apt.rata_4_uporabna_20 ?? null,
-          kredit_etaziranje_90: apt.kredit_etaziranje_90 ?? null
-        }
-      })) as unknown as ApartmentWithDetails[]
-
-      setApartments(apartmentsWithDetails)
-    } catch (error) {
-      console.error('Error fetching apartments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCreateBulk = async (data: BulkApartmentData) => {
     try {

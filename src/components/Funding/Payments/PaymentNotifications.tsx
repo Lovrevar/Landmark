@@ -17,6 +17,7 @@ import {
   fetchPaymentNotifications,
   calculateNotificationStats,
   dismissNotification,
+  dismissMilestoneNotification,
   updateOverdueNotifications,
   getNotificationUrgency,
   PaymentNotification,
@@ -105,21 +106,14 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
 
   const handleDismiss = async (notification: PaymentNotification) => {
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
-      if (!userId) return
-
       if (notification.payment_source === 'bank') {
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return
         await dismissNotification(notification.id, userId)
       } else {
-        // For subcontractor milestones, we just mark them as "completed" status
-        // so they don't show up in pending anymore
-        const { error } = await supabase
-          .from('subcontractor_milestones')
-          .update({ status: 'completed' })
-          .eq('id', notification.milestone_id!)
-
-        if (error) throw error
+        // For subcontractor milestones, mark them as "completed" so they don't show in pending
+        await dismissMilestoneNotification(notification.milestone_id!)
       }
 
       await loadNotifications()

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Plus } from 'lucide-react'
-import { supabase } from '../../../lib/supabase'
 import { LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, SearchInput, Button, ConfirmDialog } from '../../ui'
 import { formatEuropean } from '../../../utils/formatters'
 import { useSubcontractorData } from './Hooks/useSubcontractorData'
@@ -12,7 +11,7 @@ import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer
 import { SubcontractorSummary, SubcontractorContract } from './types'
 
 const SubcontractorManagement: React.FC = () => {
-  const { subcontractors, loading, fetchData } = useSubcontractorData()
+  const { subcontractors, loading, fetchData, deleteSubcontractor } = useSubcontractorData()
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorSummary | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showFormModal, setShowFormModal] = useState(false)
@@ -29,8 +28,7 @@ const SubcontractorManagement: React.FC = () => {
 
   const handleDelete = async () => {
     try {
-      const { error } = await supabase.from('subcontractors').delete().eq('id', deleteConfirm.id)
-      if (error) throw error
+      await deleteSubcontractor(deleteConfirm.id)
       setDeleteConfirm({ show: false, id: '', name: '' })
       fetchData()
     } catch (error) {

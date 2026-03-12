@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
-import { useAuth } from '../../../contexts/AuthContext'
 import {
   LoadingSpinner,
   PageHeader,
@@ -15,6 +13,7 @@ import {
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
+import { useApprovals } from './hooks/useApprovals'
 
 const COLUMN_LABELS: Record<string, string> = {
   category: 'Kategorija',
@@ -46,33 +45,24 @@ const DEFAULT_VISIBLE: Record<string, boolean> = {
   status: true,
 }
 
-interface ApprovedInvoice {
-  id: string
-  invoice_number: string
-  invoice_type: string
-  invoice_category: string
-  issue_date: string
-  due_date: string
-  total_amount: number
-  base_amount: number
-  vat_amount: number
-  status: string
-  description: string
-  approved: boolean
-  supplier_name?: string
-  company_name?: string
-  project_name?: string
-  phase_name?: string
-  contract_number?: string
-  is_retail?: boolean
-}
-
 const AccountingApprovals: React.FC = () => {
-  const { user } = useAuth()
-  const [invoices, setInvoices] = useState<ApprovedInvoice[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const {
+    invoices,
+    filteredInvoices,
+    stats,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    selectedIds,
+    toggleSelect,
+    toggleSelectAll,
+    allFilteredSelected,
+    selectedCount,
+    selectedTotal,
+    hideInvoice,
+    bulkHide
+  } = useApprovals()
+
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(DEFAULT_VISIBLE)
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [hideConfirmDialog, setHideConfirmDialog] = useState<{
@@ -85,15 +75,6 @@ const AccountingApprovals: React.FC = () => {
     invoiceNumber: null
   })
   const [bulkHideConfirmOpen, setBulkHideConfirmOpen] = useState(false)
-  const [stats, setStats] = useState({
-    totalInvoices: 0,
-    totalAmount: 0,
-    oldestInvoice: null as string | null
-  })
-
-  useEffect(() => {
-    fetchApprovedInvoices()
-  }, [])
 
   useEffect(() => {
     if (!showColumnMenu) return
@@ -109,142 +90,13 @@ const AccountingApprovals: React.FC = () => {
     setVisibleColumns((prev) => ({ ...prev, [col]: !prev[col] }))
   }
 
-  const fetchApprovedInvoices = async () => {
-    setLoading(true)
-    try {
-      const [{ data: subcontractorData, error: subError }, { data: retailData, error: retailError }] = await Promise.all([
-        supabase
-          .from('accounting_invoices')
-          .select(`
-            *,
-            supplier:subcontractors!accounting_invoices_supplier_id_fkey(id, name),
-            company:accounting_companies!accounting_invoices_company_id_fkey(id, name),
-            project:projects!accounting_invoices_project_id_fkey(id, name),
-            contract:contracts!accounting_invoices_contract_id_fkey(id, contract_number, phase_id)
-          `)
-          .eq('invoice_category', 'SUBCONTRACTOR')
-          .eq('approved', true)
-          .not('project_id', 'is', null)
-          .order('issue_date', { ascending: true }),
-        supabase
-          .from('accounting_invoices')
-          .select(`
-            *,
-            retail_supplier:retail_suppliers!accounting_invoices_retail_supplier_id_fkey(id, name),
-            retail_customer:retail_customers!accounting_invoices_retail_customer_id_fkey(id, name),
-            retail_project:retail_projects!accounting_invoices_retail_project_id_fkey(id, name),
-            company:accounting_companies!accounting_invoices_company_id_fkey(id, name)
-          `)
-          .eq('invoice_category', 'RETAIL')
-          .eq('approved', true)
-          .order('issue_date', { ascending: true })
-      ])
-
-      if (subError) throw subError
-      if (retailError) throw retailError
-
-      const { data: hiddenInvoices, error: hiddenError } = await supabase
-        .from('hidden_approved_invoices')
-        .select('invoice_id')
-
-      if (hiddenError) throw hiddenError
-
-      const hiddenIds = new Set(hiddenInvoices?.map((h) => h.invoice_id) || [])
-
-      const { data: phasesData } = await supabase
-        .from('project_phases')
-        .select('id, phase_name')
-
-      const phasesMap = new Map(phasesData?.map((p) => [p.id, p.phase_name]) || [])
-
-      const formattedSubcontractor: ApprovedInvoice[] = (subcontractorData || [])
-        .filter((inv) => !hiddenIds.has(inv.id))
-        .map((inv) => ({
-          id: inv.id,
-          invoice_number: inv.invoice_number,
-          invoice_type: inv.invoice_type,
-          invoice_category: inv.invoice_category,
-          issue_date: inv.issue_date,
-          due_date: inv.due_date,
-          total_amount: parseFloat(inv.total_amount || '0'),
-          base_amount: parseFloat(inv.base_amount || '0'),
-          vat_amount: parseFloat(inv.vat_amount || '0'),
-          status: inv.status,
-          description: inv.description || '',
-          approved: inv.approved,
-          supplier_name: (inv.supplier as { name?: string } | null)?.name || 'N/A',
-          company_name: (inv.company as { name?: string } | null)?.name || 'N/A',
-          project_name: (inv.project as { name?: string } | null)?.name || 'N/A',
-          phase_name:
-            inv.contract && (inv.contract as { phase_id?: string } | null)?.phase_id
-              ? phasesMap.get((inv.contract as { phase_id?: string }).phase_id!) || 'N/A'
-              : 'N/A',
-          contract_number: (inv.contract as { contract_number?: string } | null)?.contract_number || 'N/A',
-          is_retail: false
-        }))
-
-      const formattedRetail: ApprovedInvoice[] = (retailData || [])
-        .filter((inv) => !hiddenIds.has(inv.id))
-        .map((inv) => ({
-          id: inv.id,
-          invoice_number: inv.invoice_number,
-          invoice_type: inv.invoice_type,
-          invoice_category: inv.invoice_category,
-          issue_date: inv.issue_date,
-          due_date: inv.due_date,
-          total_amount: parseFloat(inv.total_amount || '0'),
-          base_amount: parseFloat(inv.base_amount || '0'),
-          vat_amount: parseFloat(inv.vat_amount || '0'),
-          status: inv.status,
-          description: inv.description || '',
-          approved: inv.approved,
-          supplier_name: (inv.retail_supplier as { name?: string } | null)?.name || (inv.retail_customer as { name?: string } | null)?.name || 'N/A',
-          company_name: (inv.company as { name?: string } | null)?.name || 'N/A',
-          project_name: (inv.retail_project as { name?: string } | null)?.name || 'N/A',
-          phase_name: 'N/A',
-          contract_number: 'N/A',
-          is_retail: true
-        }))
-
-      const allInvoices = [...formattedSubcontractor, ...formattedRetail].sort(
-        (a, b) => new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime()
-      )
-
-      setInvoices(allInvoices)
-      setSelectedIds(new Set())
-
-      const totalAmount = allInvoices.reduce((sum, inv) => sum + inv.total_amount, 0)
-      const oldestInvoice = allInvoices.length > 0 ? allInvoices[0].issue_date : null
-
-      setStats({
-        totalInvoices: allInvoices.length,
-        totalAmount,
-        oldestInvoice
-      })
-    } catch (error) {
-      console.error('Error fetching approved invoices:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const hideInvoiceById = async (invoiceId: string) => {
-    if (!user?.id) return
-    const { error } = await supabase.from('hidden_approved_invoices').insert({
-      invoice_id: invoiceId,
-      hidden_by: user.id
-    })
-    if (error && error.code !== '23505') throw error
-  }
-
   const handleHideInvoice = async () => {
-    if (!hideConfirmDialog.invoiceId || !user?.id) {
+    if (!hideConfirmDialog.invoiceId) {
       alert('Greška: Korisnik ili ID računa nisu pronađeni.')
       return
     }
     try {
-      await hideInvoiceById(hideConfirmDialog.invoiceId)
-      await fetchApprovedInvoices()
+      await hideInvoice(hideConfirmDialog.invoiceId)
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
     } catch (error: unknown) {
       alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
@@ -252,62 +104,13 @@ const AccountingApprovals: React.FC = () => {
   }
 
   const handleBulkHide = async () => {
-    if (!user?.id) {
-      alert('Greška: Korisnik nije pronađen.')
-      return
-    }
     try {
-      for (const id of selectedIds) {
-        await hideInvoiceById(id)
-      }
-      await fetchApprovedInvoices()
+      await bulkHide()
       setBulkHideConfirmOpen(false)
     } catch (error: unknown) {
       alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
-
-  const filteredInvoices = invoices.filter(
-    (invoice) =>
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.description.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const allFilteredSelected =
-    filteredInvoices.length > 0 &&
-    filteredInvoices.every((inv) => selectedIds.has(inv.id))
-
-  const toggleSelectAll = () => {
-    if (allFilteredSelected) {
-      setSelectedIds((prev) => {
-        const next = new Set(prev)
-        filteredInvoices.forEach((inv) => next.delete(inv.id))
-        return next
-      })
-    } else {
-      setSelectedIds((prev) => {
-        const next = new Set(prev)
-        filteredInvoices.forEach((inv) => next.add(inv.id))
-        return next
-      })
-    }
-  }
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const selectedCount = selectedIds.size
-  const selectedTotal = invoices
-    .filter((inv) => selectedIds.has(inv.id))
-    .reduce((sum, inv) => sum + inv.total_amount, 0)
 
   if (loading) {
     return <LoadingSpinner size="lg" message="Učitavanje odobrenih računa..." />
@@ -367,7 +170,12 @@ const AccountingApprovals: React.FC = () => {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setSelectedIds(new Set())}
+                  onClick={() => {
+                    filteredInvoices.forEach(inv => {
+                      if (selectedIds.has(inv.id)) toggleSelect(inv.id)
+                    })
+                    Array.from(selectedIds).forEach(id => toggleSelect(id))
+                  }}
                 >
                   Poništi odabir
                 </Button>

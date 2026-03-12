@@ -266,54 +266,12 @@ const SalesProjectsEnhanced: React.FC = () => {
     if (!unitForSale) return
 
     try {
-      let customerId = saleData.customer_id
-
-      if (customerMode === 'new') {
-        if (!saleData.buyer_name.trim() || !saleData.buyer_email.trim()) {
-          alert('Please fill in buyer name and email')
-          return
-        }
-
-        const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
-        const lastName = lastNameParts.join(' ') || firstName
-
-        const newCustomer = await salesService.createCustomer(
-          firstName,
-          lastName,
-          saleData.buyer_email,
-          saleData.buyer_phone,
-          saleData.buyer_address
-        )
-        customerId = newCustomer.id
-      }
-
-      await salesService.createSale(
-        unitForSale.unit.id,
-        unitForSale.type,
-        customerId,
-        saleData.sale_price,
-        saleData.payment_method,
-        saleData.down_payment,
-        saleData.monthly_payment,
-        saleData.sale_date,
-        saleData.contract_signed,
-        saleData.notes
-      )
-
-      if (customerMode === 'existing' && customerId) {
-        await salesService.updateCustomerStatus(customerId, 'buyer')
-      }
-
-      const buyerDisplayName = customerMode === 'existing'
-        ? saleData.buyer_name || (customers.find(c => c.id === customerId) ? `${customers.find(c => c.id === customerId)!.name} ${customers.find(c => c.id === customerId)!.surname}` : '')
-        : saleData.buyer_name
-
-      await salesService.updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, buyerDisplayName)
-
-      if (unitForSale.type === 'apartment') {
-        await salesService.updateLinkedUnitsAfterSale(unitForSale.unit.id, buyerDisplayName)
-      }
-
+      await salesService.completeSale({
+        unitForSale,
+        saleData,
+        customerMode,
+        existingCustomers: customers
+      })
       setShowSaleForm(false)
       setUnitForSale(null)
       refetch()

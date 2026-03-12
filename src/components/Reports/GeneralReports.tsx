@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Download,
   Building2,
@@ -11,37 +11,14 @@ import {
   BarChart3,
   Home
 } from 'lucide-react'
-import { format, subMonths } from 'date-fns'
+import { format } from 'date-fns'
 import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
-import { fetchGeneralReportData } from './services/generalReportService'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
-import type { ComprehensiveReport } from './types'
+import { useGeneralReportData } from './hooks/useGeneralReportData'
 
 const GeneralReports: React.FC = () => {
-  const [report, setReport] = useState<ComprehensiveReport | null>(null)
-  const [selectedProject] = useState<string>('all')
-  const [dateRange] = useState({
-    start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
-    end: format(new Date(), 'yyyy-MM-dd')
-  })
-  const [loading, setLoading] = useState(true)
+  const { report, loading } = useGeneralReportData()
   const [generatingPDF, setGeneratingPDF] = useState(false)
-
-  useEffect(() => {
-    generateComprehensiveReport()
-  }, [selectedProject, dateRange])
-
-  const generateComprehensiveReport = async () => {
-    setLoading(true)
-    try {
-      const reportData = await fetchGeneralReportData(selectedProject, dateRange)
-      setReport(reportData)
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleGeneratePDF = async () => {
     if (!report) return

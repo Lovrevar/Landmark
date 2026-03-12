@@ -1,5 +1,66 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
-import { UnitType, BulkCreateData } from '../types'
+import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale } from '../types'
+
+export interface CompleteSalePayload {
+  unitForSale: UnitForSale
+  saleData: SaleFormData
+  customerMode: CustomerMode
+  existingCustomers: Array<{ id: string; name: string; surname: string }>
+}
+
+export const completeSale = async (payload: CompleteSalePayload): Promise<void> => {
+  const { unitForSale, saleData, customerMode, existingCustomers } = payload
+
+  let customerId = saleData.customer_id
+
+  if (customerMode === 'new') {
+    if (!saleData.buyer_name.trim() || !saleData.buyer_email.trim()) {
+      throw new Error('Please fill in buyer name and email')
+    }
+
+    const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
+    const lastName = lastNameParts.join(' ') || firstName
+
+    const newCustomer = await createCustomer(
+      firstName,
+      lastName,
+      saleData.buyer_email,
+      saleData.buyer_phone,
+      saleData.buyer_address
+    )
+    customerId = newCustomer.id
+  }
+
+  await createSale(
+    unitForSale.unit.id,
+    unitForSale.type,
+    customerId,
+    saleData.sale_price,
+    saleData.payment_method,
+    saleData.down_payment,
+    saleData.monthly_payment,
+    saleData.sale_date,
+    saleData.contract_signed,
+    saleData.notes
+  )
+
+  if (customerMode === 'existing' && customerId) {
+    await updateCustomerStatus(customerId, 'buyer')
+  }
+
+  const buyerDisplayName = customerMode === 'existing'
+    ? saleData.buyer_name || (() => {
+        const found = existingCustomers.find(c => c.id === customerId)
+        return found ? `${found.name} ${found.surname}` : ''
+      })()
+    : saleData.buyer_name
+
+  await updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, buyerDisplayName)
+
+  if (unitForSale.type === 'apartment') {
+    await updateLinkedUnitsAfterSale(unitForSale.unit.id, buyerDisplayName)
+  }
+}
 
 export const fetchProjects = async () => {
   const { data, error } = await supabase

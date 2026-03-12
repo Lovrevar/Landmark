@@ -121,5 +121,10 @@ export const useSubcontractorData = () => {
     }
   }, [])
 
-  return { subcontractors, loading, fetchData }
+  const deleteSubcontractor = async (id: string): Promise<void> => {
+    const { error } = await supabase.from('subcontractors').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  return { subcontractors, loading, fetchData, deleteSubcontractor }
 }

@@ -2,6 +2,7 @@ import React from 'react'
 import { MapPin, ArrowRight, Layers, Link, Edit2 } from 'lucide-react'
 import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectWithPhases } from '../../../types/retail'
+import { formatCurrency, getStatusBadgeVariant } from '../utils'
 
 interface ProjectsGridProps {
   projects: RetailProjectWithPhases[]
@@ -10,30 +11,6 @@ interface ProjectsGridProps {
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onEditProject }) => {
-  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
-    switch (status) {
-      case 'Completed':
-        return 'green'
-      case 'In Progress':
-        return 'blue'
-      case 'Planning':
-        return 'yellow'
-      case 'On Hold':
-        return 'gray'
-      default:
-        return 'gray'
-    }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (

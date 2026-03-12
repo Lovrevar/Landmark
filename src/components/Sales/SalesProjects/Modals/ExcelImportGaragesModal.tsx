@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle } from 'lucide-react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, Button } from '../../../ui'
+import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
 
 interface ParsedGarageRow {
   rowIndex: number
@@ -51,12 +51,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-      const { data: existingGarages } = await supabase
-        .from('garages')
-        .select('number')
-        .eq('building_id', selectedBuilding.id)
-
-      const existingNumbers = new Set(existingGarages?.map(g => g.number) || [])
+      const existingNumbers = await fetchExistingGarageNumbers(selectedBuilding.id)
 
       const parsed: ParsedGarageRow[] = rows
         .slice(1)
@@ -78,52 +73,12 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
   }
 
   const handleImport = async () => {
-    if (!selectedBuilding) return
+    if (!selectedBuilding || !file) return
 
     setImporting(true)
-    let created = 0
-    let updated = 0
-    let failed = 0
-
     try {
-      for (const row of parsedRows) {
-        try {
-          const garageData = {
-            building_id: selectedBuilding.id,
-            number: row.number,
-            size_m2: row.size_m2,
-            price: row.price,
-            floor: 0,
-            status: 'Available'
-          }
-
-          if (row.exists) {
-            const { error } = await supabase
-              .from('garages')
-              .update({
-                size_m2: row.size_m2,
-                price: row.price
-              })
-              .eq('building_id', selectedBuilding.id)
-              .eq('number', row.number)
-
-            if (error) throw error
-            updated++
-          } else {
-            const { error } = await supabase
-              .from('garages')
-              .insert(garageData)
-
-            if (error) throw error
-            created++
-          }
-        } catch (error) {
-          console.error(`Error importing garage ${row.number}:`, error)
-          failed++
-        }
-      }
-
-      setImportResults({ created, updated, failed })
+      const result = await importGaragesFromExcel(file, selectedBuilding.id)
+      setImportResults({ created: result.created, updated: result.updated, failed: result.errors.length })
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
