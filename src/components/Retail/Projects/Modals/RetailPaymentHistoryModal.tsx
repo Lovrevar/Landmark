@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
-import { supabase } from '../../../../lib/supabase'
 import type { RetailContract } from '../../../../types/retail'
+import { retailProjectService } from '../Services/retailProjectService'
 
 interface AccountingPayment {
   id: string
@@ -68,100 +68,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
 
     setLoading(true)
     try {
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('accounting_invoices')
-        .select('id, invoice_number, invoice_category, retail_contract_id')
-        .eq('retail_contract_id', contract.id)
-      if (invoicesError) {
-        console.error('Invoices Error:', invoicesError)
-        throw invoicesError
-      }
-
-      const invoiceIds = (invoicesData || []).map(inv => inv.id)
-      //console.log('Invoice IDs:', invoiceIds)
-
-      if (invoiceIds.length === 0) {
-        //console.log('No invoices found for this contract')
-        setPayments([])
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('accounting_payments')
-        .select(`
-          id,
-          amount,
-          payment_date,
-          payment_method,
-          reference_number,
-          description,
-          is_cesija,
-          created_at,
-          invoice_id,
-          company_bank_account_id,
-          cesija_credit_id,
-          accounting_invoices(
-            id,
-            invoice_number,
-            invoice_type,
-            base_amount,
-            total_amount,
-            status
-          ),
-          company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(
-            bank_name,
-            account_number
-          ),
-          cesija_credit:bank_credits!accounting_payments_cesija_credit_id_fkey(
-            credit_name
-          )
-        `)
-        .in('invoice_id', invoiceIds)
-        .order('payment_date', { ascending: false })
-
-      //console.log('Payments Query Result:', { data, error })
-
-      if (error) {
-        console.error('Payments Error:', error)
-        throw error
-      }
-
-      type RawPayment = {
-        id: string; amount: string; payment_date: string | null; payment_method: string | null
-        reference_number: string | null; description: string | null; is_cesija: boolean; created_at: string
-        invoice_id: string; company_bank_account_id: string | null; cesija_credit_id: string | null
-        accounting_invoices?: { id: string; invoice_number: string; invoice_type: string; base_amount: string; total_amount: string; status: string } | null
-        company_bank_account?: { bank_name: string; account_number: string } | null
-        cesija_credit?: { credit_name: string } | null
-      }
-      const formattedPayments = (data as unknown as RawPayment[] || []).map((payment: RawPayment) => {
-        const paymentAmount = parseFloat(payment.amount)
-        const invoice = payment.accounting_invoices
-        let baseAmountPaid = paymentAmount
-
-        if (invoice && parseFloat(invoice.total_amount) > 0) {
-          baseAmountPaid = (paymentAmount / parseFloat(invoice.total_amount)) * parseFloat(invoice.base_amount)
-        }
-
-        return {
-          id: payment.id,
-          amount: paymentAmount,
-          base_amount_paid: baseAmountPaid,
-          payment_date: payment.payment_date,
-          payment_method: payment.payment_method,
-          reference_number: payment.reference_number,
-          description: payment.description,
-          is_cesija: payment.is_cesija,
-          created_at: payment.created_at,
-          invoice: invoice ? { ...invoice, base_amount: parseFloat(invoice.base_amount), total_amount: parseFloat(invoice.total_amount) } : undefined,
-          company_bank_account: payment.company_bank_account ?? undefined,
-          credit: payment.cesija_credit ?? undefined
-        }
-      })
-
-      //console.log('Formatted Payments:', formattedPayments)
-      //console.log('=== END DEBUG ===')
-
+      const formattedPayments = await retailProjectService.fetchRetailContractPayments(contract.id)
       setPayments(formattedPayments)
     } catch (error) {
       console.error('Error fetching payments:', error)

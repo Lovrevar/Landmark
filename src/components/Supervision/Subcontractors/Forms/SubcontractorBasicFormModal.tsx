@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, FormField, Input, Button } from '../../../ui'
+import { insertSubcontractorRecord, updateSubcontractorRecord } from '../../SiteManagement/Services/siteService'
 
 interface Props {
   visible: boolean
@@ -39,11 +39,9 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
       }
 
       if (editingId) {
-        const { error } = await supabase.from('subcontractors').update(payload).eq('id', editingId)
-        if (error) throw error
+        await updateSubcontractorRecord(editingId, payload)
       } else {
-        const { error } = await supabase.from('subcontractors').insert(payload)
-        if (error) throw error
+        await insertSubcontractorRecord(payload)
       }
 
       onClose()

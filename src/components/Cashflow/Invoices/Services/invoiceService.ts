@@ -428,3 +428,18 @@ export const fetchMilestones = async (contractId: string) => {
     }
   })
 }
+
+export const createBankInvoice = async (invoiceData: Record<string, unknown>): Promise<void> => {
+  const { error } = await supabase.from('accounting_invoices').insert([invoiceData])
+  if (error) throw error
+}
+
+export const upsertRetailInvoice = async (invoiceData: Record<string, unknown>, editingId?: string): Promise<void> => {
+  if (editingId) {
+    const { error } = await supabase.from('accounting_invoices').update(invoiceData).eq('id', editingId)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('accounting_invoices').insert(invoiceData)
+    if (error) throw error
+  }
+}

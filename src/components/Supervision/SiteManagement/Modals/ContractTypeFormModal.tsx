@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../ui'
+import { createContractType } from '../Services/siteService'
 
 interface Props {
   visible: boolean
@@ -31,34 +31,16 @@ export const ContractTypeFormModal: React.FC<Props> = ({ visible, onClose, onCre
       setSaving(true)
       setError(null)
 
-      const { data: existingTypes } = await supabase
-        .from('contract_types')
-        .select('id')
-        .order('id', { ascending: false })
-        .limit(1)
-
-      const newId = (existingTypes && existingTypes.length > 0 ? existingTypes[0].id : 0) + 1
-
-      const { error: insertError } = await supabase
-        .from('contract_types')
-        .insert({ id: newId, name: name.trim(), description: description.trim() || null, is_active: true })
-        .select()
-        .single()
-
-      if (insertError) {
-        if (insertError.code === '23505') {
-          setError('Kategorija s tim nazivom već postoji')
-        } else {
-          throw insertError
-        }
-        return
-      }
-
+      const newId = await createContractType(name.trim(), description.trim() || null)
       onCreated(newId)
       handleClose()
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error creating category:', err)
-      setError('Greška pri spremanju kategorije')
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+        setError('Kategorija s tim nazivom već postoji')
+      } else {
+        setError('Greška pri spremanju kategorije')
+      }
     } finally {
       setSaving(false)
     }

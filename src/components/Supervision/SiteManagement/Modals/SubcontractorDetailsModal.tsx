@@ -2,21 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../ui'
+import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../Services/siteService'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
 import { formatEuro } from '../../../../utils/formatters'
 
-interface ContractData {
-  contract_number: string
-  base_amount: number
-  vat_rate: number
-  vat_amount: number
-  total_amount: number
-  end_date: string
-  contract_type_name?: string
-  status: string
-}
+type ContractData = ContractDetailsRow
 
 interface SubcontractorDetailsModalProps {
   visible: boolean
@@ -60,38 +51,11 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
   const loadContractData = async () => {
     if (!subcontractor) return
-
     const contractId = subcontractor.contract_id || subcontractor.id
-
     try {
       setLoadingContract(true)
-      const { data, error } = await supabase
-        .from('contracts')
-        .select(`
-          contract_number,
-          base_amount,
-          vat_rate,
-          vat_amount,
-          total_amount,
-          end_date,
-          status,
-          contract_types:contract_type_id(name)
-        `)
-        .eq('id', contractId)
-        .maybeSingle()
-
-      if (!error && data) {
-        setContractData({
-          contract_number: data.contract_number,
-          base_amount: data.base_amount || 0,
-          vat_rate: data.vat_rate || 0,
-          vat_amount: data.vat_amount || 0,
-          total_amount: data.total_amount || 0,
-          end_date: data.end_date,
-          contract_type_name: (data.contract_types as unknown as { name: string } | null)?.name,
-          status: data.status
-        })
-      }
+      const data = await fetchContractDetails(contractId)
+      if (data) setContractData(data)
     } catch (error) {
       console.error('Error loading contract data:', error)
     } finally {
@@ -101,23 +65,14 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
   const loadFunderInfo = async () => {
     if (!subcontractor) return
-
     if (!subcontractor.financed_by_bank_id) {
       setFunderName(null)
       return
     }
-
     try {
       setLoadingFunder(true)
-      const { data, error } = await supabase
-        .from('banks')
-        .select('name')
-        .eq('id', subcontractor.financed_by_bank_id)
-        .maybeSingle()
-
-      if (!error && data) {
-        setFunderName(data.name)
-      }
+      const name = await fetchBankById(subcontractor.financed_by_bank_id)
+      setFunderName(name)
     } catch (error) {
       console.error('Error loading funder:', error)
     } finally {

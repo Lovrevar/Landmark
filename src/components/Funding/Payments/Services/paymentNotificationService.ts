@@ -298,3 +298,86 @@ export const regeneratePaymentSchedule = async (creditId: string): Promise<void>
     throw error
   }
 }
+
+export const fetchMilestoneProjectId = async (milestoneId: string): Promise<string> => {
+  const { data, error } = await supabase
+    .from('subcontractor_milestones')
+    .select('project_id')
+    .eq('id', milestoneId)
+    .single()
+  if (error) throw error
+  return data.project_id
+}
+
+export const fetchProjectBanks = async (projectId: string): Promise<{ id: string; name: string }[]> => {
+  type AllocWithBank = { bank_credits?: { banks?: { id: string; name: string } | null } | null }
+  const { data, error } = await supabase
+    .from('credit_allocations')
+    .select('bank_credits(banks(id, name))')
+    .eq('project_id', projectId)
+  if (error) throw error
+  return Array.from(
+    new Map(
+      ((data as unknown as AllocWithBank[]) || [])
+        .filter((a) => a.bank_credits?.banks)
+        .map((a) => {
+          const bank = a.bank_credits!.banks!
+          return [bank.id, { id: bank.id, name: bank.name }] as [string, { id: string; name: string }]
+        })
+    ).values()
+  )
+}
+
+export const fetchSubcontractorPaymentTotal = async (subcontractorId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('subcontractor_payments')
+    .select('amount')
+    .eq('subcontractor_id', subcontractorId)
+  if (error) throw error
+  return (data || []).reduce((sum, p) => sum + Number(p.amount), 0)
+}
+
+export const fetchSubcontractorFinancingBank = async (subcontractorId: string): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('subcontractors')
+    .select('financed_by_bank_id')
+    .eq('id', subcontractorId)
+    .single()
+  if (error) throw error
+  return data.financed_by_bank_id || null
+}
+
+export interface SubcontractorPaymentData {
+  subcontractor_id: string
+  amount: number
+  payment_date: string | null
+  notes: string
+  milestone_id: string
+  paid_by_bank_id: string | null
+}
+
+export const recordSubcontractorMilestonePayment = async (data: SubcontractorPaymentData): Promise<void> => {
+  const { error: paymentError } = await supabase
+    .from('subcontractor_payments')
+    .insert({
+      subcontractor_id: data.subcontractor_id,
+      amount: data.amount,
+      payment_date: data.payment_date || null,
+      notes: data.notes,
+      milestone_id: data.milestone_id,
+      paid_by_type: data.paid_by_bank_id ? 'bank' : null,
+      paid_by_bank_id: data.paid_by_bank_id
+    })
+
+  if (paymentError) throw paymentError
+
+  const { error: milestoneError } = await supabase
+    .from('subcontractor_milestones')
+    .update({
+      status: 'paid',
+      paid_date: data.payment_date || new Date().toISOString().split('T')[0]
+    })
+    .eq('id', data.milestone_id)
+
+  if (milestoneError) throw milestoneError
+}

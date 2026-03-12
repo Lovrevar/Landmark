@@ -347,3 +347,119 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
 
   return { contracts: contractsWithPayments, invoices: invoicesWithPayments }
 }
+
+export const fetchSuppliersForLinking = async (): Promise<{ id: string; name: string; contact: string }[]> => {
+  const { data, error } = await supabase.from('subcontractors').select('id, name, contact').order('name')
+  if (error) throw error
+  return data || []
+}
+
+export const fetchProjectsForLinking = async (): Promise<{ id: string; name: string }[]> => {
+  const { data, error } = await supabase.from('projects').select('id, name').order('name')
+  if (error) throw error
+  return data || []
+}
+
+export const fetchPhasesForProject = async (projectId: string): Promise<{ id: string; phase_name: string; phase_number: number; project_id: string }[]> => {
+  const { data, error } = await supabase
+    .from('project_phases')
+    .select('id, phase_name, phase_number, project_id')
+    .eq('project_id', projectId)
+    .order('phase_number')
+  if (error) throw error
+  return data || []
+}
+
+export const generateSupplierContractNumber = async (projectId: string): Promise<string> => {
+  const { data: project, error: projectError } = await supabase
+    .from('projects').select('name').eq('id', projectId).single()
+  if (projectError) throw projectError
+
+  const { data: contracts, error: contractsError } = await supabase
+    .from('contracts').select('contract_number').eq('project_id', projectId)
+    .order('created_at', { ascending: false }).limit(1)
+  if (contractsError) throw contractsError
+
+  const projectCode = project.name.substring(0, 3).toUpperCase()
+  const nextNumber = contracts && contracts.length > 0
+    ? parseInt(contracts[0].contract_number.split('-').pop() || '0') + 1
+    : 1
+  return `${projectCode}-${String(nextNumber).padStart(4, '0')}`
+}
+
+export const createSupplierContract = async (
+  supplierId: string,
+  projectId: string,
+  phaseId: string,
+  contractNumber: string
+): Promise<void> => {
+  const { error } = await supabase.from('contracts').insert({
+    contract_number: contractNumber,
+    project_id: projectId,
+    phase_id: phaseId,
+    subcontractor_id: supplierId,
+    job_description: 'Povezan iz Accountinga',
+    contract_amount: 0,
+    base_amount: 0,
+    vat_rate: 0,
+    vat_amount: 0,
+    total_amount: 0,
+    budget_realized: 0,
+    status: 'active',
+    has_contract: false,
+    contract_type_id: 0,
+    end_date: null
+  })
+  if (error) throw error
+}
+
+export const fetchRetailSupplierTypes = async (): Promise<{ id: string; name: string }[]> => {
+  const { data, error } = await supabase.from('retail_supplier_types').select('id, name').order('name')
+  if (error) throw error
+  return data || []
+}
+
+export const fetchRetailProjectsForSupplier = async (): Promise<{ id: string; name: string }[]> => {
+  const { data, error } = await supabase.from('retail_projects').select('id, name').order('name')
+  if (error) throw error
+  return data || []
+}
+
+export const fetchRetailPhasesForProject = async (projectId: string): Promise<{ id: string; phase_name: string; phase_type: string }[]> => {
+  const { data, error } = await supabase
+    .from('retail_project_phases')
+    .select('id, phase_name, phase_type')
+    .eq('project_id', projectId)
+    .order('phase_order')
+  if (error) throw error
+  return data || []
+}
+
+export const createRetailSupplierWithContract = async (
+  supplierData: { name: string; supplier_type_id: string; contact_person: string | null; contact_phone: string | null; contact_email: string | null },
+  contractData?: { phase_id: string }
+): Promise<void> => {
+  const { data: newSupplier, error: supplierError } = await supabase
+    .from('retail_suppliers')
+    .insert([supplierData])
+    .select()
+    .single()
+  if (supplierError) throw supplierError
+
+  if (contractData && newSupplier) {
+    const year = new Date().getFullYear()
+    const timestamp = Date.now().toString().slice(-6)
+    const contractNumber = `RCN-${year}-${timestamp}`
+
+    const { error: contractError } = await supabase.from('retail_contracts').insert([{
+      contract_number: contractNumber,
+      phase_id: contractData.phase_id,
+      supplier_id: newSupplier.id,
+      contract_amount: 0,
+      budget_realized: 0,
+      status: 'Active',
+      has_contract: false
+    }])
+    if (contractError) throw contractError
+  }
+}

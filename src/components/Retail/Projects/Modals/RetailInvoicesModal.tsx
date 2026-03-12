@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
-import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import type { RetailContract } from '../../../../types/retail'
+import { retailProjectService } from '../Services/retailProjectService'
 import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
 
 interface Invoice {
@@ -64,60 +64,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          invoice_type,
-          status,
-          base_amount,
-          vat_amount,
-          total_amount,
-          paid_amount,
-          remaining_amount,
-          issue_date,
-          due_date,
-          description,
-          accounting_companies!accounting_invoices_company_id_fkey(name),
-          retail_suppliers(name),
-          retail_customers(name)
-        `)
-        .eq('retail_contract_id', contract.id)
-        .order('issue_date', { ascending: false })
-
-      //console.log('📦 RetailInvoicesModal - Supabase response:', { data, error, count: data?.length })
-
-      if (error) throw error
-
-      type RawInvoice = {
-        id: string; invoice_number: string; invoice_type: string; status: string
-        base_amount: string; vat_amount: string; total_amount: string; paid_amount: string; remaining_amount: string
-        issue_date: string; due_date: string; description?: string
-        accounting_companies?: { name: string } | null
-        retail_suppliers?: { name: string } | null
-        retail_customers?: { name: string } | null
-      }
-      const formattedInvoices = (data as unknown as RawInvoice[] || []).map((inv: RawInvoice) => ({
-        id: inv.id,
-        invoice_number: inv.invoice_number,
-        invoice_type: inv.invoice_type,
-        status: inv.status,
-        base_amount: parseFloat(inv.base_amount),
-        vat_amount: parseFloat(inv.vat_amount),
-        total_amount: parseFloat(inv.total_amount),
-        paid_amount: parseFloat(inv.paid_amount),
-        remaining_amount: parseFloat(inv.remaining_amount),
-        issue_date: inv.issue_date,
-        due_date: inv.due_date,
-        description: inv.description || '',
-        company_name: inv.accounting_companies?.name || 'N/A',
-        supplier_name: inv.retail_suppliers?.name || null,
-        customer_name: inv.retail_customers?.name || null
-      }))
-
-      //console.log('✅ RetailInvoicesModal - Formatted invoices:', formattedInvoices)
-
+      const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contract.id)
       setInvoices(formattedInvoices)
     } catch (error) {
       console.error('Error fetching invoices:', error)

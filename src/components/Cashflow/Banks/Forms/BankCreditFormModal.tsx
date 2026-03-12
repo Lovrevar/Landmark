@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
-import { calculatePayments } from '../Services/bankService'
+import { calculatePayments, fetchCompanyBankAccounts } from '../Services/bankService'
 import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
-import { supabase } from '../../../../lib/supabase'
 
 interface BankCreditFormModalProps {
   showCreditForm: boolean
@@ -32,28 +31,17 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
 
   useEffect(() => {
     if (newCredit.company_id && newCredit.disbursed_to_account) {
-      fetchCompanyBankAccounts(newCredit.company_id)
+      loadCompanyBankAccounts(newCredit.company_id)
     } else {
       setCompanyBankAccounts([])
     }
   }, [newCredit.company_id, newCredit.disbursed_to_account])
 
-  const fetchCompanyBankAccounts = async (companyId: string) => {
+  const loadCompanyBankAccounts = async (companyId: string) => {
     try {
       setLoadingAccounts(true)
-      const { data, error } = await supabase
-        .from('company_bank_accounts')
-        .select(`
-          id,
-          company_id,
-          bank_name,
-          account_number,
-          current_balance
-        `)
-        .eq('company_id', companyId)
-
-      if (error) throw error
-      setCompanyBankAccounts(data || [])
+      const data = await fetchCompanyBankAccounts(companyId)
+      setCompanyBankAccounts(data)
     } catch (error) {
       console.error('Error fetching company bank accounts:', error)
       setCompanyBankAccounts([])

@@ -568,5 +568,108 @@ export const retailProjectService = {
       totalPercentage,
       remainingPercentage
     }
+  },
+
+  async fetchRetailContractInvoices(contractId: string) {
+    type RawInvoice = {
+      id: string; invoice_number: string; invoice_type: string; status: string
+      base_amount: string; vat_amount: string; total_amount: string; paid_amount: string; remaining_amount: string
+      issue_date: string; due_date: string; description?: string
+      accounting_companies?: { name: string } | null
+      retail_suppliers?: { name: string } | null
+      retail_customers?: { name: string } | null
+    }
+
+    const { data, error } = await supabase
+      .from('accounting_invoices')
+      .select(`
+        id, invoice_number, invoice_type, status,
+        base_amount, vat_amount, total_amount, paid_amount, remaining_amount,
+        issue_date, due_date, description,
+        accounting_companies!accounting_invoices_company_id_fkey(name),
+        retail_suppliers(name),
+        retail_customers(name)
+      `)
+      .eq('retail_contract_id', contractId)
+      .order('issue_date', { ascending: false })
+
+    if (error) throw error
+
+    return ((data as unknown as RawInvoice[]) || []).map((inv) => ({
+      id: inv.id,
+      invoice_number: inv.invoice_number,
+      invoice_type: inv.invoice_type,
+      status: inv.status,
+      base_amount: parseFloat(inv.base_amount),
+      vat_amount: parseFloat(inv.vat_amount),
+      total_amount: parseFloat(inv.total_amount),
+      paid_amount: parseFloat(inv.paid_amount),
+      remaining_amount: parseFloat(inv.remaining_amount),
+      issue_date: inv.issue_date,
+      due_date: inv.due_date,
+      description: inv.description || '',
+      company_name: inv.accounting_companies?.name || 'N/A',
+      supplier_name: inv.retail_suppliers?.name || null,
+      customer_name: inv.retail_customers?.name || null
+    }))
+  },
+
+  async fetchRetailContractPayments(contractId: string) {
+    const { data: invoicesData, error: invoicesError } = await supabase
+      .from('accounting_invoices')
+      .select('id')
+      .eq('retail_contract_id', contractId)
+
+    if (invoicesError) throw invoicesError
+
+    const invoiceIds = (invoicesData || []).map(inv => inv.id)
+    if (invoiceIds.length === 0) return []
+
+    type RawPayment = {
+      id: string; amount: string; payment_date: string | null; payment_method: string | null
+      reference_number: string | null; description: string | null; is_cesija: boolean; created_at: string
+      invoice_id: string; company_bank_account_id: string | null; cesija_credit_id: string | null
+      accounting_invoices?: { id: string; invoice_number: string; invoice_type: string; base_amount: string; total_amount: string; status: string } | null
+      company_bank_account?: { bank_name: string; account_number: string } | null
+      cesija_credit?: { credit_name: string } | null
+    }
+
+    const { data, error } = await supabase
+      .from('accounting_payments')
+      .select(`
+        id, amount, payment_date, payment_method, reference_number,
+        description, is_cesija, created_at, invoice_id,
+        company_bank_account_id, cesija_credit_id,
+        accounting_invoices(id, invoice_number, invoice_type, base_amount, total_amount, status),
+        company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(bank_name, account_number),
+        cesija_credit:bank_credits!accounting_payments_cesija_credit_id_fkey(credit_name)
+      `)
+      .in('invoice_id', invoiceIds)
+      .order('payment_date', { ascending: false })
+
+    if (error) throw error
+
+    return ((data as unknown as RawPayment[]) || []).map((payment) => {
+      const paymentAmount = parseFloat(payment.amount)
+      const invoice = payment.accounting_invoices
+      let baseAmountPaid = paymentAmount
+      if (invoice && parseFloat(invoice.total_amount) > 0) {
+        baseAmountPaid = (paymentAmount / parseFloat(invoice.total_amount)) * parseFloat(invoice.base_amount)
+      }
+      return {
+        id: payment.id,
+        amount: paymentAmount,
+        base_amount_paid: baseAmountPaid,
+        payment_date: payment.payment_date,
+        payment_method: payment.payment_method,
+        reference_number: payment.reference_number,
+        description: payment.description,
+        is_cesija: payment.is_cesija,
+        created_at: payment.created_at,
+        invoice: invoice ? { ...invoice, base_amount: parseFloat(invoice.base_amount), total_amount: parseFloat(invoice.total_amount) } : undefined,
+        company_bank_account: payment.company_bank_account ?? undefined,
+        credit: payment.cesija_credit ?? undefined
+      }
+    })
   }
 }

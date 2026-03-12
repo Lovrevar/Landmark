@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../../lib/supabase'
-import { supabase } from '../../../../lib/supabase'
+import { fetchContractFormData } from '../Services/siteService'
 import { VAT_RATE_OPTIONS } from '../types'
 import { useContractTypes } from '../Hooks/useContractTypes'
 import { useVATCalculation } from '../Hooks/useVATCalculation'
@@ -66,84 +66,25 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setJobDescription(subcontractor.job_description || '')
       setDeadline(subcontractor.deadline || '')
 
-      loadPhases()
+      loadContractFormData()
       loadContractTypes()
-      loadContractTypeId()
-      loadContractVATData()
     }
   }, [visible, subcontractor])
 
-  const loadPhases = async () => {
+  const loadContractFormData = async () => {
     if (!subcontractor) return
-
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
-
     try {
       setLoadingPhases(true)
-
-      const { data: contractData, error: contractError } = await supabase
-        .from('contracts')
-        .select('project_id')
-        .eq('id', contractId)
-        .single()
-
-      if (contractError) throw contractError
-
-      const { data: phasesData, error: phasesError } = await supabase
-        .from('project_phases')
-        .select('id, phase_name, project_id')
-        .eq('project_id', contractData.project_id)
-        .order('phase_number')
-
-      if (phasesError) throw phasesError
-
-      setPhases(phasesData || [])
+      const data = await fetchContractFormData(contractId)
+      setPhases(data.phases)
+      setContractTypeId(data.contract_type_id)
+      setBaseAmount(data.base_amount)
+      setVatRate(data.vat_rate)
     } catch (error) {
-      console.error('Error loading phases:', error)
+      console.error('Error loading contract form data:', error)
     } finally {
       setLoadingPhases(false)
-    }
-  }
-
-  const loadContractTypeId = async () => {
-    if (!subcontractor) return
-
-    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
-
-    try {
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('contract_type_id')
-        .eq('id', contractId)
-        .single()
-
-      if (error) throw error
-      setContractTypeId(data?.contract_type_id || 0)
-    } catch (error) {
-      console.error('Error loading contract type:', error)
-      setContractTypeId(0)
-    }
-  }
-
-  const loadContractVATData = async () => {
-    if (!subcontractor) return
-
-    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
-
-    try {
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('base_amount, vat_rate, vat_amount, total_amount')
-        .eq('id', contractId)
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setBaseAmount(data.base_amount || 0)
-        setVatRate(data.vat_rate || 0)
-      }
-    } catch (error) {
-      console.error('Error loading contract VAT data:', error)
     }
   }
 

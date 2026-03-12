@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, Button } from '../../../ui'
 import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
+import { importApartmentRow } from '../services/apartmentImportService'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -159,155 +159,9 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         }
 
         try {
-          const { data: existingApt } = await supabase
-            .from('apartments')
-            .select('id')
-            .eq('project_id', selectedProject.id)
-            .eq('building_id', row.building_id)
-            .eq('number', row.number)
-            .maybeSingle()
-
-          const apartmentData = {
-            project_id: selectedProject.id,
-            building_id: row.building_id,
-            number: row.number,
-            floor: row.floor,
-            size_m2: row.size_m2,
-            price: row.price,
-            price_per_m2: row.price_per_m2,
-            status: 'Available',
-            ulaz: row.entrance || null,
-            tip_stana: row.type || null,
-            sobnost: row.rooms ? parseInt(String(row.rooms)) || null : null,
-            povrsina_otvoreno: row.area_open || null,
-            povrsina_ot_sa_koef: row.area_open_coef || null,
-            datum_potpisa_predugovora: row.datum_potpisa_predugovora,
-            contract_payment_type: row.contract_payment_type,
-            kapara_10_posto: row.kapara_10_posto,
-            rata_1_ab_konstrukcija_30: row.rata_1_ab_konstrukcija_30,
-            rata_2_postava_stolarije_20: row.rata_2_postava_stolarije_20,
-            rata_3_obrtnicki_radovi_20: row.rata_3_obrtnicki_radovi_20,
-            rata_4_uporabna_20: row.rata_4_uporabna_20,
-            kredit_etaziranje_90: row.kredit_etaziranje_90
-          }
-
-          let apartmentId: string
-
-          if (existingApt) {
-            const { error: updateError } = await supabase
-              .from('apartments')
-              .update(apartmentData)
-              .eq('id', existingApt.id)
-
-            if (updateError) throw updateError
-            apartmentId = existingApt.id
-          } else {
-            const { data: newApt, error: insertError } = await supabase
-              .from('apartments')
-              .insert(apartmentData)
-              .select('id')
-              .single()
-
-            if (insertError) throw insertError
-            apartmentId = newApt.id
-          }
-
-          if (row.parking_label && row.parking_m2 && row.parking_price) {
-            const { data: existingGarage } = await supabase
-              .from('garages')
-              .select('id')
-              .eq('building_id', row.building_id)
-              .eq('number', row.parking_label)
-              .maybeSingle()
-
-            let garageId: string
-
-            if (existingGarage) {
-              garageId = existingGarage.id
-              await supabase
-                .from('garages')
-                .update({
-                  size_m2: row.parking_m2,
-                  price: row.parking_price,
-                  floor: row.floor
-                })
-                .eq('id', garageId)
-            } else {
-              const { data: newGarage, error: garageError } = await supabase
-                .from('garages')
-                .insert({
-                  building_id: row.building_id,
-                  number: row.parking_label,
-                  size_m2: row.parking_m2,
-                  price: row.parking_price,
-                  floor: row.floor,
-                  status: 'Available'
-                })
-                .select('id')
-                .single()
-
-              if (garageError) throw garageError
-              garageId = newGarage.id
-            }
-
-            await supabase
-              .from('apartment_garages')
-              .upsert({
-                apartment_id: apartmentId,
-                garage_id: garageId
-              }, { onConflict: 'apartment_id,garage_id' })
-
-            garagesCreated++
-          }
-
-          if (row.storage_label && row.storage_m2 && row.storage_price) {
-            const { data: existingStorage } = await supabase
-              .from('repositories')
-              .select('id')
-              .eq('building_id', row.building_id)
-              .eq('number', row.storage_label)
-              .maybeSingle()
-
-            let storageId: string
-
-            if (existingStorage) {
-              storageId = existingStorage.id
-              await supabase
-                .from('repositories')
-                .update({
-                  size_m2: row.storage_m2,
-                  price: row.storage_price,
-                  floor: row.floor
-                })
-                .eq('id', storageId)
-            } else {
-              const { data: newStorage, error: storageError } = await supabase
-                .from('repositories')
-                .insert({
-                  building_id: row.building_id,
-                  number: row.storage_label,
-                  size_m2: row.storage_m2,
-                  price: row.storage_price,
-                  floor: row.floor,
-                  status: 'Available'
-                })
-                .select('id')
-                .single()
-
-              if (storageError) throw storageError
-              storageId = newStorage.id
-            }
-
-            await supabase
-              .from('apartment_repositories')
-              .upsert({
-                apartment_id: apartmentId,
-                repository_id: storageId
-              }, { onConflict: 'apartment_id,repository_id' })
-
-            storagesCreated++
-          }
-
+          const result = await importApartmentRow(row as Parameters<typeof importApartmentRow>[0], selectedProject.id)
+          if (result.garageCreated) garagesCreated++
+          if (result.storageCreated) storagesCreated++
           successCount++
         } catch (error) {
           console.error(`Error importing row ${row.rowIndex}:`, error)
@@ -315,12 +169,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         }
       }
 
-      setImportResults({
-        success: successCount,
-        failed: failedCount,
-        garagesCreated,
-        storagesCreated
-      })
+      setImportResults({ success: successCount, failed: failedCount, garagesCreated, storagesCreated })
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)

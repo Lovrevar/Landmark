@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Link2 } from 'lucide-react'
 import { Modal, FormField, Select, Button, Alert } from '../../../ui'
-import { supabase } from '../../../../lib/supabase'
+import {
+  fetchSuppliersForLinking,
+  fetchProjectsForLinking,
+  fetchPhasesForProject,
+  generateSupplierContractNumber,
+  createSupplierContract
+} from '../Services/supplierService'
 
 interface LinkSupplierToProjectModalProps {
   visible: boolean
@@ -61,13 +67,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   const loadSuppliers = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('subcontractors')
-        .select('id, name, contact')
-        .order('name')
-
-      if (error) throw error
-      setSuppliers(data || [])
+      setSuppliers(await fetchSuppliersForLinking())
     } catch (error) {
       console.error('Error loading suppliers:', error)
       alert('Greška pri učitavanju dobavljača')
@@ -78,13 +78,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
 
   const loadProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-      setProjects(data || [])
+      setProjects(await fetchProjectsForLinking())
     } catch (error) {
       console.error('Error loading projects:', error)
       alert('Greška pri učitavanju projekata')
@@ -93,44 +87,11 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
 
   const loadPhases = async (projectId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('project_phases')
-        .select('id, phase_name, phase_number, project_id')
-        .eq('project_id', projectId)
-        .order('phase_number')
-
-      if (error) throw error
-      setPhases(data || [])
+      setPhases(await fetchPhasesForProject(projectId))
     } catch (error) {
       console.error('Error loading phases:', error)
       alert('Greška pri učitavanju faza')
     }
-  }
-
-  const generateUniqueContractNumber = async (projectId: string): Promise<string> => {
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('name')
-      .eq('id', projectId)
-      .single()
-
-    if (projectError) throw projectError
-
-    const { data: contracts, error: contractsError } = await supabase
-      .from('contracts')
-      .select('contract_number')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (contractsError) throw contractsError
-
-    const projectCode = project.name.substring(0, 3).toUpperCase()
-    const nextNumber = contracts && contracts.length > 0
-      ? parseInt(contracts[0].contract_number.split('-').pop() || '0') + 1
-      : 1
-
-    return `${projectCode}-${String(nextNumber).padStart(4, '0')}`
   }
 
   const handleSubmit = async () => {
@@ -142,29 +103,8 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
     try {
       setSubmitting(true)
 
-      const contractNumber = await generateUniqueContractNumber(selectedProjectId)
-
-      const { error } = await supabase
-        .from('contracts')
-        .insert({
-          contract_number: contractNumber,
-          project_id: selectedProjectId,
-          phase_id: selectedPhaseId,
-          subcontractor_id: selectedSupplierId,
-          job_description: 'Povezan iz Accountinga',
-          contract_amount: 0,
-          base_amount: 0,
-          vat_rate: 0,
-          vat_amount: 0,
-          total_amount: 0,
-          budget_realized: 0,
-          status: 'active',
-          has_contract: false,
-          contract_type_id: 0,
-          end_date: null
-        })
-
-      if (error) throw error
+      const contractNumber = await generateSupplierContractNumber(selectedProjectId)
+      await createSupplierContract(selectedSupplierId, selectedProjectId, selectedPhaseId, contractNumber)
       resetForm()
       onSuccess()
     } catch (error) {

@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, Button, Input, Select, FormField, Alert } from '../../../ui'
+import {
+  fetchRetailSupplierTypes,
+  fetchRetailProjectsForSupplier,
+  fetchRetailPhasesForProject,
+  createRetailSupplierWithContract
+} from '../Services/supplierService'
 
 interface RetailProject {
   id: string
@@ -57,16 +62,8 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
   const loadSupplierTypes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('retail_supplier_types')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-
-      const types = data || []
+      const types = await fetchRetailSupplierTypes()
       setSupplierTypes(types)
-
       if (types.length > 0) {
         const otherType = types.find(t => t.name === 'Other')
         setFormData(prev => ({ ...prev, supplier_type_id: otherType?.id || types[0].id }))
@@ -79,13 +76,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
   const loadRetailProjects = async () => {
     try {
       setLoadingProjects(true)
-      const { data, error } = await supabase
-        .from('retail_projects')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-      setProjects(data || [])
+      setProjects(await fetchRetailProjectsForSupplier())
     } catch (err) {
       console.error('Error loading retail projects:', err)
     } finally {
@@ -95,14 +86,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
   const loadRetailPhases = async (projectId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('retail_project_phases')
-        .select('id, phase_name, phase_type')
-        .eq('project_id', projectId)
-        .order('phase_order')
-
-      if (error) throw error
-      setPhases(data || [])
+      setPhases(await fetchRetailPhasesForProject(projectId))
     } catch (err) {
       console.error('Error loading retail phases:', err)
       setPhases([])
@@ -121,39 +105,16 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
     try {
       setSubmitting(true)
 
-      const { data: newSupplier, error: supplierError } = await supabase
-        .from('retail_suppliers')
-        .insert([{
+      await createRetailSupplierWithContract(
+        {
           name: formData.name,
           supplier_type_id: formData.supplier_type_id,
           contact_person: formData.contact_person || null,
           contact_phone: formData.contact_phone || null,
           contact_email: formData.contact_email || null
-        }])
-        .select()
-        .single()
-
-      if (supplierError) throw supplierError
-
-      if (formData.project_id && formData.phase_id && newSupplier) {
-        const year = new Date().getFullYear()
-        const timestamp = Date.now().toString().slice(-6)
-        const contractNumber = `RCN-${year}-${timestamp}`
-
-        const { error: contractError } = await supabase
-          .from('retail_contracts')
-          .insert([{
-            contract_number: contractNumber,
-            phase_id: formData.phase_id,
-            supplier_id: newSupplier.id,
-            contract_amount: 0,
-            budget_realized: 0,
-            status: 'Active',
-            has_contract: false
-          }])
-
-        if (contractError) throw contractError
-      }
+        },
+        formData.project_id && formData.phase_id ? { phase_id: formData.phase_id } : undefined
+      )
 
       onSuccess()
     } catch (err: unknown) {

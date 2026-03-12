@@ -1,120 +1,77 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import React, { useState } from 'react'
 import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
-import type { RetailLandPlot, RetailSale } from '../../../types/retail'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../../ui'
+import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
+import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 
-interface LandPlotWithSales extends RetailLandPlot {
-  sales?: RetailSale[]
-  connectedProject?: { id: string; land_plot_id: string | null; name: string } | null
+interface FormState {
+  owner_first_name: string
+  owner_last_name: string
+  plot_number: string
+  location: string | null
+  total_area_m2: string
+  purchased_area_m2: string
+  price_per_m2: string
+  payment_date: string | null
+  payment_status: 'paid' | 'pending' | 'partial'
+  notes: string | null
 }
 
+const emptyForm = (): FormState => ({
+  owner_first_name: '',
+  owner_last_name: '',
+  plot_number: '',
+  location: null,
+  total_area_m2: '',
+  purchased_area_m2: '',
+  price_per_m2: '',
+  payment_date: null,
+  payment_status: 'pending',
+  notes: null
+})
+
 const RetailLandPlots: React.FC = () => {
-  const [landPlots, setLandPlots] = useState<LandPlotWithSales[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const { loading, filteredPlots, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, loadPlotDetails } = useLandPlots()
+
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedPlot, setSelectedPlot] = useState<LandPlotWithSales | null>(null)
-  const [editingPlot, setEditingPlot] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formData, setFormData] = useState<FormState>(emptyForm())
 
-  const [formData, setFormData] = useState({
-    owner_first_name: '',
-    owner_last_name: '',
-    plot_number: '',
-    location: '',
-    total_area_m2: '',
-    purchased_area_m2: '',
-    price_per_m2: '',
-    payment_date: '',
-    payment_status: 'pending' as 'paid' | 'pending' | 'partial',
-    notes: ''
-  })
-
-  useEffect(() => {
-    fetchLandPlots()
-  }, [])
-
-  const fetchLandPlots = async () => {
-    try {
-      setLoading(true)
-
-      const { data: plots, error: plotsError } = await supabase
-        .from('retail_land_plots')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (plotsError) throw plotsError
-
-      const { data: projects, error: projectsError } = await supabase
-        .from('retail_projects')
-        .select('id, land_plot_id, name')
-        .not('land_plot_id', 'is', null)
-
-      if (projectsError) throw projectsError
-
-      const plotsWithProjects = (plots || []).map(plot => {
-        const connectedProject = projects?.find(p => p.land_plot_id === plot.id)
-        return {
-          ...plot,
-          connectedProject: connectedProject || null
-        }
-      })
-
-      setLandPlots(plotsWithProjects)
-    } catch (error) {
-      console.error('Error fetching land plots:', error)
-      alert('Greška pri učitavanju zemljišta')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOpenFormModal = (plot?: LandPlotWithSales) => {
+  const openFormModal = (plot?: LandPlotWithProject) => {
     if (plot) {
-      setEditingPlot(plot.id)
+      setEditingId(plot.id)
       setFormData({
         owner_first_name: plot.owner_first_name,
         owner_last_name: plot.owner_last_name,
         plot_number: plot.plot_number,
-        location: plot.location || '',
+        location: plot.location,
         total_area_m2: plot.total_area_m2.toString(),
         purchased_area_m2: plot.purchased_area_m2.toString(),
         price_per_m2: plot.price_per_m2.toString(),
-        payment_date: plot.payment_date || '',
+        payment_date: plot.payment_date,
         payment_status: plot.payment_status,
-        notes: plot.notes || ''
+        notes: plot.notes
       })
     } else {
-      setEditingPlot(null)
-      setFormData({
-        owner_first_name: '',
-        owner_last_name: '',
-        plot_number: '',
-        location: '',
-        total_area_m2: '',
-        purchased_area_m2: '',
-        price_per_m2: '',
-        payment_date: '',
-        payment_status: 'pending',
-        notes: ''
-      })
+      setEditingId(null)
+      setFormData(emptyForm())
     }
     document.body.style.overflow = 'hidden'
     setShowFormModal(true)
   }
 
-  const handleCloseFormModal = () => {
+  const closeFormModal = () => {
     document.body.style.overflow = 'unset'
     setShowFormModal(false)
-    setEditingPlot(null)
+    setEditingId(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     try {
-      const payload = {
+      const payload: LandPlotPayload = {
         owner_first_name: formData.owner_first_name,
         owner_last_name: formData.owner_last_name,
         plot_number: formData.plot_number,
@@ -126,63 +83,18 @@ const RetailLandPlots: React.FC = () => {
         payment_status: formData.payment_status,
         notes: formData.notes || null
       }
-
-      if (editingPlot) {
-        const { error } = await supabase
-          .from('retail_land_plots')
-          .update(payload)
-          .eq('id', editingPlot)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('retail_land_plots')
-          .insert([payload])
-
-        if (error) throw error
-      }
-
-      await fetchLandPlots()
-      handleCloseFormModal()
+      await handleSave(payload, editingId ?? undefined)
+      closeFormModal()
     } catch (error) {
       console.error('Error saving land plot:', error)
       alert('Greška pri spremanju zemljišta')
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu česticu?')) return
-
+  const handleViewDetails = async (plot: LandPlotWithProject) => {
     try {
-      const { error } = await supabase
-        .from('retail_land_plots')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      await fetchLandPlots()
-    } catch (error) {
-      console.error('Error deleting land plot:', error)
-      alert('Greška pri brisanju zemljišta')
-    }
-  }
-
-  const handleViewDetails = async (plot: LandPlotWithSales) => {
-    try {
-      const { data: sales, error } = await supabase
-        .from('retail_sales')
-        .select(`
-          *,
-          customer:retail_customers(*)
-        `)
-        .eq('land_plot_id', plot.id)
-
-      if (error) throw error
-
-      setSelectedPlot({
-        ...plot,
-        sales: sales || []
-      })
+      const plotWithSales = await loadPlotDetails(plot)
+      setSelectedPlot(plotWithSales)
       document.body.style.overflow = 'hidden'
       setShowDetailsModal(true)
     } catch (error) {
@@ -191,40 +103,23 @@ const RetailLandPlots: React.FC = () => {
     }
   }
 
-  const handleCloseDetailsModal = () => {
+  const closeDetailsModal = () => {
     document.body.style.overflow = 'unset'
     setShowDetailsModal(false)
     setSelectedPlot(null)
   }
 
-  const filteredPlots = landPlots.filter(plot =>
-    plot.owner_first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    plot.owner_last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    plot.plot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (plot.location && plot.location.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFormData(prev => ({ ...prev, [key]: e.target.value }))
 
-  const totalStats = {
-    total_plots: landPlots.length,
-    total_invested: landPlots.reduce((sum, p) => sum + p.total_price, 0),
-    total_area: landPlots.reduce((sum, p) => sum + p.purchased_area_m2, 0),
-    paid_count: landPlots.filter(p => p.payment_status === 'paid').length
-  }
-
-  if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
-  }
+  if (loading) return <LoadingSpinner message="Učitavanje..." />
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Zemljišta"
         description="Upravljanje zemljištima i česticama"
-        actions={
-          <Button icon={Plus} onClick={() => handleOpenFormModal()}>
-            Novo zemljište
-          </Button>
-        }
+        actions={<Button icon={Plus} onClick={() => openFormModal()}>Novo zemljište</Button>}
       />
 
       <StatGrid columns={4}>
@@ -266,9 +161,7 @@ const RetailLandPlots: React.FC = () => {
           <Table.Body>
             {filteredPlots.map((plot) => (
               <Table.Tr key={plot.id}>
-                <Table.Td className="font-medium text-gray-900">
-                  {plot.owner_first_name} {plot.owner_last_name}
-                </Table.Td>
+                <Table.Td className="font-medium text-gray-900">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
                 <Table.Td>{plot.plot_number}</Table.Td>
                 <Table.Td>{plot.location || '-'}</Table.Td>
                 <Table.Td>
@@ -295,7 +188,7 @@ const RetailLandPlots: React.FC = () => {
                 <Table.Td className="text-right">
                   <div className="flex items-center justify-end space-x-1">
                     <Button icon={Eye} variant="ghost" size="icon-sm" onClick={() => handleViewDetails(plot)} title="Detalji" />
-                    <Button icon={Edit} variant="ghost" size="icon-sm" onClick={() => handleOpenFormModal(plot)} title="Uredi" />
+                    <Button icon={Edit} variant="ghost" size="icon-sm" onClick={() => openFormModal(plot)} title="Uredi" />
                     <Button icon={Trash2} variant="outline-danger" size="icon-sm" onClick={() => handleDelete(plot.id)} title="Obriši" />
                   </div>
                 </Table.Td>
@@ -305,37 +198,37 @@ const RetailLandPlots: React.FC = () => {
         </Table>
       )}
 
-      <Modal show={showFormModal} onClose={handleCloseFormModal}>
-        <Modal.Header title={editingPlot ? 'Uredi zemljište' : 'Novo zemljište'} onClose={handleCloseFormModal} />
+      <Modal show={showFormModal} onClose={closeFormModal}>
+        <Modal.Header title={editingId ? 'Uredi zemljište' : 'Novo zemljište'} onClose={closeFormModal} />
         <form onSubmit={handleSubmit}>
           <Modal.Body>
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Ime vlasnika *">
-                <Input required value={formData.owner_first_name} onChange={(e) => setFormData({ ...formData, owner_first_name: e.target.value })} />
+                <Input required value={formData.owner_first_name} onChange={set('owner_first_name')} />
               </FormField>
               <FormField label="Prezime vlasnika *">
-                <Input required value={formData.owner_last_name} onChange={(e) => setFormData({ ...formData, owner_last_name: e.target.value })} />
+                <Input required value={formData.owner_last_name} onChange={set('owner_last_name')} />
               </FormField>
               <FormField label="Broj čestice *">
-                <Input required value={formData.plot_number} onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })} />
+                <Input required value={formData.plot_number} onChange={set('plot_number')} />
               </FormField>
               <FormField label="Lokacija">
-                <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Npr. Banja Luka, Kozarska Dubica..." />
+                <Input value={formData.location || ''} onChange={set('location')} placeholder="Npr. Banja Luka, Kozarska Dubica..." />
               </FormField>
               <FormField label="Ukupna površina (m²) *">
-                <Input type="number" step="0.01" required value={formData.total_area_m2} onChange={(e) => setFormData({ ...formData, total_area_m2: e.target.value })} />
+                <Input type="number" step="0.01" required value={formData.total_area_m2} onChange={set('total_area_m2')} />
               </FormField>
               <FormField label="Kupljena površina (m²) *">
-                <Input type="number" step="0.01" required value={formData.purchased_area_m2} onChange={(e) => setFormData({ ...formData, purchased_area_m2: e.target.value })} />
+                <Input type="number" step="0.01" required value={formData.purchased_area_m2} onChange={set('purchased_area_m2')} />
               </FormField>
               <FormField label="Cijena po m² (€) *">
-                <Input type="number" step="0.01" required value={formData.price_per_m2} onChange={(e) => setFormData({ ...formData, price_per_m2: e.target.value })} />
+                <Input type="number" step="0.01" required value={formData.price_per_m2} onChange={set('price_per_m2')} />
               </FormField>
               <FormField label="Datum plaćanja">
-                <Input type="date" value={formData.payment_date} onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })} />
+                <Input type="date" value={formData.payment_date || ''} onChange={set('payment_date')} />
               </FormField>
               <FormField label="Status plaćanja *">
-                <Select value={formData.payment_status} onChange={(e) => setFormData({ ...formData, payment_status: e.target.value as 'paid' | 'pending' | 'partial' })}>
+                <Select value={formData.payment_status} onChange={set('payment_status')}>
                   <option value="pending">Pending</option>
                   <option value="partial">Djelomično</option>
                   <option value="paid">Plaćeno</option>
@@ -343,20 +236,20 @@ const RetailLandPlots: React.FC = () => {
               </FormField>
               <div className="col-span-2">
                 <FormField label="Napomene">
-                  <Textarea rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
+                  <Textarea rows={3} value={formData.notes || ''} onChange={set('notes')} />
                 </FormField>
               </div>
             </div>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={handleCloseFormModal}>Odustani</Button>
-            <Button type="submit">{editingPlot ? 'Spremi' : 'Dodaj'}</Button>
+            <Button variant="secondary" type="button" onClick={closeFormModal}>Odustani</Button>
+            <Button type="submit">{editingId ? 'Spremi' : 'Dodaj'}</Button>
           </Modal.Footer>
         </form>
       </Modal>
 
-      <Modal show={showDetailsModal && !!selectedPlot} onClose={handleCloseDetailsModal} size="xl">
-        <Modal.Header title={`Detalji zemljišta - ${selectedPlot?.plot_number || ''}`} onClose={handleCloseDetailsModal} />
+      <Modal show={showDetailsModal && !!selectedPlot} onClose={closeDetailsModal} size="xl">
+        <Modal.Header title={`Detalji zemljišta - ${selectedPlot?.plot_number || ''}`} onClose={closeDetailsModal} />
         {selectedPlot && (
           <>
             <Modal.Body>
@@ -431,7 +324,7 @@ const RetailLandPlots: React.FC = () => {
               </div>
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onClick={handleCloseDetailsModal}>Zatvori</Button>
+              <Button variant="secondary" onClick={closeDetailsModal}>Zatvori</Button>
             </Modal.Footer>
           </>
         )}

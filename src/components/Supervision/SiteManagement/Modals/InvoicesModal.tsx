@@ -1,26 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
-import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
+import { fetchContractInvoices, ContractInvoiceRow } from '../Services/siteService'
 
-interface Invoice {
-  id: string
-  invoice_number: string
-  invoice_type: string
-  status: string
-  base_amount: number
-  vat_amount: number
-  total_amount: number
-  paid_amount: number
-  remaining_amount: number
-  issue_date: string
-  due_date: string
-  description: string
-  company_name: string
-  contract_id: string
-}
+type Invoice = ContractInvoiceRow
 
 type SubcontractorWithContractInfo = Subcontractor & {
   contract_id?: string
@@ -74,58 +59,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('accounting_invoices')
-        .select(`
-          id,
-          invoice_number,
-          invoice_type,
-          status,
-          base_amount,
-          vat_amount,
-          total_amount,
-          paid_amount,
-          remaining_amount,
-          issue_date,
-          due_date,
-          description,
-          company_id,
-          contract_id,
-          accounting_companies!accounting_invoices_company_id_fkey(name),
-          contracts(id)
-        `)
-        .eq('contract_id', contractId)
-        .order('issue_date', { ascending: false })
-
-      /*console.log('📦 InvoicesModal - Supabase response:', {
-        data,
-        error,
-        count: data?.length,
-        rawData: JSON.stringify(data, null, 2)
-      })*/
-
-      if (error) throw error
-
-      type RawInvoice = { id: string; invoice_number: string; invoice_type: string; status: string; base_amount: number; vat_amount: number; total_amount: number; paid_amount: number; remaining_amount: number; issue_date: string; due_date: string; description: string; accounting_companies?: { name: string } | null; contracts?: { id: string } | null }
-      const formattedInvoices = (data as unknown as RawInvoice[] || []).map((inv: RawInvoice) => ({
-        id: inv.id,
-        invoice_number: inv.invoice_number,
-        invoice_type: inv.invoice_type,
-        status: inv.status,
-        base_amount: Number(inv.base_amount),
-        vat_amount: Number(inv.vat_amount),
-        total_amount: Number(inv.total_amount),
-        paid_amount: Number(inv.paid_amount),
-        remaining_amount: Number(inv.remaining_amount),
-        issue_date: inv.issue_date,
-        due_date: inv.due_date,
-        description: inv.description || '',
-        company_name: inv.accounting_companies?.name || 'N/A',
-        contract_id: inv.contracts?.id || ''
-      }))
-
-      //console.log('✅ InvoicesModal - Formatted invoices:', formattedInvoices)
-
+      const formattedInvoices = await fetchContractInvoices(contractId)
       setInvoices(formattedInvoices)
     } catch (error) {
       console.error('Error fetching invoices:', error)

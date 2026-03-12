@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Subcontractor, WirePayment, supabase } from '../../../../lib/supabase'
+import { Subcontractor, WirePayment } from '../../../../lib/supabase'
+import { fetchContractInvoiceTotals } from '../Services/siteService'
 import { Modal, Button, Badge, EmptyState } from '../../../ui'
 
 interface AccountingPayment {
@@ -66,18 +67,9 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('accounting_invoices')
-        .select('total_amount, paid_amount')
-        .eq('contract_id', contractId)
-
-      if (error) throw error
-
-      const totalInvoices = (data || []).reduce((sum, inv) => sum + parseFloat(inv.total_amount || '0'), 0)
-      const totalPaid = (data || []).reduce((sum, inv) => sum + parseFloat(inv.paid_amount || '0'), 0)
-
-      setTotalInvoiceAmount(totalInvoices)
-      setTotalPaidAmount(totalPaid)
+      const { totalInvoiceAmount, totalPaidAmount } = await fetchContractInvoiceTotals(contractId)
+      setTotalInvoiceAmount(totalInvoiceAmount)
+      setTotalPaidAmount(totalPaidAmount)
     } catch (error) {
       console.error('Error fetching invoice totals:', error)
       setTotalInvoiceAmount(0)

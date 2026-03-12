@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
-import { PaymentNotification } from '../Services/paymentNotificationService'
+import {
+  PaymentNotification,
+  fetchMilestoneProjectId,
+  fetchProjectBanks,
+  fetchSubcontractorPaymentTotal,
+  fetchSubcontractorFinancingBank,
+  recordSubcontractorMilestonePayment
+} from '../Services/paymentNotificationService'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 
 interface Funder {
@@ -42,36 +48,10 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   }, [visible, notification])
 
   const loadFunders = async () => {
-    if (!notification?.subcontractor_id) return
-
+    if (!notification?.subcontractor_id || !notification.milestone_id) return
     try {
-      const { data: milestoneData, error: milestoneError } = await supabase
-        .from('subcontractor_milestones')
-        .select('project_id')
-        .eq('id', notification.milestone_id!)
-        .single()
-
-      if (milestoneError) throw milestoneError
-
-      const { data: allocationsData, error: allocationsError } = await supabase
-        .from('credit_allocations')
-        .select('bank_credits(banks(id, name))')
-        .eq('project_id', milestoneData.project_id)
-
-      if (allocationsError) throw allocationsError
-
-      type AllocWithBank = { bank_credits?: { banks?: { id: string; name: string } | null } | null }
-      const uniqueBanks = Array.from(
-        new Map(
-          (allocationsData as unknown as AllocWithBank[] || [])
-            .filter((alloc) => alloc.bank_credits?.banks)
-            .map((alloc) => {
-              const bank = alloc.bank_credits!.banks!
-              return [bank.id, { id: bank.id, name: bank.name }] as [string, Funder]
-            })
-        ).values()
-      )
-
+      const projectId = await fetchMilestoneProjectId(notification.milestone_id)
+      const uniqueBanks = await fetchProjectBanks(projectId)
       setBanks(uniqueBanks)
     } catch (error) {
       console.error('Error loading funders:', error)
@@ -80,16 +60,9 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
   const loadPaymentHistory = async () => {
     if (!notification?.subcontractor_id) return
-
     try {
-      const { data, error } = await supabase
-        .from('subcontractor_payments')
-        .select('amount')
-        .eq('subcontractor_id', notification.subcontractor_id)
-
-      if (error) throw error
-
-      setAlreadyPaid((data || []).reduce((sum, payment) => sum + Number(payment.amount), 0))
+      const total = await fetchSubcontractorPaymentTotal(notification.subcontractor_id)
+      setAlreadyPaid(total)
     } catch (error) {
       console.error('Error loading payment history:', error)
     }
@@ -97,19 +70,9 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
   const loadSubcontractorFinancing = async () => {
     if (!notification?.subcontractor_id) return
-
     try {
-      const { data, error } = await supabase
-        .from('subcontractors')
-        .select('financed_by_bank_id')
-        .eq('id', notification.subcontractor_id)
-        .single()
-
-      if (error) throw error
-
-      if (data.financed_by_bank_id) {
-        setPaidByBankId(data.financed_by_bank_id)
-      }
+      const bankId = await fetchSubcontractorFinancingBank(notification.subcontractor_id)
+      if (bankId) setPaidByBankId(bankId)
     } catch (error) {
       console.error('Error loading subcontractor financing:', error)
     }
@@ -123,30 +86,14 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
     setLoading(true)
     try {
-      const { error: paymentError } = await supabase
-        .from('subcontractor_payments')
-        .insert({
-          subcontractor_id: notification.subcontractor_id,
-          amount,
-          payment_date: paymentDate || null,
-          notes,
-          milestone_id: notification.milestone_id,
-          paid_by_type: paidByBankId ? 'bank' : null,
-          paid_by_bank_id: paidByBankId
-        })
-
-      if (paymentError) throw paymentError
-
-      const { error: milestoneError } = await supabase
-        .from('subcontractor_milestones')
-        .update({
-          status: 'paid',
-          paid_date: paymentDate || new Date().toISOString().split('T')[0]
-        })
-        .eq('id', notification.milestone_id!)
-
-      if (milestoneError) throw milestoneError
-
+      await recordSubcontractorMilestonePayment({
+        subcontractor_id: notification.subcontractor_id!,
+        amount,
+        payment_date: paymentDate || null,
+        notes,
+        milestone_id: notification.milestone_id!,
+        paid_by_bank_id: paidByBankId
+      })
       alert('Payment recorded successfully')
       onSuccess()
       onClose()

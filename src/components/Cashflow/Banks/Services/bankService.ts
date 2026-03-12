@@ -220,3 +220,21 @@ export const deleteCredit = async (creditId: string): Promise<void> => {
 
   if (error) throw error
 }
+
+export interface CompanyBankAccount {
+  id: string
+  company_id: string
+  bank_name: string
+  account_number: string
+  current_balance: number
+}
+
+export const fetchCompanyBankAccounts = async (companyId: string): Promise<CompanyBankAccount[]> => {
+  const { data, error } = await supabase
+    .from('company_bank_accounts')
+    .select('id, company_id, bank_name, account_number, current_balance')
+    .eq('company_id', companyId)
+
+  if (error) throw error
+  return data || []
+}

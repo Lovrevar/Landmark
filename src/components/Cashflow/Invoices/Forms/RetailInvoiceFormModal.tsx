@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
 import { Modal, Button, Textarea, FormField, Alert } from '../../../ui'
+import { upsertRetailInvoice } from '../Services/invoiceService'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './RetailInvoiceCalculationSummary'
 import { useRetailInvoiceData } from '../Hooks/useRetailInvoiceData'
@@ -241,20 +241,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         invoiceData.retail_customer_id = formData.entity_id
       }
 
-      if (editingInvoice) {
-        const { error: updateError } = await supabase
-          .from('accounting_invoices')
-          .update(invoiceData)
-          .eq('id', editingInvoice.id)
-
-        if (updateError) throw updateError
-      } else {
-        const { error: insertError } = await supabase
-          .from('accounting_invoices')
-          .insert(invoiceData)
-
-        if (insertError) throw insertError
-      }
+      await upsertRetailInvoice(invoiceData, editingInvoice?.id)
 
       onSuccess()
       onClose()

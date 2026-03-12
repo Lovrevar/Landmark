@@ -1,5 +1,80 @@
 import { supabase } from '../../../../lib/supabase'
 import { format } from 'date-fns'
+import type { RetailLandPlot, RetailCustomer, RetailSale } from '../../../../types/retail'
+
+export interface SaleWithRelations extends RetailSale {
+  land_plot?: RetailLandPlot
+  customer?: RetailCustomer
+}
+
+export interface RetailSalePayload {
+  land_plot_id: string
+  customer_id: string
+  sale_area_m2: number
+  sale_price_per_m2: number
+  payment_deadline: string
+  contract_number: string | null
+  notes: string | null
+}
+
+export async function fetchRetailSalesWithRelations(): Promise<SaleWithRelations[]> {
+  const { data, error } = await supabase
+    .from('retail_sales')
+    .select('*, land_plot:retail_land_plots(*), customer:retail_customers(*)')
+    .order('payment_deadline', { ascending: true })
+  if (error) throw error
+  return ((data || []) as SaleWithRelations[]).map(sale => ({
+    ...sale,
+    payment_status: new Date(sale.payment_deadline) < new Date() && sale.payment_status !== 'paid'
+      ? 'overdue' as const
+      : sale.payment_status
+  }))
+}
+
+export async function fetchRetailLandPlotsForSale(): Promise<RetailLandPlot[]> {
+  const { data, error } = await supabase
+    .from('retail_land_plots')
+    .select('*')
+    .order('plot_number')
+  if (error) throw error
+  return data || []
+}
+
+export async function fetchRetailCustomersForSale(): Promise<RetailCustomer[]> {
+  const { data, error } = await supabase
+    .from('retail_customers')
+    .select('*')
+    .order('name')
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertRetailSale(payload: RetailSalePayload, id?: string): Promise<void> {
+  if (id) {
+    const { error } = await supabase.from('retail_sales').update(payload).eq('id', id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('retail_sales').insert([payload])
+    if (error) throw error
+  }
+}
+
+export async function deleteRetailSale(id: string): Promise<void> {
+  const { error } = await supabase.from('retail_sales').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function recordRetailSalePayment(
+  saleId: string,
+  newPaidAmount: number,
+  newStatus: 'paid' | 'pending' | 'partial' | 'overdue'
+): Promise<void> {
+  const { error } = await supabase
+    .from('retail_sales')
+    .update({ paid_amount: newPaidAmount, payment_status: newStatus })
+    .eq('id', saleId)
+  if (error) throw error
+}
 
 export interface RetailSalesPaymentWithDetails {
   id: string

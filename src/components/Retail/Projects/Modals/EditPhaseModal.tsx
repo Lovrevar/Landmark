@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { supabase } from '../../../../lib/supabase'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
+import { retailProjectService } from '../Services/retailProjectService'
 
 interface EditPhaseModalProps {
   phase: RetailProjectPhase
@@ -40,20 +40,15 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
     setLoading(true)
 
     try {
-      const { error } = await supabase
-        .from('retail_project_phases')
-        .update({
-          phase_name: formData.phase_name,
-          budget_allocated: formData.budget_allocated,
-          status: formData.status,
-          start_date: formData.start_date || null,
-          end_date: formData.end_date || null,
-          notes: formData.notes || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', phase.id)
-
-      if (error) throw error
+      await retailProjectService.updatePhase(phase.id, {
+        phase_name: formData.phase_name,
+        budget_allocated: formData.budget_allocated,
+        status: formData.status,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        notes: formData.notes || null,
+        updated_at: new Date().toISOString()
+      })
 
       onSuccess()
     } catch (error) {
