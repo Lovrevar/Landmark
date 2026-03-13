@@ -10,14 +10,14 @@ export interface TICTotals {
 }
 
 export const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('de-DE', {
+  return new Intl.NumberFormat('hr-HR', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(num)
 }
 
 export const formatPercentage = (num: number): string => {
-  return new Intl.NumberFormat('de-DE', {
+  return new Intl.NumberFormat('hr-HR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num)

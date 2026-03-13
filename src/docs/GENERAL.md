@@ -3,21 +3,99 @@
 **Path:** `src/components/General/`
 
 ## Overview
+
 Shared project and milestone management used as a foundation across multiple domains. Not domain-specific — represents the generic "project" concept that Retail, Supervision, and Funding build on top of.
+
+---
 
 ## Sub-modules
 
 ### Projects
 **Path:** `General/Projects/`
-- Base project CRUD with milestone timeline.
-- `useProjectForm.ts` — create/edit project form state
-- `useMilestoneManagement.ts` — milestone CRUD within a project
-- `projectService.ts` — Supabase queries for projects
-- `projectDetailsService.ts` — extended project detail queries
-- `milestoneService.ts` — Supabase queries for milestones
-- Views: `ProjectCard`, `ProjectDetails`, `ProjectDetailsEnhanced`, `MilestoneTimeline`
-- `utils.ts` — project-specific helpers
+
+Core project CRUD with milestone timeline, phase/contract views, apartment tables, and financing summaries.
+
+#### Services
+
+### projectService.ts
+- `fetchProjectsWithStats()` — fetches all projects in a single joined query (contracts + project_milestones) and computes stats: total_spent, completion_percentage, milestones_completed, milestones_total
+- **Depends on:** supabase client
+
+### projectDetailsService.ts
+- `fetchProjectDetails(id)` — fetches a single project with contracts, subcontractors, invoices, apartments, milestones, bank credits, and credit allocations
+- `fetchProjectDataEnhanced(id)` — extended fetch that also computes revenue from sales, expenses, pending invoices, and investor names
+- **Depends on:** supabase client
+
+### milestoneService.ts
+- `addMilestone(projectId, data)` — inserts a new milestone for a project
+- `updateMilestone(id, data)` — updates an existing milestone
+- `deleteMilestone(id)` — removes a milestone
+- `toggleMilestoneCompletion(id, completed)` — toggles the completed state of a milestone
+- **Depends on:** supabase client
+
+#### Hooks
+
+### useProjectForm.ts
+- `useProjectForm(projectId, onSaved, onDeleted)` — manages form state, validation, and save/delete for project create/edit
+- **Calls:** projectService.ts
+- **Returns:** form, setForm, loading, error, handleSubmit, handleDelete
+
+### useMilestoneManagement.ts
+- `useMilestoneManagement(projectId, onMutated)` — wraps milestone service calls with error handling and state management
+- **Calls:** milestoneService.ts
+- **Returns:** editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, handleToggleMilestone
+
+#### Utilities
+
+### utils.ts
+- `getStatusConfig(status)` — returns badge color and label for a project status string
+- `getDaysInfo(startDate, endDate)` — returns days elapsed and remaining for a project timeline
+- `getMilestoneStatus(milestone)` — derives display status (completed, overdue, in_progress) for a milestone
+- **Depends on:** date-fns, Lucide icons
+
+#### Forms
+
+### Forms/ProjectFormModal.tsx
+- Modal form for creating and editing projects (name, location, dates, budget, status)
+- Edit mode includes a delete button
+- **Uses hooks:** useProjectForm
+- **Uses Ui:** Modal, FormField, Input, Select, Button, Alert
+
+#### Views
+
+### ProjectCard.tsx
+- Summary card for a single project showing status badge, budget, spent, remaining, progress bar, milestone count, and days info
+- **Uses services:** (receives ProjectWithStats as prop)
+- **Uses Ui:** Badge, Button
+- **Uses components:** getStatusConfig, getDaysInfo
+
+### MilestoneTimeline.tsx
+- Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
+- Shows summary stats (completed, overdue, pending)
+- **Uses hooks:** (receives milestones as props, actions as callbacks)
+- **Uses Ui:** Badge, Button, EmptyState
+
+### ProjectDetails.tsx
+- Tabbed project detail page: Overview (stats), Milestones (form + timeline), Subcontractors (contracts), Apartments (grid)
+- **Uses hooks:** useMilestoneManagement
+- **Uses services:** projectDetailsService (fetchProjectDetails)
+- **Uses components:** MilestoneTimeline
+
+### ProjectDetailsEnhanced.tsx
+- Alternative multi-tab project view: Overview, Phases & Contracts, Apartments, Subcontractors, Financing, Milestones
+- Adds phase budget breakdown, contract table, apartment table, and financing table
+- **Uses hooks:** useMilestoneManagement
+- **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
+- **Uses components:** MilestoneTimeline, ProjectFormModal
+
+### index.tsx (ProjectsManagement)
+- Project list with search by name/location and status filter, grid layout, and new project modal
+- **Uses hooks:** (direct fetch via projectService)
+- **Uses services:** projectService
+- **Uses components:** ProjectCard, ProjectFormModal
+
+---
 
 ## Notes
-- This is the canonical project model — Retail/Projects and Supervision/SiteManagement are domain-specific extensions of this pattern
+- This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first

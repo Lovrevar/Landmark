@@ -141,7 +141,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (password === 'admin') {
+    const cashflowPassword = import.meta.env.VITE_CASHFLOW_PASSWORD || 'admin'
+    if (password === cashflowPassword) {
       setCashflowUnlocked(true)
       sessionStorage.setItem('cashflow_unlocked', 'true')
       setCurrentProfile(pendingProfile!)
