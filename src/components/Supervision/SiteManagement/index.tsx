@@ -114,7 +114,7 @@ const SiteManagement: React.FC = () => {
 
   const handleAddSubcontractor = async (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => {
     if (!selectedPhase) return
-    const success = await addSubcontractorToPhase(selectedPhase, {
+    await addSubcontractorToPhase(selectedPhase, {
       useExisting,
       existing_subcontractor_id: data.existing_subcontractor_id,
       name: data.name,
@@ -133,10 +133,8 @@ const SiteManagement: React.FC = () => {
       financed_by_investor_id: data.financed_by_investor_id,
       financed_by_bank_id: data.financed_by_bank_id
     }, pendingFiles)
-    if (success) {
-      setShowSubcontractorForm(false)
-      setSelectedPhase(null)
-    }
+    setShowSubcontractorForm(false)
+    setSelectedPhase(null)
   }
 
   const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor) => {

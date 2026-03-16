@@ -33,12 +33,10 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
       if (data.useExisting) {
         if (!data.existing_subcontractor_id) {
-          alert('Please select a subcontractor')
-          return false
+          throw new Error('Odaberite podugovaratelja')
         }
         if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
-          alert('Contract cost exceeds available phase budget')
-          return false
+          throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
         const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
@@ -67,12 +65,10 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         }
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
-          alert('Please fill in required fields')
-          return false
+          throw new Error('Naziv tvrtke i kontakt su obavezni')
         }
         if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
-          alert('Contract cost exceeds available phase budget')
-          return false
+          throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
         const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
@@ -112,21 +108,23 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           await siteService.uploadSubcontractorDocuments(newSubcontractorId, newContractId, pendingFiles)
         } catch (uploadError) {
           console.error('Error uploading contract documents:', uploadError)
-          alert('Subcontractor added but some documents failed to upload. You can add them later from the edit form.')
+          // Non-blocking: subcontractor was added, documents can be added later
         }
       }
 
       await siteService.recalculatePhaseBudget(phase.id)
       await fetchProjects()
-      return true
     } catch (error: unknown) {
       console.error('Error adding subcontractor:', error)
       if (error instanceof Error && error.message?.includes('duplicate key value violates unique constraint')) {
-        alert('Contract number already exists. Please try again.')
+        throw new Error('Broj ugovora već postoji. Pokušajte ponovo.')
+      } else if (error instanceof Error && error.message?.includes('contracts_contract_type_id_fkey')) {
+        throw new Error('Odaberite kategoriju ugovora.')
+      } else if (error instanceof Error) {
+        throw error
       } else {
-        alert('Error adding subcontractor to phase.')
+        throw new Error('Greška pri dodavanju podugovaratelja.')
       }
-      return false
     }
   }
 

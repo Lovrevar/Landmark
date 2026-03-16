@@ -16,7 +16,7 @@ interface SubcontractorFormModalProps {
   onClose: () => void
   phase: ProjectPhase | null
   existingSubcontractors: Subcontractor[]
-  onSubmit: (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => void
+  onSubmit: (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => Promise<void>
   projectId: string
 }
 
@@ -59,6 +59,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const merge = (updates: Partial<SubcontractorFormData>) =>
     setFormData(prev => ({ ...prev, ...updates }))
@@ -78,6 +80,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     if (visible && projectId) {
       loadFunders()
       loadContractTypes()
+      setValidationError(null)
     }
   }, [visible, projectId])
 
@@ -98,12 +101,25 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     }
   }
 
-  const handleSubmit = () => {
-    onSubmit(
-      { ...formData, vat_amount: vatAmount, total_amount: totalAmount, cost: totalAmount },
-      useExistingSubcontractor,
-      pendingFiles
-    )
+  const handleSubmit = async () => {
+    if (isSubmitting) return
+    if (!formData.contract_type_id) {
+      setValidationError('Odaberite kategoriju ugovora')
+      return
+    }
+    setValidationError(null)
+    setIsSubmitting(true)
+    try {
+      await onSubmit(
+        { ...formData, vat_amount: vatAmount, total_amount: totalAmount, cost: totalAmount },
+        useExistingSubcontractor,
+        pendingFiles
+      )
+    } catch (e) {
+      setValidationError(e instanceof Error ? e.message : 'Greška pri dodavanju podugovaratelja.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (!visible || !phase) return null
@@ -151,6 +167,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
           </p>
         </Alert>
+
+        {validationError && (
+          <Alert variant="error" className="mb-2">{validationError}</Alert>
+        )}
 
         <FormField label="Kategorija ugovora" required helperText="Odaberite tip ugovora za ovu fazu">
           <div className="flex gap-2">
@@ -289,8 +309,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button variant="success" onClick={handleSubmit} disabled={totalAmount > availableBudget}>
-          Add Subcontractor
+        <Button variant="success" onClick={handleSubmit} disabled={isSubmitting || totalAmount > availableBudget}>
+          {isSubmitting ? 'Dodavanje...' : 'Add Subcontractor'}
         </Button>
       </Modal.Footer>
 
