@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentWithDetails } from '../types'
-import { Modal, FormField, Input, Select, Button } from '../../../ui'
+import { Modal, FormField, Input, Select, Button, Form } from '../../../ui'
 import {
   ContractedSection,
   ContractFields,
@@ -66,7 +66,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Edit Apartment" onClose={onClose} />
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+      <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -192,7 +192,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="primary">Save Changes</Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

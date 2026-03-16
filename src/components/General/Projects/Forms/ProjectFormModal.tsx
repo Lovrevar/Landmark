@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, FormField, Input, Select, Button, Alert } from '../../../ui'
+import { Modal, FormField, Input, Select, Button, Alert, Form } from '../../../ui'
 import { useProjectForm } from '../hooks/useProjectForm'
 
 interface ProjectFormModalProps {
@@ -22,7 +22,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         onClose={onClose}
       />
       <Modal.Body>
-        <form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
           {error && (
             <Alert variant="error" className="mb-4" onDismiss={() => setError('')}>
               {error}
@@ -93,7 +93,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
 
 
           </div>
-        </form>
+        </Form>
       </Modal.Body>
       <Modal.Footer>
         <div className="flex justify-between items-center w-full">

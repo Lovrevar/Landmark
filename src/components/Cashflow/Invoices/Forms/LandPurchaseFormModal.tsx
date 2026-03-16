@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Modal } from '../../../ui'
+import { Button, Modal, Form } from '../../../ui'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormData'
@@ -154,7 +154,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     <Modal show={isOpen} onClose={handleClose} size="xl">
       <Modal.Header title="Kupoprodaja Zemljišta" onClose={handleClose} />
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+      <Form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
       <Modal.Body>
         <div className="bg-slate-50 p-5 rounded-lg mb-5">
           <div className="flex justify-between items-center mb-4">
@@ -438,7 +438,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           {loading ? 'Spremanje...' : 'Kreiraj Račune'}
         </Button>
       </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

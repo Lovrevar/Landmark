@@ -1,6 +1,6 @@
 import React from 'react'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard, Form } from '../../ui'
 import { useRetailCustomers } from './hooks/useRetailCustomers'
 
 const RetailCustomers: React.FC = () => {
@@ -123,7 +123,7 @@ const RetailCustomers: React.FC = () => {
 
       <Modal show={showFormModal} onClose={closeFormModal}>
         <Modal.Header title={editingCustomerId ? 'Uredi kupca' : 'Novi kupac'} onClose={closeFormModal} />
-        <form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <FormField label="Naziv / Ime i prezime *">
               <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -145,7 +145,7 @@ const RetailCustomers: React.FC = () => {
             <Button variant="secondary" type="button" onClick={closeFormModal}>Odustani</Button>
             <Button type="submit">{editingCustomerId ? 'Spremi' : 'Dodaj'}</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
 
       <Modal show={showDetailsModal && !!selectedCustomer} onClose={closeDetailsModal} size="xl">

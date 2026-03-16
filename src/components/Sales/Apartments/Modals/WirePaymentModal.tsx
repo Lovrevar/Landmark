@@ -1,7 +1,7 @@
 import React from 'react'
 import { Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
+import { Modal, FormField, Input, Select, Textarea, Button, Form } from '../../../ui'
 
 interface WirePaymentModalProps {
   visible: boolean
@@ -55,7 +55,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Wire Payment" onClose={onClose} />
 
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -141,7 +141,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="success">Record Payment</Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

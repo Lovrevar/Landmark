@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
 import { retailProjectService } from '../Services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog } from '../../../ui'
+import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog, Form } from '../../../ui'
 
 interface ProjectFormModalProps {
   onClose: () => void
@@ -127,7 +127,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   return (
     <Modal show={true} onClose={onClose}>
       <Modal.Header title={project ? 'Uredi projekt' : 'Novi projekt'} onClose={onClose} />
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -309,7 +309,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
           </div>
         </Modal.Footer>
-      </form>
+      </Form>
 
       <ConfirmDialog
         show={showDeleteConfirm}

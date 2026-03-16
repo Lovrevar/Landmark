@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
+import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { retailProjectService } from '../Services/retailProjectService'
 
 interface EditPhaseModalProps {
@@ -72,7 +72,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
         subtitle={phase.phase_type !== 'sales' ? `Dostupan budžet: ${formatCurrency(availableBudget)}` : undefined}
         onClose={onClose}
       />
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <FormField label="Naziv Faze">
             <Input
@@ -148,7 +148,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             Spremi Promjene
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

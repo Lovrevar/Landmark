@@ -2,7 +2,7 @@ import React from 'react'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput, { formatCurrency } from '../../../Common/CurrencyInput'
 import { CesijaPaymentFields } from '../../Components/CesijaPaymentFields'
-import { Modal, Button, Input, Select, Textarea, FormField, Alert } from '../../../ui'
+import { Modal, Button, Input, Select, Textarea, FormField, Alert, Form } from '../../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../../Invoices/types'
 
 interface PaymentModalFormData {
@@ -59,7 +59,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -298,7 +298,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             Potvrdi plaćanje
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

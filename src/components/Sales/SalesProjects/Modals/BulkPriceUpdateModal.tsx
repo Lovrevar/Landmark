@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
-import { Button, Modal, FormField, Input, Alert } from '../../../ui'
+import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
 import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
 
 interface BulkPriceUpdateModalProps {
@@ -85,7 +85,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
         onClose={onClose}
       />
       <Modal.Body>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <Form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-2">Selection Summary</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -204,7 +204,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
           <Alert variant="warning">
             Warning: This will update {selectedUnits.length} units. This action cannot be undone.
           </Alert>
-        </form>
+        </Form>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { retailProjectService } from '../Services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
+import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 
 interface RetailCustomer {
   id: string
@@ -136,7 +136,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
         subtitle={`Faza: ${phase.phase_name}`}
         onClose={onClose}
       />
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -302,7 +302,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
             {contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

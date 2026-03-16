@@ -1,7 +1,7 @@
 import React from 'react'
 import { InvoiceFormFields } from './InvoiceFormFields'
 import { InvoiceVATSummary } from './InvoiceVATSummary'
-import { Modal, Button } from '../../../ui'
+import { Modal, Button, Form } from '../../../ui'
 import type { Invoice, Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../types'
 
 interface Bank {
@@ -100,7 +100,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body noPadding>
           <InvoiceFormFields
             formData={formData}
@@ -136,7 +136,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
             {editingInvoice ? 'Spremi promjene' : 'Kreiraj račun'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

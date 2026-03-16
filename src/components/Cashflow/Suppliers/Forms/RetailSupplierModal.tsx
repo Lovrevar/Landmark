@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Input, Select, FormField, Alert } from '../../../ui'
+import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import {
   fetchRetailSupplierTypes,
   fetchRetailProjectsForSupplier,
@@ -133,7 +133,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
     <Modal show={true} onClose={onClose} size="sm">
       <Modal.Header title="Novi Retail Dobavljač" onClose={onClose} />
 
-      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           {error && (
             <Alert variant="error">{error}</Alert>
@@ -261,7 +261,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             {submitting ? 'Spremam...' : 'Dodaj retail dobavljača'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BulkApartmentData } from '../types'
-import { Modal, FormField, Select, Input, Button, Alert } from '../../../ui'
+import { Modal, FormField, Select, Input, Button, Alert, Form } from '../../../ui'
 
 interface BulkApartmentModalProps {
   visible: boolean
@@ -50,7 +50,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Bulk Create Apartments" onClose={onClose} />
 
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -148,7 +148,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="success">Create Apartments</Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

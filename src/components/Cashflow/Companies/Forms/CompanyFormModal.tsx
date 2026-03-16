@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Button, Input, Select, FormField } from '../../../ui'
+import { Modal, Button, Input, Select, FormField, Form } from '../../../ui'
 import { CompanyFormData } from '../types'
 
 interface CompanyFormModalProps {
@@ -30,7 +30,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1">
+      <Form onSubmit={onSubmit} className="overflow-y-auto flex-1">
         <div className="p-6 space-y-4">
           <FormField label="Naziv firme" required>
             <Input
@@ -133,7 +133,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
             {editingCompany ? 'Spremi promjene' : 'Dodaj firmu'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

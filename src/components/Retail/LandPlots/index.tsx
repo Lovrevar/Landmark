@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 
@@ -200,7 +200,7 @@ const RetailLandPlots: React.FC = () => {
 
       <Modal show={showFormModal} onClose={closeFormModal}>
         <Modal.Header title={editingId ? 'Uredi zemljište' : 'Novo zemljište'} onClose={closeFormModal} />
-        <form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Ime vlasnika *">
@@ -245,7 +245,7 @@ const RetailLandPlots: React.FC = () => {
             <Button variant="secondary" type="button" onClick={closeFormModal}>Odustani</Button>
             <Button type="submit">{editingId ? 'Spremi' : 'Dodaj'}</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
 
       <Modal show={showDetailsModal && !!selectedPlot} onClose={closeDetailsModal} size="xl">

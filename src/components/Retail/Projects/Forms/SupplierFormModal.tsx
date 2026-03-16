@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { retailProjectService } from '../Services/retailProjectService'
 import type { RetailSupplier, RetailSupplierType } from '../../../../types/retail'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
+import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 
 interface SupplierFormModalProps {
   onClose: () => void
@@ -97,7 +97,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   return (
     <Modal show={true} onClose={onClose}>
       <Modal.Header title={supplier ? 'Uredi dobavljača' : 'Novi dobavljač'} onClose={onClose} />
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -208,7 +208,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             {supplier ? 'Spremi promjene' : 'Kreiraj dobavljača'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

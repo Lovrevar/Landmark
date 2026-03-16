@@ -14,7 +14,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLog } from './services/workLogService'
@@ -81,7 +81,7 @@ const WorkLogs: React.FC = () => {
           onClose={closeForm}
         />
 
-        <form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -230,7 +230,7 @@ const WorkLogs: React.FC = () => {
               {editingLog ? 'Update Work Log' : 'Create Work Log'}
             </Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
 
       <Card variant="default" padding="none">

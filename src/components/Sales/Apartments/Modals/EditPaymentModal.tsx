@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { PaymentWithCustomer } from '../types'
-import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
+import { Modal, FormField, Input, Select, Textarea, Button, Form } from '../../../ui'
 
 interface EditPaymentModalProps {
   visible: boolean
@@ -41,7 +41,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Edit Payment" onClose={onClose} />
 
-      <form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
             <FormField label="Payment Amount (EUR)" required>
@@ -91,7 +91,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="primary">Update Payment</Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

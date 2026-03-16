@@ -1,7 +1,7 @@
 import React from 'react'
 import DateInput from '../../../Common/DateInput'
 import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
-import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
+import { Modal, Button, Select, Input, Textarea, FormField, Form } from '../../../ui'
 
 interface AccountingPaymentFormModalProps {
   showModal: boolean
@@ -73,7 +73,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
         onClose={onClose}
       />
 
-      <form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Račun" required className="md:col-span-2">
@@ -332,7 +332,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
             {editingPayment ? 'Spremi promjene' : 'Kreiraj plaćanje'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

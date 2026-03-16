@@ -3,7 +3,7 @@ import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
 import { useLoans } from './Hooks/useLoans'
-import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input } from '../../ui'
+import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form } from '../../ui'
 
 const AccountingLoans: React.FC = () => {
   const {
@@ -133,7 +133,7 @@ const AccountingLoans: React.FC = () => {
 
       <Modal show={showAddModal} onClose={() => { setShowAddModal(false); resetForm() }} size="md">
         <Modal.Header title="Nova Pozajmica" onClose={() => { setShowAddModal(false); resetForm() }} />
-        <form onSubmit={handleAddLoan}>
+        <Form onSubmit={handleAddLoan}>
           <Modal.Body>
             <FormField label="Daje" required>
               <div className="relative">
@@ -242,7 +242,7 @@ const AccountingLoans: React.FC = () => {
               Spremi Pozajmicu
             </Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
     </div>
   )

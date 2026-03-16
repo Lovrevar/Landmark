@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Textarea, FormField, Alert } from '../../../ui'
+import { Modal, Button, Textarea, FormField, Alert, Form } from '../../../ui'
 import { upsertRetailInvoice } from '../Services/invoiceService'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './RetailInvoiceCalculationSummary'
@@ -259,7 +259,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header title={editingInvoice ? 'Uredi Retail Račun' : 'Novi Retail Račun'} onClose={onClose} />
 
-      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           {error && (
             <Alert variant="error">{error}</Alert>
@@ -312,7 +312,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             {loading ? (editingInvoice ? 'Spremanje...' : 'Kreiranje...') : (editingInvoice ? 'Spremi izmjene' : 'Kreiraj račun')}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

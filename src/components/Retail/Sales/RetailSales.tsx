@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
 
@@ -206,7 +206,7 @@ const RetailSales: React.FC = () => {
 
       <Modal show={showFormModal} onClose={closeFormModal}>
         <Modal.Header title={editingId ? 'Uredi prodaju' : 'Nova prodaja'} onClose={closeFormModal} />
-        <form onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <FormField label="Čestica" required>
               <Select required value={formData.land_plot_id} onChange={set('land_plot_id')}>
@@ -251,12 +251,12 @@ const RetailSales: React.FC = () => {
             <Button variant="secondary" type="button" onClick={closeFormModal}>Odustani</Button>
             <Button type="submit">{editingId ? 'Spremi' : 'Dodaj'}</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
 
       <Modal show={showPaymentModal && !!selectedSale} onClose={closePaymentModal} size="sm">
         <Modal.Header title="Dodaj plaćanje" onClose={closePaymentModal} />
-        <form onSubmit={handlePaymentSubmit}>
+        <Form onSubmit={handlePaymentSubmit}>
           <Modal.Body>
             <div className="mb-4">
               <p className="text-sm text-gray-600">Kupac</p>
@@ -291,7 +291,7 @@ const RetailSales: React.FC = () => {
             <Button variant="secondary" type="button" onClick={closePaymentModal}>Odustani</Button>
             <Button variant="success" type="submit">Dodaj plaćanje</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
     </div>
   )

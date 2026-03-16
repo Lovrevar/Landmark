@@ -4,7 +4,7 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import { useBankInvoiceData } from '../Hooks/useBankInvoiceData'
 import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
-import { Button, Modal, FormField, Input, Select, Textarea } from '../../../ui'
+import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { createBankInvoice } from '../../Invoices/Services/invoiceService'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
@@ -136,7 +136,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       <Modal.Header title="Novi Račun Banka" onClose={onClose} />
 
       <Modal.Body>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <Form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Tip" required>
               <Select
@@ -355,7 +355,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               {loading ? 'Kreiranje...' : 'Kreiraj račun'}
             </Button>
           </div>
-        </form>
+        </Form>
       </Modal.Body>
     </Modal>
   )

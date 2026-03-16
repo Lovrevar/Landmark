@@ -1,7 +1,7 @@
 import React from 'react'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
-import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState } from '../../ui'
+import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form } from '../../ui'
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
@@ -287,7 +287,7 @@ const CreditsManagement: React.FC = () => {
       <Modal show={showAllocationModal && !!selectedCredit} onClose={closeAllocationModal} size="sm">
         <Modal.Header title="Nova namjena kredita" onClose={closeAllocationModal} />
 
-        <form onSubmit={handleCreateAllocation}>
+        <Form onSubmit={handleCreateAllocation}>
           <Modal.Body>
             {selectedCredit && (
               <div>
@@ -384,7 +384,7 @@ const CreditsManagement: React.FC = () => {
             <Button variant="secondary" type="button" onClick={closeAllocationModal}>Cancel</Button>
             <Button variant="primary" type="submit">Create Allocation</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
     </div>
   )

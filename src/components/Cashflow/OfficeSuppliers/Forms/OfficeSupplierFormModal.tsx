@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Button, Input, FormField, Alert } from '../../../ui'
+import { Modal, Button, Input, FormField, Alert, Form } from '../../../ui'
 import { OfficeSupplier, OfficeSupplierFormData } from '../types'
 
 interface OfficeSupplierFormModalProps {
@@ -26,7 +26,7 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
         onClose={handleCloseModal}
       />
 
-      <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
+      <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           <FormField label="Naziv dobavljača" required>
             <Input
@@ -101,7 +101,7 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
             {editingSupplier ? 'Spremi promjene' : 'Dodaj dobavljača'}
           </Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentFormData } from '../types'
-import { Modal, FormField, Select, Input, Button } from '../../../ui'
+import { Modal, FormField, Select, Input, Button, Form } from '../../../ui'
 import {
   ContractedSection,
   ContractFields,
@@ -61,7 +61,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header title="Add Single Apartment" onClose={onClose} />
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+      <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -196,7 +196,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="primary">Create Apartment</Button>
         </Modal.Footer>
-      </form>
+      </Form>
     </Modal>
   )
 }
