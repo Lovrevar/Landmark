@@ -10,6 +10,7 @@ import { ContractDocumentUpload } from '../ContractDocumentUpload'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
 import { uploadSubcontractorDocuments } from '../Services/siteService'
 import { formatEuro } from '../../../../utils/formatters'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface Phase {
   id: string
@@ -39,6 +40,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   subcontractor,
   onSubmit
 }) => {
+  const toast = useToast()
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
@@ -98,7 +100,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setPendingFiles([])
       setDocViewerKey(k => k + 1)
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : 'Greška pri uploadu dokumenata')
+      toast.error(error instanceof Error ? error.message : 'Greška pri uploadu dokumenata')
     } finally {
       setUploadingFiles(false)
     }
@@ -340,7 +342,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
         <Button
           onClick={() => {
             if (!selectedPhaseId) {
-              alert('Molimo odaberite fazu')
+              toast.warning('Molimo odaberite fazu')
               return
             }
 

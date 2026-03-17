@@ -6,8 +6,10 @@ import {
   toggleRetailInvoiceApproval,
   exportRetailInvoicesCSV,
 } from '../services/retailInvoiceService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useRetailInvoices() {
+  const toast = useToast()
   const [invoices, setInvoices] = useState<RetailInvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -26,7 +28,7 @@ export function useRetailInvoices() {
       setStats(calculateRetailInvoiceStats(data))
     } catch (err) {
       console.error('Error fetching retail invoices:', err)
-      alert('Greška pri učitavanju računa')
+      toast.error('Greška pri učitavanju računa')
     } finally {
       setLoading(false)
     }
@@ -66,7 +68,7 @@ export function useRetailInvoices() {
       )
     } catch (err) {
       console.error('Error updating approval status:', err)
-      alert('Greška pri ažuriranju odobrenja')
+      toast.error('Greška pri ažuriranju odobrenja')
     }
   }
 

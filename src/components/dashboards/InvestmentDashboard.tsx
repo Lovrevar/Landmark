@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner, Button } from '../ui'
+import { useToast } from '../../contexts/ToastContext'
 import {
   Banknote,
   AlertTriangle,
@@ -22,6 +23,7 @@ const defaultFinancialSummary: FinancialSummary = {
 }
 
 const InvestmentDashboard: React.FC = () => {
+  const toast = useToast()
   const [companies, setCompanies] = useState<Company[]>([])
   const [banks, setBanks] = useState<Bank[]>([])
   const [bankCredits, setBankCredits] = useState<BankCredit[]>([])
@@ -38,7 +40,7 @@ const InvestmentDashboard: React.FC = () => {
       await generateInvestmentReportPDF(financialSummary, bankCredits, [])
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF report')
+      toast.error('Failed to generate PDF report')
     }
   }
 

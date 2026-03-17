@@ -3,6 +3,7 @@ import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface ParsedGarageRow {
   rowIndex: number
@@ -25,6 +26,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
   selectedBuilding,
   onComplete
 }) => {
+  const toast = useToast()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedGarageRow[]>([])
@@ -68,7 +70,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       setStep(2)
     } catch (error) {
       console.error('Error parsing file:', error)
-      alert('Error parsing Excel file. Please check the file format.')
+      toast.error('Error parsing Excel file. Please check the file format.')
     }
   }
 
@@ -82,7 +84,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
-      alert('An error occurred during import. Please check the console.')
+      toast.error('An error occurred during import. Please check the console.')
     } finally {
       setImporting(false)
     }

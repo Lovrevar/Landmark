@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BuildingFormData } from '../types'
 import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface SingleBuildingModalProps {
   visible: boolean
@@ -17,6 +18,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState<BuildingFormData>({
     name: '',
     description: '',
@@ -33,7 +35,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      alert('Please fill in required fields')
+      toast.warning('Please fill in required fields')
       return
     }
     onSubmit(formData)

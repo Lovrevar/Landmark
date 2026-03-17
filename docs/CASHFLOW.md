@@ -35,7 +35,7 @@ Manages approved invoices that are pending processing. Supports bulk hide/select
 ### index.tsx (AccountingApprovals)
 - Approved invoice table with search, column toggle, and bulk hide
 - **Uses hooks:** useApprovals
-- **Uses Ui:** Table, SearchInput, ColumnMenuDropdown
+- **Uses Ui:** Table, SearchInput, ColumnMenuDropdown, useToast
 
 ---
 
@@ -87,7 +87,7 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 - Form for creating bank invoices (incoming, outgoing, or expense types)
 - Multi-VAT support (up to 4 VAT rates)
 - **Uses hooks:** useBankInvoiceData
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 #### Views
 
@@ -348,7 +348,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 ### LandPurchaseFormModal.tsx
 - Form for creating land purchase invoices
 - **Uses hooks:** useLandPurchaseFormData
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 #### Views
 
@@ -576,7 +576,7 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 ### LinkSupplierToProjectModal.tsx
 - Associates an existing supplier with a project and phase
 - **Uses hooks:** useSuppliers (for projects/phases)
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 #### Modals
 

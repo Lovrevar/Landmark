@@ -3,8 +3,10 @@ import { supabase } from '../../../../lib/supabase'
 import type { BankCredit } from '../../../../lib/supabase'
 import { INITIAL_CREDIT_FORM, type CreditFormData, type CompanyBankAccount } from '../types'
 import { calculateAnnuityPayment, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useCreditForm(onSaved: () => Promise<void>) {
+  const toast = useToast()
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newCredit, setNewCredit] = useState<CreditFormData>({ ...INITIAL_CREDIT_FORM })
@@ -77,7 +79,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     }
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      alert('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
+      toast.warning('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
       return
     }
 
@@ -117,7 +119,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error adding credit:', error)
-      alert('Error adding credit facility.')
+      toast.error('Error adding credit facility.')
     }
   }
 
@@ -125,7 +127,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     if (!editingCredit) return
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      alert('Please fill in all required fields')
+      toast.warning('Please fill in all required fields')
       return
     }
 
@@ -173,7 +175,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error updating credit:', error)
-      alert('Error updating credit facility.')
+      toast.error('Error updating credit facility.')
     }
   }
 
@@ -185,7 +187,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error deleting credit:', error)
-      alert('Error deleting credit facility.')
+      toast.error('Error deleting credit facility.')
     }
   }
 

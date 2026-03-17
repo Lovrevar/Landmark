@@ -6,8 +6,10 @@ import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { createBankInvoice } from '../../Invoices/Services/invoiceService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<BankInvoiceFormData>({
     invoice_type: 'INCOMING_BANK',
@@ -82,12 +84,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     e.preventDefault()
 
     if (!formData.company_id || !formData.bank_id || !formData.invoice_number) {
-      alert('Molimo popunite sva obavezna polja')
+      toast.warning('Molimo popunite sva obavezna polja')
       return
     }
 
     if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
-      alert('Molimo unesite barem jednu osnovicu')
+      toast.warning('Molimo unesite barem jednu osnovicu')
       return
     }
 
@@ -123,7 +125,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       onClose()
     } catch (error: unknown) {
       console.error('Error creating invoice:', error)
-      alert('Greška pri kreiranju računa: ' + (error instanceof Error ? error.message : String(error)))
+      toast.error('Greška pri kreiranju računa: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setLoading(false)
     }

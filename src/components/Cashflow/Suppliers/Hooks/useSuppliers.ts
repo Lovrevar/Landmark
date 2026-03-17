@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { SupplierSummary, SupplierFormData, Project, Phase } from '../types'
 import * as supplierService from '../Services/supplierService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSuppliers = () => {
+  const toast = useToast()
   const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -107,7 +109,7 @@ export const useSuppliers = () => {
     e.preventDefault()
 
     if (!editingSupplier && formData.project_id && !formData.phase_id) {
-      alert('Molimo odaberite fazu za odabrani projekt')
+      toast.warning('Molimo odaberite fazu za odabrani projekt')
       return
     }
 
@@ -124,11 +126,11 @@ export const useSuppliers = () => {
       console.error('Error saving supplier:', error)
       const err = error as { code?: string; message?: string }
       if (err?.code === '23505' && err?.message?.includes('contract_number')) {
-        alert('Greška: Dupliran broj ugovora. Molimo pokušajte ponovo.')
+        toast.error('Greška: Dupliran broj ugovora. Molimo pokušajte ponovo.')
       } else if (err?.message) {
-        alert(`Greška: ${err.message}`)
+        toast.error(`Greška: ${err.message}`)
       } else {
-        alert('Greška prilikom spremanja dobavljača')
+        toast.error('Greška prilikom spremanja dobavljača')
       }
     }
   }
@@ -141,7 +143,7 @@ export const useSuppliers = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting supplier:', error)
-      alert('Greška prilikom brisanja dobavljača')
+      toast.error('Greška prilikom brisanja dobavljača')
     }
   }
 
@@ -153,7 +155,7 @@ export const useSuppliers = () => {
       setShowDetailsModal(true)
     } catch (error) {
       console.error('Error loading supplier details:', error)
-      alert('Greška prilikom učitavanja detalja dobavljača')
+      toast.error('Greška prilikom učitavanja detalja dobavljača')
     }
   }
 

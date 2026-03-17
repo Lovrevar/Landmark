@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { retailProjectService } from '../Services/retailProjectService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface EditPhaseModalProps {
   phase: RetailProjectPhase
@@ -16,6 +17,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState({
     phase_name: phase.phase_name,
     budget_allocated: phase.budget_allocated,
@@ -53,7 +55,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
       onSuccess()
     } catch (error) {
       console.error('Error updating phase:', error)
-      alert('Greška pri ažuriranju faze')
+      toast.error('Greška pri ažuriranju faze')
     } finally {
       setLoading(false)
     }

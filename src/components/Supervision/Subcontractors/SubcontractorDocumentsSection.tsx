@@ -4,12 +4,14 @@ import { Button } from '../../ui'
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { ContractDocumentUpload } from '../SiteManagement/ContractDocumentUpload'
 import { uploadSubcontractorDocuments } from '../SiteManagement/Services/siteService'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface Props {
   subcontractorId: string
 }
 
 export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId }) => {
+  const toast = useToast()
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [viewerKey, setViewerKey] = useState(0)
@@ -22,7 +24,7 @@ export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId
       setPendingFiles([])
       setViewerKey(k => k + 1)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Greška pri uploadu dokumenata')
+      toast.error(err instanceof Error ? err.message : 'Greška pri uploadu dokumenata')
     } finally {
       setUploading(false)
     }

@@ -3,6 +3,7 @@ import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface FormState {
   owner_first_name: string
@@ -31,6 +32,7 @@ const emptyForm = (): FormState => ({
 })
 
 const RetailLandPlots: React.FC = () => {
+  const toast = useToast()
   const { loading, filteredPlots, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, loadPlotDetails } = useLandPlots()
 
   const [showFormModal, setShowFormModal] = useState(false)
@@ -87,7 +89,7 @@ const RetailLandPlots: React.FC = () => {
       closeFormModal()
     } catch (error) {
       console.error('Error saving land plot:', error)
-      alert('Greška pri spremanju zemljišta')
+      toast.error('Greška pri spremanju zemljišta')
     }
   }
 
@@ -99,7 +101,7 @@ const RetailLandPlots: React.FC = () => {
       setShowDetailsModal(true)
     } catch (error) {
       console.error('Error loading plot details:', error)
-      alert('Greška pri učitavanju detalja')
+      toast.error('Greška pri učitavanju detalja')
     }
   }
 

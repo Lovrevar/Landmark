@@ -5,6 +5,7 @@ import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './Forms/MilestoneFormModal'
 import { retailProjectService } from './Services/retailProjectService'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneStats {
   totalPercentage: number
@@ -32,6 +33,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
+  const toast = useToast()
   const [milestones, setMilestones] = useState<RetailContractMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
@@ -75,7 +77,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error creating milestone:', error)
-      alert('Greška pri kreiranju milestonea')
+      toast.error('Greška pri kreiranju milestonea')
     }
   }
 
@@ -94,7 +96,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      alert('Greška pri ažuriranju milestonea')
+      toast.error('Greška pri ažuriranju milestonea')
     }
   }
 
@@ -106,7 +108,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Greška pri brisanju milestonea')
+      toast.error('Greška pri brisanju milestonea')
     }
   }
 

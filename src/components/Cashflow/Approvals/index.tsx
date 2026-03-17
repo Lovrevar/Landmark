@@ -10,6 +10,7 @@ import {
   EmptyState,
   ConfirmDialog
 } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
@@ -46,6 +47,7 @@ const DEFAULT_VISIBLE: Record<string, boolean> = {
 }
 
 const AccountingApprovals: React.FC = () => {
+  const toast = useToast()
   const {
     invoices,
     filteredInvoices,
@@ -92,14 +94,14 @@ const AccountingApprovals: React.FC = () => {
 
   const handleHideInvoice = async () => {
     if (!hideConfirmDialog.invoiceId) {
-      alert('Greška: Korisnik ili ID računa nisu pronađeni.')
+      toast.warning('Greška: Korisnik ili ID računa nisu pronađeni.')
       return
     }
     try {
       await hideInvoice(hideConfirmDialog.invoiceId)
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
     } catch (error: unknown) {
-      alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
+      toast.error(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
 
@@ -108,7 +110,7 @@ const AccountingApprovals: React.FC = () => {
       await bulkHide()
       setBulkHideConfirmOpen(false)
     } catch (error: unknown) {
-      alert(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
+      toast.error(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
     }
   }
 

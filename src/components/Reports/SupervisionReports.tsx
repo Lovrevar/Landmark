@@ -13,8 +13,10 @@ import type { Project } from '../../lib/supabase'
 import type { ProjectSupervisionReport } from './types'
 import { fetchProjects, generateProjectReport } from './services/supervisionReportService'
 import { generateSupervisionReportPDF } from './pdf/supervisionReportPdf'
+import { useToast } from '../../contexts/ToastContext'
 
 const SupervisionReports: React.FC = () => {
+  const toast = useToast()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [projectReport, setProjectReport] = useState<ProjectSupervisionReport | null>(null)
@@ -69,7 +71,7 @@ const SupervisionReports: React.FC = () => {
       await generateSupervisionReportPDF(projectReport, dateRange)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Error generating PDF report. Please try again.')
+      toast.error('Error generating PDF report. Please try again.')
     }
   }
 

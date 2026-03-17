@@ -6,6 +6,7 @@ import {
   deleteMilestone as svcDeleteMilestone,
   toggleMilestoneCompletion as svcToggleMilestone
 } from '../Services/milestoneService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface MilestoneFormData {
   name: string
@@ -14,11 +15,12 @@ interface MilestoneFormData {
 }
 
 export function useMilestoneManagement(projectId: string | undefined, onMutated: () => void) {
+  const toast = useToast()
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
 
   const handleAddMilestone = async (data: MilestoneFormData): Promise<void> => {
     if (!data.name.trim() || !projectId) {
-      alert('Please enter milestone name')
+      toast.warning('Please enter milestone name')
       return
     }
     try {
@@ -26,7 +28,7 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
       onMutated()
     } catch (error) {
       console.error('Error adding milestone:', error)
-      alert('Error adding milestone. Please try again.')
+      toast.error('Error adding milestone. Please try again.')
     }
   }
 
@@ -37,7 +39,7 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
       onMutated()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      alert('Error updating milestone.')
+      toast.error('Error updating milestone.')
     }
   }
 
@@ -48,7 +50,7 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
       onMutated()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Error deleting milestone.')
+      toast.error('Error deleting milestone.')
     }
   }
 

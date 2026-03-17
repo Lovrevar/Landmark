@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import type { BankWithCredits, Company } from '../types'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useBankData() {
+  const toast = useToast()
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,7 +78,7 @@ export function useBankData() {
 
   const addBank = async (newBank: { name: string; contact_person: string; contact_email: string; contact_phone: string }, onDone: () => void) => {
     if (!newBank.name.trim()) {
-      alert('Please enter bank name')
+      toast.warning('Please enter bank name')
       return
     }
     try {
@@ -86,7 +88,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error adding bank:', error)
-      alert('Error adding bank. Please try again.')
+      toast.error('Error adding bank. Please try again.')
     }
   }
 
@@ -103,7 +105,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error updating bank:', error)
-      alert('Error updating bank.')
+      toast.error('Error updating bank.')
     }
   }
 
@@ -115,7 +117,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error deleting bank:', error)
-      alert('Error deleting bank.')
+      toast.error('Error deleting bank.')
     }
   }
 

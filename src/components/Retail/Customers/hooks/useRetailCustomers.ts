@@ -7,6 +7,7 @@ import {
   updateCustomer,
   deleteCustomer,
 } from '../services/retailCustomerService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 const EMPTY_FORM: CustomerFormData = {
   name: '',
@@ -17,6 +18,7 @@ const EMPTY_FORM: CustomerFormData = {
 }
 
 export function useRetailCustomers() {
+  const toast = useToast()
   const [customers, setCustomers] = useState<CustomerWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,7 +35,7 @@ export function useRetailCustomers() {
       setCustomers(await fetchCustomersWithStats())
     } catch (err) {
       console.error('Error fetching customers:', err)
-      alert('Greška pri učitavanju kupaca')
+      toast.error('Greška pri učitavanju kupaca')
     } finally {
       setLoading(false)
     }
@@ -90,7 +92,7 @@ export function useRetailCustomers() {
       closeFormModal()
     } catch (err) {
       console.error('Error saving customer:', err)
-      alert('Greška pri spremanju kupca')
+      toast.error('Greška pri spremanju kupca')
     }
   }
 
@@ -101,7 +103,7 @@ export function useRetailCustomers() {
       await loadCustomers()
     } catch (err) {
       console.error('Error deleting customer:', err)
-      alert('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
+      toast.error('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
     }
   }
 
@@ -113,7 +115,7 @@ export function useRetailCustomers() {
       setShowDetailsModal(true)
     } catch (err) {
       console.error('Error loading customer details:', err)
-      alert('Greška pri učitavanju detalja')
+      toast.error('Greška pri učitavanju detalja')
     }
   }
 

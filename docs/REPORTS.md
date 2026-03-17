@@ -88,17 +88,17 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with risk badges, risk assessment, and PDF export
 - **Uses hooks:** useGeneralReportData
 - **Uses services:** generalReportPdf (for PDF export)
-- **Uses Ui:** Card, StatGrid, Button
+- **Uses Ui:** Card, StatGrid, Button, useToast
 
 ### SalesReports.tsx
 - Project sales report (unit status, revenue, monthly trend, apartment list) or customer report (distribution, insights), with project selector, date range picker, and PDF export
 - **Uses services:** salesReportService, salesReportPdf
-- **Uses Ui:** Card, Table, Button, Select
+- **Uses Ui:** Card, Table, Button, Select, useToast
 
 ### SupervisionReports.tsx
 - Construction dashboard: budget performance overview, contract status distribution, monthly performance table, first 10 work logs, highlights & recommendations, and PDF export
 - **Uses services:** supervisionReportService, supervisionReportPdf
-- **Uses Ui:** Card, Table, Button, Select
+- **Uses Ui:** Card, Table, Button, Select, useToast
 
 ### RetailReports.tsx
 - Tabbed retail portfolio view (Pregled, Projekti, Prodaja, Troškovi) with refresh and PDF export buttons

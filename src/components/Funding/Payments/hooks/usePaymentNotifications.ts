@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../../../../contexts/AuthContext'
+import { useToast } from '../../../../contexts/ToastContext'
 import {
   fetchPaymentNotifications,
   calculateNotificationStats,
@@ -12,6 +13,7 @@ import {
 } from '../Services/paymentNotificationService'
 
 export function usePaymentNotifications() {
+  const toast = useToast()
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<PaymentNotification[]>([])
   const [stats, setStats] = useState<NotificationStats>({
@@ -79,7 +81,7 @@ export function usePaymentNotifications() {
       await loadNotifications()
     } catch (err) {
       console.error('Error dismissing notification:', err)
-      alert('Failed to dismiss notification')
+      toast.error('Failed to dismiss notification')
     }
   }
 

@@ -9,8 +9,10 @@ import { SubcontractorDocumentsSection } from './SubcontractorDocumentsSection'
 import { SubcontractorBasicFormModal } from './Forms/SubcontractorBasicFormModal'
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { SubcontractorSummary, SubcontractorContract } from './types'
+import { useToast } from '../../../contexts/ToastContext'
 
 const SubcontractorManagement: React.FC = () => {
+  const toast = useToast()
   const { subcontractors, loading, fetchData, deleteSubcontractor } = useSubcontractorData()
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorSummary | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,7 +35,7 @@ const SubcontractorManagement: React.FC = () => {
       fetchData()
     } catch (error) {
       console.error('Error deleting subcontractor:', error)
-      alert('Failed to delete subcontractor. Check if there are contracts associated with it.')
+      toast.error('Failed to delete subcontractor. Check if there are contracts associated with it.')
     }
   }
 

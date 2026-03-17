@@ -5,8 +5,10 @@ import {
   calculatePaymentStats,
   exportPaymentsCSV,
 } from '../services/supervisionPaymentService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionPayments() {
+  const toast = useToast()
   const [payments, setPayments] = useState<PaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,7 +26,7 @@ export function useSupervisionPayments() {
       setStats(calculatePaymentStats(data))
     } catch (err) {
       console.error('Error fetching payments:', err)
-      alert('Failed to load payments')
+      toast.error('Failed to load payments')
     } finally {
       setLoading(false)
     }

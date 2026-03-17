@@ -123,7 +123,7 @@ The core supervision module. Full project site view with phases, subcontractor c
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
 - **Uses services:** siteService (milestone CRUD)
 - **Uses components:** MilestoneFormModal
-- **Uses Ui:** Button, EmptyState
+- **Uses Ui:** Button, EmptyState, useToast
 
 ### ContractDocumentUpload.tsx
 - Drag-and-drop PDF uploader enforcing PDF-only and 25 MB per file limits; validates type, size, and duplicates
@@ -175,7 +175,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 ### Forms/SubcontractorBasicFormModal.tsx
 - Add/edit base subcontractor registry entry (name, contact, notes)
 - **Uses services:** siteService (insertSubcontractorRecord, updateSubcontractorRecord)
-- **Uses Ui:** Modal, Button, Input
+- **Uses Ui:** Modal, Button, Input, useToast
 
 #### Views
 
@@ -195,7 +195,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 - Subcontractor grid with search, detail modal (contracts + documents), add/edit/delete with confirmation
 - **Uses hooks:** useSubcontractorData
 - **Uses components:** SubcontractorCard, SubcontractorContractsList, SubcontractorDocumentsSection, SubcontractorBasicFormModal
-- **Uses Ui:** SearchInput, Card, ConfirmDialog
+- **Uses Ui:** SearchInput, Card, ConfirmDialog, useToast
 
 ---
 

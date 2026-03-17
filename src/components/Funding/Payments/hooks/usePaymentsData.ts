@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase, BankCreditPayment } from '../../../../lib/supabase'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface BankPaymentWithDetails extends BankCreditPayment {
   bank_name?: string
@@ -37,6 +38,7 @@ const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
 }
 
 export function usePaymentsData() {
+  const toast = useToast()
   const [payments, setPayments] = useState<CombinedPayment[]>([])
   const [stats, setStats] = useState<PaymentsStats>({
     totalPayments: 0,
@@ -96,7 +98,7 @@ export function usePaymentsData() {
       setStats(calculateStats(enrichedBankPayments))
     } catch (error) {
       console.error('Error fetching payments:', error)
-      alert('Failed to load payments')
+      toast.error('Failed to load payments')
     } finally {
       setLoading(false)
     }

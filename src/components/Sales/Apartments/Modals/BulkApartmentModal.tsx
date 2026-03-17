@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BulkApartmentData } from '../types'
 import { Modal, FormField, Select, Input, Button, Alert, Form } from '../../../ui'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface BulkApartmentModalProps {
   visible: boolean
@@ -17,6 +18,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState<BulkApartmentData>({
     project_id: '',
     building_id: '',
@@ -38,7 +40,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.project_id || !formData.building_id) {
-      alert('Please select project and building')
+      toast.warning('Please select project and building')
       return
     }
     onSubmit(formData)

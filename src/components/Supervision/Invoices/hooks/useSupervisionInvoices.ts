@@ -6,8 +6,10 @@ import {
   toggleInvoiceApproval,
   exportInvoicesCSV,
 } from '../services/supervisionInvoiceService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionInvoices() {
+  const toast = useToast()
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -26,7 +28,7 @@ export function useSupervisionInvoices() {
       setStats(calculateInvoiceStats(data))
     } catch (err) {
       console.error('Error fetching invoices:', err)
-      alert('Failed to load invoices')
+      toast.error('Failed to load invoices')
     } finally {
       setLoading(false)
     }
@@ -66,7 +68,7 @@ export function useSupervisionInvoices() {
       )
     } catch (err) {
       console.error('Error updating invoice approval:', err)
-      alert('Failed to update invoice approval status')
+      toast.error('Failed to update invoice approval status')
     }
   }
 

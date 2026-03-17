@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { RetailSalesPaymentWithDetails, SalesStats } from '../services/retailSalesService'
 import { fetchRetailSalesPayments, calculateSalesStats, exportRetailSalesCSV } from '../services/retailSalesService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useRetailSales() {
+  const toast = useToast()
   const [payments, setPayments] = useState<RetailSalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -20,7 +22,7 @@ export function useRetailSales() {
       setStats(calculateSalesStats(data))
     } catch (err) {
       console.error('Error fetching retail sales payments:', err)
-      alert('Failed to load payments')
+      toast.error('Failed to load payments')
     } finally {
       setLoading(false)
     }

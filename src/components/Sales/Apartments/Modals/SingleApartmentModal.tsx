@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentFormData } from '../types'
 import { Modal, FormField, Select, Input, Button, Form } from '../../../ui'
+import { useToast } from '../../../../contexts/ToastContext'
 import {
   ContractedSection,
   ContractFields,
@@ -23,6 +24,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState({
     project_id: '',
     building_id: '',
@@ -49,7 +51,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.project_id || !formData.building_id || !formData.number) {
-      alert('Please fill in all required fields')
+      toast.warning('Please fill in all required fields')
       return
     }
     onSubmit({ ...formData, ...contractFieldsToPayload(contractFields) })

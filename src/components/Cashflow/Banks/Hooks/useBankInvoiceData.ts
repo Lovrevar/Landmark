@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import type { BankCompany, BankCredit, CreditAllocation, MyCompany, InvoiceCategory } from '../bankInvoiceTypes'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useBankInvoiceData = (bankId: string, creditId?: string) => {
+  const toast = useToast()
   const [banks, setBanks] = useState<BankCompany[]>([])
   const [credits, setCredits] = useState<BankCredit[]>([])
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
@@ -20,7 +22,7 @@ export const useBankInvoiceData = (bankId: string, creditId?: string) => {
       setBanks(data || [])
     } catch (error) {
       console.error('Error fetching banks:', error)
-      alert('Greška pri učitavanju banaka')
+      toast.error('Greška pri učitavanju banaka')
     }
   }
 

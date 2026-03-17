@@ -9,8 +9,10 @@ import {
   deleteCompany,
   fetchCompanyDetails
 } from '../Services/companyService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useCompanies = () => {
+  const toast = useToast()
   const [companies, setCompanies] = useState<CompanyStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -89,9 +91,9 @@ export const useCompanies = () => {
     } catch (error: unknown) {
       console.error('Error saving company:', error)
       if ((error as { code?: string })?.code === '23505') {
-        alert('OIB već postoji u sustavu!')
+        toast.error('OIB već postoji u sustavu!')
       } else {
-        alert('Greška prilikom spremanja firme')
+        toast.error('Greška prilikom spremanja firme')
       }
     }
   }
@@ -104,7 +106,7 @@ export const useCompanies = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting company:', error)
-      alert('Greška prilikom brisanja firme')
+      toast.error('Greška prilikom brisanja firme')
     }
   }
 
@@ -124,7 +126,7 @@ export const useCompanies = () => {
       setShowDetailsModal(true)
     } catch (error) {
       console.error('Error loading company details:', error)
-      alert('Greška pri učitavanju detalja firme')
+      toast.error('Greška pri učitavanju detalja firme')
     }
   }
 

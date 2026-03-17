@@ -4,8 +4,10 @@ import * as invoiceService from '../Services/invoiceService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useInvoiceColumns } from './useInvoiceColumns'
 import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../Services/invoiceFormDefaults'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useInvoices = () => {
+  const toast = useToast()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
@@ -218,7 +220,7 @@ export const useInvoices = () => {
       handleCloseModal()
     } catch (error) {
       console.error('Error saving invoice:', error)
-      alert('Greška prilikom spremanja računa')
+      toast.error('Greška prilikom spremanja računa')
     }
   }
 
@@ -270,7 +272,7 @@ export const useInvoices = () => {
       handleClosePaymentModal()
     } catch (error) {
       console.error('Error saving payment:', error)
-      alert('Greška prilikom spremanja plaćanja')
+      toast.error('Greška prilikom spremanja plaćanja')
     }
   }
 
@@ -282,7 +284,7 @@ export const useInvoices = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting invoice:', error)
-      alert('Greška prilikom brisanja računa')
+      toast.error('Greška prilikom brisanja računa')
     }
   }
 

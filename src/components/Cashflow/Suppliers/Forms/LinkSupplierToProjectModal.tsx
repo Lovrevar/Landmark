@@ -8,6 +8,7 @@ import {
   generateSupplierContractNumber,
   createSupplierContract
 } from '../Services/supplierService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface LinkSupplierToProjectModalProps {
   visible: boolean
@@ -38,6 +39,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   onClose,
   onSuccess
 }) => {
+  const toast = useToast()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
@@ -70,7 +72,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setSuppliers(await fetchSuppliersForLinking())
     } catch (error) {
       console.error('Error loading suppliers:', error)
-      alert('Greška pri učitavanju dobavljača')
+      toast.error('Greška pri učitavanju dobavljača')
     } finally {
       setLoading(false)
     }
@@ -81,7 +83,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setProjects(await fetchProjectsForLinking())
     } catch (error) {
       console.error('Error loading projects:', error)
-      alert('Greška pri učitavanju projekata')
+      toast.error('Greška pri učitavanju projekata')
     }
   }
 
@@ -90,13 +92,13 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setPhases(await fetchPhasesForProject(projectId))
     } catch (error) {
       console.error('Error loading phases:', error)
-      alert('Greška pri učitavanju faza')
+      toast.error('Greška pri učitavanju faza')
     }
   }
 
   const handleSubmit = async () => {
     if (!selectedSupplierId || !selectedProjectId || !selectedPhaseId) {
-      alert('Molimo odaberite dobavljača, projekt i fazu')
+      toast.warning('Molimo odaberite dobavljača, projekt i fazu')
       return
     }
 
@@ -109,7 +111,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       onSuccess()
     } catch (error) {
       console.error('Error linking supplier:', error)
-      alert('Greška pri povezivanju dobavljača')
+      toast.error('Greška pri povezivanju dobavljača')
     } finally {
       setSubmitting(false)
     }

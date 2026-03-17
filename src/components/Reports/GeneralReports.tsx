@@ -15,8 +15,10 @@ import { format } from 'date-fns'
 import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
+import { useToast } from '../../contexts/ToastContext'
 
 const GeneralReports: React.FC = () => {
+  const toast = useToast()
   const { report, loading } = useGeneralReportData()
   const [generatingPDF, setGeneratingPDF] = useState(false)
 
@@ -27,7 +29,7 @@ const GeneralReports: React.FC = () => {
       await generateGeneralReportPDF(report)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('Failed to generate PDF. Please try again.')
     } finally {
       setGeneratingPDF(false)
     }

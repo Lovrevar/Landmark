@@ -22,8 +22,10 @@ import {
   deletePayment
 } from '../Services/paymentService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const usePayments = () => {
+  const toast = useToast()
   const [payments, setPayments] = useState<Payment[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -218,7 +220,7 @@ export const usePayments = () => {
       handleCloseModal()
     } catch (error) {
       console.error('Error saving payment:', error)
-      alert('Greška prilikom spremanja plaćanja')
+      toast.error('Greška prilikom spremanja plaćanja')
     }
   }
 
@@ -230,7 +232,7 @@ export const usePayments = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting payment:', error)
-      alert('Greška prilikom brisanja plaćanja')
+      toast.error('Greška prilikom brisanja plaćanja')
     }
   }
 

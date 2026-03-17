@@ -3,6 +3,7 @@ import { Warehouse, Package, X } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
 import { Modal, Button, LoadingSpinner } from '../../../ui'
 import { useLinkUnits } from '../hooks/useLinkUnits'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface LinkUnitsModalProps {
   visible: boolean
@@ -17,6 +18,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   apartment,
   onLink
 }) => {
+  const toast = useToast()
   const {
     availableGarages,
     availableStorages,
@@ -56,7 +58,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
       onClose()
     } catch (error) {
       console.error('Error saving unit links:', error)
-      alert('Error saving unit links. Please try again.')
+      toast.error('Error saving unit links. Please try again.')
     }
   }
 

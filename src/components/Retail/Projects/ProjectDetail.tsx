@@ -13,6 +13,7 @@ import { RetailPaymentHistoryModal } from './Modals/RetailPaymentHistoryModal'
 import { RetailInvoicesModal } from './Modals/RetailInvoicesModal'
 import { retailProjectService } from './Services/retailProjectService'
 import { useProjectDetail } from './hooks/useProjectDetail'
+import { useToast } from '../../../contexts/ToastContext'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -22,6 +23,7 @@ interface ProjectDetailProps {
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialProject, onBack, onRefresh }) => {
+  const toast = useToast()
   const { project: hookProject, contractsMap: phaseContracts, loading, refetch: loadProjectDetails } = useProjectDetail(initialProject.id)
   const project = hookProject ?? initialProject
   const [refreshing, setRefreshing] = useState(false)
@@ -74,7 +76,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         await handleRefresh()
       } catch (error) {
         console.error('Error deleting phase:', error)
-        alert('Greška pri brisanju faze')
+        toast.error('Greška pri brisanju faze')
       }
     }
   }
@@ -114,7 +116,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         await handleRefresh()
       } catch (error) {
         console.error('Error deleting contract:', error)
-        alert('Greška pri brisanju ugovora')
+        toast.error('Greška pri brisanju ugovora')
       }
     }
   }

@@ -4,6 +4,7 @@ import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
 import { importApartmentRow } from '../services/apartmentImportService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -51,6 +52,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
   selectedProject,
   onComplete
 }) => {
+  const toast = useToast()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedApartmentRow[]>([])
@@ -139,7 +141,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       setStep(2)
     } catch (error) {
       console.error('Error parsing file:', error)
-      alert('Error parsing Excel file. Please check the file format.')
+      toast.error('Error parsing Excel file. Please check the file format.')
     }
   }
 
@@ -173,7 +175,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
-      alert('An error occurred during import. Please check the console.')
+      toast.error('An error occurred during import. Please check the console.')
     } finally {
       setImporting(false)
     }

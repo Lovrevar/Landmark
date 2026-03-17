@@ -11,6 +11,7 @@ import {
   createAllocation,
   deleteAllocation,
 } from '../services/creditService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 const EMPTY_FORM: AllocationFormData = {
   allocation_type: 'project',
@@ -22,6 +23,7 @@ const EMPTY_FORM: AllocationFormData = {
 }
 
 export function useCreditManagement() {
+  const toast = useToast()
   const [credits, setCredits] = useState<BankCredit[]>([])
   const [allocations, setAllocations] = useState<Map<string, CreditAllocation[]>>(new Map())
   const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
@@ -111,7 +113,7 @@ export function useCreditManagement() {
       setShowAllocationModal(false)
     } catch (err) {
       console.error('Error creating allocation:', err)
-      alert('Greška pri kreiranju namjene')
+      toast.error('Greška pri kreiranju namjene')
     }
   }
 

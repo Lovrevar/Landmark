@@ -13,6 +13,7 @@ import {
 } from './Services/siteService'
 import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneListProps {
   contractId: string
@@ -31,6 +32,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
+  const toast = useToast()
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
@@ -71,7 +73,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error creating milestone:', error)
-      alert('Failed to create milestone')
+      toast.error('Failed to create milestone')
     }
   }
 
@@ -90,7 +92,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      alert('Failed to update milestone')
+      toast.error('Failed to update milestone')
     }
   }
 
@@ -102,7 +104,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Failed to delete milestone')
+      toast.error('Failed to delete milestone')
     }
   }
 

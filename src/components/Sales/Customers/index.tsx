@@ -3,6 +3,7 @@ import { Plus, Mail } from 'lucide-react'
 import { PageHeader, SearchInput, Button } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './Hooks/useCustomerData'
+import { useToast } from '../../../contexts/ToastContext'
 import { CategoryTabs } from './CategoryTabs'
 import { CustomerGrid } from './CustomerGrid'
 import { CustomerFormModal } from './Forms/CustomerFormModal'
@@ -10,6 +11,7 @@ import { CustomerDetailModal } from './Modals/CustomerDetailModal'
 import { CustomerWithApartments } from './types'
 
 const CustomersManagement: React.FC = () => {
+  const toast = useToast()
   const [activeCategory, setActiveCategory] = useState<CustomerCategory | null>(null)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -69,7 +71,7 @@ const CustomersManagement: React.FC = () => {
     try {
       await deleteCustomer(id)
     } catch {
-      alert('Error deleting customer')
+      toast.error('Error deleting customer')
     }
   }
 
@@ -93,7 +95,7 @@ const CustomersManagement: React.FC = () => {
       .filter(email => email && email.trim() !== '')
 
     if (emails.length === 0) {
-      alert('No email addresses found for the selected customers.')
+      toast.warning('No email addresses found for the selected customers.')
       return
     }
 

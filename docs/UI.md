@@ -41,6 +41,12 @@ Shared primitive component library. Always check here before building new UI —
 - Responsive filter controls row (column on mobile, row on desktop)
 - Props: `children`, `className?`
 
+### Form.tsx
+- Form wrapper that prevents double-submission by tracking async submit state via context
+- Props: extends all HTML form attributes; `onSubmit?` accepts both sync and async handlers
+- Exposes `FormSubmittingContext` (value: `boolean`) — accessible via `useFormSubmitting()` hook — so child components (e.g. submit buttons) can read the submitting state without prop drilling
+- Blocks re-submission while a previous async `onSubmit` promise is pending
+
 ### FormField.tsx
 - Wraps any form input with label, required marker, helper text, and error display
 - Props: `label`, `required?`, `helperText?` (ReactNode), `error?`, `compact?`, `children`, `className?`
@@ -105,6 +111,15 @@ Shared primitive component library. Always check here before building new UI —
 - Styled multi-line text input with focus ring
 - Props: extends all HTML textarea attributes; `compact?`, `rows?` (default: 3)
 - Uses `forwardRef`
+
+### Toast (system)
+- Slide-in / slide-out toast notifications rendered in the bottom-right corner via a React portal
+- **Do not import the visual component directly** — use the hook only
+- `useToast()` — returns `{ toast, success, error, warning, dismiss }`; must be called inside `ToastProvider` (already mounted in `App.tsx`)
+- Each toast auto-dismisses after ~4.5 s; clicking it dismisses immediately
+- Variants: `'info'` (blue) | `'success'` (green) | `'warning'` (yellow) | `'error'` (red)
+- Import: `import { useToast } from 'src/contexts/ToastContext'`
+- Usage: replace `alert('...')` with `toast.error('...')` / `toast.success('...')` etc.
 
 ---
 

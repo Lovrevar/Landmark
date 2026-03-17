@@ -17,8 +17,10 @@ import {
 } from './services/salesReportService'
 import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
+import { useToast } from '../../contexts/ToastContext'
 
 const SalesReports: React.FC = () => {
+  const toast = useToast()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
@@ -88,7 +90,7 @@ const SalesReports: React.FC = () => {
       await generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Error generating PDF report. Please try again.')
+      toast.error('Error generating PDF report. Please try again.')
     }
   }
 

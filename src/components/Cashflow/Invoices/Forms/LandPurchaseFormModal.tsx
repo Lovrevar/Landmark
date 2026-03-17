@@ -4,6 +4,7 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormData'
 import { createLandPurchaseInvoices, LandPurchaseFormData } from '../services/landPurchaseService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface LandPurchaseFormModalProps {
   isOpen: boolean
@@ -16,6 +17,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [projectType, setProjectType] = useState<'projects' | 'retail'>('projects')
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
@@ -104,14 +106,14 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       const { company_id, supplier_id, invoice_name, deposit_amount, remaining_amount } = formData
 
       if (!company_id || !supplier_id || !selectedContract || !invoice_name) {
-        alert('Molimo popunite sva obavezna polja')
+        toast.warning('Molimo popunite sva obavezna polja')
         setLoading(false)
         return
       }
 
       const totalAmount = deposit_amount + remaining_amount
       if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
-        alert(`Zbir kapare i preostalog iznosa (${totalAmount.toFixed(2)} €) mora biti jednak iznosu iz ugovora (${selectedContract.base_amount.toFixed(2)} €)`)
+        toast.warning(`Zbir kapare i preostalog iznosa (${totalAmount.toFixed(2)} €) mora biti jednak iznosu iz ugovora (${selectedContract.base_amount.toFixed(2)} €)`)
         setLoading(false)
         return
       }
@@ -121,7 +123,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       handleClose()
     } catch (error) {
       console.error('Error creating land purchase invoices:', error)
-      alert('Greška pri kreiranju računa')
+      toast.error('Greška pri kreiranju računa')
     } finally {
       setLoading(false)
     }

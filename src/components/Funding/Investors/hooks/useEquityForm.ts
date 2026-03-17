@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { INITIAL_EQUITY_FORM, type EquityFormData } from '../types'
 import { format } from 'date-fns'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useEquityForm(onSaved: () => Promise<void>) {
+  const toast = useToast()
   const [showEquityForm, setShowEquityForm] = useState(false)
   const [newEquity, setNewEquity] = useState<EquityFormData>({ ...INITIAL_EQUITY_FORM })
 
   const addEquity = async () => {
     if (!newEquity.bank_id || !newEquity.amount || !newEquity.investment_date) {
-      alert('Please fill in required fields (Bank, Amount, Investment Date)')
+      toast.warning('Please fill in required fields (Bank, Amount, Investment Date)')
       return
     }
 
@@ -43,10 +45,10 @@ export function useEquityForm(onSaved: () => Promise<void>) {
       setShowEquityForm(false)
       setNewEquity({ ...INITIAL_EQUITY_FORM })
       await onSaved()
-      alert('Equity investment added successfully')
+      toast.success('Equity investment added successfully')
     } catch (error) {
       console.error('Error adding equity:', error)
-      alert('Error adding equity investment.')
+      toast.error('Error adding equity investment.')
     }
   }
 

@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
+import { useToast } from '../../../contexts/ToastContext'
 
 const emptyForm = () => ({
   land_plot_id: '',
@@ -18,6 +19,7 @@ const emptyForm = () => ({
 type FormState = ReturnType<typeof emptyForm>
 
 const RetailSales: React.FC = () => {
+  const toast = useToast()
   const {
     loading, landPlots, customers, filteredSales, totalStats,
     searchTerm, setSearchTerm, statusFilter, setStatusFilter,
@@ -73,7 +75,7 @@ const RetailSales: React.FC = () => {
       closeFormModal()
     } catch (error) {
       console.error('Error saving sale:', error)
-      alert('Greška pri spremanju prodaje')
+      toast.error('Greška pri spremanju prodaje')
     }
   }
 
@@ -99,7 +101,7 @@ const RetailSales: React.FC = () => {
       closePaymentModal()
     } catch (error) {
       console.error('Error adding payment:', error)
-      alert('Greška pri dodavanju plaćanja')
+      toast.error('Greška pri dodavanju plaćanja')
     }
   }
 

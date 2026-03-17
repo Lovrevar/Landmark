@@ -1,8 +1,10 @@
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
 import * as siteService from '../Services/siteService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
+  const toast = useToast()
   const recalculateAllPhaseBudgets = async () => {
     try {
       await siteService.recalculateAllPhaseBudgets()
@@ -28,7 +30,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error creating phases:', error)
-      alert('Error creating project phases.')
+      toast.error('Error creating project phases.')
       return false
     }
   }
@@ -45,7 +47,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     project: ProjectWithPhases
   ) => {
     if (!updates.phase_name.trim()) {
-      alert('Phase name is required')
+      toast.warning('Phase name is required')
       return false
     }
 
@@ -82,14 +84,14 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error updating phase:', error)
-      alert('Error updating phase. Please try again.')
+      toast.error('Error updating phase. Please try again.')
       return false
     }
   }
 
   const deletePhase = async (phase: ProjectPhase, _project: ProjectWithPhases) => {
     if (phase.budget_used > 0) {
-      alert('Cannot delete phase with active subcontractor assignments. Please remove or reassign all subcontractors first.')
+      toast.warning('Cannot delete phase with active subcontractor assignments. Please remove or reassign all subcontractors first.')
       return false
     }
 
@@ -105,7 +107,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error deleting phase:', error)
-      alert('Error deleting phase. Please try again.')
+      toast.error('Error deleting phase. Please try again.')
       return false
     }
   }
@@ -127,7 +129,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error updating phases:', error)
-      alert('Error updating project phases.')
+      toast.error('Error updating project phases.')
       return false
     }
   }

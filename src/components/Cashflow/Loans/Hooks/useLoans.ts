@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { CompanyLoan, Company, BankAccount, LoanFormData } from '../types'
 import { fetchLoans, fetchCompanies, fetchBankAccounts, createLoan, deleteLoan } from '../Services/loanService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useLoans = () => {
+  const toast = useToast()
   const [loans, setLoans] = useState<CompanyLoan[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
@@ -49,7 +51,7 @@ export const useLoans = () => {
     if (!formData.from_company_id || !formData.from_bank_account_id ||
         !formData.to_company_id || !formData.to_bank_account_id ||
         !formData.amount) {
-      alert('Molimo popunite sva obavezna polja')
+      toast.warning('Molimo popunite sva obavezna polja')
       return
     }
 
@@ -68,7 +70,7 @@ export const useLoans = () => {
       resetForm()
     } catch (error) {
       console.error('Error creating loan:', error)
-      alert('Greška pri kreiranju pozajmice')
+      toast.error('Greška pri kreiranju pozajmice')
     }
   }
 
@@ -80,7 +82,7 @@ export const useLoans = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting loan:', error)
-      alert('Greška pri brisanju pozajmice')
+      toast.error('Greška pri brisanju pozajmice')
     }
   }
 

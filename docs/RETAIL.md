@@ -53,12 +53,14 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### ProjectDetail.tsx
 - Detailed project view with phase cards, milestones, and contract management
+- **Uses Ui:** useToast
 
 ### PhaseCard.tsx
 - Card component for a single project phase showing budget, status, and contracts
 
 ### MilestoneList.tsx
 - List of milestones for a project with status display
+- **Uses Ui:** useToast
 
 ### index.tsx (RetailProjects)
 - Main retail projects view: list → project detail navigation with modals for add/edit
@@ -90,6 +92,7 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### Modals/EditPhaseModal.tsx
 - Edit a retail project phase (name, dates, budget, status)
+- **Uses Ui:** useToast
 
 ### Modals/RetailInvoicesModal.tsx
 - View invoices linked to a contract or phase
@@ -122,6 +125,7 @@ Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from th
 
 ### RetailSales.tsx
 - Retail sales view with sale cards, payment status, and CRUD actions
+- **Uses Ui:** useToast
 
 ### index.tsx (RetailSales)
 - Retail sales entry point
@@ -194,6 +198,7 @@ Land plot inventory tracking.
 
 ### index.tsx (LandPlots)
 - Land plot list with status and area tracking
+- **Uses Ui:** useToast
 
 ---
 

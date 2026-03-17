@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Modal, FormField, Input } from '../../../ui'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface BuildingQuantityModalProps {
   visible: boolean
@@ -16,13 +17,14 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const toast = useToast()
   const [quantity, setQuantity] = useState(1)
 
   if (!visible) return null
 
   const handleSubmit = () => {
     if (quantity < 1 || quantity > 20) {
-      alert('Please enter a valid quantity (1-20)')
+      toast.warning('Please enter a valid quantity (1-20)')
       return
     }
     onSubmit(quantity)

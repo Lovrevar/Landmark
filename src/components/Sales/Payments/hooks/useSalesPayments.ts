@@ -5,8 +5,10 @@ import {
   type SalesPaymentWithDetails,
   type SalesPaymentStats
 } from '../services/salesPaymentsService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSalesPayments() {
+  const toast = useToast()
   const [payments, setPayments] = useState<SalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -21,7 +23,7 @@ export function useSalesPayments() {
         setPayments(data)
       } catch (error) {
         console.error('Error fetching payments:', error)
-        alert('Failed to load payments')
+        toast.error('Failed to load payments')
       } finally {
         setLoading(false)
       }

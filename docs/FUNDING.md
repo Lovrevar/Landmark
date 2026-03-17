@@ -187,7 +187,7 @@ Wire payment processing and payment notifications for bank credits, investors, a
 
 ### SubcontractorNotificationPaymentModal.tsx
 - Records a payment against a subcontractor payment notification
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards

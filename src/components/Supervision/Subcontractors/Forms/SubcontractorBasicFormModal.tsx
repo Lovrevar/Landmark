@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, FormField, Input, Button } from '../../../ui'
 import { insertSubcontractorRecord, updateSubcontractorRecord } from '../../SiteManagement/Services/siteService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface Props {
   visible: boolean
@@ -17,6 +18,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
   initialData,
   onSaved
 }) => {
+  const toast = useToast()
   const [formData, setFormData] = useState(initialData)
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.contact.trim()) {
-      alert('Please fill in name and contact')
+      toast.warning('Please fill in name and contact')
       return
     }
 
@@ -48,7 +50,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
       onSaved()
     } catch (error) {
       console.error('Error saving subcontractor:', error)
-      alert('Failed to save subcontractor')
+      toast.error('Failed to save subcontractor')
     }
   }
 

@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { ContractDocument } from './types'
 import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from './Services/siteService'
 import { formatFileSize } from '../../../utils/formatters'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface ContractDocumentViewerProps {
   subcontractorId: string
@@ -16,6 +17,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   contractId,
   readOnly = false
 }) => {
+  const toast = useToast()
   const [documents, setDocuments] = useState<ContractDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       const url = await getContractDocumentSignedUrl(doc.file_path)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch {
-      alert('Greška pri otvaranju dokumenta')
+      toast.error('Greška pri otvaranju dokumenta')
     } finally {
       setOpeningId(null)
     }
@@ -63,7 +65,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       await deleteSubcontractorDocument(doc.id, doc.file_path)
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
     } catch {
-      alert('Greška pri brisanju dokumenta')
+      toast.error('Greška pri brisanju dokumenta')
     } finally {
       setDeletingId(null)
     }

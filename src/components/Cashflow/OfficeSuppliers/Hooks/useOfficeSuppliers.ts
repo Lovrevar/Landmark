@@ -8,8 +8,10 @@ import {
   deleteSupplier,
   fetchSupplierInvoices
 } from '../Services/officeSupplierService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useOfficeSuppliers = () => {
+  const toast = useToast()
   const [suppliers, setSuppliers] = useState<OfficeSupplierWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -91,7 +93,7 @@ export const useOfficeSuppliers = () => {
       handleCloseModal()
     } catch (error) {
       console.error('Error saving office supplier:', error)
-      alert('Greška prilikom spremanja dobavljača')
+      toast.error('Greška prilikom spremanja dobavljača')
     }
   }
 
@@ -103,7 +105,7 @@ export const useOfficeSuppliers = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting office supplier:', error)
-      alert('Greška prilikom brisanja dobavljača')
+      toast.error('Greška prilikom brisanja dobavljača')
     }
   }
 
@@ -118,7 +120,7 @@ export const useOfficeSuppliers = () => {
       setSupplierInvoices(invoices)
     } catch (error) {
       console.error('Error fetching supplier invoices:', error)
-      alert('Greška prilikom učitavanja računa')
+      toast.error('Greška prilikom učitavanja računa')
     } finally {
       setLoadingInvoices(false)
     }

@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 import { Upload, X, FileText, AlertCircle } from 'lucide-react'
 import { formatFileSize } from '../../../utils/formatters'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface ContractDocumentUploadProps {
   files: File[]
@@ -16,6 +17,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
   onChange,
   error
 }) => {
+  const toast = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (selected: FileList | null) => {
@@ -40,7 +42,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
     })
 
     if (errors.length > 0) {
-      alert(errors.join('\n'))
+      toast.error(errors.join(' • '))
     }
 
     if (newFiles.length > 0) {

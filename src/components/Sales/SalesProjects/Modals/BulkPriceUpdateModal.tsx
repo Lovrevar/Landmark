@@ -3,6 +3,7 @@ import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
 import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
@@ -20,6 +21,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const toast = useToast()
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
   const [adjustmentValue, setAdjustmentValue] = useState<string>('')
 
@@ -64,12 +66,12 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
     e.preventDefault()
 
     if (!adjustmentValue || parseFloat(adjustmentValue) <= 0) {
-      alert('Please enter a valid adjustment value greater than 0')
+      toast.warning('Please enter a valid adjustment value greater than 0')
       return
     }
 
     if (wouldCreateNegativePrice) {
-      alert('This decrease would result in negative prices for some units. Please enter a smaller value.')
+      toast.warning('This decrease would result in negative prices for some units. Please enter a smaller value.')
       return
     }
 

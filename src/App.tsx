@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
@@ -407,7 +408,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   )
 }

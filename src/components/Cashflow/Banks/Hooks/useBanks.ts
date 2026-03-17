@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '../bankTypes'
 import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../Services/bankService'
 import { useModalOverflow } from '../../../../hooks/useModalOverflow'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export const useBanks = () => {
+  const toast = useToast()
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -62,7 +64,7 @@ export const useBanks = () => {
     }
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      alert('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
+      toast.warning('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
       return
     }
 
@@ -72,7 +74,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error adding credit:', error)
-      alert('Error adding credit facility.')
+      toast.error('Error adding credit facility.')
     }
   }
 
@@ -80,7 +82,7 @@ export const useBanks = () => {
     if (!editingCredit) return
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
-      alert('Please fill in all required fields')
+      toast.warning('Please fill in all required fields')
       return
     }
 
@@ -90,7 +92,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error updating credit:', error)
-      alert('Error updating credit facility.')
+      toast.error('Error updating credit facility.')
     }
   }
 
@@ -102,7 +104,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting credit:', error)
-      alert('Error deleting credit facility.')
+      toast.error('Error deleting credit facility.')
     }
   }
 

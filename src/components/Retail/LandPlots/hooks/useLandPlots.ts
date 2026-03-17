@@ -8,12 +8,14 @@ import {
   type LandPlotPayload,
   type LandPlotSaleRow
 } from '../services/landPlotService'
+import { useToast } from '../../../../contexts/ToastContext'
 
 export interface LandPlotWithSales extends LandPlotWithProject {
   sales?: LandPlotSaleRow[]
 }
 
 export function useLandPlots() {
+  const toast = useToast()
   const [landPlots, setLandPlots] = useState<LandPlotWithProject[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,7 +26,7 @@ export function useLandPlots() {
       setLandPlots(await fetchLandPlotsWithProjects())
     } catch (error) {
       console.error('Error fetching land plots:', error)
-      alert('Greška pri učitavanju zemljišta')
+      toast.error('Greška pri učitavanju zemljišta')
     } finally {
       setLoading(false)
     }
@@ -46,7 +48,7 @@ export function useLandPlots() {
       await loadData()
     } catch (error) {
       console.error('Error deleting land plot:', error)
-      alert('Greška pri brisanju zemljišta')
+      toast.error('Greška pri brisanju zemljišta')
     }
   }
 

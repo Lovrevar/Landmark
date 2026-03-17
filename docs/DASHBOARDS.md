@@ -91,7 +91,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - **Uses services:** investmentDashboardService
 - **Uses components:** InvestmentSummaryCards, InvestmentCreditsTable
 - **Uses services:** investmentReportPdf (for PDF export)
-- **Uses Ui:** Card, Button
+- **Uses Ui:** Card, Button, useToast
 
 ### RetailDashboard.tsx
 - Renders retail KPI cards, project overview, payment tracking, and overdue invoice warnings

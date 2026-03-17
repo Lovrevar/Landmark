@@ -8,6 +8,7 @@ import {
   recordSubcontractorMilestonePayment
 } from '../Services/paymentNotificationService'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
+import { useToast } from '../../../../contexts/ToastContext'
 
 interface Funder {
   id: string
@@ -27,6 +28,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   notification,
   onSuccess
 }) => {
+  const toast = useToast()
   const [amount, setAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
@@ -80,7 +82,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
 
   const handleSubmit = async () => {
     if (!notification || amount <= 0) {
-      alert('Please enter a valid payment amount')
+      toast.warning('Please enter a valid payment amount')
       return
     }
 
@@ -94,12 +96,12 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
         milestone_id: notification.milestone_id!,
         paid_by_bank_id: paidByBankId
       })
-      alert('Payment recorded successfully')
+      toast.success('Payment recorded successfully')
       onSuccess()
       onClose()
     } catch (error) {
       console.error('Error recording payment:', error)
-      alert('Failed to record payment')
+      toast.error('Failed to record payment')
     } finally {
       setLoading(false)
     }

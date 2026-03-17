@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../../../contexts/AuthContext'
+import { useToast } from '../../../../contexts/ToastContext'
 import type { WorkLog, WorkLogProject, WorkLogPhase, WorkLogContract, WorkLogFormData } from '../services/workLogService'
 import {
   fetchProjects,
@@ -25,6 +26,7 @@ const emptyForm = (): WorkLogFormData => ({
 })
 
 export function useWorkLogs() {
+  const toast = useToast()
   const { user } = useAuth()
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([])
   const [projects, setProjects] = useState<WorkLogProject[]>([])
@@ -104,7 +106,7 @@ export function useWorkLogs() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.contract_id || !formData.work_description) {
-      alert('Please select a contract and provide work description')
+      toast.warning('Please select a contract and provide work description')
       return
     }
     const selectedContract = contracts.find(c => c.id === formData.contract_id)
@@ -120,7 +122,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error saving work log:', err)
-      alert('Failed to save work log')
+      toast.error('Failed to save work log')
     }
   }
 
@@ -131,7 +133,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error deleting work log:', err)
-      alert('Failed to delete work log')
+      toast.error('Failed to delete work log')
     }
   }
 

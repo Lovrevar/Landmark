@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { RetailLandPlot, RetailCustomer } from '../../../../types/retail'
+import { useToast } from '../../../../contexts/ToastContext'
 import {
   fetchRetailSalesWithRelations,
   fetchRetailLandPlotsForSale,
@@ -12,6 +13,7 @@ import {
 } from '../services/retailSalesService'
 
 export function useRetailSalesManager() {
+  const toast = useToast()
   const [sales, setSales] = useState<SaleWithRelations[]>([])
   const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
@@ -32,7 +34,7 @@ export function useRetailSalesManager() {
       setCustomers(customersData)
     } catch (error) {
       console.error('Error fetching data:', error)
-      alert('Greška pri učitavanju podataka')
+      toast.error('Greška pri učitavanju podataka')
     } finally {
       setLoading(false)
     }
@@ -52,7 +54,7 @@ export function useRetailSalesManager() {
       await loadData()
     } catch (error) {
       console.error('Error deleting sale:', error)
-      alert('Greška pri brisanju prodaje')
+      toast.error('Greška pri brisanju prodaje')
     }
   }
 

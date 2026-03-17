@@ -63,7 +63,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - Main view orchestrating project → building → unit navigation with all CRUD modals and linking
 - **Uses hooks:** useSalesData
 - **Uses components:** ProjectsGrid, BuildingsGrid, UnitsGrid, SaleFormModal, all unit/building modals
-- **Uses Ui:** Card, Button
+- **Uses Ui:** Card, Button, useToast
 
 #### Forms
 
@@ -75,15 +75,15 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### Modals/BuildingQuantityModal.tsx
 - Input for number of buildings to bulk-create (1–20)
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ### Modals/SingleBuildingModal.tsx
 - Form for single building (name, description, total_floors)
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ### Modals/SingleUnitModal.tsx
 - Form for single unit (number, floor, size, price per m², computed total price)
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ### Modals/BulkUnitsModal.tsx
 - Form for bulk unit creation (floor range, units per floor, size variation, pricing) with preview
@@ -95,16 +95,16 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### Modals/BulkPriceUpdateModal.tsx
 - Increase/decrease price per m² for selected units with preview of new prices
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ### Modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ### Modals/ExcelImportGaragesModal.tsx
 - 3-step garage bulk import (file upload → preview → results)
 - **Uses services:** garageImportService
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ---
 
@@ -163,12 +163,12 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 ### Modals/BulkApartmentModal.tsx
 - Form for bulk apartment creation (project, building, start number, quantity, floor, size, price)
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 ### Modals/SingleApartmentModal.tsx
 - Single apartment creation form including ContractedSection
 - **Uses components:** ContractedSection
-- **Uses Ui:** Modal, Button, Select
+- **Uses Ui:** Modal, Button, Select, useToast
 
 ### Modals/EditPaymentModal.tsx
 - Edit a single payment record (amount, date, type, notes)
@@ -185,7 +185,7 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 ### Modals/LinkUnitsModal.tsx
 - Link/unlink garages and storage units to an apartment
 - **Uses hooks:** useLinkUnits
-- **Uses Ui:** Modal, Button
+- **Uses Ui:** Modal, Button, useToast
 
 ---
 
@@ -230,7 +230,7 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 - Customer list page with category tabs, grid, and all CRUD modals
 - **Uses hooks:** useCustomerData
 - **Uses components:** CategoryTabs, CustomerGrid, CustomerCard, CustomerFormModal, CustomerDetailModal
-- **Uses Ui:** SearchInput
+- **Uses Ui:** SearchInput, useToast
 
 #### Forms
 

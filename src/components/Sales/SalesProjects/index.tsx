@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { useSalesData } from './Hooks/useSalesData'
 import * as salesService from './Services/salesService'
@@ -31,6 +32,7 @@ import { ExcelImportApartmentsModal } from './Modals/ExcelImportApartmentsModal'
 import { ExcelImportGaragesModal } from './Modals/ExcelImportGaragesModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
+  const toast = useToast()
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
 
   const [selectedProject, setSelectedProject] = useState<ProjectWithBuildings | null>(null)
@@ -88,7 +90,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
-      alert('Error deleting building.')
+      toast.error('Error deleting building.')
     }
   }
 
@@ -101,7 +103,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
-      alert('Error creating buildings. Please try again.')
+      toast.error('Error creating buildings. Please try again.')
     }
   }
 
@@ -114,7 +116,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
-      alert('Error creating building. Please try again.')
+      toast.error('Error creating building. Please try again.')
     }
   }
 
@@ -135,7 +137,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
-      alert('Error creating unit. Please try again.')
+      toast.error('Error creating unit. Please try again.')
     }
   }
 
@@ -148,7 +150,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
-      alert('Error creating units. Please try again.')
+      toast.error('Error creating units. Please try again.')
     }
   }
 
@@ -160,7 +162,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
-      alert('Error deleting unit.')
+      toast.error('Error deleting unit.')
     }
   }
 
@@ -170,7 +172,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Error updating status.')
+      toast.error('Error updating status.')
     }
   }
 
@@ -180,7 +182,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking garage:', error)
-      alert('Error linking garage.')
+      toast.error('Error linking garage.')
     }
   }
 
@@ -190,7 +192,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking repository:', error)
-      alert('Error linking repository.')
+      toast.error('Error linking repository.')
     }
   }
 
@@ -200,7 +202,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking garage:', error)
-      alert('Error unlinking garage.')
+      toast.error('Error unlinking garage.')
     }
   }
 
@@ -210,7 +212,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking repository:', error)
-      alert('Error unlinking repository.')
+      toast.error('Error unlinking repository.')
     }
   }
 
@@ -258,7 +260,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating prices:', error)
-      alert('Error updating prices. Please try again.')
+      toast.error('Error updating prices. Please try again.')
     }
   }
 
@@ -277,7 +279,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error completing sale:', error)
-      alert('Error completing sale. Please try again.')
+      toast.error('Error completing sale. Please try again.')
     }
   }
 
