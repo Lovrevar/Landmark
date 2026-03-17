@@ -35,6 +35,7 @@ export function useCreditManagement() {
   const [showAllocationModal, setShowAllocationModal] = useState(false)
   const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
   const [allocationForm, setAllocationForm] = useState<AllocationFormData>(EMPTY_FORM)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [projects, setProjects] = useState<ReferenceItem[]>([])
   const [companies, setCompanies] = useState<ReferenceItem[]>([])
@@ -83,7 +84,7 @@ export function useCreditManagement() {
   const toggleCredit = (creditId: string) => {
     setExpandedCredits(prev => {
       const next = new Set(prev)
-      next.has(creditId) ? next.delete(creditId) : next.add(creditId)
+      if (next.has(creditId)) { next.delete(creditId) } else { next.add(creditId) }
       return next
     })
   }
@@ -91,7 +92,7 @@ export function useCreditManagement() {
   const toggleAllocation = (allocationKey: string) => {
     setExpandedAllocations(prev => {
       const next = new Set(prev)
-      next.has(allocationKey) ? next.delete(allocationKey) : next.add(allocationKey)
+      if (next.has(allocationKey)) { next.delete(allocationKey) } else { next.add(allocationKey) }
       return next
     })
   }
@@ -107,10 +108,22 @@ export function useCreditManagement() {
   const handleCreateAllocation = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedCredit) return
+
+    const errors: Record<string, string> = {}
+    if (allocationForm.allocation_type === 'project' && !allocationForm.project_id) {
+      errors.project_id = 'Odaberi projekt'
+    }
+    if (allocationForm.allocation_type === 'refinancing' && !allocationForm.refinancing_entity_id) {
+      errors.refinancing_entity_id = 'Odaberi entitet'
+    }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     try {
       await createAllocation(selectedCredit.id, allocationForm)
       await loadAllocationsForCredit(selectedCredit.id)
       setShowAllocationModal(false)
+      setFieldErrors({})
     } catch (err) {
       console.error('Error creating allocation:', err)
       toast.error('Greška pri kreiranju namjene')
@@ -148,5 +161,6 @@ export function useCreditManagement() {
     closeAllocationModal,
     handleCreateAllocation,
     handleDeleteAllocation,
+    fieldErrors,
   }
 }

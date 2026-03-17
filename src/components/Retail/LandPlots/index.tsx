@@ -40,6 +40,7 @@ const RetailLandPlots: React.FC = () => {
   const [selectedPlot, setSelectedPlot] = useState<LandPlotWithSales | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormState>(emptyForm())
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const openFormModal = (plot?: LandPlotWithProject) => {
     if (plot) {
@@ -72,6 +73,15 @@ const RetailLandPlots: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.owner_first_name.trim()) errors.owner_first_name = 'Ime je obavezno'
+    if (!formData.owner_last_name.trim()) errors.owner_last_name = 'Prezime je obavezno'
+    if (!formData.plot_number.trim()) errors.plot_number = 'Broj čestice je obavezan'
+    if (!formData.total_area_m2) errors.total_area_m2 = 'Ukupna površina je obavezna'
+    if (!formData.purchased_area_m2) errors.purchased_area_m2 = 'Kupljena površina je obavezna'
+    if (!formData.price_per_m2) errors.price_per_m2 = 'Cijena po m² je obavezna'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     try {
       const payload: LandPlotPayload = {
         owner_first_name: formData.owner_first_name,
@@ -205,26 +215,26 @@ const RetailLandPlots: React.FC = () => {
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Ime vlasnika *">
-                <Input required value={formData.owner_first_name} onChange={set('owner_first_name')} />
+              <FormField label="Ime vlasnika" required error={fieldErrors.owner_first_name}>
+                <Input value={formData.owner_first_name} onChange={set('owner_first_name')} />
               </FormField>
-              <FormField label="Prezime vlasnika *">
-                <Input required value={formData.owner_last_name} onChange={set('owner_last_name')} />
+              <FormField label="Prezime vlasnika" required error={fieldErrors.owner_last_name}>
+                <Input value={formData.owner_last_name} onChange={set('owner_last_name')} />
               </FormField>
-              <FormField label="Broj čestice *">
-                <Input required value={formData.plot_number} onChange={set('plot_number')} />
+              <FormField label="Broj čestice" required error={fieldErrors.plot_number}>
+                <Input value={formData.plot_number} onChange={set('plot_number')} />
               </FormField>
               <FormField label="Lokacija">
                 <Input value={formData.location || ''} onChange={set('location')} placeholder="Npr. Banja Luka, Kozarska Dubica..." />
               </FormField>
-              <FormField label="Ukupna površina (m²) *">
-                <Input type="number" step="0.01" required value={formData.total_area_m2} onChange={set('total_area_m2')} />
+              <FormField label="Ukupna površina (m²)" required error={fieldErrors.total_area_m2}>
+                <Input type="number" step="0.01" value={formData.total_area_m2} onChange={set('total_area_m2')} />
               </FormField>
-              <FormField label="Kupljena površina (m²) *">
-                <Input type="number" step="0.01" required value={formData.purchased_area_m2} onChange={set('purchased_area_m2')} />
+              <FormField label="Kupljena površina (m²)" required error={fieldErrors.purchased_area_m2}>
+                <Input type="number" step="0.01" value={formData.purchased_area_m2} onChange={set('purchased_area_m2')} />
               </FormField>
-              <FormField label="Cijena po m² (€) *">
-                <Input type="number" step="0.01" required value={formData.price_per_m2} onChange={set('price_per_m2')} />
+              <FormField label="Cijena po m² (€)" required error={fieldErrors.price_per_m2}>
+                <Input type="number" step="0.01" value={formData.price_per_m2} onChange={set('price_per_m2')} />
               </FormField>
               <FormField label="Datum plaćanja">
                 <Input type="date" value={formData.payment_date || ''} onChange={set('payment_date')} />

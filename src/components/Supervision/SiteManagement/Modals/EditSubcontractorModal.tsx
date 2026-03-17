@@ -42,6 +42,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 }) => {
   const toast = useToast()
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
@@ -114,7 +115,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Name" required>
+          <FormField label="Name" required error={fieldErrors.name}>
             <Input
               type="text"
               value={name}
@@ -135,7 +136,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Projekt & Faza</h3>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Faza">
+              <FormField label="Faza" required error={fieldErrors.phase_id}>
                 <Select
                   value={selectedPhaseId}
                   onChange={(e) => setSelectedPhaseId(e.target.value)}
@@ -175,7 +176,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <Select
                 value={contractTypeId}
                 onChange={(e) => setContractTypeId(parseInt(e.target.value))}
-                required
                 disabled={loadingContractTypes}
               >
                 {contractTypes.map(type => (
@@ -197,7 +197,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           <div className="border-t border-gray-200 pt-4 mt-2">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalji posla</h3>
 
-            <FormField label="Job Description" required>
+            <FormField label="Job Description" required error={fieldErrors.jobDescription}>
               <Textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
@@ -227,7 +227,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <Select
                     value={vatRate}
                     onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                    required
                   >
                     {VAT_RATE_OPTIONS.map(r => (
                       <option key={r} value={r}>{r}%</option>
@@ -341,10 +340,12 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
         </Button>
         <Button
           onClick={() => {
-            if (!selectedPhaseId) {
-              toast.warning('Molimo odaberite fazu')
-              return
-            }
+            const errors: Record<string, string> = {}
+            if (!selectedPhaseId) errors.phase_id = 'Faza je obavezna'
+            if (!name.trim()) errors.name = 'Naziv je obavezan'
+            if (!jobDescription.trim()) errors.jobDescription = 'Opis posla je obavezan'
+            setFieldErrors(errors)
+            if (Object.keys(errors).length > 0) return
 
             const updatedSubcontractor = {
               ...subcontractor,

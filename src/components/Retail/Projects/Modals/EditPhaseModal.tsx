@@ -18,6 +18,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   onSuccess
 }) => {
   const toast = useToast()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     phase_name: phase.phase_name,
     budget_allocated: phase.budget_allocated,
@@ -39,6 +40,14 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errors: Record<string, string> = {}
+    if (!formData.phase_name.trim()) {
+      errors.phase_name = 'Naziv faze je obavezan'
+    }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
 
     try {
@@ -76,12 +85,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
       />
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          <FormField label="Naziv Faze">
+          <FormField label="Naziv Faze" required error={fieldErrors.phase_name}>
             <Input
               type="text"
               value={formData.phase_name}
               onChange={(e) => setFormData({ ...formData, phase_name: e.target.value })}
-              required
             />
           </FormField>
 
@@ -93,7 +101,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
                 min="0"
                 step="0.01"
-                required
               />
               {formData.budget_allocated > availableBudget && (
                 <p className="text-xs text-red-600 mt-1">
@@ -107,7 +114,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             <Select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as RetailProjectPhase['status'] })}
-              required
             >
               <option value="Pending">Pending</option>
               <option value="In Progress">In Progress</option>

@@ -44,6 +44,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -97,10 +98,11 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
     e.preventDefault()
     setError(null)
 
-    if (formData.project_id && !formData.phase_id) {
-      setError('Molimo odaberite fazu za odabrani projekt')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    if (formData.project_id && !formData.phase_id) errors.phase_id = 'Molimo odaberite fazu za odabrani projekt'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
     try {
       setSubmitting(true)
@@ -139,12 +141,11 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             <Alert variant="error">{error}</Alert>
           )}
 
-          <FormField label="Naziv dobavljača" required>
+          <FormField label="Naziv dobavljača" required error={fieldErrors.name}>
             <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               placeholder="npr. Geodetski ured d.o.o."
             />
           </FormField>
@@ -153,7 +154,6 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             <Select
               value={formData.supplier_type_id}
               onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
-              required
             >
               {supplierTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
@@ -209,11 +209,10 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
               </FormField>
 
               {formData.project_id && (
-                <FormField label="Faza" required>
+                <FormField label="Faza" required error={fieldErrors.phase_id}>
                   <Select
                     value={formData.phase_id}
                     onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
-                    required
                   >
                     <option value="">Odaberite fazu</option>
                     {phases.map((phase) => (

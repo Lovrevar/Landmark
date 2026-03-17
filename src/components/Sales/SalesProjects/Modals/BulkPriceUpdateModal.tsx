@@ -3,7 +3,6 @@ import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
 import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
-import { useToast } from '../../../../contexts/ToastContext'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
@@ -21,9 +20,9 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   onSubmit,
   loading = false
 }) => {
-  const toast = useToast()
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
   const [adjustmentValue, setAdjustmentValue] = useState<string>('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (visible) {
@@ -65,15 +64,15 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    const errors: Record<string, string> = {}
     if (!adjustmentValue || parseFloat(adjustmentValue) <= 0) {
-      toast.warning('Please enter a valid adjustment value greater than 0')
-      return
+      errors.adjustmentValue = 'Please enter a valid adjustment value greater than 0'
     }
-
     if (wouldCreateNegativePrice) {
-      toast.warning('This decrease would result in negative prices for some units. Please enter a smaller value.')
-      return
+      errors.adjustmentValue = 'This decrease would result in negative prices for some units. Please enter a smaller value.'
     }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
     onSubmit(adjustmentType, adjustment)
   }
@@ -139,7 +138,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
             </div>
           </div>
 
-          <FormField label="Adjustment Amount (€)">
+          <FormField label="Adjustment Amount (€)" error={fieldErrors.adjustmentValue}>
             <Input
               type="number"
               step="0.01"
@@ -147,7 +146,6 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               value={adjustmentValue}
               onChange={(e) => setAdjustmentValue(e.target.value)}
               placeholder="Enter amount (e.g., 500)"
-              required
             />
           </FormField>
 

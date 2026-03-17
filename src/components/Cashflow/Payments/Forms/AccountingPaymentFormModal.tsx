@@ -88,7 +88,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     amount: selectedInvoice ? selectedInvoice.remaining_amount : 0
                   })
                 }}
-                required
                 disabled={!!editingPayment}
               >
                 <option value="">Odaberi račun</option>
@@ -111,7 +110,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       company_bank_account_id: '',
                       credit_id: ''
                     })}
-                    required
                   >
                     <option value="bank_account">Bankovni račun</option>
                     <option value="credit">Kredit</option>
@@ -137,7 +135,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     <Select
                       value={formData.company_bank_account_id}
                       onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberi bankovni račun</option>
                       {companyBankAccounts
@@ -173,7 +170,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     <Select
                       value={formData.credit_id}
                       onChange={(e) => setFormData({ ...formData, credit_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberi kredit</option>
                       {companyCredits
@@ -232,7 +228,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       cesija_company_id: e.target.value,
                       cesija_bank_account_id: ''
                     })}
-                    required
                   >
                     <option value="">Odaberi firmu koja plaća</option>
                     {companies.map(company => (
@@ -257,7 +252,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     <Select
                       value={formData.cesija_bank_account_id}
                       onChange={(e) => setFormData({ ...formData, cesija_bank_account_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberi bankovni račun</option>
                       {companyBankAccounts
@@ -278,7 +272,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                 value={formData.payment_date}
                 onChange={(value) => setFormData({ ...formData, payment_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
               />
             </FormField>
 
@@ -288,7 +281,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                required
               />
             </FormField>
 
@@ -296,7 +288,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               <Select
                 value={formData.payment_method}
                 onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'WIRE' | 'CASH' | 'CHECK' | 'CARD' })}
-                required
               >
                 <option value="WIRE">Virman</option>
                 <option value="CASH">Gotovina</option>

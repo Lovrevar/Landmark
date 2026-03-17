@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BulkApartmentData } from '../types'
 import { Modal, FormField, Select, Input, Button, Alert, Form } from '../../../ui'
-import { useToast } from '../../../../contexts/ToastContext'
 
 interface BulkApartmentModalProps {
   visible: boolean
@@ -18,7 +17,6 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
-  const toast = useToast()
   const [formData, setFormData] = useState<BulkApartmentData>({
     project_id: '',
     building_id: '',
@@ -28,6 +26,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
     size_m2: 80,
     price: 150000
   })
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const filteredBuildings = buildings.filter(b => b.project_id === formData.project_id)
 
@@ -39,10 +38,16 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.project_id || !formData.building_id) {
-      toast.warning('Please select project and building')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.project_id) errors.project_id = 'Project is required'
+    if (!formData.building_id) errors.building_id = 'Building is required'
+    if (!formData.start_number) errors.start_number = 'Starting number is required'
+    if (!formData.quantity) errors.quantity = 'Quantity is required'
+    if (!formData.floor && formData.floor !== 0) errors.floor = 'Floor is required'
+    if (!formData.size_m2) errors.size_m2 = 'Size is required'
+    if (!formData.price) errors.price = 'Price is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(formData)
   }
 
@@ -56,11 +61,10 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Project" required>
+              <FormField label="Project" required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
-                  required
                 >
                   <option value="">Select Project</option>
                   {projects.map(p => (
@@ -69,11 +73,10 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
                 </Select>
               </FormField>
 
-              <FormField label="Building" required>
+              <FormField label="Building" required error={fieldErrors.building_id}>
                 <Select
                   value={formData.building_id}
                   onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
-                  required
                   disabled={!formData.project_id}
                 >
                   <option value="">Select Building</option>
@@ -85,22 +88,20 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Starting Number" required>
+              <FormField label="Starting Number" required error={fieldErrors.start_number}>
                 <Input
                   type="number"
                   value={formData.start_number}
                   onChange={(e) => setFormData({ ...formData, start_number: parseInt(e.target.value) })}
-                  required
                   min="1"
                 />
               </FormField>
 
-              <FormField label="Quantity" required>
+              <FormField label="Quantity" required error={fieldErrors.quantity}>
                 <Input
                   type="number"
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                  required
                   min="1"
                   max="50"
                 />
@@ -108,31 +109,28 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor" required>
+              <FormField label="Floor" required error={fieldErrors.floor}>
                 <Input
                   type="number"
                   value={formData.floor}
                   onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
-                  required
                 />
               </FormField>
 
-              <FormField label="Size (m2)" required>
+              <FormField label="Size (m2)" required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
                   value={formData.size_m2}
                   onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
-                  required
                   step="0.1"
                 />
               </FormField>
 
-              <FormField label="Price (EUR)" required>
+              <FormField label="Price (EUR)" required error={fieldErrors.price}>
                 <Input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  required
                   step="0.01"
                 />
               </FormField>

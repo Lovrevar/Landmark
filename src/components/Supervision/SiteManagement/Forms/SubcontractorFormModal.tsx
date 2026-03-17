@@ -60,7 +60,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const merge = (updates: Partial<SubcontractorFormData>) =>
     setFormData(prev => ({ ...prev, ...updates }))
@@ -80,7 +80,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     if (visible && projectId) {
       loadFunders()
       loadContractTypes()
-      setValidationError(null)
+      setFieldErrors({})
     }
   }, [visible, projectId])
 
@@ -103,11 +103,13 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   const handleSubmit = async () => {
     if (isSubmitting) return
-    if (!formData.contract_type_id) {
-      setValidationError('Odaberite kategoriju ugovora')
-      return
-    }
-    setValidationError(null)
+    const errors: Record<string, string> = {}
+    if (!formData.contract_type_id) errors.contract_type_id = 'Odaberite kategoriju ugovora'
+    if (!useExistingSubcontractor && !formData.name?.trim()) errors.name = 'Naziv je obavezan'
+    if (!useExistingSubcontractor && !formData.contact?.trim()) errors.contact = 'Kontakt je obavezan'
+    if (useExistingSubcontractor && !formData.existing_subcontractor_id) errors.existing_subcontractor_id = 'Odaberite podugovaratelja'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     setIsSubmitting(true)
     try {
       await onSubmit(
@@ -116,7 +118,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         pendingFiles
       )
     } catch (e) {
-      setValidationError(e instanceof Error ? e.message : 'Greška pri dodavanju podugovaratelja.')
+      setFieldErrors({ _form: e instanceof Error ? e.message : 'Greška pri dodavanju podugovaratelja.' })
     } finally {
       setIsSubmitting(false)
     }
@@ -168,16 +170,15 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           </p>
         </Alert>
 
-        {validationError && (
-          <Alert variant="error" className="mb-2">{validationError}</Alert>
+        {fieldErrors._form && (
+          <Alert variant="error" className="mb-2">{fieldErrors._form}</Alert>
         )}
 
-        <FormField label="Kategorija ugovora" required helperText="Odaberite tip ugovora za ovu fazu">
+        <FormField label="Kategorija ugovora" required helperText="Odaberite tip ugovora za ovu fazu" error={fieldErrors.contract_type_id}>
           <div className="flex gap-2">
             <Select
               value={formData.contract_type_id}
               onChange={(e) => merge({ contract_type_id: parseInt(e.target.value) })}
-              required
               disabled={loadingContractTypes}
               className="flex-1"
             >
@@ -208,7 +209,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
         {useExistingSubcontractor ? (
           <div className="grid grid-cols-1 gap-4">
-            <FormField label="Select Subcontractor" required>
+            <FormField label="Select Subcontractor" required error={fieldErrors.existing_subcontractor_id}>
               <Select
                 value={formData.existing_subcontractor_id}
                 onChange={(e) => {
@@ -220,7 +221,6 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                     job_description: sub?.job_description || ''
                   })
                 }}
-                required
               >
                 <option value="">Choose existing subcontractor</option>
                 {existingSubcontractors.map(s => (
@@ -257,12 +257,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <FormField label="Company Name" required>
-                <Input type="text" value={formData.name} onChange={(e) => merge({ name: e.target.value })} placeholder="Enter company name" required />
+              <FormField label="Company Name" required error={fieldErrors.name}>
+                <Input type="text" value={formData.name} onChange={(e) => merge({ name: e.target.value })} placeholder="Enter company name" />
               </FormField>
             </div>
-            <FormField label="Contact Information" required>
-              <Input type="text" value={formData.contact} onChange={(e) => merge({ contact: e.target.value })} placeholder="Email or phone" required />
+            <FormField label="Contact Information" required error={fieldErrors.contact}>
+              <Input type="text" value={formData.contact} onChange={(e) => merge({ contact: e.target.value })} placeholder="Email or phone" />
             </FormField>
 
             {hasContract && (

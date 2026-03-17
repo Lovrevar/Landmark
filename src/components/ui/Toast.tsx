@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react'
 import type { ToastItem } from '../../contexts/ToastContext'

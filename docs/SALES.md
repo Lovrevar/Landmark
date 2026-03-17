@@ -74,16 +74,16 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 #### Modals
 
 ### Modals/BuildingQuantityModal.tsx
-- Input for number of buildings to bulk-create (1–20)
-- **Uses Ui:** Modal, Button, useToast
+- Input for number of buildings to bulk-create (1–20); validates with `fieldErrors`
+- **Uses Ui:** Modal, Button
 
 ### Modals/SingleBuildingModal.tsx
-- Form for single building (name, description, total_floors)
-- **Uses Ui:** Modal, Button, useToast
+- Form for single building (name, description, total_floors); validates with `fieldErrors`
+- **Uses Ui:** Modal, Button
 
 ### Modals/SingleUnitModal.tsx
-- Form for single unit (number, floor, size, price per m², computed total price)
-- **Uses Ui:** Modal, Button, useToast
+- Form for single unit (number, floor, size, price per m², computed total price); validates with `fieldErrors`
+- **Uses Ui:** Modal, Button
 
 ### Modals/BulkUnitsModal.tsx
 - Form for bulk unit creation (floor range, units per floor, size variation, pricing) with preview
@@ -94,8 +94,8 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - **Uses Ui:** Modal, Button
 
 ### Modals/BulkPriceUpdateModal.tsx
-- Increase/decrease price per m² for selected units with preview of new prices
-- **Uses Ui:** Modal, Button, useToast
+- Increase/decrease price per m² for selected units with preview of new prices; validates with `fieldErrors`
+- **Uses Ui:** Modal, Button
 
 ### Modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
@@ -236,6 +236,7 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 
 ### Forms/CustomerFormModal.tsx
 - Add/edit customer modal: basic info, preferences (budget range, size, floor, bedrooms), and notes
+- Validates name, surname, email, phone with per-field `fieldErrors` (inline red text, not Alert)
 - **Uses Ui:** Modal, Button, FormField, Input
 
 #### Modals

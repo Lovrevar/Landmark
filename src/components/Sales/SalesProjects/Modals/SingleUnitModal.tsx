@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { UnitFormData, UnitType } from '../types'
 import { Button, Modal, FormField, Input } from '../../../ui'
-import { useToast } from '../../../../contexts/ToastContext'
 
 interface SingleUnitModalProps {
   visible: boolean
@@ -21,7 +20,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
   onSubmit,
   loading = false
 }) => {
-  const toast = useToast()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<UnitFormData>({
     building_id: buildingId,
     number: '',
@@ -46,10 +45,12 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
 
 
   const handleSubmit = () => {
+    const errors: Record<string, string> = {}
     if (!formData.number.trim()) {
-      toast.warning('Please fill in required fields')
-      return
+      errors.number = 'Please fill in required fields'
     }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(formData)
   }
 
@@ -62,7 +63,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
       />
       <Modal.Body>
           <div className="space-y-4">
-            <FormField label="Unit Number" required>
+            <FormField label="Unit Number" required error={fieldErrors.number}>
               <Input
                 type="text"
                 value={formData.number}

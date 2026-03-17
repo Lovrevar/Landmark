@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   ClipboardCheck,
   Plus,
@@ -14,7 +14,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form } from '../../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLog } from './services/workLogService'
@@ -63,6 +63,21 @@ const WorkLogs: React.FC = () => {
     handleDelete,
   } = useWorkLogs()
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const handleValidatedSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.project_id) errors.project_id = 'Projekt je obavezan'
+    if (!formData.phase_id) errors.phase_id = 'Faza je obavezna'
+    if (!formData.contract_id) errors.contract_id = 'Ugovor je obavezan'
+    if (!formData.date) errors.date = 'Datum je obavezan'
+    if (!formData.work_description?.trim()) errors.work_description = 'Opis rada je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    handleSubmit(e)
+  }
+
   if (loading) {
     return <LoadingSpinner message="Loading work logs..." />
   }
@@ -81,46 +96,40 @@ const WorkLogs: React.FC = () => {
           onClose={closeForm}
         />
 
-        <Form onSubmit={handleSubmit}>
+        <Form onSubmit={handleValidatedSubmit}>
           <Modal.Body>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+              <FormField label="Project" required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => handleProjectChange(e.target.value)}
-                  required
                 >
                   <option value="">Select Project</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </Select>
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phase *</label>
+              <FormField label="Phase" required error={fieldErrors.phase_id}>
                 <Select
                   value={formData.phase_id}
                   onChange={(e) => handlePhaseChange(e.target.value)}
                   disabled={!formData.project_id}
-                  required
                 >
                   <option value="">Select Phase</option>
                   {phases.map((phase) => (
                     <option key={phase.id} value={phase.id}>{phase.phase_name}</option>
                   ))}
                 </Select>
-              </div>
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contract *</label>
+            <FormField label="Contract" required error={fieldErrors.contract_id}>
               <Select
                 value={formData.contract_id}
                 onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
                 disabled={!formData.phase_id}
-                required
               >
                 <option value="">
                   {!formData.phase_id
@@ -140,43 +149,37 @@ const WorkLogs: React.FC = () => {
                   No active contracts found for this phase. Make sure contracts exist in Site Management.
                 </p>
               )}
-            </div>
+            </FormField>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+              <FormField label="Date" required error={fieldErrors.date}>
                 <Input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+              <FormField label="Status" required>
                 <Select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLog['status'] })}
-                  required
                 >
                   {Object.entries(statusConfig).map(([value, config]) => (
                     <option key={value} value={value}>{config.label}</option>
                   ))}
                 </Select>
-              </div>
+              </FormField>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Work Description *</label>
+            <FormField label="Work Description" required error={fieldErrors.work_description}>
               <Textarea
                 value={formData.work_description}
                 onChange={(e) => setFormData({ ...formData, work_description: e.target.value })}
                 rows={3}
                 placeholder="Describe the work performed or observed..."
-                required
               />
-            </div>
+            </FormField>
 
             {(formData.status === 'blocker' || formData.status === 'quality_issue') && (
               <div>

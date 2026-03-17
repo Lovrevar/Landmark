@@ -25,6 +25,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
     end_date: '',
     status: 'planning'
   })
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (phase) {
@@ -56,13 +57,12 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Phase Name" required>
+          <FormField label="Phase Name" required error={fieldErrors.phase_name}>
             <Input
               type="text"
               value={formData.phase_name}
               onChange={(e) => setFormData({ ...formData, phase_name: e.target.value })}
               placeholder="Enter phase name"
-              required
             />
           </FormField>
 
@@ -74,14 +74,13 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
                 ? `Warning: Budget is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')})`
                 : `Available after update: €${(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}`
             }
-            error={formData.budget_allocated < phase.budget_used ? 'Budget less than allocated' : undefined}
+            error={fieldErrors.budget_allocated ?? (formData.budget_allocated < phase.budget_used ? 'Budget less than allocated' : undefined)}
           >
             <Input
               type="number"
               value={formData.budget_allocated}
               onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
               placeholder="0"
-              required
             />
           </FormField>
 
@@ -135,7 +134,14 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={() => onSubmit(formData)}>
+        <Button onClick={() => {
+          const errors: Record<string, string> = {}
+          if (!formData.phase_name?.trim()) errors.phase_name = 'Naziv faze je obavezan'
+          if (!formData.budget_allocated && formData.budget_allocated !== 0) errors.budget_allocated = 'Budžet je obavezan'
+          setFieldErrors(errors)
+          if (Object.keys(errors).length > 0) return
+          onSubmit(formData)
+        }}>
           Update Phase
         </Button>
       </Modal.Footer>

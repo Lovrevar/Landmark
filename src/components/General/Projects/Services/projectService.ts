@@ -23,6 +23,7 @@ export async function fetchProjectsWithStats(): Promise<ProjectWithStats[]> {
       ? Math.round((milestones_completed / milestones_total) * 100)
       : 0
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { contracts: _c, project_milestones: _m, ...projectFields } = project as typeof project & { contracts: unknown; project_milestones: unknown }
     return {
       ...projectFields,

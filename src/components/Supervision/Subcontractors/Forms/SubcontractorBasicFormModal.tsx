@@ -20,18 +20,24 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
 }) => {
   const toast = useToast()
   const [formData, setFormData] = useState(initialData)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (visible) {
       setFormData(initialData)
+      setFieldErrors({})
     }
   }, [visible, initialData])
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.contact.trim()) {
-      toast.warning('Please fill in name and contact')
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    if (!formData.contact.trim()) errors.contact = 'Kontakt je obavezan'
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
       return
     }
+    setFieldErrors({})
 
     try {
       const payload = {
@@ -62,7 +68,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
       />
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Name" required>
+          <FormField label="Name" required error={fieldErrors.name}>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -70,7 +76,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
               autoFocus
             />
           </FormField>
-          <FormField label="Contact" required>
+          <FormField label="Contact" required error={fieldErrors.contact}>
             <Input
               value={formData.contact}
               onChange={(e) => setFormData({ ...formData, contact: e.target.value })}

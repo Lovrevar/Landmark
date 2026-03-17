@@ -13,19 +13,21 @@ export const ContractTypeFormModal: React.FC<Props> = ({ visible, onClose, onCre
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const handleClose = () => {
     setName('')
     setDescription('')
     setError(null)
+    setFieldErrors({})
     onClose()
   }
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      setError('Naziv kategorije je obavezan')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!name.trim()) errors.name = 'Naziv kategorije je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
     try {
       setSaving(true)
@@ -55,13 +57,12 @@ export const ContractTypeFormModal: React.FC<Props> = ({ visible, onClose, onCre
       />
       <Modal.Body>
         {error && <Alert variant="error" className="mb-4">{error}</Alert>}
-        <FormField label="Naziv kategorije" required>
+        <FormField label="Naziv kategorije" required error={fieldErrors.name}>
           <Input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="npr. Elektrika, Građevinski radovi..."
-            required
             autoFocus
           />
         </FormField>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ApartmentFormData } from '../types'
 import { Modal, FormField, Select, Input, Button, Form } from '../../../ui'
-import { useToast } from '../../../../contexts/ToastContext'
 import {
   ContractedSection,
   ContractFields,
@@ -24,7 +23,6 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
-  const toast = useToast()
   const [formData, setFormData] = useState({
     project_id: '',
     building_id: '',
@@ -39,6 +37,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
     povrsina_ot_sa_koef: null as number | null
   })
   const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const filteredBuildings = buildings.filter(b => b.project_id === formData.project_id)
 
@@ -50,10 +49,15 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.project_id || !formData.building_id || !formData.number) {
-      toast.warning('Please fill in all required fields')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.project_id) errors.project_id = 'Project is required'
+    if (!formData.building_id) errors.building_id = 'Building is required'
+    if (!formData.number) errors.number = 'Apartment number is required'
+    if (!formData.floor && formData.floor !== 0) errors.floor = 'Floor is required'
+    if (!formData.size_m2) errors.size_m2 = 'Saleable area is required'
+    if (!formData.price) errors.price = 'Price is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit({ ...formData, ...contractFieldsToPayload(contractFields) })
   }
 
@@ -67,11 +71,10 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Project" required>
+              <FormField label="Project" required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
-                  required
                 >
                   <option value="">Select Project</option>
                   {projects.map(p => (
@@ -80,11 +83,10 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 </Select>
               </FormField>
 
-              <FormField label="Building" required>
+              <FormField label="Building" required error={fieldErrors.building_id}>
                 <Select
                   value={formData.building_id}
                   onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
-                  required
                   disabled={!formData.project_id}
                 >
                   <option value="">Select Building</option>
@@ -96,13 +98,12 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Apartment Number (Oznaka stana)" required>
+              <FormField label="Apartment Number (Oznaka stana)" required error={fieldErrors.number}>
                 <Input
                   type="text"
                   value={formData.number}
                   onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                   placeholder="e.g., A101"
-                  required
                 />
               </FormField>
 
@@ -117,12 +118,11 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor (Etaža)" required>
+              <FormField label="Floor (Etaža)" required error={fieldErrors.floor}>
                 <Input
                   type="number"
                   value={formData.floor}
                   onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
-                  required
                 />
               </FormField>
 
@@ -147,12 +147,11 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Saleable Area m² (Stan m2 prodajno)" required>
+              <FormField label="Saleable Area m² (Stan m2 prodajno)" required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
                   value={formData.size_m2}
                   onChange={(e) => setFormData({ ...formData, size_m2: parseFloat(e.target.value) })}
-                  required
                   step="0.01"
                 />
               </FormField>
@@ -179,12 +178,11 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Price (EUR)" required>
+              <FormField label="Price (EUR)" required error={fieldErrors.price}>
                 <Input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  required
                   step="0.01"
                 />
               </FormField>

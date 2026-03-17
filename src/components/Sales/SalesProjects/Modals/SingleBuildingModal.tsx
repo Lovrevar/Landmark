@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BuildingFormData } from '../types'
 import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
-import { useToast } from '../../../../contexts/ToastContext'
 
 interface SingleBuildingModalProps {
   visible: boolean
@@ -18,7 +17,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   onSubmit,
   loading = false
 }) => {
-  const toast = useToast()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<BuildingFormData>({
     name: '',
     description: '',
@@ -34,10 +33,12 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   if (!visible) return null
 
   const handleSubmit = () => {
+    const errors: Record<string, string> = {}
     if (!formData.name.trim()) {
-      toast.warning('Please fill in required fields')
-      return
+      errors.name = 'Please fill in required fields'
     }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(formData)
   }
 
@@ -50,7 +51,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
       />
       <Modal.Body>
           <div className="space-y-4">
-            <FormField label="Building Name" required>
+            <FormField label="Building Name" required error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}

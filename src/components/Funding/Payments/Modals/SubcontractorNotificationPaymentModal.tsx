@@ -37,6 +37,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   const [loading, setLoading] = useState(false)
   const [alreadyPaid, setAlreadyPaid] = useState(0)
   const [contractValue, setContractValue] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (visible && notification && notification.payment_source === 'subcontractor') {
@@ -81,10 +82,11 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   }
 
   const handleSubmit = async () => {
-    if (!notification || amount <= 0) {
-      toast.warning('Please enter a valid payment amount')
-      return
-    }
+    if (!notification) return
+    const errors: Record<string, string> = {}
+    if (amount <= 0) errors.amount = 'Unesite valjani iznos plaćanja'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
     setLoading(true)
     try {
@@ -146,7 +148,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           </div>
         </div>
 
-        <FormField label="Payment Amount" required helperText="You can pay any amount, including more than the contract value">
+        <FormField label="Payment Amount" required error={fieldErrors.amount} helperText="You can pay any amount, including more than the contract value">
           <Input
             type="number"
             min="0"

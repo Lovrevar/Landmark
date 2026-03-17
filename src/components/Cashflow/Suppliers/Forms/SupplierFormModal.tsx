@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import { SupplierFormData, Project, Phase } from '../types'
 
@@ -25,6 +25,18 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const handleSubmit = (e: React.FormEvent) => {
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    if (!formData.contact.trim()) errors.contact = 'Kontakt je obavezan'
+    if (formData.project_id && !formData.phase_id) errors.phase_id = 'Faza je obavezna'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) { e.preventDefault(); return }
+    onSubmit(e)
+  }
+
   return (
     <Modal show={showModal} onClose={onClose} size="sm">
       <Modal.Header
@@ -32,24 +44,22 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
         onClose={onClose}
       />
 
-      <Form onSubmit={onSubmit} className="overflow-y-auto flex-1">
+      <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
         <Modal.Body>
-          <FormField label="Naziv dobavljača" required>
+          <FormField label="Naziv dobavljača" required error={fieldErrors.name}>
             <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               placeholder="npr. Elektro servis d.o.o."
             />
           </FormField>
 
-          <FormField label="Kontakt (email ili telefon)" required>
+          <FormField label="Kontakt (email ili telefon)" required error={fieldErrors.contact}>
             <Input
               type="text"
               value={formData.contact}
               onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-              required
               placeholder="info@example.com ili +385 99 123 4567"
             />
           </FormField>
@@ -75,11 +85,10 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                 </FormField>
 
                 {formData.project_id && (
-                  <FormField label="Faza" required>
+                  <FormField label="Faza" required error={fieldErrors.phase_id}>
                     <Select
                       value={formData.phase_id}
                       onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberite fazu</option>
                       {phases.map((phase) => (

@@ -19,6 +19,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 }) => {
   const toast = useToast()
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [projectType, setProjectType] = useState<'projects' | 'retail'>('projects')
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
 
@@ -100,25 +101,26 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const { company_id, supplier_id, invoice_name, deposit_amount, remaining_amount } = formData
+    const errors: Record<string, string> = {}
+    if (!company_id) errors.company_id = 'Firma je obavezna'
+    if (!supplier_id) errors.supplier_id = 'Dobavljač je obavezan'
+    if (!selectedContract) errors.contract_id = 'Ugovor je obavezan'
+    if (!invoice_name.trim()) errors.invoice_name = 'Ime računa je obavezno'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
 
     try {
-      const { company_id, supplier_id, invoice_name, deposit_amount, remaining_amount } = formData
-
-      if (!company_id || !supplier_id || !selectedContract || !invoice_name) {
-        toast.warning('Molimo popunite sva obavezna polja')
-        setLoading(false)
-        return
-      }
-
       const totalAmount = deposit_amount + remaining_amount
-      if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
-        toast.warning(`Zbir kapare i preostalog iznosa (${totalAmount.toFixed(2)} €) mora biti jednak iznosu iz ugovora (${selectedContract.base_amount.toFixed(2)} €)`)
+      if (Math.abs(totalAmount - selectedContract!.base_amount) > 0.01) {
         setLoading(false)
         return
       }
 
-      await createLandPurchaseInvoices(formData, projectType, selectedContract)
+      await createLandPurchaseInvoices(formData, projectType, selectedContract!)
       onSuccess()
       handleClose()
     } catch (error) {
@@ -197,7 +199,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 value={formData.company_id}
                 onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                required
               >
                 <option value="">Odaberite firmu</option>
                 {companies.map((company) => (
@@ -206,6 +207,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   </option>
                 ))}
               </select>
+              {fieldErrors.company_id && <p className="text-xs text-red-600 mt-1">{fieldErrors.company_id}</p>}
             </div>
 
             <div>
@@ -216,7 +218,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 value={formData.supplier_id}
                 onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value, project_id: '', phase_id: '' })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                required
               >
                 <option value="">Odaberite {projectType === 'retail' ? 'retail dobavljača' : 'dobavljača'}</option>
                 {suppliers.map((supplier) => (
@@ -225,6 +226,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   </option>
                 ))}
               </select>
+              {fieldErrors.supplier_id && <p className="text-xs text-red-600 mt-1">{fieldErrors.supplier_id}</p>}
             </div>
 
             <div>
@@ -235,7 +237,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 value={formData.project_id}
                 onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
-                required
                 disabled={!formData.supplier_id}
               >
                 <option value="">Odaberite {projectType === 'retail' ? 'retail projekt' : 'projekt'}</option>
@@ -255,7 +256,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 value={formData.phase_id}
                 onChange={(e) => setFormData({ ...formData, phase_id: e.target.value, contract_id: '' })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
-                required
                 disabled={!formData.project_id}
               >
                 <option value="">Odaberite fazu</option>
@@ -276,7 +276,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   value={formData.contract_id}
                   onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  required
                 >
                   <option value="">Odaberite ugovor</option>
                   {availableContracts.map((contract) => (
@@ -285,6 +284,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                     </option>
                   ))}
                 </select>
+                {fieldErrors.contract_id && <p className="text-xs text-red-600 mt-1">{fieldErrors.contract_id}</p>}
               </div>
             )}
 
@@ -333,8 +333,8 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, invoice_name: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="npr. Zemljište Kozara"
-                required
               />
+              {fieldErrors.invoice_name && <p className="text-xs text-red-600 mt-1">{fieldErrors.invoice_name}</p>}
               <p className="text-xs text-slate-500 mt-1.5">
                 Računi će biti kreirani kao: <span className="font-semibold">{formData.invoice_name || '(ime)'}-Kapara</span> i <span className="font-semibold">{formData.invoice_name || '(ime)'}-Preostalo</span>
               </p>
@@ -354,7 +354,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <CurrencyInput
                     value={formData.deposit_amount}
                     onChange={(value) => setFormData({ ...formData, deposit_amount: value })}
-                    required
                   />
                 </div>
 
@@ -365,7 +364,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <DateInput
                     value={formData.deposit_due_date}
                     onChange={(value) => setFormData({ ...formData, deposit_due_date: value })}
-                    required
                   />
                 </div>
               </div>
@@ -381,7 +379,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <CurrencyInput
                     value={formData.remaining_amount}
                     onChange={(value) => setFormData({ ...formData, remaining_amount: value })}
-                    required
                   />
                 </div>
 
@@ -392,7 +389,6 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <DateInput
                     value={formData.remaining_due_date}
                     onChange={(value) => setFormData({ ...formData, remaining_due_date: value })}
-                    required
                   />
                 </div>
               </div>

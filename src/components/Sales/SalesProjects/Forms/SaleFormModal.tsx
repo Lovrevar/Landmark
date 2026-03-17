@@ -20,6 +20,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
   onSubmit
 }) => {
   const [customerMode, setCustomerMode] = useState<CustomerMode>('new')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<SaleFormData>({
     customer_id: '',
     sale_price: 0,
@@ -67,6 +68,16 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
   if (!visible || !unitForSale) return null
 
   const handleSubmit = () => {
+    const errors: Record<string, string> = {}
+    if (customerMode === 'new') {
+      if (!formData.buyer_name.trim()) errors.buyer_name = 'Full name is required'
+      if (!formData.buyer_email.trim()) errors.buyer_email = 'Email is required'
+    } else {
+      if (!formData.customer_id) errors.customer_id = 'Please select a customer'
+    }
+    if (!formData.sale_price) errors.sale_price = 'Sale price is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(formData, customerMode)
   }
 
@@ -111,11 +122,10 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
             </div>
 
             {customerMode === 'existing' ? (
-              <FormField label="Select Customer">
+              <FormField label="Select Customer" error={fieldErrors.customer_id}>
                 <Select
                   value={formData.customer_id}
                   onChange={(e) => handleCustomerSelect(e.target.value)}
-                  required
                 >
                   <option value="">Select a customer</option>
                   {customers.map(customer => (
@@ -127,22 +137,20 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
               </FormField>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Full Name" required>
+                <FormField label="Full Name" required error={fieldErrors.buyer_name}>
                   <Input
                     type="text"
                     value={formData.buyer_name}
                     onChange={(e) => setFormData({ ...formData, buyer_name: e.target.value })}
                     placeholder="John Smith"
-                    required
                   />
                 </FormField>
-                <FormField label="Email" required>
+                <FormField label="Email" required error={fieldErrors.buyer_email}>
                   <Input
                     type="email"
                     value={formData.buyer_email}
                     onChange={(e) => setFormData({ ...formData, buyer_email: e.target.value })}
                     placeholder="john@example.com"
-                    required
                   />
                 </FormField>
                 <FormField label="Phone">
@@ -166,13 +174,12 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <FormField label="Sale Price (€)" required>
+            <FormField label="Sale Price (€)" required error={fieldErrors.sale_price}>
               <Input
                 type="number"
                 min="0"
                 value={formData.sale_price}
                 onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) || 0 })}
-                required
               />
             </FormField>
             <FormField label="Payment Method">

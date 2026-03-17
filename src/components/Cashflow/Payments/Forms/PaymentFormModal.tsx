@@ -88,7 +88,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                       company_bank_account_id: '',
                       credit_id: ''
                     })}
-                    required
                   >
                     <option value="bank_account">Bankovni račun</option>
                     <option value="credit">Kredit</option>
@@ -109,7 +108,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     <Select
                       value={paymentFormData.company_bank_account_id}
                       onChange={(e) => onFormChange({ ...paymentFormData, company_bank_account_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberi bankovni račun</option>
                       {companyBankAccounts
@@ -142,7 +140,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                         onFormChange({ ...paymentFormData, credit_id: newCreditId, credit_allocation_id: '' })
                         onCreditChange(newCreditId)
                       }}
-                      required
                     >
                       <option value="">Odaberi kredit</option>
                       {companyCredits
@@ -174,7 +171,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     <Select
                       value={paymentFormData.credit_allocation_id}
                       onChange={(e) => onFormChange({ ...paymentFormData, credit_allocation_id: e.target.value })}
-                      required
                     >
                       <option value="">Odaberi projekt</option>
                       {creditAllocations.map(allocation => {
@@ -229,7 +225,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                 value={paymentFormData.payment_date}
                 onChange={(value) => onFormChange({ ...paymentFormData, payment_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
               />
             </FormField>
 
@@ -246,7 +241,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               <Select
                 value={paymentFormData.payment_method}
                 onChange={(e) => onFormChange({ ...paymentFormData, payment_method: e.target.value })}
-                required
               >
                 <option value="WIRE">Virman</option>
                 <option value="CASH">Gotovina</option>

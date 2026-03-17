@@ -4,13 +4,15 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import { useBankInvoiceData } from '../Hooks/useBankInvoiceData'
 import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
-import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
+import { Alert, Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { createBankInvoice } from '../../Invoices/Services/invoiceService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
   const toast = useToast()
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [amountError, setAmountError] = useState('')
   const [formData, setFormData] = useState<BankInvoiceFormData>({
     invoice_type: 'INCOMING_BANK',
     company_id: '',
@@ -83,15 +85,17 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.company_id || !formData.bank_id || !formData.invoice_number) {
-      toast.warning('Molimo popunite sva obavezna polja')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.company_id) errors.company_id = 'Firma je obavezna'
+    if (!formData.bank_id) errors.bank_id = 'Investitor je obavezan'
+    if (!formData.invoice_number.trim()) errors.invoice_number = 'Broj računa je obavezan'
+    if (!formData.category) errors.category = 'Kategorija je obavezna'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
-    if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
-      toast.warning('Molimo unesite barem jednu osnovicu')
-      return
-    }
+    const noAmount = formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0
+    setAmountError(noAmount ? 'Unesite barem jednu osnovicu' : '')
+    if (noAmount) return
 
     setLoading(true)
 
@@ -144,7 +148,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               <Select
                 value={formData.invoice_type}
                 onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as BankInvoiceFormData['invoice_type'] })}
-                required
               >
                 <option value="INCOMING_BANK">Odljev</option>
                 <option value="OUTGOING_BANK">Priljev</option>
@@ -152,11 +155,10 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               </Select>
             </FormField>
 
-            <FormField label="Moja firma" required>
+            <FormField label="Moja firma" required error={fieldErrors.company_id}>
               <Select
                 value={formData.company_id}
                 onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                required
               >
                 <option value="">Odaberi firmu</option>
                 {myCompanies.map((company) => (
@@ -167,11 +169,10 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               </Select>
             </FormField>
 
-            <FormField label="Investitor" required>
+            <FormField label="Investitor" required error={fieldErrors.bank_id}>
               <Select
                 value={formData.bank_id}
                 onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
-                required
               >
                 <option value="">Odaberi investitora</option>
                 {banks.map((bank) => (
@@ -190,7 +191,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.bank_credit_id}
                 onChange={(e) => setFormData({ ...formData, bank_credit_id: e.target.value })}
                 disabled={!formData.bank_id || credits.length === 0}
-                required={formData.invoice_type === 'INCOMING_BANK_EXPENSES'}
               >
                 <option value="">Bez kredita</option>
                 {credits.map((credit) => (
@@ -230,13 +230,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               </FormField>
             )}
 
-            <FormField label="Broj računa" required>
+            <FormField label="Broj računa" required error={fieldErrors.invoice_number}>
               <Input
                 type="text"
                 value={formData.invoice_number}
                 onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
                 placeholder="npr. INV-2024-001"
-                required
               />
             </FormField>
 
@@ -263,7 +262,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.issue_date}
                 onChange={(value) => setFormData({ ...formData, issue_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
               />
             </FormField>
 
@@ -272,7 +270,6 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.due_date}
                 onChange={(value) => setFormData({ ...formData, due_date: value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                required
               />
             </FormField>
 
@@ -318,11 +315,10 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
             <InvoicePreview formData={formData} calc={calc} />
 
-            <FormField label="Kategorija" required>
+            <FormField label="Kategorija" required error={fieldErrors.category}>
               <Select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
               >
                 <option value="">Odaberi kategoriju</option>
                 {invoiceCategories.map(cat => (
@@ -340,6 +336,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               placeholder="Dodatni opis računa..."
             />
           </FormField>
+
+          {amountError && (
+            <Alert variant="error" className="mb-2" onDismiss={() => setAmountError('')}>
+              {amountError}
+            </Alert>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button

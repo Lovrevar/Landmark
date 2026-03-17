@@ -15,6 +15,7 @@ const AccountingLoans: React.FC = () => {
     setShowAddModal,
     formData,
     setFormData,
+    fieldErrors,
     handleAddLoan,
     handleDeleteLoan,
     resetForm,
@@ -135,14 +136,13 @@ const AccountingLoans: React.FC = () => {
         <Modal.Header title="Nova Pozajmica" onClose={() => { setShowAddModal(false); resetForm() }} />
         <Form onSubmit={handleAddLoan}>
           <Modal.Body>
-            <FormField label="Daje" required>
+            <FormField label="Daje" required error={fieldErrors.from_company_id}>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Select
                   value={formData.from_company_id}
                   onChange={(e) => setFormData({ ...formData, from_company_id: e.target.value, from_bank_account_id: '' })}
                   className="pl-10"
-                  required
                 >
                   <option value="">Odaberite firmu</option>
                   {companies.map(company => (
@@ -153,11 +153,10 @@ const AccountingLoans: React.FC = () => {
             </FormField>
 
             {formData.from_company_id && (
-              <FormField label="Račun (Daje)" required>
+              <FormField label="Račun (Daje)" required error={fieldErrors.from_bank_account_id}>
                 <Select
                   value={formData.from_bank_account_id}
                   onChange={(e) => setFormData({ ...formData, from_bank_account_id: e.target.value })}
-                  required
                 >
                   <option value="">Odaberite račun</option>
                   {getFromCompanyAccounts().map(account => (
@@ -171,14 +170,13 @@ const AccountingLoans: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-4"></div>
 
-            <FormField label="Prima" required>
+            <FormField label="Prima" required error={fieldErrors.to_company_id}>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Select
                   value={formData.to_company_id}
                   onChange={(e) => setFormData({ ...formData, to_company_id: e.target.value, to_bank_account_id: '' })}
                   className="pl-10"
-                  required
                 >
                   <option value="">Odaberite firmu</option>
                   {companies.map(company => (
@@ -189,11 +187,10 @@ const AccountingLoans: React.FC = () => {
             </FormField>
 
             {formData.to_company_id && (
-              <FormField label="Račun (Prima)" required>
+              <FormField label="Račun (Prima)" required error={fieldErrors.to_bank_account_id}>
                 <Select
                   value={formData.to_bank_account_id}
                   onChange={(e) => setFormData({ ...formData, to_bank_account_id: e.target.value })}
-                  required
                 >
                   <option value="">Odaberite račun</option>
                   {getToCompanyAccounts().map(account => (
@@ -218,7 +215,7 @@ const AccountingLoans: React.FC = () => {
               </div>
             </FormField>
 
-            <FormField label="Iznos" required>
+            <FormField label="Iznos" required error={fieldErrors.amount}>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">€</span>
                 <Input
@@ -229,7 +226,6 @@ const AccountingLoans: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   className="pl-8"
                   placeholder="0.00"
-                  required
                 />
               </div>
             </FormField>

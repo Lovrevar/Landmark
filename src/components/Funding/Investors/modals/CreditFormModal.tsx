@@ -209,7 +209,6 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
                     <Select
                       value={formData.disbursed_to_bank_account_id}
                       onChange={(e) => onChange({ disbursed_to_bank_account_id: e.target.value })}
-                      required={formData.disbursed_to_account}
                     >
                       <option value="">Odaberite račun</option>
                       {companyBankAccounts.map((account) => (

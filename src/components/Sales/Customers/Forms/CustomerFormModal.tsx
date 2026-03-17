@@ -20,6 +20,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onSave
 }) => {
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<Partial<Customer>>({
     name: '',
     surname: '',
@@ -75,22 +76,13 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
   const handleSubmit = async () => {
     setError(null)
-    if (!formData.name?.trim() || !formData.surname?.trim()) {
-      setError('First name and last name are required.')
-      return
-    }
-    if (!formData.email?.trim()) {
-      setError('Email is required.')
-      return
-    }
-    if (!formData.phone?.trim()) {
-      setError('Phone is required.')
-      return
-    }
-    if (!formData.status) {
-      setError('Status is required.')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.name?.trim()) errors.name = 'First name is required.'
+    if (!formData.surname?.trim()) errors.surname = 'Last name is required.'
+    if (!formData.email?.trim()) errors.email = 'Email is required.'
+    if (!formData.phone?.trim()) errors.phone = 'Phone is required.'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     try {
       await onSave(formData, editingCustomer?.id)
       onClose()
@@ -121,14 +113,14 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </Alert>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="First Name" required>
+            <FormField label="First Name" required error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </FormField>
-            <FormField label="Last Name" required>
+            <FormField label="Last Name" required error={fieldErrors.surname}>
               <Input
                 type="text"
                 value={formData.surname}
@@ -138,14 +130,14 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Email" required>
+            <FormField label="Email" required error={fieldErrors.email}>
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </FormField>
-            <FormField label="Phone" required>
+            <FormField label="Phone" required error={fieldErrors.phone}>
               <Input
                 type="tel"
                 value={formData.phone}

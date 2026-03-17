@@ -146,7 +146,7 @@ Retail customer records (land/parcel buyers) — distinct from Sales/Customers (
 #### Hooks
 
 ### hooks/useRetailCustomers.ts
-- `useRetailCustomers()` — fetches retail customer list with linked sales
+- `useRetailCustomers()` — fetches retail customer list with linked sales; validates customer name before save (returns `fieldErrors`)
 
 #### Views
 
@@ -198,6 +198,7 @@ Land plot inventory tracking.
 
 ### index.tsx (LandPlots)
 - Land plot list with status and area tracking
+- Inline form validates owner_first_name, owner_last_name, plot_number, total_area_m2, purchased_area_m2, price_per_m2 with `fieldErrors`
 - **Uses Ui:** useToast
 
 ---

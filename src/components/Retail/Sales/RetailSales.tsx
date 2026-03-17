@@ -32,6 +32,8 @@ const RetailSales: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormState>(emptyForm())
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [paymentFieldErrors, setPaymentFieldErrors] = useState<Record<string, string>>({})
 
   const openFormModal = (sale?: SaleWithRelations) => {
     if (sale) {
@@ -61,6 +63,14 @@ const RetailSales: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.land_plot_id) errors.land_plot_id = 'Odaberite česticu'
+    if (!formData.customer_id) errors.customer_id = 'Odaberite kupca'
+    if (!formData.sale_area_m2) errors.sale_area_m2 = 'Unesite površinu'
+    if (!formData.sale_price_per_m2) errors.sale_price_per_m2 = 'Unesite cijenu po m²'
+    if (!formData.payment_deadline) errors.payment_deadline = 'Unesite rok plaćanja'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     try {
       const payload: RetailSalePayload = {
         land_plot_id: formData.land_plot_id,
@@ -96,6 +106,10 @@ const RetailSales: React.FC = () => {
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedSale) return
+    const pErrors: Record<string, string> = {}
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) pErrors.paymentAmount = 'Unesite iznos plaćanja'
+    setPaymentFieldErrors(pErrors)
+    if (Object.keys(pErrors).length > 0) return
     try {
       await handleAddPayment(selectedSale, parseFloat(paymentAmount))
       closePaymentModal()
@@ -210,8 +224,8 @@ const RetailSales: React.FC = () => {
         <Modal.Header title={editingId ? 'Uredi prodaju' : 'Nova prodaja'} onClose={closeFormModal} />
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <FormField label="Čestica" required>
-              <Select required value={formData.land_plot_id} onChange={set('land_plot_id')}>
+            <FormField label="Čestica" required error={fieldErrors.land_plot_id}>
+              <Select value={formData.land_plot_id} onChange={set('land_plot_id')}>
                 <option value="">Odaberite česticu</option>
                 {landPlots.map((plot) => (
                   <option key={plot.id} value={plot.id}>{plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name}</option>
@@ -219,8 +233,8 @@ const RetailSales: React.FC = () => {
               </Select>
             </FormField>
 
-            <FormField label="Kupac" required>
-              <Select required value={formData.customer_id} onChange={set('customer_id')}>
+            <FormField label="Kupac" required error={fieldErrors.customer_id}>
+              <Select value={formData.customer_id} onChange={set('customer_id')}>
                 <option value="">Odaberite kupca</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>{customer.name}</option>
@@ -229,16 +243,16 @@ const RetailSales: React.FC = () => {
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Površina (m²)" required>
-                <Input type="number" step="0.01" required value={formData.sale_area_m2} onChange={set('sale_area_m2')} />
+              <FormField label="Površina (m²)" required error={fieldErrors.sale_area_m2}>
+                <Input type="number" step="0.01" value={formData.sale_area_m2} onChange={set('sale_area_m2')} />
               </FormField>
-              <FormField label="Cijena po m² (€)" required>
-                <Input type="number" step="0.01" required value={formData.sale_price_per_m2} onChange={set('sale_price_per_m2')} />
+              <FormField label="Cijena po m² (€)" required error={fieldErrors.sale_price_per_m2}>
+                <Input type="number" step="0.01" value={formData.sale_price_per_m2} onChange={set('sale_price_per_m2')} />
               </FormField>
             </div>
 
-            <FormField label="Rok plaćanja" required>
-              <Input type="date" required value={formData.payment_deadline} onChange={set('payment_deadline')} />
+            <FormField label="Rok plaćanja" required error={fieldErrors.payment_deadline}>
+              <Input type="date" value={formData.payment_deadline} onChange={set('payment_deadline')} />
             </FormField>
 
             <FormField label="Broj ugovora">
@@ -278,11 +292,10 @@ const RetailSales: React.FC = () => {
                 <span className="font-bold text-orange-600">€{selectedSale?.remaining_amount.toLocaleString('hr-HR')}</span>
               </div>
             </div>
-            <FormField label="Iznos plaćanja (€)" required>
+            <FormField label="Iznos plaćanja (€)" required error={paymentFieldErrors.paymentAmount}>
               <Input
                 type="number"
                 step="0.01"
-                required
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 max={selectedSale?.remaining_amount}

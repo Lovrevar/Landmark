@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Modal, FormField, Input, Select, Button, Alert, Form } from '../../../ui'
 import { useProjectForm } from '../hooks/useProjectForm'
 
@@ -14,6 +14,18 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     onSuccess,
     onSuccess
   )
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const handleLocalSubmit = (e?: React.FormEvent) => {
+    const errors: Record<string, string> = {}
+    if (!form.name?.trim()) errors.name = 'Project name is required'
+    if (!form.location?.trim()) errors.location = 'Location is required'
+    if (!form.start_date) errors.start_date = 'Start date is required'
+    if (!form.budget) errors.budget = 'Budget is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    if (e) handleSubmit(e)
+  }
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
@@ -22,7 +34,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         onClose={onClose}
       />
       <Modal.Body>
-        <Form onSubmit={handleSubmit}>
+        <Form onSubmit={(e) => handleLocalSubmit(e)}>
           {error && (
             <Alert variant="error" className="mb-4" onDismiss={() => setError('')}>
               {error}
@@ -30,32 +42,29 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Project Name" required className="md:col-span-2">
+            <FormField label="Project Name" required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g., Kozara Residential Complex"
-                required
               />
             </FormField>
 
-            <FormField label="Location" required className="md:col-span-2">
+            <FormField label="Location" required className="md:col-span-2" error={fieldErrors.location}>
               <Input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="e.g., Zagreb, Croatia"
-                required
               />
             </FormField>
 
-            <FormField label="Start Date" required>
+            <FormField label="Start Date" required error={fieldErrors.start_date}>
               <Input
                 type="date"
                 value={form.start_date}
                 onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                required
               />
             </FormField>
 
@@ -67,7 +76,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
-            <FormField label="Budget (EUR)" required>
+            <FormField label="Budget (EUR)" required error={fieldErrors.budget}>
               <Input
                 type="number"
                 value={form.budget}
@@ -75,7 +84,6 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                required
               />
             </FormField>
 
@@ -106,7 +114,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={loading} loading={loading}>
+            <Button onClick={() => handleLocalSubmit()} disabled={loading} loading={loading}>
               {projectId ? 'Update Project' : 'Create Project'}
             </Button>
           </div>

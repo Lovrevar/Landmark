@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Button, Modal, FormField, Input } from '../../../ui'
-import { useToast } from '../../../../contexts/ToastContext'
 
 interface BuildingQuantityModalProps {
   visible: boolean
@@ -17,16 +16,18 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   onSubmit,
   loading = false
 }) => {
-  const toast = useToast()
   const [quantity, setQuantity] = useState(1)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   if (!visible) return null
 
   const handleSubmit = () => {
+    const errors: Record<string, string> = {}
     if (quantity < 1 || quantity > 20) {
-      toast.warning('Please enter a valid quantity (1-20)')
-      return
+      errors.quantity = 'Please enter a valid quantity (1-20)'
     }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(quantity)
     setQuantity(1)
   }
@@ -39,7 +40,7 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
         onClose={onClose}
       />
       <Modal.Body>
-        <FormField label="Number of Buildings to Create" required>
+        <FormField label="Number of Buildings to Create" required error={fieldErrors.quantity}>
           <Input
             type="number"
             min="1"

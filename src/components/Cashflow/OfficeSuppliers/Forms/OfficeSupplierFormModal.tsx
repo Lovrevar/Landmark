@@ -33,7 +33,6 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               placeholder="npr. HR Servis d.o.o."
             />
           </FormField>

@@ -28,14 +28,12 @@ export const ContractFormFields: React.FC<Props> = ({
             onChange={(e) => onChange({ base_amount: parseFloat(e.target.value) || 0 })}
             placeholder="0"
             step="0.01"
-            required
           />
         </FormField>
         <FormField label="PDV stopa" required>
           <Select
             value={formData.vat_rate}
             onChange={(e) => onChange({ vat_rate: parseFloat(e.target.value) })}
-            required
           >
             {VAT_RATE_OPTIONS.map(r => (
               <option key={r} value={r}>{r}%</option>
@@ -68,7 +66,6 @@ export const ContractFormFields: React.FC<Props> = ({
             type="date"
             value={formData.deadline}
             onChange={(e) => onChange({ deadline: e.target.value })}
-            required={deadlineRequired}
           />
         </FormField>
       </div>

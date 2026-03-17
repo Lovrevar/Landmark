@@ -5,7 +5,6 @@ import { format } from 'date-fns'
 import { useLazySection } from './hooks/useLazySection'
 import { INVOICE_STATUS_CONFIG } from './constants'
 import { fetchCreditInvoices } from './services/creditService'
-import type { CreditInvoiceRow } from './types'
 
 const COLOR_CLASSES = {
   emerald: { header: 'bg-emerald-50', text: 'text-emerald-700', bold: 'text-emerald-700', footer: 'bg-emerald-50' },

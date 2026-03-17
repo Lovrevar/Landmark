@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../Services/siteService'
-import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../ui'
+import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
 interface MilestoneFormModalProps {
   visible: boolean
@@ -41,7 +41,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   })
 
   const [remainingPercentage, setRemainingPercentage] = useState(100)
-  const [validationError, setValidationError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (visible) {
@@ -79,22 +79,14 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   }
 
   const handleSubmit = () => {
-    if (!formData.milestone_name.trim()) {
-      setValidationError('Milestone name is required')
-      return
+    const errors: Record<string, string> = {}
+    if (!formData.milestone_name.trim()) errors.milestone_name = 'Naziv prekretnice je obavezan'
+    if (formData.percentage <= 0) errors.percentage = 'Postotak mora biti veći od 0'
+    else if (formData.percentage > remainingPercentage + (editingMilestone?.percentage || 0)) {
+      errors.percentage = `Postotak premašuje dostupnih ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`
     }
-
-    if (formData.percentage <= 0) {
-      setValidationError('Percentage must be greater than 0')
-      return
-    }
-
-    if (formData.percentage > remainingPercentage + (editingMilestone?.percentage || 0)) {
-      setValidationError(`Percentage exceeds available ${remainingPercentage + (editingMilestone?.percentage || 0)}%`)
-      return
-    }
-
-    setValidationError(null)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(formData)
   }
 
@@ -113,18 +105,13 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
       />
 
       <Modal.Body>
-        {validationError && (
-          <Alert variant="error">{validationError}</Alert>
-        )}
-
         <div className="grid grid-cols-1 gap-4 mt-4">
-          <FormField label="Milestone Name" required>
+          <FormField label="Milestone Name" required error={fieldErrors.milestone_name}>
             <Input
               type="text"
               value={formData.milestone_name}
               onChange={(e) => setFormData({ ...formData, milestone_name: e.target.value })}
               placeholder="e.g., Projektiranje, Izvedba temelja"
-              required
             />
           </FormField>
 
@@ -142,6 +129,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               label="Percentage (%)"
               required
               helperText={`Max: ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`}
+              error={fieldErrors.percentage}
             >
               <Input
                 type="number"
@@ -151,7 +139,6 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
                 value={formData.percentage}
                 onChange={(e) => setFormData({ ...formData, percentage: parseFloat(e.target.value) || 0 })}
                 placeholder="30.00"
-                required
               />
             </FormField>
 

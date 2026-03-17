@@ -26,6 +26,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   const [newTypeName, setNewTypeName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     loadSupplierTypes()
@@ -65,6 +66,12 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    if (!formData.supplier_type_id) errors.supplier_type_id = 'Tip dobavljača je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
     setError(null)
 
@@ -106,21 +113,19 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Naziv dobavljača" required className="md:col-span-2">
+            <FormField label="Naziv dobavljača" required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
               />
             </FormField>
 
-            <FormField label="Tip dobavljača" required>
+            <FormField label="Tip dobavljača" required error={fieldErrors.supplier_type_id}>
               <div className="flex gap-2">
                 <Select
                   value={formData.supplier_type_id}
                   onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
-                  required
                   className="flex-1"
                 >
                   <option value="">Odaberite tip</option>

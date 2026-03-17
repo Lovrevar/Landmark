@@ -89,6 +89,7 @@ export function usePaymentNotifications() {
     loading,
     stats,
     filteredNotifications,
+    totalNotifications: notifications.length,
     selectedFilter,
     setSelectedFilter,
     showDismissed,

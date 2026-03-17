@@ -176,7 +176,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
   }
 
   const addPaymentToSubcontractor = async () => {
-    toast.info('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
+    toast.warning('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
     return false
   }
 
@@ -191,13 +191,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const updateWirePayment = async (..._args: unknown[]) => {
-    toast.info('Payment updates have moved to Accounting module. Please go to Accounting → Payments to edit payments.')
+    toast.warning('Payment updates have moved to Accounting module. Please go to Accounting → Payments to edit payments.')
     return false
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const deleteWirePayment = async (..._args: unknown[]) => {
-    toast.info('Payment deletion has moved to Accounting module. Please go to Accounting → Payments to delete payments.')
+    toast.warning('Payment deletion has moved to Accounting module. Please go to Accounting → Payments to delete payments.')
     return false
   }
 

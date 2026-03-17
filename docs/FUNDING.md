@@ -36,8 +36,9 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 
 ### useCreditManagement.ts
 - `useCreditManagement()` — manages credit list, allocation state, expanded credit/allocation sets, and form state
+- Validates allocation form before submit (project_id or refinancing_entity_id required)
 - **Calls:** creditService.ts
-- **Returns:** credits, allocations, disbursedAmounts, expandedCredits, expandedAllocations, loading, projects, companies, banks, showAllocationModal, selectedCredit, allocationForm, setAllocationForm, toggleCredit, toggleAllocation, openAllocationModal, closeAllocationModal, handleCreateAllocation, handleDeleteAllocation
+- **Returns:** credits, allocations, disbursedAmounts, expandedCredits, expandedAllocations, loading, projects, companies, banks, showAllocationModal, selectedCredit, allocationForm, setAllocationForm, toggleCredit, toggleAllocation, openAllocationModal, closeAllocationModal, handleCreateAllocation, handleDeleteAllocation, **fieldErrors**
 
 ### useLazySection.ts
 - `useLazySection<T>(fetchFn)` — generic hook for lazy-loading a section's data on first expand
@@ -162,7 +163,7 @@ Wire payment processing and payment notifications for bank credits, investors, a
 ### usePaymentNotifications.ts
 - `usePaymentNotifications()` — manages pending payment notification state and actions
 - **Calls:** paymentNotificationService.ts
-- **Returns:** notifications, loading, handleDismiss, handleMarkPaid, refetch
+- **Returns:** loading, stats, filteredNotifications, totalNotifications, selectedFilter, setSelectedFilter, showDismissed, setShowDismissed, expandedNotification, setExpandedNotification, handleDismiss
 
 #### Views
 
@@ -187,7 +188,8 @@ Wire payment processing and payment notifications for bank credits, investors, a
 
 ### SubcontractorNotificationPaymentModal.tsx
 - Records a payment against a subcontractor payment notification
-- **Uses Ui:** Modal, Button, Select, useToast
+- Validates amount > 0 with inline `fieldErrors` (no toast)
+- **Uses Ui:** Modal, Button, Select
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards

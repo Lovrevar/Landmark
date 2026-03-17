@@ -28,6 +28,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
 }) => {
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [loadingAccounts, setLoadingAccounts] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (newCredit.company_id && newCredit.disbursed_to_account) {
@@ -51,6 +52,18 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
   }
 
   if (!showCreditForm) return null
+
+  const handleAddCredit = () => {
+    const errors: Record<string, string> = {}
+    if (!newCredit.bank_id) errors.bank_id = 'Bank is required'
+    if (!newCredit.credit_name.trim()) errors.credit_name = 'Credit name is required'
+    if (!newCredit.amount) errors.amount = 'Amount is required'
+    if (!newCredit.start_date) errors.start_date = 'Start date is required'
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) errors.disbursed_to_bank_account_id = 'Bank account is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    addCredit()
+  }
 
   const calculation = calculatePayments(newCredit)
 
@@ -87,11 +100,10 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Bank" required>
+          <FormField label="Bank" required error={fieldErrors.bank_id}>
             <Select
               value={newCredit.bank_id}
               onChange={(e) => setNewCredit({ ...newCredit, bank_id: e.target.value })}
-              required
             >
               <option value="">Select bank</option>
               {banks.map(bank => (
@@ -102,13 +114,12 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Credit Name" required>
+          <FormField label="Credit Name" required error={fieldErrors.credit_name}>
             <Input
               type="text"
               value={newCredit.credit_name}
               onChange={(e) => setNewCredit({ ...newCredit, credit_name: e.target.value })}
               placeholder="e.g., Kozara Construction Loan 2024"
-              required
             />
           </FormField>
 
@@ -139,12 +150,11 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Amount (€)" required>
+          <FormField label="Amount (€)" required error={fieldErrors.amount}>
             <Input
               type="number"
               value={newCredit.amount}
               onChange={(e) => setNewCredit({ ...newCredit, amount: parseFloat(e.target.value) || 0 })}
-              required
             />
           </FormField>
 
@@ -190,12 +200,11 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Start Date" required>
+          <FormField label="Start Date" required error={fieldErrors.start_date}>
             <DateInput
               value={newCredit.start_date}
               onChange={(value) => setNewCredit({ ...newCredit, start_date: value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
             />
           </FormField>
 
@@ -264,11 +273,10 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
                     <p className="text-sm text-red-800">Odabrana firma nema bankovnih računa. Molimo dodajte račun u "Moje firme" prvo.</p>
                   </div>
                 ) : (
-                  <FormField label="Bankovni račun" required>
+                  <FormField label="Bankovni račun" required error={fieldErrors.disbursed_to_bank_account_id}>
                     <Select
                       value={newCredit.disbursed_to_bank_account_id || ''}
                       onChange={(e) => setNewCredit({ ...newCredit, disbursed_to_bank_account_id: e.target.value })}
-                      required={newCredit.disbursed_to_account}
                     >
                       <option value="">Odaberite račun</option>
                       {companyBankAccounts.map(account => (
@@ -289,7 +297,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
         <Button variant="secondary" onClick={resetCreditForm}>
           Cancel
         </Button>
-        <Button variant="success" onClick={addCredit}>
+        <Button variant="success" onClick={handleAddCredit}>
           Add Credit
         </Button>
       </Modal.Footer>

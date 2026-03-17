@@ -41,6 +41,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     loadCustomers()
@@ -81,22 +82,17 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.customer_id) errors.customer_id = 'Morate odabrati kupca'
+    if (!formData.contract_amount) errors.contract_amount = 'Morate unijeti cijenu ugovora'
+    if (!formData.contract_date) errors.contract_date = 'Morate unijeti datum ugovora'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
     setError(null)
 
     try {
-      if (!formData.customer_id) {
-        throw new Error('Morate odabrati kupca')
-      }
-
-      if (!formData.contract_amount) {
-        throw new Error('Morate unijeti cijenu ugovora')
-      }
-
-      if (!formData.contract_date) {
-        throw new Error('Morate unijeti datum ugovora')
-      }
-
       const dataToSubmit = {
         phase_id: phase.id,
         customer_id: formData.customer_id,
@@ -156,11 +152,11 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               required
               helperText='Ako kupac ne postoji, dodajte ga prvo preko "Kupci" menija'
               className="md:col-span-2"
+              error={fieldErrors.customer_id}
             >
               <Select
                 value={formData.customer_id}
                 onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-                required
               >
                 <option value="">Odaberi kupca...</option>
                 {customers.map((customer) => (
@@ -177,28 +173,25 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 value={formData.contract_number}
                 onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
                 className="bg-gray-50"
-                required
                 readOnly={!!contract}
               />
             </FormField>
 
-            <FormField label="Datum ugovora" required>
+            <FormField label="Datum ugovora" required error={fieldErrors.contract_date}>
               <Input
                 type="date"
                 value={formData.contract_date}
                 onChange={(e) => setFormData({ ...formData, contract_date: e.target.value })}
-                required
               />
             </FormField>
 
-            <FormField label="Cijena ugovora (€)" required>
+            <FormField label="Cijena ugovora (€)" required error={fieldErrors.contract_amount}>
               <Input
                 type="number"
                 step="0.01"
                 value={formData.contract_amount}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
                 placeholder="npr. 500000"
-                required
               />
             </FormField>
 

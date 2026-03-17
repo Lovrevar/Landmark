@@ -32,6 +32,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     loadSuppliers()
@@ -48,14 +49,18 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errors: Record<string, string> = {}
+    if (!formData.supplier_id) {
+      errors.supplier_id = 'Morate odabrati dobavljača'
+    }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
     setError(null)
 
     try {
-      if (!formData.supplier_id) {
-        throw new Error('Morate odabrati dobavljača')
-      }
-
       let contractNumber = formData.contract_number
       if (!contract) {
         contractNumber = await retailProjectService.generateContractNumber(phase.project_id)
@@ -127,13 +132,12 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <FormField label="Dobavljač *">
+                <FormField label="Dobavljač *" error={fieldErrors.supplier_id}>
                   <div className="flex space-x-2">
                     <Select
                       value={formData.supplier_id}
                       onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
                       className="flex-1"
-                      required
                     >
                       <option value="">Odaberi dobavljača...</option>
                       {suppliers.map((supplier) => (
@@ -187,7 +191,6 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                 step="0.01"
                 value={formData.has_contract ? formData.contract_amount : '0'}
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
-                required={formData.has_contract}
                 disabled={!formData.has_contract}
                 className={!formData.has_contract ? 'bg-gray-100 cursor-not-allowed' : ''}
               />

@@ -53,7 +53,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.invoice_type}
           onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as 'incoming' | 'outgoing' })}
-          required
         >
           <option value="incoming">Ulazni račun</option>
           <option value="outgoing">Izlazni račun</option>
@@ -64,7 +63,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.entity_type}
           onChange={(e) => setFormData({ ...formData, entity_type: e.target.value as 'customer' | 'supplier' })}
-          required
         >
           <option value="supplier">Dobavljač</option>
           <option value="customer">Kupac</option>
@@ -75,7 +73,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.entity_id}
           onChange={(e) => setFormData({ ...formData, entity_id: e.target.value })}
-          required
         >
           <option value="">Odaberi {formData.entity_type === 'supplier' ? 'dobavljača' : 'kupca'}</option>
           {getEntityOptions().map(entity => (
@@ -102,7 +99,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.company_id}
           onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-          required
         >
           <option value="">Odaberi firmu</option>
           {companies.map(company => (
@@ -115,7 +111,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.retail_project_id}
           onChange={(e) => setFormData({ ...formData, retail_project_id: e.target.value })}
-          required
         >
           <option value="">Odaberi projekt</option>
           {projects.map(project => (
@@ -130,7 +125,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.retail_contract_id}
           onChange={(e) => setFormData({ ...formData, retail_contract_id: e.target.value })}
-          required
           disabled={!formData.retail_project_id || !formData.entity_id}
         >
           <option value="">
@@ -185,7 +179,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
           value={formData.invoice_number}
           onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
           placeholder="npr. INV-2025-001"
-          required
         />
       </FormField>
 
@@ -212,7 +205,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
           value={formData.issue_date}
           onChange={(value) => setFormData({ ...formData, issue_date: value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          required
         />
       </FormField>
 
@@ -221,7 +213,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
           value={formData.due_date}
           onChange={(value) => setFormData({ ...formData, due_date: value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          required
         />
       </FormField>
 
@@ -265,7 +256,6 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         <Select
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          required
         >
           <option value="">Odaberi kategoriju</option>
           {invoiceCategories.map(cat => (

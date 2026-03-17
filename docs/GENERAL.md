@@ -77,6 +77,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### ProjectDetails.tsx
 - Tabbed project detail page: Overview (stats), Milestones (form + timeline), Subcontractors (contracts), Apartments (grid)
+- Inline milestone form validates name with `milestoneFieldErrors` before calling `handleAddMilestone`
 - **Uses hooks:** useMilestoneManagement
 - **Uses services:** projectDetailsService (fetchProjectDetails)
 - **Uses components:** MilestoneTimeline

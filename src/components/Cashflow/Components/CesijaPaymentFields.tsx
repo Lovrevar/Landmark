@@ -44,7 +44,6 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
             cesija_company_id: e.target.value,
             cesija_bank_account_id: ''
           })}
-          required
         >
           <option value="">Odaberi firmu koja plaća</option>
           {companies.map(company => (
@@ -66,7 +65,6 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                 cesija_bank_account_id: '',
                 cesija_credit_id: ''
               })}
-              required
             >
               <option value="bank_account">Bankovni račun</option>
               <option value="credit">Kredit</option>
@@ -87,7 +85,6 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
               <Select
                 value={paymentFormData.cesija_bank_account_id}
                 onChange={(e) => onFormChange({ ...paymentFormData, cesija_bank_account_id: e.target.value })}
-                required
               >
                 <option value="">Odaberi bankovni račun</option>
                 {companyBankAccounts
@@ -122,7 +119,6 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
                   onFormChange({ ...paymentFormData, cesija_credit_id: newCreditId, cesija_credit_allocation_id: '' })
                   onCreditChange(newCreditId)
                 }}
-                required
               >
                 <option value="">Odaberi kredit</option>
                 {companyCredits
@@ -156,7 +152,6 @@ export const CesijaPaymentFields: React.FC<CesijaPaymentFieldsProps> = ({
               <Select
                 value={paymentFormData.cesija_credit_allocation_id}
                 onChange={(e) => onFormChange({ ...paymentFormData, cesija_credit_allocation_id: e.target.value })}
-                required
               >
                 <option value="">Odaberi projekt</option>
                 {creditAllocations.map(allocation => {

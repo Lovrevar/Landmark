@@ -29,6 +29,7 @@ const ProjectDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'subcontractors' | 'apartments' | 'milestones'>('overview')
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
+  const [milestoneFieldErrors, setMilestoneFieldErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   const loadProject = useCallback(async () => {
@@ -51,6 +52,11 @@ const ProjectDetails: React.FC = () => {
   }, [id, loadProject])
 
   const handleSubmitMilestone = async () => {
+    const errors: Record<string, string> = {}
+    if (!newMilestone.name.trim()) errors.name = 'Naziv je obavezan'
+    setMilestoneFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     if (editingMilestone) {
       await handleUpdateMilestone(editingMilestone.id, { name: newMilestone.name, due_date: newMilestone.due_date || null, completed: newMilestone.completed })
     } else {
@@ -238,13 +244,12 @@ const ProjectDetails: React.FC = () => {
                   {editingMilestone ? 'Edit Milestone' : 'Add New Milestone'}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField label="Milestone Name" required className="md:col-span-2">
+                  <FormField label="Milestone Name" required className="md:col-span-2" error={milestoneFieldErrors.name}>
                     <Input
                       type="text"
                       value={newMilestone.name}
                       onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
                       placeholder="e.g., Contracts Signed, Foundation Complete, Building No.1 Finished"
-                      required
                     />
                   </FormField>
                   <FormField label="Target Due Date">

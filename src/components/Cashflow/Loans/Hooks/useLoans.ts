@@ -21,6 +21,7 @@ export const useLoans = () => {
     amount: '',
     loan_date: format(new Date(), 'yyyy-MM-dd')
   })
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchData()
@@ -48,12 +49,14 @@ export const useLoans = () => {
   const handleAddLoan = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.from_company_id || !formData.from_bank_account_id ||
-        !formData.to_company_id || !formData.to_bank_account_id ||
-        !formData.amount) {
-      toast.warning('Molimo popunite sva obavezna polja')
-      return
-    }
+    const errors: Record<string, string> = {}
+    if (!formData.from_company_id) errors.from_company_id = 'Odaberite firmu koja daje'
+    if (!formData.from_bank_account_id) errors.from_bank_account_id = 'Odaberite račun'
+    if (!formData.to_company_id) errors.to_company_id = 'Odaberite firmu koja prima'
+    if (!formData.to_bank_account_id) errors.to_bank_account_id = 'Odaberite račun'
+    if (!formData.amount) errors.amount = 'Unesite iznos'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
     try {
       await createLoan({
@@ -68,6 +71,7 @@ export const useLoans = () => {
       await fetchData()
       setShowAddModal(false)
       resetForm()
+      setFieldErrors({})
     } catch (error) {
       console.error('Error creating loan:', error)
       toast.error('Greška pri kreiranju pozajmice')
@@ -121,6 +125,7 @@ export const useLoans = () => {
     setShowAddModal,
     formData,
     setFormData,
+    fieldErrors,
     handleAddLoan,
     handleDeleteLoan,
     resetForm,

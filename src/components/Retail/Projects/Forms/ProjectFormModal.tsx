@@ -30,6 +30,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [loadingLandPlots, setLoadingLandPlots] = useState(true)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -74,6 +75,15 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    if (!formData.location.trim()) errors.location = 'Lokacija je obavezna'
+    if (!formData.plot_number.trim()) errors.plot_number = 'Broj čestice je obavezan'
+    if (!formData.total_area_m2) errors.total_area_m2 = 'Površina je obavezna'
+    if (!formData.purchase_price) errors.purchase_price = 'Budžet je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setLoading(true)
     setError(null)
 
@@ -136,12 +146,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Naziv projekta" required className="md:col-span-2">
+            <FormField label="Naziv projekta" required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
               />
             </FormField>
 
@@ -186,12 +195,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               required
               helperText={formData.land_plot_id ? 'Automatski popunjeno iz odabranog zemljišta' : undefined}
               className="md:col-span-2"
+              error={fieldErrors.location}
             >
               <Input
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
                 disabled={!!formData.land_plot_id}
               />
             </FormField>
@@ -200,12 +209,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               label="Broj čestice"
               required
               helperText={formData.land_plot_id ? 'Automatski popunjeno' : undefined}
+              error={fieldErrors.plot_number}
             >
               <Input
                 type="text"
                 value={formData.plot_number}
                 onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
-                required
                 disabled={!!formData.land_plot_id}
               />
             </FormField>
@@ -222,13 +231,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               </Select>
             </FormField>
 
-            <FormField label="Površina (m²)" required>
+            <FormField label="Površina (m²)" required error={fieldErrors.total_area_m2}>
               <Input
                 type="number"
                 step="0.01"
                 value={formData.total_area_m2}
                 onChange={(e) => setFormData({ ...formData, total_area_m2: e.target.value })}
-                required
               />
             </FormField>
 
@@ -239,13 +247,13 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 ? `Cijena zemljišta: €${selectedPlot.total_price.toLocaleString('hr-HR')}`
                 : 'Budžet projekta'
               }
+              error={fieldErrors.purchase_price}
             >
               <Input
                 type="number"
                 step="0.01"
                 value={formData.purchase_price}
                 onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
-                required
               />
             </FormField>
 

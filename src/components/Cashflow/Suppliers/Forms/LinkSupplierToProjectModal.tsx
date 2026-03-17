@@ -97,11 +97,6 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   }
 
   const handleSubmit = async () => {
-    if (!selectedSupplierId || !selectedProjectId || !selectedPhaseId) {
-      toast.warning('Molimo odaberite dobavljača, projekt i fazu')
-      return
-    }
-
     try {
       setSubmitting(true)
 

@@ -24,6 +24,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
     loading,
     stats,
     filteredNotifications,
+    totalNotifications,
     selectedFilter,
     setSelectedFilter,
     showDismissed,
@@ -163,7 +164,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            All ({notifications.length})
+            All ({totalNotifications})
           </button>
           <button
             onClick={() => setSelectedFilter('overdue')}

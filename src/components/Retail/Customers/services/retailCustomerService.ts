@@ -61,7 +61,7 @@ export async function fetchCustomersWithStats(): Promise<CustomerWithStats[]> {
   const contractList = allContracts || []
   const contractIds = contractList.map(c => c.id)
 
-  let invoiceMap = new Map<string, number>()
+  const invoiceMap = new Map<string, number>()
   if (contractIds.length > 0) {
     const { data: invoices } = await supabase
       .from('accounting_invoices')
@@ -139,7 +139,7 @@ export async function fetchCustomerContracts(customerId: string): Promise<Retail
       paid_amount,
       remaining_amount,
       payment_status: remaining_amount === 0 ? 'paid' : paid_amount > 0 ? 'partial' : 'pending',
-    } as RetailContractForDisplay
+    } as unknown as RetailContractForDisplay
   })
 }
 

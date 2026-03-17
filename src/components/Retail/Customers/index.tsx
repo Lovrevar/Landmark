@@ -19,6 +19,7 @@ const RetailCustomers: React.FC = () => {
     openFormModal,
     closeFormModal,
     handleSubmit,
+    fieldErrors,
     handleDelete,
     handleViewDetails,
     closeDetailsModal,
@@ -125,8 +126,8 @@ const RetailCustomers: React.FC = () => {
         <Modal.Header title={editingCustomerId ? 'Uredi kupca' : 'Novi kupac'} onClose={closeFormModal} />
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <FormField label="Naziv / Ime i prezime *">
-              <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <FormField label="Naziv / Ime i prezime" required error={fieldErrors.name}>
+              <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             </FormField>
             <FormField label="Telefon">
               <Input value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />

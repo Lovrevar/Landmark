@@ -19,6 +19,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
   const [notes, setNotes] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (payment) {
@@ -32,6 +33,12 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!payment) return
+    const errors: Record<string, string> = {}
+    if (!amount) errors.amount = 'Payment amount is required'
+    if (!paymentDate) errors.paymentDate = 'Payment date is required'
+    if (!paymentType) errors.paymentType = 'Payment type is required'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     onSubmit(payment.id, amount, paymentDate, paymentType, notes)
   }
 
@@ -44,31 +51,28 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
-            <FormField label="Payment Amount (EUR)" required>
+            <FormField label="Payment Amount (EUR)" required error={fieldErrors.amount}>
               <Input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value))}
-                required
                 min="0"
                 step="0.01"
               />
             </FormField>
 
-            <FormField label="Payment Date" required>
+            <FormField label="Payment Date" required error={fieldErrors.paymentDate}>
               <Input
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-                required
               />
             </FormField>
 
-            <FormField label="Payment Type" required>
+            <FormField label="Payment Type" required error={fieldErrors.paymentType}>
               <Select
                 value={paymentType}
                 onChange={(e) => setPaymentType(e.target.value as 'down_payment' | 'installment' | 'final_payment' | 'other')}
-                required
               >
                 <option value="down_payment">Down Payment</option>
                 <option value="installment">Installment</option>

@@ -29,6 +29,7 @@ const CreditsManagement: React.FC = () => {
     closeAllocationModal,
     handleCreateAllocation,
     handleDeleteAllocation,
+    fieldErrors,
   } = useCreditManagement()
 
   if (loading) {
@@ -315,11 +316,10 @@ const CreditsManagement: React.FC = () => {
             </FormField>
 
             {allocationForm.allocation_type === 'project' && (
-              <FormField label="Project" required>
+              <FormField label="Project" required error={fieldErrors.project_id}>
                 <Select
                   value={allocationForm.project_id}
                   onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
-                  required
                 >
                   <option value="">Odaberi projekt...</option>
                   {projects.map((project) => (
@@ -345,11 +345,10 @@ const CreditsManagement: React.FC = () => {
                   </Select>
                 </FormField>
 
-                <FormField label={allocationForm.refinancing_entity_type === 'company' ? 'Firma' : 'Banka'} required>
+                <FormField label={allocationForm.refinancing_entity_type === 'company' ? 'Firma' : 'Banka'} required error={fieldErrors.refinancing_entity_id}>
                   <Select
                     value={allocationForm.refinancing_entity_id}
                     onChange={(e) => setAllocationForm({ ...allocationForm, refinancing_entity_id: e.target.value })}
-                    required
                   >
                     <option value="">Odaberi {allocationForm.refinancing_entity_type === 'company' ? 'firmu' : 'banku'}...</option>
                     {allocationForm.refinancing_entity_type === 'company'

@@ -103,7 +103,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
               contract_id: '',
               milestone_id: ''
             })}
-            required
             disabled={editingInvoice !== null}
           >
             {isOfficeInvoice ? (
@@ -143,7 +142,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           <Select
             value={formData.company_id}
             onChange={(e) => onFormChange({ ...formData, company_id: e.target.value })}
-            required
           >
             <option value="">Odaberi firmu</option>
             {companies.map(company => (
@@ -157,7 +155,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
             type="text"
             value={formData.invoice_number}
             onChange={(e) => onFormChange({ ...formData, invoice_number: e.target.value })}
-            required
           />
         </FormField>
 
@@ -184,7 +181,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
             value={formData.issue_date}
             onChange={(value) => onFormChange({ ...formData, issue_date: value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
           />
         </FormField>
 
@@ -193,7 +189,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
             value={formData.due_date}
             onChange={(value) => onFormChange({ ...formData, due_date: value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
           />
         </FormField>
 
@@ -237,7 +232,6 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           <Select
             value={formData.category}
             onChange={(e) => onFormChange({ ...formData, category: e.target.value })}
-            required
           >
             <option value="">Odaberi kategoriju</option>
             {invoiceCategories.map(cat => (

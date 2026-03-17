@@ -28,6 +28,7 @@ export function useRetailCustomers() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetailView | null>(null)
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null)
   const [formData, setFormData] = useState<CustomerFormData>(EMPTY_FORM)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const loadCustomers = useCallback(async () => {
     setLoading(true)
@@ -82,6 +83,10 @@ export function useRetailCustomers() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     try {
       if (editingCustomerId) {
         await updateCustomer(editingCustomerId, formData)
@@ -140,6 +145,7 @@ export function useRetailCustomers() {
     openFormModal,
     closeFormModal,
     handleSubmit,
+    fieldErrors,
     handleDelete,
     handleViewDetails,
     closeDetailsModal,
