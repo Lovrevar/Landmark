@@ -61,8 +61,6 @@ These are business-specific — do not simplify or generalize them:
 UI Component → Custom Hook → Service Layer → Supabase → Database
 ```
 
-See `.claude-code-rules` for full modular architecture rules.
-
 ## Shared UI Library
 
 There is a shared component library at `src/components/ui/` with ~20 components including `Modal`, `Table`, `Badge`, `Card`. Always use these before creating new UI primitives.
@@ -75,7 +73,6 @@ There is a shared component library at `src/components/ui/` with ~20 components 
 
 ## Reference Implementations
 
-- `src/components/Site/` — canonical modular structure example
 - `src/components/Sales/` — well-organised feature module
 
 ## Codebase Index
