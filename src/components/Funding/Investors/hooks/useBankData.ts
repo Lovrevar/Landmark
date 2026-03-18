@@ -109,17 +109,28 @@ export function useBankData() {
     }
   }
 
-  const deleteBank = async (bankId: string) => {
-    if (!confirm('Are you sure you want to delete this bank? This will also delete all associated credits.')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const deleteBank = (bankId: string) => setPendingDeleteId(bankId)
+
+  const confirmDeleteBank = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      const { error } = await supabase.from('banks').delete().eq('id', bankId)
+      const { error } = await supabase.from('banks').delete().eq('id', pendingDeleteId)
       if (error) throw error
       await fetchData()
     } catch (error) {
       console.error('Error deleting bank:', error)
       toast.error('Error deleting bank.')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
 
-  return { banks, companies, loading, fetchData, addBank, updateBank, deleteBank }
+  const cancelDeleteBank = () => setPendingDeleteId(null)
+
+  return { banks, companies, loading, fetchData, addBank, updateBank, deleteBank, confirmDeleteBank, cancelDeleteBank, pendingDeleteId, deleting }
 }

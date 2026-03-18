@@ -101,16 +101,27 @@ export function useRetailCustomers() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovog kupca?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteCustomer(id)
+      await deleteCustomer(pendingDeleteId)
       await loadCustomers()
     } catch (err) {
       console.error('Error deleting customer:', err)
       toast.error('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   const handleViewDetails = async (customer: CustomerWithStats) => {
     try {
@@ -147,6 +158,10 @@ export function useRetailCustomers() {
     handleSubmit,
     fieldErrors,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleViewDetails,
     closeDetailsModal,
   }

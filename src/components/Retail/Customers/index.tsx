@@ -1,6 +1,6 @@
 import React from 'react'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard, Form } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard, Form, ConfirmDialog } from '../../ui'
 import { useRetailCustomers } from './hooks/useRetailCustomers'
 
 const RetailCustomers: React.FC = () => {
@@ -21,6 +21,10 @@ const RetailCustomers: React.FC = () => {
     handleSubmit,
     fieldErrors,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleViewDetails,
     closeDetailsModal,
   } = useRetailCustomers()
@@ -232,6 +236,18 @@ const RetailCustomers: React.FC = () => {
           </>
         )}
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovog kupca?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

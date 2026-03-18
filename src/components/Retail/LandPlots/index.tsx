@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog } from '../../ui'
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 import { useToast } from '../../../contexts/ToastContext'
@@ -33,7 +33,7 @@ const emptyForm = (): FormState => ({
 
 const RetailLandPlots: React.FC = () => {
   const toast = useToast()
-  const { loading, filteredPlots, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, loadPlotDetails } = useLandPlots()
+  const { loading, filteredPlots, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails } = useLandPlots()
 
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -341,6 +341,18 @@ const RetailLandPlots: React.FC = () => {
           </>
         )}
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu česticu?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

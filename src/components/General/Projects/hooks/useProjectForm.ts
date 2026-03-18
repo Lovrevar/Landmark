@@ -114,11 +114,14 @@ export function useProjectForm(
     }
   }
 
-  const handleDelete = async () => {
-    if (!projectId) return
-    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) return
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-    setLoading(true)
+  const handleDelete = () => setShowDeleteConfirm(true)
+
+  const confirmDelete = async () => {
+    if (!projectId) return
+    setDeleting(true)
     try {
       const { error } = await supabase
         .from('projects')
@@ -130,9 +133,12 @@ export function useProjectForm(
       console.error('Error deleting project:', err)
       setError(err instanceof Error ? err.message : 'Failed to delete project')
     } finally {
-      setLoading(false)
+      setDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
-  return { form, setForm, loading, error, setError, handleSubmit, handleDelete }
+  const cancelDelete = () => setShowDeleteConfirm(false)
+
+  return { form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting }
 }

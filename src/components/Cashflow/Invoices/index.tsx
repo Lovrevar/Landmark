@@ -1,5 +1,5 @@
 import React from 'react'
-import { LoadingSpinner, PageHeader } from '../../ui'
+import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
 import { RetailInvoiceFormModal } from './Forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/Forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './Forms/LandPurchaseFormModal'
@@ -100,6 +100,10 @@ const AccountingInvoices: React.FC = () => {
     handleCloseViewModal,
     handlePaymentSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     fetchData
   } = useInvoices()
 
@@ -327,6 +331,18 @@ const AccountingInvoices: React.FC = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovaj račun?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

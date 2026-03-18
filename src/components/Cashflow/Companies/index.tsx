@@ -3,7 +3,7 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './Hooks/useCompanies'
 import CompanyFormModal from './Forms/CompanyFormModal'
 import CompanyDetailsModal from './Modals/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState } from '../../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ConfirmDialog } from '../../ui'
 
 const AccountingCompanies: React.FC = () => {
   const {
@@ -20,6 +20,10 @@ const AccountingCompanies: React.FC = () => {
     handleCloseAddModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleViewDetails,
     handleCloseDetailsModal,
     handleAccountCountChange,
@@ -166,6 +170,18 @@ const AccountingCompanies: React.FC = () => {
         show={showDetailsModal}
         company={selectedCompany}
         onClose={handleCloseDetailsModal}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu firmu? Svi računi povezani s firmom će biti odspojeni."
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
       />
     </div>
   )

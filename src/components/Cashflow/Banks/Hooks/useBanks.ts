@@ -96,17 +96,27 @@ export const useBanks = () => {
     }
   }
 
-  const handleDeleteCredit = async (creditId: string) => {
-    if (!confirm('Are you sure you want to delete this credit facility?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDeleteCredit = (creditId: string) => setPendingDeleteId(creditId)
+
+  const confirmDeleteCredit = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteCredit(creditId)
+      await deleteCredit(pendingDeleteId)
       await fetchData()
     } catch (error) {
       console.error('Error deleting credit:', error)
       toast.error('Error deleting credit facility.')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDeleteCredit = () => setPendingDeleteId(null)
 
   const handleEditCredit = (credit: BankCredit) => {
     setEditingCredit(credit)
@@ -171,6 +181,10 @@ export const useBanks = () => {
     addCredit,
     handleEditCredit,
     handleDeleteCredit,
+    confirmDeleteCredit,
+    cancelDeleteCredit,
+    pendingDeleteId,
+    deleting,
     resetCreditForm
   }
 }

@@ -12,7 +12,7 @@ import {
   getMilestoneStatsForContract
 } from './Services/siteService'
 import { MilestoneStats, MilestoneFormData } from './types'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
+import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneListProps {
@@ -38,6 +38,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<SubcontractorMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
+  const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   useEffect(() => {
     loadMilestones()
@@ -96,15 +98,22 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return
+  const handleDeleteMilestone = (milestoneId: string) => {
+    setPendingDeleteMilestoneId(milestoneId)
+  }
 
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestoneId) return
+    setDeletingMilestone(true)
     try {
-      await deleteMilestone(milestoneId)
+      await deleteMilestone(pendingDeleteMilestoneId)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       toast.error('Failed to delete milestone')
+    } finally {
+      setDeletingMilestone(false)
+      setPendingDeleteMilestoneId(null)
     }
   }
 
@@ -313,6 +322,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title="Potvrda brisanja"
+        message="Are you sure you want to delete this milestone?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteMilestone}
+        onCancel={() => setPendingDeleteMilestoneId(null)}
+        loading={deletingMilestone}
+      />
 
       {showMilestoneModal && (
         <MilestoneFormModal

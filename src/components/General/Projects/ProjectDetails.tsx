@@ -16,7 +16,7 @@ import {
   Circle,
   AlertTriangle
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState, ConfirmDialog } from '../../ui'
 import { format, differenceInDays } from 'date-fns'
 import { fetchProjectDetails } from './Services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
@@ -45,7 +45,12 @@ const ProjectDetails: React.FC = () => {
     }
   }, [id])
 
-  const { editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, handleToggleMilestone } = useMilestoneManagement(id, loadProject)
+  const {
+    editingMilestone, setEditingMilestone,
+    handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone,
+    confirmDeleteMilestone, cancelDeleteMilestone, pendingDeleteMilestoneId, deletingMilestone,
+    handleToggleMilestone
+  } = useMilestoneManagement(id, loadProject)
 
   useEffect(() => {
     if (id) loadProject()
@@ -433,6 +438,18 @@ const ProjectDetails: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovaj milestone?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteMilestone}
+        onCancel={cancelDeleteMilestone}
+        loading={deletingMilestone}
+      />
     </div>
   )
 }

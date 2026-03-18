@@ -1,7 +1,7 @@
 import React from 'react'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
-import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form } from '../../ui'
+import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form, ConfirmDialog } from '../../ui'
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
@@ -29,6 +29,10 @@ const CreditsManagement: React.FC = () => {
     closeAllocationModal,
     handleCreateAllocation,
     handleDeleteAllocation,
+    confirmDeleteAllocation,
+    cancelDeleteAllocation,
+    pendingDeleteAllocation,
+    deletingAllocation,
     fieldErrors,
   } = useCreditManagement()
 
@@ -385,6 +389,18 @@ const CreditsManagement: React.FC = () => {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteAllocation}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu namjenu?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteAllocation}
+        onCancel={cancelDeleteAllocation}
+        loading={deletingAllocation}
+      />
     </div>
   )
 }

@@ -43,16 +43,27 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
     }
   }
 
-  const handleDeleteMilestone = async (milestoneId: string): Promise<void> => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return
+  const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
+  const [deletingMilestone, setDeletingMilestone] = useState(false)
+
+  const handleDeleteMilestone = (milestoneId: string) => setPendingDeleteMilestoneId(milestoneId)
+
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestoneId) return
+    setDeletingMilestone(true)
     try {
-      await svcDeleteMilestone(milestoneId)
+      await svcDeleteMilestone(pendingDeleteMilestoneId)
       onMutated()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       toast.error('Error deleting milestone.')
+    } finally {
+      setDeletingMilestone(false)
+      setPendingDeleteMilestoneId(null)
     }
   }
+
+  const cancelDeleteMilestone = () => setPendingDeleteMilestoneId(null)
 
   const handleToggleMilestone = async (milestoneId: string, completed: boolean): Promise<void> => {
     try {
@@ -69,6 +80,10 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
     handleAddMilestone,
     handleUpdateMilestone,
     handleDeleteMilestone,
+    confirmDeleteMilestone,
+    cancelDeleteMilestone,
+    pendingDeleteMilestoneId,
+    deletingMilestone,
     handleToggleMilestone
   }
 }

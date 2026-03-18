@@ -5,7 +5,7 @@ import SupplierFormModal from './Forms/SupplierFormModal'
 import SupplierDetailsModal from './Modals/SupplierDetailsModal'
 import { LinkSupplierToProjectModal } from './Forms/LinkSupplierToProjectModal'
 import { useSuppliers } from './Hooks/useSuppliers'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge } from '../../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge, ConfirmDialog } from '../../ui'
 
 const AccountingSuppliers: React.FC = () => {
   const {
@@ -37,6 +37,10 @@ const AccountingSuppliers: React.FC = () => {
     handleCloseAddModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteSupplier,
+    deleting,
     handleViewDetails,
     handleCloseDetailsModal,
     handleOpenLinkModal,
@@ -275,6 +279,18 @@ const AccountingSuppliers: React.FC = () => {
           handleCloseLinkModal()
           fetchData()
         }}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteSupplier}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane ugovore i račune."
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
       />
     </div>
   )

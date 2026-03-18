@@ -3,7 +3,7 @@ import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar 
 import { format } from 'date-fns'
 import { useOfficeSuppliers } from './Hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './Forms/OfficeSupplierFormModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge } from '../../ui'
+import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 
 const OfficeSuppliers: React.FC = () => {
   const {
@@ -24,6 +24,10 @@ const OfficeSuppliers: React.FC = () => {
     handleCloseModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleViewInvoices,
     handleCloseInvoicesModal
   } = useOfficeSuppliers()
@@ -295,6 +299,18 @@ const OfficeSuppliers: React.FC = () => {
           </>
         )}
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane račune."
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

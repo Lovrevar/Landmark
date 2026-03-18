@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
-import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader } from '../../ui'
+import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader, ConfirmDialog } from '../../ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './types'
 import * as apartmentService from './Services/apartmentService'
 import { useApartmentData } from './hooks/useApartmentData'
@@ -44,6 +44,8 @@ const ApartmentManagement: React.FC = () => {
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
+  const [pendingDeleteApartmentId, setPendingDeleteApartmentId] = useState<string | null>(null)
+  const [deletingApartment, setDeletingApartment] = useState(false)
 
   const handleCreateBulk = async (data: BulkApartmentData) => {
     try {
@@ -79,16 +81,21 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
-  const handleDeleteApartment = async (id: string) => {
-    const apt = apartments.find(a => a.id === id)
-    const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
-    if (!window.confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) return
+  const handleDeleteApartment = (id: string) => {
+    setPendingDeleteApartmentId(id)
+  }
 
+  const confirmDeleteApartment = async () => {
+    if (!pendingDeleteApartmentId) return
+    setDeletingApartment(true)
     try {
-      await apartmentService.deleteApartment(id)
+      await apartmentService.deleteApartment(pendingDeleteApartmentId)
       fetchData()
     } catch (error) {
       console.error('Error deleting apartment:', error)
+    } finally {
+      setDeletingApartment(false)
+      setPendingDeleteApartmentId(null)
     }
   }
 
@@ -520,6 +527,22 @@ const ApartmentManagement: React.FC = () => {
         }}
         apartment={selectedApartment}
         onLink={fetchData}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteApartmentId}
+        title="Potvrda brisanja"
+        message={(() => {
+          const apt = apartments.find(a => a.id === pendingDeleteApartmentId)
+          const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
+          return `Are you sure you want to delete ${label}? This action cannot be undone.`
+        })()}
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteApartment}
+        onCancel={() => setPendingDeleteApartmentId(null)}
+        loading={deletingApartment}
       />
     </div>
   )

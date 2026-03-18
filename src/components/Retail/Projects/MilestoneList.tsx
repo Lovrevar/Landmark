@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
+import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './Forms/MilestoneFormModal'
 import { retailProjectService } from './Services/retailProjectService'
@@ -39,6 +39,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<RetailContractMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
+  const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   useEffect(() => {
     loadMilestones()
@@ -100,15 +102,22 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovaj milestone?')) return
+  const handleDeleteMilestone = (milestoneId: string) => {
+    setPendingDeleteMilestoneId(milestoneId)
+  }
 
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestoneId) return
+    setDeletingMilestone(true)
     try {
-      await retailProjectService.deleteMilestone(milestoneId)
+      await retailProjectService.deleteMilestone(pendingDeleteMilestoneId)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       toast.error('Greška pri brisanju milestonea')
+    } finally {
+      setDeletingMilestone(false)
+      setPendingDeleteMilestoneId(null)
     }
   }
 
@@ -347,6 +356,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
         phaseName={phaseName}
         contractCost={contractCost}
         editingMilestone={editingMilestone}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovaj milestone?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteMilestone}
+        onCancel={() => setPendingDeleteMilestoneId(null)}
+        loading={deletingMilestone}
       />
     </div>
   )

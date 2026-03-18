@@ -1,10 +1,34 @@
+import { useState } from 'react'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
 import * as siteService from '../Services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
+export type PendingConfirm = {
+  title: string
+  message: string
+  variant?: 'danger' | 'primary'
+  confirmLabel?: string
+  onConfirm: () => void
+  onCancel: () => void
+}
+
 export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
   const toast = useToast()
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
+
+  const requestConfirm = (title: string, message: string, variant: 'danger' | 'primary' = 'primary', confirmLabel?: string): Promise<boolean> =>
+    new Promise<boolean>(resolve => {
+      setPendingConfirm({
+        title,
+        message,
+        variant,
+        confirmLabel,
+        onConfirm: () => { setPendingConfirm(null); resolve(true) },
+        onCancel:  () => { setPendingConfirm(null); resolve(false) }
+      })
+    })
+
   const recalculateAllPhaseBudgets = async () => {
     try {
       await siteService.recalculateAllPhaseBudgets()
@@ -21,7 +45,8 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       const message = budgetDifference > 0
         ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
         : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      if (!confirm(message)) return false
+      const confirmed = await requestConfirm('Potvrda', message)
+      if (!confirmed) return false
     }
 
     try {
@@ -52,11 +77,11 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
 
     if (updates.budget_allocated < phase.budget_used) {
-      if (!confirm(
-        `Warning: New budget ($${updates.budget_allocated.toLocaleString('hr-HR')}) is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')}).\n\n` +
-        `This means you're reducing the budget below what's already committed to subcontractors.\n\n` +
-        `Do you want to proceed anyway?`
-      )) return false
+      const confirmed = await requestConfirm(
+        'Upozorenje',
+        `Warning: New budget (€${updates.budget_allocated.toLocaleString('hr-HR')}) is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')}).\n\nThis means you're reducing the budget below what's already committed to subcontractors.\n\nDo you want to proceed anyway?`
+      )
+      if (!confirmed) return false
     }
 
     const otherPhasesTotalBudget = project.phases
@@ -69,7 +94,8 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       const message = projectBudgetDiff > 0
         ? `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will exceed project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
         : `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will be less than project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-      if (!confirm(message)) return false
+      const confirmed = await requestConfirm('Potvrda', message)
+      if (!confirmed) return false
     }
 
     try {
@@ -95,7 +121,13 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return false
     }
 
-    if (!confirm(`Are you sure you want to delete phase "${phase.phase_name}"?`)) return false
+    const confirmed = await requestConfirm(
+      'Potvrda brisanja',
+      `Jeste li sigurni da želite obrisati fazu "${phase.phase_name}"?`,
+      'danger',
+      'Da, obriši'
+    )
+    if (!confirmed) return false
 
     try {
       await siteService.deletePhase(phase.id)
@@ -120,7 +152,8 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       const message = budgetDifference > 0
         ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
         : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      if (!confirm(message)) return false
+      const confirmed = await requestConfirm('Potvrda', message)
+      if (!confirmed) return false
     }
 
     try {
@@ -134,5 +167,5 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
-  return { recalculateAllPhaseBudgets, createProjectPhases, updatePhase, deletePhase, updateProjectPhases }
+  return { recalculateAllPhaseBudgets, createProjectPhases, updatePhase, deletePhase, updateProjectPhases, pendingConfirm }
 }

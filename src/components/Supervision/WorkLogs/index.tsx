@@ -14,7 +14,7 @@ import {
   Palette,
   Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField } from '../../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLog } from './services/workLogService'
@@ -61,6 +61,10 @@ const WorkLogs: React.FC = () => {
     handlePhaseChange,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
   } = useWorkLogs()
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -315,6 +319,18 @@ const WorkLogs: React.FC = () => {
           )}
         </div>
       </Card>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovaj radni nalog?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

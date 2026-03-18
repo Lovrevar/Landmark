@@ -130,15 +130,27 @@ export function useCreditManagement() {
     }
   }
 
-  const handleDeleteAllocation = async (allocationId: string, creditId: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu namjenu?')) return
+  const [pendingDeleteAllocation, setPendingDeleteAllocation] = useState<{ allocationId: string; creditId: string } | null>(null)
+  const [deletingAllocation, setDeletingAllocation] = useState(false)
+
+  const handleDeleteAllocation = (allocationId: string, creditId: string) =>
+    setPendingDeleteAllocation({ allocationId, creditId })
+
+  const confirmDeleteAllocation = async () => {
+    if (!pendingDeleteAllocation) return
+    setDeletingAllocation(true)
     try {
-      await deleteAllocation(allocationId)
-      await loadAllocationsForCredit(creditId)
+      await deleteAllocation(pendingDeleteAllocation.allocationId)
+      await loadAllocationsForCredit(pendingDeleteAllocation.creditId)
     } catch (err) {
       console.error('Error deleting allocation:', err)
+    } finally {
+      setDeletingAllocation(false)
+      setPendingDeleteAllocation(null)
     }
   }
+
+  const cancelDeleteAllocation = () => setPendingDeleteAllocation(null)
 
   return {
     credits,
@@ -161,6 +173,10 @@ export function useCreditManagement() {
     closeAllocationModal,
     handleCreateAllocation,
     handleDeleteAllocation,
+    confirmDeleteAllocation,
+    cancelDeleteAllocation,
+    pendingDeleteAllocation,
+    deletingAllocation,
     fieldErrors,
   }
 }

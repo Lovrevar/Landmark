@@ -41,16 +41,27 @@ export function useLandPlots() {
     await loadData()
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu česticu?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteLandPlot(id)
+      await deleteLandPlot(pendingDeleteId)
       await loadData()
     } catch (error) {
       console.error('Error deleting land plot:', error)
       toast.error('Greška pri brisanju zemljišta')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   const loadPlotDetails = async (plot: LandPlotWithProject): Promise<LandPlotWithSales> => {
     const sales = await fetchLandPlotSales(plot.id)
@@ -82,6 +93,10 @@ export function useLandPlots() {
     setSearchTerm,
     handleSave,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     loadPlotDetails
   }
 }

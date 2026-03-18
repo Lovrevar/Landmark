@@ -289,3 +289,4 @@ Payment tracking for apartment sales contracts.
 ## Notes
 - Customer records here are property buyers (Sales CRM) — distinct from `Cashflow/Customers` (accounting customers)
 - Unit types: `stan` (apartment), `garaža` (garage), `repozitorij` (storage) — linked via junction tables `apartment_garages` and `apartment_repositories`
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item pattern — never use `window.confirm()` or `confirm()`

@@ -100,3 +100,4 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 ## Notes
 - This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`

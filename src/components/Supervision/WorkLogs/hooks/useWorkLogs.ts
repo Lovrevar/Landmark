@@ -126,16 +126,27 @@ export function useWorkLogs() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this work log?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteWorkLog(id)
+      await deleteWorkLog(pendingDeleteId)
       await loadData()
     } catch (err) {
       console.error('Error deleting work log:', err)
       toast.error('Failed to delete work log')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   return {
     workLogs,
@@ -154,5 +165,9 @@ export function useWorkLogs() {
     handlePhaseChange,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
   }
 }

@@ -224,17 +224,27 @@ export const usePayments = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovo plaćanje?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deletePayment(id)
+      await deletePayment(pendingDeleteId)
       await fetchData()
     } catch (error) {
       console.error('Error deleting payment:', error)
       toast.error('Greška prilikom brisanja plaćanja')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   const filteredPayments = payments.filter(payment => {
     const invoice = payment.accounting_invoices
@@ -308,6 +318,10 @@ export const usePayments = () => {
     handleCloseDetailView,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     filteredPayments,
     resetDateFilters
   }

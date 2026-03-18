@@ -264,3 +264,4 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 ## Notes
 - Shared investment TypeScript types live in `src/types/investment.ts`
 - `lib/Deleted/` contains old credit components that were refactored into this module — do not restore
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`

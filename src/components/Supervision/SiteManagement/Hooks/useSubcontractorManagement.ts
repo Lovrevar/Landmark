@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import * as siteService from '../Services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {
   const toast = useToast()
+  const [pendingDeleteSubcontractor, setPendingDeleteSubcontractor] = useState<string | null>(null)
+  const [deletingSubcontractor, setDeletingSubcontractor] = useState(false)
   const addSubcontractorToPhase = async (
     phase: ProjectPhase,
     data: {
@@ -157,12 +160,16 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     }
   }
 
-  const deleteSubcontractor = async (subcontractorId: string) => {
-    if (!confirm('Are you sure you want to delete this subcontractor?')) return false
+  const deleteSubcontractor = (subcontractorId: string) => {
+    setPendingDeleteSubcontractor(subcontractorId)
+  }
 
+  const confirmDeleteSubcontractor = async () => {
+    if (!pendingDeleteSubcontractor) return false
+    setDeletingSubcontractor(true)
     try {
-      const subcontractor = await siteService.getSubcontractorDetails(subcontractorId)
-      await siteService.deleteSubcontractor(subcontractorId)
+      const subcontractor = await siteService.getSubcontractorDetails(pendingDeleteSubcontractor)
+      await siteService.deleteSubcontractor(pendingDeleteSubcontractor)
       if (subcontractor.phase_id) {
         await siteService.recalculatePhaseBudget(subcontractor.phase_id)
       }
@@ -172,8 +179,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       console.error('Error deleting subcontractor:', error)
       toast.error('Error deleting subcontractor.')
       return false
+    } finally {
+      setDeletingSubcontractor(false)
+      setPendingDeleteSubcontractor(null)
     }
   }
+
+  const cancelDeleteSubcontractor = () => setPendingDeleteSubcontractor(null)
 
   const addPaymentToSubcontractor = async () => {
     toast.warning('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
@@ -205,6 +217,10 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     addSubcontractorToPhase,
     updateSubcontractor,
     deleteSubcontractor,
+    pendingDeleteSubcontractor,
+    confirmDeleteSubcontractor,
+    cancelDeleteSubcontractor,
+    deletingSubcontractor,
     addPaymentToSubcontractor,
     fetchWirePayments,
     updateWirePayment,

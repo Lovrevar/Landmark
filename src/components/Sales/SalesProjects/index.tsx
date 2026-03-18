@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Building2, FileUp } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button } from '../../ui'
+import { LoadingSpinner, PageHeader, Button, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { useSalesData } from './Hooks/useSalesData'
@@ -71,6 +71,10 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false)
   const [showImportApartmentsModal, setShowImportApartmentsModal] = useState(false)
   const [showImportGaragesModal, setShowImportGaragesModal] = useState(false)
+  const [pendingDeleteBuildingId, setPendingDeleteBuildingId] = useState<string | null>(null)
+  const [deletingBuilding, setDeletingBuilding] = useState(false)
+  const [pendingDeleteUnit, setPendingDeleteUnit] = useState<{ id: string; unitType: UnitType } | null>(null)
+  const [deletingUnit, setDeletingUnit] = useState(false)
 
   const handleSelectProject = (project: ProjectWithBuildings) => {
     setSelectedProject(project)
@@ -82,15 +86,22 @@ const SalesProjectsEnhanced: React.FC = () => {
     setViewMode('units')
   }
 
-  const handleDeleteBuilding = async (buildingId: string) => {
-    if (!confirm('Are you sure you want to delete this building? All units inside will also be deleted.')) return
+  const handleDeleteBuilding = (buildingId: string) => {
+    setPendingDeleteBuildingId(buildingId)
+  }
 
+  const confirmDeleteBuilding = async () => {
+    if (!pendingDeleteBuildingId) return
+    setDeletingBuilding(true)
     try {
-      await salesService.deleteBuilding(buildingId)
+      await salesService.deleteBuilding(pendingDeleteBuildingId)
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
       toast.error('Error deleting building.')
+    } finally {
+      setDeletingBuilding(false)
+      setPendingDeleteBuildingId(null)
     }
   }
 
@@ -154,15 +165,22 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
-  const handleDeleteUnit = async (unitId: string, unitType: UnitType) => {
-    if (!confirm(`Are you sure you want to delete this ${unitType}?`)) return
+  const handleDeleteUnit = (unitId: string, unitType: UnitType) => {
+    setPendingDeleteUnit({ id: unitId, unitType })
+  }
 
+  const confirmDeleteUnit = async () => {
+    if (!pendingDeleteUnit) return
+    setDeletingUnit(true)
     try {
-      await salesService.deleteUnit(unitId, unitType)
+      await salesService.deleteUnit(pendingDeleteUnit.id, pendingDeleteUnit.unitType)
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
       toast.error('Error deleting unit.')
+    } finally {
+      setDeletingUnit(false)
+      setPendingDeleteUnit(null)
     }
   }
 
@@ -495,6 +513,30 @@ const SalesProjectsEnhanced: React.FC = () => {
           setShowImportGaragesModal(false)
           refetch()
         }}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteBuildingId}
+        title="Potvrda brisanja"
+        message="Are you sure you want to delete this building? All units inside will also be deleted."
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteBuilding}
+        onCancel={() => setPendingDeleteBuildingId(null)}
+        loading={deletingBuilding}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteUnit}
+        title="Potvrda brisanja"
+        message={pendingDeleteUnit ? `Are you sure you want to delete this ${pendingDeleteUnit.unitType}?` : ''}
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteUnit}
+        onCancel={() => setPendingDeleteUnit(null)}
+        loading={deletingUnit}
       />
     </div>
   )

@@ -5,6 +5,7 @@ import { ContractDocument } from './types'
 import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from './Services/siteService'
 import { formatFileSize } from '../../../utils/formatters'
 import { useToast } from '../../../contexts/ToastContext'
+import { ConfirmDialog } from '../../ui'
 
 interface ContractDocumentViewerProps {
   subcontractorId: string
@@ -23,6 +24,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [openingId, setOpeningId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<ContractDocument | null>(null)
 
   useEffect(() => {
     if (contractId || subcontractorId) {
@@ -57,17 +59,21 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     }
   }
 
-  const handleDelete = async (doc: ContractDocument) => {
-    if (!confirm(`Jeste li sigurni da želite obrisati "${doc.file_name}"?`)) return
+  const handleDelete = (doc: ContractDocument) => {
+    setPendingDeleteDoc(doc)
+  }
 
+  const confirmDeleteDoc = async () => {
+    if (!pendingDeleteDoc) return
     try {
-      setDeletingId(doc.id)
-      await deleteSubcontractorDocument(doc.id, doc.file_path)
-      setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
+      setDeletingId(pendingDeleteDoc.id)
+      await deleteSubcontractorDocument(pendingDeleteDoc.id, pendingDeleteDoc.file_path)
+      setDocuments((prev) => prev.filter((d) => d.id !== pendingDeleteDoc.id))
     } catch {
       toast.error('Greška pri brisanju dokumenta')
     } finally {
       setDeletingId(null)
+      setPendingDeleteDoc(null)
     }
   }
 
@@ -99,6 +105,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   }
 
   return (
+    <>
     <div className="space-y-2">
       {documents.map((doc) => (
         <div
@@ -141,5 +148,18 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
         </div>
       ))}
     </div>
+
+    <ConfirmDialog
+      show={!!pendingDeleteDoc}
+      title="Potvrda brisanja"
+      message={pendingDeleteDoc ? `Jeste li sigurni da želite obrisati "${pendingDeleteDoc.file_name}"?` : ''}
+      confirmLabel="Da, obriši"
+      cancelLabel="Odustani"
+      variant="danger"
+      onConfirm={confirmDeleteDoc}
+      onCancel={() => setPendingDeleteDoc(null)}
+      loading={!!deletingId}
+    />
+    </>
   )
 }

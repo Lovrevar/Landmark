@@ -207,3 +207,4 @@ Land plot inventory tracking.
 - Retail invoice types are shared with Cashflow via `Cashflow/Invoices/retailInvoiceTypes.ts` — do not duplicate
 - Shared retail TypeScript interfaces live in `src/types/retail.ts` (RetailLandPlot, RetailCustomer, RetailSale, RetailProject, RetailProjectPhase, RetailSupplier, RetailContract, RetailContractMilestone, and composed variants)
 - `SiteManagement/` and `Retail/Projects/` share a similar phase/milestone UI pattern — keep in sync when updating either
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`

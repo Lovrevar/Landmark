@@ -135,17 +135,27 @@ export const useSuppliers = () => {
     }
   }
 
-  const handleDelete = async (supplier: SupplierSummary) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane ugovore i račune.')) return
+  const [pendingDeleteSupplier, setPendingDeleteSupplier] = useState<SupplierSummary | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDelete = (supplier: SupplierSummary) => setPendingDeleteSupplier(supplier)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteSupplier) return
+    setDeleting(true)
     try {
-      await supplierService.deleteSupplier(supplier)
+      await supplierService.deleteSupplier(pendingDeleteSupplier)
       await fetchData()
     } catch (error) {
       console.error('Error deleting supplier:', error)
       toast.error('Greška prilikom brisanja dobavljača')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteSupplier(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteSupplier(null)
 
   const handleViewDetails = async (supplier: SupplierSummary) => {
     try {
@@ -219,6 +229,10 @@ export const useSuppliers = () => {
     handleCloseAddModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteSupplier,
+    deleting,
     handleViewDetails,
     handleCloseDetailsModal,
     handleOpenLinkModal,

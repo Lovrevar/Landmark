@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog } from '../../ui'
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
 import { useToast } from '../../../contexts/ToastContext'
@@ -23,7 +23,7 @@ const RetailSales: React.FC = () => {
   const {
     loading, landPlots, customers, filteredSales, totalStats,
     searchTerm, setSearchTerm, statusFilter, setStatusFilter,
-    handleSave, handleDelete, handleAddPayment
+    handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, handleAddPayment
   } = useRetailSalesManager()
 
   const [showFormModal, setShowFormModal] = useState(false)
@@ -308,6 +308,18 @@ const RetailSales: React.FC = () => {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu prodaju?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

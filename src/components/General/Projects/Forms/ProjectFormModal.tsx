@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Modal, FormField, Input, Select, Button, Alert, Form } from '../../../ui'
+import { Modal, FormField, Input, Select, Button, Alert, Form, ConfirmDialog } from '../../../ui'
 import { useProjectForm } from '../hooks/useProjectForm'
 
 interface ProjectFormModalProps {
@@ -9,7 +9,7 @@ interface ProjectFormModalProps {
 }
 
 const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose, onSuccess }) => {
-  const { form, setForm, loading, error, setError, handleSubmit, handleDelete } = useProjectForm(
+  const { form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting } = useProjectForm(
     projectId,
     onSuccess,
     onSuccess
@@ -28,6 +28,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
   }
 
   return (
+    <>
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
         title={projectId ? 'Edit Project' : 'New Project'}
@@ -121,6 +122,19 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         </div>
       </Modal.Footer>
     </Modal>
+
+    <ConfirmDialog
+      show={showDeleteConfirm}
+      title="Potvrda brisanja"
+      message="Jeste li sigurni da želite obrisati ovaj projekt? Ova akcija se ne može poništiti."
+      confirmLabel="Da, obriši"
+      cancelLabel="Odustani"
+      variant="danger"
+      onConfirm={confirmDelete}
+      onCancel={cancelDelete}
+      loading={deleting}
+    />
+    </>
   )
 }
 

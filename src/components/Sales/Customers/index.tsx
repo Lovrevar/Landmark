@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button } from '../../ui'
+import { PageHeader, SearchInput, Button, ConfirmDialog } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './Hooks/useCustomerData'
 import { useToast } from '../../../contexts/ToastContext'
@@ -19,6 +19,8 @@ const CustomersManagement: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<CustomerWithApartments | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [pendingDeleteCustomerId, setPendingDeleteCustomerId] = useState<string | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState(false)
 
   const {
     customers,
@@ -66,12 +68,20 @@ const CustomersManagement: React.FC = () => {
     setShowDetailModal(true)
   }
 
-  const handleDeleteCustomer = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return
+  const handleDeleteCustomer = (id: string) => {
+    setPendingDeleteCustomerId(id)
+  }
+
+  const confirmDeleteCustomer = async () => {
+    if (!pendingDeleteCustomerId) return
+    setDeletingCustomer(true)
     try {
-      await deleteCustomer(id)
+      await deleteCustomer(pendingDeleteCustomerId)
     } catch {
       toast.error('Error deleting customer')
+    } finally {
+      setDeletingCustomer(false)
+      setPendingDeleteCustomerId(null)
     }
   }
 
@@ -162,6 +172,18 @@ const CustomersManagement: React.FC = () => {
         show={showDetailModal}
         customer={selectedCustomer}
         onClose={handleCloseDetail}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteCustomerId}
+        title="Potvrda brisanja"
+        message="Are you sure you want to delete this customer?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteCustomer}
+        onCancel={() => setPendingDeleteCustomerId(null)}
+        loading={deletingCustomer}
       />
     </div>
   )

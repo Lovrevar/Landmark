@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
-import { Modal, Button, EmptyState } from '../../../ui'
+import { Modal, Button, EmptyState, ConfirmDialog } from '../../../ui'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,
@@ -46,6 +46,8 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  const [pendingDeletePayment, setPendingDeletePayment] = useState<{ id: string; saleId: string | null; amount: number } | null>(null)
+
   const { totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice } = useMemo(() => {
     if (!apartment) {
       return { aptPaid: 0, totalPaid: 0, remainingBalance: 0, garagesTotalPrice: 0, storagesTotalPrice: 0, totalPrice: 0 }
@@ -186,11 +188,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                       <Button
                         variant="danger"
                         size="icon-sm"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this payment?')) {
-                            onDeletePayment(payment.id, payment.sale_id, payment.amount)
-                          }
-                        }}
+                        onClick={() => setPendingDeletePayment({ id: payment.id, saleId: payment.sale_id, amount: payment.amount })}
                         title="Delete payment"
                         icon={Trash2}
                       />
@@ -208,6 +206,22 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Close</Button>
       </Modal.Footer>
+
+      <ConfirmDialog
+        show={!!pendingDeletePayment}
+        title="Potvrda brisanja"
+        message="Are you sure you want to delete this payment?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDeletePayment) {
+            onDeletePayment(pendingDeletePayment.id, pendingDeletePayment.saleId, pendingDeletePayment.amount)
+          }
+          setPendingDeletePayment(null)
+        }}
+        onCancel={() => setPendingDeletePayment(null)}
+      />
     </Modal>
   )
 }

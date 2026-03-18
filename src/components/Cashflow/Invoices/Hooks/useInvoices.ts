@@ -276,17 +276,27 @@ export const useInvoices = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovaj račun?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await invoiceService.handleDelete(id)
+      await invoiceService.handleDelete(pendingDeleteId)
       await fetchData()
     } catch (error) {
       console.error('Error deleting invoice:', error)
       toast.error('Greška prilikom brisanja računa')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   return {
     invoices,
@@ -363,6 +373,10 @@ export const useInvoices = () => {
     handleCloseViewModal,
     handlePaymentSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     fetchData
   }
 }

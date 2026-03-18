@@ -179,17 +179,28 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     }
   }
 
-  const handleDeleteCredit = async (creditId: string) => {
-    if (!confirm('Are you sure you want to delete this credit facility?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteCredit = (creditId: string) => setPendingDeleteId(creditId)
+
+  const confirmDeleteCredit = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      const { error } = await supabase.from('bank_credits').delete().eq('id', creditId)
+      const { error } = await supabase.from('bank_credits').delete().eq('id', pendingDeleteId)
       if (error) throw error
       await onSaved()
     } catch (error) {
       console.error('Error deleting credit:', error)
       toast.error('Error deleting credit facility.')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDeleteCredit = () => setPendingDeleteId(null)
 
   return {
     showCreditForm,
@@ -203,5 +214,9 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     resetCreditForm,
     addCredit,
     handleDeleteCredit,
+    confirmDeleteCredit,
+    cancelDeleteCredit,
+    pendingDeleteId,
+    deleting,
   }
 }

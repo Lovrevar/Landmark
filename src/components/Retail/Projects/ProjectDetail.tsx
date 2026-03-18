@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
-import { Button, Badge, LoadingSpinner, EmptyState } from '../../ui'
+import { Button, Badge, LoadingSpinner, EmptyState, ConfirmDialog } from '../../ui'
 import { formatCurrency, getStatusBadgeVariant } from '../utils'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
@@ -41,6 +41,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   const [selectedContractForModal, setSelectedContractForModal] = useState<RetailContract | null>(null)
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
   const [phaseToEdit, setPhaseToEdit] = useState<RetailProjectPhase | null>(null)
+  const [pendingDeletePhase, setPendingDeletePhase] = useState<RetailProjectPhase | null>(null)
+  const [deletingPhase, setDeletingPhase] = useState(false)
+  const [pendingDeleteContractId, setPendingDeleteContractId] = useState<string | null>(null)
+  const [deletingContract, setDeletingContract] = useState(false)
 
   useEffect(() => {
     loadProjectDetails()
@@ -69,15 +73,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     await handleRefresh()
   }
 
-  const handleDeletePhase = async (phase: RetailProjectPhase) => {
-    if (confirm(`Jeste li sigurni da želite obrisati fazu "${phase.phase_name}"?`)) {
-      try {
-        await retailProjectService.deletePhase(phase.id)
-        await handleRefresh()
-      } catch (error) {
-        console.error('Error deleting phase:', error)
-        toast.error('Greška pri brisanju faze')
-      }
+  const handleDeletePhase = (phase: RetailProjectPhase) => {
+    setPendingDeletePhase(phase)
+  }
+
+  const confirmDeletePhase = async () => {
+    if (!pendingDeletePhase) return
+    setDeletingPhase(true)
+    try {
+      await retailProjectService.deletePhase(pendingDeletePhase.id)
+      await handleRefresh()
+    } catch (error) {
+      console.error('Error deleting phase:', error)
+      toast.error('Greška pri brisanju faze')
+    } finally {
+      setDeletingPhase(false)
+      setPendingDeletePhase(null)
     }
   }
 
@@ -109,15 +120,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     await handleRefresh()
   }
 
-  const handleDeleteContract = async (contractId: string) => {
-    if (confirm('Jeste li sigurni da želite obrisati ovaj ugovor?')) {
-      try {
-        await retailProjectService.deleteContract(contractId)
-        await handleRefresh()
-      } catch (error) {
-        console.error('Error deleting contract:', error)
-        toast.error('Greška pri brisanju ugovora')
-      }
+  const handleDeleteContract = (contractId: string) => {
+    setPendingDeleteContractId(contractId)
+  }
+
+  const confirmDeleteContract = async () => {
+    if (!pendingDeleteContractId) return
+    setDeletingContract(true)
+    try {
+      await retailProjectService.deleteContract(pendingDeleteContractId)
+      await handleRefresh()
+    } catch (error) {
+      console.error('Error deleting contract:', error)
+      toast.error('Greška pri brisanju ugovora')
+    } finally {
+      setDeletingContract(false)
+      setPendingDeleteContractId(null)
     }
   }
 
@@ -352,6 +370,30 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           onSuccess={handleEditPhaseSuccess}
         />
       )}
+
+      <ConfirmDialog
+        show={!!pendingDeletePhase}
+        title="Potvrda brisanja"
+        message={pendingDeletePhase ? `Jeste li sigurni da želite obrisati fazu "${pendingDeletePhase.phase_name}"?` : ''}
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeletePhase}
+        onCancel={() => setPendingDeletePhase(null)}
+        loading={deletingPhase}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteContractId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovaj ugovor?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteContract}
+        onCancel={() => setPendingDeleteContractId(null)}
+        loading={deletingContract}
+      />
     </div>
   )
 }

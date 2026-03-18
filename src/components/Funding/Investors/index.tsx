@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { PageHeader, LoadingSpinner, Button } from '../../ui'
+import { PageHeader, LoadingSpinner, Button, ConfirmDialog } from '../../ui'
 import { useBankData }   from './hooks/useBankData'
 import { useBankForm }   from './hooks/useBankForm'
 import { useCreditForm } from './hooks/useCreditForm'
@@ -14,7 +14,13 @@ import type { BankWithCredits } from './types'
 import type { BankCredit } from '../../../lib/supabase'
 
 const InvestorsManagement: React.FC = () => {
-  const { banks, companies, loading, addBank, updateBank, deleteBank, fetchData } = useBankData()
+  const {
+    banks, companies, loading, addBank, updateBank, deleteBank, fetchData,
+    pendingDeleteId: pendingDeleteBankId,
+    confirmDeleteBank,
+    cancelDeleteBank,
+    deleting: deletingBank
+  } = useBankData()
   const [selectedBank, setSelectedBank] = useState<BankWithCredits | null>(null)
 
   React.useEffect(() => {
@@ -98,6 +104,30 @@ const InvestorsManagement: React.FC = () => {
         formData={equityForm.newEquity}
         onChange={(data) => equityForm.setNewEquity(prev => ({ ...prev, ...data }))}
         onSubmit={equityForm.addEquity}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteBankId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu banku? Ovo će obrisati i sve vezane kredite."
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteBank}
+        onCancel={cancelDeleteBank}
+        loading={deletingBank}
+      />
+
+      <ConfirmDialog
+        show={!!creditForm.pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu kreditnu liniju?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={creditForm.confirmDeleteCredit}
+        onCancel={creditForm.cancelDeleteCredit}
+        loading={creditForm.deleting}
       />
     </div>
   )

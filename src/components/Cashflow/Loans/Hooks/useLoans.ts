@@ -78,17 +78,27 @@ export const useLoans = () => {
     }
   }
 
-  const handleDeleteLoan = async (loanId: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu pozajmicu?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDeleteLoan = (loanId: string) => setPendingDeleteId(loanId)
+
+  const confirmDeleteLoan = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteLoan(loanId)
+      await deleteLoan(pendingDeleteId)
       await fetchData()
     } catch (error) {
       console.error('Error deleting loan:', error)
       toast.error('Greška pri brisanju pozajmice')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDeleteLoan = () => setPendingDeleteId(null)
 
   const resetForm = () => {
     setFormData({
@@ -128,6 +138,10 @@ export const useLoans = () => {
     fieldErrors,
     handleAddLoan,
     handleDeleteLoan,
+    confirmDeleteLoan,
+    cancelDeleteLoan,
+    pendingDeleteId,
+    deleting,
     resetForm,
     getFromCompanyAccounts,
     getToCompanyAccounts,

@@ -3,7 +3,7 @@ import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
 import { useLoans } from './Hooks/useLoans'
-import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form } from '../../ui'
+import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog } from '../../ui'
 
 const AccountingLoans: React.FC = () => {
   const {
@@ -18,6 +18,10 @@ const AccountingLoans: React.FC = () => {
     fieldErrors,
     handleAddLoan,
     handleDeleteLoan,
+    confirmDeleteLoan,
+    cancelDeleteLoan,
+    pendingDeleteId,
+    deleting,
     resetForm,
     getFromCompanyAccounts,
     getToCompanyAccounts,
@@ -240,6 +244,18 @@ const AccountingLoans: React.FC = () => {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovu pozajmicu?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteLoan}
+        onCancel={cancelDeleteLoan}
+        loading={deleting}
+      />
     </div>
   )
 }

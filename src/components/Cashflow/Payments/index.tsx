@@ -1,6 +1,6 @@
 import React from 'react'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../../ui'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog } from '../../ui'
 import DateInput from '../../Common/DateInput'
 import { usePayments } from './Hooks/usePayments'
 import AccountingPaymentFormModal from './Forms/AccountingPaymentFormModal'
@@ -43,6 +43,10 @@ const AccountingPayments: React.FC = () => {
     handleCloseDetailView,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     filteredPayments,
     resetDateFilters
   } = usePayments()
@@ -186,6 +190,18 @@ const AccountingPayments: React.FC = () => {
         companyCredits={companyCredits}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title="Potvrda brisanja"
+        message="Jeste li sigurni da želite obrisati ovo plaćanje?"
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
       />
     </div>
   )

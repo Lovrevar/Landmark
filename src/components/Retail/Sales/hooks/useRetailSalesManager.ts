@@ -47,16 +47,27 @@ export function useRetailSalesManager() {
     await loadData()
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu prodaju?')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteRetailSale(id)
+      await deleteRetailSale(pendingDeleteId)
       await loadData()
     } catch (error) {
       console.error('Error deleting sale:', error)
       toast.error('Greška pri brisanju prodaje')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   const handleAddPayment = async (sale: SaleWithRelations, amount: number) => {
     const newPaidAmount = sale.paid_amount + amount
@@ -102,6 +113,10 @@ export function useRetailSalesManager() {
     setStatusFilter,
     handleSave,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleAddPayment
   }
 }

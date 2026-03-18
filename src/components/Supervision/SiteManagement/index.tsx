@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LoadingSpinner, Modal } from '../../ui'
+import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './types'
@@ -31,6 +31,11 @@ const SiteManagement: React.FC = () => {
     addSubcontractorToPhase,
     updateSubcontractor,
     deleteSubcontractor,
+    pendingDeleteSubcontractor,
+    confirmDeleteSubcontractor,
+    cancelDeleteSubcontractor,
+    deletingSubcontractor,
+    pendingConfirm,
     fetchWirePayments,
     updateWirePayment,
     deleteWirePayment,
@@ -431,6 +436,29 @@ const SiteManagement: React.FC = () => {
             />
           </Modal>
         )}
+
+        <ConfirmDialog
+          show={!!pendingConfirm}
+          title={pendingConfirm?.title ?? ''}
+          message={pendingConfirm?.message ?? ''}
+          confirmLabel={pendingConfirm?.confirmLabel ?? 'Da, nastavi'}
+          cancelLabel="Odustani"
+          variant={pendingConfirm?.variant ?? 'primary'}
+          onConfirm={() => pendingConfirm?.onConfirm()}
+          onCancel={() => pendingConfirm?.onCancel()}
+        />
+
+        <ConfirmDialog
+          show={!!pendingDeleteSubcontractor}
+          title="Potvrda brisanja"
+          message="Jeste li sigurni da želite obrisati ovog podizvođača?"
+          confirmLabel="Da, obriši"
+          cancelLabel="Odustani"
+          variant="danger"
+          onConfirm={confirmDeleteSubcontractor}
+          onCancel={cancelDeleteSubcontractor}
+          loading={deletingSubcontractor}
+        />
       </div>
     )
   }

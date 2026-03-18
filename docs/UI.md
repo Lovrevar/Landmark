@@ -32,6 +32,9 @@ Shared primitive component library. Always check here before building new UI —
 - Yes/No confirmation modal with danger/primary action variants
 - Props: `show`, `title`, `message` (string | ReactNode), `confirmLabel?`, `cancelLabel?`, `variant` ('danger' | 'primary'), `onConfirm`, `onCancel`, `loading?`
 - Default button labels: "Potvrdi" / "Odustani" (Croatian)
+- **Usage pattern (hooks):** Hook exposes `pendingDeleteId` / `confirmDelete` / `cancelDelete` / `deleting`. Component renders `<ConfirmDialog show={!!pendingDeleteId} ... onConfirm={confirmDelete} onCancel={cancelDelete} loading={deleting} />`. Delete buttons set the pending ID instead of calling confirm() directly.
+- **Usage pattern (components):** Component holds `const [pendingDelete, setPendingDelete] = useState<T | null>(null)` locally. Delete button calls `setPendingDelete(item)`. ConfirmDialog rendered at bottom of JSX.
+- **Never use `window.confirm()` or `confirm()`** — all deletion confirmations must use ConfirmDialog.
 
 ### EmptyState.tsx
 - Centered empty list / no-results placeholder with icon and optional action

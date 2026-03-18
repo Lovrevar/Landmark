@@ -98,17 +98,27 @@ export const useCompanies = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu firmu? Svi računi povezani s firmom će biti odspojeni.')) return
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
     try {
-      await deleteCompany(id)
+      await deleteCompany(pendingDeleteId)
       await fetchData()
     } catch (error) {
       console.error('Error deleting company:', error)
       toast.error('Greška prilikom brisanja firme')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
     }
   }
+
+  const cancelDelete = () => setPendingDeleteId(null)
 
   const handleViewDetails = async (company: CompanyStats) => {
     try {
@@ -184,6 +194,10 @@ export const useCompanies = () => {
     handleCloseAddModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     handleViewDetails,
     handleCloseDetailsModal,
     handleAccountCountChange,
