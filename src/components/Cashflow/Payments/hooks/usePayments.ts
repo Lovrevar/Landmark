@@ -20,7 +20,7 @@ import {
   createPayment,
   updatePayment,
   deletePayment
-} from '../Services/paymentService'
+} from '../services/paymentService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 

@@ -1,8 +1,8 @@
 import React from 'react'
 import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
-import { useOfficeSuppliers } from './Hooks/useOfficeSuppliers'
-import OfficeSupplierFormModal from './Forms/OfficeSupplierFormModal'
+import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
+import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 
 const OfficeSuppliers: React.FC = () => {

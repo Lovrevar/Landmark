@@ -3,8 +3,8 @@ import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
-import { useSalesData } from './Hooks/useSalesData'
-import * as salesService from './Services/salesService'
+import { useSalesData } from './hooks/useSalesData'
+import * as salesService from './services/salesService'
 import {
   ViewMode,
   UnitType,
@@ -21,15 +21,15 @@ import {
 import { ProjectsGrid } from './ProjectsGrid'
 import { BuildingsGrid } from './BuildingsGrid'
 import { UnitsGrid } from './UnitsGrid'
-import { BuildingQuantityModal } from './Modals/BuildingQuantityModal'
-import { SingleBuildingModal } from './Modals/SingleBuildingModal'
-import { SingleUnitModal } from './Modals/SingleUnitModal'
-import { BulkUnitsModal } from './Modals/BulkUnitsModal'
-import { LinkingModal } from './Modals/LinkingModal'
-import { SaleFormModal } from './Forms/SaleFormModal'
-import { BulkPriceUpdateModal } from './Modals/BulkPriceUpdateModal'
-import { ExcelImportApartmentsModal } from './Modals/ExcelImportApartmentsModal'
-import { ExcelImportGaragesModal } from './Modals/ExcelImportGaragesModal'
+import { BuildingQuantityModal } from './modals/BuildingQuantityModal'
+import { SingleBuildingModal } from './modals/SingleBuildingModal'
+import { SingleUnitModal } from './modals/SingleUnitModal'
+import { BulkUnitsModal } from './modals/BulkUnitsModal'
+import { LinkingModal } from './modals/LinkingModal'
+import { SaleFormModal } from './forms/SaleFormModal'
+import { BulkPriceUpdateModal } from './modals/BulkPriceUpdateModal'
+import { ExcelImportApartmentsModal } from './modals/ExcelImportApartmentsModal'
+import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const toast = useToast()

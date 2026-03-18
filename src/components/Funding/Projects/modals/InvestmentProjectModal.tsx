@@ -10,7 +10,7 @@ import {
 import { Modal, Badge, StatGrid, EmptyState } from '../../../ui'
 import { format, differenceInDays } from 'date-fns'
 import type { ProjectWithFinancials, FundingUtilizationItem } from '../../../General/Projects/types'
-import { fetchFundingUtilization } from '../Services/investmentService'
+import { fetchFundingUtilization } from '../services/investmentService'
 
 interface Props {
   project: ProjectWithFinancials

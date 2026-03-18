@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
-import { getPaymentMethodLabel } from '../Services/paymentHelpers'
+import { getPaymentMethodLabel } from '../services/paymentHelpers'
 
 interface PaymentDetailViewProps {
   payment: Payment | null

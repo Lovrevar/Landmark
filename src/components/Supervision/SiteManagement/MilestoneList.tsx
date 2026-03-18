@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
-import { MilestoneFormModal } from './Modals/MilestoneFormModal'
+import { MilestoneFormModal } from './modals/MilestoneFormModal'
 import {
   fetchMilestonesByContract,
   getNextMilestoneNumber,
@@ -10,7 +10,7 @@ import {
   updateMilestone,
   deleteMilestone,
   getMilestoneStatsForContract
-} from './Services/siteService'
+} from './services/siteService'
 import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'

@@ -17,7 +17,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 #### Services
 
-### Services/salesService.ts
+### services/salesService.ts
 - `fetchProjects()` — fetches all sales projects
 - `fetchBuildings()` — fetches buildings for a project
 - `fetchApartments()`, `fetchGarages()`, `fetchRepositories()` — fetches units by type
@@ -36,14 +36,14 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `updateUnitAfterSale(apartmentId, saleData)` — patches unit record post-sale
 - **Depends on:** supabase client
 
-### Services/garageImportService.ts
+### services/garageImportService.ts
 - `importGaragesFromExcel(file, buildingId)` — parses Excel file and bulk-inserts garage records
 - `fetchExistingGarageNumbers(buildingId)` — returns existing garage numbers to detect duplicates
 - **Depends on:** supabase client, xlsx
 
 #### Hooks
 
-### Hooks/useSalesData.ts
+### hooks/useSalesData.ts
 - `useSalesData()` — fetches projects, buildings, apartments, garages, repositories, customers, and sales; enriches apartments with sale_info; calculates totals
 - **Calls:** salesService.ts
 - **Returns:** projects, buildings, apartments, garages, repositories, customers, loading, refetch
@@ -67,41 +67,41 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 #### Forms
 
-### Forms/SaleFormModal.tsx
+### forms/SaleFormModal.tsx
 - Sale creation form with new/existing customer toggle; collects sale price, payment method, down payment, monthly payment, sale date, contract signed, and notes
 - **Uses Ui:** Modal, Button, Select
 
 #### Modals
 
-### Modals/BuildingQuantityModal.tsx
+### modals/BuildingQuantityModal.tsx
 - Input for number of buildings to bulk-create (1–20); validates with `fieldErrors`
 - **Uses Ui:** Modal, Button
 
-### Modals/SingleBuildingModal.tsx
+### modals/SingleBuildingModal.tsx
 - Form for single building (name, description, total_floors); validates with `fieldErrors`
 - **Uses Ui:** Modal, Button
 
-### Modals/SingleUnitModal.tsx
+### modals/SingleUnitModal.tsx
 - Form for single unit (number, floor, size, price per m², computed total price); validates with `fieldErrors`
 - **Uses Ui:** Modal, Button
 
-### Modals/BulkUnitsModal.tsx
+### modals/BulkUnitsModal.tsx
 - Form for bulk unit creation (floor range, units per floor, size variation, pricing) with preview
 - **Uses Ui:** Modal, Button
 
-### Modals/LinkingModal.tsx
+### modals/LinkingModal.tsx
 - Select available garages or storage units to link to an apartment
 - **Uses Ui:** Modal, Button
 
-### Modals/BulkPriceUpdateModal.tsx
+### modals/BulkPriceUpdateModal.tsx
 - Increase/decrease price per m² for selected units with preview of new prices; validates with `fieldErrors`
 - **Uses Ui:** Modal, Button
 
-### Modals/ExcelImportApartmentsModal.tsx
+### modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
 - **Uses Ui:** Modal, Button, useToast
 
-### Modals/ExcelImportGaragesModal.tsx
+### modals/ExcelImportGaragesModal.tsx
 - 3-step garage bulk import (file upload → preview → results)
 - **Uses services:** garageImportService
 - **Uses Ui:** Modal, Button, useToast
@@ -115,7 +115,7 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 #### Services
 
-### Services/apartmentService.ts
+### services/apartmentService.ts
 - `createBulkApartments(data)` — bulk-inserts apartments
 - `createSingleApartment(data)` — inserts a single apartment
 - `updateApartment(id, data)` — updates apartment fields
@@ -126,7 +126,7 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - `fetchSaleIdForApartment(apartmentId)` — resolves the sale ID for payment creation
 - **Depends on:** supabase client
 
-### Services/linkUnitsService.ts
+### services/linkUnitsService.ts
 - `fetchLinkedUnitIds(apartmentId)` — returns IDs of currently linked garages and storage units
 - `fetchAvailableUnits(buildingId)` — returns unlinked garages and storage units in the building
 - `saveUnitLinks(apartmentId, garageIds, storageIds)` — upserts and removes links to match selection
@@ -157,32 +157,32 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 #### Modals
 
-### Modals/ApartmentDetailsModal.tsx
+### modals/ApartmentDetailsModal.tsx
 - Read-only apartment detail view with location, specs, and contract data if present
 - **Uses Ui:** Modal
 
-### Modals/BulkApartmentModal.tsx
+### modals/BulkApartmentModal.tsx
 - Form for bulk apartment creation (project, building, start number, quantity, floor, size, price)
 - **Uses Ui:** Modal, Button, Select, useToast
 
-### Modals/SingleApartmentModal.tsx
+### modals/SingleApartmentModal.tsx
 - Single apartment creation form including ContractedSection
 - **Uses components:** ContractedSection
 - **Uses Ui:** Modal, Button, Select, useToast
 
-### Modals/EditPaymentModal.tsx
+### modals/EditPaymentModal.tsx
 - Edit a single payment record (amount, date, type, notes)
 - **Uses Ui:** Modal, Button, Select
 
-### Modals/PaymentHistoryModal.tsx
+### modals/PaymentHistoryModal.tsx
 - All payments for an apartment with linked units, totals, and progress bar
 - **Uses Ui:** Modal, Table
 
-### Modals/WirePaymentModal.tsx
+### modals/WirePaymentModal.tsx
 - Display-only summary of apartment and linked units with total package price
 - **Uses Ui:** Modal
 
-### Modals/LinkUnitsModal.tsx
+### modals/LinkUnitsModal.tsx
 - Link/unlink garages and storage units to an apartment
 - **Uses hooks:** useLinkUnits
 - **Uses Ui:** Modal, Button, useToast
@@ -196,7 +196,7 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 
 #### Services
 
-### Services/customerService.ts
+### services/customerService.ts
 - `fetchCustomers(category)` — fetches customers filtered by category with linked apartment/garage/repository data
 - `createCustomer(data)` — inserts a new customer
 - `updateCustomer(id, data)` — updates a customer record
@@ -204,13 +204,13 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 - `updateLastContact(id, date)` — updates the last contact date
 - **Depends on:** supabase client, customerCache.ts
 
-### Services/customerCache.ts
+### services/customerCache.ts
 - Client-side cache with 5-minute TTL for customer data and counts
 - Invalidated on all CRUD operations
 
 #### Hooks
 
-### Hooks/useCustomerData.ts
+### hooks/useCustomerData.ts
 - `useCustomerData(activeCategory)` — fetches customers for the active category, reads counts from cache, exposes CRUD actions
 - **Calls:** customerService.ts, customerCache.ts
 - **Returns:** customers, counts, loading, saveCustomer, deleteCustomer, updateLastContact
@@ -234,14 +234,14 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 
 #### Forms
 
-### Forms/CustomerFormModal.tsx
+### forms/CustomerFormModal.tsx
 - Add/edit customer modal: basic info, preferences (budget range, size, floor, bedrooms), and notes
 - Validates name, surname, email, phone with per-field `fieldErrors` (inline red text, not Alert)
 - **Uses Ui:** Modal, Button, FormField, Input
 
 #### Modals
 
-### Modals/CustomerDetailModal.tsx
+### modals/CustomerDetailModal.tsx
 - Read-only customer detail view; groups purchases by project with per-project and grand totals
 - **Uses Ui:** Modal, Table
 

@@ -3,7 +3,7 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-r
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
-import { fetchContractInvoices, ContractInvoiceRow } from '../Services/siteService'
+import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
 
 type Invoice = ContractInvoiceRow
 

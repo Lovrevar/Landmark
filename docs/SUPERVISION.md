@@ -17,7 +17,7 @@ The core supervision module. Full project site view with phases, subcontractor c
 
 #### Services
 
-### Services/siteService.ts
+### services/siteService.ts
 - `fetchAllProjects()` — fetches all site projects with phases and subcontractor summary data
 - `fetchProjectPhases(projectId)` — fetches phases for a project
 - `fetchSubcontractorsWithPhases()` — fetches subcontractor-contract records joined with phase and project data
@@ -57,49 +57,49 @@ The core supervision module. Full project site view with phases, subcontractor c
 
 #### Hooks
 
-### Hooks/useSiteData.ts
+### hooks/useSiteData.ts
 - `useSiteData()` — aggregator hook that composes useSiteProjectData, useProjectPhases, useSubcontractorManagement, and useSubcontractorComments into a single return object
 - **Calls:** useSiteProjectData, useProjectPhases, useSubcontractorManagement, useSubcontractorComments
 
-### Hooks/useSiteProjectData.ts
+### hooks/useSiteProjectData.ts
 - `useSiteProjectData()` — fetches projects with phases, subcontractors, and invoice stats; builds existingSubcontractors array
 - **Calls:** siteService.ts
 - **Returns:** projects, loading, existingSubcontractors, refetch
 
-### Hooks/useProjectPhases.ts
+### hooks/useProjectPhases.ts
 - `useProjectPhases()` — manages phase CRUD with budget allocation validation
 - **Calls:** siteService.ts
 - **Returns:** createProjectPhases, updatePhase, deletePhase
 
-### Hooks/useSubcontractorManagement.ts
+### hooks/useSubcontractorManagement.ts
 - `useSubcontractorManagement()` — manages subcontractor add/edit/delete with document upload, phase budget recalculation, and unique contract number generation
 - **Calls:** siteService.ts
 - **Returns:** addSubcontractorToPhase, updateSubcontractor, deleteSubcontractor
 
-### Hooks/useSubcontractorComments.ts
+### hooks/useSubcontractorComments.ts
 - `useSubcontractorComments()` — fetches and creates subcontractor comments; supports types: completed, issue, general
 - **Calls:** siteService.ts
 - **Returns:** fetchSubcontractorComments, addSubcontractorComment
 
-### Hooks/useContractTypes.ts
+### hooks/useContractTypes.ts
 - `useContractTypes()` — loads active contract types from the contract_types table
 - **Calls:** supabase client
 - **Returns:** contractTypes, loading, load
 
-### Hooks/useVATCalculation.ts
+### hooks/useVATCalculation.ts
 - `useVATCalculation(baseAmount, vatRate)` — computes vatAmount and totalAmount via useMemo
 - Formula: `vatAmount = baseAmount × vatRate / 100`
 - **Returns:** vatAmount, totalAmount
 
 #### Forms
 
-### Forms/ContractFormFields.tsx
+### forms/ContractFormFields.tsx
 - Reusable contract field group: Osnovica (base amount), PDV stopa (VAT rate from VAT_RATE_OPTIONS), VAT/total summary display, start date, and deadline
 - Props: formData, vatAmount, totalAmount, onChange, deadlineRequired?
 - **Uses hooks:** (receives computed vatAmount/totalAmount as props)
 - **Uses Ui:** Select, Input
 
-### Forms/SubcontractorFormModal.tsx
+### forms/SubcontractorFormModal.tsx
 - Complex form for adding a subcontractor to a phase: toggle between new entry and existing subcontractor, contract fields, document upload, and financing source selection
 - **Uses hooks:** useContractTypes, useVATCalculation
 - **Uses components:** ContractFormFields, ContractTypeFormModal, ContractDocumentUpload
@@ -165,14 +165,14 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 
 #### Hooks
 
-### Hooks/useSubcontractorData.ts
+### hooks/useSubcontractorData.ts
 - `useSubcontractorData()` — fetches subcontractors, contracts with phase/project relations, and invoices by contract; aggregates into a Map keyed by subcontractor ID
 - **Calls:** siteService.ts
 - **Returns:** `Map<subcontractorId, SubcontractorSummary>`, loading, refetch
 
 #### Forms
 
-### Forms/SubcontractorBasicFormModal.tsx
+### forms/SubcontractorBasicFormModal.tsx
 - Add/edit base subcontractor registry entry (name, contact, notes)
 - **Uses services:** siteService (insertSubcontractorRecord, updateSubcontractorRecord)
 - **Uses Ui:** Modal, Button, Input, useToast

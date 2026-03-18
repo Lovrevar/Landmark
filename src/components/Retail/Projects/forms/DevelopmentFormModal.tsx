@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { SupplierFormModal } from './SupplierFormModal'

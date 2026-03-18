@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Apartment, Garage, Repository, Customer } from '../../../../lib/supabase'
 import { ProjectWithBuildings, BuildingWithUnits } from '../types'
-import * as salesService from '../Services/salesService'
+import * as salesService from '../services/salesService'
 
 export const useSalesData = () => {
   const [projects, setProjects] = useState<ProjectWithBuildings[]>([])

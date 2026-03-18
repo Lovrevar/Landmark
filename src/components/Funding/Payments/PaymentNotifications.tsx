@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { format, isToday, isTomorrow } from 'date-fns'
 import { LoadingSpinner, Badge, Button, EmptyState } from '../../ui'
-import { getNotificationUrgency, type PaymentNotification } from './Services/paymentNotificationService'
+import { getNotificationUrgency, type PaymentNotification } from './services/paymentNotificationService'
 import { usePaymentNotifications } from './hooks/usePaymentNotifications'
 
 interface PaymentNotificationsProps {

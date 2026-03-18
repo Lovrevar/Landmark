@@ -8,7 +8,7 @@ import {
   updateCompany,
   deleteCompany,
   fetchCompanyDetails
-} from '../Services/companyService'
+} from '../services/companyService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useCompanies = () => {

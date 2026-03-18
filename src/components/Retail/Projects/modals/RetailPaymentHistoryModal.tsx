@@ -3,7 +3,7 @@ import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
 import type { RetailContract } from '../../../../types/retail'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 
 interface AccountingPayment {
   id: string

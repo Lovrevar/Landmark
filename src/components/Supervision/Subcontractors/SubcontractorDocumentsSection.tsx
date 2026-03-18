@@ -3,7 +3,7 @@ import { FileText } from 'lucide-react'
 import { Button } from '../../ui'
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { ContractDocumentUpload } from '../SiteManagement/ContractDocumentUpload'
-import { uploadSubcontractorDocuments } from '../SiteManagement/Services/siteService'
+import { uploadSubcontractorDocuments } from '../SiteManagement/services/siteService'
 import { useToast } from '../../../contexts/ToastContext'
 
 interface Props {

@@ -28,17 +28,18 @@ Every feature module follows this internal structure:
 Module/
 ├── index.tsx              # Entry point / main view
 ├── types.ts               # Module-specific TypeScript types
-├── Components/            # Presentational sub-components
-├── Forms/                 # Form modals for create/edit
-├── Modals/                # Detail/action modals
-├── Hooks/                 # Data fetching and local state
-└── Services/              # Supabase queries and business logic
+├── components/            # Presentational sub-components
+├── forms/                 # Form modals for create/edit
+├── modals/                # Detail/action modals
+├── hooks/                 # Data fetching and local state
+└── services/              # Supabase queries and business logic
 ```
 
-- **Hooks** own data fetching — components never call Supabase directly
-- **Services** are plain async functions called by hooks
+- **hooks** own data fetching — components never call Supabase directly
+- **services** are plain async functions called by hooks
 - **Types** are local to each module; shared types live in `src/types/`
 - **Ui/** components are the only shared primitives — use them everywhere
+- **Casing convention:** Feature/domain directories use PascalCase (`Sales/`, `SalesProjects/`); utility subdirectories always use lowercase (`hooks/`, `services/`, `forms/`, `modals/`, `components/`)
 
 ---
 

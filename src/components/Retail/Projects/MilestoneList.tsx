@@ -3,8 +3,8 @@ import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-r
 import { format } from 'date-fns'
 import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
-import { MilestoneFormModal } from './Forms/MilestoneFormModal'
-import { retailProjectService } from './Services/retailProjectService'
+import { MilestoneFormModal } from './forms/MilestoneFormModal'
+import { retailProjectService } from './services/retailProjectService'
 import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneStats {

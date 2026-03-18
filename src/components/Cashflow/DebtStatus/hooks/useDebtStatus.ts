@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { DebtSummary } from '../types'
-import { fetchDebtData, fetchProjects } from '../Services/debtService'
+import { fetchDebtData, fetchProjects } from '../services/debtService'
 
 interface Project {
   id: string

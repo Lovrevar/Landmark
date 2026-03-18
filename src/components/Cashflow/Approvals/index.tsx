@@ -13,7 +13,7 @@ import {
 import { useToast } from '../../../contexts/ToastContext'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
+import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
 
 const COLUMN_LABELS: Record<string, string> = {

@@ -1,8 +1,8 @@
 import React from 'react'
 import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet, Filter } from 'lucide-react'
-import { useDebtStatus } from './Hooks/useDebtStatus'
-import { formatEuropeanNumber } from './Services/debtService'
-import { exportToExcel, exportToPDF } from './Services/debtExport'
+import { useDebtStatus } from './hooks/useDebtStatus'
+import { formatEuropeanNumber } from './services/debtService'
+import { exportToExcel, exportToPDF } from './services/debtExport'
 import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../../ui'
 
 const DebtStatus: React.FC = () => {

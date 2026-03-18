@@ -7,7 +7,7 @@ import {
   updateSupplier,
   deleteSupplier,
   fetchSupplierInvoices
-} from '../Services/officeSupplierService'
+} from '../services/officeSupplierService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useOfficeSuppliers = () => {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 interface EditPhaseModalProps {

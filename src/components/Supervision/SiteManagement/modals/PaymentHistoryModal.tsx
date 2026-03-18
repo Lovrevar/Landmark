@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
-import { fetchContractInvoiceTotals } from '../Services/siteService'
+import { fetchContractInvoiceTotals } from '../services/siteService'
 import { Modal, Button, Badge, EmptyState } from '../../../ui'
 
 interface AccountingPayment {

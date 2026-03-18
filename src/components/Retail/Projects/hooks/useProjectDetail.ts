@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 import type { RetailProjectWithPhases, RetailContract } from '../../../../types/retail'
 
 export function useProjectDetail(projectId: string) {

@@ -1,8 +1,8 @@
 import React from 'react'
 import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
-import { useCompanies } from './Hooks/useCompanies'
-import CompanyFormModal from './Forms/CompanyFormModal'
-import CompanyDetailsModal from './Modals/CompanyDetailsModal'
+import { useCompanies } from './hooks/useCompanies'
+import CompanyFormModal from './forms/CompanyFormModal'
+import CompanyDetailsModal from './modals/CompanyDetailsModal'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ConfirmDialog } from '../../ui'
 
 const AccountingCompanies: React.FC = () => {

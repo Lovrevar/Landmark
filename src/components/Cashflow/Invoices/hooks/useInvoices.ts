@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types'
-import * as invoiceService from '../Services/invoiceService'
+import * as invoiceService from '../services/invoiceService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useInvoiceColumns } from './useInvoiceColumns'
-import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../Services/invoiceFormDefaults'
+import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../services/invoiceFormDefaults'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useInvoices = () => {

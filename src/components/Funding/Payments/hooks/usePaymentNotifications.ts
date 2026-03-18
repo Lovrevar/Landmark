@@ -10,7 +10,7 @@ import {
   getNotificationUrgency,
   type PaymentNotification,
   type NotificationStats,
-} from '../Services/paymentNotificationService'
+} from '../services/paymentNotificationService'
 
 export function usePaymentNotifications() {
   const toast = useToast()

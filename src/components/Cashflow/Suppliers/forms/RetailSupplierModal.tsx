@@ -5,7 +5,7 @@ import {
   fetchRetailProjectsForSupplier,
   fetchRetailPhasesForProject,
   createRetailSupplierWithContract
-} from '../Services/supplierService'
+} from '../services/supplierService'
 
 interface RetailProject {
   id: string

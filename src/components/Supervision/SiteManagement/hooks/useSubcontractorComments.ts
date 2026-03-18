@@ -1,4 +1,4 @@
-import * as siteService from '../Services/siteService'
+import * as siteService from '../services/siteService'
 
 export const useSubcontractorComments = () => {
   const fetchSubcontractorComments = async (subcontractorId: string) => {

@@ -6,7 +6,7 @@ import {
   fetchSubcontractorPaymentTotal,
   fetchSubcontractorFinancingBank,
   recordSubcontractorMilestonePayment
-} from '../Services/paymentNotificationService'
+} from '../services/paymentNotificationService'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 import { useToast } from '../../../../contexts/ToastContext'
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Building2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { PaymentNotification } from '../Services/paymentNotificationService'
+import { PaymentNotification } from '../services/paymentNotificationService'
 import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../ui'
 
 interface NotificationPaymentModalProps {

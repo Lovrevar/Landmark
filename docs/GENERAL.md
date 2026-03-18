@@ -55,7 +55,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 #### Forms
 
-### Forms/ProjectFormModal.tsx
+### forms/ProjectFormModal.tsx
 - Modal form for creating and editing projects (name, location, dates, budget, status)
 - Edit mode includes a delete button
 - **Uses hooks:** useProjectForm

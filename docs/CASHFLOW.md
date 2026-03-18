@@ -184,7 +184,7 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 ---
 
 ### Components (shared within Cashflow)
-**Path:** `Components/`
+**Path:** `components/`
 
 Shared UI sub-components reused across Cashflow forms and views.
 
@@ -512,7 +512,7 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 ---
 
 ### Services (Cashflow-level helpers)
-**Path:** `Services/`
+**Path:** `services/`
 
 Shared utilities used across multiple Cashflow sub-modules.
 

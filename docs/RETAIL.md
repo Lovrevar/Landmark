@@ -25,18 +25,18 @@ Core retail module. Tracks development projects through phases (development, con
 
 #### Services
 
-### Services/retailProjectService.ts
+### services/retailProjectService.ts
 - Fetches retail projects, project details, and contracts grouped by phase
 - **Depends on:** supabase client
 
 #### Hooks
 
-### Hooks/useRetailProjects.ts
+### hooks/useRetailProjects.ts
 - `useRetailProjects()` — fetches all retail projects list
 - **Calls:** retailProjectService
 - **Returns:** projects, loading, error, refetch
 
-### Hooks/useProjectDetail.ts
+### hooks/useProjectDetail.ts
 - `useProjectDetail(projectId)` — fetches a single retail project with its phases and contracts grouped by phase
 - **Calls:** retailProjectService
 - **Returns:** project, contractsMap, loading, refetch
@@ -70,34 +70,34 @@ Core retail module. Tracks development projects through phases (development, con
 
 #### Forms
 
-### Forms/ProjectFormModal.tsx
+### forms/ProjectFormModal.tsx
 - Add/edit retail project form
 
-### Forms/DevelopmentFormModal.tsx
+### forms/DevelopmentFormModal.tsx
 - Form for creating a development phase
 
-### Forms/MilestoneFormModal.tsx
+### forms/MilestoneFormModal.tsx
 - Form for adding a milestone to a project
 
-### Forms/SupplierFormModal.tsx
+### forms/SupplierFormModal.tsx
 - Form for adding a supplier to a project phase
 
-### Forms/SalesFormModal.tsx
+### forms/SalesFormModal.tsx
 - Form for creating a sales contract for a parcel
 
 #### Modals
 
-### Modals/ContractFormModal.tsx
+### modals/ContractFormModal.tsx
 - Add/edit a supplier or customer contract for a phase
 
-### Modals/EditPhaseModal.tsx
+### modals/EditPhaseModal.tsx
 - Edit a retail project phase (name, dates, budget, status)
 - **Uses Ui:** useToast
 
-### Modals/RetailInvoicesModal.tsx
+### modals/RetailInvoicesModal.tsx
 - View invoices linked to a contract or phase
 
-### Modals/RetailPaymentHistoryModal.tsx
+### modals/RetailPaymentHistoryModal.tsx
 - View payment history for a contract
 
 ---

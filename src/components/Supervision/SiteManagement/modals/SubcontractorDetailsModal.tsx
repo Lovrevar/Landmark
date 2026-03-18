@@ -3,7 +3,7 @@ import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from '
 import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
 import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../ui'
-import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../Services/siteService'
+import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../services/siteService'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
 import { formatEuro } from '../../../../utils/formatters'
 

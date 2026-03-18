@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '../bankTypes'
-import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../Services/bankService'
+import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../services/bankService'
 import { useModalOverflow } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 

@@ -2,7 +2,7 @@ import React from 'react'
 import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
-import { useLoans } from './Hooks/useLoans'
+import { useLoans } from './hooks/useLoans'
 import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog } from '../../ui'
 
 const AccountingLoans: React.FC = () => {

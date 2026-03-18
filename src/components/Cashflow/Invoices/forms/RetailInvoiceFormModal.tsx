@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Button, Textarea, FormField, Alert, Form } from '../../../ui'
-import { upsertRetailInvoice } from '../Services/invoiceService'
+import { upsertRetailInvoice } from '../services/invoiceService'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './RetailInvoiceCalculationSummary'
-import { useRetailInvoiceData } from '../Hooks/useRetailInvoiceData'
+import { useRetailInvoiceData } from '../hooks/useRetailInvoiceData'
 import {
   RetailInvoiceFormModalProps,
   RetailInvoiceFormData,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { MilestoneFormData } from '../types'
-import { validateMilestonePercentagesForContract } from '../Services/siteService'
+import { validateMilestonePercentagesForContract } from '../services/siteService'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
 interface MilestoneFormModalProps {

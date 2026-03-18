@@ -1,6 +1,6 @@
 import React from 'react'
 import { FileDown, FileSpreadsheet, Save, AlertCircle } from 'lucide-react'
-import { exportToExcel, exportToPDF } from './Services/TICExport'
+import { exportToExcel, exportToPDF } from './services/ticExport'
 import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState } from '../../ui'
 import { useTIC } from './hooks/useTIC'
 import { formatNumber, formatPercentage, calculateRowPercentages } from './utils/ticFormatters'

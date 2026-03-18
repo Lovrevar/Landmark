@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput from '../../../Common/CurrencyInput'
-import { useBankInvoiceData } from '../Hooks/useBankInvoiceData'
+import { useBankInvoiceData } from '../hooks/useBankInvoiceData'
 import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
 import { Alert, Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
-import { createBankInvoice } from '../../Invoices/Services/invoiceService'
+import { createBankInvoice } from '../../Invoices/services/invoiceService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {

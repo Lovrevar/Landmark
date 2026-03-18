@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
 import { format } from 'date-fns'
 import type { RetailContract } from '../../../../types/retail'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
 
 interface Invoice {

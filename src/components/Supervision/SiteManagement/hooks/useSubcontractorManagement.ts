@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
-import * as siteService from '../Services/siteService'
+import * as siteService from '../services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {

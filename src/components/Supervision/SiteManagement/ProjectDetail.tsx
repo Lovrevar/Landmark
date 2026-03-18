@@ -3,7 +3,7 @@ import { ArrowLeft, Building2, Settings, CreditCard } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase } from './types'
 import { PhaseCard } from './PhaseCard'
-import { fetchCreditAllocations, type CreditAllocation } from './Services/siteService'
+import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
 
 interface ProjectDetailProps {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CustomerStats, TotalStats } from '../types'
-import { fetchCustomers, buildCustomerStats } from '../Services/customerService'
+import { fetchCustomers, buildCustomerStats } from '../services/customerService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 
 export const useAccountingCustomers = () => {

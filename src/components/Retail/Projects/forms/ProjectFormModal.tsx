@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
-import { retailProjectService } from '../Services/retailProjectService'
+import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog, Form } from '../../../ui'
 

@@ -1,10 +1,10 @@
 import React from 'react'
 import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store, Link2 } from 'lucide-react'
-import RetailSupplierModal from './Forms/RetailSupplierModal'
-import SupplierFormModal from './Forms/SupplierFormModal'
-import SupplierDetailsModal from './Modals/SupplierDetailsModal'
-import { LinkSupplierToProjectModal } from './Forms/LinkSupplierToProjectModal'
-import { useSuppliers } from './Hooks/useSuppliers'
+import RetailSupplierModal from './forms/RetailSupplierModal'
+import SupplierFormModal from './forms/SupplierFormModal'
+import SupplierDetailsModal from './modals/SupplierDetailsModal'
+import { LinkSupplierToProjectModal } from './forms/LinkSupplierToProjectModal'
+import { useSuppliers } from './hooks/useSuppliers'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge, ConfirmDialog } from '../../ui'
 
 const AccountingSuppliers: React.FC = () => {

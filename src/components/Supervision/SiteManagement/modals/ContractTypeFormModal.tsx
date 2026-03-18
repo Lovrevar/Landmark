@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, FormField, Input, Textarea, Button, Alert } from '../../../ui'
-import { createContractType } from '../Services/siteService'
+import { createContractType } from '../services/siteService'
 
 interface Props {
   visible: boolean

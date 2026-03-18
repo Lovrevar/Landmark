@@ -5,7 +5,7 @@ import {
   updateMilestone as svcUpdateMilestone,
   deleteMilestone as svcDeleteMilestone,
   toggleMilestoneCompletion as svcToggleMilestone
-} from '../Services/milestoneService'
+} from '../services/milestoneService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 interface MilestoneFormData {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
-import * as siteService from '../Services/siteService'
+import * as siteService from '../services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export type PendingConfirm = {

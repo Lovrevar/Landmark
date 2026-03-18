@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, FormField, Input, Button } from '../../../ui'
-import { insertSubcontractorRecord, updateSubcontractorRecord } from '../../SiteManagement/Services/siteService'
+import { insertSubcontractorRecord, updateSubcontractorRecord } from '../../SiteManagement/services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 interface Props {

@@ -10,8 +10,8 @@ import {
 import { LoadingSpinner, PageHeader, StatGrid, Badge, Button } from '../../ui'
 import { format } from 'date-fns'
 import type { ProjectWithFinancials } from '../../General/Projects/types'
-import { fetchInvestmentProjects } from './Services/investmentService'
-import InvestmentProjectModal from './Modals/InvestmentProjectModal'
+import { fetchInvestmentProjects } from './services/investmentService'
+import InvestmentProjectModal from './modals/InvestmentProjectModal'
 
 const getFundingColor = (ratio: number) => {
   if (ratio >= 100) return 'text-green-600'

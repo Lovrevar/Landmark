@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { customerService } from '../Services/customerService'
-import { cache } from '../Services/customerCache'
+import { customerService } from '../services/customerService'
+import { cache } from '../services/customerCache'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
 import { Customer } from '../../../../lib/supabase'
 

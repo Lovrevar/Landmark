@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Invoice, MonthlyBudget } from '../types'
-import { fetchInvoices as fetchInvoicesService, fetchBudgets as fetchBudgetsService } from '../Services/calendarService'
+import { fetchInvoices as fetchInvoicesService, fetchBudgets as fetchBudgetsService } from '../services/calendarService'
 
 export const useCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())

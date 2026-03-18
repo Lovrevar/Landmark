@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { CompanyLoan, Company, BankAccount, LoanFormData } from '../types'
-import { fetchLoans, fetchCompanies, fetchBankAccounts, createLoan, deleteLoan } from '../Services/loanService'
+import { fetchLoans, fetchCompanies, fetchBankAccounts, createLoan, deleteLoan } from '../services/loanService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useLoans = () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
-import { calculatePayments, fetchCompanyBankAccounts } from '../Services/bankService'
+import { calculatePayments, fetchCompanyBankAccounts } from '../services/bankService'
 import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
 
 interface BankCreditFormModalProps {

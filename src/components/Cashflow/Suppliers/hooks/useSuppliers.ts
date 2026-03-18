@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { SupplierSummary, SupplierFormData, Project, Phase } from '../types'
-import * as supplierService from '../Services/supplierService'
+import * as supplierService from '../services/supplierService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 

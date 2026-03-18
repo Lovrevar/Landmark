@@ -1,16 +1,16 @@
 import React from 'react'
 import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
-import { RetailInvoiceFormModal } from './Forms/RetailInvoiceFormModal'
-import BankInvoiceFormModal from '../Banks/Forms/BankInvoiceFormModal'
-import { LandPurchaseFormModal } from './Forms/LandPurchaseFormModal'
-import { useInvoices } from './Hooks/useInvoices'
-import { InvoiceFormModal } from './Forms/InvoiceFormModal'
-import { PaymentFormModal } from '../Payments/Forms/PaymentFormModal'
+import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
+import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
+import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
+import { useInvoices } from './hooks/useInvoices'
+import { InvoiceFormModal } from './forms/InvoiceFormModal'
+import { PaymentFormModal } from '../Payments/forms/PaymentFormModal'
 import { InvoiceDetailView } from './InvoiceDetailView'
 import { InvoiceTable } from './InvoiceTable'
 import { InvoiceFilters } from './InvoiceFilters'
 import { InvoiceStats } from './InvoiceStats'
-import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
+import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { InvoiceActionButtons } from './InvoiceActionButtons'
 import { InvoicePagination } from './InvoicePagination'
 import {
@@ -25,7 +25,7 @@ import {
   getMilestonesByContract,
   isOverdue,
   columnLabels
-} from '../Services/invoiceHelpers'
+} from '../services/invoiceHelpers'
 
 const AccountingInvoices: React.FC = () => {
   const {

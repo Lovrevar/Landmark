@@ -16,8 +16,8 @@ import {
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import MilestoneTimeline from './MilestoneTimeline'
-import ProjectFormModal from './Forms/ProjectFormModal'
-import { fetchProjectDataEnhanced } from './Services/projectDetailsService'
+import ProjectFormModal from './forms/ProjectFormModal'
+import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 

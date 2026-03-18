@@ -7,7 +7,7 @@ import {
   fetchPhasesForProject,
   generateSupplierContractNumber,
   createSupplierContract
-} from '../Services/supplierService'
+} from '../services/supplierService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 interface LinkSupplierToProjectModalProps {

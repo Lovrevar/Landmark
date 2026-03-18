@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
-import * as siteService from '../Services/siteService'
+import * as siteService from '../services/siteService'
 
 export const useSiteProjectData = () => {
   const [projects, setProjects] = useState<ProjectWithPhases[]>([])

@@ -1,5 +1,5 @@
 import { DebtSummary } from '../types'
-import { formatEuropeanNumber } from '../Services/debtService'
+import { formatEuropeanNumber } from '../services/debtService'
 
 const getSupplierTypeText = (type: string) => {
   switch (type) {
