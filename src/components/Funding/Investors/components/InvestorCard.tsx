@@ -1,5 +1,6 @@
 import React from 'react'
 import { CreditCard as Edit2, Trash2, Eye } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../../ui'
 import type { BankWithCredits } from '../types'
 
@@ -11,6 +12,7 @@ interface InvestorCardProps {
 }
 
 const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onDelete }) => {
+  const { t } = useTranslation()
   return (
     <div
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -47,17 +49,17 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="text-center">
           <p className="text-xl font-bold text-green-600">€{(bank.credit_utilized / 1000000).toFixed(1)}M</p>
-          <p className="text-xs text-gray-600">Credit Utilized</p>
+          <p className="text-xs text-gray-600">{t('funding.investors.card.credit_utilized')}</p>
         </div>
         <div className="text-center">
           <p className="text-xl font-bold text-red-600">€{(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
-          <p className="text-xs text-gray-600">Outstanding</p>
+          <p className="text-xs text-gray-600">{t('funding.investors.card.outstanding')}</p>
         </div>
       </div>
 
       <div className="mb-4">
         <div className="flex justify-between mb-1">
-          <span className="text-sm text-gray-600">Credit Utilization</span>
+          <span className="text-sm text-gray-600">{t('funding.investors.card.credit_utilization')}</span>
           <span className="text-sm font-medium">{bank.credit_utilization.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -74,7 +76,7 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
 
       <div className="border-t pt-3">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Active Credits</span>
+          <span className="text-sm text-gray-600">{t('funding.investors.card.active_credits')}</span>
           <span className="text-sm font-medium text-gray-900">{bank.active_credits}</span>
         </div>
       </div>

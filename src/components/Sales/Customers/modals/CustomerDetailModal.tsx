@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Mail, Phone, MapPin, Clock, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments } from '../types'
@@ -12,6 +13,8 @@ interface CustomerDetailModalProps {
 }
 
 export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, customer, onClose }) => {
+  const { t } = useTranslation()
+
   if (!show || !customer) return null
 
   const projectGroups = customer.status === 'buyer' && customer.apartments && customer.apartments.length > 0
@@ -31,14 +34,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             <div className="flex items-start">
               <Mail className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-600">Email</p>
+                <p className="text-sm text-gray-600">{t('customers.detail_modal.email')}</p>
                 <p className="font-medium text-gray-900">{customer.email}</p>
               </div>
             </div>
             <div className="flex items-start">
               <Phone className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-600">Phone</p>
+                <p className="text-sm text-gray-600">{t('customers.detail_modal.phone')}</p>
                 <p className="font-medium text-gray-900">{customer.phone}</p>
               </div>
             </div>
@@ -48,7 +51,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             <div className="flex items-start">
               <MapPin className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-600">Address</p>
+                <p className="text-sm text-gray-600">{t('customers.detail_modal.address')}</p>
                 <p className="font-medium text-gray-900">{customer.address}</p>
               </div>
             </div>
@@ -58,7 +61,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             <div className="flex items-start">
               <Clock className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-600">Last Contact</p>
+                <p className="text-sm text-gray-600">{t('customers.detail_modal.last_contact')}</p>
                 <p className="font-medium text-gray-900">
                   {format(new Date(customer.last_contact_date), 'MMMM dd, yyyy')}
                 </p>
@@ -70,7 +73,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Home className="w-5 h-5 mr-2" />
-                Purchased Properties
+                {t('customers.detail_modal.purchased')}
               </h3>
 
               <div className="space-y-6">
@@ -99,9 +102,9 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                       {unit.type === 'repository' && <Package className="w-4 h-4 text-gray-600" />}
                                       <div>
                                         <p className="font-medium text-gray-900">
-                                          {unit.type === 'apartment' && `Apartment ${unit.number}`}
-                                          {unit.type === 'garage' && `Garage ${unit.number}`}
-                                          {unit.type === 'repository' && `Repository ${unit.number}`}
+                                          {unit.type === 'apartment' && `${t('common.apartment')} ${unit.number}`}
+                                          {unit.type === 'garage' && `${t('common.garage')} ${unit.number}`}
+                                          {unit.type === 'repository' && `${t('common.storage')} ${unit.number}`}
                                         </p>
                                         {unit.type === 'apartment' && (
                                           <p className="text-xs text-gray-600">Floor {unit.floor} • {unit.size_m2}m²</p>
@@ -139,11 +142,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                                   <div className="mt-2 pt-2 border-t border-gray-200 grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                      <p className="text-gray-600">Paid</p>
+                                      <p className="text-gray-600">{t('common.paid')}</p>
                                       <p className="font-semibold text-green-700">€{(unit.total_paid || 0).toLocaleString('hr-HR')}</p>
                                     </div>
                                     <div>
-                                      <p className="text-gray-600">Remaining</p>
+                                      <p className="text-gray-600">{t('customers.detail_modal.total_remaining')}</p>
                                       <p className="font-semibold text-red-600">€{(totalPackage - (unit.total_paid || 0)).toLocaleString('hr-HR')}</p>
                                     </div>
                                   </div>
@@ -154,11 +157,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                           <div className="mt-3 pt-3 border-t border-gray-300 space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="font-medium text-gray-700">Project Total Paid:</span>
+                              <span className="font-medium text-gray-700">{t('customers.detail_modal.total_paid')}:</span>
                               <span className="font-bold text-green-700">€{projectPaid.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="font-medium text-gray-700">Project Remaining:</span>
+                              <span className="font-medium text-gray-700">{t('customers.detail_modal.total_remaining')}:</span>
                               <span className="font-bold text-red-600">€{projectRemaining.toLocaleString('hr-HR')}</span>
                             </div>
                           </div>
@@ -173,18 +176,18 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                       return (
                         <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                          <h4 className="font-semibold text-blue-900 mb-3">All Projects Summary</h4>
+                          <h4 className="font-semibold text-blue-900 mb-3">{t('customers.detail_modal.grand_total')}</h4>
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="font-medium text-blue-800">Total Paid:</span>
+                              <span className="font-medium text-blue-800">{t('customers.detail_modal.total_paid')}:</span>
                               <span className="font-bold text-green-700">€{grandPaid.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="font-medium text-blue-800">Total Remaining:</span>
+                              <span className="font-medium text-blue-800">{t('customers.detail_modal.total_remaining')}:</span>
                               <span className="font-bold text-red-600">€{grandRemaining.toLocaleString('hr-HR')}</span>
                             </div>
                             <div className="flex justify-between pt-2 border-t border-blue-300">
-                              <span className="font-bold text-blue-900">Grand Total:</span>
+                              <span className="font-bold text-blue-900">{t('customers.detail_modal.grand_total')}:</span>
                               <span className="font-bold text-blue-900 text-lg">€{grandTotal.toLocaleString('hr-HR')}</span>
                             </div>
                           </div>
@@ -197,11 +200,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
           {(customer.status === 'interested' || customer.status === 'hot_lead' || customer.status === 'negotiating') && customer.preferences && (
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('customers.detail_modal.preferences')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {customer.preferences.budget_min && customer.preferences.budget_max && (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600">Budget Range</p>
+                    <p className="text-sm text-gray-600">{t('customers.detail_modal.budget_range')}</p>
                     <p className="font-medium text-gray-900">
                       €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K
                     </p>
@@ -209,7 +212,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                 )}
                 {customer.preferences.preferred_size_min && customer.preferences.preferred_size_max && (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600">Size Range</p>
+                    <p className="text-sm text-gray-600">{t('customers.detail_modal.size_range')}</p>
                     <p className="font-medium text-gray-900">
                       {customer.preferences.preferred_size_min}m² - {customer.preferences.preferred_size_max}m²
                     </p>
@@ -217,20 +220,20 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                 )}
                 {customer.preferences.bedrooms && (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600">Bedrooms</p>
+                    <p className="text-sm text-gray-600">{t('customers.detail_modal.bedrooms')}</p>
                     <p className="font-medium text-gray-900">{customer.preferences.bedrooms}</p>
                   </div>
                 )}
                 {customer.preferences.preferred_floor && (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600">Preferred Floor</p>
+                    <p className="text-sm text-gray-600">{t('customers.detail_modal.preferred_floor')}</p>
                     <p className="font-medium text-gray-900">{customer.preferences.preferred_floor}</p>
                   </div>
                 )}
               </div>
               {customer.preferences.preferred_location && (
                 <div className="bg-blue-50 p-3 rounded-lg mt-3">
-                  <p className="text-sm text-gray-600">Preferred Location</p>
+                  <p className="text-sm text-gray-600">{t('customers.detail_modal.preferred_location')}</p>
                   <p className="font-medium text-gray-900">{customer.preferences.preferred_location}</p>
                 </div>
               )}
@@ -245,7 +248,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
           {customer.status === 'backed_out' && customer.backed_out_reason && (
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Backed Out Reason</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('customers.detail_modal.backed_out_reason')}</h3>
               <div className="bg-red-50 p-4 rounded-lg">
                 <p className="text-gray-900">{customer.backed_out_reason}</p>
               </div>

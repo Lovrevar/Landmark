@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
 interface WirePaymentModalProps {
@@ -28,6 +29,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onNotesChange,
   onSubmit,
 }) => {
+  const { t } = useTranslation()
   return (
     <Modal show={visible} onClose={onClose} size="md">
       <Modal.Header title={title} onClose={onClose} />
@@ -37,18 +39,18 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
           {details}
         </div>
 
-        <FormField label="Payment Amount" required>
+        <FormField label={t('funding.payments.wire_payment_modal.amount_label')} required>
           <Input
             type="number"
             value={amount || ''}
             onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
-            placeholder="Enter payment amount"
+            placeholder={t('funding.payments.wire_payment_modal.amount_placeholder')}
             min="0"
             step="0.01"
           />
         </FormField>
 
-        <FormField label="Payment Date">
+        <FormField label={t('funding.payments.wire_payment_modal.date_label')}>
           <Input
             type="date"
             value={paymentDate}
@@ -56,19 +58,19 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
           />
         </FormField>
 
-        <FormField label="Notes">
+        <FormField label={t('funding.payments.wire_payment_modal.notes_label')}>
           <Textarea
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             rows={3}
-            placeholder="Add any notes about this payment..."
+            placeholder={t('funding.payments.wire_payment_modal.notes_placeholder')}
           />
         </FormField>
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button variant="success" onClick={onSubmit}>Record Payment</Button>
+        <Button variant="ghost" onClick={onClose}>{t('funding.payments.wire_payment_modal.cancel_button')}</Button>
+        <Button variant="success" onClick={onSubmit}>{t('funding.payments.wire_payment_modal.submit_button')}</Button>
       </Modal.Footer>
     </Modal>
   )

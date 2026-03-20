@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
@@ -32,6 +33,7 @@ import { ExcelImportApartmentsModal } from './modals/ExcelImportApartmentsModal'
 import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
+  const { t } = useTranslation()
   const toast = useToast()
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
 
@@ -302,23 +304,29 @@ const SalesProjectsEnhanced: React.FC = () => {
   }
 
   const getUnitLabel = (unitType: UnitType) => {
-    if (unitType === 'apartment') return 'Apartments'
-    if (unitType === 'garage') return 'Garages'
-    return 'Repositories'
+    if (unitType === 'apartment') return t('sales_projects.units.apartments')
+    if (unitType === 'garage') return t('sales_projects.units.garages')
+    return t('sales_projects.units.repositories')
+  }
+
+  const getUnitLabelSingular = (unitType: UnitType) => {
+    if (unitType === 'apartment') return t('common.apartment')
+    if (unitType === 'garage') return t('common.garage')
+    return t('common.storage')
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading sales projects..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div>
       <PageHeader
-        title="Sales Projects"
+        title={t('sales_projects.title')}
         description={
-          viewMode === 'projects' ? 'Select a project to manage buildings and units' :
-          viewMode === 'buildings' ? `Managing buildings for ${selectedProject?.name}` :
-          `Managing units in ${selectedBuilding?.name}`
+          viewMode === 'projects' ? t('sales_projects.select_project') :
+          viewMode === 'buildings' ? `${t('sales_projects.managing_buildings')} ${selectedProject?.name}` :
+          `${t('sales_projects.managing_units')} ${selectedBuilding?.name}`
         }
         className="mb-6"
         actions={
@@ -330,20 +338,20 @@ const SalesProjectsEnhanced: React.FC = () => {
                   icon={FileUp}
                   onClick={() => setShowImportApartmentsModal(true)}
                 >
-                  Import from Excel
+                  {t('sales_projects.import_excel')}
                 </Button>
                 <Button
                   variant="success"
                   icon={Plus}
                   onClick={() => setShowBuildingQuantityForm(true)}
                 >
-                  Create Buildings (1-20)
+                  {t('sales_projects.create_buildings')}
                 </Button>
                 <Button
                   icon={Building2}
                   onClick={() => setShowBuildingForm(true)}
                 >
-                  Add Single Building
+                  {t('sales_projects.add_single_building')}
                 </Button>
               </>
             )}
@@ -355,7 +363,7 @@ const SalesProjectsEnhanced: React.FC = () => {
                     icon={FileUp}
                     onClick={() => setShowImportGaragesModal(true)}
                   >
-                    Import Garages from Excel
+                    {t('sales_projects.import_garages_excel')}
                   </Button>
                 )}
                 <Button
@@ -363,13 +371,13 @@ const SalesProjectsEnhanced: React.FC = () => {
                   icon={Building2}
                   onClick={() => setShowBulkUnitForm(true)}
                 >
-                  Bulk Create {getUnitLabel(activeUnitType)}
+                  {t('sales_projects.bulk_create')} {getUnitLabel(activeUnitType)}
                 </Button>
                 <Button
                   icon={Plus}
                   onClick={() => setShowUnitForm(true)}
                 >
-                  Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
+                  {t('sales_projects.add_single')} {getUnitLabelSingular(activeUnitType)}
                 </Button>
               </>
             )}
@@ -517,10 +525,10 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteBuildingId}
-        title="Potvrda brisanja"
-        message="Are you sure you want to delete this building? All units inside will also be deleted."
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={t('sales_projects.confirm_delete_building')}
+        confirmLabel={t('confirm.delete_confirm')}
+        cancelLabel={t('confirm.cancel')}
         variant="danger"
         onConfirm={confirmDeleteBuilding}
         onCancel={() => setPendingDeleteBuildingId(null)}
@@ -529,10 +537,10 @@ const SalesProjectsEnhanced: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteUnit}
-        title="Potvrda brisanja"
-        message={pendingDeleteUnit ? `Are you sure you want to delete this ${pendingDeleteUnit.unitType}?` : ''}
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={pendingDeleteUnit ? t('sales_projects.confirm_delete_unit') : ''}
+        confirmLabel={t('confirm.delete_confirm')}
+        cancelLabel={t('confirm.cancel')}
         variant="danger"
         onConfirm={confirmDeleteUnit}
         onCancel={() => setPendingDeleteUnit(null)}

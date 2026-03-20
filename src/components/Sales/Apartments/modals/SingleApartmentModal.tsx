@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApartmentFormData } from '../types'
 import { Modal, FormField, Select, Input, Button, Form } from '../../../ui'
 import {
@@ -36,6 +37,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
     povrsina_otvoreno: null as number | null,
     povrsina_ot_sa_koef: null as number | null
   })
+  const { t } = useTranslation()
   const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -65,31 +67,31 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
-      <Modal.Header title="Add Single Apartment" onClose={onClose} />
+      <Modal.Header title={t('apartments.add')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Project" required error={fieldErrors.project_id}>
+              <FormField label={t('apartments.form.project')} required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
                 >
-                  <option value="">Select Project</option>
+                  <option value="">{t('apartments.form.select_project')}</option>
                   {projects.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </Select>
               </FormField>
 
-              <FormField label="Building" required error={fieldErrors.building_id}>
+              <FormField label={t('apartments.form.building')} required error={fieldErrors.building_id}>
                 <Select
                   value={formData.building_id}
                   onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
                   disabled={!formData.project_id}
                 >
-                  <option value="">Select Building</option>
+                  <option value="">{t('apartments.form.select_building')}</option>
                   {filteredBuildings.map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
@@ -98,7 +100,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Apartment Number (Oznaka stana)" required error={fieldErrors.number}>
+              <FormField label={t('apartments.form.number')} required error={fieldErrors.number}>
                 <Input
                   type="text"
                   value={formData.number}
@@ -107,7 +109,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Entrance (Ulaz)">
+              <FormField label={t('apartments.form.entrance')}>
                 <Input
                   type="text"
                   value={formData.ulaz || ''}
@@ -118,7 +120,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor (Etaža)" required error={fieldErrors.floor}>
+              <FormField label={t('apartments.form.floor')} required error={fieldErrors.floor}>
                 <Input
                   type="number"
                   value={formData.floor}
@@ -126,7 +128,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Apartment Type (Tip stana)">
+              <FormField label={t('apartments.form.type')}>
                 <Input
                   type="text"
                   value={formData.tip_stana || ''}
@@ -135,7 +137,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Rooms (Sobnost)">
+              <FormField label={t('apartments.form.rooms')}>
                 <Input
                   type="number"
                   value={formData.sobnost ?? ''}
@@ -147,7 +149,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Saleable Area m² (Stan m2 prodajno)" required error={fieldErrors.size_m2}>
+              <FormField label={t('apartments.form.saleable_area')} required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
                   value={formData.size_m2}
@@ -156,7 +158,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Open Area m² (Površina otvoreno)">
+              <FormField label={t('apartments.form.open_area')}>
                 <Input
                   type="number"
                   value={formData.povrsina_otvoreno ?? ''}
@@ -166,7 +168,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Open Area w/ Coef. m²">
+              <FormField label={t('apartments.form.open_area_coef')}>
                 <Input
                   type="number"
                   value={formData.povrsina_ot_sa_koef ?? ''}
@@ -178,7 +180,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Price (EUR)" required error={fieldErrors.price}>
+              <FormField label={t('apartments.form.price')} required error={fieldErrors.price}>
                 <Input
                   type="number"
                   value={formData.price}
@@ -193,8 +195,8 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
         </Modal.Body>
 
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary">Create Apartment</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="primary">{t('apartments.add')}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Home, Warehouse, Package, Link as LinkIcon, Unlink, Trash2, DollarSign, CheckSquare, Square, ArrowLeft } from 'lucide-react'
 import {
   BuildingWithUnits,
@@ -57,6 +58,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   onDeselectAllUnits,
   onConfigurePrice
 }) => {
+  const { t } = useTranslation()
   const getUnitIcon = (unitType: UnitType) => {
     if (unitType === 'apartment') return Home
     if (unitType === 'garage') return Warehouse
@@ -64,9 +66,9 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   }
 
   const getUnitLabel = (unitType: UnitType) => {
-    if (unitType === 'apartment') return 'Apartments'
-    if (unitType === 'garage') return 'Garages'
-    return 'Repositories'
+    if (unitType === 'apartment') return t('sales_projects.units.apartments')
+    if (unitType === 'garage') return t('sales_projects.units.garages')
+    return t('sales_projects.units.repositories')
   }
 
   const getFilteredUnits = () => {
@@ -90,20 +92,20 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   return (
     <div>
       <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
-        Back to Buildings
+        {t('sales_projects.back_to_buildings')}
       </Button>
 
       {selectedUnitIds.length > 0 && (
         <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium text-blue-900">
-              {selectedUnitIds.length} {selectedUnitIds.length === 1 ? 'unit' : 'units'} selected
+              {selectedUnitIds.length} {t('sales_projects.units_selected')}
             </span>
             <button
               onClick={onDeselectAllUnits}
               className="text-sm text-blue-700 hover:text-blue-900 underline"
             >
-              Deselect All
+              {t('sales_projects.deselect_all')}
             </button>
           </div>
           <button
@@ -111,7 +113,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
             <DollarSign className="w-4 h-4 mr-2" />
-            Configure Price
+            {t('sales_projects.configure_price')}
           </button>
         </div>
       )}
@@ -142,13 +144,13 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">Filter by status:</span>
+          <span className="text-sm font-medium text-gray-700">{t('sales_projects.filter_by_status')}:</span>
           <div className="flex space-x-2">
           {[
-            { value: 'all', label: 'All' },
-            { value: 'available', label: 'Available' },
-            { value: 'reserved', label: 'Reserved' },
-            { value: 'sold', label: 'Sold' }
+            { value: 'all', label: t('sales_projects.filter.all') },
+            { value: 'available', label: t('sales_projects.filter.available') },
+            { value: 'reserved', label: t('sales_projects.filter.reserved') },
+            { value: 'sold', label: t('sales_projects.filter.sold') }
           ].map((filter) => (
             <button
               key={filter.value}
@@ -170,7 +172,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
             className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors duration-200"
           >
             {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
-            {allFilteredSelected ? 'Deselect All' : 'Select All'}
+            {allFilteredSelected ? t('sales_projects.deselect_all') : t('sales_projects.select_all')}
           </button>
         </div>
       </div>
@@ -239,11 +241,11 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
               <div className="space-y-2 mb-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Size:</span>
+                  <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.size')}:</span>
                   <span className="text-sm font-medium">{unit.size_m2} m²</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Price per m²:</span>
+                  <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.price_per_m2')}:</span>
                   <span className="text-sm font-medium text-blue-600">
                     €{(unit.price_per_m2 && unit.price_per_m2 > 0
                       ? unit.price_per_m2
@@ -252,13 +254,13 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? 'Apartment Price:' : 'Total Price:'}</span>
+                  <span className="text-sm text-gray-600">{activeUnitType === 'apartment' ? t('sales_projects.unit_detail.apartment_price') : t('sales_projects.unit_detail.total_price')}:</span>
                   <span className="text-sm font-bold text-green-600">€{(unit.price ?? 0).toLocaleString('hr-HR')}</span>
                 </div>
 
                 {activeUnitType === 'apartment' && hasLinkedUnits && (
                   <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="text-sm font-semibold text-gray-900">Total Package:</span>
+                    <span className="text-sm font-semibold text-gray-900">{t('sales_projects.unit_detail.total_package')}:</span>
                     <span className="text-base font-bold text-blue-700">€{totalPackagePrice.toLocaleString('hr-HR')}</span>
                   </div>
                 )}
@@ -266,26 +268,26 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 {unit.status === 'Sold' && unit.sale_info && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Buyer:</span>
+                      <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.buyer')}:</span>
                       <span className="text-sm font-medium">{unit.sale_info.buyer_name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Sale Price:</span>
+                      <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.sale_price')}:</span>
                       <span className="text-sm font-bold text-green-600">€{unit.sale_info.sale_price.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Down Payment:</span>
+                      <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.down_payment')}:</span>
                       <span className="text-sm font-medium">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
                     </div>
                     {unit.sale_info.monthly_payment > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Monthly:</span>
+                        <span className="text-sm text-gray-600">{t('sales_projects.unit_detail.monthly')}:</span>
                         <span className="text-sm font-medium">€{unit.sale_info.monthly_payment.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="mt-2">
                       <div className="flex justify-between mb-1">
-                        <span className="text-xs text-gray-500">Payment Progress</span>
+                        <span className="text-xs text-gray-500">{t('sales_projects.unit_detail.payment_progress')}</span>
                         <span className="text-xs font-medium">
                           €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString('hr-HR')}
                         </span>
@@ -305,7 +307,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 {linkedGarages.map((garage: { id: string; number: string; price: number }) => (
                   <div key={garage.id} className="bg-orange-50 border border-orange-200 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-orange-700">Garage: {garage.number}</span>
+                      <span className="text-xs font-semibold text-orange-700">{t('common.garage')}: {garage.number}</span>
                       <button
                         onClick={() => onUnlinkGarage(unit.id, garage.id)}
                         className="text-orange-600 hover:text-orange-800"
@@ -314,7 +316,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                       </button>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-orange-600">Price:</span>
+                      <span className="text-xs text-orange-600">{t('sales_projects.unit_detail.price')}:</span>
                       <span className="text-xs font-bold text-orange-700">€{(garage.price || 0).toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
@@ -323,7 +325,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 {linkedRepositories.map((repository: { id: string; number: string; price: number }) => (
                   <div key={repository.id} className="bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-700">Repository: {repository.number}</span>
+                      <span className="text-xs font-semibold text-gray-700">{t('common.storage')}: {repository.number}</span>
                       <button
                         onClick={() => onUnlinkRepository(unit.id, repository.id)}
                         className="text-gray-600 hover:text-gray-800"
@@ -332,7 +334,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                       </button>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600">Price:</span>
+                      <span className="text-xs text-gray-600">{t('sales_projects.unit_detail.price')}:</span>
                       <span className="text-xs font-bold text-gray-700">€{(repository.price || 0).toLocaleString('hr-HR')}</span>
                     </div>
                   </div>
@@ -349,16 +351,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <div className="flex space-x-1">
                       {unit.status === 'Available' && (
                         <Button size="sm" variant="ghost" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
-                          Reserve
+                          {t('sales_projects.unit_detail.reserve')}
                         </Button>
                       )}
                       {unit.status === 'Reserved' && (
                         <Button size="sm" variant="ghost" className="bg-blue-100 text-blue-700 hover:bg-blue-200" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
-                          Available
+                          {t('sales_projects.unit_detail.available')}
                         </Button>
                       )}
                       <Button size="sm" variant="success" onClick={() => onSellUnit(unit as unknown as (Apartment | Garage | Repository), activeUnitType)}>
-                        Sell
+                        {t('sales_projects.unit_detail.sell')}
                       </Button>
                     </div>
                   )}

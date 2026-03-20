@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Home, Warehouse, Package } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
 import { Modal, FormField, Input, Select, Textarea, Button, Form } from '../../../ui'
@@ -42,6 +43,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   onSubmit,
   onMultiUnitSubmit: _onMultiUnitSubmit  // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
+  const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   if (!visible || !apartment) return null
@@ -72,7 +74,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Home className="w-4 h-4 mr-2 text-blue-600" />
-                  <span className="text-sm text-gray-900">Apartment {apartment.number}</span>
+                  <span className="text-sm text-gray-900">{t('common.apartment')} {apartment.number}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-700">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
@@ -80,7 +82,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
-                    <span className="text-sm text-gray-900">Garage {linkedGarage.number}</span>
+                    <span className="text-sm text-gray-900">{t('common.garage')} {linkedGarage.number}</span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
                 </div>
@@ -89,13 +91,13 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Package className="w-4 h-4 mr-2 text-gray-600" />
-                    <span className="text-sm text-gray-900">Storage {linkedStorage.number}</span>
+                    <span className="text-sm text-gray-900">{t('common.storage')} {linkedStorage.number}</span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
               <div className="pt-2 mt-2 border-t border-gray-300 flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-900">Total Package:</span>
+                <span className="text-sm font-bold text-gray-900">{t('common.total')}:</span>
                 <span className="text-base font-bold text-green-600">€{totalPackagePrice.toLocaleString('hr-HR')}</span>
               </div>
             </div>
@@ -124,10 +126,10 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
               value={paymentType}
               onChange={(e) => onPaymentTypeChange(e.target.value as 'down_payment' | 'installment' | 'final_payment' | 'other')}
             >
-              <option value="down_payment">Down Payment</option>
-              <option value="installment">Installment</option>
-              <option value="final_payment">Final Payment</option>
-              <option value="other">Other</option>
+              <option value="down_payment">{t('payment_type.down_payment')}</option>
+              <option value="installment">{t('payment_type.installment')}</option>
+              <option value="final_payment">{t('payment_type.final_payment')}</option>
+              <option value="other">{t('payment_type.other')}</option>
             </Select>
           </FormField>
 
@@ -143,8 +145,8 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
         </Modal.Body>
 
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="success">Record Payment</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="success">{t('common.save')}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Warehouse, Package, X } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
 import { Modal, Button, LoadingSpinner } from '../../../ui'
@@ -18,6 +19,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   apartment,
   onLink
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const {
     availableGarages,
@@ -70,32 +72,32 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
   return (
     <Modal show={visible} onClose={onClose} size="xl">
       <Modal.Header
-        title={`Link Units to Apartment ${apartment.number}`}
+        title={t('apartments.link_units_modal.title')}
         subtitle={`${apartment.project_name} - ${apartment.building_name}`}
         onClose={onClose}
       />
 
       <Modal.Body>
         {loading ? (
-          <LoadingSpinner message="Loading available units..." />
+          <LoadingSpinner message={t('apartments.link_units_modal.loading')} />
         ) : (
           <div className="space-y-6">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h5 className="font-medium text-gray-900 mb-2">Currently Linked Units</h5>
+              <h5 className="font-medium text-gray-900 mb-2">{t('apartments.link_units_modal.linked')}</h5>
               {selectedGarages.length === 0 && selectedStorages.length === 0 ? (
-                <p className="text-sm text-gray-500">No units linked</p>
+                <p className="text-sm text-gray-500">{t('apartments.link_units_modal.no_linked')}</p>
               ) : (
                 <div className="space-y-1">
                   {selectedGarages.map(garage => (
                     <div key={garage.id} className="text-sm text-gray-700 flex items-center">
                       <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
-                      Garage {garage.number} - €{garage.price.toLocaleString('hr-HR')}
+                      {t('common.garage')} {garage.number} - €{garage.price.toLocaleString('hr-HR')}
                     </div>
                   ))}
                   {selectedStorages.map(storage => (
                     <div key={storage.id} className="text-sm text-gray-700 flex items-center">
                       <Package className="w-4 h-4 mr-2 text-gray-600" />
-                      Storage {storage.number} - €{storage.price.toLocaleString('hr-HR')}
+                      {t('common.storage')} {storage.number} - €{storage.price.toLocaleString('hr-HR')}
                     </div>
                   ))}
                 </div>
@@ -105,10 +107,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
             <div>
               <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                 <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
-                Select Garages ({selectedGarageIds.length} selected)
+                {t('apartments.link_units_modal.select_garages')} ({selectedGarageIds.length})
               </h4>
               {availableGarages.length === 0 ? (
-                <p className="text-gray-500 text-sm">No garages available in this building</p>
+                <p className="text-gray-500 text-sm">{t('apartments.link_units_modal.no_garages')}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {availableGarages.map((garage) => {
@@ -129,10 +131,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">Garage {garage.number}</div>
+                          <div className="font-medium text-gray-900">{t('common.garage')} {garage.number}</div>
                           {isSelected && <X className="w-4 h-4 text-orange-600" />}
                         </div>
-                        <div className="text-sm text-gray-600">Floor {garage.floor} • {garage.size_m2}m²</div>
+                        <div className="text-sm text-gray-600">{t('common.floor')} {garage.floor} • {garage.size_m2}m²</div>
                         <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
                         {!isAvailable && <div className="text-xs text-gray-500 mt-1">{garage.status}</div>}
                       </button>
@@ -145,10 +147,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
             <div>
               <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                 <Package className="w-5 h-5 mr-2 text-gray-600" />
-                Select Storages ({selectedStorageIds.length} selected)
+                {t('apartments.link_units_modal.select_storages')} ({selectedStorageIds.length})
               </h4>
               {availableStorages.length === 0 ? (
-                <p className="text-gray-500 text-sm">No storages available in this building</p>
+                <p className="text-gray-500 text-sm">{t('apartments.link_units_modal.no_storages')}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {availableStorages.map((storage) => {
@@ -169,10 +171,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">Storage {storage.number}</div>
+                          <div className="font-medium text-gray-900">{t('common.storage')} {storage.number}</div>
                           {isSelected && <X className="w-4 h-4 text-gray-600" />}
                         </div>
-                        <div className="text-sm text-gray-600">Floor {storage.floor} • {storage.size_m2}m²</div>
+                        <div className="text-sm text-gray-600">{t('common.floor')} {storage.floor} • {storage.size_m2}m²</div>
                         <div className="text-sm font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</div>
                         {!isAvailable && <div className="text-xs text-gray-500 mt-1">{storage.status}</div>}
                       </button>
@@ -186,13 +188,13 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           variant="primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? 'Saving...' : 'Save Links'}
+          {saving ? t('common.saving') : t('apartments.link_units_modal.save')}
         </Button>
       </Modal.Footer>
     </Modal>

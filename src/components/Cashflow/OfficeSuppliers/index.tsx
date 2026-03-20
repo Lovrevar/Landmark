@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
@@ -6,6 +7,7 @@ import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 
 const OfficeSuppliers: React.FC = () => {
+  const { t } = useTranslation()
   const {
     suppliers,
     loading,
@@ -33,48 +35,48 @@ const OfficeSuppliers: React.FC = () => {
   } = useOfficeSuppliers()
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Office Dobavljači"
-        description="Upravljanje dobavljačima za uredske troškove"
+        title={t('office_suppliers.title')}
+        description={t('office_suppliers.description')}
         actions={
           <Button
             onClick={() => handleOpenModal()}
             icon={Plus}
           >
-            Novi dobavljač
+            {t('office_suppliers.add_button')}
           </Button>
         }
       />
 
       <StatGrid columns={4}>
         <StatCard
-          label="Ukupno dobavljača"
+          label={t('office_suppliers.stats.total')}
           value={suppliers.length}
           icon={Building2}
           color="white"
         />
 
         <StatCard
-          label="Ukupno računa"
+          label={t('office_suppliers.stats.total_invoices')}
           value={suppliers.reduce((sum, s) => sum + s.total_invoices, 0)}
           icon={FileText}
           color="gray"
         />
 
         <StatCard
-          label="Ukupno plaćeno (bez PDV)"
+          label={t('office_suppliers.stats.total_paid')}
           value={`€${suppliers.reduce((sum, s) => sum + s.paid_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={Building2}
           color="green"
         />
 
         <StatCard
-          label="Preostalo (bez PDV)"
+          label={t('office_suppliers.stats.remaining')}
           value={`€${suppliers.reduce((sum, s) => sum + s.remaining_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={Building2}
           color="yellow"
@@ -86,7 +88,7 @@ const OfficeSuppliers: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onClear={() => setSearchTerm('')}
-          placeholder="Pretraži dobavljače..."
+          placeholder={t('office_suppliers.search_placeholder')}
         />
       </div>
 
@@ -94,8 +96,8 @@ const OfficeSuppliers: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <EmptyState
             icon={Building2}
-            title={searchTerm ? 'Nema rezultata pretrage' : 'Nema office dobavljača'}
-            description={searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog office dobavljača klikom na gumb iznad'}
+            title={searchTerm ? t('office_suppliers.empty.title_search') : t('office_suppliers.empty.title_empty')}
+            description={searchTerm ? t('office_suppliers.empty.description_search') : t('office_suppliers.empty.description_empty')}
           />
         </div>
       ) : (
@@ -147,19 +149,19 @@ const OfficeSuppliers: React.FC = () => {
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                  <span className="text-gray-600">Računi:</span>
+                  <span className="text-gray-600">{t('office_suppliers.card.invoices')}</span>
                   <span className="font-medium text-gray-900">{supplier.total_invoices}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Ukupno (bez PDV):</span>
+                  <span className="text-gray-600">{t('office_suppliers.card.total_no_vat')}</span>
                   <span className="font-bold text-gray-900">€{supplier.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Plaćeno:</span>
+                  <span className="text-gray-600">{t('office_suppliers.card.paid')}</span>
                   <span className="font-medium text-green-600">€{supplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Preostalo:</span>
+                  <span className="text-gray-600">{t('office_suppliers.card.remaining')}</span>
                   <span className="font-medium text-orange-600">€{supplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
@@ -174,7 +176,7 @@ const OfficeSuppliers: React.FC = () => {
                   size="sm"
                   fullWidth
                 >
-                  Uredi
+                  {t('office_suppliers.card.edit')}
                 </Button>
                 <Button
                   onClick={(e) => {
@@ -184,7 +186,7 @@ const OfficeSuppliers: React.FC = () => {
                   variant="outline-danger"
                   size="icon-md"
                   icon={Trash2}
-                  title="Obriši"
+                  title={t('office_suppliers.card.delete')}
                 />
               </div>
             </div>
@@ -205,33 +207,33 @@ const OfficeSuppliers: React.FC = () => {
         {selectedSupplier && (
           <>
             <Modal.Header
-              title={`Računi - ${selectedSupplier.name}`}
-              subtitle={`Ukupno: ${supplierInvoices.length} računa | Plaćeno: €${selectedSupplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Preostalo: €${selectedSupplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              title={t('office_suppliers.invoices_modal.title', { name: selectedSupplier.name })}
+              subtitle={t('office_suppliers.invoices_modal.subtitle', { count: supplierInvoices.length, paid: selectedSupplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), remaining: selectedSupplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
               onClose={handleCloseInvoicesModal}
             />
 
             <Modal.Body noPadding={false}>
               {loadingInvoices ? (
-                <LoadingSpinner message="Učitavanje računa..." />
+                <LoadingSpinner message={t('office_suppliers.invoices_modal.loading')} />
               ) : supplierInvoices.length === 0 ? (
                 <EmptyState
                   icon={FileText}
-                  title="Nema računa"
-                  description="Ovaj dobavljač nema unesenih računa."
+                  title={t('office_suppliers.invoices_modal.empty_title')}
+                  description={t('office_suppliers.invoices_modal.empty_description')}
                 />
               ) : (
                 <Table>
                   <Table.Head>
                     <Table.Tr hoverable={false}>
-                      <Table.Th>Broj računa</Table.Th>
-                      <Table.Th>Datum izdavanja</Table.Th>
-                      <Table.Th>Datum dospijeća</Table.Th>
-                      <Table.Th>Opis</Table.Th>
-                      <Table.Th className="text-right">Osnovica</Table.Th>
-                      <Table.Th className="text-right">Ukupno (s PDV)</Table.Th>
-                      <Table.Th className="text-right">Plaćeno</Table.Th>
-                      <Table.Th className="text-right">Preostalo</Table.Th>
-                      <Table.Th className="text-center">Status</Table.Th>
+                      <Table.Th>{t('office_suppliers.invoices_modal.table.invoice_number')}</Table.Th>
+                      <Table.Th>{t('office_suppliers.invoices_modal.table.issue_date')}</Table.Th>
+                      <Table.Th>{t('office_suppliers.invoices_modal.table.due_date')}</Table.Th>
+                      <Table.Th>{t('office_suppliers.invoices_modal.table.description')}</Table.Th>
+                      <Table.Th className="text-right">{t('office_suppliers.invoices_modal.table.base')}</Table.Th>
+                      <Table.Th className="text-right">{t('office_suppliers.invoices_modal.table.total')}</Table.Th>
+                      <Table.Th className="text-right">{t('office_suppliers.invoices_modal.table.paid')}</Table.Th>
+                      <Table.Th className="text-right">{t('office_suppliers.invoices_modal.table.remaining')}</Table.Th>
+                      <Table.Th className="text-center">{t('office_suppliers.invoices_modal.table.status')}</Table.Th>
                     </Table.Tr>
                   </Table.Head>
                   <Table.Body>
@@ -278,7 +280,7 @@ const OfficeSuppliers: React.FC = () => {
                             }
                             size="sm"
                           >
-                            {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                            {invoice.status === 'PAID' ? t('office_suppliers.status.paid') : invoice.status === 'PARTIALLY_PAID' ? t('office_suppliers.status.partial') : t('office_suppliers.status.unpaid')}
                           </Badge>
                         </Table.Td>
                       </Table.Tr>
@@ -293,7 +295,7 @@ const OfficeSuppliers: React.FC = () => {
                 onClick={handleCloseInvoicesModal}
                 variant="ghost"
               >
-                Zatvori
+                {t('office_suppliers.invoices_modal.close')}
               </Button>
             </Modal.Footer>
           </>
@@ -302,10 +304,10 @@ const OfficeSuppliers: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteId}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane račune."
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('office_suppliers.confirm_delete.title')}
+        message={t('office_suppliers.confirm_delete.message')}
+        confirmLabel={t('office_suppliers.confirm_delete.confirm')}
+        cancelLabel={t('office_suppliers.confirm_delete.cancel')}
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}

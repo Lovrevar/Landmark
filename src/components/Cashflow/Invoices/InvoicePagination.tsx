@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pagination } from '../../ui'
 
 interface InvoicePaginationProps {
@@ -14,13 +15,14 @@ export const InvoicePagination: React.FC<InvoicePaginationProps> = ({
   totalCount,
   onPageChange
 }) => {
+  const { t } = useTranslation()
   return (
     <Pagination
       currentPage={currentPage}
       pageSize={pageSize}
       totalCount={totalCount}
       onPageChange={onPageChange}
-      itemLabel="računa"
+      itemLabel={t('invoices.pagination.item_label')}
     />
   )
 }

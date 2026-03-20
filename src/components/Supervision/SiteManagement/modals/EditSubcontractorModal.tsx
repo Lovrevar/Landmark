@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { fetchContractFormData } from '../services/siteService'
@@ -40,6 +41,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   subcontractor,
   onSubmit
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -111,11 +113,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
-      <Modal.Header title="Edit Subcontractor" onClose={onClose} />
+      <Modal.Header title={t('supervision.edit_subcontractor.title')} onClose={onClose} />
 
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Name" required error={fieldErrors.name}>
+          <FormField label={t('supervision.edit_subcontractor.name')} required error={fieldErrors.name}>
             <Input
               type="text"
               value={name}
@@ -123,26 +125,26 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Contact" required>
+          <FormField label={t('supervision.edit_subcontractor.contact')} required>
             <Input
               type="text"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="Phone or email"
+              placeholder={t('supervision.edit_subcontractor.contact_placeholder')}
             />
           </FormField>
 
           <div className="border-t border-gray-200 pt-4 mt-2">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Projekt & Faza</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('supervision.edit_subcontractor.project_phase')}</h3>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Faza" required error={fieldErrors.phase_id}>
+              <FormField label={t('supervision.edit_subcontractor.phase')} required error={fieldErrors.phase_id}>
                 <Select
                   value={selectedPhaseId}
                   onChange={(e) => setSelectedPhaseId(e.target.value)}
                   disabled={loadingPhases}
                 >
-                  <option value="">Odaberite fazu</option>
+                  <option value="">{t('supervision.edit_subcontractor.select_phase')}</option>
                   {phases.map((phase) => (
                     <option key={phase.id} value={phase.id}>
                       {phase.phase_name}
@@ -151,7 +153,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                 </Select>
               </FormField>
 
-              <FormField label="Status ugovora">
+              <FormField label={t('supervision.edit_subcontractor.contract_status')}>
                 <div className="flex items-center h-10">
                   <label className="inline-flex items-center cursor-pointer">
                     <input
@@ -161,7 +163,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">
-                      {hasContract ? 'Sa ugovorom' : 'Bez ugovora'}
+                      {hasContract ? t('supervision.edit_subcontractor.with_contract') : t('supervision.edit_subcontractor.no_contract')}
                     </span>
                   </label>
                 </div>
@@ -169,9 +171,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
 
             <FormField
-              label="Kategorija ugovora"
+              label={t('supervision.edit_subcontractor.contract_category')}
               required
-              helperText="Odaberite tip ugovora za ovu fazu"
+              helperText={t('supervision.edit_subcontractor.contract_category_help')}
             >
               <Select
                 value={contractTypeId}
@@ -188,16 +190,15 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
             {!hasContract && (
               <Alert variant="warning">
-                <strong>Bez ugovora:</strong> Dobavljač će biti označen kao bez formalnog ugovora.
-                Budžet se prati samo kroz fakture.
+                <strong>{t('supervision.edit_subcontractor.no_contract_warning_title')}</strong> {t('supervision.edit_subcontractor.no_contract_warning_body')}
               </Alert>
             )}
           </div>
 
           <div className="border-t border-gray-200 pt-4 mt-2">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalji posla</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('supervision.edit_subcontractor.job_details')}</h3>
 
-            <FormField label="Job Description" required error={fieldErrors.jobDescription}>
+            <FormField label={t('supervision.edit_subcontractor.job_description')} required error={fieldErrors.jobDescription}>
               <Textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
@@ -210,8 +211,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
-                  label="Osnovica (€)"
-                  helperText="Base amount without VAT"
+                  label={t('supervision.edit_subcontractor.base')}
+                  helperText={t('supervision.edit_subcontractor.base_help')}
                   required
                 >
                   <Input
@@ -223,7 +224,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   />
                 </FormField>
 
-                <FormField label="PDV stopa" required>
+                <FormField label={t('supervision.edit_subcontractor.vat_rate')} required>
                   <Select
                     value={vatRate}
                     onChange={(e) => setVatRate(parseFloat(e.target.value))}
@@ -237,14 +238,14 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
               <div className="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
                 <div>
-                  <label className="text-xs text-gray-600">Iznos PDV</label>
+                  <label className="text-xs text-gray-600">{t('supervision.edit_subcontractor.vat_amount')}</label>
                   <p className="text-lg font-semibold text-gray-900">{formatEuro(vatAmount)}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600">Ukupno</label>
+                  <label className="text-xs text-gray-600">{t('supervision.edit_subcontractor.total')}</label>
                   <p className="text-lg font-bold text-blue-600">{formatEuro(totalAmount)}</p>
                 </div>
-                <FormField label="Deadline" required>
+                <FormField label={t('supervision.edit_subcontractor.deadline')} required>
                   <Input
                     type="date"
                     value={deadline}
@@ -257,20 +258,20 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
           {hasContract && (
             <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700"><strong>Payment Info (Read-only)</strong></p>
+              <p className="text-sm text-blue-700"><strong>{t('supervision.edit_subcontractor.payment_info')}</strong></p>
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Paid (Base):</span>
+                  <span className="text-gray-600">{t('supervision.edit_subcontractor.total_paid_base')}</span>
                   <span className="font-medium text-gray-900">{formatEuro(subcontractor.budget_realized)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining:</span>
+                  <span className="text-gray-600">{t('supervision.edit_subcontractor.remaining')}</span>
                   <span className="font-medium text-orange-600">
                     {formatEuro(Math.max(0, totalAmount - subcontractor.budget_realized))}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
-                  <span className="text-gray-600">Progress:</span>
+                  <span className="text-gray-600">{t('supervision.edit_subcontractor.progress')}</span>
                   <span className="font-medium text-gray-900">
                     {totalAmount > 0
                       ? Math.min(100, ((subcontractor.budget_realized / totalAmount) * 100)).toFixed(1)
@@ -291,7 +292,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                 </div>
               </div>
               <p className="text-xs text-blue-600 mt-2">
-                Progress is automatically calculated based on payments (base amounts)
+                {t('supervision.edit_subcontractor.progress_note')}
               </p>
             </div>
           )}
@@ -300,11 +301,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           <div className="border-t border-gray-200 pt-4 mt-2">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.edit_subcontractor.contract_docs')}</h3>
             </div>
 
             <div className="mb-4">
-              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Postojeći dokumenti</p>
+              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.existing_docs')}</p>
               <ContractDocumentViewer
                 key={docViewerKey}
                 subcontractorId={getTrueSubcontractorId(subcontractor)}
@@ -312,7 +313,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Dodaj nove dokumente</p>
+              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.add_docs')}</p>
               <ContractDocumentUpload
                 files={pendingFiles}
                 onChange={setPendingFiles}
@@ -325,7 +326,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   loading={uploadingFiles}
                   className="mt-3"
                 >
-                  Učitaj {pendingFiles.length} {pendingFiles.length === 1 ? 'dokument' : 'dokumenata'}
+                  {t('supervision.edit_subcontractor.upload')} {pendingFiles.length} {pendingFiles.length === 1 ? t('supervision.edit_subcontractor.doc_singular') : t('supervision.edit_subcontractor.doc_plural')}
                 </Button>
               )}
             </div>
@@ -336,14 +337,14 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={() => {
             const errors: Record<string, string> = {}
-            if (!selectedPhaseId) errors.phase_id = 'Faza je obavezna'
-            if (!name.trim()) errors.name = 'Naziv je obavezan'
-            if (!jobDescription.trim()) errors.jobDescription = 'Opis posla je obavezan'
+            if (!selectedPhaseId) errors.phase_id = t('supervision.edit_subcontractor.errors.phase_required')
+            if (!name.trim()) errors.name = t('supervision.edit_subcontractor.errors.name_required')
+            if (!jobDescription.trim()) errors.jobDescription = t('supervision.edit_subcontractor.errors.job_required')
             setFieldErrors(errors)
             if (Object.keys(errors).length > 0) return
 
@@ -366,11 +367,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             onSubmit(updatedSubcontractor)
           }}
         >
-          Save Changes
+          {t('common.save_changes')}
         </Button>
         {subcontractor.has_contract !== false && (
           <Button variant="success">
-            Mark as Completed
+            {t('supervision.edit_subcontractor.mark_completed')}
           </Button>
         )}
       </Modal.Footer>

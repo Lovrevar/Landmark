@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   TrendingUp,
   Users,
@@ -17,6 +18,7 @@ import { useToast } from '../../contexts/ToastContext'
 
 const SupervisionReports: React.FC = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [projectReport, setProjectReport] = useState<ProjectSupervisionReport | null>(null)
@@ -71,23 +73,23 @@ const SupervisionReports: React.FC = () => {
       await generateSupervisionReportPDF(projectReport, dateRange)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      toast.error('Error generating PDF report. Please try again.')
+      toast.error(t('reports.supervision.pdf_error'))
     }
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading reports..." />
+    return <LoadingSpinner message={t('reports.supervision.loading')} />
   }
 
   return (
     <div>
       <PageHeader
-        title="Supervision Reports"
-        description="Generate comprehensive supervision and construction reports"
+        title={t('reports.supervision.title')}
+        description={t('reports.supervision.description')}
         actions={
           projectReport ? (
             <Button icon={Download} onClick={handleGeneratePDF}>
-              Export Report
+              {t('reports.supervision.export_report')}
             </Button>
           ) : undefined
         }
@@ -95,14 +97,14 @@ const SupervisionReports: React.FC = () => {
       />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.supervision.config_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField label="Project">
+          <FormField label={t('reports.supervision.project_label')}>
             <Select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
-              <option value="">Select a project</option>
+              <option value="">{t('reports.supervision.select_project')}</option>
               {projects.map(project => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -111,14 +113,14 @@ const SupervisionReports: React.FC = () => {
             </Select>
           </FormField>
 
-          <FormField label="Start Date">
+          <FormField label={t('reports.supervision.start_date')}>
             <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
             />
           </FormField>
-          <FormField label="End Date">
+          <FormField label={t('reports.supervision.end_date')}>
             <Input
               type="date"
               value={dateRange.end}
@@ -129,14 +131,14 @@ const SupervisionReports: React.FC = () => {
       </div>
 
       {generatingReport && (
-        <LoadingSpinner message="Generating report..." />
+        <LoadingSpinner message={t('reports.supervision.generating')} />
       )}
 
       {projectReport && !generatingReport && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Project Supervision Overview</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('reports.supervision.project_overview')}</h2>
               <Badge variant={
                 projectReport.project.status === 'Completed' ? 'green'
                   : projectReport.project.status === 'In Progress' ? 'blue'
@@ -151,37 +153,37 @@ const SupervisionReports: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 mb-3">{projectReport.project.name}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Location:</span>
+                    <span className="text-gray-600">{t('reports.supervision.location')}</span>
                     <span className="font-medium">{projectReport.project.location}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Start Date:</span>
+                    <span className="text-gray-600">{t('reports.supervision.start_date_label')}</span>
                     <span className="font-medium">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Budget:</span>
+                    <span className="text-gray-600">{t('reports.supervision.total_budget')}</span>
                     <span className="font-medium">€{projectReport.total_budget.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Funders:</span>
+                    <span className="text-gray-600">{t('reports.supervision.funders')}</span>
                     <span className="font-medium">{projectReport.investors}</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Budget Performance</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t('reports.supervision.budget_performance')}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Budget Used:</span>
+                    <span className="text-gray-600">{t('reports.supervision.budget_used')}</span>
                     <span className="font-bold text-orange-600">€{projectReport.total_payments.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Remaining:</span>
+                    <span className="text-gray-600">{t('reports.supervision.remaining')}</span>
                     <span className="font-bold text-green-600">€{projectReport.remaining_budget.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Utilization:</span>
+                    <span className="text-gray-600">{t('reports.supervision.utilization')}</span>
                     <span className="font-medium">{projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%</span>
                   </div>
                 </div>
@@ -190,15 +192,15 @@ const SupervisionReports: React.FC = () => {
           </div>
 
           <StatGrid columns={5}>
-            <StatCard label="Total Contracts" value={projectReport.total_contracts} icon={FileText} color="blue" />
-            <StatCard label="Active Contracts" value={projectReport.active_contracts} icon={TrendingUp} color="green" />
-            <StatCard label="Subcontractors" value={projectReport.total_subcontractors} icon={Users} color="teal" />
-            <StatCard label="Phases Done" value={`${projectReport.completed_phases}/${projectReport.total_phases}`} icon={Activity} color="orange" />
-            <StatCard label="Work Logs" value={projectReport.total_work_logs} icon={ClipboardCheck} color="teal" />
+            <StatCard label={t('reports.supervision.total_contracts_stat')} value={projectReport.total_contracts} icon={FileText} color="blue" />
+            <StatCard label={t('reports.supervision.active_contracts_stat')} value={projectReport.active_contracts} icon={TrendingUp} color="green" />
+            <StatCard label={t('reports.supervision.subcontractors_stat')} value={projectReport.total_subcontractors} icon={Users} color="teal" />
+            <StatCard label={t('reports.supervision.phases_done_stat')} value={`${projectReport.completed_phases}/${projectReport.total_phases}`} icon={Activity} color="orange" />
+            <StatCard label={t('reports.supervision.work_logs_stat')} value={projectReport.total_work_logs} icon={ClipboardCheck} color="teal" />
           </StatGrid>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Contract Status Distribution</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.supervision.contract_status')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="space-y-4">

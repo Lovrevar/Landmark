@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../../Common/CurrencyInput'
 import { VatCalculation } from '../retailInvoiceTypes'
 
@@ -17,18 +18,19 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
   base_amount_4,
   calculation
 }) => {
+  const { t } = useTranslation()
   if (base_amount_1 === 0 && base_amount_2 === 0 && base_amount_3 === 0 && base_amount_4 === 0) {
     return null
   }
 
   return (
     <div className="col-span-2 bg-gray-50 rounded-lg p-4 space-y-2">
-      <div className="text-sm font-medium text-gray-700 mb-2">Pregled računa:</div>
+      <div className="text-sm font-medium text-gray-700 mb-2">{t('invoices.form.vat_preview')}</div>
 
       {base_amount_1 > 0 && (
         <div className="space-y-1 pb-2 border-b border-gray-200">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Osnovica (PDV 25%):</span>
+            <span className="text-gray-600">{t('invoices.form.base_vat25')}</span>
             <span className="font-medium">€{formatCurrency(base_amount_1)}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -36,7 +38,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(calculation.vat1)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600">Subtotal:</span>
+            <span className="text-gray-600">{t('invoices.form.subtotal')}</span>
             <span>€{formatCurrency(calculation.subtotal1)}</span>
           </div>
         </div>
@@ -45,7 +47,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
       {base_amount_2 > 0 && (
         <div className="space-y-1 pb-2 border-b border-gray-200">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Osnovica (PDV 13%):</span>
+            <span className="text-gray-600">{t('invoices.form.base_vat13')}</span>
             <span className="font-medium">€{formatCurrency(base_amount_2)}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -53,7 +55,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(calculation.vat2)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600">Subtotal:</span>
+            <span className="text-gray-600">{t('invoices.form.subtotal')}</span>
             <span>€{formatCurrency(calculation.subtotal2)}</span>
           </div>
         </div>
@@ -62,7 +64,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
       {base_amount_4 > 0 && (
         <div className="space-y-1 pb-2 border-b border-gray-200">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Osnovica (PDV 5%):</span>
+            <span className="text-gray-600">{t('invoices.form.base_vat5')}</span>
             <span className="font-medium">€{formatCurrency(base_amount_4)}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -70,7 +72,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(calculation.vat4)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600">Subtotal:</span>
+            <span className="text-gray-600">{t('invoices.form.subtotal')}</span>
             <span>€{formatCurrency(calculation.subtotal4)}</span>
           </div>
         </div>
@@ -79,7 +81,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
       {base_amount_3 > 0 && (
         <div className="space-y-1 pb-2 border-b border-gray-200">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Osnovica (PDV 0%):</span>
+            <span className="text-gray-600">{t('invoices.form.base_vat0')}</span>
             <span className="font-medium">€{formatCurrency(base_amount_3)}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -87,14 +89,14 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€0.00</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600">Subtotal:</span>
+            <span className="text-gray-600">{t('invoices.form.subtotal')}</span>
             <span>€{formatCurrency(calculation.subtotal3)}</span>
           </div>
         </div>
       )}
 
       <div className="flex justify-between text-base font-bold pt-2">
-        <span>UKUPNO:</span>
+        <span>{t('invoices.form.grand_total')}</span>
         <span>€{formatCurrency(calculation.totalAmount)}</span>
       </div>
     </div>

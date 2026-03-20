@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Download,
   RefreshCw,
@@ -7,6 +7,7 @@ import {
   DollarSign,
   Briefcase
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { PortfolioOverview } from '../Reports/PortfolioOverview'
 import { ProjectPerformanceTable } from '../Reports/ProjectPerformanceTable'
 import { SalesAnalysis } from '../Reports/SalesAnalysis'
@@ -18,18 +19,19 @@ import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
 
-const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'overview', label: 'Pregled', icon: <BarChart3 className="w-4 h-4" /> },
-  { id: 'projects', label: 'Projekti', icon: <Briefcase className="w-4 h-4" /> },
-  { id: 'sales', label: 'Prodaja', icon: <TrendingUp className="w-4 h-4" /> },
-  { id: 'costs', label: 'Troškovi', icon: <DollarSign className="w-4 h-4" /> }
-]
-
 const RetailReports: React.FC = () => {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [data, setData] = useState<RetailReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+
+  const tabs = useMemo<{ id: TabId; label: string; icon: React.ReactNode }[]>(() => [
+    { id: 'overview', label: t('reports.retail.tab_overview'), icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'projects', label: t('reports.retail.tab_projects'), icon: <Briefcase className="w-4 h-4" /> },
+    { id: 'sales', label: t('reports.retail.tab_sales'), icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'costs', label: t('reports.retail.tab_costs'), icon: <DollarSign className="w-4 h-4" /> }
+  ], [t])
 
   useEffect(() => {
     loadData()
@@ -68,14 +70,14 @@ const RetailReports: React.FC = () => {
     }).format(amount)
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje izvještaja..." />
+    return <LoadingSpinner message={t('reports.retail.loading')} />
   }
 
   if (!data) {
     return (
       <EmptyState
-        title="Greška pri učitavanju podataka."
-        action={<Button onClick={loadData}>Pokušaj ponovo</Button>}
+        title={t('reports.retail.error')}
+        action={<Button onClick={loadData}>{t('reports.retail.retry')}</Button>}
       />
     )
   }
@@ -83,12 +85,16 @@ const RetailReports: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Retail izvještaji"
-        description={`${data.portfolio.total_projects} projekata \u00B7 ${data.portfolio.total_customers} kupaca \u00B7 ${data.portfolio.total_suppliers} dobavljača`}
+        title={t('reports.retail.title')}
+        description={t('reports.retail.description', {
+          projects: data.portfolio.total_projects,
+          customers: data.portfolio.total_customers,
+          suppliers: data.portfolio.total_suppliers
+        })}
         actions={
           <>
-            <Button variant="secondary" icon={RefreshCw} onClick={loadData} loading={loading}>Osvjezi</Button>
-            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>PDF izvještaj</Button>
+            <Button variant="secondary" icon={RefreshCw} onClick={loadData} loading={loading}>{t('common.refresh')}</Button>
+            <Button icon={Download} onClick={handleExportPdf} loading={exporting}>{t('reports.retail.export_pdf')}</Button>
           </>
         }
       />

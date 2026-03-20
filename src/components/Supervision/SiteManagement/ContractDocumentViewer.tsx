@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { ContractDocument } from './types'
@@ -18,6 +19,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   contractId,
   readOnly = false
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [documents, setDocuments] = useState<ContractDocument[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +43,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
         : await fetchSubcontractorDocuments(subcontractorId)
       setDocuments(docs)
     } catch {
-      setError('Greška pri učitavanju dokumenata')
+      setError(t('supervision.site_management.doc_viewer.load_error'))
     } finally {
       setLoading(false)
     }
@@ -53,7 +55,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       const url = await getContractDocumentSignedUrl(doc.file_path)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch {
-      toast.error('Greška pri otvaranju dokumenta')
+      toast.error(t('supervision.site_management.doc_viewer.open_error'))
     } finally {
       setOpeningId(null)
     }
@@ -70,7 +72,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       await deleteSubcontractorDocument(pendingDeleteDoc.id, pendingDeleteDoc.file_path)
       setDocuments((prev) => prev.filter((d) => d.id !== pendingDeleteDoc.id))
     } catch {
-      toast.error('Greška pri brisanju dokumenta')
+      toast.error(t('supervision.site_management.doc_viewer.delete_error'))
     } finally {
       setDeletingId(null)
       setPendingDeleteDoc(null)
@@ -81,7 +83,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     return (
       <div className="flex items-center gap-2 py-3 text-gray-500">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span className="text-sm">Učitavanje dokumenata...</span>
+        <span className="text-sm">{t('supervision.site_management.doc_viewer.loading')}</span>
       </div>
     )
   }
@@ -99,7 +101,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     return (
       <div className="text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
         <FileText className="w-8 h-8 text-gray-300 mx-auto mb-1" />
-        <p className="text-sm text-gray-500">Nema priloženih dokumenata</p>
+        <p className="text-sm text-gray-500">{t('supervision.site_management.doc_viewer.none')}</p>
       </div>
     )
   }
@@ -124,7 +126,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
               onClick={() => handleOpen(doc)}
               disabled={openingId === doc.id}
               className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
-              title="Otvori dokument"
+              title={t('supervision.site_management.doc_viewer.open')}
             >
               {openingId === doc.id
                 ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -136,7 +138,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
                 onClick={() => handleDelete(doc)}
                 disabled={deletingId === doc.id}
                 className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                title="Obriši dokument"
+                title={t('supervision.site_management.doc_viewer.delete')}
               >
                 {deletingId === doc.id
                   ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -151,10 +153,10 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 
     <ConfirmDialog
       show={!!pendingDeleteDoc}
-      title="Potvrda brisanja"
-      message={pendingDeleteDoc ? `Jeste li sigurni da želite obrisati "${pendingDeleteDoc.file_name}"?` : ''}
-      confirmLabel="Da, obriši"
-      cancelLabel="Odustani"
+      title={t('common.confirm_delete')}
+      message={pendingDeleteDoc ? t('supervision.site_management.doc_viewer.delete_confirm', { name: pendingDeleteDoc.file_name }) : ''}
+      confirmLabel={t('common.yes_delete')}
+      cancelLabel={t('common.cancel')}
       variant="danger"
       onConfirm={confirmDeleteDoc}
       onCancel={() => setPendingDeleteDoc(null)}

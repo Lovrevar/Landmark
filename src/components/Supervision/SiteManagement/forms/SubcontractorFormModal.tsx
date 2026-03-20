@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, FileText } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import { SubcontractorFormData } from '../types'
@@ -33,6 +34,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   onSubmit,
   projectId
 }) => {
+  const { t } = useTranslation()
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [hasContract, setHasContract] = useState(true)
   const [formData, setFormData] = useState<SubcontractorFormData>({
@@ -104,10 +106,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const handleSubmit = async () => {
     if (isSubmitting) return
     const errors: Record<string, string> = {}
-    if (!formData.contract_type_id) errors.contract_type_id = 'Odaberite kategoriju ugovora'
-    if (!useExistingSubcontractor && !formData.name?.trim()) errors.name = 'Naziv je obavezan'
-    if (!useExistingSubcontractor && !formData.contact?.trim()) errors.contact = 'Kontakt je obavezan'
-    if (useExistingSubcontractor && !formData.existing_subcontractor_id) errors.existing_subcontractor_id = 'Odaberite podugovaratelja'
+    if (!formData.contract_type_id) errors.contract_type_id = t('supervision.subcontractor_form.errors.select_category')
+    if (!useExistingSubcontractor && !formData.name?.trim()) errors.name = t('supervision.subcontractors.form.errors.name_required')
+    if (!useExistingSubcontractor && !formData.contact?.trim()) errors.contact = t('supervision.subcontractors.form.errors.contact_required')
+    if (useExistingSubcontractor && !formData.existing_subcontractor_id) errors.existing_subcontractor_id = t('supervision.subcontractor_form.errors.select_subcontractor')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     setIsSubmitting(true)
@@ -118,7 +120,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         pendingFiles
       )
     } catch (e) {
-      setFieldErrors({ _form: e instanceof Error ? e.message : 'Greška pri dodavanju podugovaratelja.' })
+      setFieldErrors({ _form: e instanceof Error ? e.message : t('supervision.subcontractor_form.errors.add_error') })
     } finally {
       setIsSubmitting(false)
     }
@@ -129,7 +131,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const availableBudget = phase.budget_allocated - phase.budget_used
 
   const funderSelect = banks.length > 0 ? (
-    <FormField label="Financed By (Optional)" helperText="Select which bank is financing this contract">
+    <FormField label={t('supervision.subcontractor_form.financed_by')} helperText={t('supervision.subcontractor_form.financed_by_help')}>
       <Select
         value={formData.financed_by_bank_id || ''}
         onChange={(e) => merge({
@@ -138,7 +140,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         })}
         disabled={loadingFunders}
       >
-        <option value="">No financing source selected</option>
+        <option value="">{t('supervision.subcontractor_form.no_financing')}</option>
         {banks.map(bank => <option key={bank.id} value={bank.id}>{bank.name}</option>)}
       </Select>
     </FormField>
@@ -147,8 +149,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
-        title="Add New Subcontractor"
-        subtitle={`${phase.phase_name} • Available Budget: ${formatEuro(availableBudget)}`}
+        title={t('supervision.subcontractor_form.title')}
+        subtitle={`${phase.phase_name} • ${t('supervision.subcontractor_form.available_budget')} ${formatEuro(availableBudget)}`}
         onClose={onClose}
       />
 
@@ -161,12 +163,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               onChange={(e) => setHasContract(!e.target.checked)}
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm font-medium text-gray-900">Bez ugovora</span>
+            <span className="ml-2 text-sm font-medium text-gray-900">{t('supervision.subcontractor_form.no_contract')}</span>
           </label>
           <p className="text-xs text-gray-600 mt-1 ml-6">
             {hasContract
-              ? 'Subkontraktor ima formalan ugovor - unesite osnovicu bez PDV-a'
-              : 'Subkontraktor nema formalan ugovor - računi se dodaju naknadno kroz Accounting modul'}
+              ? t('supervision.subcontractor_form.with_contract_help')
+              : t('supervision.subcontractor_form.no_contract_help')}
           </p>
         </Alert>
 
@@ -174,7 +176,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           <Alert variant="error" className="mb-2">{fieldErrors._form}</Alert>
         )}
 
-        <FormField label="Kategorija ugovora" required helperText="Odaberite tip ugovora za ovu fazu" error={fieldErrors.contract_type_id}>
+        <FormField label={t('supervision.subcontractor_form.contract_category')} required helperText={t('supervision.subcontractor_form.contract_category_help')} error={fieldErrors.contract_type_id}>
           <div className="flex gap-2">
             <Select
               value={formData.contract_type_id}
@@ -182,7 +184,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               disabled={loadingContractTypes}
               className="flex-1"
             >
-              <option value="">Odaberi kategoriju</option>
+              <option value="">{t('supervision.subcontractor_form.select_category')}</option>
               {contractTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
@@ -194,22 +196,22 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         </FormField>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">Subcontractor Selection</label>
+          <label className="block text-sm font-medium text-gray-700 mb-3">{t('supervision.subcontractor_form.selection')}</label>
           <div className="flex space-x-4">
             <label className="flex items-center">
               <input type="radio" checked={!useExistingSubcontractor} onChange={() => setUseExistingSubcontractor(false)} className="mr-2" />
-              <span className="text-sm text-gray-700">Create New Subcontractor</span>
+              <span className="text-sm text-gray-700">{t('supervision.subcontractor_form.create_new')}</span>
             </label>
             <label className="flex items-center">
               <input type="radio" checked={useExistingSubcontractor} onChange={() => setUseExistingSubcontractor(true)} className="mr-2" />
-              <span className="text-sm text-gray-700">Select Existing Subcontractor</span>
+              <span className="text-sm text-gray-700">{t('supervision.subcontractor_form.select_existing')}</span>
             </label>
           </div>
         </div>
 
         {useExistingSubcontractor ? (
           <div className="grid grid-cols-1 gap-4">
-            <FormField label="Select Subcontractor" required error={fieldErrors.existing_subcontractor_id}>
+            <FormField label={t('supervision.subcontractor_form.select_label')} required error={fieldErrors.existing_subcontractor_id}>
               <Select
                 value={formData.existing_subcontractor_id}
                 onChange={(e) => {
@@ -222,7 +224,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                   })
                 }}
               >
-                <option value="">Choose existing subcontractor</option>
+                <option value="">{t('supervision.subcontractor_form.select_placeholder')}</option>
                 {existingSubcontractors.map(s => (
                   <option key={s.id} value={s.id}>{s.name} - {s.contact}</option>
                 ))}
@@ -239,17 +241,17 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               />
             )}
             {!hasContract && (
-              <FormField label="Deadline (opcionalno)">
+              <FormField label={t('supervision.subcontractor_form.deadline_optional')}>
                 <Input type="date" value={formData.deadline} onChange={(e) => merge({ deadline: e.target.value })} />
               </FormField>
             )}
 
-            <FormField label="Job Description for this Phase">
+            <FormField label={t('supervision.subcontractor_form.job_description')}>
               <Textarea
                 value={formData.job_description}
                 onChange={(e) => merge({ job_description: e.target.value })}
                 rows={3}
-                placeholder="Describe the work for this specific phase..."
+                placeholder={t('supervision.subcontractor_form.job_description_placeholder')}
               />
             </FormField>
             {funderSelect}
@@ -257,12 +259,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <FormField label="Company Name" required error={fieldErrors.name}>
-                <Input type="text" value={formData.name} onChange={(e) => merge({ name: e.target.value })} placeholder="Enter company name" />
+              <FormField label={t('supervision.subcontractor_form.company_name')} required error={fieldErrors.name}>
+                <Input type="text" value={formData.name} onChange={(e) => merge({ name: e.target.value })} placeholder={t('supervision.subcontractor_form.company_placeholder')} />
               </FormField>
             </div>
-            <FormField label="Contact Information" required error={fieldErrors.contact}>
-              <Input type="text" value={formData.contact} onChange={(e) => merge({ contact: e.target.value })} placeholder="Email or phone" />
+            <FormField label={t('supervision.subcontractor_form.contact_info')} required error={fieldErrors.contact}>
+              <Input type="text" value={formData.contact} onChange={(e) => merge({ contact: e.target.value })} placeholder={t('supervision.subcontractor_form.contact_placeholder')} />
             </FormField>
 
             {hasContract && (
@@ -276,18 +278,18 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               </div>
             )}
             {!hasContract && (
-              <FormField label="Deadline (opcionalno)">
+              <FormField label={t('supervision.subcontractor_form.deadline_optional')}>
                 <Input type="date" value={formData.deadline} onChange={(e) => merge({ deadline: e.target.value })} />
               </FormField>
             )}
 
             <div className="md:col-span-2">
-              <FormField label="Job Description">
+              <FormField label={t('supervision.subcontractor_form.job_description')}>
                 <Textarea
                   value={formData.job_description}
                   onChange={(e) => merge({ job_description: e.target.value })}
                   rows={3}
-                  placeholder="Describe the work package and responsibilities..."
+                  placeholder={t('supervision.subcontractor_form.job_description_new_placeholder')}
                 />
               </FormField>
             </div>
@@ -299,8 +301,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           <div className="mt-6 border-t border-gray-200 pt-4">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
-              <span className="text-xs text-gray-500">(opcionalno)</span>
+              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_form.contract_docs')}</h3>
+              <span className="text-xs text-gray-500">{t('supervision.subcontractor_form.optional_label')}</span>
             </div>
             <ContractDocumentUpload files={pendingFiles} onChange={setPendingFiles} />
           </div>
@@ -308,9 +310,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant="success" onClick={handleSubmit} disabled={isSubmitting || totalAmount > availableBudget}>
-          {isSubmitting ? 'Dodavanje...' : 'Add Subcontractor'}
+          {isSubmitting ? t('supervision.subcontractor_form.adding') : t('supervision.subcontractor_form.add')}
         </Button>
       </Modal.Footer>
 

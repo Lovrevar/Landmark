@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Users } from 'lucide-react'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { CustomerCard } from './CustomerCard'
@@ -29,15 +30,17 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   onDelete,
   onUpdateContact
 }) => {
+  const { t } = useTranslation()
+
   if (loading) {
-    return <LoadingSpinner message="Loading customers..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   if (customers.length === 0) {
     return (
       <EmptyState
         icon={Users}
-        title="No customers in this category"
+        title={t('common.no_data')}
       />
     )
   }

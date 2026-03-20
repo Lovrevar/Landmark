@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
@@ -27,6 +28,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
   onComplete
 }) => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedGarageRow[]>([])
@@ -106,8 +108,8 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
   return (
     <Modal show={visible} onClose={handleClose} size="lg">
       <Modal.Header
-        title="Import Garages from Excel"
-        subtitle={selectedBuilding ? `Building: ${selectedBuilding.name}` : ''}
+        title={t('sales_projects.excel_import.garages_title')}
+        subtitle={selectedBuilding ? `${t('sales_projects.building')}: ${selectedBuilding.name}` : ''}
         onClose={handleClose}
       />
 
@@ -117,7 +119,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
               <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Upload Garages Excel File
+                {t('sales_projects.excel_import.upload_garages_file')}
               </h3>
               <p className="text-sm text-gray-500 mb-4">
                 Select an Excel file with 3 columns: parking oznaka, parking m2, parking cijena
@@ -221,20 +223,20 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
           <div className="space-y-4">
             <div className="text-center py-8">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Import Complete!</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="text-sm text-green-600 mb-1">Created</div>
+                <div className="text-sm text-green-600 mb-1">{t('sales_projects.excel_import.created')}</div>
                 <div className="text-3xl font-bold text-green-700">{importResults.created}</div>
               </div>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="text-sm text-yellow-600 mb-1">Updated</div>
+                <div className="text-sm text-yellow-600 mb-1">{t('sales_projects.excel_import.updated')}</div>
                 <div className="text-3xl font-bold text-yellow-700">{importResults.updated}</div>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="text-sm text-red-600 mb-1">Failed</div>
+                <div className="text-sm text-red-600 mb-1">{t('sales_projects.excel_import.failed')}</div>
                 <div className="text-3xl font-bold text-red-700">{importResults.failed}</div>
               </div>
             </div>
@@ -245,32 +247,32 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       <Modal.Footer>
         {step === 1 && (
           <>
-            <Button variant="secondary" onClick={handleClose}>Cancel</Button>
+            <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
             <Button
               variant="primary"
               onClick={parseFile}
               disabled={!file}
             >
-              Parse File
+              {t('sales_projects.excel_import.parse_file')}
             </Button>
           </>
         )}
 
         {step === 2 && (
           <>
-            <Button variant="secondary" onClick={() => setStep(1)}>Back</Button>
+            <Button variant="secondary" onClick={() => setStep(1)}>{t('common.back')}</Button>
             <Button
               variant="primary"
               onClick={handleImport}
               disabled={importing || parsedRows.length === 0}
             >
-              {importing ? 'Importing...' : `Import ${parsedRows.length} Garages`}
+              {importing ? t('sales_projects.excel_import.importing') : t('sales_projects.excel_import.import_garages', { count: parsedRows.length })}
             </Button>
           </>
         )}
 
         {step === 3 && (
-          <Button variant="primary" onClick={handleClose}>Close</Button>
+          <Button variant="primary" onClick={handleClose}>{t('common.close')}</Button>
         )}
       </Modal.Footer>
     </Modal>

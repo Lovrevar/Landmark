@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Warehouse, Package } from 'lucide-react'
 import { Apartment } from '../../../../lib/supabase'
 import { BuildingWithUnits } from '../types'
@@ -21,6 +22,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
   onLinkGarage,
   onLinkRepository
 }) => {
+  const { t } = useTranslation()
   if (!visible || !apartment || !building) return null
 
   const availableGarages = building.garages.filter(g => g.status === 'Available')
@@ -28,12 +30,12 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose}>
-      <Modal.Header title={`Link Garage & Repository to ${apartment.number}`} onClose={onClose} />
+      <Modal.Header title={`${t('sales_projects.linking_modal.title')} ${apartment.number}`} onClose={onClose} />
       <Modal.Body>
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
               <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
-              Link Garage
+              {t('sales_projects.linking_modal.link_garage')}
             </h4>
             <div className="grid grid-cols-2 gap-3">
               {availableGarages.map((garage) => (
@@ -49,13 +51,13 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                       : 'border-gray-200 hover:border-orange-300 bg-white'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">Garage {garage.number}</div>
-                  <div className="text-sm text-gray-600">Floor {garage.floor} • {garage.size_m2}m²</div>
+                  <div className="font-medium text-gray-900">{t('common.garage')} {garage.number}</div>
+                  <div className="text-sm text-gray-600">{t('sales_projects.linking_modal.floor')} {garage.floor} • {garage.size_m2}m²</div>
                   <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableGarages.length === 0 && (
-                <p className="text-gray-500 col-span-2">No available garages</p>
+                <p className="text-gray-500 col-span-2">{t('sales_projects.linking_modal.no_garages')}</p>
               )}
             </div>
           </div>
@@ -63,7 +65,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
               <Package className="w-5 h-5 mr-2 text-gray-600" />
-              Link Repository
+              {t('sales_projects.linking_modal.link_repository')}
             </h4>
             <div className="grid grid-cols-2 gap-3">
               {availableRepositories.map((repository) => (
@@ -79,13 +81,13 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">Repository {repository.number}</div>
-                  <div className="text-sm text-gray-600">Floor {repository.floor} • {repository.size_m2}m²</div>
+                  <div className="font-medium text-gray-900">{t('common.storage')} {repository.number}</div>
+                  <div className="text-sm text-gray-600">{t('sales_projects.linking_modal.floor')} {repository.floor} • {repository.size_m2}m²</div>
                   <div className="text-sm font-medium text-gray-600">€{repository.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableRepositories.length === 0 && (
-                <p className="text-gray-500 col-span-2">No available repositories</p>
+                <p className="text-gray-500 col-span-2">{t('sales_projects.linking_modal.no_repositories')}</p>
               )}
             </div>
           </div>
@@ -93,7 +95,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" fullWidth onClick={onClose}>
-          Close
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

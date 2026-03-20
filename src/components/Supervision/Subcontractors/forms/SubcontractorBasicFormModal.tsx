@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Button } from '../../../ui'
 import { insertSubcontractorRecord, updateSubcontractorRecord } from '../../SiteManagement/services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
@@ -18,6 +19,7 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
   initialData,
   onSaved
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [formData, setFormData] = useState(initialData)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -31,8 +33,8 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
 
   const handleSave = async () => {
     const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
-    if (!formData.contact.trim()) errors.contact = 'Kontakt je obavezan'
+    if (!formData.name.trim()) errors.name = t('supervision.subcontractors.form.errors.name_required')
+    if (!formData.contact.trim()) errors.contact = t('supervision.subcontractors.form.errors.contact_required')
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       return
@@ -56,46 +58,46 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
       onSaved()
     } catch (error) {
       console.error('Error saving subcontractor:', error)
-      toast.error('Failed to save subcontractor')
+      toast.error(t('supervision.subcontractors.save_error'))
     }
   }
 
   return (
     <Modal show={visible} onClose={onClose}>
       <Modal.Header
-        title={editingId ? 'Edit Subcontractor' : 'Add Subcontractor'}
+        title={editingId ? t('supervision.subcontractors.edit') : t('supervision.subcontractors.add')}
         onClose={onClose}
       />
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Name" required error={fieldErrors.name}>
+          <FormField label={t('supervision.subcontractors.form.name')} required error={fieldErrors.name}>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter subcontractor name"
+              placeholder={t('supervision.subcontractors.form.name_placeholder')}
               autoFocus
             />
           </FormField>
-          <FormField label="Contact" required error={fieldErrors.contact}>
+          <FormField label={t('supervision.subcontractors.form.contact')} required error={fieldErrors.contact}>
             <Input
               value={formData.contact}
               onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-              placeholder="Phone number or email"
+              placeholder={t('supervision.subcontractors.form.contact_placeholder')}
             />
           </FormField>
-          <FormField label="Notes">
+          <FormField label={t('supervision.subcontractors.form.notes')}>
             <Input
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Optional notes"
+              placeholder={t('supervision.subcontractors.form.notes_placeholder')}
             />
           </FormField>
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
         <Button onClick={handleSave}>
-          {editingId ? 'Update' : 'Add'} Subcontractor
+          {editingId ? t('supervision.subcontractors.form.update_btn') : t('supervision.subcontractors.form.add_btn')}
         </Button>
       </Modal.Footer>
     </Modal>

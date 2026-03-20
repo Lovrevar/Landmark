@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
 import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
@@ -34,6 +35,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   onClose,
   contract
 }) => {
+  const { t } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -89,11 +91,11 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'PAID':
-        return 'Plaćeno'
+        return t('retail_projects.payment_history_modal.status_paid')
       case 'PARTIALLY_PAID':
-        return 'Djelomično plaćeno'
+        return t('retail_projects.payment_history_modal.status_partial')
       case 'UNPAID':
-        return 'Neplaćeno'
+        return t('retail_projects.payment_history_modal.status_unpaid')
       default:
         return status
     }
@@ -102,13 +104,13 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'INCOMING_SUPPLIER':
-        return 'Ulazni (Dobavljač)'
+        return t('retail_projects.invoices_modal.type_incoming_supplier')
       case 'OUTGOING_SUPPLIER':
-        return 'Izlazni (Dobavljač)'
+        return t('retail_projects.invoices_modal.type_outgoing_supplier')
       case 'INCOMING_INVESTMENT':
-        return 'Ulazni (Kupac)'
+        return t('retail_projects.invoices_modal.type_incoming_investment')
       case 'OUTGOING_SALES':
-        return 'Izlazni (Kupac)'
+        return t('retail_projects.invoices_modal.type_outgoing_sales')
       default:
         return type
     }
@@ -122,8 +124,8 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   return (
     <Modal show={isOpen && !!contract} onClose={onClose} size="full">
       <Modal.Header
-        title={`Računi - ${contract?.contract_number || ''}`}
-        subtitle={`Iznos ugovora: €${contract?.contract_amount.toLocaleString('hr-HR')} | Plaćeno: €${contract?.budget_realized.toLocaleString('hr-HR')}`}
+        title={t('retail_projects.invoices_modal.title', { contract: contract?.contract_number || '' })}
+        subtitle={t('retail_projects.invoices_modal.subtitle', { amount: contract?.contract_amount.toLocaleString('hr-HR'), paid: contract?.budget_realized.toLocaleString('hr-HR') })}
         onClose={onClose}
       />
       <Modal.Body>
@@ -132,7 +134,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="Nema računa za ovaj ugovor"
+            title={t('retail_projects.invoices_modal.no_invoices')}
           />
         ) : (
           <div className="space-y-4">
@@ -146,7 +148,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-500 uppercase">Broj računa</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
                       <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
                         {getStatusLabel(invoice.status)}
                       </Badge>
@@ -156,7 +158,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Firma</label>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.company_label')}</label>
                     <div className="flex items-center mb-2">
                       <Building2 className="w-4 h-4 text-gray-400 mr-2" />
                       <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
@@ -176,7 +178,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Ukupan iznos</label>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.amount_label')}</label>
                     <div className="flex items-center">
                       <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                       <p className="text-lg font-bold text-gray-900">
@@ -185,18 +187,18 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                     </div>
                     {invoice.status !== 'UNPAID' && (
                       <p className="text-xs text-green-600 mt-1">
-                        Plaćeno: €{invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                        {t('retail_projects.invoices_modal.paid_label', { amount: invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) })}
                       </p>
                     )}
                     {invoice.remaining_amount > 0 && (
                       <p className="text-xs text-red-600 mt-1">
-                        Preostalo: €{invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                        {t('retail_projects.invoices_modal.remaining_label', { amount: invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) })}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Dospijeće</label>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                       <p className={`text-sm font-medium ${
@@ -208,29 +210,29 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                     {isOverdue(invoice.due_date, invoice.status) && (
                       <div className="flex items-center mt-1 text-red-600">
                         <AlertCircle className="w-3 h-3 mr-1" />
-                        <span className="text-xs font-semibold">KASNI</span>
+                        <span className="text-xs font-semibold">{t('retail_projects.invoices_modal.overdue_badge')}</span>
                       </div>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Izdano: {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                      {t('retail_projects.invoices_modal.issue_date_label')} {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
                     </p>
                   </div>
                 </div>
 
                 {invoice.description && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <label className="text-xs font-medium text-gray-500 uppercase block mb-1">Opis</label>
+                    <label className="text-xs font-medium text-gray-500 uppercase block mb-1">{t('retail_projects.invoices_modal.description_label')}</label>
                     <p className="text-sm text-gray-700">{invoice.description}</p>
                   </div>
                 )}
 
                 <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Osnovica:</span>
+                    <span className="text-gray-500">{t('retail_projects.invoices_modal.base_label')}</span>
                     <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">PDV:</span>
+                    <span className="text-gray-500">{t('retail_projects.invoices_modal.vat_label')}</span>
                     <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
@@ -242,10 +244,10 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       <Modal.Footer>
         <div className="flex justify-between items-center w-full">
           <div className="text-sm text-gray-600">
-            Ukupno računa: <span className="font-semibold">{invoices.length}</span>
+            {t('retail_projects.invoices_modal.total_invoices')} <span className="font-semibold">{invoices.length}</span>
           </div>
           <Button variant="secondary" onClick={onClose}>
-            Zatvori
+            {t('common.close')}
           </Button>
         </div>
       </Modal.Footer>

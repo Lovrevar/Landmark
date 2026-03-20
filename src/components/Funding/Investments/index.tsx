@@ -1,6 +1,7 @@
 import React from 'react'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form, ConfirmDialog } from '../../ui'
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
@@ -9,6 +10,7 @@ import CreditExpenses from './CreditExpenses'
 import { useCreditManagement } from './hooks/useCreditManagement'
 
 const CreditsManagement: React.FC = () => {
+  const { t } = useTranslation()
   const {
     credits,
     allocations,
@@ -37,21 +39,21 @@ const CreditsManagement: React.FC = () => {
   } = useCreditManagement()
 
   if (loading) {
-    return <LoadingSpinner message="Loading credits..." />
+    return <LoadingSpinner message={t('funding.investments.loading')} />
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Investicije"
-        description="Pregled svih investicija i njihovih namjena"
+        title={t('funding.investments.title')}
+        description={t('funding.investments.description')}
       />
 
       {credits.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="Nema evidentiranih investicija"
-          description="Dodajte prvu investiciju putem upravljanja investicijama"
+          title={t('funding.investments.no_investments_title')}
+          description={t('funding.investments.no_investments_description')}
         />
       ) : (
         <div className="space-y-4">
@@ -84,7 +86,7 @@ const CreditsManagement: React.FC = () => {
                       <button
                         onClick={() => toggleCredit(credit.id)}
                         className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
-                        title={isExpanded ? "Collapse credit" : "Expand credit"}
+                        title={isExpanded ? t('funding.investments.collapse_credit_title') : t('funding.investments.expand_credit_title')}
                       >
                         {isExpanded ? (
                           <ChevronUp className="w-6 h-6 text-blue-600" />
@@ -95,7 +97,7 @@ const CreditsManagement: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-3">
                           <h3 className="text-xl font-semibold text-gray-900">
-                            {credit.credit_name || 'Unnamed Credit'}
+                            {credit.credit_name || t('funding.investments.unnamed_credit')}
                           </h3>
                           {credit.credit_type === 'equity' && (
                             <Badge variant="purple">EQUITY</Badge>
@@ -109,7 +111,7 @@ const CreditsManagement: React.FC = () => {
                           </Badge>
                         </div>
                         <p className="text-gray-600 mt-1">
-                          {credit.bank?.name || 'Unknown Bank'}
+                          {credit.bank?.name || t('funding.investments.unknown_bank')}
                           {credit.company && ` • ${credit.company.name}`}
                         </p>
                       </div>
@@ -117,11 +119,11 @@ const CreditsManagement: React.FC = () => {
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
-                        <p className="text-sm text-gray-600">Investment Amount</p>
+                        <p className="text-sm text-gray-600">{t('banks.index.credit.investment_amount')}</p>
                       </div>
                       {!credit.disbursed_to_account && (
                         <Button variant="success" icon={Plus} onClick={() => openAllocationModal(credit)}>
-                          Namjena Investicije
+                          {t('funding.investments.investment_purpose_btn')}
                         </Button>
                       )}
                     </div>
@@ -129,25 +131,25 @@ const CreditsManagement: React.FC = () => {
 
                   <StatGrid columns={5} className="mt-4">
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm text-blue-700">Investment Amount</p>
+                      <p className="text-sm text-blue-700">{t('banks.index.credit.investment_amount')}</p>
                       <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-slate-50 p-3 rounded-lg">
-                      <p className="text-sm text-slate-700">Alocirano</p>
+                      <p className="text-sm text-slate-700">{t('banks.index.credit.allocated')}</p>
                       <p className="text-lg font-bold text-slate-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
-                      <p className="text-sm text-orange-700">Iskorišteno</p>
+                      <p className="text-sm text-orange-700">{t('banks.index.credit.paid_out')}</p>
                       <p className="text-lg font-bold text-orange-900">€{paidOut.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                      <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Dug</p>
+                      <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>{t('banks.index.credit.debt')}</p>
                       <p className={`text-lg font-bold ${netUsed > 0 ? 'text-red-900' : 'text-gray-900'}`}>
                         €{credit.outstanding_balance.toLocaleString('hr-HR')}
                       </p>
                     </div>
                     <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>Nealocirano</p>
+                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>{t('banks.index.credit.unallocated')}</p>
                       <p className={`text-lg font-bold ${unallocatedAmount < 0 ? 'text-red-900' : 'text-green-900'}`}>
                         €{unallocatedAmount.toLocaleString('hr-HR')}
                       </p>
@@ -157,17 +159,17 @@ const CreditsManagement: React.FC = () => {
                   <div className="mt-4">
                     <div className="flex justify-between mb-2">
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="font-medium text-gray-700">Korištenje investicije</span>
+                        <span className="font-medium text-gray-700">{t('funding.investments.investment_usage_label')}</span>
                         {usedPercentage > 0 && (
                           <span className="flex items-center gap-1">
                             <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
-                            Iskorišteno {usedPercentage.toFixed(1)}%
+                            {t('funding.investments.used_percent', { percent: usedPercentage.toFixed(1) })}
                           </span>
                         )}
                         {remainingAllocatedPercentage > 0 && (
                           <span className="flex items-center gap-1">
                             <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                            Alocirano {remainingAllocatedPercentage.toFixed(1)}%
+                            {t('funding.investments.allocated_percent', { percent: remainingAllocatedPercentage.toFixed(1) })}
                           </span>
                         )}
                       </div>
@@ -185,7 +187,7 @@ const CreditsManagement: React.FC = () => {
                     </div>
                     {allocationPercentage > 100 && (
                       <p className="text-xs text-red-600 mt-1">
-                        Prekoračeno za €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
+                        {t('funding.investments.over_allocated', { amount: (totalAllocated - credit.amount).toLocaleString('hr-HR') })}
                       </p>
                     )}
                   </div>
@@ -197,23 +199,23 @@ const CreditsManagement: React.FC = () => {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-gray-900 flex items-center">
                           <Building2 className="w-5 h-5 mr-2" />
-                          Credit Details
+                          {t('banks.index.credit.credit_details')}
                         </h4>
                         <div className="space-y-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Loan Type:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.loan_type_label')}</span>
                             <span className="font-medium text-gray-900">{credit.credit_type}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Interest Rate:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.interest_rate_label')}</span>
                             <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Outstanding Balance:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.outstanding_balance_label')}</span>
                             <span className="font-medium text-gray-900">€{credit.outstanding_balance.toLocaleString('hr-HR')}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Repaid Amount:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.repaid_amount_label')}</span>
                             <span className="font-medium text-green-600">€{credit.repaid_amount.toLocaleString('hr-HR')}</span>
                           </div>
                         </div>
@@ -222,24 +224,24 @@ const CreditsManagement: React.FC = () => {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-gray-900 flex items-center">
                           <TrendingUp className="w-5 h-5 mr-2" />
-                          Dates & Timeline
+                          {t('banks.index.credit.dates_timeline')}
                         </h4>
                         <div className="space-y-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Start Date:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.start_date_label')}</span>
                             <span className="font-medium text-gray-900">
                               {format(new Date(credit.start_date), 'MMM dd, yyyy')}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Maturity Date:</span>
+                            <span className="text-gray-600">{t('banks.index.credit.maturity_date_label')}</span>
                             <span className="font-medium text-gray-900">
                               {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
                             </span>
                           </div>
                           {credit.usage_expiration_date && (
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Usage Expiration:</span>
+                              <span className="text-gray-600">{t('banks.index.credit.usage_expiration_label')}</span>
                               <span className="font-medium text-gray-900">
                                 {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
                               </span>
@@ -251,7 +253,7 @@ const CreditsManagement: React.FC = () => {
 
                     {creditAllocations.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
-                        <h4 className="font-semibold text-gray-900 mb-4">Namjene kredita ({creditAllocations.length})</h4>
+                        <h4 className="font-semibold text-gray-900 mb-4">{t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}</h4>
                         <div className="space-y-3">
                           {creditAllocations.map((allocation) => {
                             const allocationKey = `${credit.id}-${allocation.id}`
@@ -277,7 +279,7 @@ const CreditsManagement: React.FC = () => {
 
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
-                        <h4 className="font-semibold text-gray-900 mb-2">Purpose</h4>
+                        <h4 className="font-semibold text-gray-900 mb-2">{t('banks.index.credit.purpose_heading')}</h4>
                         <p className="text-sm text-gray-600">{credit.purpose}</p>
                       </div>
                     )}
@@ -290,20 +292,20 @@ const CreditsManagement: React.FC = () => {
       )}
 
       <Modal show={showAllocationModal && !!selectedCredit} onClose={closeAllocationModal} size="sm">
-        <Modal.Header title="Nova namjena kredita" onClose={closeAllocationModal} />
+        <Modal.Header title={t('funding.investments.allocation_modal.title')} onClose={closeAllocationModal} />
 
         <Form onSubmit={handleCreateAllocation}>
           <Modal.Body>
             {selectedCredit && (
               <div>
-                <p className="text-sm font-medium text-gray-700">Credit: {selectedCredit.credit_name}</p>
+                <p className="text-sm font-medium text-gray-700">{t('funding.investments.allocation_modal.credit_label')} {selectedCredit.credit_name}</p>
                 <p className="text-sm text-gray-500">
-                  Unallocated: {(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
+                  {t('funding.investments.allocation_modal.unallocated_label')} {(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
                 </p>
               </div>
             )}
 
-            <FormField label="Kategorija" required>
+            <FormField label={t('funding.investments.allocation_modal.category_label')} required>
               <Select
                 value={allocationForm.allocation_type}
                 onChange={(e) => setAllocationForm({
@@ -313,19 +315,19 @@ const CreditsManagement: React.FC = () => {
                   refinancing_entity_id: '',
                 })}
               >
-                <option value="project">Projekt</option>
-                <option value="opex">OPEX (Bez projekta)</option>
-                <option value="refinancing">Refinanciranje</option>
+                <option value="project">{t('funding.investments.allocation_modal.project_option')}</option>
+                <option value="opex">{t('funding.investments.allocation_modal.opex_option')}</option>
+                <option value="refinancing">{t('funding.investments.allocation_modal.refinancing_option')}</option>
               </Select>
             </FormField>
 
             {allocationForm.allocation_type === 'project' && (
-              <FormField label="Project" required error={fieldErrors.project_id}>
+              <FormField label={t('funding.investments.allocation_modal.project_label')} required error={fieldErrors.project_id}>
                 <Select
                   value={allocationForm.project_id}
                   onChange={(e) => setAllocationForm({ ...allocationForm, project_id: e.target.value })}
                 >
-                  <option value="">Odaberi projekt...</option>
+                  <option value="">{t('funding.investments.allocation_modal.select_project')}</option>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
@@ -335,7 +337,7 @@ const CreditsManagement: React.FC = () => {
 
             {allocationForm.allocation_type === 'refinancing' && (
               <>
-                <FormField label="Tip entiteta" required>
+                <FormField label={t('funding.investments.allocation_modal.entity_type_label')} required>
                   <Select
                     value={allocationForm.refinancing_entity_type}
                     onChange={(e) => setAllocationForm({
@@ -344,17 +346,17 @@ const CreditsManagement: React.FC = () => {
                       refinancing_entity_id: '',
                     })}
                   >
-                    <option value="company">Firma</option>
-                    <option value="bank">Banka</option>
+                    <option value="company">{t('funding.investments.allocation_modal.company_option')}</option>
+                    <option value="bank">{t('funding.investments.allocation_modal.bank_option')}</option>
                   </Select>
                 </FormField>
 
-                <FormField label={allocationForm.refinancing_entity_type === 'company' ? 'Firma' : 'Banka'} required error={fieldErrors.refinancing_entity_id}>
+                <FormField label={allocationForm.refinancing_entity_type === 'company' ? t('funding.investments.allocation_modal.company_option') : t('funding.investments.allocation_modal.bank_option')} required error={fieldErrors.refinancing_entity_id}>
                   <Select
                     value={allocationForm.refinancing_entity_id}
                     onChange={(e) => setAllocationForm({ ...allocationForm, refinancing_entity_id: e.target.value })}
                   >
-                    <option value="">Odaberi {allocationForm.refinancing_entity_type === 'company' ? 'firmu' : 'banku'}...</option>
+                    <option value="">{allocationForm.refinancing_entity_type === 'company' ? t('funding.investments.allocation_modal.select_company') : t('funding.investments.allocation_modal.select_bank')}</option>
                     {allocationForm.refinancing_entity_type === 'company'
                       ? companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)
                       : banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)
@@ -364,7 +366,7 @@ const CreditsManagement: React.FC = () => {
               </>
             )}
 
-            <FormField label="Allocated Amount" required>
+            <FormField label={t('funding.investments.allocation_modal.allocated_amount_label')} required>
               <Input
                 type="number"
                 value={allocationForm.allocated_amount}
@@ -374,7 +376,7 @@ const CreditsManagement: React.FC = () => {
               />
             </FormField>
 
-            <FormField label="Description">
+            <FormField label={t('funding.investments.allocation_modal.description_label')}>
               <Textarea
                 value={allocationForm.description}
                 onChange={(e) => setAllocationForm({ ...allocationForm, description: e.target.value })}
@@ -384,18 +386,18 @@ const CreditsManagement: React.FC = () => {
           </Modal.Body>
 
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={closeAllocationModal}>Cancel</Button>
-            <Button variant="primary" type="submit">Create Allocation</Button>
+            <Button variant="secondary" type="button" onClick={closeAllocationModal}>{t('funding.investments.allocation_modal.cancel_button')}</Button>
+            <Button variant="primary" type="submit">{t('funding.investments.allocation_modal.create_button')}</Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       <ConfirmDialog
         show={!!pendingDeleteAllocation}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovu namjenu?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('funding.investments.confirm_delete_allocation_title')}
+        message={t('funding.investments.confirm_delete_allocation_message')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteAllocation}
         onCancel={cancelDeleteAllocation}

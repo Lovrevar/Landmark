@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
@@ -20,6 +21,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const { t } = useTranslation()
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
   const [adjustmentValue, setAdjustmentValue] = useState<string>('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -81,21 +83,21 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
-        title="Bulk Price Update"
-        subtitle={`Selected: ${selectedUnits.length} units`}
+        title={t('sales_projects.bulk_price.title')}
+        subtitle={`${t('sales_projects.bulk_price.selected')}: ${selectedUnits.length} ${t('sales_projects.bulk_price.units')}`}
         onClose={onClose}
       />
       <Modal.Body>
         <Form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">Selection Summary</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">{t('sales_projects.bulk_price.selection_summary')}</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-blue-700">Selected Units:</p>
+                <p className="text-blue-700">{t('sales_projects.bulk_price.selected_units')}:</p>
                 <p className="font-bold text-blue-900">{selectedUnits.length}</p>
               </div>
               <div>
-                <p className="text-blue-700">Current Price Range/m²:</p>
+                <p className="text-blue-700">{t('sales_projects.bulk_price.current_price_range')}:</p>
                 <p className="font-bold text-blue-900">
                   €{priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   {priceRange.min !== priceRange.max && (
@@ -108,7 +110,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adjustment Type
+              {t('sales_projects.bulk_price.adjustment_type')}
             </label>
             <div className="grid grid-cols-2 gap-4">
               <button
@@ -121,7 +123,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 }`}
               >
                 <Plus className="w-5 h-5 mr-2" />
-                <span className="font-semibold">Increase Price</span>
+                <span className="font-semibold">{t('sales_projects.bulk_price.increase_price')}</span>
               </button>
               <button
                 type="button"
@@ -133,12 +135,12 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 }`}
               >
                 <Minus className="w-5 h-5 mr-2" />
-                <span className="font-semibold">Decrease Price</span>
+                <span className="font-semibold">{t('sales_projects.bulk_price.decrease_price')}</span>
               </button>
             </div>
           </div>
 
-          <FormField label="Adjustment Amount (€)" error={fieldErrors.adjustmentValue}>
+          <FormField label={t('sales_projects.bulk_price.adjustment_amount')} error={fieldErrors.adjustmentValue}>
             <Input
               type="number"
               step="0.01"
@@ -156,7 +158,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               <h3 className={`font-semibold mb-3 ${
                 adjustmentType === 'increase' ? 'text-green-900' : 'text-red-900'
               }`}>
-                Price Preview
+                {t('sales_projects.bulk_price.price_preview')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="bg-white rounded-lg p-3 border border-gray-200">
@@ -164,7 +166,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                     {adjustmentType === 'increase' ? '+' : '-'}€{adjustment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
                   </p>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700">New Price Range/m²:</span>
+                    <span className="text-gray-700">{t('sales_projects.bulk_price.new_price_range')}:</span>
                     <span className={`font-bold text-lg ${
                       adjustmentType === 'increase' ? 'text-green-700' : 'text-red-700'
                     }`}>
@@ -176,15 +178,15 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                   </div>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                  <span className="text-gray-700">Current Total Value:</span>
+                  <span className="text-gray-700">{t('sales_projects.bulk_price.current_total_value')}:</span>
                   <span className="font-semibold">€{totalCurrentValue.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">New Total Value:</span>
+                  <span className="text-gray-700">{t('sales_projects.bulk_price.new_total_value')}:</span>
                   <span className="font-semibold">€{totalNewValue.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                  <span className="font-bold text-gray-900">Total Value Change:</span>
+                  <span className="font-bold text-gray-900">{t('sales_projects.bulk_price.total_value_change')}:</span>
                   <span className={`font-bold text-lg ${
                     totalValueChange >= 0 ? 'text-green-700' : 'text-red-700'
                   }`}>
@@ -208,7 +210,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           variant="success"
@@ -216,7 +218,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
           onClick={handleSubmit}
           disabled={wouldCreateNegativePrice}
         >
-          Update {selectedUnits.length} Units
+          {t('sales_projects.bulk_price.update_units', { count: selectedUnits.length })}
         </Button>
       </Modal.Footer>
     </Modal>

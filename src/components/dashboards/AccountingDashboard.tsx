@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from './types/accountingDashboardTypes'
 import * as accountingService from './services/accountingDashboardService'
@@ -21,6 +22,7 @@ const defaultCashFlow: CashFlowStats = {
 }
 
 const AccountingDashboard: React.FC = () => {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [vatStats, setVatStats] = useState<VATStats>(defaultVAT)
   const [cashFlowStats, setCashFlowStats] = useState<CashFlowStats>(defaultCashFlow)
@@ -55,18 +57,18 @@ const AccountingDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" message="Loading accounting dashboard..." />
+    return <LoadingSpinner size="lg" message={t('dashboards.accounting.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Accounting Dashboard</h1>
-          <p className="text-gray-600 mt-1">Comprehensive financial overview and insights</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.accounting.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('dashboards.accounting.subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-500">Current Period</p>
+          <p className="text-sm text-gray-500">{t('dashboards.accounting.current_period')}</p>
           <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'MMMM yyyy')}</p>
         </div>
       </div>

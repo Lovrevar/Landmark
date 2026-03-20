@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
@@ -46,6 +47,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  const { t } = useTranslation()
   const [pendingDeletePayment, setPendingDeletePayment] = useState<{ id: string; saleId: string | null; amount: number } | null>(null)
 
   const { totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice } = useMemo(() => {
@@ -70,7 +72,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
   return (
     <Modal show={visible} onClose={onClose} size="xl">
-      <Modal.Header title="Payment History" onClose={onClose} />
+      <Modal.Header title={t('apartments.payment_history')} onClose={onClose} />
 
       <Modal.Body>
         <div className="space-y-6">
@@ -80,15 +82,15 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             </p>
             <div className="grid grid-cols-3 gap-4 mt-4">
               <div>
-                <p className="text-sm text-gray-600">Total Value</p>
+                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.total_value')}</p>
                 <p className="text-lg font-bold text-gray-900">€{totalPrice.toLocaleString('hr-HR')}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Paid</p>
+                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.total_paid')}</p>
                 <p className="text-lg font-bold text-green-600">€{totalPaid.toLocaleString('hr-HR')}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Remaining</p>
+                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.remaining')}</p>
                 <p className={`text-lg font-bold ${remainingBalance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                   €{remainingBalance.toLocaleString('hr-HR')}
                 </p>
@@ -98,7 +100,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             {totalPrice > 0 && (
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Overall Progress</span>
+                  <span className="text-gray-600">{t('apartments.payment_history_modal.progress')}</span>
                   <span className="font-medium">{((totalPaid / totalPrice) * 100).toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -114,7 +116,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
               <div className="bg-blue-50 p-2 rounded">
                 <p className="text-xs text-gray-600 flex items-center">
                   <Home className="w-3 h-3 mr-1 text-blue-600" />
-                  Apartment
+                  {t('common.apartment')}
                 </p>
                 <p className="text-sm font-bold text-blue-600">€{apartment.price.toLocaleString('hr-HR')}</p>
               </div>
@@ -140,11 +142,11 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900 mb-3">All Payments ({payments.length})</h4>
+            <h4 className="font-semibold text-gray-900 mb-3">{t('apartments.payment_history_modal.all_payments')} ({payments.length})</h4>
             {payments.length === 0 ? (
               <EmptyState
                 icon={DollarSign}
-                title="No payments recorded yet"
+                title={t('apartments.payment_history_modal.no_payments')}
               />
             ) : (
               <div className="space-y-3">
@@ -204,15 +206,15 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Close</Button>
+        <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </Modal.Footer>
 
       <ConfirmDialog
         show={!!pendingDeletePayment}
-        title="Potvrda brisanja"
-        message="Are you sure you want to delete this payment?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_payment')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={() => {
           if (pendingDeletePayment) {

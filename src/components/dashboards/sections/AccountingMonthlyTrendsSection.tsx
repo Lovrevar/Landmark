@@ -1,5 +1,6 @@
 import React from 'react'
 import { Calendar } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { MonthlyData } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
+  const { t } = useTranslation()
   if (monthlyData.length === 0) return null
 
   return (
@@ -15,7 +17,7 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
         <div className="flex items-center">
           <Calendar className="w-5 h-5 text-gray-600 mr-2" />
           <h2 className="text-lg font-semibold text-gray-900">
-            Monthly Cash Flow Trends ({new Date().getFullYear()})
+            {t('dashboards.accounting.monthly_trends', { year: new Date().getFullYear() })}
           </h2>
         </div>
       </div>
@@ -59,11 +61,11 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
         <div className="flex items-center justify-center space-x-6 mt-6 pt-4 border-t border-gray-200">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-green-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">Incoming</span>
+            <span className="text-sm text-gray-600">{t('dashboards.accounting.incoming')}</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">Outgoing</span>
+            <span className="text-sm text-gray-600">{t('dashboards.accounting.outgoing')}</span>
           </div>
         </div>
       </div>

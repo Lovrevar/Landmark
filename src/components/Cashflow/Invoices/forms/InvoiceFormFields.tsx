@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import { InvoiceEntityFields } from '../../components/InvoiceEntityFields'
@@ -85,10 +86,11 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
   getSupplierContractsByProject,
   getMilestonesByContract
 }) => {
+  const { t } = useTranslation()
   return (
     <div className="p-6 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="Tip računa" required>
+        <FormField label={t('invoices.form.type_label')} required>
           <Select
             value={formData.invoice_type}
             onChange={(e) => onFormChange({
@@ -107,15 +109,15 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           >
             {isOfficeInvoice ? (
               <>
-                <option value="INCOMING_OFFICE">Ulazni</option>
-                <option value="OUTGOING_OFFICE">Izlazni</option>
+                <option value="INCOMING_OFFICE">{t('invoices.form.type_incoming')}</option>
+                <option value="OUTGOING_OFFICE">{t('invoices.form.type_outgoing')}</option>
               </>
             ) : (
               <>
-                <option value="INCOMING_SUPPLIER">Ulazni (Dobavljač)</option>
-                <option value="INCOMING_INVESTMENT">Ulazni (Investicije)</option>
-                <option value="OUTGOING_SUPPLIER">Izlazni (Dobavljač)</option>
-                <option value="OUTGOING_SALES">Izlazni (Prodaja)</option>
+                <option value="INCOMING_SUPPLIER">{t('invoices.form.type_incoming_supplier')}</option>
+                <option value="INCOMING_INVESTMENT">{t('invoices.form.type_incoming_investment')}</option>
+                <option value="OUTGOING_SUPPLIER">{t('invoices.form.type_outgoing_supplier')}</option>
+                <option value="OUTGOING_SALES">{t('invoices.form.type_outgoing_sales')}</option>
               </>
             )}
           </Select>
@@ -138,19 +140,19 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           getMilestonesByContract={getMilestonesByContract}
         />
 
-        <FormField label="Firma" required>
+        <FormField label={t('invoices.form.company_label')} required>
           <Select
             value={formData.company_id}
             onChange={(e) => onFormChange({ ...formData, company_id: e.target.value })}
           >
-            <option value="">Odaberi firmu</option>
+            <option value="">{t('invoices.form.select_company')}</option>
             {companies.map(company => (
               <option key={company.id} value={company.id}>{company.name}</option>
             ))}
           </Select>
         </FormField>
 
-        <FormField label="Broj računa" required>
+        <FormField label={t('invoices.form.number_label')} required>
           <Input
             type="text"
             value={formData.invoice_number}
@@ -158,7 +160,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Poziv na broj">
+        <FormField label={t('invoices.form.reference_label')}>
           <Input
             type="text"
             value={formData.reference_number}
@@ -167,7 +169,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="IBAN">
+        <FormField label={t('invoices.form.iban_label')}>
           <Input
             type="text"
             value={formData.iban}
@@ -176,7 +178,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Datum izdavanja" required>
+        <FormField label={t('invoices.form.issue_date_label')} required>
           <DateInput
             value={formData.issue_date}
             onChange={(value) => onFormChange({ ...formData, issue_date: value })}
@@ -184,7 +186,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Datum dospijeća" required>
+        <FormField label={t('invoices.form.due_date_label')} required>
           <DateInput
             value={formData.due_date}
             onChange={(value) => onFormChange({ ...formData, due_date: value })}
@@ -192,7 +194,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Osnovica PDV 25%">
+        <FormField label={t('invoices.form.base_25')}>
           <CurrencyInput
             value={formData.base_amount_1}
             onChange={(value) => onFormChange({ ...formData, base_amount_1: value })}
@@ -201,7 +203,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Osnovica PDV 13%">
+        <FormField label={t('invoices.form.base_13')}>
           <CurrencyInput
             value={formData.base_amount_2}
             onChange={(value) => onFormChange({ ...formData, base_amount_2: value })}
@@ -210,7 +212,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Osnovica PDV 5%">
+        <FormField label={t('invoices.form.base_5')}>
           <CurrencyInput
             value={formData.base_amount_4}
             onChange={(value) => onFormChange({ ...formData, base_amount_4: value })}
@@ -219,7 +221,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Osnovica PDV 0%">
+        <FormField label={t('invoices.form.base_0')}>
           <CurrencyInput
             value={formData.base_amount_3}
             onChange={(value) => onFormChange({ ...formData, base_amount_3: value })}
@@ -228,12 +230,12 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label="Kategorija" required>
+        <FormField label={t('invoices.form.category_label')} required>
           <Select
             value={formData.category}
             onChange={(e) => onFormChange({ ...formData, category: e.target.value })}
           >
-            <option value="">Odaberi kategoriju</option>
+            <option value="">{t('invoices.form.select_category')}</option>
             {invoiceCategories.map(cat => (
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
@@ -241,12 +243,12 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
         </FormField>
       </div>
 
-      <FormField label="Opis (opcionalno)">
+      <FormField label={t('invoices.form.description_label')}>
         <Textarea
           value={formData.description}
           onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
           rows={3}
-          placeholder="Dodatne napomene..."
+          placeholder={t('invoices.form.additional_notes')}
         />
       </FormField>
     </div>

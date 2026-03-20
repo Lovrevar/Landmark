@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link2 } from 'lucide-react'
 import { Modal, FormField, Select, Button, Alert } from '../../../ui'
 import {
@@ -39,6 +40,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   onClose,
   onSuccess
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -72,7 +74,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setSuppliers(await fetchSuppliersForLinking())
     } catch (error) {
       console.error('Error loading suppliers:', error)
-      toast.error('Greška pri učitavanju dobavljača')
+      toast.error(t('suppliers.link.error_suppliers'))
     } finally {
       setLoading(false)
     }
@@ -83,7 +85,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setProjects(await fetchProjectsForLinking())
     } catch (error) {
       console.error('Error loading projects:', error)
-      toast.error('Greška pri učitavanju projekata')
+      toast.error(t('suppliers.link.error_projects'))
     }
   }
 
@@ -92,7 +94,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       setPhases(await fetchPhasesForProject(projectId))
     } catch (error) {
       console.error('Error loading phases:', error)
-      toast.error('Greška pri učitavanju faza')
+      toast.error(t('suppliers.link.error_phases'))
     }
   }
 
@@ -106,7 +108,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       onSuccess()
     } catch (error) {
       console.error('Error linking supplier:', error)
-      toast.error('Greška pri povezivanju dobavljača')
+      toast.error(t('suppliers.link.error_link'))
     } finally {
       setSubmitting(false)
     }
@@ -133,23 +135,23 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
             <Link2 className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Poveži Dobavljača</h2>
-            <p className="text-gray-600 text-sm">Dodaj postojećeg dobavljača u fazu projekta</p>
+            <h2 className="text-2xl font-bold text-gray-900">{t('suppliers.link.title')}</h2>
+            <p className="text-gray-600 text-sm">{t('suppliers.link.description')}</p>
           </div>
         </div>
 
         <Alert variant="info" className="mb-6">
-          Dobavljač će biti dodan u odabranu fazu bez ugovora (has_contract = false)
+          {t('suppliers.link.info')}
         </Alert>
 
         <div className="space-y-4">
-          <FormField label="Dobavljač" required>
+          <FormField label={t('suppliers.link.supplier_label')} required>
             <Select
               value={selectedSupplierId}
               onChange={(e) => setSelectedSupplierId(e.target.value)}
               disabled={loading}
             >
-              <option value="">Odaberi dobavljača</option>
+              <option value="">{t('suppliers.link.select_supplier')}</option>
               {suppliers.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>
                   {supplier.name} - {supplier.contact}
@@ -158,12 +160,12 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
             </Select>
           </FormField>
 
-          <FormField label="Projekt" required>
+          <FormField label={t('suppliers.link.project_label')} required>
             <Select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
             >
-              <option value="">Odaberi projekt</option>
+              <option value="">{t('suppliers.link.select_project')}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -172,16 +174,16 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
             </Select>
           </FormField>
 
-          <FormField label="Faza" required>
+          <FormField label={t('suppliers.link.phase_label')} required>
             <Select
               value={selectedPhaseId}
               onChange={(e) => setSelectedPhaseId(e.target.value)}
               disabled={!selectedProjectId}
             >
-              <option value="">Odaberi fazu</option>
+              <option value="">{t('suppliers.link.select_phase')}</option>
               {phases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
-                  Faza {phase.phase_number}: {phase.phase_name}
+                  {t('suppliers.link.phase_prefix', { number: phase.phase_number })}{phase.phase_name}
                 </option>
               ))}
             </Select>
@@ -190,14 +192,14 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
 
         <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
           <Button variant="ghost" onClick={handleClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
             onClick={handleSubmit}
             disabled={submitting || !selectedSupplierId || !selectedProjectId || !selectedPhaseId}
           >
-            {submitting ? 'Povezivanje...' : 'Poveži'}
+            {submitting ? t('suppliers.link.linking') : t('suppliers.link.link_button')}
           </Button>
         </div>
       </div>

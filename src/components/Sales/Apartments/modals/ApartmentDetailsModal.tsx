@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApartmentWithDetails } from '../types'
 import { Modal, Badge, Button } from '../../../ui'
 
@@ -37,13 +38,15 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
   onClose,
   apartment
 }) => {
+  const { t } = useTranslation()
+
   if (!visible || !apartment) return null
 
   const showContract = hasContractData(apartment)
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
-      <Modal.Header title="Apartment Details" onClose={onClose} />
+      <Modal.Header title={t('apartments.details')} onClose={onClose} />
 
       <Modal.Body>
         <div className="space-y-6">
@@ -65,18 +68,18 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
           </div>
 
           <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Location</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.location')}</h4>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Project:</span>
+                <span className="text-gray-600">{t('common.project')}:</span>
                 <span className="font-medium text-gray-900">{apartment.project_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Building:</span>
+                <span className="text-gray-600">{t('common.building')}:</span>
                 <span className="font-medium text-gray-900">{apartment.building_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Floor (Etaža):</span>
+                <span className="text-gray-600">{t('apartments.form.floor')} (Etaža):</span>
                 <span className="font-medium text-gray-900">{apartment.floor}</span>
               </div>
               {apartment.ulaz && (
@@ -89,7 +92,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
           </div>
 
           <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Specifications</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.specs')}</h4>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2">
               {apartment.tip_stana && (
                 <div className="flex justify-between">
@@ -104,7 +107,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">Saleable Area:</span>
+                <span className="text-gray-600">{t('apartments.details_modal.saleable_area')}:</span>
                 <span className="font-medium text-gray-900">{apartment.size_m2} m²</span>
               </div>
               {apartment.povrsina_otvoreno != null && (
@@ -120,7 +123,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">Price:</span>
+                <span className="text-gray-600">{t('apartments.table.price')}:</span>
                 <span className="font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
             </div>
@@ -128,16 +131,16 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
 
           {apartment.buyer_name && (
             <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">Buyer Information</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.buyer_info')}</h4>
               <div className="flex justify-between">
-                <span className="text-gray-600">Buyer:</span>
+                <span className="text-gray-600">{t('apartments.table.buyer')}:</span>
                 <span className="font-medium text-gray-900">{apartment.buyer_name}</span>
               </div>
             </div>
           )}
 
           {showContract && <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Contract</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.contract')}</h4>
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Datum potpisa predugovora:</span>
@@ -183,7 +186,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Close</Button>
+        <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </Modal.Footer>
     </Modal>
   )

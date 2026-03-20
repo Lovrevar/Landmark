@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { retailProjectService } from '../services/retailProjectService'
@@ -17,6 +18,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
@@ -43,7 +45,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
 
     const errors: Record<string, string> = {}
     if (!formData.phase_name.trim()) {
-      errors.phase_name = 'Naziv faze je obavezan'
+      errors.phase_name = t('retail_projects.phase_form.phase_name_error')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
@@ -64,7 +66,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
       onSuccess()
     } catch (error) {
       console.error('Error updating phase:', error)
-      toast.error('Greška pri ažuriranju faze')
+      toast.error(t('retail_projects.phase_form.error_update'))
     } finally {
       setLoading(false)
     }
@@ -79,13 +81,13 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
-        title="Uredi Fazu"
-        subtitle={phase.phase_type !== 'sales' ? `Dostupan budžet: ${formatCurrency(availableBudget)}` : undefined}
+        title={t('retail_projects.phase_form.title')}
+        subtitle={phase.phase_type !== 'sales' ? t('retail_projects.phase_form.available_budget', { amount: formatCurrency(availableBudget) }) : undefined}
         onClose={onClose}
       />
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          <FormField label="Naziv Faze" required error={fieldErrors.phase_name}>
+          <FormField label={t('retail_projects.phase_form.phase_name_label')} required error={fieldErrors.phase_name}>
             <Input
               type="text"
               value={formData.phase_name}
@@ -94,7 +96,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
           </FormField>
 
           {phase.phase_type !== 'sales' && (
-            <FormField label="Budžet (EUR)">
+            <FormField label={t('retail_projects.phase_form.budget_label')}>
               <Input
                 type="number"
                 value={formData.budget_allocated}
@@ -104,13 +106,13 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
               />
               {formData.budget_allocated > availableBudget && (
                 <p className="text-xs text-red-600 mt-1">
-                  Upozorenje: Prekoračenje dostupnog budžeta za {formatCurrency(formData.budget_allocated - availableBudget)}
+                  {t('retail_projects.phase_form.budget_warning', { amount: formatCurrency(formData.budget_allocated - availableBudget) })}
                 </p>
               )}
             </FormField>
           )}
 
-          <FormField label="Status">
+          <FormField label={t('retail_projects.phase_form.status_label')}>
             <Select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as RetailProjectPhase['status'] })}
@@ -122,7 +124,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
           </FormField>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Datum Početka">
+            <FormField label={t('retail_projects.phase_form.start_date')}>
               <Input
                 type="date"
                 value={formData.start_date}
@@ -130,7 +132,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum Završetka">
+            <FormField label={t('retail_projects.phase_form.end_date')}>
               <Input
                 type="date"
                 value={formData.end_date}
@@ -139,21 +141,21 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             </FormField>
           </div>
 
-          <FormField label="Napomene">
+          <FormField label={t('retail_projects.phase_form.notes_label')}>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder="Dodatne napomene..."
+              placeholder={t('retail_projects.phase_form.notes_placeholder')}
             />
           </FormField>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={loading}>
-            Spremi Promjene
+            {t('common.save_changes')}
           </Button>
         </Modal.Footer>
       </Form>

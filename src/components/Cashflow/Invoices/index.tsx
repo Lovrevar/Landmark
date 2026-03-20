@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
 import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
@@ -28,6 +29,7 @@ import {
 } from '../services/invoiceHelpers'
 
 const AccountingInvoices: React.FC = () => {
+  const { t } = useTranslation()
   const {
     invoices,
     companies,
@@ -164,14 +166,14 @@ const AccountingInvoices: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6 max-w-full">
       <PageHeader
-        title="Računi"
-        description="Upravljanje ulaznim i izlaznim računima"
+        title={t('invoices.title')}
+        description={t('invoices.subtitle')}
         actions={
           <div className="flex items-center gap-2">
             <ColumnMenuDropdown
@@ -334,10 +336,10 @@ const AccountingInvoices: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteId}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovaj račun?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_invoice')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectWithBuildings, OnSelectProjectCallback } from './types'
 import { Badge } from '../../ui'
 
@@ -12,6 +13,7 @@ const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'gray' => {
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject }) => {
+  const { t } = useTranslation()
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
@@ -33,17 +35,17 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{project.total_buildings}</p>
-              <p className="text-xs text-gray-600">Buildings</p>
+              <p className="text-xs text-gray-600">{t('sales_projects.buildings')}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">{project.total_units}</p>
-              <p className="text-xs text-gray-600">Total Units</p>
+              <p className="text-xs text-gray-600">{t('sales_projects.total_units')}</p>
             </div>
           </div>
 
           <div className="mb-4">
             <div className="flex justify-between mb-1">
-              <span className="text-sm text-gray-600">Sales Progress</span>
+              <span className="text-sm text-gray-600">{t('sales_projects.sales_progress')}</span>
               <span className="text-sm font-medium">
                 {project.total_units > 0 ? ((project.sold_units / project.total_units) * 100).toFixed(1) : '0'}%
               </span>
@@ -58,7 +60,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
           <div className="border-t pt-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Revenue</span>
+              <span className="text-sm text-gray-600">{t('sales_projects.revenue')}</span>
               <span className="font-bold text-green-600">€{project.total_revenue.toLocaleString('hr-HR')}</span>
             </div>
           </div>

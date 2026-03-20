@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
@@ -25,6 +26,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   onClose,
   subcontractor
 }) => {
+  const { t } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -84,11 +86,11 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'PAID':
-        return 'Plaćeno'
+        return t('common.paid')
       case 'PARTIALLY_PAID':
-        return 'Djelomično plaćeno'
+        return t('common.partial')
       case 'UNPAID':
-        return 'Neplaćeno'
+        return t('common.unpaid')
       default:
         return status
     }
@@ -104,8 +106,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="full">
       <Modal.Header
-        title={`Invoices - ${(subcontractor as SubcontractorWithContractInfo).company_name || subcontractor.name}`}
-        subtitle={`Contract: ${(subcontractor as SubcontractorWithContractInfo).contract_title || (subcontractor as SubcontractorWithContractInfo).contract_number || 'N/A'}`}
+        title={`${t('supervision.invoices_modal.title')} ${(subcontractor as SubcontractorWithContractInfo).company_name || subcontractor.name}`}
+        subtitle={`${t('supervision.invoices_modal.contract')} ${(subcontractor as SubcontractorWithContractInfo).contract_title || (subcontractor as SubcontractorWithContractInfo).contract_number || 'N/A'}`}
         onClose={onClose}
       />
 
@@ -117,8 +119,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No invoices found"
-            description="No invoices found for this subcontractor"
+            title={t('supervision.invoices_modal.no_invoices')}
+            description={t('supervision.invoices_modal.no_invoices_desc')}
           />
         ) : (
             <div className="space-y-4">
@@ -132,7 +134,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-medium text-gray-500 uppercase">Invoice Number</label>
+                        <label className="text-xs font-medium text-gray-500 uppercase">{t('supervision.invoices_modal.invoice_number')}</label>
                         <Badge variant={getStatusVariant(invoice.status)} size="sm">
                           {getStatusLabel(invoice.status)}
                         </Badge>
@@ -141,7 +143,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Company</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('supervision.invoices_modal.company')}</label>
                       <div className="flex items-center">
                         <Building2 className="w-4 h-4 text-gray-400 mr-2" />
                         <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
@@ -149,7 +151,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Total Amount</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('supervision.invoices_modal.total_amount')}</label>
                       <div className="flex items-center">
                         <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                         <p className="text-lg font-bold text-gray-900">
@@ -158,13 +160,13 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                       </div>
                       {invoice.status !== 'UNPAID' && (
                         <p className="text-xs text-gray-600 mt-1">
-                          Paid: €{invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                          {t('supervision.invoices_modal.paid')} €{invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">Due Date</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('supervision.invoices_modal.due_date')}</label>
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                         <p className={`text-sm font-medium ${
@@ -176,7 +178,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                       {isOverdue(invoice.due_date, invoice.status) && (
                         <div className="flex items-center mt-1 text-red-600">
                           <AlertCircle className="w-3 h-3 mr-1" />
-                          <span className="text-xs font-semibold">OVERDUE</span>
+                          <span className="text-xs font-semibold">{t('supervision.invoices_modal.overdue')}</span>
                         </div>
                       )}
                     </div>
@@ -184,22 +186,22 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
                   {invoice.description && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <label className="text-xs font-medium text-gray-500 uppercase block mb-1">Description</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase block mb-1">{t('supervision.invoices_modal.description')}</label>
                       <p className="text-sm text-gray-700">{invoice.description}</p>
                     </div>
                   )}
 
                   <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Base Amount:</span>
+                      <span className="text-gray-500">{t('supervision.invoices_modal.base_amount')}</span>
                       <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">VAT:</span>
+                      <span className="text-gray-500">{t('supervision.invoices_modal.vat')}</span>
                       <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Issue Date:</span>
+                      <span className="text-gray-500">{t('supervision.invoices_modal.issue_date')}</span>
                       <span className="ml-2 font-medium">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</span>
                     </div>
                   </div>
@@ -211,10 +213,10 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
       <Modal.Footer>
         <div className="text-sm text-gray-600">
-          Total Invoices: <span className="font-semibold">{invoices.length}</span>
+          {t('supervision.invoices_modal.total_invoices')} <span className="font-semibold">{invoices.length}</span>
         </div>
         <Button variant="secondary" onClick={onClose}>
-          Close
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

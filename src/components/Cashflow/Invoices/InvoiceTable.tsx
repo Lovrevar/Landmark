@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
@@ -40,16 +41,17 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   getSupplierCustomerName,
   isOverdue
 }) => {
+  const { t } = useTranslation()
   return (
     <Table>
       <Table.Head>
         <tr>
-          {visibleColumns.approved && <Table.Th>Odobreno</Table.Th>}
-          {visibleColumns.type && <Table.Th>Tip</Table.Th>}
+          {visibleColumns.approved && <Table.Th>{t('invoices.table.approved')}</Table.Th>}
+          {visibleColumns.type && <Table.Th>{t('invoices.table.type')}</Table.Th>}
           {visibleColumns.invoice_number && (
             <Table.Th sortable onClick={() => onSort('invoice_number')}>
               <div className="flex items-center gap-1">
-                <span>Broj računa</span>
+                <span>{t('invoices.table.number')}</span>
                 {sortField === 'invoice_number' ? (
                   sortDirection === 'asc' ? (
                     <ArrowUp className="w-4 h-4" />
@@ -62,14 +64,14 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               </div>
             </Table.Th>
           )}
-          {visibleColumns.company && <Table.Th>Firma</Table.Th>}
-          {visibleColumns.supplier_customer && <Table.Th>{filterDirection === 'OUTGOING' ? 'Kupac' : 'Dobavljač'}</Table.Th>}
-          {visibleColumns.category && <Table.Th>Kategorija</Table.Th>}
-          {visibleColumns.issue_date && <Table.Th>Datum izdavanja</Table.Th>}
+          {visibleColumns.company && <Table.Th>{t('invoices.table.company')}</Table.Th>}
+          {visibleColumns.supplier_customer && <Table.Th>{filterDirection === 'OUTGOING' ? t('invoices.table.buyer') : t('invoices.table.supplier')}</Table.Th>}
+          {visibleColumns.category && <Table.Th>{t('invoices.table.category')}</Table.Th>}
+          {visibleColumns.issue_date && <Table.Th>{t('invoices.table.issue_date')}</Table.Th>}
           {visibleColumns.due_date && (
             <Table.Th sortable onClick={() => onSort('due_date')}>
               <div className="flex items-center gap-1">
-                <span>Dospijeće</span>
+                <span>{t('invoices.table.due_date')}</span>
                 {sortField === 'due_date' ? (
                   sortDirection === 'asc' ? (
                     <ArrowUp className="w-4 h-4" />
@@ -82,13 +84,13 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               </div>
             </Table.Th>
           )}
-          {visibleColumns.base_amount && <Table.Th>Osnovica</Table.Th>}
-          {visibleColumns.vat && <Table.Th>PDV</Table.Th>}
-          {visibleColumns.total_amount && <Table.Th>Ukupno</Table.Th>}
-          {visibleColumns.paid_amount && <Table.Th>Plaćeno</Table.Th>}
-          {visibleColumns.remaining_amount && <Table.Th>Preostalo</Table.Th>}
-          {visibleColumns.status && <Table.Th>Status</Table.Th>}
-          <Table.Th sticky>Akcije</Table.Th>
+          {visibleColumns.base_amount && <Table.Th>{t('invoices.table.base')}</Table.Th>}
+          {visibleColumns.vat && <Table.Th>{t('invoices.table.vat')}</Table.Th>}
+          {visibleColumns.total_amount && <Table.Th>{t('invoices.table.total')}</Table.Th>}
+          {visibleColumns.paid_amount && <Table.Th>{t('invoices.table.paid')}</Table.Th>}
+          {visibleColumns.remaining_amount && <Table.Th>{t('invoices.table.remaining')}</Table.Th>}
+          {visibleColumns.status && <Table.Th>{t('invoices.table.status')}</Table.Th>}
+          <Table.Th sticky>{t('invoices.table.actions')}</Table.Th>
         </tr>
       </Table.Head>
       <Table.Body>
@@ -97,7 +99,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1}>
               <EmptyState
                 icon={FileText}
-                title="Nema pronađenih računa"
+                title={t('invoices.table.no_invoices')}
               />
             </td>
           </tr>
@@ -219,8 +221,8 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               {visibleColumns.status && (
                 <Table.Td>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                    {invoice.status === 'UNPAID' ? 'Neplaćeno' :
-                     invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Plaćeno'}
+                    {invoice.status === 'UNPAID' ? t('common.unpaid') :
+                     invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.paid')}
                   </span>
                 </Table.Td>
               )}

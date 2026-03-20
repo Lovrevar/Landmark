@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import type { Company } from './types'
 import { SearchInput, Select, Button } from '../../ui'
@@ -32,6 +33,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
   onCompanyChange,
   onClearFilters
 }) => {
+  const { t } = useTranslation()
   const hasActiveFilters =
     searchTerm ||
     filterCategory !== 'ALL' ||
@@ -43,7 +45,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SearchInput
           value={searchTerm}
-          placeholder="Pretraži..."
+          placeholder={t('invoices.search')}
           onChange={(e) => onSearchChange(e.target.value)}
           onClear={() => onSearchChange('')}
         />
@@ -52,30 +54,30 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
           value={filterCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
         >
-          <option value="ALL">Sve kategorije</option>
-          <option value="SUPPLIER">Dobavljač</option>
-          <option value="OFFICE">Ured</option>
-          <option value="INVESTMENT">Investicije</option>
-          <option value="BANK">Banka</option>
-          <option value="SALES">Prodaja</option>
+          <option value="ALL">{t('invoices.filters.all_types')}</option>
+          <option value="SUPPLIER">{t('invoice_type.ulazni_dob')}</option>
+          <option value="OFFICE">{t('invoice_type.ulazni_ured')}</option>
+          <option value="INVESTMENT">{t('invoice_type.ulazni_inv')}</option>
+          <option value="BANK">{t('invoice_type.ulazni_banka')}</option>
+          <option value="SALES">{t('invoice_type.izlazni_prod')}</option>
         </Select>
 
         <Select
           value={filterStatus}
           onChange={(e) => onStatusChange(e.target.value)}
         >
-          <option value="ALL">Svi statusi</option>
-          <option value="PAID">Plaćeno</option>
-          <option value="UNPAID">Neplaćeno</option>
-          <option value="PARTIALLY_PAID">Djelomično plaćeno</option>
-          <option value="UNPAID_AND_PARTIAL">Neplaćeno + Djelomično</option>
+          <option value="ALL">{t('invoices.filters.all_statuses')}</option>
+          <option value="PAID">{t('common.paid')}</option>
+          <option value="UNPAID">{t('common.unpaid')}</option>
+          <option value="PARTIALLY_PAID">{t('common.partial')}</option>
+          <option value="UNPAID_AND_PARTIAL">{t('common.unpaid')} + {t('common.partial')}</option>
         </Select>
 
         <Select
           value={filterCompany}
           onChange={(e) => onCompanyChange(e.target.value)}
         >
-          <option value="ALL">Sve firme</option>
+          <option value="ALL">{t('invoices.filters.all_suppliers')}</option>
           {companies.map(company => (
             <option key={company.id} value={company.id}>{company.name}</option>
           ))}
@@ -113,7 +115,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
               icon={X}
               onClick={onClearFilters}
             >
-              Očisti
+              {t('common.clear')}
             </Button>
           )}
         </div>

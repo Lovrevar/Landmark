@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BuildingFormData } from '../types'
 import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
 
@@ -17,6 +18,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<BuildingFormData>({
     name: '',
@@ -45,13 +47,13 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   return (
     <Modal show={true} onClose={onClose}>
       <Modal.Header
-        title="Add New Building"
-        subtitle={`Project: ${project.name}`}
+        title={t('sales_projects.single_building_modal.title')}
+        subtitle={`${t('sales_projects.project')}: ${project.name}`}
         onClose={onClose}
       />
       <Modal.Body>
           <div className="space-y-4">
-            <FormField label="Building Name" required error={fieldErrors.name}>
+            <FormField label={t('sales_projects.single_building_modal.building_name')} required error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
@@ -59,14 +61,14 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
                 placeholder="e.g., Building A, Tower 1"
               />
             </FormField>
-            <FormField label="Description">
+            <FormField label={t('sales_projects.single_building_modal.description')}>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
               />
             </FormField>
-            <FormField label="Total Floors" required>
+            <FormField label={t('sales_projects.single_building_modal.total_floors')} required>
               <Input
                 type="number"
                 min="1"
@@ -78,10 +80,10 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button loading={loading} onClick={handleSubmit}>
-          Add Building
+          {t('sales_projects.single_building_modal.add_building')}
         </Button>
       </Modal.Footer>
     </Modal>

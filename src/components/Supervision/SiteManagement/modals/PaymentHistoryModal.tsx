@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
@@ -39,6 +40,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
+  const { t } = useTranslation()
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0)
   const [loading, setLoading] = useState(false)
@@ -88,7 +90,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
-        title="Payment History"
+        title={t('supervision.payment_history.title')}
         subtitle={subcontractor.name}
         onClose={onClose}
       />
@@ -97,19 +99,19 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-sm text-gray-600">Total Invoices</p>
+                <p className="text-sm text-gray-600">{t('supervision.payment_history.total_invoices')}</p>
                 <p className="text-lg font-bold text-gray-900">
                   €{loading ? '...' : totalInvoiceAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Paid</p>
+                <p className="text-sm text-gray-600">{t('supervision.payment_history.total_paid')}</p>
                 <p className="text-lg font-bold text-teal-600">
                   €{loading ? '...' : totalPaidAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Remaining</p>
+                <p className="text-sm text-gray-600">{t('supervision.payment_history.remaining')}</p>
                 <p className="text-lg font-bold text-orange-600">
                   €{loading ? '...' : Math.max(0, totalInvoiceAmount - totalPaidAmount).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
@@ -117,12 +119,12 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             </div>
           </div>
 
-        <h4 className="font-semibold text-gray-900 mb-3">All Payments ({payments.length})</h4>
+        <h4 className="font-semibold text-gray-900 mb-3">{t('supervision.payment_history.all_payments')} ({payments.length})</h4>
 
         {payments.length === 0 ? (
           <EmptyState
             icon={DollarSign}
-            title="No payments recorded yet"
+            title={t('supervision.payment_history.no_payments')}
           />
         ) : (
             <div className="space-y-3">
@@ -142,7 +144,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                             </span>
                           )}
                           {!payment.payment_date && (
-                            <span className="text-sm text-gray-400 italic">Date not set</span>
+                            <span className="text-sm text-gray-400 italic">{t('supervision.edit_payment.date_not_set')}</span>
                           )}
                         </div>
 
@@ -150,7 +152,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <div className="flex items-center space-x-2 mb-2">
                             <FileText className="w-4 h-4 text-blue-600" />
                             <span className="text-sm text-gray-700">
-                              Invoice: <span className="font-medium text-blue-600">
+                              {t('supervision.payment_history.invoice')} <span className="font-medium text-blue-600">
                                 {accountingPayment.invoice.invoice_number}
                               </span>
                             </span>
@@ -162,13 +164,13 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
                         {isAccountingPayment && accountingPayment.payment_method && (
                           <div className="text-sm text-gray-600 mb-2">
-                            Method: <span className="font-medium">{accountingPayment.payment_method}</span>
+                            {t('supervision.payment_history.method')} <span className="font-medium">{accountingPayment.payment_method}</span>
                           </div>
                         )}
 
                         {isAccountingPayment && accountingPayment.reference_number && (
                           <div className="text-sm text-gray-600 mb-2">
-                            Ref: {accountingPayment.reference_number}
+                            {t('supervision.payment_history.ref')} {accountingPayment.reference_number}
                           </div>
                         )}
 
@@ -176,8 +178,8 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <div className="flex items-center space-x-2 mb-2">
                             <Building2 className="w-4 h-4 text-green-600" />
                             <span className="text-sm text-gray-700">
-                              Paid by: <span className="font-medium text-green-600">
-                                {(payment as WirePayment & { bank?: { name: string } }).bank?.name || 'Bank'}
+                              {t('supervision.payment_history.paid_by')} <span className="font-medium text-green-600">
+                                {(payment as WirePayment & { bank?: { name: string } }).bank?.name || t('common.bank')}
                               </span>
                             </span>
                           </div>
@@ -190,22 +192,22 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
 
                         <p className="text-xs text-gray-400">
-                          Created {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
+                          {t('supervision.payment_history.created')} {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
                         </p>
                       </div>
                       {!isAccountingPayment && (
                         <div className="flex space-x-2 ml-4">
                           <Button size="sm" onClick={() => onEditPayment(payment as WirePayment)}>
-                            Edit
+                            {t('common.edit')}
                           </Button>
                           <Button size="sm" variant="danger" onClick={() => onDeletePayment(payment.id, payment.amount)}>
-                            Delete
+                            {t('common.delete')}
                           </Button>
                         </div>
                       )}
                       {isAccountingPayment && (
                         <div className="ml-4">
-                          <span className="text-xs text-gray-500 italic">Managed in Accounting</span>
+                          <span className="text-xs text-gray-500 italic">{t('supervision.payment_history.managed_in_accounting')}</span>
                         </div>
                       )}
                     </div>
@@ -218,7 +220,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Close
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

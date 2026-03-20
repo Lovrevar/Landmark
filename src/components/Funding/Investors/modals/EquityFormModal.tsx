@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 import type { EquityFormData, BankWithCredits, Company } from '../types'
 import { calculateEquityCashflow, calculateMoneyMultiple } from '../utils/creditCalculations'
@@ -22,44 +23,45 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
   onChange,
   onSubmit,
 }) => {
+  const { t } = useTranslation()
   const cashflowValue = calculateEquityCashflow(formData)
   const moneyMultiple = calculateMoneyMultiple(formData)
 
   return (
     <Modal show={show} onClose={onClose} size="lg">
-      <Modal.Header title="Add New Investment" onClose={onClose} />
+      <Modal.Header title={t('funding.equity_form.title')} onClose={onClose} />
       <Modal.Body>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Bank" required>
+          <FormField label={t('funding.equity_form.bank_label')} required>
             <Select
               value={formData.bank_id}
               onChange={(e) => onChange({ bank_id: e.target.value })}
             >
-              <option value="">Select bank</option>
+              <option value="">{t('funding.equity_form.select_bank')}</option>
               {banks.map(bank => (
                 <option key={bank.id} value={bank.id}>{bank.name}</option>
               ))}
             </Select>
           </FormField>
-          <FormField label="Company">
+          <FormField label={t('funding.equity_form.company_label')}>
             <Select
               value={formData.company_id}
               onChange={(e) => onChange({ company_id: e.target.value })}
             >
-              <option value="">Select company</option>
+              <option value="">{t('funding.equity_form.select_company')}</option>
               {companies.map(company => (
                 <option key={company.id} value={company.id}>{company.name}</option>
               ))}
             </Select>
           </FormField>
-          <FormField label="Amount" required>
+          <FormField label={t('funding.equity_form.amount_label')} required>
             <Input
               type="number"
               value={formData.amount}
               onChange={(e) => onChange({ amount: parseFloat(e.target.value) || 0 })}
             />
           </FormField>
-          <FormField label="IRR (%)">
+          <FormField label={t('funding.equity_form.irr_label')}>
             <Input
               type="number"
               step="0.1"
@@ -67,7 +69,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
               onChange={(e) => onChange({ expected_return: parseFloat(e.target.value) || 0 })}
             />
           </FormField>
-          <FormField label="Payment Schedule">
+          <FormField label={t('funding.equity_form.payment_schedule_label')}>
             <Select
               value={formData.payment_schedule}
               onChange={(e) => {
@@ -79,15 +81,15 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                 })
               }}
             >
-              <option value="yearly">Yearly</option>
-              <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
+              <option value="yearly">{t('funding.equity_form.yearly_option')}</option>
+              <option value="monthly">{t('funding.equity_form.monthly_option')}</option>
+              <option value="custom">{t('funding.equity_form.custom_option')}</option>
             </Select>
           </FormField>
 
           {formData.payment_schedule === 'custom' && (
             <>
-              <FormField label="Number of Payments" required>
+              <FormField label={t('funding.equity_form.num_payments_label')} required>
                 <Input
                   type="number"
                   min="1"
@@ -102,16 +104,16 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                       custom_payments: newPayments
                     })
                   }}
-                  placeholder="Enter number of payments"
+                  placeholder={t('funding.equity_form.num_payments_placeholder')}
                 />
               </FormField>
 
               {formData.custom_payment_count > 0 && (
                 <div className="md:col-span-2 space-y-4">
-                  <h4 className="font-medium text-gray-900">Payment Schedule Details</h4>
+                  <h4 className="font-medium text-gray-900">{t('funding.equity_form.payment_schedule_details_heading')}</h4>
                   {formData.custom_payments.map((payment, index) => (
                     <div key={index} className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                      <FormField label={`Payment ${index + 1} - Date`} required>
+                      <FormField label={t('funding.equity_form.payment_date_label', { num: index + 1 })} required>
                         <Input
                           type="date"
                           value={payment.date}
@@ -122,7 +124,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                           }}
                         />
                       </FormField>
-                      <FormField label={`Payment ${index + 1} - Amount`} required>
+                      <FormField label={t('funding.equity_form.payment_amount_label', { num: index + 1 })} required>
                         <Input
                           type="number"
                           value={payment.amount || ''}
@@ -131,7 +133,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                             updatedPayments[index] = { ...updatedPayments[index], amount: parseFloat(e.target.value) || 0 }
                             onChange({ custom_payments: updatedPayments })
                           }}
-                          placeholder="Amount"
+                          placeholder={t('funding.equity_form.payment_amount_placeholder')}
                         />
                       </FormField>
                     </div>
@@ -143,8 +145,8 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
 
           {formData.payment_schedule !== 'custom' && (
             <FormField
-              label={`${formData.payment_schedule === 'yearly' ? 'Yearly' : 'Monthly'} Cashflow`}
-              helperText={`${formData.payment_schedule === 'yearly' ? 'Annual' : 'Monthly'} payment amount based on IRR and investment period minus grace period`}
+              label={formData.payment_schedule === 'yearly' ? t('funding.equity_form.yearly_cashflow_label') : t('funding.equity_form.monthly_cashflow_label')}
+              helperText={formData.payment_schedule === 'yearly' ? t('funding.equity_form.yearly_cashflow_helper') : t('funding.equity_form.monthly_cashflow_helper')}
             >
               <Input
                 type="text"
@@ -154,66 +156,66 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
               />
             </FormField>
           )}
-          <FormField label="Money Multiple" helperText="Total return multiple">
+          <FormField label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
             <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
               {moneyMultiple}
             </div>
           </FormField>
-          <FormField label="Investment Date" required>
+          <FormField label={t('funding.equity_form.investment_date_label')} required>
             <Input
               type="date"
               value={formData.investment_date}
               onChange={(e) => onChange({ investment_date: e.target.value })}
             />
           </FormField>
-          <FormField label="Exit Date">
+          <FormField label={t('funding.equity_form.exit_date_label')}>
             <Input
               type="date"
               value={formData.maturity_date}
               onChange={(e) => onChange({ maturity_date: e.target.value })}
             />
           </FormField>
-          <FormField label="Usage Expiration Date">
+          <FormField label={t('funding.equity_form.usage_expiration_label')}>
             <Input
               type="date"
               value={formData.usage_expiration_date}
               onChange={(e) => onChange({ usage_expiration_date: e.target.value })}
             />
           </FormField>
-          <FormField label="Grace Period (months)">
+          <FormField label={t('funding.equity_form.grace_period_label')}>
             <Input
               type="number"
               value={formData.grace_period}
               onChange={(e) => onChange({ grace_period: parseInt(e.target.value) || 0 })}
-              placeholder="0"
+              placeholder={t('funding.equity_form.grace_period_placeholder')}
             />
           </FormField>
           <div className="md:col-span-2">
-            <FormField label="Mortgages">
+            <FormField label={t('funding.equity_form.mortgages_label')}>
               <Textarea
                 value={formData.terms}
                 onChange={(e) => onChange({ terms: e.target.value })}
                 rows={3}
-                placeholder="Terms and conditions of the investment..."
+                placeholder={t('funding.equity_form.mortgages_placeholder')}
               />
             </FormField>
           </div>
           <div className="md:col-span-2">
-            <FormField label="Notes">
+            <FormField label={t('funding.equity_form.notes_label')}>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => onChange({ notes: e.target.value })}
                 rows={3}
-                placeholder="Additional notes about this investment..."
+                placeholder={t('funding.equity_form.notes_placeholder')}
               />
             </FormField>
           </div>
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>{t('funding.equity_form.cancel_button')}</Button>
         <Button variant="success" onClick={onSubmit}>
-          Add Investment
+          {t('funding.equity_form.submit_button')}
         </Button>
       </Modal.Footer>
     </Modal>

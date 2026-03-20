@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../services/siteService'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
@@ -40,6 +41,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
     due_date: null
   })
 
+  const { t } = useTranslation()
   const [remainingPercentage, setRemainingPercentage] = useState(100)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -80,10 +82,10 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
 
   const handleSubmit = () => {
     const errors: Record<string, string> = {}
-    if (!formData.milestone_name.trim()) errors.milestone_name = 'Naziv prekretnice je obavezan'
-    if (formData.percentage <= 0) errors.percentage = 'Postotak mora biti veći od 0'
+    if (!formData.milestone_name.trim()) errors.milestone_name = t('supervision.milestone_form.errors.name_required')
+    if (formData.percentage <= 0) errors.percentage = t('supervision.milestone_form.errors.percentage_zero')
     else if (formData.percentage > remainingPercentage + (editingMilestone?.percentage || 0)) {
-      errors.percentage = `Postotak premašuje dostupnih ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`
+      errors.percentage = `${t('supervision.milestone_form.errors.percentage_exceeds')} ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
@@ -99,36 +101,36 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
-        title={editingMilestone ? 'Edit Milestone' : 'Add Payment Milestone'}
-        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | Contract (Base): €${contractCost.toLocaleString('hr-HR')} • Available: ${remainingPercentage.toFixed(2)}%`}
+        title={editingMilestone ? t('supervision.milestone_form.title_edit') : t('supervision.milestone_form.title_add')}
+        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | ${t('common.contract')} (Base): €${contractCost.toLocaleString('hr-HR')} • ${t('supervision.milestone_form.available')} ${remainingPercentage.toFixed(2)}%`}
         onClose={onClose}
       />
 
       <Modal.Body>
         <div className="grid grid-cols-1 gap-4 mt-4">
-          <FormField label="Milestone Name" required error={fieldErrors.milestone_name}>
+          <FormField label={t('supervision.milestone_form.name')} required error={fieldErrors.milestone_name}>
             <Input
               type="text"
               value={formData.milestone_name}
               onChange={(e) => setFormData({ ...formData, milestone_name: e.target.value })}
-              placeholder="e.g., Projektiranje, Izvedba temelja"
+              placeholder={t('supervision.milestone_form.name_placeholder')}
             />
           </FormField>
 
-          <FormField label="Description">
+          <FormField label={t('supervision.milestone_form.description')}>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="Describe deliverables and requirements for this milestone..."
+              placeholder={t('supervision.milestone_form.description_placeholder')}
             />
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
-              label="Percentage (%)"
+              label={t('supervision.milestone_form.percentage')}
               required
-              helperText={`Max: ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`}
+              helperText={`${t('supervision.milestone_form.max')} ${(remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2)}%`}
               error={fieldErrors.percentage}
             >
               <Input
@@ -143,8 +145,8 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
             </FormField>
 
             <FormField
-              label="Calculated Amount"
-              helperText={`${formData.percentage}% of €${contractCost.toLocaleString('hr-HR')}`}
+              label={t('supervision.milestone_form.calculated_amount')}
+              helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} €${contractCost.toLocaleString('hr-HR')}`}
             >
               <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 font-semibold">
                 €{calculateAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -152,7 +154,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
             </FormField>
           </div>
 
-          <FormField label="Due Date">
+          <FormField label={t('supervision.milestone_form.due_date')}>
             <Input
               type="date"
               value={formData.due_date || ''}
@@ -164,10 +166,10 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={handleSubmit}>
-          {editingMilestone ? 'Update Milestone' : 'Add Milestone'}
+          {editingMilestone ? t('supervision.milestone_form.update') : t('supervision.milestone_form.add')}
         </Button>
       </Modal.Footer>
     </Modal>

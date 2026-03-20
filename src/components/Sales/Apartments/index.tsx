@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
 import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader, ConfirmDialog } from '../../ui'
@@ -14,6 +15,7 @@ import { EditPaymentModal } from './modals/EditPaymentModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
+  const { t } = useTranslation()
   useAuth()
   const {
     apartments,
@@ -161,25 +163,25 @@ const ApartmentManagement: React.FC = () => {
   })
 
   if (loading) {
-    return <LoadingSpinner message="Loading apartments..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Apartments"
-        description="Manage all apartments across projects"
+        title={t('apartments.title')}
+        description={t('apartments.subtitle')}
         actions={
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
-              <p className="text-sm text-gray-600">Total Apartments</p>
+              <p className="text-sm text-gray-600">{t('apartments.title')}</p>
               <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
             </div>
             <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
-              Bulk Create Apartments
+              {t('apartments.bulk_create')}
             </Button>
             <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
-              Add Single Apartment
+              {t('apartments.add')}
             </Button>
           </div>
         }
@@ -192,7 +194,7 @@ const ApartmentManagement: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onClear={() => setSearchTerm('')}
-              placeholder="Search apartments..."
+              placeholder={t('apartments.search')}
             />
           </div>
 
@@ -203,7 +205,7 @@ const ApartmentManagement: React.FC = () => {
               setFilterBuilding('all')
             }}
           >
-            <option value="all">All Projects</option>
+            <option value="all">{t('apartments.form.select_project')}</option>
             {projects.map(project => (
               <option key={project.id} value={project.id}>{project.name}</option>
             ))}
@@ -213,7 +215,7 @@ const ApartmentManagement: React.FC = () => {
             value={filterBuilding}
             onChange={(e) => setFilterBuilding(e.target.value)}
           >
-            <option value="all">All Buildings</option>
+            <option value="all">{t('apartments.form.select_building')}</option>
             {buildings
               .filter(b => filterProject === 'all' || b.project_id === filterProject)
               .map(building => (
@@ -231,7 +233,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            All
+            {t('common.status')}
           </button>
           <button
             onClick={() => setFilterStatus('Available')}
@@ -241,7 +243,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Available
+            {t('apartments.statuses.available')}
           </button>
           <button
             onClick={() => setFilterStatus('Reserved')}
@@ -251,7 +253,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Reserved
+            {t('apartments.statuses.reserved')}
           </button>
           <button
             onClick={() => setFilterStatus('Sold')}
@@ -261,7 +263,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Sold
+            {t('apartments.statuses.sold')}
           </button>
         </div>
       </div>
@@ -269,8 +271,8 @@ const ApartmentManagement: React.FC = () => {
       {filteredApartments.length === 0 ? (
         <EmptyState
           icon={Home}
-          title="No Apartments Found"
-          description="Try adjusting your filters"
+          title={t('common.no_data')}
+          description={t('apartments.search')}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -301,35 +303,35 @@ const ApartmentManagement: React.FC = () => {
               >
                 <div className="mb-3">
                   <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                  <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                  <p className="text-sm text-gray-600">{t('common.floor')} {apartment.floor}</p>
                 </div>
 
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Project:</span>
+                    <span className="text-sm text-gray-600">{t('common.project')}:</span>
                     <span className="text-sm font-medium">{apartment.project_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Building:</span>
+                    <span className="text-sm text-gray-600">{t('common.building')}:</span>
                     <span className="text-sm font-medium">{apartment.building_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Size:</span>
+                    <span className="text-sm text-gray-600">{t('apartments.table.size')}:</span>
                     <span className="text-sm font-medium">{apartment.size_m2} m²</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Price:</span>
+                    <span className="text-sm text-gray-600">{t('apartments.table.price')}:</span>
                     <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
                   </div>
 
                   {(aptLinkedGarages.length > 0 || aptLinkedStorages.length > 0) && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-1">Linked Units:</p>
+                      <p className="text-xs font-semibold text-gray-700 mb-1">{t('apartments.link_units')}:</p>
                       {aptLinkedGarages.map((garage) => (
                         <div key={garage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
-                            Garage {garage.number}
+                            {t('common.garage')} {garage.number}
                           </span>
                           <span className="font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</span>
                         </div>
@@ -338,13 +340,13 @@ const ApartmentManagement: React.FC = () => {
                         <div key={storage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Package className="w-3 h-3 mr-1 text-gray-600" />
-                            Storage {storage.number}
+                            {t('common.storage')} {storage.number}
                           </span>
                           <span className="font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</span>
                         </div>
                       ))}
                       <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
-                        <span className="text-xs font-semibold text-gray-700">Total Value:</span>
+                        <span className="text-xs font-semibold text-gray-700">{t('common.total')}:</span>
                         <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -353,13 +355,13 @@ const ApartmentManagement: React.FC = () => {
                   {apartment.status === 'Sold' && apartment.buyer_name && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Buyer:</span>
+                        <span className="text-sm text-gray-600">{t('apartments.table.buyer')}:</span>
                         <span className="text-sm font-medium">{apartment.buyer_name}</span>
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="flex justify-between mb-1">
-                          <span className="text-xs font-semibold text-gray-700">Overall Progress</span>
+                          <span className="text-xs font-semibold text-gray-700">{t('apartments.payment_history_modal.progress')}</span>
                           <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
@@ -389,7 +391,7 @@ const ApartmentManagement: React.FC = () => {
                     fullWidth
                     onClick={() => openPaymentHistory(apartment)}
                   >
-                    View Payments
+                    {t('apartments.payment_history')}
                   </Button>
                   {(aptLinkedGarages.length === 0 || aptLinkedStorages.length === 0) && (
                     <Button
@@ -402,7 +404,7 @@ const ApartmentManagement: React.FC = () => {
                         setShowLinkUnitsModal(true)
                       }}
                     >
-                      Link Units
+                      {t('apartments.link_units')}
                     </Button>
                   )}
                   <div className="grid grid-cols-3 gap-2">
@@ -414,7 +416,7 @@ const ApartmentManagement: React.FC = () => {
                         setShowEditModal(true)
                       }}
                     >
-                      Edit
+                      {t('common.edit')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -424,14 +426,14 @@ const ApartmentManagement: React.FC = () => {
                         setShowDetailsModal(true)
                       }}
                     >
-                      Details
+                      {t('apartments.details')}
                     </Button>
                     <Button
                       variant="danger"
                       size="sm"
                       onClick={() => handleDeleteApartment(apartment.id)}
                     >
-                      Delete
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </div>
@@ -446,11 +448,11 @@ const ApartmentManagement: React.FC = () => {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center">
               <Filter className="w-5 h-5 mr-2" />
-              <span className="font-medium">Filtered Results</span>
+              <span className="font-medium">{t('customers.sales_payments.filtered_results')}</span>
             </div>
             <div>
               Showing <span className="font-semibold">{filteredApartments.length}</span> of{' '}
-              <span className="font-semibold">{apartments.length}</span> apartments
+              <span className="font-semibold">{apartments.length}</span> {t('apartments.title').toLowerCase()}
             </div>
           </div>
         </Alert>

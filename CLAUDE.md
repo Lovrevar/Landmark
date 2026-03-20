@@ -65,11 +65,16 @@ UI Component → Custom Hook → Service Layer → Supabase → Database
 
 There is a shared component library at `src/components/ui/` with ~20 components including `Modal`, `Table`, `Badge`, `Card`. Always use these before creating new UI primitives.
 
-## Croatian Language & Localisation
+### Rules for i18n work
 
-- The UI is in Croatian — keep all user-facing strings in Croatian
-- PDF reports must support Croatian characters: `š`, `č`, `ć`, `đ`, `ž` — use the established jsPDF font setup already in the codebase, do not replace it
-- Do not translate Croatian business/legal terms (cesija, kompenzacija, etc.) — use them as-is
+1. **Always ask before translating ambiguous strings** — do not guess or auto-translate;
+   batch questions by component and wait for confirmation
+2. Strings that appear in multiple components must use a `common.*` shared key
+3. Croatian domain/legal terms are **never translated** — keep them as literal string values
+   in both locale files
+4. After any i18n change, re-scan the affected components for missed hardcoded strings
+5. The language switcher respects the user's stored preference; browser locale is the fallback
+
 
 ## Reference Implementations
 

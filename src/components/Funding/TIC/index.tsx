@@ -1,11 +1,13 @@
 import React from 'react'
 import { FileDown, FileSpreadsheet, Save, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { exportToExcel, exportToPDF } from './services/ticExport'
 import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState } from '../../ui'
 import { useTIC } from './hooks/useTIC'
 import { formatNumber, formatPercentage, calculateRowPercentages } from './utils/ticFormatters'
 
 const TICManagement: React.FC = () => {
+  const { t } = useTranslation()
   const {
     projects,
     lineItems,
@@ -45,16 +47,16 @@ const TICManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-gray-900">TIC - Struktura Troškova Investicije</h2>
-          <p className="text-gray-600 mt-1">Kalkulator troškova investicije (bez PDV-a)</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('tic.heading')}</h2>
+          <p className="text-gray-600 mt-1">{t('tic.description')}</p>
 
-          <FormField label="Odaberi projekt:" className="mt-4 max-w-md">
+          <FormField label={t('tic.select_project_label')} className="mt-4 max-w-md">
             <Select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
               disabled={loading}
             >
-              <option value="">-- Odaberi projekt --</option>
+              <option value="">{t('tic.select_project_placeholder')}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -71,7 +73,7 @@ const TICManagement: React.FC = () => {
             loading={saving}
             icon={Save}
           >
-            Spremi
+            {t('tic.save_button')}
           </Button>
           <Button
             variant="success"
@@ -79,7 +81,7 @@ const TICManagement: React.FC = () => {
             disabled={!selectedProjectId}
             icon={FileSpreadsheet}
           >
-            Export Excel
+            {t('tic.export_excel_button')}
           </Button>
           <Button
             variant="danger"
@@ -87,7 +89,7 @@ const TICManagement: React.FC = () => {
             disabled={!selectedProjectId}
             icon={FileDown}
           >
-            Export PDF
+            {t('tic.export_pdf_button')}
           </Button>
         </div>
       </div>
@@ -100,18 +102,18 @@ const TICManagement: React.FC = () => {
 
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-          <LoadingSpinner message="Učitavam TIC podatke..." />
+          <LoadingSpinner message={t('tic.loading')} />
         </div>
       ) : !selectedProjectId ? (
         <EmptyState
           icon={AlertCircle}
-          title="Nema odabranog projekta"
-          description="Odaberite projekt za pregled TIC strukture troškova"
+          title={t('tic.no_project_title')}
+          description={t('tic.no_project_description')}
         />
       ) : (
         <Card>
           <h3 className="text-lg font-bold text-center text-gray-900 mb-6 uppercase">
-            Struktura Troškova Investicije (bez PDV-a)
+            {t('tic.table_heading')}
           </h3>
 
           <div className="overflow-x-auto">
@@ -119,16 +121,16 @@ const TICManagement: React.FC = () => {
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900">
-                    NAMJENA
+                    {t('tic.col_purpose')}
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900" colSpan={2}>
-                    VLASTITA SREDSTVA
+                    {t('tic.col_own_funds')}
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900" colSpan={2}>
-                    KREDITNA SREDSTVA
+                    {t('tic.col_credit_funds')}
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
-                    UKUPNA INVESTICIJA
+                    {t('tic.col_total_investment')}
                   </th>
                 </tr>
                 <tr className="bg-gray-50">
@@ -160,11 +162,11 @@ const TICManagement: React.FC = () => {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="border border-gray-300 px-4 py-2 text-gray-900">{item.name}</td>
                       <td className="border border-gray-300 px-2 py-2">
-                        <input
+                        <Input
                           type="number"
                           value={item.vlastita}
                           onChange={(e) => handleValueChange(index, 'vlastita', e.target.value)}
-                          className="w-full px-2 py-1 text-right border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="px-2 py-1 text-right border-gray-200"
                           step="0.01"
                         />
                       </td>
@@ -172,11 +174,11 @@ const TICManagement: React.FC = () => {
                         {formatPercentage(vlastitaPercent)}%
                       </td>
                       <td className="border border-gray-300 px-2 py-2">
-                        <input
+                        <Input
                           type="number"
                           value={item.kreditna}
                           onChange={(e) => handleValueChange(index, 'kreditna', e.target.value)}
-                          className="w-full px-2 py-1 text-right border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="px-2 py-1 text-right border-gray-200"
                           step="0.01"
                         />
                       </td>
@@ -190,7 +192,7 @@ const TICManagement: React.FC = () => {
                   )
                 })}
                 <tr className="bg-blue-50 font-bold">
-                  <td className="border border-gray-300 px-4 py-3 text-gray-900 uppercase">UKUPNO:</td>
+                  <td className="border border-gray-300 px-4 py-3 text-gray-900 uppercase">{t('tic.total_row')}</td>
                   <td className="border border-gray-300 px-4 py-3 text-right text-blue-900">
                     {formatNumber(totals.vlastita)}
                   </td>
@@ -213,7 +215,7 @@ const TICManagement: React.FC = () => {
 
           <div className="mt-8 space-y-4 max-w-xl">
             <div className="flex items-center gap-4">
-              <label className="font-semibold text-gray-900 whitespace-nowrap">INVESTITOR:</label>
+              <label className="font-semibold text-gray-900 whitespace-nowrap">{t('tic.investor_label')}</label>
               <Input
                 value={investorName}
                 onChange={(e) => setInvestorName(e.target.value)}
@@ -222,14 +224,14 @@ const TICManagement: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <label className="font-semibold text-gray-900 whitespace-nowrap">Za investitora:</label>
+              <label className="font-semibold text-gray-900 whitespace-nowrap">{t('tic.for_investor_label')}</label>
               <div className="flex-1 border-b-2 border-gray-300 pb-2">
-                <span className="text-gray-400 text-sm">Potpis</span>
+                <span className="text-gray-400 text-sm">{t('tic.signature_label')}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <label className="font-semibold text-gray-900 whitespace-nowrap">Datum:</label>
+              <label className="font-semibold text-gray-900 whitespace-nowrap">{t('tic.date_label')}</label>
               <Input
                 type="date"
                 value={documentDate}

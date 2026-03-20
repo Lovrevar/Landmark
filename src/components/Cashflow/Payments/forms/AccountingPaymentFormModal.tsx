@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
 import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
 import { Modal, Button, Select, Input, Textarea, FormField, Form } from '../../../ui'
@@ -28,16 +29,17 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const { t } = useTranslation()
   const getInvoiceTypeLabel = (type: string) => {
     const typeMap: Record<string, string> = {
-      'INCOMING_SUPPLIER': 'Ulazni dobavljač',
-      'INCOMING_INVESTMENT': 'Ulazni investitor',
-      'OUTGOING_SUPPLIER': 'Izlazni dobavljač',
-      'OUTGOING_SALES': 'Izlazni prodaja',
-      'INCOMING_OFFICE': 'Ulazni ured',
-      'OUTGOING_OFFICE': 'Izlazni ured',
-      'INCOMING_BANK': 'Ulazni banka',
-      'OUTGOING_BANK': 'Izlazni banka'
+      'INCOMING_SUPPLIER': t('payments.detail.type_incoming_supplier'),
+      'INCOMING_INVESTMENT': t('payments.detail.type_incoming_investment'),
+      'OUTGOING_SUPPLIER': t('payments.detail.type_outgoing_supplier'),
+      'OUTGOING_SALES': t('payments.detail.type_outgoing_sales'),
+      'INCOMING_OFFICE': t('payments.detail.type_incoming_office'),
+      'OUTGOING_OFFICE': t('payments.detail.type_outgoing_office'),
+      'INCOMING_BANK': t('payments.detail.type_incoming_bank'),
+      'OUTGOING_BANK': t('payments.detail.type_outgoing_bank')
     }
     return typeMap[type] || type
   }
@@ -61,7 +63,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
     if (typeLabel) parts.push(typeLabel)
     if (companyName) parts.push(companyName)
     if (entityName) parts.push(entityName)
-    parts.push(`Preostalo: ${remaining}`)
+    parts.push(`${t('payments.form.remaining_label')}${remaining}`)
 
     return parts.join(' - ')
   }
@@ -69,14 +71,14 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
   return (
     <Modal show={showModal} onClose={onClose}>
       <Modal.Header
-        title={editingPayment ? 'Uredi plaćanje' : 'Novo plaćanje'}
+        title={editingPayment ? t('payments.form.title_edit') : t('payments.form.title_new')}
         onClose={onClose}
       />
 
       <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Račun" required className="md:col-span-2">
+            <FormField label={t('payments.form.invoice_label')} required className="md:col-span-2">
               <Select
                 value={formData.invoice_id}
                 onChange={(e) => {
@@ -90,7 +92,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                 }}
                 disabled={!!editingPayment}
               >
-                <option value="">Odaberi račun</option>
+                <option value="">{t('payments.form.select_invoice')}</option>
                 {invoices.map(invoice => (
                   <option key={invoice.id} value={invoice.id}>
                     {formatInvoiceDisplay(invoice)}
@@ -101,7 +103,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
             {formData.invoice_id && !formData.is_cesija && (
               <>
-                <FormField label="Izvor plaćanja" required className="md:col-span-2">
+                <FormField label={t('payments.form.source_label')} required className="md:col-span-2">
                   <Select
                     value={formData.payment_source_type}
                     onChange={(e) => setFormData({
@@ -111,16 +113,16 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       credit_id: ''
                     })}
                   >
-                    <option value="bank_account">Bankovni račun</option>
-                    <option value="credit">Kredit</option>
-                    <option value="kompenzacija">Kompenzacija</option>
-                    <option value="gotovina">Gotovina</option>
+                    <option value="bank_account">{t('payments.form.source_bank')}</option>
+                    <option value="credit">{t('payments.form.source_credit')}</option>
+                    <option value="kompenzacija">{t('payments.form.source_kompenzacija')}</option>
+                    <option value="gotovina">{t('payments.form.source_cash')}</option>
                   </Select>
                 </FormField>
 
                 {formData.payment_source_type === 'bank_account' && (
                   <FormField
-                    label="Bankovni račun"
+                    label={t('payments.form.bank_account_label')}
                     required
                     className="md:col-span-2"
                     error={
@@ -128,7 +130,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                         const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
                         return selectedInvoice && acc.company_id === selectedInvoice.company_id
                       }).length === 0
-                        ? 'Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.'
+                        ? t('payments.form.no_bank_accounts_error')
                         : undefined
                     }
                   >
@@ -136,7 +138,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       value={formData.company_bank_account_id}
                       onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
                     >
-                      <option value="">Odaberi bankovni račun</option>
+                      <option value="">{t('payments.form.select_bank_account')}</option>
                       {companyBankAccounts
                         .filter(acc => {
                           const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
@@ -144,7 +146,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                         })
                         .map(account => (
                           <option key={account.id} value={account.id}>
-                            {account.bank_name} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                            {account.bank_name} ({t('payments.form.balance_label')}€{account.current_balance.toLocaleString('hr-HR')})
                           </option>
                         ))}
                     </Select>
@@ -153,7 +155,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
                 {formData.payment_source_type === 'credit' && (
                   <FormField
-                    label="Kredit"
+                    label={t('payments.form.credit_label')}
                     required
                     className="md:col-span-2"
                     error={
@@ -163,7 +165,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                           credit.company_id === selectedInvoice.company_id &&
                           !credit.disbursed_to_account
                       }).length === 0
-                        ? 'Ova firma nema dostupnih kredita. Molimo dodajte kredit u sekciji Krediti.'
+                        ? t('payments.form.no_credits_error')
                         : undefined
                     }
                   >
@@ -171,7 +173,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       value={formData.credit_id}
                       onChange={(e) => setFormData({ ...formData, credit_id: e.target.value })}
                     >
-                      <option value="">Odaberi kredit</option>
+                      <option value="">{t('payments.form.select_credit')}</option>
                       {companyCredits
                         .filter(credit => {
                           const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
@@ -183,7 +185,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                           const available = credit.amount - credit.used_amount
                           return (
                             <option key={credit.id} value={credit.id}>
-                              {credit.credit_name} (Dostupno: €{available.toLocaleString('hr-HR')})
+                              {credit.credit_name} ({t('payments.form.credit_available')}€{available.toLocaleString('hr-HR')})
                             </option>
                           )
                         })}
@@ -209,18 +211,18 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm font-medium text-gray-700">
-                    Ugovor o cesiji (plaćanje iz druge firme)
+                    {t('payments.form.cesija_checkbox')}
                   </span>
                 </label>
                 <p className="text-xs text-gray-500 mt-1 ml-6">
-                  Označite ako želite platiti račun s bankovnog računa druge firme
+                  {t('payments.form.cesija_hint')}
                 </p>
               </div>
             )}
 
             {formData.is_cesija && (
               <>
-                <FormField label="Firma koja plaća (cesija)" required className="md:col-span-2">
+                <FormField label={t('payments.form.cesija_company_label')} required className="md:col-span-2">
                   <Select
                     value={formData.cesija_company_id}
                     onChange={(e) => setFormData({
@@ -229,7 +231,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       cesija_bank_account_id: ''
                     })}
                   >
-                    <option value="">Odaberi firmu koja plaća</option>
+                    <option value="">{t('payments.form.select_cesija_company')}</option>
                     {companies.map(company => (
                       <option key={company.id} value={company.id}>
                         {company.name}
@@ -240,12 +242,12 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
                 {formData.cesija_company_id && (
                   <FormField
-                    label="Bankovni račun (cesija)"
+                    label={t('payments.form.cesija_bank_label')}
                     required
                     className="md:col-span-2"
                     error={
                       formData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === formData.cesija_company_id).length === 0
-                        ? 'Ova firma nema dodanih bankovnih računa. Molimo dodajte račun u sekciji Firme.'
+                        ? t('payments.form.no_bank_accounts_error')
                         : undefined
                     }
                   >
@@ -253,12 +255,12 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       value={formData.cesija_bank_account_id}
                       onChange={(e) => setFormData({ ...formData, cesija_bank_account_id: e.target.value })}
                     >
-                      <option value="">Odaberi bankovni račun</option>
+                      <option value="">{t('payments.form.select_bank_account')}</option>
                       {companyBankAccounts
                         .filter(acc => acc.company_id === formData.cesija_company_id)
                         .map(account => (
                           <option key={account.id} value={account.id}>
-                            {account.bank_name} (Saldo: €{account.current_balance.toLocaleString('hr-HR')})
+                            {account.bank_name} ({t('payments.form.balance_label')}€{account.current_balance.toLocaleString('hr-HR')})
                           </option>
                         ))}
                     </Select>
@@ -267,7 +269,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               </>
             )}
 
-            <FormField label="Datum plaćanja" required>
+            <FormField label={t('payments.form.date_label')} required>
               <DateInput
                 value={formData.payment_date}
                 onChange={(value) => setFormData({ ...formData, payment_date: value })}
@@ -275,7 +277,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Iznos" required>
+            <FormField label={t('payments.form.amount_label')} required>
               <Input
                 type="number"
                 step="0.01"
@@ -284,43 +286,43 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Način plaćanja" required>
+            <FormField label={t('payments.form.method_label')} required>
               <Select
                 value={formData.payment_method}
                 onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'WIRE' | 'CASH' | 'CHECK' | 'CARD' })}
               >
-                <option value="WIRE">Virman</option>
-                <option value="CASH">Gotovina</option>
-                <option value="CHECK">Ček</option>
-                <option value="CARD">Kartica</option>
+                <option value="WIRE">{t('payments.method_wire')}</option>
+                <option value="CASH">{t('payments.method_cash')}</option>
+                <option value="CHECK">{t('payments.method_check')}</option>
+                <option value="CARD">{t('payments.method_card')}</option>
               </Select>
             </FormField>
 
-            <FormField label="Referenca (opcionalno)">
+            <FormField label={t('payments.form.reference_label')}>
               <Input
                 type="text"
                 value={formData.reference_number}
                 onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
-                placeholder="Poziv na broj..."
+                placeholder={t('payments.form.reference_placeholder')}
               />
             </FormField>
           </div>
 
-          <FormField label="Opis (opcionalno)">
+          <FormField label={t('payments.form.description_label')}>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="Dodatne napomene..."
+              placeholder={t('invoices.form.additional_notes')}
             />
           </FormField>
         </Modal.Body>
         <Modal.Footer sticky>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" type="submit">
-            {editingPayment ? 'Spremi promjene' : 'Kreiraj plaćanje'}
+            {editingPayment ? t('common.save_changes') : t('payments.form.create')}
           </Button>
         </Modal.Footer>
       </Form>

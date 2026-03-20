@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Building2,
@@ -22,6 +23,7 @@ import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 
 const ProjectDetailsEnhanced: React.FC = () => {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
@@ -66,8 +68,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
     setShowMilestoneForm(false)
   }
 
-  if (loading) return <LoadingSpinner message="Loading project..." />
-  if (!project) return <EmptyState icon={Building2} title="Project not found" />
+  if (loading) return <LoadingSpinner message={t('general_projects.loading')} />
+  if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
@@ -76,21 +78,21 @@ const ProjectDetailsEnhanced: React.FC = () => {
     : 0
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Building2 },
-    { id: 'phases', label: 'Phases & Contracts', icon: Briefcase },
-    { id: 'apartments', label: 'Apartments', icon: Home },
-    { id: 'subcontractors', label: 'Subcontractors', icon: Users },
-    { id: 'financing', label: 'Financing', icon: DollarSign },
-    { id: 'milestones', label: 'Milestones', icon: Target }
+    { id: 'overview', label: t('common.overview'), icon: Building2 },
+    { id: 'phases', label: t('general_projects.tab_phases'), icon: Briefcase },
+    { id: 'apartments', label: t('common.apartments'), icon: Home },
+    { id: 'subcontractors', label: t('common.subcontractors'), icon: Users },
+    { id: 'financing', label: t('general_projects.tab_financing'), icon: DollarSign },
+    { id: 'milestones', label: t('general_projects.milestones'), icon: Target }
   ]
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/projects')}>
-          Back to Projects
+          {t('general_projects.back_to_projects')}
         </Button>
-        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>Edit Project</Button>
+        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>{t('general_projects.edit_project')}</Button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -111,27 +113,27 @@ const ProjectDetailsEnhanced: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Budget</span>
+              <span className="text-sm text-gray-600">{t('common.budget')}</span>
               <DollarSign className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
-            <p className="text-xs text-gray-500 mt-1">Spent: €{totalSpent.toLocaleString('hr-HR')}</p>
+            <p className="text-xs text-gray-500 mt-1">{t('general_projects.card_spent')}: €{totalSpent.toLocaleString('hr-HR')}</p>
           </div>
 
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-blue-700">Timeline</span>
+              <span className="text-sm text-blue-700">{t('general_projects.timeline')}</span>
               <Calendar className="w-5 h-5 text-blue-400" />
             </div>
             <p className="text-2xl font-bold text-blue-900">
-              {project.end_date ? `${differenceInDays(parseISO(project.end_date), new Date())} days` : 'Ongoing'}
+              {project.end_date ? `${differenceInDays(parseISO(project.end_date), new Date())} ${t('general_projects.days')}` : t('general_projects.ongoing')}
             </p>
             <p className="text-xs text-blue-600 mt-1">{format(parseISO(project.start_date), 'MMM dd, yyyy')}</p>
           </div>
 
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-green-700">Progress</span>
+              <span className="text-sm text-green-700">{t('general_projects.card_progress')}</span>
               <TrendingUp className="w-5 h-5 text-green-400" />
             </div>
             <p className="text-2xl font-bold text-green-900">{completionPercentage}%</p>
@@ -142,11 +144,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
           <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-orange-700">Team</span>
+              <span className="text-sm text-orange-700">{t('general_projects.team')}</span>
               <Users className="w-5 h-5 text-orange-400" />
             </div>
             <p className="text-2xl font-bold text-orange-900">{contracts.length}</p>
-            <p className="text-xs text-orange-600 mt-1">Active contracts</p>
+            <p className="text-xs text-orange-600 mt-1">{t('general_projects.stat_active_contracts')}</p>
           </div>
         </div>
       </div>
@@ -175,44 +177,44 @@ const ProjectDetailsEnhanced: React.FC = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Project Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('general_projects.project_info')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <span className="text-sm text-gray-600">Location</span>
+                    <span className="text-sm text-gray-600">{t('general_projects.location')}</span>
                     <p className="text-gray-900 font-medium mt-1">{project.location}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <span className="text-sm text-gray-600">Investor</span>
-                    <p className="text-gray-900 font-medium mt-1">{project.investor || 'N/A'}</p>
+                    <span className="text-sm text-gray-600">{t('common.investor')}</span>
+                    <p className="text-gray-900 font-medium mt-1">{project.investor || t('general_projects.na')}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <span className="text-sm text-gray-600">Start Date</span>
+                    <span className="text-sm text-gray-600">{t('common.start_date')}</span>
                     <p className="text-gray-900 font-medium mt-1">{format(parseISO(project.start_date), 'MMMM dd, yyyy')}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <span className="text-sm text-gray-600">End Date</span>
+                    <span className="text-sm text-gray-600">{t('common.end_date')}</span>
                     <p className="text-gray-900 font-medium mt-1">
-                      {project.end_date ? format(parseISO(project.end_date), 'MMMM dd, yyyy') : 'Ongoing'}
+                      {project.end_date ? format(parseISO(project.end_date), 'MMMM dd, yyyy') : t('general_projects.ongoing')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Financial Summary</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('general_projects.financial_summary')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <span className="text-sm text-blue-700">Total Investment</span>
+                    <span className="text-sm text-blue-700">{t('general_projects.total_investment')}</span>
                     <p className="text-2xl font-bold text-blue-900 mt-1">
                       €{investments.reduce((sum, inv) => sum + Number(inv.allocated_amount), 0).toLocaleString('hr-HR')}
                     </p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                    <span className="text-sm text-red-700">Total Expenses</span>
+                    <span className="text-sm text-red-700">{t('general_projects.total_expenses')}</span>
                     <p className="text-2xl font-bold text-red-900 mt-1">€{totalSpent.toLocaleString('hr-HR')}</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <span className="text-sm text-green-700">Revenue from Sales</span>
+                    <span className="text-sm text-green-700">{t('general_projects.revenue_from_sales')}</span>
                     <p className="text-2xl font-bold text-green-900 mt-1">€{totalRevenue.toLocaleString('hr-HR')}</p>
                   </div>
                 </div>
@@ -220,8 +222,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Milestones</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('milestones')}>View all</Button>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('general_projects.recent_milestones')}</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('milestones')}>{t('general_projects.view_all')}</Button>
                 </div>
                 <MilestoneTimeline milestones={milestones.slice(0, 3)} editable={false} />
               </div>
@@ -231,10 +233,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
           {activeTab === 'phases' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Project Phases</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('general_projects.project_phases')}</h3>
               </div>
               {phases.length === 0 ? (
-                <EmptyState icon={Briefcase} title="No phases created yet" />
+                <EmptyState icon={Briefcase} title={t('general_projects.no_phases')} />
               ) : (
                 <div className="space-y-4">
                   {phases.map((phase) => (
@@ -242,18 +244,18 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">
-                            Phase {phase.phase_number}: {phase.phase_name}
+                            {t('common.phase')} {phase.phase_number}: {phase.phase_name}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">Status: <span className="font-medium">{phase.status}</span></p>
+                          <p className="text-sm text-gray-600 mt-1">{t('common.status')}: <span className="font-medium">{phase.status}</span></p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">Budget</p>
+                          <p className="text-sm text-gray-600">{t('common.budget')}</p>
                           <p className="text-lg font-semibold text-gray-900">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
-                          <p className="text-sm text-blue-600">Used: €{phase.budget_used.toLocaleString('hr-HR')}</p>
+                          <p className="text-sm text-blue-600">{t('general_projects.used')}: €{phase.budget_used.toLocaleString('hr-HR')}</p>
                         </div>
                       </div>
                       <div className="border-t border-gray-200 pt-4 mt-4">
-                        <h5 className="font-medium text-gray-900 mb-3">Contracts in this phase</h5>
+                        <h5 className="font-medium text-gray-900 mb-3">{t('general_projects.contracts_in_phase')}</h5>
                         <div className="space-y-2">
                           {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).map((contract) => (
                             <div key={contract.id} className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
@@ -263,12 +265,12 @@ const ProjectDetailsEnhanced: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className="text-sm font-semibold text-gray-900">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-xs text-gray-600">Realized: €{contract.budget_realized.toLocaleString('hr-HR')}</p>
+                                <p className="text-xs text-gray-600">{t('general_projects.realized')}: €{contract.budget_realized.toLocaleString('hr-HR')}</p>
                               </div>
                             </div>
                           ))}
                           {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).length === 0 && (
-                            <p className="text-sm text-gray-500 italic">No contracts in this phase</p>
+                            <p className="text-sm text-gray-500 italic">{t('general_projects.no_contracts_in_phase')}</p>
                           )}
                         </div>
                       </div>
@@ -283,27 +285,27 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                  <span className="text-sm text-green-700">Sold</span>
+                  <span className="text-sm text-green-700">{t('status.sold')}</span>
                   <p className="text-2xl font-bold text-green-900 mt-1">{apartments.filter((a) => a.status === 'Sold').length}</p>
                 </div>
                 <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                  <span className="text-sm text-yellow-700">Reserved</span>
+                  <span className="text-sm text-yellow-700">{t('status.reserved')}</span>
                   <p className="text-2xl font-bold text-yellow-900 mt-1">{apartments.filter((a) => a.status === 'Reserved').length}</p>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <span className="text-sm text-blue-700">Available</span>
+                  <span className="text-sm text-blue-700">{t('status.available')}</span>
                   <p className="text-2xl font-bold text-blue-900 mt-1">{apartments.filter((a) => a.status === 'Available').length}</p>
                 </div>
               </div>
               <Table>
                 <Table.Head>
                   <Table.Tr>
-                    <Table.Th>Unit</Table.Th>
-                    <Table.Th>Floor</Table.Th>
-                    <Table.Th>Size (m²)</Table.Th>
-                    <Table.Th>Price</Table.Th>
-                    <Table.Th>Status</Table.Th>
-                    <Table.Th>Buyer</Table.Th>
+                    <Table.Th>{t('common.unit')}</Table.Th>
+                    <Table.Th>{t('common.floor')}</Table.Th>
+                    <Table.Th>{t('general_projects.size_m2')}</Table.Th>
+                    <Table.Th>{t('general_projects.price')}</Table.Th>
+                    <Table.Th>{t('common.status')}</Table.Th>
+                    <Table.Th>{t('general_projects.buyer')}</Table.Th>
                   </Table.Tr>
                 </Table.Head>
                 <Table.Body>
@@ -328,9 +330,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
           {activeTab === 'subcontractors' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Subcontractors & Contracts</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('general_projects.subcontractors_contracts')}</h3>
               {contracts.length === 0 ? (
-                <EmptyState icon={Users} title="No contracts yet" />
+                <EmptyState icon={Users} title={t('general_projects.no_contracts')} />
               ) : (
                 <div className="space-y-4">
                   {contracts.map((contract) => (
@@ -340,7 +342,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                           <h4 className="text-lg font-semibold text-gray-900">{contract.subcontractor.name}</h4>
                           <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
                           {contract.phase && (
-                            <p className="text-sm text-blue-600 mt-1">Phase: {contract.phase.phase_name}</p>
+                            <p className="text-sm text-blue-600 mt-1">{t('common.phase')}: {contract.phase.phase_name}</p>
                           )}
                         </div>
                         <Badge variant={
@@ -351,21 +353,21 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-sm text-gray-600">Contract Amount</p>
+                          <p className="text-sm text-gray-600">{t('general_projects.contract_amount')}</p>
                           <p className="text-lg font-semibold text-gray-900 mt-1">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Budget Realized</p>
+                          <p className="text-sm text-gray-600">{t('general_projects.budget_realized')}</p>
                           <p className="text-lg font-semibold text-blue-600 mt-1">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Remaining</p>
+                          <p className="text-sm text-gray-600">{t('common.remaining')}</p>
                           <p className="text-lg font-semibold text-green-600 mt-1">
                             €{(contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Contact</p>
+                          <p className="text-sm text-gray-600">{t('general_projects.contact')}</p>
                           <p className="text-sm text-gray-900 mt-1">{contract.subcontractor.contact}</p>
                         </div>
                       </div>
@@ -378,9 +380,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
           {activeTab === 'financing' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Funding Sources</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('general_projects.funding_sources')}</h3>
               {investments.length === 0 ? (
-                <EmptyState icon={DollarSign} title="No credit allocations recorded" />
+                <EmptyState icon={DollarSign} title={t('general_projects.no_credit_allocations')} />
               ) : (
                 <div className="space-y-4">
                   {investments.map((investment) => (
@@ -400,7 +402,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-blue-600">€{investment.allocated_amount.toLocaleString('hr-HR')}</p>
-                          <p className="text-xs text-gray-500 mt-1">Used: €{investment.used_amount.toLocaleString('hr-HR')}</p>
+                          <p className="text-xs text-gray-500 mt-1">{t('general_projects.used')}: €{investment.used_amount.toLocaleString('hr-HR')}</p>
                         </div>
                       </div>
                     </div>
@@ -413,23 +415,23 @@ const ProjectDetailsEnhanced: React.FC = () => {
           {activeTab === 'milestones' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Project Milestones</h3>
-                <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>Add Milestone</Button>
+                <h3 className="text-lg font-semibold text-gray-900">{t('general_projects.milestones_title')}</h3>
+                <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>{t('general_projects.add_milestone')}</Button>
               </div>
 
               {showMilestoneForm && (
                 <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-4">New Milestone</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">{t('general_projects.new_milestone')}</h4>
                   <div className="space-y-4">
-                    <FormField label="Milestone Name">
+                    <FormField label={t('general_projects.milestone_name')}>
                       <Input
                         type="text"
                         value={newMilestone.name}
                         onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
-                        placeholder="e.g., Foundation Complete"
+                        placeholder={t('general_projects.milestone_name_placeholder_short')}
                       />
                     </FormField>
-                    <FormField label="Due Date (Optional)">
+                    <FormField label={t('general_projects.milestone_due_date_optional')}>
                       <Input
                         type="date"
                         value={newMilestone.due_date}
@@ -437,12 +439,12 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       />
                     </FormField>
                     <div className="flex space-x-3">
-                      <Button onClick={handleSubmitMilestone}>Add Milestone</Button>
+                      <Button onClick={handleSubmitMilestone}>{t('general_projects.add_milestone')}</Button>
                       <Button variant="secondary" onClick={() => {
                         setShowMilestoneForm(false)
                         setNewMilestone({ name: '', due_date: '', completed: false })
                       }}>
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </div>

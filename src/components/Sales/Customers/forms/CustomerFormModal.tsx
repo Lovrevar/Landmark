@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Customer } from '../../../../lib/supabase'
 import { CustomerWithApartments, CustomerCategory } from '../types'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
@@ -19,6 +20,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onClose,
   onSave
 }) => {
+  const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<Partial<Customer>>({
@@ -101,7 +103,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   return (
     <Modal show={show} onClose={onClose} size="xl">
       <Modal.Header
-        title={editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+        title={editingCustomer ? t('customers.edit') : t('customers.add')}
         onClose={onClose}
       />
 
@@ -113,14 +115,14 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </Alert>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="First Name" required error={fieldErrors.name}>
+            <FormField label={t('customers.form.first_name')} required error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </FormField>
-            <FormField label="Last Name" required error={fieldErrors.surname}>
+            <FormField label={t('customers.form.last_name')} required error={fieldErrors.surname}>
               <Input
                 type="text"
                 value={formData.surname}
@@ -130,14 +132,14 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Email" required error={fieldErrors.email}>
+            <FormField label={t('customers.form.email')} required error={fieldErrors.email}>
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </FormField>
-            <FormField label="Phone" required error={fieldErrors.phone}>
+            <FormField label={t('customers.form.phone')} required error={fieldErrors.phone}>
               <Input
                 type="tel"
                 value={formData.phone}
@@ -147,31 +149,31 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Status" required>
+            <FormField label={t('customers.form.status')} required>
               <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out' })}
               >
-                <option value="interested">Interested</option>
-                <option value="hot_lead">Hot Lead</option>
-                <option value="negotiating">Negotiating</option>
-                <option value="buyer">Buyer</option>
-                <option value="backed_out">Backed Out</option>
+                <option value="interested">{t('customer_status.interested')}</option>
+                <option value="hot_lead">{t('customer_status.hot_lead')}</option>
+                <option value="negotiating">{t('customer_status.negotiating')}</option>
+                <option value="buyer">{t('customer_status.buyer')}</option>
+                <option value="backed_out">{t('customer_status.backed_out')}</option>
               </Select>
             </FormField>
-            <FormField label="Priority">
+            <FormField label={t('customers.form.priority')}>
               <Select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'hot' | 'warm' | 'cold' })}
               >
-                <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
+                <option value="hot">{t('customer_priority.hot')}</option>
+                <option value="warm">{t('customer_priority.warm')}</option>
+                <option value="cold">{t('customer_priority.cold')}</option>
               </Select>
             </FormField>
           </div>
 
-          <FormField label="Address">
+          <FormField label={t('customers.form.address')}>
             <Input
               type="text"
               value={formData.address}
@@ -180,14 +182,14 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </FormField>
 
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Bank Account">
+            <FormField label={t('customers.form.bank_account')}>
               <Input
                 type="text"
                 value={formData.bank_account}
                 onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })}
               />
             </FormField>
-            <FormField label="ID Number">
+            <FormField label={t('customers.form.id_number')}>
               <Input
                 type="text"
                 value={formData.id_number}
@@ -197,7 +199,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           {formData.status === 'backed_out' && (
-            <FormField label="Backed Out Reason">
+            <FormField label={t('customers.form.backed_out_reason')}>
               <Textarea
                 value={formData.backed_out_reason}
                 onChange={(e) => setFormData({ ...formData, backed_out_reason: e.target.value })}
@@ -209,9 +211,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
           {(formData.status === 'interested' || formData.status === 'hot_lead' || formData.status === 'negotiating') && (
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Preferences</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('customers.form.preferences')}</h3>
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Min Budget (EUR)">
+                <FormField label={t('customers.form.min_budget')}>
                   <Input
                     type="number"
                     value={formData.preferences?.budget_min || ''}
@@ -221,7 +223,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     })}
                   />
                 </FormField>
-                <FormField label="Max Budget (EUR)">
+                <FormField label={t('customers.form.max_budget')}>
                   <Input
                     type="number"
                     value={formData.preferences?.budget_max || ''}
@@ -231,7 +233,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     })}
                   />
                 </FormField>
-                <FormField label="Min Size (m2)">
+                <FormField label={t('customers.form.min_size')}>
                   <Input
                     type="number"
                     value={formData.preferences?.preferred_size_min || ''}
@@ -241,7 +243,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     })}
                   />
                 </FormField>
-                <FormField label="Max Size (m2)">
+                <FormField label={t('customers.form.max_size')}>
                   <Input
                     type="number"
                     value={formData.preferences?.preferred_size_max || ''}
@@ -251,7 +253,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     })}
                   />
                 </FormField>
-                <FormField label="Bedrooms">
+                <FormField label={t('customers.form.bedrooms')}>
                   <Input
                     type="number"
                     value={formData.preferences?.bedrooms || ''}
@@ -261,7 +263,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     })}
                   />
                 </FormField>
-                <FormField label="Preferred Floor">
+                <FormField label={t('customers.form.preferred_floor')}>
                   <Input
                     type="text"
                     value={formData.preferences?.preferred_floor || ''}
@@ -274,7 +276,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </FormField>
               </div>
               <div className="mt-4">
-                <FormField label="Preferred Location">
+                <FormField label={t('customers.form.preferred_location')}>
                   <Input
                     type="text"
                     value={formData.preferences?.preferred_location || ''}
@@ -286,7 +288,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </FormField>
               </div>
               <div className="mt-4">
-                <FormField label="Preference Notes">
+                <FormField label={t('customers.form.preference_notes')}>
                   <Textarea
                     value={formData.preferences?.notes || ''}
                     onChange={(e) => setFormData({
@@ -301,7 +303,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </div>
           )}
 
-          <FormField label="General Notes">
+          <FormField label={t('customers.form.general_notes')}>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -313,9 +315,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant="primary" onClick={handleSubmit}>
-          {editingCustomer ? 'Update Customer' : 'Add Customer'}
+          {editingCustomer ? t('customers.update') : t('customers.add')}
         </Button>
       </Modal.Footer>
     </Modal>

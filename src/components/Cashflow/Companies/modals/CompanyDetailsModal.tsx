@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { DollarSign, TrendingUp } from 'lucide-react'
 import { CompanyStats } from '../types'
 import { Modal, Button, Badge, StatCard, StatGrid } from '../../../ui'
@@ -10,6 +11,7 @@ interface CompanyDetailsModalProps {
 }
 
 const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company, onClose }) => {
+  const { t } = useTranslation()
   if (!company) return null
 
   return (
@@ -23,22 +25,22 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
       <Modal.Body>
         <StatGrid columns={4}>
           <StatCard
-            label="Trenutno stanje"
+            label={t('companies.details.current_balance')}
             value={`€${company.current_balance.toLocaleString('hr-HR')}`}
             color={company.current_balance >= 0 ? 'green' : 'red'}
           />
           <StatCard
-            label="Izdano računa"
+            label={t('companies.details.issued_invoices')}
             value={`€${company.total_income_paid.toLocaleString('hr-HR')}`}
             color="green"
           />
           <StatCard
-            label="Plaćeno računa"
+            label={t('companies.details.paid_invoices')}
             value={`€${company.total_expense_paid.toLocaleString('hr-HR')}`}
             color="red"
           />
           <StatCard
-            label={company.profit >= 0 ? 'Dobit' : 'Gubitak'}
+            label={company.profit >= 0 ? t('companies.stats.profit') : t('companies.stats.loss')}
             value={`€${Math.abs(company.profit).toLocaleString('hr-HR')}`}
             color={company.profit >= 0 ? 'green' : 'red'}
           />
@@ -47,10 +49,10 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
             <DollarSign className="w-5 h-5 mr-2" />
-            Bankovni računi ({company.bank_accounts.length})
+            {t('companies.details.bank_accounts_heading', { count: company.bank_accounts.length })}
           </h3>
           {company.bank_accounts.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nema dodanih bankovnih računa</p>
+            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">{t('companies.details.no_bank_accounts')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {company.bank_accounts.map((account) => (
@@ -60,7 +62,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                     <p className="text-xs text-gray-500 mb-2">{account.account_number}</p>
                   )}
                   <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Stanje:</span>
+                    <span className="text-gray-600">{t('companies.details.balance_label')}</span>
                     <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       €{account.current_balance.toLocaleString('hr-HR')}
                     </span>
@@ -74,10 +76,10 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2" />
-            Krediti ({company.credits.length})
+            {t('companies.details.credits_heading', { count: company.credits.length })}
           </h3>
           {company.credits.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">Nema dodanih kredita</p>
+            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">{t('companies.details.no_credits')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {company.credits.map((credit) => {
@@ -92,26 +94,26 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                     <div className="flex items-start justify-between mb-2">
                       <p className="font-semibold text-gray-900">{credit.credit_name}</p>
                       {isExpired && (
-                        <Badge variant="red" size="sm">ISTEKAO</Badge>
+                        <Badge variant="red" size="sm">{t('companies.details.credit_expired')}</Badge>
                       )}
                     </div>
                     <div className="space-y-1 mb-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">{isDisbursedToAccount ? 'Iznos Kredita:' : 'Limit:'}</span>
+                        <span className="text-gray-600">{isDisbursedToAccount ? t('companies.details.credit_amount_label') : t('companies.details.credit_limit_label')}</span>
                         <span className="font-medium text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
                       </div>
                       {!isDisbursedToAccount && (
                         <>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Iskorišteno:</span>
+                            <span className="text-gray-600">{t('companies.details.credit_used')}</span>
                             <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Dostupno:</span>
+                            <span className="text-gray-600">{t('companies.details.credit_available')}</span>
                             <span className="font-bold text-green-600">€{available.toLocaleString('hr-HR')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Kamata:</span>
+                            <span className="text-gray-600">{t('companies.details.credit_interest')}</span>
                             <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
                           </div>
                         </>
@@ -120,7 +122,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
 
                     {isDisbursedToAccount && credit.allocations && credit.allocations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs font-semibold text-gray-700 mb-2">Namjena:</p>
+                        <p className="text-xs font-semibold text-gray-700 mb-2">{t('companies.details.credit_purpose')}</p>
                         <div className="space-y-1">
                           {credit.allocations.map((allocation) => (
                             <div key={allocation.id} className="flex justify-between text-xs">
@@ -144,7 +146,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                             style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 text-right">{utilizationPercent.toFixed(1)}% iskorišteno</p>
+                        <p className="text-xs text-gray-500 mt-1 text-right">{t('companies.details.credit_utilization', { percent: utilizationPercent.toFixed(1) })}</p>
                       </>
                     )}
                   </div>
@@ -157,7 +159,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
 
       <Modal.Footer sticky>
         <Button variant="secondary" onClick={onClose}>
-          Zatvori
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

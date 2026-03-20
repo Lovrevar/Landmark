@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LoadingSpinner,
   PageHeader,
@@ -16,20 +17,7 @@ import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
 
-const COLUMN_LABELS: Record<string, string> = {
-  category: 'Kategorija',
-  invoice_number: 'Broj računa',
-  supplier_name: 'Dobavljač',
-  project_name: 'Projekt',
-  phase_name: 'Faza',
-  contract_number: 'Ugovor',
-  issue_date: 'Datum izdavanja',
-  due_date: 'Dospijeće',
-  base_amount: 'Osnovica',
-  vat_amount: 'PDV',
-  total_amount: 'Ukupno',
-  status: 'Status',
-}
+const COLUMN_KEYS = ['category', 'invoice_number', 'supplier_name', 'project_name', 'phase_name', 'contract_number', 'issue_date', 'due_date', 'base_amount', 'vat_amount', 'total_amount', 'status']
 
 const DEFAULT_VISIBLE: Record<string, boolean> = {
   category: true,
@@ -47,7 +35,13 @@ const DEFAULT_VISIBLE: Record<string, boolean> = {
 }
 
 const AccountingApprovals: React.FC = () => {
+  const { t } = useTranslation()
   const toast = useToast()
+
+  const COLUMN_LABELS: Record<string, string> = Object.fromEntries(
+    COLUMN_KEYS.map(key => [key, t(`approvals.column_labels.${key}`)])
+  )
+
   const {
     invoices,
     filteredInvoices,
@@ -94,14 +88,14 @@ const AccountingApprovals: React.FC = () => {
 
   const handleHideInvoice = async () => {
     if (!hideConfirmDialog.invoiceId) {
-      toast.warning('Greška: Korisnik ili ID računa nisu pronađeni.')
+      toast.warning(t('approvals.error_missing'))
       return
     }
     try {
       await hideInvoice(hideConfirmDialog.invoiceId)
       setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
     } catch (error: unknown) {
-      toast.error(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
+      toast.error(t('approvals.error_hide', { error: error instanceof Error ? error.message : t('common.error') }))
     }
   }
 
@@ -110,31 +104,31 @@ const AccountingApprovals: React.FC = () => {
       await bulkHide()
       setBulkHideConfirmOpen(false)
     } catch (error: unknown) {
-      toast.error(`Došlo je do greške pri skrivanju računa: ${error instanceof Error ? error.message : 'Nepoznata greška'}`)
+      toast.error(t('approvals.error_hide', { error: error instanceof Error ? error.message : t('common.error') }))
     }
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" message="Učitavanje odobrenih računa..." />
+    return <LoadingSpinner size="lg" message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Odobrenja"
-        subtitle="Odobreni računi od podizvodjača koji čekaju obradu"
+        title={t('approvals.title')}
+        subtitle={t('approvals.subtitle')}
         icon={CheckCircle}
       />
 
       <StatGrid columns={3}>
         <StatCard
-          title="Računi na čekanju"
+          title={t('approvals.stats.pending')}
           value={stats.totalInvoices.toString()}
           icon={FileText}
           trend={stats.totalInvoices > 0 ? 'up' : 'neutral'}
         />
         <StatCard
-          title="Ukupan iznos"
+          title={t('approvals.stats.total_amount')}
           value={`€${stats.totalAmount.toLocaleString('hr-HR', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
@@ -143,7 +137,7 @@ const AccountingApprovals: React.FC = () => {
           trend="neutral"
         />
         <StatCard
-          title="Najstariji račun"
+          title={t('approvals.stats.oldest')}
           value={
             stats.oldestInvoice
               ? format(new Date(stats.oldestInvoice), 'dd.MM.yyyy')
@@ -159,14 +153,14 @@ const AccountingApprovals: React.FC = () => {
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Pretraži račune..."
+            placeholder={t('approvals.search_placeholder')}
             className="max-w-md"
           />
           <div className="flex items-center gap-3">
             {selectedCount > 0 && (
               <>
                 <span className="text-sm text-gray-600">
-                  Odabrano: <span className="font-semibold text-gray-900">{selectedCount}</span>
+                  {t('approvals.selected_info')} <span className="font-semibold text-gray-900">{selectedCount}</span>
                   {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
                 </span>
                 <Button
@@ -179,7 +173,7 @@ const AccountingApprovals: React.FC = () => {
                     Array.from(selectedIds).forEach(id => toggleSelect(id))
                   }}
                 >
-                  Poništi odabir
+                  {t('approvals.cancel_selection')}
                 </Button>
                 <Button
                   size="sm"
@@ -187,7 +181,7 @@ const AccountingApprovals: React.FC = () => {
                   onClick={() => setBulkHideConfirmOpen(true)}
                 >
                   <EyeOff className="w-4 h-4 mr-1" />
-                  Sakrij odabrane ({selectedCount})
+                  {t('approvals.hide_selected', { count: selectedCount })}
                 </Button>
               </>
             )}
@@ -205,8 +199,8 @@ const AccountingApprovals: React.FC = () => {
           <div className="p-8">
             <EmptyState
               icon={CheckCircle}
-              title="Nema računa za prikaz"
-              description="Svi odobreni računi su obrađeni i skriveni."
+              title={t('approvals.empty.title')}
+              description={t('approvals.empty.description')}
             />
           </div>
         ) : (
@@ -222,19 +216,19 @@ const AccountingApprovals: React.FC = () => {
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
                     />
                   </th>
-                  {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Kategorija</th>}
-                  {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Broj računa</th>}
-                  {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dobavljač</th>}
-                  {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Projekt</th>}
-                  {visibleColumns.phase_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Faza</th>}
-                  {visibleColumns.contract_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ugovor</th>}
-                  {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Datum izdavanja</th>}
-                  {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dospijeće</th>}
-                  {visibleColumns.base_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Osnovica</th>}
-                  {visibleColumns.vat_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">PDV</th>}
-                  {visibleColumns.total_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ukupno</th>}
-                  {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>}
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Akcije</th>
+                  {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.category')}</th>}
+                  {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.invoice_number')}</th>}
+                  {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.supplier_name')}</th>}
+                  {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.project_name')}</th>}
+                  {visibleColumns.phase_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.phase_name')}</th>}
+                  {visibleColumns.contract_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.contract_number')}</th>}
+                  {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.issue_date')}</th>}
+                  {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.due_date')}</th>}
+                  {visibleColumns.base_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.base_amount')}</th>}
+                  {visibleColumns.vat_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.vat_amount')}</th>}
+                  {visibleColumns.total_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.total_amount')}</th>}
+                  {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.status')}</th>}
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.table_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -254,7 +248,7 @@ const AccountingApprovals: React.FC = () => {
                     {visibleColumns.category && (
                       <td className="px-4 py-4 whitespace-nowrap">
                         <Badge variant={invoice.is_retail ? 'teal' : 'blue'} size="sm">
-                          {invoice.is_retail ? 'Retail' : 'Podizvodjač'}
+                          {invoice.is_retail ? t('approvals.category_retail') : t('approvals.category_subcontractor')}
                         </Badge>
                       </td>
                     )}
@@ -286,7 +280,7 @@ const AccountingApprovals: React.FC = () => {
                           <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
                             {invoice.status}
                           </Badge>
-                          <Badge variant="success">Odobreno</Badge>
+                          <Badge variant="success">{t('approvals.approved_badge')}</Badge>
                         </div>
                       </td>
                     )}
@@ -303,7 +297,7 @@ const AccountingApprovals: React.FC = () => {
                         }
                       >
                         <EyeOff className="w-4 h-4 mr-1" />
-                        Sakrij
+                        {t('approvals.hide_button')}
                       </Button>
                     </td>
                   </tr>
@@ -318,8 +312,8 @@ const AccountingApprovals: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <EmptyState
             icon={AlertCircle}
-            title="Nema rezultata pretrage"
-            description={`Nema računa koji odgovaraju pretrazi "${searchTerm}".`}
+            title={t('approvals.no_results.title')}
+            description={t('approvals.no_results.description', { term: searchTerm })}
           />
         </div>
       )}
@@ -330,10 +324,10 @@ const AccountingApprovals: React.FC = () => {
           setHideConfirmDialog({ isOpen: false, invoiceId: null, invoiceNumber: null })
         }
         onConfirm={handleHideInvoice}
-        title="Sakrij račun"
-        message={`Jeste li sigurni da želite sakriti račun ${hideConfirmDialog.invoiceNumber}? Račun će biti uklonjen s ove stranice, ali će ostati vidljiv u ostalim dijelovima sustava.`}
-        confirmLabel="Sakrij"
-        cancelLabel="Odustani"
+        title={t('approvals.confirm_hide.title')}
+        message={t('approvals.confirm_hide.message', { number: hideConfirmDialog.invoiceNumber })}
+        confirmLabel={t('approvals.confirm_hide.confirm')}
+        cancelLabel={t('approvals.confirm_hide.cancel')}
         variant="danger"
       />
 
@@ -341,10 +335,10 @@ const AccountingApprovals: React.FC = () => {
         show={bulkHideConfirmOpen}
         onCancel={() => setBulkHideConfirmOpen(false)}
         onConfirm={handleBulkHide}
-        title="Sakrij odabrane račune"
-        message={`Jeste li sigurni da želite sakriti ${selectedCount} odabranih računa (ukupno €${selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})? Računi će biti uklonjeni s ove stranice, ali će ostati vidljivi u ostalim dijelovima sustava.`}
-        confirmLabel={`Sakrij (${selectedCount})`}
-        cancelLabel="Odustani"
+        title={t('approvals.confirm_bulk_hide.title')}
+        message={t('approvals.confirm_bulk_hide.message', { count: selectedCount, total: selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
+        confirmLabel={t('approvals.confirm_bulk_hide.confirm', { count: selectedCount })}
+        cancelLabel={t('approvals.confirm_bulk_hide.cancel')}
         variant="danger"
       />
     </div>

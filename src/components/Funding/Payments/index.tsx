@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
 import { usePaymentsData } from './hooks/usePaymentsData'
 
 const FundingPaymentsManagement: React.FC = () => {
+  const { t } = useTranslation()
   const { payments, stats, loading, refetch } = usePaymentsData()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
@@ -54,18 +56,18 @@ const FundingPaymentsManagement: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading payments..." />
+    return <LoadingSpinner message={t('funding.payments.loading')} />
   }
 
   return (
     <div className="max-w-7xl mx-auto">
-      <PageHeader title="Funding Payments" description="Track and manage all bank credit payments" />
+      <PageHeader title={t('funding.payments.title')} description={t('funding.payments.description')} />
 
       <StatGrid columns={4}>
-        <StatCard label="Total Payments" value={stats.totalPayments} subtitle={`${stats.bankPayments} bank credit payments`} icon={FileText} color="blue" />
-        <StatCard label="Total Amount" value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
-        <StatCard label="This Month" value={stats.paymentsThisMonth} subtitle="payments" icon={Calendar} color="blue" />
-        <StatCard label="Month Amount" value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+        <StatCard label={t('funding.payments.stats.total_payments_label')} value={stats.totalPayments} subtitle={t('funding.payments.stats.bank_payments_subtitle', { count: stats.bankPayments })} icon={FileText} color="blue" />
+        <StatCard label={t('funding.payments.stats.total_amount_label')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
+        <StatCard label={t('funding.payments.stats.this_month_label')} value={stats.paymentsThisMonth} subtitle={t('funding.payments.stats.payments_subtitle')} icon={Calendar} color="blue" />
+        <StatCard label={t('funding.payments.stats.month_amount_label')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
@@ -75,30 +77,30 @@ const FundingPaymentsManagement: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onClear={() => setSearchTerm('')}
-              placeholder="Search payments..."
+              placeholder={t('funding.payments.search_placeholder')}
             />
           </div>
 
           <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'recent' | 'large')}>
-            <option value="all">All Payments</option>
-            <option value="recent">Recent (7 days)</option>
-            <option value="large">Large (&gt; €50k)</option>
+            <option value="all">{t('funding.payments.filter_all')}</option>
+            <option value="recent">{t('funding.payments.filter_recent')}</option>
+            <option value="large">{t('funding.payments.filter_large')}</option>
           </Select>
 
           <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
-            Export CSV
+            {t('funding.payments.export_csv_button')}
           </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <FormField label="Start Date">
+          <FormField label={t('funding.payments.start_date_label')}>
             <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
             />
           </FormField>
-          <FormField label="End Date">
+          <FormField label={t('funding.payments.end_date_label')}>
             <Input
               type="date"
               value={dateRange.end}
@@ -111,20 +113,20 @@ const FundingPaymentsManagement: React.FC = () => {
       {filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
-          title="No payments found"
-          description="Try adjusting your search or filters"
+          title={t('funding.payments.no_payments_title')}
+          description={t('funding.payments.no_payments_description')}
         />
       ) : (
         <Table>
           <Table.Head>
             <Table.Tr>
-              <Table.Th>Date</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th>Recipient</Table.Th>
-              <Table.Th>Project</Table.Th>
-              <Table.Th>Category</Table.Th>
-              <Table.Th align="right">Amount</Table.Th>
-              <Table.Th>Notes</Table.Th>
+              <Table.Th>{t('funding.payments.table.date_col')}</Table.Th>
+              <Table.Th>{t('funding.payments.table.type_col')}</Table.Th>
+              <Table.Th>{t('funding.payments.table.recipient_col')}</Table.Th>
+              <Table.Th>{t('funding.payments.table.project_col')}</Table.Th>
+              <Table.Th>{t('funding.payments.table.category_col')}</Table.Th>
+              <Table.Th align="right">{t('funding.payments.table.amount_col')}</Table.Th>
+              <Table.Th>{t('funding.payments.table.notes_col')}</Table.Th>
             </Table.Tr>
           </Table.Head>
           <Table.Body>
@@ -137,7 +139,7 @@ const FundingPaymentsManagement: React.FC = () => {
                 </Table.Td>
                 <Table.Td>
                   <Badge variant="blue">
-                    <span className="inline-flex items-center"><Building2 className="w-3 h-3 mr-1" />Bank</span>
+                    <span className="inline-flex items-center"><Building2 className="w-3 h-3 mr-1" />{t('funding.payments.table.bank_badge')}</span>
                   </Badge>
                 </Table.Td>
                 <Table.Td className="font-medium">{payment.bank_name}</Table.Td>
@@ -162,13 +164,13 @@ const FundingPaymentsManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Filter className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">Filtered Results</span>
+              <span className="text-sm font-medium text-blue-900">{t('funding.payments.filtered_results_label')}</span>
             </div>
             <div className="text-sm text-blue-900">
-              <span className="font-semibold">{filteredPayments.length}</span> payments totaling{' '}
-              <span className="font-semibold">
-                €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}
-              </span>
+              {t('funding.payments.filtered_summary', {
+                count: filteredPayments.length,
+                total: `€${filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}`
+              })}
             </div>
           </div>
         </div>

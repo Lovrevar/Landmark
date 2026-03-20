@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, FormField, Input } from '../../../ui'
 
 interface BuildingQuantityModalProps {
@@ -16,6 +17,7 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const { t } = useTranslation()
   const [quantity, setQuantity] = useState(1)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -35,12 +37,12 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   return (
     <Modal show={true} onClose={onClose}>
       <Modal.Header
-        title="Bulk Create Buildings"
-        subtitle={`Project: ${project.name}`}
+        title={t('sales_projects.building_quantity_modal.title')}
+        subtitle={`${t('sales_projects.project')}: ${project.name}`}
         onClose={onClose}
       />
       <Modal.Body>
-        <FormField label="Number of Buildings to Create" required error={fieldErrors.quantity}>
+        <FormField label={t('sales_projects.building_quantity_modal.number_of_buildings')} required error={fieldErrors.quantity}>
           <Input
             type="number"
             min="1"
@@ -55,10 +57,10 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
           onClose()
           setQuantity(1)
         }}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button loading={loading} onClick={handleSubmit}>
-          Create {quantity} Buildings
+          {t('sales_projects.building_quantity_modal.create_buildings', { count: quantity })}
         </Button>
       </Modal.Footer>
     </Modal>

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { InvoiceFormFields } from './InvoiceFormFields'
 import { InvoiceVATSummary } from './InvoiceVATSummary'
 import { Modal, Button, Form } from '../../../ui'
@@ -93,10 +94,11 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
   getSupplierContractsByProject,
   getMilestonesByContract
 }) => {
+  const { t } = useTranslation()
   return (
     <Modal show={show} onClose={onClose} size="md">
       <Modal.Header
-        title={editingInvoice ? 'Uredi račun' : 'Novi račun'}
+        title={editingInvoice ? t('invoices.edit') : t('invoices.add')}
         onClose={onClose}
       />
 
@@ -130,10 +132,10 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button type="submit">
-            {editingInvoice ? 'Spremi promjene' : 'Kreiraj račun'}
+            {editingInvoice ? t('common.save_changes') : t('invoices.form.create')}
           </Button>
         </Modal.Footer>
       </Form>

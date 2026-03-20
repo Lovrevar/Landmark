@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailSupplier, RetailSupplierType } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
@@ -21,6 +22,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
     contact_person: supplier?.contact_person || '',
     notes: supplier?.notes || ''
   })
+  const { t } = useTranslation()
   const [supplierTypes, setSupplierTypes] = useState<RetailSupplierType[]>([])
   const [showNewTypeInput, setShowNewTypeInput] = useState(false)
   const [newTypeName, setNewTypeName] = useState('')
@@ -43,7 +45,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
   const handleAddNewType = async () => {
     if (!newTypeName.trim()) {
-      setError('Unesite naziv tipa')
+      setError(t('retail_projects.supplier_form.type_name_error'))
       return
     }
 
@@ -57,7 +59,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
       setNewTypeName('')
       setShowNewTypeInput(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri kreiranju novog tipa')
+      setError(err instanceof Error ? err.message : t('retail_projects.supplier_form.create_type_error'))
       console.error('Error creating supplier type:', err)
     } finally {
       setLoading(false)
@@ -67,8 +69,8 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
-    if (!formData.supplier_type_id) errors.supplier_type_id = 'Tip dobavljača je obavezan'
+    if (!formData.name.trim()) errors.name = t('retail_projects.supplier_form.name_error')
+    if (!formData.supplier_type_id) errors.supplier_type_id = t('retail_projects.supplier_form.type_error')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -94,7 +96,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri spremanju dobavljača')
+      setError(err instanceof Error ? err.message : t('retail_projects.supplier_form.save_error'))
       console.error('Error saving supplier:', err)
     } finally {
       setLoading(false)
@@ -103,7 +105,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose}>
-      <Modal.Header title={supplier ? 'Uredi dobavljača' : 'Novi dobavljač'} onClose={onClose} />
+      <Modal.Header title={supplier ? t('retail_projects.supplier_form.edit_title') : t('retail_projects.supplier_form.new_title')} onClose={onClose} />
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
@@ -113,7 +115,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Naziv dobavljača" required className="md:col-span-2" error={fieldErrors.name}>
+            <FormField label={t('retail_projects.supplier_form.name_label')} required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
@@ -121,14 +123,14 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Tip dobavljača" required error={fieldErrors.supplier_type_id}>
+            <FormField label={t('retail_projects.supplier_form.type_label')} required error={fieldErrors.supplier_type_id}>
               <div className="flex gap-2">
                 <Select
                   value={formData.supplier_type_id}
                   onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
                   className="flex-1"
                 >
-                  <option value="">Odaberite tip</option>
+                  <option value="">{t('retail_projects.supplier_form.select_type')}</option>
                   {supplierTypes.map((type) => (
                     <option key={type.id} value={type.id}>
                       {type.name}
@@ -147,13 +149,13 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             </FormField>
 
             {showNewTypeInput && (
-              <FormField label="Novi tip dobavljača" className="md:col-span-2">
+              <FormField label={t('retail_projects.supplier_form.new_type_label')} className="md:col-span-2">
                 <div className="flex gap-2">
                   <Input
                     type="text"
                     value={newTypeName}
                     onChange={(e) => setNewTypeName(e.target.value)}
-                    placeholder="Unesite naziv novog tipa"
+                    placeholder={t('retail_projects.supplier_form.new_type_placeholder')}
                     className="flex-1"
                   />
                   <Button
@@ -161,7 +163,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                     onClick={handleAddNewType}
                     disabled={loading || !newTypeName.trim()}
                   >
-                    Dodaj
+                    {t('common.add')}
                   </Button>
                   <Button
                     type="button"
@@ -172,13 +174,13 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                     }}
                     disabled={loading}
                   >
-                    Odustani
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </FormField>
             )}
 
-            <FormField label="Kontakt osoba">
+            <FormField label={t('retail_projects.supplier_form.contact_label')}>
               <Input
                 type="text"
                 value={formData.contact_person}
@@ -186,7 +188,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Napomene" className="md:col-span-2">
+            <FormField label={t('retail_projects.supplier_form.notes_label')} className="md:col-span-2">
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -203,14 +205,14 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             onClick={onClose}
             disabled={loading}
           >
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             loading={loading}
             disabled={loading}
           >
-            {supplier ? 'Spremi promjene' : 'Kreiraj dobavljača'}
+            {supplier ? t('retail_projects.supplier_form.save_changes') : t('retail_projects.supplier_form.save_supplier')}
           </Button>
         </Modal.Footer>
       </Form>

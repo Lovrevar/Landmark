@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BulkCreateData, UnitType, BulkPreview } from '../types'
 import { Button, Modal, FormField, Input } from '../../../ui'
 
@@ -19,6 +20,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
   onSubmit,
   loading = false
 }) => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<BulkCreateData>({
     floor_start: 1,
     floor_end: 10,
@@ -48,9 +50,9 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
   if (!visible) return null
 
   const getUnitLabel = () => {
-    if (unitType === 'apartment') return 'Apartments'
-    if (unitType === 'garage') return 'Garages'
-    return 'Repositories'
+    if (unitType === 'apartment') return t('sales_projects.units.apartments')
+    if (unitType === 'garage') return t('sales_projects.units.garages')
+    return t('sales_projects.units.repositories')
   }
 
   const calculatePreview = (): BulkPreview => {
@@ -70,13 +72,13 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
-        title="Bulk Create Units"
-        subtitle={`Building: ${selectedBuilding.name}`}
+        title={t('sales_projects.bulk_units_modal.title')}
+        subtitle={`${t('sales_projects.building')}: ${selectedBuilding.name}`}
         onClose={onClose}
       />
       <Modal.Body>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <FormField label="Start Floor">
+            <FormField label={t('sales_projects.bulk_units_modal.start_floor')}>
               <Input
                 type="number"
                 min="0"
@@ -84,7 +86,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, floor_start: parseInt(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="End Floor">
+            <FormField label={t('sales_projects.bulk_units_modal.end_floor')}>
               <Input
                 type="number"
                 min="0"
@@ -92,7 +94,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, floor_end: parseInt(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Units per Floor">
+            <FormField label={t('sales_projects.bulk_units_modal.units_per_floor')}>
               <Input
                 type="number"
                 min="1"
@@ -101,7 +103,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
               />
             </FormField>
             <FormField
-              label="Number Prefix (optional)"
+              label={t('sales_projects.bulk_units_modal.number_prefix')}
               helperText={`Default: ${defaultPrefix} (e.g., ${defaultPrefix}101, ${defaultPrefix}202)`}
             >
               <Input
@@ -111,7 +113,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
                 placeholder={defaultPrefix}
               />
             </FormField>
-            <FormField label="Base Size (m²)">
+            <FormField label={t('sales_projects.bulk_units_modal.base_size')}>
               <Input
                 type="number"
                 min="0"
@@ -119,7 +121,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, base_size: parseInt(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Size Variation (±m²)">
+            <FormField label={t('sales_projects.bulk_units_modal.size_variation')}>
               <Input
                 type="number"
                 min="0"
@@ -127,7 +129,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, size_variation: parseInt(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Base Price per m²">
+            <FormField label={t('sales_projects.bulk_units_modal.base_price_per_m2')}>
               <Input
                 type="number"
                 min="0"
@@ -136,8 +138,8 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
               />
             </FormField>
             <FormField
-              label="Floor Premium (€)"
-              helperText="Additional price per floor above start floor"
+              label={t('sales_projects.bulk_units_modal.floor_premium')}
+              helperText={t('sales_projects.bulk_units_modal.floor_premium_hint')}
             >
               <Input
                 type="number"
@@ -149,24 +151,24 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
           </div>
 
           <div className="bg-blue-50 p-4 rounded-lg mb-6">
-            <h4 className="font-semibold text-blue-900 mb-2">Preview</h4>
+            <h4 className="font-semibold text-blue-900 mb-2">{t('sales_projects.bulk_units_modal.preview')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-blue-700">Total {getUnitLabel()}:</span>
+                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.total_label')} {getUnitLabel()}:</span>
                 <span className="font-medium text-blue-900 ml-2">{preview.totalUnits}</span>
               </div>
               <div>
-                <span className="text-blue-700">Avg. Size:</span>
+                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.avg_size')}:</span>
                 <span className="font-medium text-blue-900 ml-2">{preview.avgSize} m²</span>
               </div>
               <div>
-                <span className="text-blue-700">Avg. Price:</span>
+                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.avg_price')}:</span>
                 <span className="font-medium text-blue-900 ml-2">
                   €{Math.round(preview.avgPrice).toLocaleString('hr-HR')}
                 </span>
               </div>
               <div>
-                <span className="text-blue-700">Total Value:</span>
+                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.total_value')}:</span>
                 <span className="font-medium text-blue-900 ml-2">
                   €{Math.round(preview.totalValue).toLocaleString('hr-HR')}
                 </span>
@@ -182,10 +184,10 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button loading={loading} onClick={() => onSubmit(formData)}>
-          Create {preview.totalUnits} Units
+          {t('sales_projects.bulk_units_modal.create_units', { count: preview.totalUnits })}
         </Button>
       </Modal.Footer>
     </Modal>

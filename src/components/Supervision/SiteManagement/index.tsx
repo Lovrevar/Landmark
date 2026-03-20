@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
@@ -18,6 +19,7 @@ import { MilestoneList } from './MilestoneList'
 import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../../../utils/permissions'
 
 const SiteManagement: React.FC = () => {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const {
     projects,
@@ -441,8 +443,8 @@ const SiteManagement: React.FC = () => {
           show={!!pendingConfirm}
           title={pendingConfirm?.title ?? ''}
           message={pendingConfirm?.message ?? ''}
-          confirmLabel={pendingConfirm?.confirmLabel ?? 'Da, nastavi'}
-          cancelLabel="Odustani"
+          confirmLabel={pendingConfirm?.confirmLabel ?? t('common.yes_confirm')}
+          cancelLabel={t('common.cancel')}
           variant={pendingConfirm?.variant ?? 'primary'}
           onConfirm={() => pendingConfirm?.onConfirm()}
           onCancel={() => pendingConfirm?.onCancel()}
@@ -450,10 +452,10 @@ const SiteManagement: React.FC = () => {
 
         <ConfirmDialog
           show={!!pendingDeleteSubcontractor}
-          title="Potvrda brisanja"
-          message="Jeste li sigurni da želite obrisati ovog podizvođača?"
-          confirmLabel="Da, obriši"
-          cancelLabel="Odustani"
+          title={t('common.confirm_delete')}
+          message={t('supervision.site_management.confirm_delete_sub')}
+          confirmLabel={t('common.yes_delete')}
+          cancelLabel={t('common.cancel')}
           variant="danger"
           onConfirm={confirmDeleteSubcontractor}
           onCancel={cancelDeleteSubcontractor}

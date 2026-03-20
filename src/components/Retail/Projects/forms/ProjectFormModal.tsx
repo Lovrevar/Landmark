@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Trash2 } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
@@ -15,6 +16,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   onSuccess,
   project
 }) => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     land_plot_id: String(project?.land_plot_id || ''),
     name: String(project?.name || ''),
@@ -76,11 +78,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
-    if (!formData.location.trim()) errors.location = 'Lokacija je obavezna'
-    if (!formData.plot_number.trim()) errors.plot_number = 'Broj čestice je obavezan'
-    if (!formData.total_area_m2) errors.total_area_m2 = 'Površina je obavezna'
-    if (!formData.purchase_price) errors.purchase_price = 'Budžet je obavezan'
+    if (!formData.name.trim()) errors.name = t('retail_projects.project_form.errors.name')
+    if (!formData.location.trim()) errors.location = t('retail_projects.project_form.errors.location')
+    if (!formData.plot_number.trim()) errors.plot_number = t('retail_projects.project_form.errors.plot_number')
+    if (!formData.total_area_m2) errors.total_area_m2 = t('retail_projects.project_form.errors.area')
+    if (!formData.purchase_price) errors.purchase_price = t('retail_projects.project_form.errors.budget')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -107,7 +109,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri spremanju projekta')
+      setError(err instanceof Error ? err.message : t('retail_projects.project_form.save_error'))
       console.error('Error saving project:', err)
     } finally {
       setLoading(false)
@@ -124,7 +126,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       await retailProjectService.deleteProject(project.id as string)
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri brisanju projekta')
+      setError(err instanceof Error ? err.message : t('retail_projects.project_form.delete_error'))
       console.error('Error deleting project:', err)
     } finally {
       setDeleting(false)
@@ -136,7 +138,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose}>
-      <Modal.Header title={project ? 'Uredi projekt' : 'Novi projekt'} onClose={onClose} />
+      <Modal.Header title={project ? t('retail_projects.project_form.edit_title') : t('retail_projects.project_form.new_title')} onClose={onClose} />
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
@@ -146,7 +148,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Naziv projekta" required className="md:col-span-2" error={fieldErrors.name}>
+            <FormField label={t('retail_projects.project_form.name_label')} required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={formData.name}
@@ -155,10 +157,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Zemljište">
+              <FormField label={t('retail_projects.project_form.land_label')}>
                 {loadingLandPlots ? (
                   <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
-                    Učitavam zemljišta...
+                    {t('retail_projects.project_form.loading_land')}
                   </div>
                 ) : (
                   <>
@@ -166,7 +168,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                       value={formData.land_plot_id}
                       onChange={(e) => handleLandPlotChange(e.target.value)}
                     >
-                      <option value="">-- Bez zemljišta (ručni unos) --</option>
+                      <option value="">{t('retail_projects.project_form.no_land_option')}</option>
                       {landPlots.map(plot => (
                         <option key={plot.id} value={plot.id}>
                           {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name} ({plot.purchased_area_m2} m²)
@@ -175,13 +177,13 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                     </Select>
                     {selectedPlot && (
                       <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                        <div className="font-medium text-blue-900 mb-1">Info o zemljištu:</div>
+                        <div className="font-medium text-blue-900 mb-1">{t('retail_projects.project_form.land_info_title')}</div>
                         <div className="text-blue-800 space-y-1">
-                          <div>Vlasnik: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
-                          <div>Ukupna površina: {selectedPlot.total_area_m2} m²</div>
-                          <div>Kupljena površina: {selectedPlot.purchased_area_m2} m²</div>
-                          <div>Cijena po m²: €{selectedPlot.price_per_m2.toFixed(2)}</div>
-                          <div>Ukupna cijena: €{selectedPlot.total_price.toFixed(2)}</div>
+                          <div>{t('retail_land_plots.detail.owner')}: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
+                          <div>{t('retail_land_plots.detail.total_area')}: {selectedPlot.total_area_m2} m²</div>
+                          <div>{t('retail_land_plots.detail.purchased_area')}: {selectedPlot.purchased_area_m2} m²</div>
+                          <div>{t('retail_land_plots.detail.price_per_m2')}: €{selectedPlot.price_per_m2.toFixed(2)}</div>
+                          <div>{t('retail_land_plots.detail.total_price')}: €{selectedPlot.total_price.toFixed(2)}</div>
                         </div>
                       </div>
                     )}
@@ -191,9 +193,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
 
             <FormField
-              label="Lokacija"
+              label={t('retail_projects.project_form.location_label')}
               required
-              helperText={formData.land_plot_id ? 'Automatski popunjeno iz odabranog zemljišta' : undefined}
+              helperText={formData.land_plot_id ? t('retail_projects.project_form.location_autofill') : undefined}
               className="md:col-span-2"
               error={fieldErrors.location}
             >
@@ -206,9 +208,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </FormField>
 
             <FormField
-              label="Broj čestice"
+              label={t('retail_projects.project_form.plot_number_label')}
               required
-              helperText={formData.land_plot_id ? 'Automatski popunjeno' : undefined}
+              helperText={formData.land_plot_id ? t('retail_projects.project_form.plot_autofill') : undefined}
               error={fieldErrors.plot_number}
             >
               <Input
@@ -219,19 +221,19 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Status">
+            <FormField label={t('retail_projects.project_form.status_label')}>
               <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <option value="Planning">Planning</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-                <option value="On Hold">On Hold</option>
+                <option value="Planning">{t('status.planning')}</option>
+                <option value="In Progress">{t('status.in_progress')}</option>
+                <option value="Completed">{t('status.completed')}</option>
+                <option value="On Hold">{t('status.on_hold')}</option>
               </Select>
             </FormField>
 
-            <FormField label="Površina (m²)" required error={fieldErrors.total_area_m2}>
+            <FormField label={t('retail_projects.project_form.area_label')} required error={fieldErrors.total_area_m2}>
               <Input
                 type="number"
                 step="0.01"
@@ -241,11 +243,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </FormField>
 
             <FormField
-              label="Budžet projekta (€)"
+              label={t('retail_projects.project_form.budget_label')}
               required
               helperText={selectedPlot
-                ? `Cijena zemljišta: €${selectedPlot.total_price.toLocaleString('hr-HR')}`
-                : 'Budžet projekta'
+                ? `${t('retail_land_plots.detail.total_price')}: €${selectedPlot.total_price.toLocaleString('hr-HR')}`
+                : t('common.budget')
               }
               error={fieldErrors.purchase_price}
             >
@@ -257,7 +259,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum početka">
+            <FormField label={t('retail_projects.project_form.start_date')}>
               <Input
                 type="date"
                 value={formData.start_date}
@@ -265,7 +267,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum završetka">
+            <FormField label={t('retail_projects.project_form.end_date')}>
               <Input
                 type="date"
                 value={formData.end_date}
@@ -273,7 +275,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Napomene" className="md:col-span-2">
+            <FormField label={t('retail_projects.project_form.notes_label')} className="md:col-span-2">
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -294,7 +296,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={loading || deleting}
                 >
-                  Obriši projekt
+                  {t('retail_projects.project_form.delete_btn')}
                 </Button>
               )}
             </div>
@@ -305,14 +307,14 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onClick={onClose}
                 disabled={loading || deleting}
               >
-                Odustani
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 loading={loading}
                 disabled={loading || deleting}
               >
-                {project ? 'Spremi promjene' : 'Kreiraj projekt'}
+                {project ? t('common.save_changes') : t('retail_projects.project_form.create_btn')}
               </Button>
             </div>
           </div>
@@ -321,16 +323,14 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
       <ConfirmDialog
         show={showDeleteConfirm}
-        title="Potvrda brisanja"
+        title={t('retail_projects.project_form.delete_confirm_title')}
         message={
           <>
-            Jeste li sigurni da želite obrisati projekt "<strong>{String(project?.name || '')}</strong>"?
-            <br /><br />
-            Ova akcija će obrisati projekt i sve povezane podatke (faze, ugovore, milestones). Ova akcija se ne može poništiti.
+            {t('retail_projects.project_form.delete_confirm_msg', { name: String(project?.name || '') })}
           </>
         }
-        confirmLabel={deleting ? 'Brišem...' : 'Da, obriši'}
-        cancelLabel="Odustani"
+        confirmLabel={deleting ? t('retail_projects.project_form.deleting') : t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}

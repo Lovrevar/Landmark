@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, DollarSign, ChevronDown, ChevronUp } from 'lucide-react'
 import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../types/retail'
 
@@ -31,6 +32,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onViewInvoices,
   onManageMilestones
 }) => {
+  const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
 
   const contractsWithContract = phaseContracts.filter(c => c.has_contract && c.contract_amount > 0)
@@ -81,7 +83,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
-              title={isExpanded ? "Collapse phase" : "Expand phase"}
+              title={isExpanded ? t('retail_projects.collapse_phase') : t('retail_projects.expand_phase')}
             >
               {isExpanded ? (
                 <ChevronUp className="w-6 h-6 text-blue-600" />
@@ -94,14 +96,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 <span className="mr-2">{getPhaseIcon(phase.phase_type)}</span>
                 {phase.phase_name}
               </h3>
-              <p className="text-gray-600">Phase {phase.phase_order} • {phaseContracts.length} contract{phaseContracts.length !== 1 ? 's' : ''}</p>
+              <p className="text-gray-600">{t('retail_projects.phase_order', { order: phase.phase_order })} • {t('retail_projects.contracts_count', { count: phaseContracts.length })}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             {phase.phase_type !== 'sales' && (
               <div className="text-right">
                 <p className="text-lg font-bold text-gray-900">{formatCurrency(phase.budget_allocated)}</p>
-                <p className="text-sm text-gray-600">Forecasted Budget</p>
+                <p className="text-sm text-gray-600">{t('retail_projects.forecasted_budget')}</p>
               </div>
             )}
             <Button
@@ -121,30 +123,30 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               icon={Plus}
               onClick={() => onAddContract(phase)}
             >
-              {phase.phase_type === 'development' ? 'Add Supplier' :
-               phase.phase_type === 'construction' ? 'Add Contract' :
-               'Add Sale'}
+              {phase.phase_type === 'development' ? t('retail_projects.add_supplier_btn') :
+               phase.phase_type === 'construction' ? t('retail_projects.add_contract_btn') :
+               t('retail_projects.add_sale_btn')}
             </Button>
           </div>
         </div>
 
         <div className={`mt-4 grid grid-cols-1 gap-4 ${phase.phase_type === 'sales' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? 'Sales Revenue' : 'Contracted Amount'}</p>
+            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? t('retail_projects.sales_revenue_label') : t('retail_projects.contracted_amount')}</p>
             <p className="text-lg font-bold text-gray-900">{formatCurrency(totalContractCost)}</p>
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
-            <p className="text-sm text-teal-700">{phase.phase_type === 'sales' ? 'Received' : 'Paid Out'}</p>
+            <p className="text-sm text-teal-700">{phase.phase_type === 'sales' ? t('retail_projects.received') : t('retail_projects.paid_out')}</p>
             <p className="text-lg font-bold text-teal-900">{formatCurrency(totalPaidOut)}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
-            <p className="text-sm text-orange-700">{phase.phase_type === 'sales' ? 'Outstanding' : 'Unpaid Contracts'}</p>
+            <p className="text-sm text-orange-700">{phase.phase_type === 'sales' ? t('retail_projects.outstanding') : t('retail_projects.unpaid_contracts')}</p>
             <p className="text-lg font-bold text-orange-900">{formatCurrency(totalUnpaid)}</p>
           </div>
           {phase.phase_type !== 'sales' && (
             <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
               <p className={`text-sm ${availableBudget < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                Forecasted Budget
+                {t('retail_projects.forecasted_budget')}
               </p>
               <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900' : 'text-green-900'}`}>
                 {formatCurrency(availableBudget)}
@@ -156,7 +158,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         {phase.phase_type !== 'sales' && (
           <div className="mt-4">
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-gray-600">Budget Utilization (Paid vs Allocated)</span>
+              <span className="text-sm text-gray-600">{t('retail_projects.budget_utilization')}</span>
               <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
@@ -171,7 +173,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </div>
             {budgetUtilization > 100 && (
               <p className="text-xs text-red-600 mt-1">
-                Over budget by {formatCurrency(totalPaidOut - phase.budget_allocated)}
+                {t('retail_projects.over_budget_by', { amount: formatCurrency(totalPaidOut - phase.budget_allocated) })}
               </p>
             )}
           </div>
@@ -183,14 +185,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           {phaseContracts.length === 0 ? (
           <EmptyState
             icon={DollarSign}
-            title="No contracts in this phase yet"
+            title={t('retail_projects.no_contracts_phase')}
             action={
               <Button
                 variant="primary"
                 icon={Plus}
                 onClick={() => onAddContract(phase)}
               >
-                Add First Contract
+                {t('retail_projects.add_first_contract')}
               </Button>
             }
           />
@@ -214,10 +216,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               }
 
               const getContractStatusLabel = () => {
-                if (gainLoss > 0) return 'Overpaid'
-                if (isPaid && gainLoss === 0) return 'Paid'
-                if (isPartial) return 'Partial'
-                return 'Unpaid'
+                if (gainLoss > 0) return t('retail_projects.overpaid')
+                if (isPaid && gainLoss === 0) return t('retail_projects.milestones.status_paid')
+                if (isPartial) return t('retail_projects.milestones.status_pending')
+                return t('retail_projects.milestones.status_unpaid')
               }
 
               return (
@@ -236,13 +238,13 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-gray-900">
                           {phase.phase_type === 'sales'
-                            ? (contract.customer?.name || 'Unknown Customer')
-                            : (contract.supplier?.name || 'Unknown Supplier')
+                            ? (contract.customer?.name || t('retail_projects.unknown_customer'))
+                            : (contract.supplier?.name || t('retail_projects.unknown_supplier'))
                           }
                         </h4>
                         {!hasValidContract && (
                           <Badge variant="yellow" size="sm">
-                            BEZ UGOVORA
+                            {t('retail_projects.no_contract_badge')}
                           </Badge>
                         )}
                       </div>
@@ -261,7 +263,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   <div className="space-y-2 text-xs mb-3">
                     {contract.contract_date && phase.phase_type !== 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Datum ugovora:</span>
+                        <span className="text-gray-600">{t('retail_projects.contract_date_label')}</span>
                         <span className="font-medium text-gray-900">
                           {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
                         </span>
@@ -269,25 +271,25 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     )}
                     {contract.notes && (phase.phase_type === 'development' || phase.phase_type === 'construction') && (
                       <div className="mb-2">
-                        <span className="text-gray-600">Opis:</span>
+                        <span className="text-gray-600">{t('retail_projects.description_label')}</span>
                         <p className="text-gray-700 mt-1 text-xs line-clamp-2">{contract.notes}</p>
                       </div>
                     )}
                     {contract.building_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Površina objekta:</span>
+                        <span className="text-gray-600">{t('retail_projects.building_surface_label')}</span>
                         <span className="font-medium text-blue-600">{contract.building_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.total_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Površina ukupno:</span>
+                        <span className="text-gray-600">{t('retail_projects.total_surface_label')}</span>
                         <span className="font-medium text-blue-600">{contract.total_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.price_per_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Cijena po m²:</span>
+                        <span className="text-gray-600">{t('retail_projects.price_per_m2_label_col')}</span>
                         <span className="font-medium text-teal-600">
                           {formatCurrency(contract.price_per_m2)}
                         </span>
@@ -295,7 +297,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     )}
                     {contract.end_date && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Deadline:</span>
+                        <span className="text-gray-600">{t('retail_projects.deadline_label')}</span>
                         <span className="font-medium text-gray-900">
                           {format(new Date(contract.end_date), 'MMM dd, yyyy')}
                         </span>
@@ -304,21 +306,21 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {hasValidContract ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Contract:</span>
+                          <span className="text-gray-600">{t('retail_projects.contract_value_label')}</span>
                           <span className="font-medium text-gray-900">{formatCurrency(contractAmount)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Paid:</span>
+                          <span className="text-gray-600">{t('retail_projects.paid_label')}</span>
                           <span className="font-medium text-teal-600">{formatCurrency(actualPaid)}</span>
                         </div>
                         {remainingToPay > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Remaining:</span>
+                            <span className="text-gray-600">{t('retail_projects.remaining_label')}</span>
                             <span className="font-medium text-orange-600">{formatCurrency(remainingToPay)}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                          <span className="text-gray-600 font-medium">{t('retail_projects.gain_loss_label')}</span>
                           <span className={`font-bold ${
                             gainLoss > 0 ? 'text-red-600' :
                             gainLoss < 0 ? 'text-green-600' :
@@ -331,11 +333,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     ) : (
                       <>
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                          <span className="text-gray-600 font-medium">{t('retail_projects.total_paid_label')}</span>
                           <span className="font-bold text-green-600">{formatCurrency(actualPaid)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 font-medium">Ukupno dugovi:</span>
+                          <span className="text-gray-600 font-medium">{t('retail_projects.total_debts_label')}</span>
                           <span className="font-bold text-orange-600">{formatCurrency(contract.invoiced_remaining || 0)}</span>
                         </div>
                       </>
@@ -349,7 +351,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       fullWidth
                       onClick={() => onViewPayments(contract)}
                     >
-                      Payments
+                      {t('common.payments')}
                     </Button>
                     <Button
                       variant="primary"
@@ -357,7 +359,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       fullWidth
                       onClick={() => onViewInvoices(contract)}
                     >
-                      Invoices
+                      {t('common.invoices')}
                     </Button>
                     <div className="grid grid-cols-3 gap-2">
                       <Button
@@ -366,7 +368,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onEditContract(contract)}
                       >
-                        Edit
+                        {t('common.edit')}
                       </Button>
                       <Button
                         variant="amber"
@@ -382,7 +384,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onDeleteContract(contract.id)}
                       >
-                        Delete
+                        {t('common.delete')}
                       </Button>
                     </div>
                   </div>

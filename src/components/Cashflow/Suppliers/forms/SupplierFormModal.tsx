@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import { SupplierFormData, Project, Phase } from '../types'
 
@@ -25,13 +26,14 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = (e: React.FormEvent) => {
     const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
-    if (!formData.contact.trim()) errors.contact = 'Kontakt je obavezan'
-    if (formData.project_id && !formData.phase_id) errors.phase_id = 'Faza je obavezna'
+    if (!formData.name.trim()) errors.name = t('suppliers.form.name_required')
+    if (!formData.contact.trim()) errors.contact = t('suppliers.form.contact_required')
+    if (formData.project_id && !formData.phase_id) errors.phase_id = t('suppliers.form.phase_required')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) { e.preventDefault(); return }
     onSubmit(e)
@@ -40,13 +42,13 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   return (
     <Modal show={showModal} onClose={onClose} size="sm">
       <Modal.Header
-        title={editingSupplier ? 'Uredi dobavljača' : 'Novi dobavljač'}
+        title={editingSupplier ? t('suppliers.edit') : t('suppliers.add_new')}
         onClose={onClose}
       />
 
       <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
         <Modal.Body>
-          <FormField label="Naziv dobavljača" required error={fieldErrors.name}>
+          <FormField label={t('suppliers.form.name')} required error={fieldErrors.name}>
             <Input
               type="text"
               value={formData.name}
@@ -55,7 +57,7 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Kontakt (email ili telefon)" required error={fieldErrors.contact}>
+          <FormField label={t('suppliers.form.contact_label')} required error={fieldErrors.contact}>
             <Input
               type="text"
               value={formData.contact}
@@ -66,16 +68,16 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
           {!editingSupplier && (
             <div className="border-t border-gray-200 pt-4 mt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Poveži sa projektom (opcionalno)</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('suppliers.form.link_project_optional')}</h3>
 
               <div className="space-y-4">
-                <FormField label="Projekti">
+                <FormField label={t('suppliers.form.projects_label')}>
                   <Select
                     value={formData.project_id}
                     onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
                     disabled={loadingProjects}
                   >
-                    <option value="">Odaberite projekt</option>
+                    <option value="">{t('suppliers.form.select_project')}</option>
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.name}
@@ -85,12 +87,12 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                 </FormField>
 
                 {formData.project_id && (
-                  <FormField label="Faza" required error={fieldErrors.phase_id}>
+                  <FormField label={t('suppliers.form.phase_label')} required error={fieldErrors.phase_id}>
                     <Select
                       value={formData.phase_id}
                       onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
                     >
-                      <option value="">Odaberite fazu</option>
+                      <option value="">{t('suppliers.form.select_phase')}</option>
                       {phases.map((phase) => (
                         <option key={phase.id} value={phase.id}>
                           {phase.phase_name}
@@ -103,15 +105,15 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             </div>
           )}
 
-          <Alert variant="info" title="Napomena">
-            Nakon dodavanja dobavljača, možete kreirati račune za njih u sekciji "Računi".
+          <Alert variant="info" title={t('suppliers.form.note_title')}>
+            {t('suppliers.form.note_invoices')}
             {!editingSupplier && formData.project_id && formData.phase_id ? (
               <span className="block mt-2">
-                Dobavljač će biti automatski zakačen na odabrani projekt i fazu kao "bez ugovora". Možete vidjeti dobavljača u "Site Management" modulu za taj projekt.
+                {t('suppliers.form.note_linked')}
               </span>
             ) : !editingSupplier ? (
               <span className="block mt-2">
-                Za dobavljače s projektima, koristite "Site Management" za kreiranje ugovora.
+                {t('suppliers.form.note_use_site')}
               </span>
             ) : null}
           </Alert>
@@ -119,10 +121,10 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button type="submit">
-            {editingSupplier ? 'Spremi promjene' : 'Dodaj dobavljača'}
+            {editingSupplier ? t('common.save_changes') : t('suppliers.add')}
           </Button>
         </Modal.Footer>
       </Form>

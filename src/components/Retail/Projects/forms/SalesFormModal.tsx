@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
@@ -25,6 +26,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   onSuccess,
   contract
 }) => {
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
   const [formData, setFormData] = useState({
     customer_id: contract?.customer_id || '',
@@ -83,9 +85,9 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errors: Record<string, string> = {}
-    if (!formData.customer_id) errors.customer_id = 'Morate odabrati kupca'
-    if (!formData.contract_amount) errors.contract_amount = 'Morate unijeti cijenu ugovora'
-    if (!formData.contract_date) errors.contract_date = 'Morate unijeti datum ugovora'
+    if (!formData.customer_id) errors.customer_id = t('retail_projects.contract_form.customer_error')
+    if (!formData.contract_amount) errors.contract_amount = t('retail_projects.contract_form.contract_amount_required')
+    if (!formData.contract_date) errors.contract_date = t('retail_projects.contract_form.contract_date_required')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -118,7 +120,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri spremanju ugovora')
+      setError(err instanceof Error ? err.message : t('retail_projects.contract_form.save_error'))
       console.error('Error saving contract:', err)
     } finally {
       setLoading(false)
@@ -128,7 +130,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   return (
     <Modal show={true} onClose={onClose}>
       <Modal.Header
-        title={contract ? 'Uredi kupca' : 'Novi kupac'}
+        title={contract ? t('retail_projects.contract_form.edit_customer_title') : t('retail_projects.contract_form.new_customer_title')}
         subtitle={`Faza: ${phase.phase_name}`}
         onClose={onClose}
       />
@@ -142,15 +144,15 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 
           <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Napomena:</strong> Dodajte kupce (najmodavce) koji će plaćati najamninu za prostor u retail centru.
+              <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.sales_note_body')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
-              label="Kupac (Najmodavac)"
+              label={t('retail_projects.contract_form.customer_label')}
               required
-              helperText='Ako kupac ne postoji, dodajte ga prvo preko "Kupci" menija'
+              helperText={t('retail_projects.contract_form.customer_helper')}
               className="md:col-span-2"
               error={fieldErrors.customer_id}
             >
@@ -158,7 +160,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 value={formData.customer_id}
                 onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
               >
-                <option value="">Odaberi kupca...</option>
+                <option value="">{t('retail_projects.contract_form.select_customer')}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
@@ -167,7 +169,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               </Select>
             </FormField>
 
-            <FormField label="Broj ugovora" required>
+            <FormField label={t('retail_projects.contract_form.contract_number_label')} required>
               <Input
                 type="text"
                 value={formData.contract_number}
@@ -177,7 +179,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum ugovora" required error={fieldErrors.contract_date}>
+            <FormField label={t('retail_projects.contract_form.contract_date_label')} required error={fieldErrors.contract_date}>
               <Input
                 type="date"
                 value={formData.contract_date}
@@ -185,7 +187,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Cijena ugovora (€)" required error={fieldErrors.contract_amount}>
+            <FormField label={t('retail_projects.contract_form.contract_amount_label')} required error={fieldErrors.contract_amount}>
               <Input
                 type="number"
                 step="0.01"
@@ -195,7 +197,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Površina objekta (m²)" helperText="Površina samog objekta/prostora">
+            <FormField label={t('retail_projects.contract_form.building_surface_label')} helperText={t('retail_projects.contract_form.building_surface_hint')}>
               <Input
                 type="number"
                 step="0.01"
@@ -205,7 +207,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Površina ukupno (m²)" helperText="Ukupna površina (sa parkingom, skladištem...)">
+            <FormField label={t('retail_projects.contract_form.total_surface_label')} helperText={t('retail_projects.contract_form.total_surface_hint')}>
               <Input
                 type="number"
                 step="0.01"
@@ -216,10 +218,10 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
             </FormField>
 
             <FormField
-              label="Cijena po m² (€)"
+              label={t('retail_projects.contract_form.price_per_m2_label')}
               helperText={formData.price_per_m2
-                ? 'Izračunato: Cijena ugovora ÷ Površina ukupno'
-                : 'Unesite cijenu i površinu za automatski izračun'
+                ? t('retail_projects.contract_form.price_auto_hint')
+                : t('retail_projects.contract_form.price_enter_hint')
               }
             >
               <Input
@@ -227,23 +229,23 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 step="0.01"
                 value={formData.price_per_m2}
                 className="bg-gray-50 font-semibold"
-                placeholder="Automatski izračunato"
+                placeholder={t('retail_projects.contract_form.price_auto_placeholder')}
                 readOnly
               />
             </FormField>
 
-            <FormField label="Status">
+            <FormField label={t('common.status')}>
               <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Active' | 'Completed' | 'Cancelled' })}
               >
-                <option value="Active">Active</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="Active">{t('retail_projects.contract_form.status_active')}</option>
+                <option value="Completed">{t('retail_projects.contract_form.status_completed')}</option>
+                <option value="Cancelled">{t('retail_projects.contract_form.status_cancelled')}</option>
               </Select>
             </FormField>
 
-            <FormField label="Datum početka">
+            <FormField label={t('retail_projects.contract_form.start_date')}>
               <Input
                 type="date"
                 value={formData.start_date}
@@ -251,7 +253,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Datum završetka">
+            <FormField label={t('retail_projects.contract_form.end_date_label')}>
               <Input
                 type="date"
                 value={formData.end_date}
@@ -259,12 +261,12 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Napomene" className="md:col-span-2">
+            <FormField label={t('retail_projects.contract_form.notes_label')} className="md:col-span-2">
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                placeholder="Dodatne informacije o ugovoru..."
+                placeholder={t('retail_projects.contract_form.additional_notes')}
               />
             </FormField>
           </div>
@@ -272,7 +274,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
           {!contract && (
             <div className="bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>Napomena:</strong> Nakon kreiranja ugovora, možete dodati milestones plaćanja kroz žutu tipku (📊).
+                <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.note_milestones_sales')}
               </p>
             </div>
           )}
@@ -285,14 +287,14 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
             onClick={onClose}
             disabled={loading}
           >
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             loading={loading}
             disabled={loading}
           >
-            {contract ? 'Spremi promjene' : 'Kreiraj ugovor'}
+            {contract ? t('common.save_changes') : t('retail_projects.contract_form.new_title')}
           </Button>
         </Modal.Footer>
       </Form>

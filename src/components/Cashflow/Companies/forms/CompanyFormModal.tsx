@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, Button, Input, Select, FormField, Form } from '../../../ui'
 import { CompanyFormData } from '../types'
 
@@ -23,16 +24,17 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
   onBankAccountChange,
   onFormDataChange
 }) => {
+  const { t } = useTranslation()
   return (
     <Modal show={show} onClose={onClose} size="sm">
       <Modal.Header
-        title={editingCompany ? 'Uredi firmu' : 'Nova firma'}
+        title={editingCompany ? t('companies.form.title_edit') : t('companies.form.title_new')}
         onClose={onClose}
       />
 
       <Form onSubmit={onSubmit} className="overflow-y-auto flex-1">
         <div className="p-6 space-y-4">
-          <FormField label="Naziv firme" required>
+          <FormField label={t('companies.form.name')} required>
             <Input
               type="text"
               value={formData.name}
@@ -41,7 +43,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="OIB" required helperText="Unesite 11-znamenkasti OIB">
+          <FormField label={t('companies.form.oib')} required helperText={t('companies.form.oib_helper')}>
             <Input
               type="text"
               value={formData.oib}
@@ -49,12 +51,12 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
               placeholder="12345678901"
               maxLength={11}
               pattern="[0-9]{11}"
-              title="OIB mora imati točno 11 brojeva"
+              title={t('companies.form.oib_title')}
             />
           </FormField>
 
           {!editingCompany && (
-            <FormField label="Broj bankovnih računa" required helperText="Odaberite broj bankovnih računa">
+            <FormField label={t('companies.form.account_count')} required helperText={t('companies.form.account_count_helper')}>
               <Select
                 value={formData.accountCount}
                 onChange={(e) => onAccountCountChange(parseInt(e.target.value))}
@@ -67,11 +69,11 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
           )}
 
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">Bankovni računi</h3>
+            <h3 className="font-semibold text-gray-900">{t('companies.form.bank_accounts_heading')}</h3>
             {formData.bankAccounts.map((account, index) => (
               <div key={index} className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
-                <p className="text-sm font-medium text-gray-700">Račun #{index + 1}</p>
-                <FormField label="Naziv banke" required compact>
+                <p className="text-sm font-medium text-gray-700">{t('companies.form.account_label', { number: index + 1 })}</p>
+                <FormField label={t('companies.form.bank_name')} required compact>
                   <Input
                     type="text"
                     compact
@@ -81,7 +83,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                     disabled={editingCompany !== null}
                   />
                 </FormField>
-                <FormField label="Trenutno stanje (€)" required compact>
+                <FormField label={t('companies.form.current_balance')} required compact>
                   <Input
                     type="number"
                     compact
@@ -92,7 +94,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                   />
                 </FormField>
                 {editingCompany && (
-                  <FormField label="Datum stanja" compact helperText="Plaćanja od ovog datuma ulaze u obračun stanja">
+                  <FormField label={t('companies.form.balance_date')} compact helperText={t('companies.form.balance_date_helper')}>
                     <Input
                       type="date"
                       compact
@@ -109,12 +111,11 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
             <p className="text-sm text-blue-800">
               {editingCompany ? (
                 <>
-                  <strong>Napomena:</strong> Možete promijeniti trenutna stanja računa. Promjene će biti vidljive odmah.
+                  <strong>{t('companies.form.note_label')}</strong> {t('companies.form.note_edit')}
                 </>
               ) : (
                 <>
-                  <strong>Napomena:</strong> Nakon dodavanja firme i bankovnih računa, svaki račun će se automatski
-                  ažurirati kada izdajete ili plaćate račune.
+                  <strong>{t('companies.form.note_label')}</strong> {t('companies.form.note_new')}
                 </>
               )}
             </p>
@@ -123,10 +124,10 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button type="submit">
-            {editingCompany ? 'Spremi promjene' : 'Dodaj firmu'}
+            {editingCompany ? t('common.save_changes') : t('companies.form.add_label')}
           </Button>
         </Modal.Footer>
       </Form>

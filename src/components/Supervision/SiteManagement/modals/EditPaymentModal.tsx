@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { WirePayment } from '../../../../lib/supabase'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
 
@@ -17,15 +18,17 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   onChange,
   onSubmit
 }) => {
+  const { t } = useTranslation()
+
   if (!visible || !payment) return null
 
   return (
     <Modal show={true} onClose={onClose}>
-      <Modal.Header title="Edit Payment" onClose={onClose} />
+      <Modal.Header title={t('supervision.edit_payment.title')} onClose={onClose} />
 
       <Modal.Body>
         <div className="space-y-4">
-          <FormField label="Payment Amount (€)" required>
+          <FormField label={t('supervision.edit_payment.amount')} required>
             <Input
               type="number"
               min="0"
@@ -36,7 +39,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Payment Date (Optional)">
+          <FormField label={t('supervision.edit_payment.payment_date')}>
             <Input
               type="date"
               value={payment.payment_date || ''}
@@ -44,12 +47,12 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Notes (Optional)">
+          <FormField label={t('supervision.edit_payment.notes')}>
             <Textarea
               value={payment.notes || ''}
               onChange={(e) => onChange({ ...payment, notes: e.target.value })}
               rows={2}
-              placeholder="Add any notes about this payment"
+              placeholder={t('supervision.edit_payment.notes_placeholder')}
             />
           </FormField>
         </div>
@@ -57,10 +60,10 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={onSubmit} disabled={payment.amount <= 0}>
-          Save Changes
+          {t('common.save_changes')}
         </Button>
       </Modal.Footer>
     </Modal>

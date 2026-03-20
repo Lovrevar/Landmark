@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
@@ -26,6 +27,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
   addCredit,
   resetCreditForm
 }) => {
+  const { t } = useTranslation()
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -55,11 +57,11 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
 
   const handleAddCredit = () => {
     const errors: Record<string, string> = {}
-    if (!newCredit.bank_id) errors.bank_id = 'Bank is required'
-    if (!newCredit.credit_name.trim()) errors.credit_name = 'Credit name is required'
-    if (!newCredit.amount) errors.amount = 'Amount is required'
-    if (!newCredit.start_date) errors.start_date = 'Start date is required'
-    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) errors.disbursed_to_bank_account_id = 'Bank account is required'
+    if (!newCredit.bank_id) errors.bank_id = t('banks.credit_form.bank_required')
+    if (!newCredit.credit_name.trim()) errors.credit_name = t('banks.credit_form.credit_name_required')
+    if (!newCredit.amount) errors.amount = t('banks.credit_form.amount_required')
+    if (!newCredit.start_date) errors.start_date = t('banks.credit_form.start_date_required')
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) errors.disbursed_to_bank_account_id = t('banks.credit_form.bank_account_required')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     addCredit()
@@ -70,42 +72,42 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
   return (
     <Modal show={showCreditForm} onClose={resetCreditForm} size="md">
       <Modal.Header
-        title={editingCredit ? 'Edit Credit Facility' : 'Add New Credit Facility'}
+        title={editingCredit ? t('banks.credit_form.title_edit') : t('banks.credit_form.title_add')}
         onClose={resetCreditForm}
       />
 
       <Modal.Body>
         {calculation && (
           <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-3">Payment Schedule Preview</h4>
+            <h4 className="font-semibold text-blue-900 mb-3">{t('banks.credit_form.schedule_preview')}</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-blue-700 mb-1">Principal Payment</p>
+                <p className="text-sm text-blue-700 mb-1">{t('banks.credit_form.principal_payment')}</p>
                 <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs text-blue-600">Every {calculation.principalFrequency}</p>
-                <p className="text-xs text-blue-600 mt-1">{calculation.totalPrincipalPayments} total payments</p>
+                <p className="text-xs text-blue-600">{t('banks.credit_form.every_freq', { frequency: calculation.principalFrequency })}</p>
+                <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalPrincipalPayments })}</p>
               </div>
               <div>
-                <p className="text-sm text-green-700 mb-1">Interest Payment</p>
+                <p className="text-sm text-green-700 mb-1">{t('banks.credit_form.interest_payment')}</p>
                 <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs text-green-600">Every {calculation.interestFrequency}</p>
-                <p className="text-xs text-green-600 mt-1">{calculation.totalInterestPayments} total payments</p>
+                <p className="text-xs text-green-600">{t('banks.credit_form.every_freq', { frequency: calculation.interestFrequency })}</p>
+                <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-blue-200">
-              <p className="text-sm text-blue-700">Payments start: <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
-              <p className="text-xs text-blue-600 mt-1">After {newCredit.grace_period} month grace period</p>
+              <p className="text-sm text-blue-700">{t('banks.credit_form.payments_start_label')}<span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+              <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.grace_period_after', { months: newCredit.grace_period })}</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Bank" required error={fieldErrors.bank_id}>
+          <FormField label={t('banks.credit_form.bank_label')} required error={fieldErrors.bank_id}>
             <Select
               value={newCredit.bank_id}
               onChange={(e) => setNewCredit({ ...newCredit, bank_id: e.target.value })}
             >
-              <option value="">Select bank</option>
+              <option value="">{t('banks.credit_form.select_bank')}</option>
               {banks.map(bank => (
                 <option key={bank.id} value={bank.id}>
                   {bank.name}
@@ -114,7 +116,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Credit Name" required error={fieldErrors.credit_name}>
+          <FormField label={t('banks.credit_form.credit_name_label')} required error={fieldErrors.credit_name}>
             <Input
               type="text"
               value={newCredit.credit_name}
@@ -123,12 +125,12 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Company">
+          <FormField label={t('banks.credit_form.company_label')}>
             <Select
               value={newCredit.company_id}
               onChange={(e) => setNewCredit({ ...newCredit, company_id: e.target.value })}
             >
-              <option value="">Select company</option>
+              <option value="">{t('banks.credit_form.select_company')}</option>
               {companies.map(company => (
                 <option key={company.id} value={company.id}>
                   {company.name}
@@ -137,20 +139,20 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             </Select>
           </FormField>
 
-          <FormField label="Loan Type">
+          <FormField label={t('banks.credit_form.loan_type_label')}>
             <Select
               value={newCredit.credit_type}
               onChange={(e) => setNewCredit({ ...newCredit, credit_type: e.target.value as NewCreditForm['credit_type'] })}
             >
-              <option value="construction_loan_senior">Construction Loan</option>
-              <option value="term_loan_senior">Term Loan</option>
-              <option value="line_of_credit_senior">Line of Credit - Senior</option>
-              <option value="line_of_credit_junior">Line of Credit - Junior</option>
-              <option value="bridge_loan_senior">Bridge Loan</option>
+              <option value="construction_loan_senior">{t('banks.credit_form.construction_loan')}</option>
+              <option value="term_loan_senior">{t('banks.credit_form.term_loan')}</option>
+              <option value="line_of_credit_senior">{t('banks.credit_form.loc_senior')}</option>
+              <option value="line_of_credit_junior">{t('banks.credit_form.loc_junior')}</option>
+              <option value="bridge_loan_senior">{t('banks.credit_form.bridge_loan')}</option>
             </Select>
           </FormField>
 
-          <FormField label="Amount (€)" required error={fieldErrors.amount}>
+          <FormField label={t('banks.credit_form.amount_label')} required error={fieldErrors.amount}>
             <Input
               type="number"
               value={newCredit.amount}
@@ -158,7 +160,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Interest Rate (%)">
+          <FormField label={t('banks.credit_form.interest_rate_label')}>
             <Input
               type="number"
               step="0.1"
@@ -167,7 +169,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Grace Period (months)">
+          <FormField label={t('banks.credit_form.grace_period_label')}>
             <Input
               type="number"
               value={newCredit.grace_period}
@@ -176,31 +178,31 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Principal Repayment Type" helperText="How often to repay principal">
+          <FormField label={t('banks.credit_form.principal_repayment_label')} helperText={t('banks.credit_form.principal_repayment_helper')}>
             <Select
               value={newCredit.principal_repayment_type}
               onChange={(e) => setNewCredit({ ...newCredit, principal_repayment_type: e.target.value as NewCreditForm['principal_repayment_type'] })}
             >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="biyearly">Biyearly</option>
-              <option value="yearly">Yearly</option>
+              <option value="monthly">{t('banks.credit_form.monthly')}</option>
+              <option value="quarterly">{t('banks.credit_form.quarterly')}</option>
+              <option value="biyearly">{t('banks.credit_form.biyearly')}</option>
+              <option value="yearly">{t('banks.credit_form.yearly')}</option>
             </Select>
           </FormField>
 
-          <FormField label="Interest Repayment Type" helperText="How often to pay interest">
+          <FormField label={t('banks.credit_form.interest_repayment_label')} helperText={t('banks.credit_form.interest_repayment_helper')}>
             <Select
               value={newCredit.interest_repayment_type}
               onChange={(e) => setNewCredit({ ...newCredit, interest_repayment_type: e.target.value as NewCreditForm['interest_repayment_type'] })}
             >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="biyearly">Biyearly</option>
-              <option value="yearly">Yearly</option>
+              <option value="monthly">{t('banks.credit_form.monthly')}</option>
+              <option value="quarterly">{t('banks.credit_form.quarterly')}</option>
+              <option value="biyearly">{t('banks.credit_form.biyearly')}</option>
+              <option value="yearly">{t('banks.credit_form.yearly')}</option>
             </Select>
           </FormField>
 
-          <FormField label="Start Date" required error={fieldErrors.start_date}>
+          <FormField label={t('banks.credit_form.start_date_label')} required error={fieldErrors.start_date}>
             <DateInput
               value={newCredit.start_date}
               onChange={(value) => setNewCredit({ ...newCredit, start_date: value })}
@@ -208,7 +210,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Maturity Date">
+          <FormField label={t('banks.credit_form.maturity_date_label')}>
             <DateInput
               value={newCredit.maturity_date}
               onChange={(value) => setNewCredit({ ...newCredit, maturity_date: value })}
@@ -216,7 +218,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Usage Expiration Date">
+          <FormField label={t('banks.credit_form.usage_expiration_label')}>
             <DateInput
               value={newCredit.usage_expiration_date || ''}
               onChange={(value) => setNewCredit({ ...newCredit, usage_expiration_date: value })}
@@ -224,12 +226,12 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Purpose" className="md:col-span-2">
+          <FormField label={t('banks.credit_form.purpose_label')} className="md:col-span-2">
             <Textarea
               value={newCredit.purpose}
               onChange={(e) => setNewCredit({ ...newCredit, purpose: e.target.value })}
               rows={3}
-              placeholder="What is this credit facility for?"
+              placeholder={t('banks.credit_form.purpose_placeholder')}
             />
           </FormField>
         </div>
@@ -251,9 +253,9 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <div className="flex-1">
-                <span className="font-medium text-gray-900">Isplata na račun</span>
+                <span className="font-medium text-gray-900">{t('banks.credit_form.disbursed_to_account_label')}</span>
                 <p className="text-sm text-gray-600 mt-1">
-                  Kada je označeno, cijeli iznos kredita će automatski biti isplaćen na odabrani bankovni račun firme.
+                  {t('banks.credit_form.disbursed_to_account_hint')}
                 </p>
               </div>
             </label>
@@ -262,26 +264,26 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               <div className="mt-4">
                 {!newCredit.company_id ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">Molimo prvo odaberite firmu da biste vidjeli dostupne bankovne račune.</p>
+                    <p className="text-sm text-yellow-800">{t('banks.credit_form.select_company_first')}</p>
                   </div>
                 ) : loadingAccounts ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-gray-600">Učitavanje računa...</p>
+                    <p className="text-sm text-gray-600">{t('banks.credit_form.loading_accounts')}</p>
                   </div>
                 ) : companyBankAccounts.length === 0 ? (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-800">Odabrana firma nema bankovnih računa. Molimo dodajte račun u "Moje firme" prvo.</p>
+                    <p className="text-sm text-red-800">{t('banks.credit_form.no_bank_accounts')}</p>
                   </div>
                 ) : (
-                  <FormField label="Bankovni račun" required error={fieldErrors.disbursed_to_bank_account_id}>
+                  <FormField label={t('banks.credit_form.bank_account_label')} required error={fieldErrors.disbursed_to_bank_account_id}>
                     <Select
                       value={newCredit.disbursed_to_bank_account_id || ''}
                       onChange={(e) => setNewCredit({ ...newCredit, disbursed_to_bank_account_id: e.target.value })}
                     >
-                      <option value="">Odaberite račun</option>
+                      <option value="">{t('banks.credit_form.select_account')}</option>
                       {companyBankAccounts.map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.bank_name || 'Nepoznata banka'} {account.account_number ? `- ${account.account_number}` : ''} (Saldo: €{Number(account.current_balance).toLocaleString('hr-HR')})
+                          {account.bank_name || t('banks.credit_form.unknown_bank')} {account.account_number ? `- ${account.account_number}` : ''} ({t('banks.credit_form.balance_label')}€{Number(account.current_balance).toLocaleString('hr-HR')})
                         </option>
                       ))}
                     </Select>
@@ -295,10 +297,10 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={resetCreditForm}>
-          Cancel
+          {t('banks.credit_form.cancel_button')}
         </Button>
         <Button variant="success" onClick={handleAddCredit}>
-          Add Credit
+          {t('banks.credit_form.add_button')}
         </Button>
       </Modal.Footer>
     </Modal>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
 import { useLazySection } from './hooks/useLazySection'
@@ -35,6 +36,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
   icon: Icon,
   showAllocation = false,
 }) => {
+  const { t } = useTranslation()
   const colors = COLOR_CLASSES[accentColor]
 
   const fetcher = () => fetchCreditInvoices(creditId, invoiceType, showAllocation)
@@ -79,7 +81,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
         <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
           {loading ? (
             <div className="p-4">
-              <LoadingSpinner message="Učitavanje..." />
+              <LoadingSpinner message={t('funding.credit_invoice_section.loading')} />
             </div>
           ) : invoices.length === 0 ? (
             <p className="text-sm text-gray-500 px-4 py-3">
@@ -91,33 +93,33 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                 <thead>
                   <tr className={`${colors.header} border-b border-gray-200`}>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Broj računa
+                      {t('funding.credit_invoice_section.invoice_number_col')}
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Firma
+                      {t('funding.credit_invoice_section.company_col')}
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Investitor
+                      {t('funding.credit_invoice_section.investor_col')}
                     </th>
                     {showAllocation && (
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Namjena
+                        {t('funding.credit_invoice_section.purpose_col')}
                       </th>
                     )}
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Datum izdavanja
+                      {t('funding.credit_invoice_section.issue_date_col')}
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Datum plaćanja
+                      {t('funding.credit_invoice_section.payment_date_col')}
                     </th>
                     <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       {paymentAmountLabel}
                     </th>
                     <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Ukupni iznos
+                      {t('funding.credit_invoice_section.total_amount_col')}
                     </th>
                     <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
+                      {t('funding.credit_invoice_section.status_col')}
                     </th>
                   </tr>
                 </thead>
@@ -174,7 +176,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                 <tfoot>
                   <tr className={`${colors.footer} border-t border-gray-200`}>
                     <td colSpan={tfootColspan} className="px-4 py-2.5 text-sm font-semibold text-gray-700">
-                      Ukupno
+                      {t('funding.credit_invoice_section.total_row')}
                     </td>
                     <td className={`px-4 py-2.5 text-right font-bold ${colors.bold}`}>
                       €{totalPayment.toLocaleString('hr-HR')}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
 import { Modal, FormField, Input, Select, Button } from '../../../ui'
 
@@ -17,6 +18,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   onSubmit,
   editMode = false
 }) => {
+  const { t } = useTranslation()
   const [phaseCount, setPhaseCount] = useState(4)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
 
@@ -67,7 +69,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       const newPhases = [...phases]
       for (let i = currentCount; i < count; i++) {
         newPhases.push({
-          phase_name: `Phase ${i + 1}`,
+          phase_name: `${t('common.phase')} ${i + 1}`,
           budget_allocated: 0,
           start_date: '',
           end_date: ''
@@ -87,19 +89,19 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   return (
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
-        title={editMode ? 'Edit Project Phases' : 'Setup Project Phases'}
-        subtitle={`Distribute €${project.budget.toLocaleString('hr-HR')} budget across construction phases`}
+        title={editMode ? t('supervision.site_management.phase_setup.title_edit') : t('supervision.site_management.phase_setup.title_create')}
+        subtitle={`${t('supervision.site_management.phase_setup.distribute')} €${project.budget.toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.budget_across')}`}
         onClose={onClose}
       />
 
       <Modal.Body>
-        <FormField label="Number of Phases">
+        <FormField label={t('supervision.site_management.phase_setup.num_phases')}>
           <Select
             value={phaseCount}
             onChange={(e) => updatePhaseCount(parseInt(e.target.value))}
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(count => (
-              <option key={count} value={count}>{count} Phase</option>
+              <option key={count} value={count}>{count} {t('common.phase')}</option>
             ))}
           </Select>
         </FormField>
@@ -107,9 +109,9 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         <div className="space-y-4 mt-6">
           {phases.map((phase, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Phase {index + 1}</h4>
+              <h4 className="font-medium text-gray-900 mb-3">{t('common.phase')} {index + 1}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Phase Name">
+                <FormField label={t('supervision.site_management.phase_setup.phase_name')}>
                   <Input
                     type="text"
                     value={phase.phase_name}
@@ -118,10 +120,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                       newPhases[index].phase_name = e.target.value
                       setPhases(newPhases)
                     }}
-                    placeholder={`Phase ${index + 1} name`}
+                    placeholder={`${t('common.phase')} ${index + 1} ${t('common.name').toLowerCase()}`}
                   />
                 </FormField>
-                <FormField label="Budget Allocated (€)">
+                <FormField label={t('supervision.site_management.phase_setup.budget_allocated')}>
                   <Input
                     type="number"
                     value={phase.budget_allocated}
@@ -133,7 +135,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                     placeholder="0"
                   />
                 </FormField>
-                <FormField label="Start Date">
+                <FormField label={t('supervision.site_management.phase_setup.start_date')}>
                   <Input
                     type="date"
                     value={phase.start_date}
@@ -144,7 +146,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                     }}
                   />
                 </FormField>
-                <FormField label="End Date">
+                <FormField label={t('supervision.site_management.phase_setup.end_date')}>
                   <Input
                     type="date"
                     value={phase.end_date}
@@ -161,14 +163,14 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         </div>
 
         <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-3">Budget Summary</h4>
+          <h4 className="font-medium text-gray-900 mb-3">{t('supervision.site_management.phase_setup.budget_summary')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Total Project Budget</p>
+              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.total_budget')}</p>
               <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Allocated</p>
+              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.total_allocated')}</p>
               <p className={`text-lg font-bold ${
                 totalAllocated === project.budget
                   ? 'text-green-600'
@@ -180,7 +182,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Difference</p>
+              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.difference')}</p>
               <p className={`text-lg font-bold ${
                 difference === 0
                   ? 'text-green-600'
@@ -189,10 +191,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                   : 'text-blue-600'
               }`}>
                 {difference === 0
-                  ? 'Matched'
+                  ? t('supervision.site_management.phase_setup.matched')
                   : difference > 0
-                  ? `€${difference.toLocaleString('hr-HR')} under`
-                  : `€${Math.abs(difference).toLocaleString('hr-HR')} over`
+                  ? `€${difference.toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.under')}`
+                  : `€${Math.abs(difference).toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.over')}`
                 }
               </p>
             </div>
@@ -200,7 +202,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           {difference !== 0 && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">Note:</span> Phase budgets don't match the project budget. You can proceed with this allocation, but be aware of the difference when managing costs.
+                {t('supervision.site_management.phase_setup.mismatch_note')}
               </p>
             </div>
           )}
@@ -209,10 +211,10 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={() => onSubmit(phases)}>
-          {editMode ? 'Update Phases' : 'Create Phases'}
+          {editMode ? t('supervision.site_management.phase_setup.update') : t('supervision.site_management.phase_setup.create')}
         </Button>
       </Modal.Footer>
     </Modal>

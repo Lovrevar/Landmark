@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2 } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../ui'
 import { format, parseISO, isPast } from 'date-fns'
@@ -20,6 +21,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
   onToggleComplete,
   editable = true
 }) => {
+  const { t } = useTranslation()
   const sortedMilestones = useMemo(() => [...milestones].sort((a, b) => {
     if (!a.due_date) return 1
     if (!b.due_date) return -1
@@ -30,8 +32,8 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
     return (
       <EmptyState
         icon={Calendar}
-        title="No milestones yet"
-        description="Add milestones to track project progress"
+        title={t('general_projects.milestones_empty_title')}
+        description={t('general_projects.milestones_empty_desc')}
       />
     )
   }
@@ -72,7 +74,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                         {milestone.due_date && (
                           <div className="flex items-center text-sm text-gray-600 mt-1">
                             <Calendar className="w-4 h-4 mr-1" />
-                            <span>Due: {format(parseISO(milestone.due_date), 'MMM dd, yyyy')}</span>
+                            <span>{t('general_projects.milestone_due')}: {format(parseISO(milestone.due_date), 'MMM dd, yyyy')}</span>
                           </div>
                         )}
                       </div>
@@ -84,7 +86,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                             variant="ghost"
                             icon={milestone.completed ? Circle : CheckCircle}
                             onClick={() => onToggleComplete?.(milestone.id, milestone.completed)}
-                            title={milestone.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                            title={milestone.completed ? t('general_projects.milestone_mark_incomplete') : t('general_projects.milestone_mark_complete')}
                             className={milestone.completed ? 'text-yellow-600 hover:bg-yellow-200' : 'text-green-600 hover:bg-green-200'}
                           />
                           <Button
@@ -92,7 +94,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                             variant="ghost"
                             icon={Edit2}
                             onClick={() => onEdit?.(milestone)}
-                            title="Edit milestone"
+                            title={t('general_projects.milestone_edit')}
                             className="text-blue-600 hover:bg-blue-200"
                           />
                           <Button
@@ -100,7 +102,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                             variant="ghost"
                             icon={Trash2}
                             onClick={() => onDelete?.(milestone.id)}
-                            title="Delete milestone"
+                            title={t('general_projects.milestone_delete')}
                             className="text-red-600 hover:bg-red-200"
                           />
                         </div>
@@ -120,24 +122,24 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="text-gray-700">
-                <span className="font-semibold">{milestones.filter(m => m.completed).length}</span> Completed
+                <span className="font-semibold">{milestones.filter(m => m.completed).length}</span> {t('status.completed')}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="w-5 h-5 text-blue-600" />
               <span className="text-gray-700">
-                <span className="font-semibold">{milestones.filter(m => !m.completed && (!m.due_date || !isPast(parseISO(m.due_date)))).length}</span> In Progress
+                <span className="font-semibold">{milestones.filter(m => !m.completed && (!m.due_date || !isPast(parseISO(m.due_date)))).length}</span> {t('status.in_progress')}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               <span className="text-gray-700">
-                <span className="font-semibold">{milestones.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length}</span> Overdue
+                <span className="font-semibold">{milestones.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length}</span> {t('status.overdue')}
               </span>
             </div>
           </div>
           <div className="text-gray-600">
-            Progress: <span className="font-semibold">{Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)}%</span>
+            {t('general_projects.milestone_progress')}: <span className="font-semibold">{Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)}%</span>
           </div>
         </div>
       </div>

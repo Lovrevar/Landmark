@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import {
   fetchRetailSupplierTypes,
@@ -29,6 +30,7 @@ interface RetailSupplierModalProps {
 }
 
 const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: '',
     supplier_type_id: '',
@@ -99,8 +101,8 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
     setError(null)
 
     const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
-    if (formData.project_id && !formData.phase_id) errors.phase_id = 'Molimo odaberite fazu za odabrani projekt'
+    if (!formData.name.trim()) errors.name = t('suppliers.form.name_required')
+    if (formData.project_id && !formData.phase_id) errors.phase_id = t('suppliers.form.phase_required_for_project')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -122,9 +124,9 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
     } catch (err: unknown) {
       console.error('Error saving retail supplier:', err)
       if ((err as { code?: string })?.code === '23505') {
-        setError('Dobavljac s tim podacima vec postoji. Pokušajte ponovo.')
+        setError(t('suppliers.form.duplicate_error'))
       } else {
-        setError((err as { message?: string })?.message || 'Greška prilikom spremanja dobavljača')
+        setError((err as { message?: string })?.message || t('suppliers.form.save_error'))
       }
     } finally {
       setSubmitting(false)
@@ -133,7 +135,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
   return (
     <Modal show={true} onClose={onClose} size="sm">
-      <Modal.Header title="Novi Retail Dobavljač" onClose={onClose} />
+      <Modal.Header title={t('suppliers.add_retail')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
@@ -141,7 +143,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             <Alert variant="error">{error}</Alert>
           )}
 
-          <FormField label="Naziv dobavljača" required error={fieldErrors.name}>
+          <FormField label={t('suppliers.form.name')} required error={fieldErrors.name}>
             <Input
               type="text"
               value={formData.name}
@@ -150,7 +152,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             />
           </FormField>
 
-          <FormField label="Tip dobavljača" required>
+          <FormField label={t('suppliers.form.type')} required>
             <Select
               value={formData.supplier_type_id}
               onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
@@ -161,17 +163,17 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             </Select>
           </FormField>
 
-          <FormField label="Kontakt osoba">
+          <FormField label={t('suppliers.form.contact_person_label')}>
             <Input
               type="text"
               value={formData.contact_person}
               onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-              placeholder="Ime i prezime"
+              placeholder={t('suppliers.form.contact_person_placeholder')}
             />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Telefon">
+            <FormField label={t('suppliers.form.phone')}>
               <Input
                 type="tel"
                 value={formData.contact_phone}
@@ -179,7 +181,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
                 placeholder="+385 99 ..."
               />
             </FormField>
-            <FormField label="Email">
+            <FormField label={t('suppliers.form.email')}>
               <Input
                 type="email"
                 value={formData.contact_email}
@@ -190,16 +192,16 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
           </div>
 
           <div className="border-t border-gray-200 pt-4 mt-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Poveži sa retail projektom (opcionalno)</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('suppliers.form.link_retail_project_optional')}</h3>
 
             <div className="space-y-4">
-              <FormField label="Retail Projekt">
+              <FormField label={t('suppliers.form.retail_project_label')}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
                   disabled={loadingProjects}
                 >
-                  <option value="">Odaberite retail projekt</option>
+                  <option value="">{t('suppliers.form.select_retail_project')}</option>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
@@ -209,12 +211,12 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
               </FormField>
 
               {formData.project_id && (
-                <FormField label="Faza" required error={fieldErrors.phase_id}>
+                <FormField label={t('suppliers.form.phase_label')} required error={fieldErrors.phase_id}>
                   <Select
                     value={formData.phase_id}
                     onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
                   >
-                    <option value="">Odaberite fazu</option>
+                    <option value="">{t('suppliers.form.select_phase')}</option>
                     {phases.map((phase) => (
                       <option key={phase.id} value={phase.id}>
                         {phase.phase_name} ({phase.phase_type})
@@ -228,15 +230,14 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
           <Alert variant="info">
             <p>
-              <strong>Napomena:</strong> Retail dobavljač će biti kreiran u retail sustavu.
+              <strong>{t('suppliers.form.note_title')}:</strong> {t('suppliers.form.retail_note_created')}
               {formData.project_id && formData.phase_id ? (
                 <span className="block mt-2">
-                  Dobavljač će biti automatski povezan s odabranim retail projektom i fazom.
-                  Možete ga vidjeti u "Retail Projekti" modulu.
+                  {t('suppliers.form.retail_note_linked')}
                 </span>
               ) : (
                 <span className="block mt-2">
-                  Možete naknadno povezati dobavljača s retail projektom u "Retail Projekti" modulu.
+                  {t('suppliers.form.retail_note_link_later')}
                 </span>
               )}
             </p>
@@ -250,14 +251,14 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             onClick={onClose}
             disabled={submitting}
           >
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             variant="primary"
             loading={submitting}
           >
-            {submitting ? 'Spremam...' : 'Dodaj retail dobavljača'}
+            {submitting ? t('suppliers.form.saving_label') : t('suppliers.form.add_retail_label')}
           </Button>
         </Modal.Footer>
       </Form>

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectInvestment } from '../../../../lib/supabase'
 import { format } from 'date-fns'
 import { WirePaymentModal } from './WirePaymentModal'
@@ -30,33 +31,34 @@ export const InvestorWirePaymentModal: React.FC<InvestorWirePaymentModalProps> =
   onNotesChange,
   onSubmit,
 }) => {
+  const { t } = useTranslation()
   if (!investment) return null
 
   const details = (
     <>
-      <h4 className="font-semibold text-blue-900 mb-2">Investment Details</h4>
+      <h4 className="font-semibold text-blue-900 mb-2">{t('funding.payments.investor_wire_modal.details_heading')}</h4>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-blue-700">Investor</p>
+          <p className="text-blue-700">{t('funding.payments.investor_wire_modal.investor_label')}</p>
           <p className="font-medium text-blue-900">{investorName}</p>
         </div>
         <div>
-          <p className="text-blue-700">Investment Type</p>
+          <p className="text-blue-700">{t('funding.payments.investor_wire_modal.investment_type_label')}</p>
           <p className="font-medium text-blue-900">
             {investment.investment_type.toUpperCase()}
           </p>
         </div>
         <div>
-          <p className="text-blue-700">Investment Amount</p>
+          <p className="text-blue-700">{t('funding.payments.investor_wire_modal.investment_amount_label')}</p>
           <p className="font-medium text-blue-900">{investment.amount.toLocaleString('hr-HR')}</p>
         </div>
         <div>
-          <p className="text-blue-700">Expected Return</p>
+          <p className="text-blue-700">{t('funding.payments.investor_wire_modal.expected_return_label')}</p>
           <p className="font-medium text-blue-900">{investment.expected_return}%</p>
         </div>
         {investment.maturity_date && (
           <div>
-            <p className="text-blue-700">Maturity Date</p>
+            <p className="text-blue-700">{t('funding.payments.investor_wire_modal.maturity_date_label')}</p>
             <p className="font-medium text-blue-900">
               {format(new Date(investment.maturity_date), 'MMM dd, yyyy')}
             </p>
@@ -70,7 +72,7 @@ export const InvestorWirePaymentModal: React.FC<InvestorWirePaymentModalProps> =
     <WirePaymentModal
       visible={visible}
       onClose={onClose}
-      title="Record Investor Payment"
+      title={t('funding.payments.investor_wire_modal.title')}
       details={details}
       amount={amount}
       paymentDate={paymentDate}

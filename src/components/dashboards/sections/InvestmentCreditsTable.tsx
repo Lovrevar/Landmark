@@ -5,6 +5,7 @@ import { format, differenceInDays } from 'date-fns'
 import { Button, Badge } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { formatEuro } from '../../../utils/formatters'
+import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../types/investment'
 
 interface Props {
@@ -13,14 +14,15 @@ interface Props {
 
 const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Active Investments & Expiration Dates</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.investment.active_investments_table')}</h2>
           <Button variant="primary" onClick={() => navigate('/funding-credits')}>
-            View All Credits
+            {t('dashboards.investment.view_all_credits')}
           </Button>
         </div>
       </div>
@@ -28,8 +30,8 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
         {bankCredits.length === 0 ? (
           <div className="text-center py-12">
             <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Investments Found</h3>
-            <p className="text-gray-600">No investments available.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('dashboards.investment.no_investments')}</h3>
+            <p className="text-gray-600">{t('dashboards.investment.no_investments_sub')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -55,35 +57,35 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                           {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`}
                         </h3>
                         {credit.project && <Badge variant="blue" size="sm">{credit.project.name}</Badge>}
-                        {maturityWarning && <Badge variant="orange" size="sm">Maturing Soon</Badge>}
-                        {usageWarning && <Badge variant="yellow" size="sm">Usage Expiring</Badge>}
+                        {maturityWarning && <Badge variant="orange" size="sm">{t('dashboards.investment.maturing_soon')}</Badge>}
+                        {usageWarning && <Badge variant="yellow" size="sm">{t('dashboards.investment.usage_expiring')}</Badge>}
                       </div>
                       <p className="text-gray-600">{credit.company?.name || 'Unknown Company'}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-gray-900">{formatEuro(Number(credit.amount))}</p>
-                      <p className="text-sm text-gray-600">Investment Amount</p>
+                      <p className="text-sm text-gray-600">{t('dashboards.investment.investment_amount')}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                    <StatCard label="Used" value={formatEuro(Number(credit.used_amount || 0))} color="blue" size="sm" />
-                    <StatCard label="Repaid" value={formatEuro(Number(credit.repaid_amount || 0))} color="teal" size="sm" />
+                    <StatCard label={t('dashboards.investment.used')} value={formatEuro(Number(credit.used_amount || 0))} color="blue" size="sm" />
+                    <StatCard label={t('dashboards.investment.repaid')} value={formatEuro(Number(credit.repaid_amount || 0))} color="teal" size="sm" />
                     <StatCard
-                      label="Available"
+                      label={t('dashboards.investment.available_investments')}
                       value={formatEuro(Number(credit.amount) - Number(credit.used_amount || 0))}
                       color="green"
                       size="sm"
                     />
-                    <StatCard label="Outstanding" value={formatEuro(Number(credit.outstanding_balance || 0))} color="red" size="sm" />
-                    <StatCard label="Interest Rate" value={`${Number(credit.interest_rate || 0).toFixed(2)}%`} color="orange" size="sm" />
+                    <StatCard label={t('dashboards.investment.outstanding')} value={formatEuro(Number(credit.outstanding_balance || 0))} color="red" size="sm" />
+                    <StatCard label={t('dashboards.investment.interest_rate')} value={`${Number(credit.interest_rate || 0).toFixed(2)}%`} color="orange" size="sm" />
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
                     <div>
                       <span className="text-gray-600 flex items-center space-x-1">
                         <Calendar className="w-3 h-3" />
-                        <span>Start Date:</span>
+                        <span>{t('dashboards.investment.start_date')}</span>
                       </span>
                       <p className="font-medium text-gray-900">{format(new Date(credit.start_date), 'MMM dd, yyyy')}</p>
                     </div>
@@ -91,7 +93,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                       <div>
                         <span className="text-gray-600 flex items-center space-x-1">
                           <Calendar className="w-3 h-3" />
-                          <span>Maturity Date:</span>
+                          <span>{t('dashboards.investment.maturity_date')}</span>
                         </span>
                         <p className={`font-medium ${maturityWarning ? 'text-orange-600' : 'text-gray-900'}`}>
                           {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
@@ -105,7 +107,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                       <div>
                         <span className="text-gray-600 flex items-center space-x-1">
                           <Clock className="w-3 h-3" />
-                          <span>Usage Expires:</span>
+                          <span>{t('dashboards.investment.usage_expires')}</span>
                         </span>
                         <p className={`font-medium ${usageWarning ? 'text-yellow-600' : 'text-gray-900'}`}>
                           {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
@@ -119,7 +121,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
 
                   <div>
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-600">Utilization</span>
+                      <span className="text-gray-600">{t('dashboards.investment.utilization')}</span>
                       <span className="font-semibold text-gray-900">{utilizationPercent.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { PageHeader, LoadingSpinner, Button, ConfirmDialog } from '../../ui'
 import { useBankData }   from './hooks/useBankData'
 import { useBankForm }   from './hooks/useBankForm'
@@ -14,6 +15,7 @@ import type { BankWithCredits } from './types'
 import type { BankCredit } from '../../../lib/supabase'
 
 const InvestorsManagement: React.FC = () => {
+  const { t } = useTranslation()
   const {
     banks, companies, loading, addBank, updateBank, deleteBank, fetchData,
     pendingDeleteId: pendingDeleteBankId,
@@ -35,18 +37,18 @@ const InvestorsManagement: React.FC = () => {
   const creditForm = useCreditForm(fetchData)
   const equityForm = useEquityForm(fetchData)
 
-  if (loading) return <LoadingSpinner message="Loading banks..." />
+  if (loading) return <LoadingSpinner message={t('funding.investors.loading')} />
 
   return (
     <div>
       <PageHeader
-        title="Investors"
-        description="Manage investor partnerships and investments"
+        title={t('funding.investors.title')}
+        description={t('funding.investors.description')}
         actions={
           <div className="flex space-x-3">
-            <Button icon={Plus} onClick={() => bankForm.setShowBankForm(true)}>Add Investor</Button>
-            <Button icon={Plus} variant="success" onClick={() => creditForm.setShowCreditForm(true)}>Add Loan</Button>
-            <Button icon={Plus} variant="primary" onClick={() => equityForm.setShowEquityForm(true)}>Add Equity</Button>
+            <Button icon={Plus} onClick={() => bankForm.setShowBankForm(true)}>{t('funding.investors.add_investor')}</Button>
+            <Button icon={Plus} variant="success" onClick={() => creditForm.setShowCreditForm(true)}>{t('funding.investors.add_loan')}</Button>
+            <Button icon={Plus} variant="primary" onClick={() => equityForm.setShowEquityForm(true)}>{t('funding.investors.add_equity')}</Button>
           </div>
         }
       />
@@ -108,10 +110,10 @@ const InvestorsManagement: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteBankId}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovu banku? Ovo će obrisati i sve vezane kredite."
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('funding.investors.confirm_delete_bank_title')}
+        message={t('funding.investors.confirm_delete_bank_message')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteBank}
         onCancel={cancelDeleteBank}
@@ -120,10 +122,10 @@ const InvestorsManagement: React.FC = () => {
 
       <ConfirmDialog
         show={!!creditForm.pendingDeleteId}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovu kreditnu liniju?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('funding.investors.confirm_delete_credit_title')}
+        message={t('funding.investors.confirm_delete_credit_message')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={creditForm.confirmDeleteCredit}
         onCancel={creditForm.cancelDeleteCredit}

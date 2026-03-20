@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Briefcase, FileText } from 'lucide-react'
 import { SupplierSummary } from '../types'
 import { Modal, Badge, Button, StatCard, StatGrid } from '../../../ui'
@@ -14,6 +15,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
   supplier,
   onClose
 }) => {
+  const { t } = useTranslation()
   if (!supplier) return null
 
   return (
@@ -44,22 +46,22 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
       <Modal.Body>
         <StatGrid columns={4}>
           <StatCard
-            label="Ukupno ugovora"
+            label={t('suppliers.stats.total_contracts')}
             value={supplier.total_contracts}
             color="gray"
           />
           <StatCard
-            label="Vrijednost"
+            label={t('suppliers.details.value')}
             value={`€${supplier.total_contract_value.toLocaleString('hr-HR')}`}
             color="gray"
           />
           <StatCard
-            label="Plaćeno"
+            label={t('suppliers.details.paid')}
             value={`€${supplier.total_paid.toLocaleString('hr-HR')}`}
             color="green"
           />
           <StatCard
-            label="Preostalo"
+            label={t('suppliers.details.remaining')}
             value={`€${(supplier.total_contract_value - supplier.total_paid).toLocaleString('hr-HR')}`}
             color="yellow"
           />
@@ -68,10 +70,10 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
             <Briefcase className="w-5 h-5 mr-2" />
-            Ugovori ({supplier.contracts.length})
+            {t('suppliers.details.contracts_heading', { count: supplier.contracts.length })}
           </h3>
           {supplier.contracts.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Nema ugovora</p>
+            <p className="text-gray-500 text-center py-4">{t('suppliers.details.no_contracts')}</p>
           ) : (
             <div className="space-y-3">
               {supplier.contracts.map((contract) => (
@@ -92,7 +94,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                     <div>
                       <p className="text-xs text-gray-500">
-                        {contract.has_contract === false ? 'Vrijednost (računi)' : 'Ugovor'}
+                        {contract.has_contract === false ? t('suppliers.details.invoice_value') : t('suppliers.details.contract_value')}
                       </p>
                       <p className="text-sm font-medium">
                         €{(contract.has_contract === false
@@ -102,11 +104,11 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Plaćeno</p>
+                      <p className="text-xs text-gray-500">{t('suppliers.details.paid')}</p>
                       <p className="text-sm font-medium text-green-600">€{(contract.actual_paid || 0).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Preostalo</p>
+                      <p className="text-xs text-gray-500">{t('suppliers.details.remaining')}</p>
                       <p className="text-sm font-medium text-orange-600">
                         €{((contract.has_contract === false
                           ? (contract.total_invoiced || 0)
@@ -124,10 +126,10 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
             <FileText className="w-5 h-5 mr-2" />
-            Računi ({supplier.invoices.length})
+            {t('suppliers.details.invoices_heading', { count: supplier.invoices.length })}
           </h3>
           {supplier.invoices.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Nema računa</p>
+            <p className="text-gray-500 text-center py-4">{t('suppliers.details.no_invoices')}</p>
           ) : (
             <div className="space-y-3">
               {supplier.invoices.map((invoice) => (
@@ -145,21 +147,21 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       }
                       size="sm"
                     >
-                      {invoice.status === 'PAID' ? 'Plaćeno' :
-                       invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                      {invoice.status === 'PAID' ? t('common.paid') :
+                       invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
                     <div>
-                      <p className="text-xs text-gray-500">Ukupno (sa PDV)</p>
+                      <p className="text-xs text-gray-500">{t('suppliers.details.total_with_vat')}</p>
                       <p className="text-sm font-medium">€{parseFloat((invoice.total_amount || 0).toString()).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Plaćeno</p>
+                      <p className="text-xs text-gray-500">{t('suppliers.details.paid')}</p>
                       <p className="text-sm font-medium text-green-600">€{(invoice.actual_paid || 0).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Preostalo</p>
+                      <p className="text-xs text-gray-500">{t('suppliers.details.remaining')}</p>
                       <p className="text-sm font-medium text-orange-600">
                         €{Math.max(0, parseFloat((invoice.total_amount || 0).toString()) - (invoice.actual_paid || 0)).toLocaleString('hr-HR')}
                       </p>
@@ -178,7 +180,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
           onClick={onClose}
           className="bg-gray-600 text-white hover:bg-gray-700 hover:text-white"
         >
-          Zatvori
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

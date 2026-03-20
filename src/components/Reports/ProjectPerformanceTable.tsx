@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Table, Badge } from '../ui'
 import type { ProjectReportData } from './retailReportTypes'
 
@@ -11,6 +12,7 @@ interface Props {
 type SortKey = 'name' | 'land_cost' | 'total_costs' | 'total_revenue' | 'profit' | 'roi'
 
 export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurrency }) => {
+  const { t } = useTranslation()
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortAsc, setSortAsc] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -71,19 +73,19 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-5 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Pregled projekata</h3>
-        <p className="text-sm text-gray-500 mt-1">Financijski pregled po projektu</p>
+        <h3 className="text-lg font-semibold text-gray-900">{t('reports.project_performance.title')}</h3>
+        <p className="text-sm text-gray-500 mt-1">{t('reports.project_performance.subtitle')}</p>
       </div>
 
       <Table className="rounded-none shadow-none border-0">
         <Table.Head>
           <Table.Tr hoverable={false}>
-            <SortHeader label="Projekt" field="name" />
-            <Table.Th className="font-semibold text-gray-600">Status</Table.Th>
-            <SortHeader label="Zemljiste" field="land_cost" />
-            <SortHeader label="Troskovi" field="total_costs" />
-            <SortHeader label="Prihod" field="total_revenue" />
-            <SortHeader label="Profit" field="profit" />
+            <SortHeader label={t('common.project')} field="name" />
+            <Table.Th className="font-semibold text-gray-600">{t('common.status')}</Table.Th>
+            <SortHeader label={t('reports.project_performance.land')} field="land_cost" />
+            <SortHeader label={t('reports.project_performance.costs')} field="total_costs" />
+            <SortHeader label={t('reports.project_performance.revenue')} field="total_revenue" />
+            <SortHeader label={t('reports.project_performance.profit')} field="profit" />
             <SortHeader label="ROI" field="roi" />
             <Table.Th className="w-10">{''}</Table.Th>
           </Table.Tr>
@@ -138,7 +140,7 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
         </Table.Body>
         <tfoot className="bg-gray-100 border-t-2 border-gray-300">
           <tr className="font-semibold text-gray-900">
-            <td className="px-4 py-3">Ukupno ({projects.length})</td>
+            <td className="px-4 py-3">{t('common.total')} ({projects.length})</td>
             <td className="px-4 py-3"></td>
             <td className="px-4 py-3 text-sm">{formatCurrency(totals.land_cost)}</td>
             <td className="px-4 py-3 text-sm">{formatCurrency(totals.costs)}</td>
@@ -165,16 +167,17 @@ function ProjectExpandedDetail({ project, formatCurrency }: {
   project: ProjectReportData
   formatCurrency: (n: number) => string
 }) {
+  const { t } = useTranslation()
   const phases = [
-    { label: 'Razvoj', data: project.development, color: 'blue' },
-    { label: 'Gradnja', data: project.construction, color: 'amber' },
-    { label: 'Prodaja', data: project.sales, color: 'green' }
+    { label: t('reports.project_performance.phase_development'), data: project.development, color: 'blue' },
+    { label: t('reports.project_performance.phase_construction'), data: project.construction, color: 'amber' },
+    { label: t('reports.project_performance.phase_sales'), data: project.sales, color: 'green' }
   ]
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="bg-white rounded-lg p-4 border border-gray-200">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Zemljiste</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{t('reports.project_performance.land')}</p>
         <p className="text-lg font-bold text-gray-900">{formatCurrency(project.land_cost)}</p>
         <p className="text-xs text-gray-500 mt-1">{project.total_area_m2.toLocaleString('hr-HR')} m2</p>
       </div>
@@ -183,24 +186,24 @@ function ProjectExpandedDetail({ project, formatCurrency }: {
           <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{label}</p>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Budz.:</span>
+              <span className="text-gray-500">{t('reports.project_performance.budget_abbr')}:</span>
               <span className="font-medium">{formatCurrency(data.budget_allocated)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Ugov.:</span>
+              <span className="text-gray-500">{t('reports.project_performance.contracted_abbr')}:</span>
               <span className="font-medium">{formatCurrency(data.contract_cost)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Plac.:</span>
+              <span className="text-gray-500">{t('reports.project_performance.paid_abbr')}:</span>
               <span className="font-medium text-teal-600">{formatCurrency(data.budget_realized)}</span>
             </div>
             {data.unpaid > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-500">Neplac.:</span>
+                <span className="text-gray-500">{t('reports.project_performance.unpaid_abbr')}:</span>
                 <span className="font-medium text-orange-600">{formatCurrency(data.unpaid)}</span>
               </div>
             )}
-            <div className="text-xs text-gray-400 pt-1">{data.contracts_count} ugovora</div>
+            <div className="text-xs text-gray-400 pt-1">{t('reports.project_performance.contracts_count', { count: data.contracts_count })}</div>
           </div>
         </div>
       ))}

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, Button, Input, FormField, Alert, Form } from '../../../ui'
 import { OfficeSupplier, OfficeSupplierFormData } from '../types'
 
@@ -19,26 +20,28 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
   handleCloseModal,
   handleSubmit
 }) => {
+  const { t } = useTranslation()
+
   return (
     <Modal show={showModal} onClose={handleCloseModal} size="md">
       <Modal.Header
-        title={editingSupplier ? 'Uredi office dobavljača' : 'Novi office dobavljač'}
+        title={editingSupplier ? t('office_suppliers.form.title_edit') : t('office_suppliers.form.title_add')}
         onClose={handleCloseModal}
       />
 
       <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
-          <FormField label="Naziv dobavljača" required>
+          <FormField label={t('office_suppliers.form.name_label')} required>
             <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="npr. HR Servis d.o.o."
+              placeholder={t('office_suppliers.form.name_placeholder')}
             />
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Kontakt (telefon)">
+            <FormField label={t('office_suppliers.form.contact_label')}>
               <Input
                 type="text"
                 value={formData.contact}
@@ -47,7 +50,7 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="Email">
+            <FormField label={t('office_suppliers.form.email_label')}>
               <Input
                 type="email"
                 value={formData.email}
@@ -57,17 +60,17 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
             </FormField>
           </div>
 
-          <FormField label="Adresa">
+          <FormField label={t('office_suppliers.form.address_label')}>
             <Input
               type="text"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Ulica 123, Zagreb"
+              placeholder={t('office_suppliers.form.address_placeholder')}
             />
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="OIB">
+            <FormField label={t('office_suppliers.form.oib_label')}>
               <Input
                 type="text"
                 value={formData.tax_id}
@@ -76,7 +79,7 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label="PDV ID">
+            <FormField label={t('office_suppliers.form.vat_label')}>
               <Input
                 type="text"
                 value={formData.vat_id}
@@ -86,18 +89,17 @@ const OfficeSupplierFormModal: React.FC<OfficeSupplierFormModalProps> = ({
             </FormField>
           </div>
 
-          <Alert variant="info" title="Napomena">
-            Office dobavljači se koriste za uredske troškove kao što su plaće,
-            lizinzi automobila, najam ureda, režije i slično. Ne prikazuju se u projektnim računima.
+          <Alert variant="info" title={t('office_suppliers.form.note_title')}>
+            {t('office_suppliers.form.note_text')}
           </Alert>
         </Modal.Body>
 
         <Modal.Footer>
           <Button variant="secondary" type="button" onClick={handleCloseModal}>
-            Odustani
+            {t('office_suppliers.form.cancel')}
           </Button>
           <Button type="submit">
-            {editingSupplier ? 'Spremi promjene' : 'Dodaj dobavljača'}
+            {editingSupplier ? t('office_suppliers.form.save_changes') : t('office_suppliers.form.add')}
           </Button>
         </Modal.Footer>
       </Form>

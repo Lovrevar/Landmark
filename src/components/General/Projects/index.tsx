@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FolderKanban, Plus } from 'lucide-react'
 import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
 import { fetchProjectsWithStats } from './services/projectService'
@@ -7,6 +8,7 @@ import ProjectCard from './ProjectCard'
 import ProjectFormModal from './forms/ProjectFormModal'
 
 const ProjectsManagement: React.FC = () => {
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,11 +53,11 @@ const ProjectsManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Projects"
-        description="Manage all your projects and milestones"
+        title={t('general_projects.title')}
+        description={t('general_projects.subtitle')}
         actions={
           <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
-            New Project
+            {t('general_projects.new_project')}
           </Button>
         }
       />
@@ -67,24 +69,24 @@ const ProjectsManagement: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Search projects..."
+            placeholder={t('general_projects.search')}
           />
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">All Status</option>
-            <option value="Planning">Planning</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="On Hold">On Hold</option>
+            <option value="all">{t('general_projects.all_statuses')}</option>
+            <option value="Planning">{t('status.planning')}</option>
+            <option value="In Progress">{t('status.in_progress')}</option>
+            <option value="Completed">{t('status.completed')}</option>
+            <option value="On Hold">{t('status.on_hold')}</option>
           </Select>
         </div>
 
         {loading ? (
-          <LoadingSpinner message="Loading projects..." />
+          <LoadingSpinner message={t('general_projects.loading')} />
         ) : filteredProjects.length === 0 ? (
-          <EmptyState icon={FolderKanban} title="No projects found" />
+          <EmptyState icon={FolderKanban} title={t('general_projects.no_projects')} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (

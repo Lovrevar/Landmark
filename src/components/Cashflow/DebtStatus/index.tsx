@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet, Filter } from 'lucide-react'
 import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
@@ -6,6 +7,7 @@ import { exportToExcel, exportToPDF } from './services/debtExport'
 import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../../ui'
 
 const DebtStatus: React.FC = () => {
+  const { t } = useTranslation()
   const {
     debtData,
     loading,
@@ -25,13 +27,13 @@ const DebtStatus: React.FC = () => {
   const getSupplierTypeBadge = (type: string) => {
     switch (type) {
       case 'retail_supplier':
-        return <Badge variant="teal" size="sm">Retail</Badge>
+        return <Badge variant="teal" size="sm">{t('debt_status.supplier_types.retail')}</Badge>
       case 'office_supplier':
-        return <Badge variant="blue" size="sm">Office</Badge>
+        return <Badge variant="blue" size="sm">{t('debt_status.supplier_types.office')}</Badge>
       case 'mixed':
-        return <Badge variant="purple" size="sm">Mixed</Badge>
+        return <Badge variant="purple" size="sm">{t('debt_status.supplier_types.mixed')}</Badge>
       default:
-        return <Badge variant="gray" size="sm">Site</Badge>
+        return <Badge variant="gray" size="sm">{t('debt_status.supplier_types.site')}</Badge>
     }
   }
 
@@ -50,21 +52,21 @@ const DebtStatus: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Stanje duga"
-        description="Pregled svih neisplaćenih obveza prema dobavljačima"
+        title={t('debt_status.title')}
+        description={t('debt_status.description')}
         actions={
           <>
             <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel}>
-              Export Excel
+              {t('common.export_excel')}
             </Button>
             <Button variant="danger" icon={FileDown} onClick={handleExportPDF}>
-              Export PDF
+              {t('common.export_pdf')}
             </Button>
           </>
         }
@@ -72,25 +74,25 @@ const DebtStatus: React.FC = () => {
 
       <StatGrid columns={4}>
         <StatCard
-          label="Ukupno dobavljača"
+          label={t('debt_status.stats.total_suppliers')}
           value={totalSuppliers}
           icon={Users}
           color="blue"
         />
         <StatCard
-          label="Dobavljači s dugom"
+          label={t('debt_status.stats.suppliers_with_debt')}
           value={suppliersWithDebt}
           icon={AlertCircle}
           color="yellow"
         />
         <StatCard
-          label="Ukupno neisplaćeno"
+          label={t('debt_status.stats.total_unpaid')}
           value={`€${formatEuropeanNumber(totalUnpaid)}`}
           icon={TrendingUp}
           color="red"
         />
         <StatCard
-          label="Ukupno isplaćeno"
+          label={t('debt_status.stats.total_paid')}
           value={`€${formatEuropeanNumber(totalPaid)}`}
           icon={DollarSign}
           color="green"
@@ -102,14 +104,14 @@ const DebtStatus: React.FC = () => {
           <Filter className="w-5 h-5 text-gray-500" />
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filtriraj po projektu
+              {t('debt_status.filter_label')}
             </label>
             <Select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="w-full max-w-md"
             >
-              <option value="">Svi projekti</option>
+              <option value="">{t('debt_status.all_projects')}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name} {project.type === 'retail' ? '(Retail)' : '(Site)'}
@@ -123,7 +125,7 @@ const DebtStatus: React.FC = () => {
               onClick={() => setSelectedProjectId('')}
               className="mt-6"
             >
-              Poništi filter
+              {t('debt_status.clear_filter')}
             </Button>
           )}
         </div>
@@ -133,8 +135,8 @@ const DebtStatus: React.FC = () => {
         {debtData.length === 0 ? (
           <EmptyState
             icon={AlertCircle}
-            title="Nema podataka o dugovima"
-            description="Trenutno nema neisplaćenih računa"
+            title={t('debt_status.empty.title')}
+            description={t('debt_status.empty.description')}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -147,17 +149,17 @@ const DebtStatus: React.FC = () => {
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>Firma</span>
+                      <span>{t('debt_status.table.supplier')}</span>
                       {sortBy === 'name' && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </div>
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tip
+                    {t('debt_status.table.type')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Računi
+                    {t('debt_status.table.invoices')}
                   </th>
                   <th
                     scope="col"
@@ -165,7 +167,7 @@ const DebtStatus: React.FC = () => {
                     onClick={() => handleSort('unpaid')}
                   >
                     <div className="flex items-center justify-end space-x-1">
-                      <span>Neisplaćeno</span>
+                      <span>{t('debt_status.table.unpaid')}</span>
                       {sortBy === 'unpaid' && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
@@ -177,14 +179,14 @@ const DebtStatus: React.FC = () => {
                     onClick={() => handleSort('paid')}
                   >
                     <div className="flex items-center justify-end space-x-1">
-                      <span>Isplaćeno</span>
+                      <span>{t('debt_status.table.paid')}</span>
                       {sortBy === 'paid' && (
                         <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </div>
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ukupno
+                    {t('debt_status.table.total')}
                   </th>
                 </tr>
               </thead>
@@ -219,7 +221,7 @@ const DebtStatus: React.FC = () => {
                 ))}
                 <tr className="bg-gray-50 font-semibold">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" colSpan={3}>
-                    UKUPNO
+                    {t('debt_status.table.grand_total')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600">
                     €{formatEuropeanNumber(totalUnpaid)}
@@ -237,14 +239,14 @@ const DebtStatus: React.FC = () => {
         )}
       </div>
 
-      <Alert variant="info" title="Napomena:">
+      <Alert variant="info" title={t('debt_status.note_title')}>
         <ul className="list-disc list-inside space-y-1">
-          <li>Neisplaćeno = preostali iznos svih neplaćenih i djelomično plaćenih računa</li>
-          <li>Isplaćeno = ukupan iznos svih izvršenih plaćanja za tog dobavljača</li>
-          <li>Dobavljači s istim imenom grupirani su i zbrojeni bez obzira na tip (Site, Retail, Office)</li>
-          <li>Tip "Mixed" označava da se dobavljač pojavljuje u više kategorija</li>
-          <li>Koristite filter za prikaz dugovanja samo za određeni projekt</li>
-          <li>Kliknite na zaglavlje stupca za sortiranje podataka</li>
+          <li>{t('debt_status.note_unpaid')}</li>
+          <li>{t('debt_status.note_paid')}</li>
+          <li>{t('debt_status.note_grouped')}</li>
+          <li>{t('debt_status.note_mixed')}</li>
+          <li>{t('debt_status.note_filter')}</li>
+          <li>{t('debt_status.note_sort')}</li>
         </ul>
       </Alert>
     </div>

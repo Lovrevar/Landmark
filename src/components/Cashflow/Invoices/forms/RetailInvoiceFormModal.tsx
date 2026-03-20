@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, Button, Textarea, FormField, Alert, Form } from '../../../ui'
 import { upsertRetailInvoice } from '../services/invoiceService'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
@@ -15,6 +16,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   onSuccess,
   editingInvoice
 }) => {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
@@ -186,16 +188,16 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
     setError(null)
 
     try {
-      if (!formData.company_id) throw new Error('Morate odabrati firmu')
-      if (!formData.entity_id) throw new Error('Morate odabrati entitet')
-      if (!formData.retail_project_id) throw new Error('Morate odabrati projekt')
-      if (!formData.retail_contract_id) throw new Error('Morate odabrati ugovor/fazu')
-      if (!formData.invoice_number) throw new Error('Morate unijeti broj računa')
-      if (!formData.issue_date) throw new Error('Morate unijeti datum izdavanja')
-      if (!formData.due_date) throw new Error('Morate unijeti datum dospijeća')
+      if (!formData.company_id) throw new Error(t('invoices.retail.error_company'))
+      if (!formData.entity_id) throw new Error(t('invoices.retail.error_entity'))
+      if (!formData.retail_project_id) throw new Error(t('invoices.retail.error_project'))
+      if (!formData.retail_contract_id) throw new Error(t('invoices.retail.error_contract'))
+      if (!formData.invoice_number) throw new Error(t('invoices.retail.error_number'))
+      if (!formData.issue_date) throw new Error(t('invoices.retail.error_issue_date'))
+      if (!formData.due_date) throw new Error(t('invoices.retail.error_due_date'))
 
       if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
-        throw new Error('Morate unijeti barem jednu osnovicu')
+        throw new Error(t('invoices.retail.error_base'))
       }
 
       calculateVatAndTotal()
@@ -210,7 +212,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       } else if (formData.invoice_type === 'incoming' && formData.entity_type === 'customer') {
         invoiceType = 'INCOMING_INVESTMENT'
       } else {
-        throw new Error('Nevalidna kombinacija tipa računa i entiteta')
+        throw new Error(t('invoices.retail.error_invalid_type'))
       }
 
       const invoiceData: Record<string, unknown> = {
@@ -247,7 +249,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       onClose()
     } catch (err: unknown) {
       console.error('Error creating retail invoice:', err)
-      setError(err instanceof Error ? err.message : 'Greška pri kreiranju računa')
+      setError(err instanceof Error ? err.message : t('invoices.retail.error_create'))
     } finally {
       setLoading(false)
     }
@@ -257,7 +259,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
-      <Modal.Header title={editingInvoice ? 'Uredi Retail Račun' : 'Novi Retail Račun'} onClose={onClose} />
+      <Modal.Header title={editingInvoice ? t('invoices.retail.title_edit') : t('invoices.retail.title_new')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
@@ -286,12 +288,12 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             calculation={calc}
           />
 
-          <FormField label="Napomene">
+          <FormField label={t('invoices.retail.notes_label')}>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder="Dodatne napomene..."
+              placeholder={t('invoices.form.additional_notes')}
             />
           </FormField>
         </Modal.Body>
@@ -302,14 +304,14 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             variant="secondary"
             onClick={onClose}
           >
-            Odustani
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             variant="primary"
             loading={loading}
           >
-            {loading ? (editingInvoice ? 'Spremanje...' : 'Kreiranje...') : (editingInvoice ? 'Spremi izmjene' : 'Kreiraj račun')}
+            {loading ? (editingInvoice ? t('invoices.retail.save_loading') : t('invoices.retail.create_loading')) : (editingInvoice ? t('invoices.retail.save') : t('invoices.retail.create'))}
           </Button>
         </Modal.Footer>
       </Form>

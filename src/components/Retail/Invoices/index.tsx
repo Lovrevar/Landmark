@@ -1,17 +1,12 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { format } from 'date-fns'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
 
-const INVOICE_TYPE_LABELS: Record<string, string> = {
-  INCOMING_SUPPLIER: 'Ulazni - Dobavljač',
-  OUTGOING_SALES: 'Izlazni - Prodaja',
-  OUTGOING_SUPPLIER: 'Izlazni - Dobavljač',
-  INCOMING_INVESTMENT: 'Ulazni - Investicija',
-}
-
 const RetailInvoicesManagement: React.FC = () => {
+  const { t } = useTranslation()
   const {
     loading,
     stats,
@@ -28,27 +23,40 @@ const RetailInvoicesManagement: React.FC = () => {
     handleExportCSV,
   } = useRetailInvoices()
 
-  if (loading) return <LoadingSpinner message="Učitavanje retail računa..." />
+  const INVOICE_TYPE_LABELS = useMemo<Record<string, string>>(() => ({
+    INCOMING_SUPPLIER: t('retail_invoices.type.incoming_supplier'),
+    OUTGOING_SALES: t('retail_invoices.type.outgoing_sales'),
+    OUTGOING_SUPPLIER: t('retail_invoices.type.outgoing_supplier'),
+    INCOMING_INVESTMENT: t('retail_invoices.type.incoming_investment'),
+  }), [t])
+
+  const INVOICE_STATUS_LABELS: Record<string, string> = {
+    PAID: t('common.paid'),
+    PARTIALLY_PAID: t('common.partial'),
+    UNPAID: t('common.unpaid'),
+  }
+
+  if (loading) return <LoadingSpinner message={t('retail_invoices.loading')} />
 
   return (
     <div className="p-6">
       <PageHeader
-        title="Retail Računi"
-        description="Pregled i odobravanje retail računa za slanje u cashflow"
+        title={t('retail_invoices.title')}
+        description={t('retail_invoices.description')}
       />
 
       <StatGrid columns={4} className="mb-8">
-        <StatCard label="Ukupno računa" value={stats.totalInvoices} icon={FileText} color="blue" />
-        <StatCard label="Ukupan iznos" value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
-        <StatCard label="Ovaj mjesec" value={stats.invoicesThisMonth} subtitle="računa" icon={Calendar} />
-        <StatCard label="Iznos ovaj mj." value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
+        <StatCard label={t('common.total_invoices')} value={stats.totalInvoices} icon={FileText} color="blue" />
+        <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
+        <StatCard label={t('common.this_month')} value={stats.invoicesThisMonth} subtitle={t('retail_invoices.invoices_subtitle')} icon={Calendar} />
+        <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <SearchInput
-              placeholder="Pretraži račune..."
+              placeholder={t('retail_invoices.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onClear={() => setSearchTerm('')}
@@ -56,31 +64,31 @@ const RetailInvoicesManagement: React.FC = () => {
           </div>
 
           <Select value={filterType} onChange={(e) => setFilterType(e.target.value as 'all' | 'incoming' | 'outgoing')}>
-            <option value="all">Svi tipovi</option>
-            <option value="incoming">Ulazni</option>
-            <option value="outgoing">Izlazni</option>
+            <option value="all">{t('retail_invoices.filter.all_types')}</option>
+            <option value="incoming">{t('retail_invoices.filter.incoming')}</option>
+            <option value="outgoing">{t('retail_invoices.filter.outgoing')}</option>
           </Select>
 
           <Select value={filterApproved} onChange={(e) => setFilterApproved(e.target.value as 'all' | 'approved' | 'not_approved')}>
-            <option value="all">Sve</option>
-            <option value="approved">Odobreno</option>
-            <option value="not_approved">Nije odobreno</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="approved">{t('retail_invoices.filter.approved')}</option>
+            <option value="not_approved">{t('retail_invoices.filter.not_approved')}</option>
           </Select>
 
           <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            Export CSV
+            {t('common.export_csv')}
           </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <FormField label="Datum od">
+          <FormField label={t('retail_invoices.date_from')}>
             <Input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
             />
           </FormField>
-          <FormField label="Datum do">
+          <FormField label={t('retail_invoices.date_to')}>
             <Input
               type="date"
               value={dateRange.end}
@@ -93,24 +101,24 @@ const RetailInvoicesManagement: React.FC = () => {
       {filteredInvoices.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
-          title="Nema računa"
-          description="Nema retail računa koji odgovaraju zadanim filterima"
+          title={t('retail_invoices.no_invoices')}
+          description={t('retail_invoices.no_invoices_desc')}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
           <table className="w-full min-w-[1200px] bg-white">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">Odobri</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broj računa</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tip</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dospijeće</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projekt</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dobavljač / Kupac</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firma</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Iznos</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">{t('retail_invoices.table.approve')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('retail_invoices.table.invoice_number')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('retail_invoices.table.type')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('common.date')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('retail_invoices.table.due_date')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('common.project')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('retail_invoices.table.supplier_customer')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('common.company')}</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('common.amount')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -122,7 +130,7 @@ const RetailInvoicesManagement: React.FC = () => {
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleApprove(invoice.id, invoice.approved)}
-                      title={invoice.approved ? 'Odobreno - klikni za poništenje' : 'Klikni za odobravanje'}
+                      title={invoice.approved ? t('retail_invoices.approve_title_cancel') : t('retail_invoices.approve_title')}
                       className={`p-1 rounded transition-colors ${
                         invoice.approved
                           ? 'text-green-600 hover:text-green-800'
@@ -159,7 +167,7 @@ const RetailInvoicesManagement: React.FC = () => {
                         : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
                         : 'red'
                     }>
-                      {invoice.status}
+                      {INVOICE_STATUS_LABELS[invoice.status] || invoice.status}
                     </Badge>
                   </td>
                 </tr>

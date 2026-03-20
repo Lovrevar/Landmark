@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApartmentWithDetails } from '../types'
 import { Modal, FormField, Input, Select, Button, Form } from '../../../ui'
 import {
@@ -34,6 +35,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     povrsina_otvoreno: null as number | null,
     povrsina_ot_sa_koef: null as number | null
   })
+  const { t } = useTranslation()
   const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -73,22 +75,22 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
-      <Modal.Header title="Edit Apartment" onClose={onClose} />
+      <Modal.Header title={t('apartments.edit')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">
-                <strong>Project:</strong> {apartment.project_name}
+                <strong>{t('common.project')}:</strong> {apartment.project_name}
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                <strong>Building:</strong> {apartment.building_name}
+                <strong>{t('common.building')}:</strong> {apartment.building_name}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Apartment Number (Oznaka stana)" required error={fieldErrors.number}>
+              <FormField label={t('apartments.form.number')} required error={fieldErrors.number}>
                 <Input
                   type="text"
                   value={formData.number}
@@ -96,7 +98,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Entrance (Ulaz)">
+              <FormField label={t('apartments.form.entrance')}>
                 <Input
                   type="text"
                   value={formData.ulaz}
@@ -107,7 +109,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor (Etaža)" required error={fieldErrors.floor}>
+              <FormField label={t('apartments.form.floor')} required error={fieldErrors.floor}>
                 <Input
                   type="number"
                   value={formData.floor}
@@ -115,7 +117,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Apartment Type (Tip stana)">
+              <FormField label={t('apartments.form.type')}>
                 <Input
                   type="text"
                   value={formData.tip_stana}
@@ -124,7 +126,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Rooms (Sobnost)">
+              <FormField label={t('apartments.form.rooms')}>
                 <Input
                   type="number"
                   value={formData.sobnost ?? ''}
@@ -136,7 +138,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Saleable Area m² (Stan m2 prodajno)" required error={fieldErrors.size_m2}>
+              <FormField label={t('apartments.form.saleable_area')} required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
                   value={formData.size_m2}
@@ -145,7 +147,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Open Area m² (Površina otvoreno)">
+              <FormField label={t('apartments.form.open_area')}>
                 <Input
                   type="number"
                   value={formData.povrsina_otvoreno ?? ''}
@@ -155,7 +157,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Open Area w/ Coef. m²">
+              <FormField label={t('apartments.form.open_area_coef')}>
                 <Input
                   type="number"
                   value={formData.povrsina_ot_sa_koef ?? ''}
@@ -167,7 +169,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Price (EUR)" required error={fieldErrors.price}>
+              <FormField label={t('apartments.form.price')} required error={fieldErrors.price}>
                 <Input
                   type="number"
                   value={formData.price}
@@ -176,14 +178,14 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Status" required error={fieldErrors.status}>
+              <FormField label={t('apartments.form.status')} required error={fieldErrors.status}>
                 <Select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
-                  <option value="Available">Available</option>
-                  <option value="Reserved">Reserved</option>
-                  <option value="Sold">Sold</option>
+                  <option value="Available">{t('apartments.statuses.available')}</option>
+                  <option value="Reserved">{t('apartments.statuses.reserved')}</option>
+                  <option value="Sold">{t('apartments.statuses.sold')}</option>
                 </Select>
               </FormField>
             </div>
@@ -193,8 +195,8 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
         </Modal.Body>
 
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary">Save Changes</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="primary">{t('common.save')}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

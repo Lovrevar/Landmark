@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner, Button } from '../ui'
+import { useTranslation } from 'react-i18next'
 import { useToast } from '../../contexts/ToastContext'
 import {
   Banknote,
@@ -23,6 +24,7 @@ const defaultFinancialSummary: FinancialSummary = {
 }
 
 const InvestmentDashboard: React.FC = () => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [companies, setCompanies] = useState<Company[]>([])
   const [banks, setBanks] = useState<Bank[]>([])
@@ -40,7 +42,7 @@ const InvestmentDashboard: React.FC = () => {
       await generateInvestmentReportPDF(financialSummary, bankCredits, [])
     } catch (error) {
       console.error('Error generating PDF:', error)
-      toast.error('Failed to generate PDF report')
+      toast.error(t('dashboards.investment.pdf_error'))
     }
   }
 
@@ -61,7 +63,7 @@ const InvestmentDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" message="Loading investment dashboard..." />
+    return <LoadingSpinner size="lg" message={t('dashboards.investment.loading')} />
   }
 
   const expiringUsageCount = bankCredits.filter(c =>
@@ -80,11 +82,11 @@ const InvestmentDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Investment Dashboard</h1>
-          <p className="text-gray-600 mt-1">Overview of funding, investments, and financial metrics</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.investment.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('dashboards.investment.subtitle')}</p>
         </div>
         <Button variant="danger" icon={FileDown} onClick={handleExportPDF} disabled={bankCredits.length === 0}>
-          Export to PDF
+          {t('dashboards.investment.export_pdf')}
         </Button>
       </div>
 
@@ -93,24 +95,24 @@ const InvestmentDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Investment Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.investment_overview')}</h3>
             <Banknote className="w-5 h-5 text-blue-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Investment Lines:</span>
+              <span className="text-gray-600">{t('dashboards.investment.total_investment_lines')}</span>
               <span className="font-medium">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Used Amount:</span>
+              <span className="text-gray-600">{t('dashboards.investment.used_amount')}</span>
               <span className="font-medium text-blue-600">€{(financialSummary.total_used_credit / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Repaid Amount:</span>
+              <span className="text-gray-600">{t('dashboards.investment.repaid_amount')}</span>
               <span className="font-medium text-green-600">€{(financialSummary.total_repaid_credit / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Avg. Interest Rate:</span>
+              <span className="text-gray-600">{t('dashboards.investment.avg_interest_rate')}</span>
               <span className="font-medium">{financialSummary.weighted_avg_interest.toFixed(2)}%</span>
             </div>
           </div>
@@ -118,24 +120,24 @@ const InvestmentDashboard: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Investment Partners</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.investment_partners')}</h3>
             <CreditCard className="w-5 h-5 text-green-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Active Investors:</span>
+              <span className="text-gray-600">{t('dashboards.investment.active_investors')}</span>
               <span className="font-medium">{banks.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Active Investments:</span>
+              <span className="text-gray-600">{t('dashboards.investment.active_investments')}</span>
               <span className="font-medium">{bankCredits.filter(c => c.status === 'active').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Companies:</span>
+              <span className="text-gray-600">{t('dashboards.investment.total_companies')}</span>
               <span className="font-medium">{companies.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Upcoming Maturities:</span>
+              <span className="text-gray-600">{t('dashboards.investment.upcoming_maturities_label')}</span>
               <span className={`font-medium ${financialSummary.upcoming_maturities > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                 {financialSummary.upcoming_maturities}
               </span>
@@ -145,7 +147,7 @@ const InvestmentDashboard: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Critical Alerts</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.critical_alerts')}</h3>
             <AlertTriangle className="w-5 h-5 text-orange-600" />
           </div>
           <div className="space-y-3">
@@ -153,20 +155,20 @@ const InvestmentDashboard: React.FC = () => {
               <div className="flex items-center p-2 bg-orange-50 border border-orange-200 rounded">
                 <Clock className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
                 <span className="text-sm text-orange-800">
-                  {financialSummary.upcoming_maturities} investment(s) maturing soon
+                  {t('dashboards.investment.investments_maturing', { count: financialSummary.upcoming_maturities })}
                 </span>
               </div>
             )}
             {expiringUsageCount > 0 && (
               <div className="flex items-center p-2 bg-yellow-50 border border-yellow-200 rounded">
                 <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0" />
-                <span className="text-sm text-yellow-800">{expiringUsageCount} usage period(s) expiring</span>
+                <span className="text-sm text-yellow-800">{t('dashboards.investment.usage_periods_expiring', { count: expiringUsageCount })}</span>
               </div>
             )}
             {noCriticalIssues && (
               <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
                 <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
-                <span className="text-sm text-green-800">No critical issues</span>
+                <span className="text-sm text-green-800">{t('dashboards.investment.no_critical_issues')}</span>
               </div>
             )}
           </div>
@@ -177,12 +179,12 @@ const InvestmentDashboard: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.investment.recent_activity')}</h2>
         </div>
         <div className="p-6">
           {recentActivities.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No recent activity</p>
+              <p>{t('dashboards.investment.no_recent_activity')}</p>
             </div>
           ) : (
             <div className="space-y-4">

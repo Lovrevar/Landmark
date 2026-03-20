@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ProjectsGrid } from './ProjectsGrid'
 import { ProjectDetail } from './ProjectDetail'
 import { ProjectFormModal } from './forms/ProjectFormModal'
@@ -8,6 +9,7 @@ import type { RetailProjectWithPhases } from '../../../types/retail'
 import { LoadingSpinner, PageHeader, Button } from '../../ui'
 
 const RetailProjects: React.FC = () => {
+  const { t } = useTranslation()
   const { projects, loading, refetch } = useRetailProjects()
   const [selectedProject, setSelectedProject] = useState<RetailProjectWithPhases | null>(null)
   const [showProjectModal, setShowProjectModal] = useState(false)
@@ -35,7 +37,7 @@ const RetailProjects: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Učitavam projekte..." size="lg" />
+    return <LoadingSpinner message={t('retail_projects.loading_projects')} size="lg" />
   }
 
   if (selectedProject) {
@@ -51,8 +53,8 @@ const RetailProjects: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Retail Projekti"
-        description="Upravljanje projektima razvoja zemljišta"
+        title={t('retail_projects.title')}
+        description={t('retail_projects.subtitle')}
         className="mb-6"
         actions={
           <>
@@ -62,13 +64,13 @@ const RetailProjects: React.FC = () => {
               onClick={handleRefresh}
               loading={isRefreshing}
             >
-              Osvježi
+              {t('common.refresh')}
             </Button>
             <Button
               icon={Plus}
               onClick={() => setShowProjectModal(true)}
             >
-              Dodaj projekt
+              {t('retail_projects.add')}
             </Button>
           </>
         }

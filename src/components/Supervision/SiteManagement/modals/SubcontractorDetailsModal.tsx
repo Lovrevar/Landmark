@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
@@ -34,6 +35,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onAddComment,
   onManageMilestones
 }) => {
+  const { t } = useTranslation()
   const [funderName, setFunderName] = useState<string | null>(null)
   const [, setLoadingFunder] = useState(false)
   const [contractData, setContractData] = useState<ContractData | null>(null)
@@ -86,9 +88,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   const contractCost = subcontractor.cost ?? 0
 
   const getBudgetStatus = () =>
-    realized > contractCost ? 'Over Budget' :
-    realized === contractCost ? 'Fully Paid' :
-    realized > 0 ? 'Partial Payment' : 'Unpaid'
+    realized > contractCost ? t('supervision.subcontractor_details.status_over_budget') :
+    realized === contractCost ? t('supervision.subcontractor_details.status_fully_paid') :
+    realized > 0 ? t('supervision.subcontractor_details.status_partial') : t('supervision.subcontractor_details.status_unpaid')
 
   const getBudgetVariant = (): 'red' | 'green' | 'blue' | 'gray' => {
     if (realized > contractCost) return 'red'
@@ -103,7 +105,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
         <div className="flex items-center gap-2 mt-2">
           {subcontractor.has_contract === false && (
             <Badge variant="yellow" size="sm">
-              BEZ UGOVORA
+              {t('supervision.subcontractor_details.no_contract_badge')}
             </Badge>
           )}
           {subcontractor.has_contract !== false && (
@@ -121,9 +123,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center mb-2">
               <FileText className="w-4 h-4 text-gray-600 mr-2" />
-              <h3 className="text-sm font-semibold text-gray-900">Opis posla</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_details.job_description')}</h3>
             </div>
-            <p className="text-gray-700 text-sm">{subcontractor.job_description || 'Nema opisa'}</p>
+            <p className="text-gray-700 text-sm">{subcontractor.job_description || t('supervision.subcontractor_details.no_description')}</p>
           </div>
 
           {/* Contract Information */}
@@ -132,7 +134,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
                   <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-blue-900">Detalji ugovora</h3>
+                  <h3 className="text-sm font-semibold text-blue-900">{t('supervision.subcontractor_details.contract_details')}</h3>
                 </div>
                 {contractData.contract_type_name && (
                   <Badge variant="blue" size="sm">{contractData.contract_type_name}</Badge>
@@ -141,12 +143,12 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <p className="text-xs text-blue-700">Broj ugovora</p>
+                  <p className="text-xs text-blue-700">{t('supervision.subcontractor_details.contract_number')}</p>
                   <p className="text-sm font-semibold text-blue-900">{contractData.contract_number}</p>
                 </div>
                 {contractData.end_date && (
                   <div>
-                    <p className="text-xs text-blue-700">Rok</p>
+                    <p className="text-xs text-blue-700">{t('supervision.subcontractor_details.deadline')}</p>
                     <p className="text-sm font-semibold text-blue-900">
                       {format(new Date(contractData.end_date), 'dd.MM.yyyy')}
                     </p>
@@ -156,19 +158,19 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
               <div className="bg-white p-3 rounded-lg space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">Osnovica</span>
+                  <span className="text-xs text-gray-600">{t('supervision.subcontractor_details.base')}</span>
                   <span className="text-sm font-semibold text-gray-900">
                     {formatEuro(contractData.base_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">PDV ({contractData.vat_rate}%)</span>
+                  <span className="text-xs text-gray-600">{t('supervision.subcontractor_details.vat')} ({contractData.vat_rate}%)</span>
                   <span className="text-sm font-semibold text-gray-900">
                     {formatEuro(contractData.vat_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-900">Ukupno</span>
+                  <span className="text-sm font-semibold text-gray-900">{t('common.total')}</span>
                   <span className="text-lg font-bold text-blue-600">
                     {formatEuro(contractData.total_amount)}
                   </span>
@@ -182,7 +184,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4 text-gray-600" />
-                <h3 className="text-sm font-semibold text-gray-900">Dokumenti ugovora</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_details.contract_docs')}</h3>
               </div>
               <ContractDocumentViewer
                 subcontractorId={subcontractor.subcontractor_id || subcontractor.id}
@@ -197,7 +199,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 text-gray-600 mr-1" />
-                  <p className="text-xs text-gray-600">Ugovoreno (osnova)</p>
+                  <p className="text-xs text-gray-600">{t('supervision.subcontractor_details.contracted_base')}</p>
                 </div>
                 <p className="text-xl font-bold text-gray-900">
                   {formatEuro(contractData?.base_amount ?? contractCost)}
@@ -207,7 +209,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 text-teal-600 mr-1" />
-                  <p className="text-xs text-teal-700">Plaćeno (osnova)</p>
+                  <p className="text-xs text-teal-700">{t('supervision.subcontractor_details.paid_base')}</p>
                 </div>
                 <p className="text-xl font-bold text-teal-900">
                   {formatEuro(realized)}
@@ -225,7 +227,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                     realized > (contractData?.base_amount ?? contractCost) ? 'text-red-700' :
                     realized < (contractData?.base_amount ?? contractCost) ? 'text-green-700' :
                     'text-gray-600'
-                  }`}>Gain/Loss</p>
+                  }`}>{t('supervision.subcontractor_details.gain_loss')}</p>
                 </div>
                 <p className={`text-xl font-bold ${
                   realized > (contractData?.base_amount ?? contractCost) ? 'text-red-900' :
@@ -242,16 +244,16 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
               <div className="flex items-center mb-2">
                 <FileText className="w-5 h-5 text-yellow-700 mr-2" />
-                <h3 className="text-sm font-semibold text-yellow-900">Bez formalnog ugovora</h3>
+                <h3 className="text-sm font-semibold text-yellow-900">{t('supervision.subcontractor_details.no_contract_heading')}</h3>
               </div>
               <div className="bg-white p-3 rounded-lg mt-3">
-                <p className="text-xs text-yellow-700 mb-1">Plaćeno ukupno</p>
+                <p className="text-xs text-yellow-700 mb-1">{t('supervision.subcontractor_details.total_paid')}</p>
                 <p className="text-2xl font-bold text-yellow-900">
                   {formatEuro(realized)}
                 </p>
               </div>
               <p className="text-xs text-yellow-700 mt-3">
-                Troškovi se prate kroz račune u Accounting modulu
+                {t('supervision.subcontractor_details.accounting_note')}
               </p>
             </div>
           )}
@@ -262,7 +264,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               <div className="flex items-center">
                 <Building2 className="w-5 h-5 text-blue-600 mr-2" />
                 <div>
-                  <p className="text-xs text-blue-700 font-medium">Financira</p>
+                  <p className="text-xs text-blue-700 font-medium">{t('supervision.subcontractor_details.financed_by')}</p>
                   <p className="text-sm font-semibold text-blue-900">{funderName}</p>
                 </div>
               </div>
@@ -277,7 +279,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               fullWidth
               onClick={onManageMilestones}
             >
-              Manage Payment Milestones
+              {t('supervision.subcontractor_details.manage_milestones')}
             </Button>
           )}
 
@@ -285,14 +287,14 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           <div className="border-t border-gray-200 pt-6">
             <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
               <MessageSquare className="w-5 h-5 mr-2 text-gray-600" />
-              Supervision Comments
+              {t('supervision.subcontractor_details.comments')}
             </h4>
 
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {comments.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
                   <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Nema komentara. Dodaj prvi komentar!</p>
+                  <p className="text-gray-500 text-sm">{t('supervision.subcontractor_details.no_comments')}</p>
                 </div>
               ) : (
                 comments.map((comment) => (
@@ -313,8 +315,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                           }
                           size="sm"
                         >
-                          {comment.comment_type === 'completed' ? 'Završeno' :
-                           comment.comment_type === 'issue' ? 'Problem' : 'Napomena'}
+                          {comment.comment_type === 'completed' ? t('supervision.subcontractor_details.work_finished_type') :
+                           comment.comment_type === 'issue' ? t('supervision.subcontractor_details.problem_type') : t('supervision.subcontractor_details.note_type')}
                         </Badge>
                       </div>
                       <span className="text-xs text-gray-500">
@@ -328,21 +330,21 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </div>
 
             <div className="border-t border-gray-200 pt-4">
-              <FormField label="Tip komentara">
+              <FormField label={t('supervision.subcontractor_details.comment_type')}>
                 <Select
                   value={commentType}
                   onChange={(e) => onCommentTypeChange(e.target.value as 'completed' | 'issue' | 'general')}
                 >
-                  <option value="general">Napomena</option>
-                  <option value="completed">Posao završen</option>
-                  <option value="issue">Problem</option>
+                  <option value="general">{t('supervision.subcontractor_details.note_type')}</option>
+                  <option value="completed">{t('supervision.subcontractor_details.work_finished_type')}</option>
+                  <option value="issue">{t('supervision.subcontractor_details.problem_type')}</option>
                 </Select>
               </FormField>
               <div className="flex space-x-3 mt-3">
                 <Textarea
                   value={newComment}
                   onChange={(e) => onCommentChange(e.target.value)}
-                  placeholder="Dodaj komentar nadzora..."
+                  placeholder={t('supervision.subcontractor_details.comment_placeholder')}
                   rows={3}
                   className="flex-1 resize-none"
                 />
@@ -351,7 +353,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   disabled={!newComment.trim()}
                   icon={Send}
                   size="icon-md"
-                  title="Dodaj komentar"
+                  title={t('supervision.subcontractor_details.add_comment')}
                 />
               </div>
             </div>

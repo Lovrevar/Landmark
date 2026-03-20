@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
@@ -6,6 +7,7 @@ import { useLoans } from './hooks/useLoans'
 import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog } from '../../ui'
 
 const AccountingLoans: React.FC = () => {
+  const { t } = useTranslation()
   const {
     companies,
     loading,
@@ -35,11 +37,11 @@ const AccountingLoans: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pozajmice i prijenosi"
-        description="Evidencija pozajmica i prijenosa između firmi"
+        title={t('loans.title')}
+        description={t('loans.description')}
         actions={
           <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
-            Nova Pozajmica
+            {t('loans.add_button')}
           </Button>
         }
       />
@@ -50,7 +52,7 @@ const AccountingLoans: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Pretraži pozajmice i prijenose..."
+            placeholder={t('loans.search_placeholder')}
           />
         </div>
 
@@ -59,25 +61,25 @@ const AccountingLoans: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Datum
+                  {t('loans.table.date')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Daje
+                  {t('loans.table.from')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Račun (Daje)
+                  {t('loans.table.from_account')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Prima
+                  {t('loans.table.to')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Račun (Prima)
+                  {t('loans.table.to_account')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Iznos
+                  {t('loans.table.amount')}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Akcije
+                  {t('loans.table.actions')}
                 </th>
               </tr>
             </thead>
@@ -85,7 +87,7 @@ const AccountingLoans: React.FC = () => {
               {filteredLoans.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    Nema pozajmica
+                    {t('loans.empty')}
                   </td>
                 </tr>
               ) : (
@@ -137,10 +139,10 @@ const AccountingLoans: React.FC = () => {
       </div>
 
       <Modal show={showAddModal} onClose={() => { setShowAddModal(false); resetForm() }} size="md">
-        <Modal.Header title="Nova Pozajmica" onClose={() => { setShowAddModal(false); resetForm() }} />
+        <Modal.Header title={t('loans.modal_title')} onClose={() => { setShowAddModal(false); resetForm() }} />
         <Form onSubmit={handleAddLoan}>
           <Modal.Body>
-            <FormField label="Daje" required error={fieldErrors.from_company_id}>
+            <FormField label={t('loans.form.from_label')} required error={fieldErrors.from_company_id}>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Select
@@ -148,7 +150,7 @@ const AccountingLoans: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, from_company_id: e.target.value, from_bank_account_id: '' })}
                   className="pl-10"
                 >
-                  <option value="">Odaberite firmu</option>
+                  <option value="">{t('loans.form.select_company')}</option>
                   {companies.map(company => (
                     <option key={company.id} value={company.id}>{company.name}</option>
                   ))}
@@ -157,15 +159,15 @@ const AccountingLoans: React.FC = () => {
             </FormField>
 
             {formData.from_company_id && (
-              <FormField label="Račun (Daje)" required error={fieldErrors.from_bank_account_id}>
+              <FormField label={t('loans.form.from_account_label')} required error={fieldErrors.from_bank_account_id}>
                 <Select
                   value={formData.from_bank_account_id}
                   onChange={(e) => setFormData({ ...formData, from_bank_account_id: e.target.value })}
                 >
-                  <option value="">Odaberite račun</option>
+                  <option value="">{t('loans.form.select_account')}</option>
                   {getFromCompanyAccounts().map(account => (
                     <option key={account.id} value={account.id}>
-                      {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
+                      {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} ({t('loans.form.balance_label')}{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
                     </option>
                   ))}
                 </Select>
@@ -174,7 +176,7 @@ const AccountingLoans: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-4"></div>
 
-            <FormField label="Prima" required error={fieldErrors.to_company_id}>
+            <FormField label={t('loans.form.to_label')} required error={fieldErrors.to_company_id}>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Select
@@ -182,7 +184,7 @@ const AccountingLoans: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, to_company_id: e.target.value, to_bank_account_id: '' })}
                   className="pl-10"
                 >
-                  <option value="">Odaberite firmu</option>
+                  <option value="">{t('loans.form.select_company')}</option>
                   {companies.map(company => (
                     <option key={company.id} value={company.id}>{company.name}</option>
                   ))}
@@ -191,15 +193,15 @@ const AccountingLoans: React.FC = () => {
             </FormField>
 
             {formData.to_company_id && (
-              <FormField label="Račun (Prima)" required error={fieldErrors.to_bank_account_id}>
+              <FormField label={t('loans.form.to_account_label')} required error={fieldErrors.to_bank_account_id}>
                 <Select
                   value={formData.to_bank_account_id}
                   onChange={(e) => setFormData({ ...formData, to_bank_account_id: e.target.value })}
                 >
-                  <option value="">Odaberite račun</option>
+                  <option value="">{t('loans.form.select_account')}</option>
                   {getToCompanyAccounts().map(account => (
                     <option key={account.id} value={account.id}>
-                      {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} (Stanje: €{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
+                      {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} ({t('loans.form.balance_label')}{account.current_balance.toLocaleString('hr-HR', { minimumFractionDigits: 2 })})
                     </option>
                   ))}
                 </Select>
@@ -208,7 +210,7 @@ const AccountingLoans: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-4"></div>
 
-            <FormField label="Datum">
+            <FormField label={t('loans.form.date_label')}>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                 <DateInput
@@ -219,7 +221,7 @@ const AccountingLoans: React.FC = () => {
               </div>
             </FormField>
 
-            <FormField label="Iznos" required error={fieldErrors.amount}>
+            <FormField label={t('loans.form.amount_label')} required error={fieldErrors.amount}>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">€</span>
                 <Input
@@ -236,10 +238,10 @@ const AccountingLoans: React.FC = () => {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="ghost" type="button" onClick={() => { setShowAddModal(false); resetForm() }}>
-              Odustani
+              {t('loans.form.cancel')}
             </Button>
             <Button variant="primary" type="submit">
-              Spremi Pozajmicu
+              {t('loans.form.save')}
             </Button>
           </Modal.Footer>
         </Form>
@@ -247,10 +249,10 @@ const AccountingLoans: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteId}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovu pozajmicu?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('loans.confirm_delete.title')}
+        message={t('loans.confirm_delete.message')}
+        confirmLabel={t('loans.confirm_delete.confirm')}
+        cancelLabel={t('loans.confirm_delete.cancel')}
         variant="danger"
         onConfirm={confirmDeleteLoan}
         onCancel={cancelDeleteLoan}

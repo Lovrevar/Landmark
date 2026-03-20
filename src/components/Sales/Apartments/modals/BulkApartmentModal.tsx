@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BulkApartmentData } from '../types'
 import { Modal, FormField, Select, Input, Button, Alert, Form } from '../../../ui'
 
@@ -17,6 +18,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   buildings,
   onSubmit
 }) => {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<BulkApartmentData>({
     project_id: '',
     building_id: '',
@@ -55,31 +57,31 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
-      <Modal.Header title="Bulk Create Apartments" onClose={onClose} />
+      <Modal.Header title={t('apartments.bulk_create')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Project" required error={fieldErrors.project_id}>
+              <FormField label={t('apartments.form.project')} required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
                   onChange={(e) => setFormData({ ...formData, project_id: e.target.value, building_id: '' })}
                 >
-                  <option value="">Select Project</option>
+                  <option value="">{t('apartments.form.select_project')}</option>
                   {projects.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </Select>
               </FormField>
 
-              <FormField label="Building" required error={fieldErrors.building_id}>
+              <FormField label={t('apartments.form.building')} required error={fieldErrors.building_id}>
                 <Select
                   value={formData.building_id}
                   onChange={(e) => setFormData({ ...formData, building_id: e.target.value })}
                   disabled={!formData.project_id}
                 >
-                  <option value="">Select Building</option>
+                  <option value="">{t('apartments.form.select_building')}</option>
                   {filteredBuildings.map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
@@ -88,7 +90,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Starting Number" required error={fieldErrors.start_number}>
+              <FormField label={t('apartments.form.starting_number')} required error={fieldErrors.start_number}>
                 <Input
                   type="number"
                   value={formData.start_number}
@@ -97,7 +99,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Quantity" required error={fieldErrors.quantity}>
+              <FormField label={t('apartments.form.quantity')} required error={fieldErrors.quantity}>
                 <Input
                   type="number"
                   value={formData.quantity}
@@ -109,7 +111,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="Floor" required error={fieldErrors.floor}>
+              <FormField label={t('apartments.form.floor')} required error={fieldErrors.floor}>
                 <Input
                   type="number"
                   value={formData.floor}
@@ -145,8 +147,8 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
         </Modal.Body>
 
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="success">Create Apartments</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="success">{t('apartments.form.create')}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

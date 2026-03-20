@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PaymentWithCustomer } from '../types'
 import { Modal, FormField, Input, Select, Textarea, Button, Form } from '../../../ui'
 
@@ -19,6 +20,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentType, setPaymentType] = useState<'down_payment' | 'installment' | 'final_payment' | 'other'>('installment')
   const [notes, setNotes] = useState('')
+  const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
-      <Modal.Header title="Edit Payment" onClose={onClose} />
+      <Modal.Header title={t('common.edit')} onClose={onClose} />
 
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
@@ -74,10 +76,10 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                 value={paymentType}
                 onChange={(e) => setPaymentType(e.target.value as 'down_payment' | 'installment' | 'final_payment' | 'other')}
               >
-                <option value="down_payment">Down Payment</option>
-                <option value="installment">Installment</option>
-                <option value="final_payment">Final Payment</option>
-                <option value="other">Other</option>
+                <option value="down_payment">{t('payment_type.down_payment')}</option>
+                <option value="installment">{t('payment_type.installment')}</option>
+                <option value="final_payment">{t('payment_type.final_payment')}</option>
+                <option value="other">{t('payment_type.other')}</option>
               </Select>
             </FormField>
 
@@ -92,8 +94,8 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
         </Modal.Body>
 
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary">Update Payment</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="primary">{t('common.save')}</Button>
         </Modal.Footer>
       </Form>
     </Modal>

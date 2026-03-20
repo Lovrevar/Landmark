@@ -7,6 +7,7 @@ import {
   fetchSubcontractorFinancingBank,
   recordSubcontractorMilestonePayment
 } from '../services/paymentNotificationService'
+import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 import { useToast } from '../../../../contexts/ToastContext'
 
@@ -28,6 +29,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   notification,
   onSuccess
 }) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [amount, setAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
@@ -84,7 +86,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   const handleSubmit = async () => {
     if (!notification) return
     const errors: Record<string, string> = {}
-    if (amount <= 0) errors.amount = 'Unesite valjani iznos plaćanja'
+    if (amount <= 0) errors.amount = t('funding.payments.subcontractor_modal.amount_error')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -98,12 +100,12 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
         milestone_id: notification.milestone_id!,
         paid_by_bank_id: paidByBankId
       })
-      toast.success('Payment recorded successfully')
+      toast.success(t('funding.payments.subcontractor_modal.success_message'))
       onSuccess()
       onClose()
     } catch (error) {
       console.error('Error recording payment:', error)
-      toast.error('Failed to record payment')
+      toast.error(t('funding.payments.subcontractor_modal.error_message'))
     } finally {
       setLoading(false)
     }
@@ -116,7 +118,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   return (
     <Modal show={visible} onClose={onClose} size="sm">
       <Modal.Header
-        title="Wire Payment"
+        title={t('funding.payments.subcontractor_modal.title')}
         subtitle={notification.subcontractor_name}
         onClose={onClose}
       />
@@ -124,43 +126,43 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
       <Modal.Body>
         <div className="p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">Contract Amount:</span>
+            <span className="text-sm text-gray-600">{t('funding.payments.subcontractor_modal.contract_amount_label')}</span>
             <span className="text-sm font-medium text-gray-900">{contractValue.toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">Already Paid:</span>
+            <span className="text-sm text-gray-600">{t('funding.payments.subcontractor_modal.already_paid_label')}</span>
             <span className="text-sm font-medium text-teal-600">{alreadyPaid.toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between pt-2 border-t border-gray-200">
-            <span className="text-sm font-medium text-gray-700">Remaining:</span>
+            <span className="text-sm font-medium text-gray-700">{t('funding.payments.subcontractor_modal.remaining_label')}</span>
             <span className="text-sm font-bold text-orange-600">{remaining.toLocaleString('hr-HR')}</span>
           </div>
         </div>
 
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex justify-between mb-1">
-            <span className="text-sm font-medium text-blue-900">Milestone:</span>
+            <span className="text-sm font-medium text-blue-900">{t('funding.payments.subcontractor_modal.milestone_label')}</span>
             <span className="text-sm text-blue-700">{notification.milestone_name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-blue-900">Percentage:</span>
+            <span className="text-sm font-medium text-blue-900">{t('funding.payments.subcontractor_modal.percentage_label')}</span>
             <span className="text-sm text-blue-700">{notification.milestone_percentage}%</span>
           </div>
         </div>
 
-        <FormField label="Payment Amount" required error={fieldErrors.amount} helperText="You can pay any amount, including more than the contract value">
+        <FormField label={t('funding.payments.subcontractor_modal.amount_label')} required error={fieldErrors.amount} helperText={t('funding.payments.subcontractor_modal.amount_helper')}>
           <Input
             type="number"
             min="0"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-            placeholder="Enter payment amount"
+            placeholder={t('funding.payments.wire_payment_modal.amount_placeholder')}
             autoFocus
           />
         </FormField>
 
-        <FormField label="Payment Date (Optional)" helperText="Leave empty if date is not yet known">
+        <FormField label={t('funding.payments.subcontractor_modal.date_label')} helperText={t('funding.payments.subcontractor_modal.date_helper')}>
           <Input
             type="date"
             value={paymentDate}
@@ -169,12 +171,12 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
         </FormField>
 
         {banks.length > 0 && (
-          <FormField label="Paid By (Optional)" helperText="Select which bank is making this payment">
+          <FormField label={t('funding.payments.subcontractor_modal.paid_by_label')} helperText={t('funding.payments.subcontractor_modal.paid_by_helper')}>
             <Select
               value={paidByBankId || ''}
               onChange={(e) => setPaidByBankId(e.target.value || null)}
             >
-              <option value="">No payer selected</option>
+              <option value="">{t('funding.payments.subcontractor_modal.no_payer')}</option>
               {banks.map(bank => (
                 <option key={bank.id} value={bank.id}>{bank.name}</option>
               ))}
@@ -182,20 +184,20 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
           </FormField>
         )}
 
-        <FormField label="Notes (Optional)">
+        <FormField label={t('funding.payments.subcontractor_modal.notes_label')}>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            placeholder="Add any notes about this payment"
+            placeholder={t('funding.payments.subcontractor_modal.notes_placeholder')}
           />
         </FormField>
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose} disabled={loading}>{t('funding.payments.subcontractor_modal.cancel_button')}</Button>
         <Button variant="success" onClick={handleSubmit} loading={loading} disabled={amount <= 0}>
-          Record Payment
+          {t('funding.payments.subcontractor_modal.submit_button')}
         </Button>
       </Modal.Footer>
     </Modal>

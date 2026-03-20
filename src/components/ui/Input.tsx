@@ -18,7 +18,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
     className,
   ].filter(Boolean).join(' ')
 
-  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} />
+  const handleFocus = props.type === 'number'
+    ? (e: React.FocusEvent<HTMLInputElement>) => {
+        e.target.select()
+        props.onFocus?.(e)
+      }
+    : props.onFocus
+
+  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} onFocus={handleFocus} />
 })
 
 Input.displayName = 'Input'

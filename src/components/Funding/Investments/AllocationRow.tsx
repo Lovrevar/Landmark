@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
 import { INVOICE_STATUS_CONFIG } from './constants'
@@ -44,6 +45,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
   onToggle,
   onDelete,
 }) => {
+  const { t } = useTranslation()
   const [invoicesExpanded, setInvoicesExpanded] = useState(false)
   const [invoices, setInvoices] = useState<AllocationInvoice[]>([])
   const [invoicesLoading, setInvoicesLoading] = useState(false)
@@ -71,10 +73,10 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
 
   const allocationLabel =
     allocation.allocation_type === 'project'
-      ? allocation.project?.name ?? 'Projekt'
+      ? allocation.project?.name ?? t('funding.investments.allocation_modal.project_option')
       : allocation.allocation_type === 'opex'
-      ? 'OPEX (Bez projekta)'
-      : `Refinanciranje - ${allocation.refinancing_company?.name ?? allocation.refinancing_bank?.name ?? 'N/A'}`
+      ? t('funding.allocation_row.opex_label')
+      : `${t('funding.allocation_row.refinancing_prefix')}${allocation.refinancing_company?.name ?? allocation.refinancing_bank?.name ?? 'N/A'}`
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -94,29 +96,29 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           <span className="font-semibold text-gray-900">{allocationLabel}</span>
           {allocation.allocation_type === 'refinancing' && (
             <Badge variant="orange" className="ml-2">
-              {allocation.refinancing_entity_type === 'company' ? 'FIRMA' : 'BANKA'}
+              {allocation.refinancing_entity_type === 'company' ? t('funding.allocation_row.company_badge') : t('funding.allocation_row.bank_badge')}
             </Badge>
           )}
         </div>
         <div className="flex items-center space-x-4">
           <div className="text-right">
             <div className="text-sm text-gray-600">
-              Alocirano:{' '}
+              {t('funding.allocation_row.allocated_label')}{' '}
               <span className="font-semibold text-blue-600">
                 €{allocation.allocated_amount.toLocaleString('hr-HR')}
               </span>
             </div>
             {credit.disbursed_to_account ? (
               <div className="text-xs text-gray-500">
-                Isplaćeno:{' '}
+                {t('funding.allocation_row.paid_out_label')}{' '}
                 <span className="font-semibold text-green-600">
                   €{allocation.allocated_amount.toLocaleString('hr-HR')}
                 </span>
               </div>
             ) : (
               <div className="text-xs text-gray-500">
-                Iskorišteno: €{allocation.used_amount.toLocaleString('hr-HR')} |{' '}
-                Dostupno:{' '}
+                {t('funding.allocation_row.used_label')} €{allocation.used_amount.toLocaleString('hr-HR')} |{' '}
+                {t('funding.allocation_row.available_label')}{' '}
                 <span
                   className={
                     allocation.allocated_amount - allocation.used_amount < 0
@@ -150,13 +152,13 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           {credit.disbursed_to_account ? (
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-gray-600">Alocirano</p>
+                <p className="text-gray-600">{t('funding.allocation_row.allocated_label')}</p>
                 <p className="font-semibold text-blue-600">
                   €{allocation.allocated_amount.toLocaleString('hr-HR')}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600">Isplaćeno</p>
+                <p className="text-gray-600">{t('funding.allocation_row.paid_out_label')}</p>
                 <p className="font-semibold text-green-600">
                   €{allocation.allocated_amount.toLocaleString('hr-HR')}
                 </p>
@@ -165,19 +167,19 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           ) : (
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
-                <p className="text-gray-600">Alocirano</p>
+                <p className="text-gray-600">{t('funding.allocation_row.allocated_label')}</p>
                 <p className="font-semibold text-blue-600">
                   €{allocation.allocated_amount.toLocaleString('hr-HR')}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600">Iskorišteno</p>
+                <p className="text-gray-600">{t('funding.allocation_row.used_label')}</p>
                 <p className="font-semibold text-orange-600">
                   €{allocation.used_amount.toLocaleString('hr-HR')}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600">Dostupno</p>
+                <p className="text-gray-600">{t('funding.allocation_row.available_label')}</p>
                 <p
                   className={`font-semibold ${
                     allocation.allocated_amount - allocation.used_amount < 0
@@ -199,7 +201,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               <div className="flex items-center space-x-2 text-gray-700 font-medium">
                 <FileText className="w-4 h-4" />
                 <span>
-                  Računi plaćeni ovom alokacijom
+                  {t('funding.allocation_row.invoices_section_label')}
                   {invoicesFetched && ` (${invoices.length})`}
                 </span>
               </div>
@@ -214,11 +216,11 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               <div className="bg-white border-t border-gray-200">
                 {invoicesLoading ? (
                   <div className="p-4">
-                    <LoadingSpinner message="Učitavanje računa..." />
+                    <LoadingSpinner message={t('funding.allocation_row.loading_invoices')} />
                   </div>
                 ) : invoices.length === 0 ? (
                   <p className="text-sm text-gray-500 px-4 py-3">
-                    Nema računa plaćenih ovom alokacijom.
+                    {t('funding.allocation_row.no_invoices')}
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -226,22 +228,22 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Broj računa
+                            {t('funding.allocation_row.table.invoice_number')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Dobavljac
+                            {t('funding.allocation_row.table.supplier')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Datum plaćanja
+                            {t('funding.allocation_row.table.payment_date')}
                           </th>
                           <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Iznos plaćanja
+                            {t('funding.allocation_row.table.payment_amount')}
                           </th>
                           <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Ukupni iznos
+                            {t('funding.allocation_row.table.total_amount')}
                           </th>
                           <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Status
+                            {t('funding.allocation_row.table.status')}
                           </th>
                         </tr>
                       </thead>

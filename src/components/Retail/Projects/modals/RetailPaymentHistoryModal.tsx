@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
@@ -43,6 +44,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
   onClose,
   contract
 }) => {
+  const { t } = useTranslation()
   const [payments, setPayments] = useState<AccountingPayment[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -82,25 +84,25 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
   return (
     <Modal show={visible && !!contract} onClose={onClose} size="lg">
       <Modal.Header
-        title="Povijest plaćanja"
+        title={t('retail_projects.payment_history_modal.title')}
         subtitle={contract.contract_number}
         onClose={onClose}
       />
       <Modal.Body>
-        <p className="text-xs text-blue-600 mb-4">* Svi iznosi prikazani bez PDV-a</p>
+        <p className="text-xs text-blue-600 mb-4">{t('retail_projects.payment_history_modal.amounts_note')}</p>
 
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-sm text-gray-600">Iznos ugovora</p>
+              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.contract_amount')}</p>
               <p className="text-lg font-bold text-gray-900">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Ukupno plaćeno</p>
+              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.total_paid')}</p>
               <p className="text-lg font-bold text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Preostalo</p>
+              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.remaining')}</p>
               <p className="text-lg font-bold text-orange-600">
                 €{Math.max(0, contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
               </p>
@@ -108,13 +110,13 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
           </div>
         </div>
 
-        <h4 className="font-semibold text-gray-900 mb-3">Sva plaćanja ({payments.length})</h4>
+        <h4 className="font-semibold text-gray-900 mb-3">{t('retail_projects.payment_history_modal.all_payments', { count: payments.length })}</h4>
 
         {loading ? (
-          <LoadingSpinner message="Učitavanje..." />
+          <LoadingSpinner message={t('common.loading')} />
         ) : payments.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            Nema zabilježenih plaćanja
+            {t('retail_projects.payment_history_modal.no_payments')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -128,7 +130,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                           €{payment.base_amount_paid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                         <span className="text-xs text-gray-500">
-                          (sa PDV: €{payment.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                          {t('retail_projects.payment_history_modal.with_vat', { amount: payment.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
                         </span>
                       </div>
                       {payment.payment_date && (
@@ -137,7 +139,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                         </span>
                       )}
                       {!payment.payment_date && (
-                        <span className="text-sm text-gray-400 italic">Datum nije postavljen</span>
+                        <span className="text-sm text-gray-400 italic">{t('retail_projects.payment_history_modal.no_date')}</span>
                       )}
                     </div>
 
@@ -145,7 +147,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                       <div className="flex items-center space-x-2 mb-2">
                         <FileText className="w-4 h-4 text-blue-600" />
                         <span className="text-sm text-gray-700">
-                          Račun: <span className="font-medium text-blue-600">
+                          {t('retail_projects.payment_history_modal.invoice_label')} <span className="font-medium text-blue-600">
                             {payment.invoice.invoice_number}
                           </span>
                         </span>
@@ -156,40 +158,40 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                             ? 'yellow'
                             : 'red'
                         } size="sm">
-                          {payment.invoice.status === 'PAID' ? 'Plaćeno' :
-                           payment.invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                          {payment.invoice.status === 'PAID' ? t('retail_projects.payment_history_modal.status_paid') :
+                           payment.invoice.status === 'PARTIALLY_PAID' ? t('retail_projects.payment_history_modal.status_partial') : t('retail_projects.payment_history_modal.status_unpaid')}
                         </Badge>
                       </div>
                     )}
 
                     {payment.payment_method && (
                       <div className="text-sm text-gray-600 mb-2">
-                        Način plaćanja: <span className="font-medium">{payment.payment_method}</span>
+                        {t('retail_projects.payment_history_modal.payment_method_label')} <span className="font-medium">{payment.payment_method}</span>
                       </div>
                     )}
 
                     {payment.is_cesija && (
                       <div className="text-sm text-blue-600 mb-2 font-medium">
-                        Cesija
+                        {t('retail_projects.payment_history_modal.cesija_label')}
                       </div>
                     )}
 
                     {payment.company_bank_account && (
                       <div className="text-sm text-gray-600 mb-2">
-                        Račun: {payment.company_bank_account.bank_name}
+                        {t('retail_projects.payment_history_modal.account_label')} {payment.company_bank_account.bank_name}
                         {payment.company_bank_account.account_number && ` - ${payment.company_bank_account.account_number}`}
                       </div>
                     )}
 
                     {payment.credit && (
                       <div className="text-sm text-gray-600 mb-2">
-                        Kredit: {payment.credit.credit_name}
+                        {t('retail_projects.payment_history_modal.credit_label')} {payment.credit.credit_name}
                       </div>
                     )}
 
                     {payment.reference_number && (
                       <div className="text-sm text-gray-600 mb-2">
-                        Referenca: {payment.reference_number}
+                        {t('retail_projects.payment_history_modal.reference_label')} {payment.reference_number}
                       </div>
                     )}
 
@@ -200,11 +202,11 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                     )}
 
                     <p className="text-xs text-gray-400">
-                      Kreirano {format(new Date(payment.created_at), 'dd.MM.yyyy HH:mm')}
+                      {t('retail_projects.payment_history_modal.created_label')} {format(new Date(payment.created_at), 'dd.MM.yyyy HH:mm')}
                     </p>
                   </div>
                   <div className="ml-4">
-                    <span className="text-xs text-gray-500 italic">Upravljano u Računovodstvu</span>
+                    <span className="text-xs text-gray-500 italic">{t('retail_projects.payment_history_modal.managed_in_accounting')}</span>
                   </div>
                 </div>
               </div>
@@ -214,7 +216,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" fullWidth onClick={onClose}>
-          Zatvori
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

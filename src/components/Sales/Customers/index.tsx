@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Mail } from 'lucide-react'
 import { PageHeader, SearchInput, Button, ConfirmDialog } from '../../ui'
 import { CustomerCategory } from './types'
@@ -11,6 +12,7 @@ import { CustomerDetailModal } from './modals/CustomerDetailModal'
 import { CustomerWithApartments } from './types'
 
 const CustomersManagement: React.FC = () => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [activeCategory, setActiveCategory] = useState<CustomerCategory | null>(null)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
@@ -116,8 +118,8 @@ const CustomersManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Customer Management"
-        description="Manage your sales pipeline and customer relationships"
+        title={t('customers.title')}
+        description={t('customers.subtitle')}
         actions={
           <>
             <Button variant="success" icon={Mail} onClick={handleExportEmails}>
@@ -126,7 +128,7 @@ const CustomersManagement: React.FC = () => {
                 : `Email All (${filteredCustomers.filter(c => c.email).length})`}
             </Button>
             <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
-              Add Customer
+              {t('customers.add')}
             </Button>
           </>
         }
@@ -143,7 +145,7 @@ const CustomersManagement: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onClear={() => setSearchTerm('')}
-          placeholder="Search customers..."
+          placeholder={t('customers.search')}
         />
       </div>
 
@@ -176,10 +178,10 @@ const CustomersManagement: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteCustomerId}
-        title="Potvrda brisanja"
-        message="Are you sure you want to delete this customer?"
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={t('confirm.are_you_sure')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteCustomer}
         onCancel={() => setPendingDeleteCustomerId(null)}

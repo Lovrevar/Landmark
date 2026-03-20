@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { Customer } from '../../../../lib/supabase'
 import { SaleFormData, UnitForSale, CustomerMode } from '../types'
@@ -19,6 +20,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const { t } = useTranslation()
   const [customerMode, setCustomerMode] = useState<CustomerMode>('new')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<SaleFormData>({
@@ -94,10 +96,10 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
-      <Modal.Header title={`Complete Sale for ${unitForSale.unit.number}`} onClose={onClose} />
+      <Modal.Header title={`${t('sale_form.complete_sale')} ${unitForSale.unit.number}`} onClose={onClose} />
       <Modal.Body>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">Customer</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">{t('sale_form.customer')}</label>
             <div className="flex space-x-4 mb-4">
               <label className="flex items-center">
                 <input
@@ -107,7 +109,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                   onChange={(e) => setCustomerMode(e.target.value as CustomerMode)}
                   className="mr-2"
                 />
-                Create New Customer
+                {t('sale_form.create_new_customer')}
               </label>
               <label className="flex items-center">
                 <input
@@ -117,17 +119,17 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                   onChange={(e) => setCustomerMode(e.target.value as CustomerMode)}
                   className="mr-2"
                 />
-                Select Existing Customer
+                {t('sale_form.select_existing_customer')}
               </label>
             </div>
 
             {customerMode === 'existing' ? (
-              <FormField label="Select Customer" error={fieldErrors.customer_id}>
+              <FormField label={t('sale_form.select_customer')} error={fieldErrors.customer_id}>
                 <Select
                   value={formData.customer_id}
                   onChange={(e) => handleCustomerSelect(e.target.value)}
                 >
-                  <option value="">Select a customer</option>
+                  <option value="">{t('sale_form.select_customer_placeholder')}</option>
                   {customers.map(customer => (
                     <option key={customer.id} value={customer.id}>
                       {customer.name} {customer.surname} - {customer.email}
@@ -137,7 +139,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
               </FormField>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Full Name" required error={fieldErrors.buyer_name}>
+                <FormField label={t('sale_form.full_name')} required error={fieldErrors.buyer_name}>
                   <Input
                     type="text"
                     value={formData.buyer_name}
@@ -145,7 +147,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                     placeholder="John Smith"
                   />
                 </FormField>
-                <FormField label="Email" required error={fieldErrors.buyer_email}>
+                <FormField label={t('sale_form.email')} required error={fieldErrors.buyer_email}>
                   <Input
                     type="email"
                     value={formData.buyer_email}
@@ -153,7 +155,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                     placeholder="john@example.com"
                   />
                 </FormField>
-                <FormField label="Phone">
+                <FormField label={t('sale_form.phone')}>
                   <Input
                     type="tel"
                     value={formData.buyer_phone}
@@ -161,7 +163,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                     placeholder="+1 (555) 123-4567"
                   />
                 </FormField>
-                <FormField label="Address">
+                <FormField label={t('sale_form.address')}>
                   <Input
                     type="text"
                     value={formData.buyer_address}
@@ -174,7 +176,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <FormField label="Sale Price (€)" required error={fieldErrors.sale_price}>
+            <FormField label={t('sale_form.sale_price')} required error={fieldErrors.sale_price}>
               <Input
                 type="number"
                 min="0"
@@ -182,18 +184,18 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Payment Method">
+            <FormField label={t('sale_form.payment_method')}>
               <Select
                 value={formData.payment_method}
                 onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'credit' | 'bank_loan' | 'installments' })}
               >
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
-                <option value="bank_loan">Bank Loan</option>
-                <option value="installments">Installments</option>
+                <option value="cash">{t('payment_type.cash')}</option>
+                <option value="credit">{t('payment_type.credit')}</option>
+                <option value="bank_loan">{t('payment_type.bank_loan')}</option>
+                <option value="installments">{t('payment_type.installments')}</option>
               </Select>
             </FormField>
-            <FormField label="Down Payment (€)">
+            <FormField label={t('sale_form.down_payment')}>
               <Input
                 type="number"
                 min="0"
@@ -201,7 +203,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, down_payment: parseFloat(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Monthly Payment (€)">
+            <FormField label={t('sale_form.monthly_payment')}>
               <Input
                 type="number"
                 min="0"
@@ -209,7 +211,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, monthly_payment: parseFloat(e.target.value) || 0 })}
               />
             </FormField>
-            <FormField label="Sale Date">
+            <FormField label={t('sale_form.sale_date')}>
               <Input
                 type="date"
                 value={formData.sale_date}
@@ -225,36 +227,36 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                 className="mr-2"
               />
               <label htmlFor="contract_signed" className="text-sm font-medium text-gray-700">
-                Contract Signed
+                {t('sale_form.contract_signed')}
               </label>
             </div>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h4 className="font-semibold text-gray-900 mb-3">Sale Summary</h4>
+            <h4 className="font-semibold text-gray-900 mb-3">{t('sale_form.sale_summary')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">Sale Price:</span>
+                <span className="text-gray-600">{t('sale_form.sale_price')}:</span>
                 <span className="font-medium text-gray-900 ml-2">€{formData.sale_price.toLocaleString('hr-HR')}</span>
               </div>
               <div>
-                <span className="text-gray-600">Down Payment:</span>
+                <span className="text-gray-600">{t('sale_form.down_payment')}:</span>
                 <span className="font-medium text-gray-900 ml-2">€{formData.down_payment.toLocaleString('hr-HR')}</span>
               </div>
               <div>
-                <span className="text-gray-600">Remaining:</span>
+                <span className="text-gray-600">{t('sale_form.remaining')}:</span>
                 <span className="font-medium text-gray-900 ml-2">
                   €{(formData.sale_price - formData.down_payment).toLocaleString('hr-HR')}
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">Monthly Payment:</span>
+                <span className="text-gray-600">{t('sale_form.monthly_payment')}:</span>
                 <span className="font-medium text-gray-900 ml-2">€{formData.monthly_payment.toLocaleString('hr-HR')}</span>
               </div>
             </div>
           </div>
 
-          <FormField label="Notes">
+          <FormField label={t('sale_form.notes')}>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -265,10 +267,10 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button variant="success" onClick={handleSubmit}>
-          Complete Sale
+          {t('sale_form.complete_sale_btn')}
         </Button>
       </Modal.Footer>
     </Modal>

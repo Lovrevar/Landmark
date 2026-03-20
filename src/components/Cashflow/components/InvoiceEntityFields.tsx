@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import { Select, FormField } from '../../ui'
 import type { Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../Invoices/types'
@@ -64,10 +65,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
   getSupplierContractsByProject,
   getMilestonesByContract
 }) => {
+  const { t } = useTranslation()
+
   return (
     <>
       {formData.invoice_type === 'INCOMING_SUPPLIER' && (
-        <FormField label="Dobavljač" required>
+        <FormField label={t('invoice_entity.supplier_label')} required>
           <Select
             value={formData.supplier_id}
             onChange={(e) => {
@@ -84,7 +87,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
               })
             }}
           >
-            <option value="">Odaberi dobavljača</option>
+            <option value="">{t('invoice_entity.supplier_placeholder')}</option>
             {suppliers.map(supplier => (
               <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
             ))}
@@ -93,12 +96,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'INCOMING_SUPPLIER' && (
-        <FormField label="Refundacija (opcionalno)">
+        <FormField label={t('invoice_entity.refund_label')}>
           <Select
             value={formData.refund_id}
             onChange={(e) => onFormChange({ ...formData, refund_id: e.target.value })}
           >
-            <option value="">Bez refundacije</option>
+            <option value="">{t('invoice_entity.no_refund')}</option>
             {refunds.map(refund => (
               <option key={refund.id} value={refund.id}>{refund.name}</option>
             ))}
@@ -107,12 +110,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
-        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? 'Office Kupac' : 'Office Dobavljač'} required>
+        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? t('invoice_entity.office_buyer_label') : t('invoice_entity.office_supplier_label')} required>
           <Select
             value={formData.office_supplier_id}
             onChange={(e) => onFormChange({ ...formData, office_supplier_id: e.target.value })}
           >
-            <option value="">{formData.invoice_type === 'OUTGOING_OFFICE' ? 'Odaberi office kupca' : 'Odaberi office dobavljača'}</option>
+            <option value="">{formData.invoice_type === 'OUTGOING_OFFICE' ? t('invoice_entity.office_buyer_placeholder') : t('invoice_entity.office_supplier_placeholder')}</option>
             {officeSuppliers.map(supplier => (
               <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
             ))}
@@ -121,12 +124,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'INCOMING_OFFICE' && (
-        <FormField label="Refundacija (opcionalno)">
+        <FormField label={t('invoice_entity.refund_label')}>
           <Select
             value={formData.refund_id}
             onChange={(e) => onFormChange({ ...formData, refund_id: e.target.value })}
           >
-            <option value="">Bez refundacije</option>
+            <option value="">{t('invoice_entity.no_refund')}</option>
             {refunds.map(refund => (
               <option key={refund.id} value={refund.id}>{refund.name}</option>
             ))}
@@ -135,12 +138,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'INCOMING_INVESTMENT' && (
-        <FormField label="Banka (opcionalno)">
+        <FormField label={t('invoice_entity.bank_label')}>
           <Select
             value={formData.bank_id}
             onChange={(e) => onFormChange({ ...formData, bank_id: e.target.value })}
           >
-            <option value="">Bez banke</option>
+            <option value="">{t('invoice_entity.no_bank')}</option>
             {banks.map(bank => (
               <option key={bank.id} value={bank.id}>{bank.name}</option>
             ))}
@@ -149,12 +152,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SUPPLIER' && (
-        <FormField label="Kupac" required>
+        <FormField label={t('invoice_entity.buyer_label')} required>
           <Select
             value={formData.supplier_id}
             onChange={(e) => onFormChange({ ...formData, supplier_id: e.target.value })}
           >
-            <option value="">Odaberi kupca</option>
+            <option value="">{t('invoice_entity.buyer_placeholder')}</option>
             {suppliers.map(supplier => (
               <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
             ))}
@@ -163,7 +166,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SALES' && (
-        <FormField label="Kupac" required>
+        <FormField label={t('invoice_entity.buyer_label')} required>
           <Select
             value={formData.customer_id}
             onChange={(e) => {
@@ -179,7 +182,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
               })
             }}
           >
-            <option value="">Odaberi kupca</option>
+            <option value="">{t('invoice_entity.buyer_placeholder')}</option>
             {customers.map(customer => (
               <option key={customer.id} value={customer.id}>
                 {customer.name} {customer.surname}
@@ -190,7 +193,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {!isOfficeInvoice && (
-        <FormField label="Projekt (opcionalno)">
+        <FormField label={t('invoice_entity.project_label')}>
           <Select
             value={formData.project_id}
             onChange={(e) => onFormChange({
@@ -201,7 +204,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
               milestone_id: ''
             })}
           >
-            <option value="">Bez projekta</option>
+            <option value="">{t('invoice_entity.no_project')}</option>
             {(formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id
               ? getCustomerProjects(formData.customer_id)
               : formData.invoice_type === 'INCOMING_SUPPLIER' && formData.supplier_id
@@ -217,14 +220,14 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       {(formData.invoice_type === 'INCOMING_SUPPLIER' || formData.invoice_type === 'OUTGOING_SUPPLIER') && formData.supplier_id && (
         <>
           <FormField
-            label={formData.project_id ? "Ugovor / Faza" : "Ugovor / Faza (opcionalno)"}
+            label={formData.project_id ? t('invoice_entity.contract_label') : t('invoice_entity.contract_optional_label')}
             required={!!formData.project_id}
           >
             <Select
               value={formData.contract_id}
               onChange={(e) => onFormChange({ ...formData, contract_id: e.target.value, milestone_id: '' })}
             >
-              <option value="">Bez ugovora</option>
+              <option value="">{t('invoice_entity.no_contract')}</option>
               {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
                 <option key={contract.id} value={contract.id}>
                   {contract.contract_number} - {contract.projects?.name || 'N/A'}
@@ -236,22 +239,22 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
           </FormField>
 
           {formData.contract_id && getMilestonesByContract(formData.contract_id).length > 0 && (
-            <FormField label="Milestone (opcionalno)" helperText="Odabir milestone-a će automatski ažurirati njegov status na &quot;plaćen&quot;">
+            <FormField label={t('invoice_entity.milestone_label')} helperText={t('invoice_entity.milestone_helper')}>
               <Select
                 value={formData.milestone_id}
                 onChange={(e) => onFormChange({ ...formData, milestone_id: e.target.value })}
               >
-                <option value="">Bez milestone-a</option>
+                <option value="">{t('invoice_entity.no_milestone')}</option>
                 {getMilestonesByContract(formData.contract_id).map(milestone => {
                   const remainingText = milestone.remaining_amount !== undefined
-                    ? ` - preostalo €${milestone.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    ? `${t('invoice_entity.milestone_remaining')}${milestone.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : ''
 
                   return (
                     <option key={milestone.id} value={milestone.id}>
                       #{milestone.milestone_number} - {milestone.milestone_name} ({milestone.percentage}%)
-                      {milestone.status === 'completed' && ' - Završeno'}
-                      {milestone.status === 'pending' && ' - Na čekanju'}
+                      {milestone.status === 'completed' && t('invoice_entity.milestone_completed')}
+                      {milestone.status === 'pending' && t('invoice_entity.milestone_pending')}
                       {remainingText}
                     </option>
                   )
@@ -263,12 +266,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SALES' && formData.customer_id && (
-        <FormField label="Stan (opcionalno)">
+        <FormField label={t('invoice_entity.apartment_label')}>
           <Select
             value={formData.apartment_id}
             onChange={(e) => onFormChange({ ...formData, apartment_id: e.target.value })}
           >
-            <option value="">Odaberi stan</option>
+            <option value="">{t('invoice_entity.apartment_placeholder')}</option>
             {getCustomerApartmentsByProject(formData.customer_id, formData.project_id).map(apt => (
               <option key={apt.id} value={apt.id}>
                 {apt.projects?.name} - {apt.buildings?.name} - Apt {apt.number} (€{formatCurrency(apt.price)})

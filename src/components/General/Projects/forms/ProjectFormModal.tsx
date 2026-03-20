@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Button, Alert, Form, ConfirmDialog } from '../../../ui'
 import { useProjectForm } from '../hooks/useProjectForm'
 
@@ -9,6 +10,7 @@ interface ProjectFormModalProps {
 }
 
 const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose, onSuccess }) => {
+  const { t } = useTranslation()
   const { form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting } = useProjectForm(
     projectId,
     onSuccess,
@@ -18,10 +20,10 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
 
   const handleLocalSubmit = (e?: React.FormEvent) => {
     const errors: Record<string, string> = {}
-    if (!form.name?.trim()) errors.name = 'Project name is required'
-    if (!form.location?.trim()) errors.location = 'Location is required'
-    if (!form.start_date) errors.start_date = 'Start date is required'
-    if (!form.budget) errors.budget = 'Budget is required'
+    if (!form.name?.trim()) errors.name = t('general_projects.form_error_name')
+    if (!form.location?.trim()) errors.location = t('general_projects.form_error_location')
+    if (!form.start_date) errors.start_date = t('general_projects.form_error_start_date')
+    if (!form.budget) errors.budget = t('general_projects.form_error_budget')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     if (e) handleSubmit(e)
@@ -31,7 +33,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     <>
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
-        title={projectId ? 'Edit Project' : 'New Project'}
+        title={projectId ? t('general_projects.edit_project') : t('general_projects.new_project')}
         onClose={onClose}
       />
       <Modal.Body>
@@ -43,25 +45,25 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Project Name" required className="md:col-span-2" error={fieldErrors.name}>
+            <FormField label={t('general_projects.form.name')} required className="md:col-span-2" error={fieldErrors.name}>
               <Input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g., Kozara Residential Complex"
+                placeholder={t('general_projects.form_name_placeholder')}
               />
             </FormField>
 
-            <FormField label="Location" required className="md:col-span-2" error={fieldErrors.location}>
+            <FormField label={t('general_projects.form_location')} required className="md:col-span-2" error={fieldErrors.location}>
               <Input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder="e.g., Zagreb, Croatia"
+                placeholder={t('general_projects.form_location_placeholder')}
               />
             </FormField>
 
-            <FormField label="Start Date" required error={fieldErrors.start_date}>
+            <FormField label={t('general_projects.form.start_date')} required error={fieldErrors.start_date}>
               <Input
                 type="date"
                 value={form.start_date}
@@ -69,7 +71,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
-            <FormField label="End Date (Optional)">
+            <FormField label={t('general_projects.form_end_date_optional')}>
               <Input
                 type="date"
                 value={form.end_date}
@@ -77,7 +79,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
-            <FormField label="Budget (EUR)" required error={fieldErrors.budget}>
+            <FormField label={t('general_projects.form_budget_eur')} required error={fieldErrors.budget}>
               <Input
                 type="number"
                 value={form.budget}
@@ -88,15 +90,15 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
-            <FormField label="Status">
+            <FormField label={t('general_projects.form.status')}>
               <Select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
               >
-                <option value="Planning">Planning</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-                <option value="On Hold">On Hold</option>
+                <option value="Planning">{t('status.planning')}</option>
+                <option value="In Progress">{t('status.in_progress')}</option>
+                <option value="Completed">{t('status.completed')}</option>
+                <option value="On Hold">{t('status.on_hold')}</option>
               </Select>
             </FormField>
 
@@ -108,15 +110,15 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         <div className="flex justify-between items-center w-full">
           {projectId && (
             <Button variant="danger" onClick={handleDelete} disabled={loading}>
-              Delete Project
+              {t('general_projects.delete_project')}
             </Button>
           )}
           <div className={`flex space-x-3 ${!projectId ? 'ml-auto' : ''}`}>
             <Button variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={() => handleLocalSubmit()} disabled={loading} loading={loading}>
-              {projectId ? 'Update Project' : 'Create Project'}
+              {projectId ? t('general_projects.update_project') : t('general_projects.create_project')}
             </Button>
           </div>
         </div>
@@ -125,10 +127,10 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
 
     <ConfirmDialog
       show={showDeleteConfirm}
-      title="Potvrda brisanja"
-      message="Jeste li sigurni da želite obrisati ovaj projekt? Ova akcija se ne može poništiti."
-      confirmLabel="Da, obriši"
-      cancelLabel="Odustani"
+      title={t('confirm.delete_title')}
+      message={t('general_projects.confirm_delete_project')}
+      confirmLabel={t('common.yes_delete')}
+      cancelLabel={t('common.cancel')}
       variant="danger"
       onConfirm={confirmDelete}
       onCancel={cancelDelete}

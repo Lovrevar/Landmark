@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import Button from './Button'
 
 interface ConfirmDialogProps {
@@ -17,13 +18,17 @@ export default function ConfirmDialog({
   show,
   title,
   message,
-  confirmLabel = 'Potvrdi',
-  cancelLabel = 'Odustani',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   onConfirm,
   onCancel,
   loading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation()
+  const resolvedConfirmLabel = confirmLabel ?? t('common.confirm')
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel')
+
   if (!show) return null
 
   return (
@@ -45,7 +50,7 @@ export default function ConfirmDialog({
             onClick={onCancel}
             disabled={loading}
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button
             variant={variant === 'danger' ? 'danger' : 'primary'}
@@ -53,7 +58,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             loading={loading}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Building2, CreditCard, DollarSign, TrendingUp, TrendingDown,
   ChevronDown, ChevronUp
@@ -14,6 +15,7 @@ import CreditRepayments from '../../Funding/Investments/CreditRepayments'
 import CreditExpenses from '../../Funding/Investments/CreditExpenses'
 
 const AccountingBanks: React.FC = () => {
+  const { t } = useTranslation()
   const {
     banks: banksMeta,
     companies,
@@ -35,7 +37,7 @@ const AccountingBanks: React.FC = () => {
   const loading = banksLoading || creditsLoading
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   const totalCreditAcrossAllBanks = banksMeta.reduce((sum, b) => sum + b.total_credit_limit, 0)
@@ -78,19 +80,19 @@ const AccountingBanks: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Investicije"
-        description="Pregled svih investicija"
+        title={t('banks.index.title')}
+        description={t('banks.index.subtitle')}
       />
 
       <StatGrid columns={4}>
-        <StatCard label="Ukupan kredit limit" value={`€${totalCreditAcrossAllBanks.toLocaleString('hr-HR')}`} icon={CreditCard} />
-        <StatCard label="Ukupno iskorišteno" value={`€${totalUsedAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingDown} color="blue" />
-        <StatCard label="Ukupno vraćeno" value={`€${totalRepaidAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
-        <StatCard label="Ukupan dug" value={`€${totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}`} icon={DollarSign} color="red" />
+        <StatCard label={t('banks.index.stats.total_credit_limit')} value={`€${totalCreditAcrossAllBanks.toLocaleString('hr-HR')}`} icon={CreditCard} />
+        <StatCard label={t('banks.index.stats.total_used')} value={`€${totalUsedAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingDown} color="blue" />
+        <StatCard label={t('banks.index.stats.total_repaid')} value={`€${totalRepaidAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+        <StatCard label={t('banks.index.stats.total_outstanding')} value={`€${totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}`} icon={DollarSign} color="red" />
       </StatGrid>
 
       {banks.length === 0 ? (
-        <EmptyState icon={Building2} title="Nema banaka" description="Nema dodanih banaka u sustavu" />
+        <EmptyState icon={Building2} title={t('banks.no_banks')} description={t('banks.no_banks_description')} />
       ) : (
         <div className="space-y-4">
           {banks.map((bank) => {
@@ -115,21 +117,21 @@ const AccountingBanks: React.FC = () => {
                     <div className="text-left">
                       <h2 className="text-lg font-bold text-gray-900">{bank.name}</h2>
                       <p className="text-sm text-gray-500">
-                        {bankCredits.length} {bankCredits.length === 1 ? 'kredit' : 'kredita'}
+                        {bankCredits.length} {bankCredits.length === 1 ? t('banks.index.bank.credits_count_singular') : t('banks.index.bank.credits_count_plural')}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-8">
                     <div className="text-right hidden sm:block">
-                      <p className="text-xs text-gray-500">Ukupno</p>
+                      <p className="text-xs text-gray-500">{t('banks.index.bank.total_label')}</p>
                       <p className="text-sm font-semibold text-gray-900">€{bankTotal.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="text-xs text-gray-500">Iskorišteno</p>
+                      <p className="text-xs text-gray-500">{t('banks.index.bank.used_label')}</p>
                       <p className="text-sm font-semibold text-blue-600">€{bankUsed.toLocaleString('hr-HR')}</p>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <p className="text-xs text-gray-500">Dug</p>
+                      <p className="text-xs text-gray-500">{t('banks.index.bank.debt_label')}</p>
                       <p className="text-sm font-semibold text-red-600">€{bankOutstanding.toLocaleString('hr-HR')}</p>
                     </div>
                     {isBankExpanded ? (
@@ -202,31 +204,31 @@ const AccountingBanks: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className="text-lg font-bold text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-sm text-gray-600">Investment Amount</p>
+                                <p className="text-sm text-gray-600">{t('banks.index.credit.investment_amount')}</p>
                               </div>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
                               <div className="bg-blue-50 p-3 rounded-lg">
-                                <p className="text-sm text-blue-700">Investment Amount</p>
+                                <p className="text-sm text-blue-700">{t('banks.index.credit.investment_amount')}</p>
                                 <p className="text-lg font-bold text-blue-900">€{credit.amount.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className="bg-violet-50 p-3 rounded-lg">
-                                <p className="text-sm text-violet-700">Allocated</p>
+                                <p className="text-sm text-violet-700">{t('banks.index.credit.allocated')}</p>
                                 <p className="text-lg font-bold text-violet-900">€{totalAllocated.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className="bg-orange-50 p-3 rounded-lg">
-                                <p className="text-sm text-orange-700">Paid Out</p>
+                                <p className="text-sm text-orange-700">{t('banks.index.credit.paid_out')}</p>
                                 <p className="text-lg font-bold text-orange-900">€{paidOut.toLocaleString('hr-HR')}</p>
                               </div>
                               <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                                <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>Debt</p>
+                                <p className={`text-sm ${netUsed > 0 ? 'text-red-700' : 'text-gray-700'}`}>{t('banks.index.credit.debt')}</p>
                                 <p className={`text-lg font-bold ${netUsed > 0 ? 'text-red-900' : 'text-gray-900'}`}>
                                   €{credit.outstanding_balance.toLocaleString('hr-HR')}
                                 </p>
                               </div>
                               <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                                <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>Unallocated</p>
+                                <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>{t('banks.index.credit.unallocated')}</p>
                                 <p className={`text-lg font-bold ${unallocatedAmount < 0 ? 'text-red-900' : 'text-green-900'}`}>
                                   €{unallocatedAmount.toLocaleString('hr-HR')}
                                 </p>
@@ -236,17 +238,17 @@ const AccountingBanks: React.FC = () => {
                             <div className="mt-4">
                               <div className="flex justify-between mb-2">
                                 <div className="flex items-center gap-4 text-sm text-gray-600">
-                                  <span className="font-medium text-gray-700">Allocation Progress</span>
+                                  <span className="font-medium text-gray-700">{t('banks.index.credit.allocation_progress')}</span>
                                   {paidOutPercentage > 0 && (
                                     <span className="flex items-center gap-1">
                                       <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
-                                      Iskorišteno {paidOutPercentage.toFixed(1)}%
+                                      {t('banks.index.credit.used_percent', { percent: paidOutPercentage.toFixed(1) })}
                                     </span>
                                   )}
                                   {remainingAllocatedPercentage > 0 && (
                                     <span className="flex items-center gap-1">
                                       <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                                      Alocirano {remainingAllocatedPercentage.toFixed(1)}%
+                                      {t('banks.index.credit.allocated_percent', { percent: remainingAllocatedPercentage.toFixed(1) })}
                                     </span>
                                   )}
                                 </div>
@@ -264,7 +266,7 @@ const AccountingBanks: React.FC = () => {
                               </div>
                               {totalUsagePercentage > 100 && (
                                 <p className="text-xs text-red-600 mt-1">
-                                  Over-allocated by €{(totalAllocated - credit.amount).toLocaleString('hr-HR')}
+                                  {t('banks.index.credit.over_allocated', { amount: (totalAllocated - credit.amount).toLocaleString('hr-HR') })}
                                 </p>
                               )}
                             </div>
@@ -276,23 +278,23 @@ const AccountingBanks: React.FC = () => {
                                 <div className="space-y-4">
                                   <h4 className="font-semibold text-gray-900 flex items-center">
                                     <Building2 className="w-5 h-5 mr-2" />
-                                    Credit Details
+                                    {t('banks.index.credit.credit_details')}
                                   </h4>
                                   <div className="space-y-3 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Loan Type:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.loan_type_label')}</span>
                                       <span className="font-medium text-gray-900">{credit.credit_type}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Interest Rate:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.interest_rate_label')}</span>
                                       <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Outstanding Balance:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.outstanding_balance_label')}</span>
                                       <span className="font-medium text-gray-900">€{credit.outstanding_balance.toLocaleString('hr-HR')}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Repaid Amount:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.repaid_amount_label')}</span>
                                       <span className="font-medium text-green-600">€{credit.repaid_amount.toLocaleString('hr-HR')}</span>
                                     </div>
                                   </div>
@@ -301,24 +303,24 @@ const AccountingBanks: React.FC = () => {
                                 <div className="space-y-4">
                                   <h4 className="font-semibold text-gray-900 flex items-center">
                                     <TrendingUp className="w-5 h-5 mr-2" />
-                                    Dates &amp; Timeline
+                                    {t('banks.index.credit.dates_timeline')}
                                   </h4>
                                   <div className="space-y-3 text-sm">
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Start Date:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.start_date_label')}</span>
                                       <span className="font-medium text-gray-900">
                                         {format(new Date(credit.start_date), 'MMM dd, yyyy')}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Maturity Date:</span>
+                                      <span className="text-gray-600">{t('banks.index.credit.maturity_date_label')}</span>
                                       <span className="font-medium text-gray-900">
                                         {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
                                       </span>
                                     </div>
                                     {credit.usage_expiration_date && (
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Usage Expiration:</span>
+                                        <span className="text-gray-600">{t('banks.index.credit.usage_expiration_label')}</span>
                                         <span className="font-medium text-gray-900">
                                           {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
                                         </span>
@@ -331,7 +333,7 @@ const AccountingBanks: React.FC = () => {
                               {creditAllocations.length > 0 && (
                                 <div className="mt-6 pt-6 border-t border-gray-200">
                                   <h4 className="font-semibold text-gray-900 mb-4">
-                                    Namjene kredita ({creditAllocations.length})
+                                    {t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}
                                   </h4>
                                   <div className="space-y-3">
                                     {creditAllocations.map((allocation) => {
@@ -358,7 +360,7 @@ const AccountingBanks: React.FC = () => {
 
                               {credit.purpose && (
                                 <div className="mt-6 pt-6 border-t border-gray-200">
-                                  <h4 className="font-semibold text-gray-900 mb-2">Purpose</h4>
+                                  <h4 className="font-semibold text-gray-900 mb-2">{t('banks.index.credit.purpose_heading')}</h4>
                                   <p className="text-sm text-gray-600">{credit.purpose}</p>
                                 </div>
                               )}

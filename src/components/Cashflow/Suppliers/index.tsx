@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store, Link2 } from 'lucide-react'
 import RetailSupplierModal from './forms/RetailSupplierModal'
 import SupplierFormModal from './forms/SupplierFormModal'
@@ -8,6 +9,7 @@ import { useSuppliers } from './hooks/useSuppliers'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge, ConfirmDialog } from '../../ui'
 
 const AccountingSuppliers: React.FC = () => {
+  const { t } = useTranslation()
   const {
     suppliers,
     loading,
@@ -48,34 +50,34 @@ const AccountingSuppliers: React.FC = () => {
   } = useSuppliers()
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dobavljači"
-        description="Pregled svih dobavljača, ugovora i plaćanja"
+        title={t('suppliers.title')}
+        description={t('suppliers.subtitle')}
         actions={
           <>
             <Button variant="secondary" icon={Link2} onClick={handleOpenLinkModal}>
-              Poveži Dobavljača
+              {t('suppliers.link_supplier')}
             </Button>
             <Button variant="primary" icon={Plus} onClick={() => handleOpenAddModal()}>
-              Novi dobavljač
+              {t('suppliers.add_new')}
             </Button>
             <Button variant="primary" icon={Store} onClick={() => setShowRetailModal(true)} className="bg-teal-600 hover:bg-teal-700">
-              Novi Retail Dobavljač
+              {t('suppliers.add_retail')}
             </Button>
           </>
         }
       />
 
       <StatGrid columns={4}>
-        <StatCard label="Ukupno dobavljača" value={suppliers.length} icon={Users} />
-        <StatCard label="Ukupno ugovora" value={suppliers.reduce((sum, s) => sum + s.total_contracts, 0)} icon={Briefcase} color="gray" />
-        <StatCard label="Ukupno plaćeno" value={`€${suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
-        <StatCard label="Ukupno dugovi" value={`€${suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}`} icon={TrendingUp} color="yellow" />
+        <StatCard label={t('suppliers.stats.total_count')} value={suppliers.length} icon={Users} />
+        <StatCard label={t('suppliers.stats.total_contracts')} value={suppliers.reduce((sum, s) => sum + s.total_contracts, 0)} icon={Briefcase} color="gray" />
+        <StatCard label={t('suppliers.stats.total_paid')} value={`€${suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
+        <StatCard label={t('suppliers.stats.total_remaining')} value={`€${suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -83,7 +85,7 @@ const AccountingSuppliers: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onClear={() => setSearchTerm('')}
-          placeholder="Pretraži dobavljače..."
+          placeholder={t('suppliers.search')}
         />
       </div>
 
@@ -91,8 +93,8 @@ const AccountingSuppliers: React.FC = () => {
         {filteredSuppliers.length === 0 ? (
           <EmptyState
             icon={Users}
-            title={searchTerm ? 'Nema rezultata pretrage' : 'Nema dobavljača'}
-            description={searchTerm ? 'Pokušajte s drugim pojmom' : 'Dodajte prvog dobavljača koristeći gumb iznad'}
+            title={searchTerm ? t('common.no_results') : t('suppliers.no_suppliers')}
+            description={searchTerm ? t('suppliers.no_results_hint') : t('suppliers.no_suppliers_hint')}
           />
         ) : (
           <>
@@ -120,24 +122,24 @@ const AccountingSuppliers: React.FC = () => {
                       </div>
                       <div className="flex items-center">
                         <Briefcase className="w-4 h-4 mr-1" />
-                        {supplier.total_contracts} ugovora
+                        {t('suppliers.contracts_count', { count: supplier.total_contracts })}
                       </div>
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
-                        {supplier.total_invoices} računa
+                        {t('suppliers.invoices_count', { count: supplier.total_invoices })}
                       </div>
                     </div>
                     <div className="flex items-center space-x-6 mt-2 text-sm">
                       <div>
-                        <span className="text-gray-600">Vrijednost: </span>
+                        <span className="text-gray-600">{t('suppliers.value_label')}</span>
                         <span className="font-semibold text-gray-900">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Plaćeno: </span>
+                        <span className="text-gray-600">{t('suppliers.paid_label')}</span>
                         <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Dugovi: </span>
+                        <span className="text-gray-600">{t('suppliers.remaining_label')}</span>
                         <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -161,21 +163,20 @@ const AccountingSuppliers: React.FC = () => {
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Prethodna
+                    {t('common.previous')}
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Sljedeća
+                    {t('common.next')}
                   </button>
                 </div>
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      Prikazano <span className="font-medium">{startIndex + 1}</span> do <span className="font-medium">{Math.min(endIndex, filteredSuppliers.length)}</span> od{' '}
-                      <span className="font-medium">{filteredSuppliers.length}</span> rezultata
+                      {t('suppliers.pagination.shown', { from: startIndex + 1, to: Math.min(endIndex, filteredSuppliers.length), total: filteredSuppliers.length })}
                     </p>
                   </div>
                   <div>
@@ -283,10 +284,10 @@ const AccountingSuppliers: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteSupplier}
-        title="Potvrda brisanja"
-        message="Jeste li sigurni da želite obrisati ovog dobavljača? Ovo će obrisati sve vezane ugovore i račune."
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        title={t('confirm.delete_title')}
+        message={t('suppliers.confirm_delete_message')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
