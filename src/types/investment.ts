@@ -4,7 +4,6 @@ export interface Project {
   location: string
   budget: number
   status: string
-  investor: string
   start_date: string
   end_date: string
 }

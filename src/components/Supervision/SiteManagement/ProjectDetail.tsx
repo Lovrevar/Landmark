@@ -1,33 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Building2, Settings, CreditCard, DollarSign, Percent } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { ArrowLeft, Building2, Settings, CreditCard } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases } from './types'
+import { ProjectWithPhases, SubcontractorWithPhase } from './types'
 import { PhaseCard } from './PhaseCard'
-import { supabase } from '../../../lib/supabase'
+import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
-
-interface Company {
-  id: string
-  name: string
-}
-
-interface CreditAllocation {
-  id: string
-  allocated_amount: number
-  used_amount: number
-  description: string | null
-  bank_credit: {
-    id: string
-    credit_name: string
-    amount: number
-    used_amount: number
-    repaid_amount: number
-    outstanding_balance: number
-    interest_rate: number
-    disbursed_to_account?: boolean
-    company: Company
-  }
-}
 
 interface ProjectDetailProps {
   project: ProjectWithPhases
@@ -70,45 +48,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onTogglePhase,
   onToggleContractType
 }) => {
+  const { t } = useTranslation()
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
-  const [loadingCredits, setLoadingCredits] = useState(false)
+  const [, setLoadingCredits] = useState(false)
 
   useEffect(() => {
-    fetchProjectCreditAllocations()
+    setLoadingCredits(true)
+    fetchCreditAllocations(project.id)
+      .then(setCreditAllocations)
+      .catch(err => console.error('Error fetching project credit allocations:', err))
+      .finally(() => setLoadingCredits(false))
   }, [project.id])
-
-  const fetchProjectCreditAllocations = async () => {
-    try {
-      setLoadingCredits(true)
-      const { data, error } = await supabase
-        .from('credit_allocations')
-        .select(`
-          id,
-          allocated_amount,
-          used_amount,
-          description,
-          bank_credit:bank_credits!credit_allocations_credit_id_fkey(
-            id,
-            credit_name,
-            amount,
-            used_amount,
-            repaid_amount,
-            outstanding_balance,
-            interest_rate,
-            disbursed_to_account,
-            company:accounting_companies(id, name)
-          )
-        `)
-        .eq('project_id', project.id)
-
-      if (error) throw error
-      setCreditAllocations(data || [])
-    } catch (error) {
-      console.error('Error fetching project credit allocations:', error)
-    } finally {
-      setLoadingCredits(false)
-    }
-  }
 
   return (
     <div>
@@ -119,18 +69,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           size="sm"
           onClick={onBack}
         >
-          Back to Projects
+          {t('supervision.site_management.project_detail.back_to_projects')}
         </Button>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
             <p className="text-gray-600 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 mt-1">
-              Budget: €{project.budget.toLocaleString('hr-HR')}
+              {t('supervision.site_management.project_detail.budget_label')}: €{project.budget.toLocaleString('hr-HR')}
               {project.has_phases && (
                 <>
                   <span className="ml-2">
-                    • Allocated: €{project.total_budget_allocated.toLocaleString('hr-HR')}
+                    • {t('supervision.site_management.project_detail.allocated_label')}: €{project.total_budget_allocated.toLocaleString('hr-HR')}
                   </span>
                 </>
               )}
@@ -149,7 +99,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onClick={onOpenPhaseSetup}
                 icon={Settings}
               >
-                Setup Phases
+                {t('supervision.site_management.setup_phases')}
               </Button>
             ) : (
               onEditPhaseSetup && (
@@ -157,7 +107,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onClick={onEditPhaseSetup}
                   icon={Settings}
                 >
-                  Edit Phases
+                  {t('supervision.site_management.edit_phases')}
                 </Button>
               )
             )}
@@ -170,7 +120,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
           <div className="flex items-center mb-4">
             <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Alocirana sredstva za ovaj projekt</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('supervision.site_management.project_detail.allocated_funds')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {creditAllocations.map((allocation) => {
@@ -189,23 +139,23 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Alocirano:</span>
+                      <span className="text-gray-600">{t('supervision.site_management.project_detail.credit_allocated')}:</span>
                       <span className="font-bold text-blue-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
                     </div>
                     {credit.disbursed_to_account ? null : (
                       <>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Iskorišteno:</span>
+                          <span className="text-gray-600">{t('supervision.site_management.project_detail.credit_used')}:</span>
                           <span className="font-semibold text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Dostupno:</span>
+                          <span className="text-gray-600">{t('supervision.site_management.project_detail.credit_available')}:</span>
                           <span className={`font-semibold ${availableAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
                             €{availableAmount.toLocaleString('hr-HR')}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Kamatna stopa:</span>
+                          <span className="text-gray-600">{t('supervision.site_management.project_detail.interest_rate')}:</span>
                           <span className="font-semibold text-teal-600">{credit.interest_rate}%</span>
                         </div>
                       </>
@@ -221,7 +171,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   {!credit.disbursed_to_account && (
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-500">Iskorištenost alokacije</span>
+                        <span className="text-gray-500">{t('supervision.site_management.project_detail.allocation_usage')}</span>
                         <span className="font-semibold text-gray-700">{allocationUsedPercentage.toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -274,47 +224,47 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       ) : (
         <EmptyState
           icon={Building2}
-          title="No phases created yet"
-          description="Set up construction phases to better organize subcontractors and budget allocation."
+          title={t('supervision.site_management.project_detail.no_phases_title')}
+          description={t('supervision.site_management.project_detail.no_phases_desc')}
           action={
             <Button onClick={onOpenPhaseSetup} icon={Settings}>
-              Setup Phases
+              {t('supervision.site_management.setup_phases')}
             </Button>
           }
         />
       )}
 
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Summary</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('supervision.site_management.project_detail.project_summary')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{project.subcontractors.length}</div>
-            <div className="text-sm text-gray-600">Total Subcontractors</div>
+            <div className="text-sm text-gray-600">{t('supervision.site_management.project_detail.total_subcontractors')}</div>
           </div>
           {canManagePayments && (
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {project.subcontractors.filter(s => {
-                  const sub = s as any
+                  const sub = s as SubcontractorWithPhase
                   if (sub.has_contract) {
                     return sub.budget_realized >= sub.cost && sub.cost > 0
                   }
                   return (sub.invoice_total_owed ?? 0) === 0 && (sub.invoice_total_paid ?? 0) > 0
                 }).length}
               </div>
-              <div className="text-sm text-gray-600">Fully Paid</div>
+              <div className="text-sm text-gray-600">{t('status.fully_paid')}</div>
             </div>
           )}
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">€{project.total_subcontractor_cost.toLocaleString('hr-HR')}</div>
-            <div className="text-sm text-gray-600">Contract Total</div>
+            <div className="text-sm text-gray-600">{t('supervision.site_management.project_detail.contract_total')}</div>
           </div>
           {canManagePayments && (
             <div className="text-center">
               <div className="text-2xl font-bold text-teal-600">
                 €{project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString('hr-HR')}
               </div>
-              <div className="text-sm text-gray-600">Total Paid</div>
+              <div className="text-sm text-gray-600">{t('supervision.payment_history.total_paid')}</div>
             </div>
           )}
         </div>

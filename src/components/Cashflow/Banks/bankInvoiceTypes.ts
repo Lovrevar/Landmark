@@ -6,6 +6,7 @@ export interface BankInvoiceFormModalProps {
 export interface BankCompany {
   id: string
   name: string
+  oib?: string
   contact_person?: string
   contact_email?: string
 }
@@ -25,7 +26,7 @@ export interface CreditAllocation {
   allocated_amount: number
   used_amount: number
   description: string | null
-  allocation_type: 'project' | 'opex' | 'refinancing'
+  allocation_type?: 'project' | 'opex' | 'refinancing'
   project?: { id: string; name: string }
 }
 

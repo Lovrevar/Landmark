@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from 'react'
-import { LoadingSpinner, Modal } from '../../ui'
+import { useTranslation } from 'react-i18next'
+import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './types'
-import { useSiteData } from './Hooks/useSiteData'
+import { useSiteData } from './hooks/useSiteData'
 import { ProjectsGrid } from './ProjectsGrid'
 import { ProjectDetail } from './ProjectDetail'
-import { PhaseSetupModal } from './Modals/PhaseSetupModal'
-import { EditPhaseModal } from './Modals/EditPhaseModal'
-import { SubcontractorFormModal } from './Forms/SubcontractorFormModal'
-import { EditSubcontractorModal } from './Modals/EditSubcontractorModal'
-import { PaymentHistoryModal } from './Modals/PaymentHistoryModal'
-import { EditPaymentModal } from './Modals/EditPaymentModal'
-import { SubcontractorDetailsModal } from './Modals/SubcontractorDetailsModal'
-import { InvoicesModal } from './Modals/InvoicesModal'
+import { PhaseSetupModal } from './modals/PhaseSetupModal'
+import { EditPhaseModal } from './modals/EditPhaseModal'
+import { SubcontractorFormModal } from './forms/SubcontractorFormModal'
+import { EditSubcontractorModal } from './modals/EditSubcontractorModal'
+import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
+import { EditPaymentModal } from './modals/EditPaymentModal'
+import { SubcontractorDetailsModal } from './modals/SubcontractorDetailsModal'
+import { InvoicesModal } from './modals/InvoicesModal'
 import { MilestoneList } from './MilestoneList'
 import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../../../utils/permissions'
 
 const SiteManagement: React.FC = () => {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const {
     projects,
@@ -31,7 +33,11 @@ const SiteManagement: React.FC = () => {
     addSubcontractorToPhase,
     updateSubcontractor,
     deleteSubcontractor,
-    addPaymentToSubcontractor,
+    pendingDeleteSubcontractor,
+    confirmDeleteSubcontractor,
+    cancelDeleteSubcontractor,
+    deletingSubcontractor,
+    pendingConfirm,
     fetchWirePayments,
     updateWirePayment,
     deleteWirePayment,
@@ -115,7 +121,7 @@ const SiteManagement: React.FC = () => {
 
   const handleAddSubcontractor = async (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => {
     if (!selectedPhase) return
-    const success = await addSubcontractorToPhase(selectedPhase, {
+    await addSubcontractorToPhase(selectedPhase, {
       useExisting,
       existing_subcontractor_id: data.existing_subcontractor_id,
       name: data.name,
@@ -134,10 +140,8 @@ const SiteManagement: React.FC = () => {
       financed_by_investor_id: data.financed_by_investor_id,
       financed_by_bank_id: data.financed_by_bank_id
     }, pendingFiles)
-    if (success) {
-      setShowSubcontractorForm(false)
-      setSelectedPhase(null)
-    }
+    setShowSubcontractorForm(false)
+    setSelectedPhase(null)
   }
 
   const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor) => {
@@ -155,7 +159,7 @@ const SiteManagement: React.FC = () => {
 
   const openPaymentHistory = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractorForPayment(subcontractor)
-    const contractId = (subcontractor as any).contract_id || subcontractor.id
+    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
     const payments = await fetchWirePayments(contractId)
     setWirePayments(payments)
     setShowPaymentHistory(true)
@@ -434,6 +438,29 @@ const SiteManagement: React.FC = () => {
             />
           </Modal>
         )}
+
+        <ConfirmDialog
+          show={!!pendingConfirm}
+          title={pendingConfirm?.title ?? ''}
+          message={pendingConfirm?.message ?? ''}
+          confirmLabel={pendingConfirm?.confirmLabel ?? t('common.yes_confirm')}
+          cancelLabel={t('common.cancel')}
+          variant={pendingConfirm?.variant ?? 'primary'}
+          onConfirm={() => pendingConfirm?.onConfirm()}
+          onCancel={() => pendingConfirm?.onCancel()}
+        />
+
+        <ConfirmDialog
+          show={!!pendingDeleteSubcontractor}
+          title={t('common.confirm_delete')}
+          message={t('supervision.site_management.confirm_delete_sub')}
+          confirmLabel={t('common.yes_delete')}
+          cancelLabel={t('common.cancel')}
+          variant="danger"
+          onConfirm={confirmDeleteSubcontractor}
+          onCancel={cancelDeleteSubcontractor}
+          loading={deletingSubcontractor}
+        />
       </div>
     )
   }

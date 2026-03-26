@@ -1,8 +1,8 @@
 import { format } from 'date-fns'
-import type { Project, Company, CreditAllocation, BankCredit, FinancialSummary } from '../../types/investment'
+import type { Project, BankCredit, FinancialSummary } from '../../types/investment'
 import { formatEuropean } from '../../utils/formatters'
 
-const addHeader = (doc: any, yPos: number) => {
+const addHeader = (doc: import('jspdf').jsPDF, yPos: number) => {
   doc.setFillColor(15, 23, 42)
   doc.rect(0, 0, 210, yPos, 'F')
 
@@ -19,7 +19,7 @@ const addHeader = (doc: any, yPos: number) => {
   return yPos + 10
 }
 
-const addSectionTitle = (doc: any, title: string, yPos: number) => {
+const addSectionTitle = (doc: import('jspdf').jsPDF, title: string, yPos: number) => {
   doc.setFillColor(241, 245, 249)
   doc.rect(14, yPos - 2, 182, 10, 'F')
 
@@ -32,7 +32,7 @@ const addSectionTitle = (doc: any, title: string, yPos: number) => {
   return yPos + 15
 }
 
-const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, innerRadius: number, data: { label: string, value: number, color: number[] }[]) => {
+const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerRadius: number, innerRadius: number, data: { label: string, value: number, color: number[] }[]) => {
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   if (total === 0) return
@@ -141,7 +141,7 @@ const drawDonutChart = (doc: any, x: number, y: number, outerRadius: number, inn
   doc.setTextColor(0, 0, 0)
 }
 
-const drawBarChart = (doc: any, x: number, y: number, width: number, height: number, data: { label: string, value: number, max: number, color?: number[] }[]) => {
+const drawBarChart = (doc: import('jspdf').jsPDF, x: number, y: number, width: number, height: number, data: { label: string, value: number, max: number, color?: [number, number, number] }[]) => {
   const maxValue = Math.max(...data.map(d => d.max))
   const barHeight = Math.min(6, (height - (data.length + 1) * 2) / data.length)
 
@@ -186,8 +186,7 @@ const drawBarChart = (doc: any, x: number, y: number, width: number, height: num
 export const generateInvestmentReportPDF = async (
   financialSummary: FinancialSummary,
   bankCredits: BankCredit[],
-  projects: Project[],
-  companies: Company[]
+  projects: Project[]
 ) => {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF()
@@ -196,7 +195,7 @@ export const generateInvestmentReportPDF = async (
 
   yPos = addSectionTitle(doc, 'EXECUTIVE SUMMARY', yPos)
 
-  const statBoxes = [
+  const statBoxes: Array<{ label: string; value: number; color: [number, number, number] }> = [
     { label: 'Portfolio Value', value: financialSummary.total_portfolio_value, color: [59, 130, 246] },
     { label: 'Outstanding Debt', value: financialSummary.total_debt, color: [239, 68, 68] },
     { label: 'Available Investments', value: financialSummary.available_credit, color: [34, 197, 94] },
@@ -237,7 +236,7 @@ export const generateInvestmentReportPDF = async (
   doc.setFillColor(226, 232, 240)
   doc.roundedRect(20, yPos + 3, 170, 6, 1, 1, 'F')
 
-  const progressColor = utilizationRate >= 90 ? [239, 68, 68] : utilizationRate >= 70 ? [249, 115, 22] : [59, 130, 246]
+  const progressColor: [number, number, number] = utilizationRate >= 90 ? [239, 68, 68] : utilizationRate >= 70 ? [249, 115, 22] : [59, 130, 246]
   doc.setFillColor(...progressColor)
   doc.roundedRect(20, yPos + 3, (170 * Math.min(utilizationRate, 100)) / 100, 6, 1, 1, 'F')
 
@@ -332,7 +331,7 @@ if (highUtilizationCredits > 0) {
     yPos += 10
   }
 
-  const allAllocations: Array<{ label: string, value: number, max: number, color: number[] }> = []
+  const allAllocations: Array<{ label: string, value: number, max: number, color: [number, number, number] }> = []
 
   bankCredits.forEach(credit => {
     if (credit.credit_allocations && credit.credit_allocations.length > 0) {
@@ -340,7 +339,7 @@ if (highUtilizationCredits > 0) {
         const projectName = allocation.project?.name || 'OPEX'
         const creditLabel = `${credit.credit_name || credit.company?.name || 'Credit'} - ${projectName}`
         const utilPercent = allocation.allocated_amount > 0 ? (allocation.used_amount / allocation.allocated_amount) * 100 : 0
-        const color = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
+        const color: [number, number, number] = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
 
         allAllocations.push({
           label: creditLabel,
@@ -351,7 +350,7 @@ if (highUtilizationCredits > 0) {
       })
     } else {
       const utilPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
-      const color = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
+      const color: [number, number, number] = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
       allAllocations.push({
         label: credit.credit_name || `${credit.company?.name || 'Credit'}`,
         value: credit.amount,
@@ -364,7 +363,6 @@ if (highUtilizationCredits > 0) {
   const creditUtilizationData = allAllocations.sort((a, b) => Number(b.value) - Number(a.value))
 
   if (creditUtilizationData.length > 0) {
-    const chartHeight = creditUtilizationData.length * 8
     const itemsPerPage = Math.floor(210 / 8)
     const totalChunks = Math.ceil(creditUtilizationData.length / itemsPerPage)
 
@@ -402,7 +400,7 @@ if (highUtilizationCredits > 0) {
 
   bankCredits
     .sort((a, b) => Number(b.amount) - Number(a.amount))
-    .forEach((credit, index) => {
+    .forEach((credit) => {
       const hasAllocations = credit.credit_allocations && credit.credit_allocations.length > 0
       const allocationCount = hasAllocations ? credit.credit_allocations!.length : 0
       const baseHeight = 38
@@ -416,7 +414,7 @@ if (highUtilizationCredits > 0) {
       }
 
       const utilizationPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
-      const bgColor = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
+      const bgColor: [number, number, number] = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
 
       doc.setFillColor(...bgColor)
       doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
@@ -487,7 +485,7 @@ if (highUtilizationCredits > 0) {
       doc.setFillColor(226, 232, 240)
       doc.roundedRect(barStartX, yPos + utilizationY - 3, barWidth, 4, 1, 1, 'F')
 
-      const utilBarColor = utilizationPercent >= 90 ? [239, 68, 68] : utilizationPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
+      const utilBarColor: [number, number, number] = utilizationPercent >= 90 ? [239, 68, 68] : utilizationPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
       doc.setFillColor(...utilBarColor)
       doc.roundedRect(barStartX, yPos + utilizationY - 3, (barWidth * Math.min(utilizationPercent, 100)) / 100, 4, 1, 1, 'F')
 

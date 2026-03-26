@@ -1,6 +1,7 @@
 import React from 'react'
 import { XCircle, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import type { SubcontractorStatus } from '../types/supervisionTypes'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadlines, needsAttention }) => {
+  const { t } = useTranslation()
   const allClear = overdueTasks.length === 0 && criticalDeadlines.length === 0 && needsAttention.length === 0
 
   return (
@@ -19,7 +21,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
           <div className="p-6 border-b border-red-200 bg-red-50">
             <h2 className="text-xl font-semibold text-red-900 flex items-center">
               <XCircle className="w-5 h-5 mr-2" />
-              Overdue Tasks ({overdueTasks.length})
+              {t('dashboards.supervision.overdue_tasks', { count: overdueTasks.length })}
             </h2>
           </div>
           <div className="p-6 space-y-3">
@@ -30,13 +32,13 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900">{sub.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-red-600 font-medium mt-2">
-                      {Math.abs(sub.days_until_deadline)} days overdue • {sub.progress}% complete
+                      {t('dashboards.supervision.days_overdue', { days: Math.abs(sub.days_until_deadline) })} • {sub.progress}% {t('dashboards.supervision.complete')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-600">Deadline was</p>
+                    <p className="text-xs text-gray-600">{t('dashboards.supervision.deadline_was')}</p>
                     <p className="text-sm font-medium text-red-700">
-                      {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : t('dashboards.supervision.na')}
                     </p>
                   </div>
                 </div>
@@ -51,7 +53,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
           <div className="p-6 border-b border-orange-200 bg-orange-50">
             <h2 className="text-xl font-semibold text-orange-900 flex items-center">
               <Clock className="w-5 h-5 mr-2" />
-              Critical Deadlines - Next 7 Days ({criticalDeadlines.length})
+              {t('dashboards.supervision.critical_deadlines', { count: criticalDeadlines.length })}
             </h2>
           </div>
           <div className="p-6 space-y-3">
@@ -62,13 +64,13 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900">{sub.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-orange-600 font-medium mt-2">
-                      {sub.days_until_deadline} days remaining • {sub.progress}% complete
+                      {t('dashboards.supervision.days_remaining', { days: sub.days_until_deadline })} • {sub.progress}% {t('dashboards.supervision.complete')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-600">Due</p>
+                    <p className="text-xs text-gray-600">{t('dashboards.supervision.due')}</p>
                     <p className="text-sm font-medium text-orange-700">
-                      {format(parseISO(sub.deadline), 'MMM dd, yyyy')}
+                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : t('dashboards.supervision.na')}
                     </p>
                   </div>
                 </div>
@@ -83,7 +85,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
           <div className="p-6 border-b border-yellow-200 bg-yellow-50">
             <h2 className="text-xl font-semibold text-yellow-900 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
-              No Recent Activity ({needsAttention.length})
+              {t('dashboards.supervision.no_recent_activity', { count: needsAttention.length })}
             </h2>
           </div>
           <div className="p-6 space-y-3">
@@ -94,13 +96,13 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900">{sub.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-yellow-600 font-medium mt-2">
-                      No work logs this week • {sub.progress}% complete
+                      {t('dashboards.supervision.no_work_logs_week')} • {sub.progress}% {t('dashboards.supervision.complete')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-600">Last activity</p>
+                    <p className="text-xs text-gray-600">{t('dashboards.supervision.last_activity_label')}</p>
                     <p className="text-sm font-medium text-yellow-700">
-                      {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : 'None'}
+                      {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : t('dashboards.supervision.none')}
                     </p>
                   </div>
                 </div>
@@ -113,8 +115,8 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
       {allClear && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
-          <p className="text-gray-600">No critical issues or alerts at this time</p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboards.supervision.all_clear')}</h3>
+          <p className="text-gray-600">{t('dashboards.supervision.no_critical_issues')}</p>
         </div>
       )}
     </div>

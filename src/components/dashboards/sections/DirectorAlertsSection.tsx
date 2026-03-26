@@ -1,5 +1,6 @@
 import React from 'react'
 import { AlertTriangle, Clock, Activity } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Alert } from '../types/directorTypes'
 
 interface Props {
@@ -7,13 +8,14 @@ interface Props {
 }
 
 const DirectorAlertsSection: React.FC<Props> = ({ alerts }) => {
+  const { t } = useTranslation()
   if (alerts.length === 0) return null
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-4">
         <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">Critical Alerts ({alerts.length})</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.director.critical_alerts', { count: alerts.length })}</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {alerts.slice(0, 6).map((alert, index) => (

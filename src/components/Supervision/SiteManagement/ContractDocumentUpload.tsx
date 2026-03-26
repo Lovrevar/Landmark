@@ -1,6 +1,8 @@
 import React, { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Upload, X, FileText, AlertCircle } from 'lucide-react'
 import { formatFileSize } from '../../../utils/formatters'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface ContractDocumentUploadProps {
   files: File[]
@@ -16,6 +18,8 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
   onChange,
   error
 }) => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (selected: FileList | null) => {
@@ -26,11 +30,11 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
 
     Array.from(selected).forEach((file) => {
       if (file.type !== ACCEPTED_TYPE) {
-        errors.push(`"${file.name}" nije PDF dokument`)
+        errors.push(t('supervision.site_management.doc_upload.not_pdf', { name: file.name }))
         return
       }
       if (file.size > MAX_FILE_SIZE) {
-        errors.push(`"${file.name}" premašuje 25MB ograničenje`)
+        errors.push(t('supervision.site_management.doc_upload.exceeds_size', { name: file.name }))
         return
       }
       const isDuplicate = files.some((f) => f.name === file.name && f.size === file.size)
@@ -40,7 +44,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
     })
 
     if (errors.length > 0) {
-      alert(errors.join('\n'))
+      toast.error(errors.join(' • '))
     }
 
     if (newFiles.length > 0) {
@@ -80,10 +84,10 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
         />
         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
         <p className="text-sm font-medium text-gray-700">
-          Povucite PDF dokumente ovdje ili kliknite za odabir
+          {t('supervision.site_management.doc_upload.drag_or_click')}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          Samo PDF datoteke, max 25MB po dokumentu
+          {t('supervision.site_management.doc_upload.hint')}
         </p>
       </div>
 
@@ -97,7 +101,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
       {files.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-            Odabrani dokumenti ({files.length})
+            {t('supervision.site_management.doc_upload.selected_count', { count: files.length })}
           </p>
           {files.map((file, index) => (
             <div
@@ -116,7 +120,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
                   removeFile(index)
                 }}
                 className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-                title="Ukloni"
+                title={t('supervision.site_management.doc_upload.remove')}
               >
                 <X className="w-4 h-4" />
               </button>

@@ -1,8 +1,9 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Briefcase, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '../../ui'
 import { formatEuropean } from '../../../utils/formatters'
-import { SubcontractorSummary } from '../types'
+import { SubcontractorSummary } from './types'
 
 interface Props {
   sub: SubcontractorSummary
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDelete }) => {
+  const { t } = useTranslation()
   const paymentPercentage = sub.total_contract_value > 0
     ? (sub.total_paid / sub.total_contract_value) * 100
     : 0
@@ -27,14 +29,14 @@ export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDe
           <button
             onClick={onEdit}
             className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Edit Subcontractor"
+            title={t('supervision.subcontractors.edit')}
           >
             <Pencil className="w-4 h-4" />
           </button>
           <button
             onClick={onDelete}
             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Delete Subcontractor"
+            title={t('supervision.subcontractors.delete_title')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -47,32 +49,32 @@ export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDe
       <Card.Body>
         <div className="space-y-3 mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Total Contracts:</span>
+            <span className="text-gray-600">{t('supervision.subcontractors.total_contracts')}:</span>
             <span className="font-medium text-gray-900">{sub.total_contracts}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Active / Completed:</span>
+            <span className="text-gray-600">{t('supervision.subcontractors.active_completed')}:</span>
             <span className="font-medium text-gray-900">
               {sub.active_contracts} / {sub.completed_contracts}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-            <span className="text-gray-600">Total Value:</span>
+            <span className="text-gray-600">{t('supervision.subcontractors.contract_value')}:</span>
             <span className="font-bold text-gray-900">€{formatEuropean(sub.total_contract_value)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Total Paid:</span>
+            <span className="text-gray-600">{t('common.total_paid')}:</span>
             <span className="font-medium text-teal-600">€{formatEuropean(sub.total_paid)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Remaining:</span>
+            <span className="text-gray-600">{t('common.remaining')}:</span>
             <span className="font-medium text-orange-600">€{formatEuropean(sub.total_remaining)}</span>
           </div>
         </div>
 
         <div className="pt-3 border-t border-gray-200">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs text-gray-600">Payment Progress</span>
+            <span className="text-xs text-gray-600">{t('supervision.subcontractors.payment_progress')}</span>
             <span className="text-xs font-medium text-gray-900">{paymentPercentage.toFixed(0)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">

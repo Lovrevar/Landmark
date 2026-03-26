@@ -1,5 +1,6 @@
 import React from 'react'
 import { Briefcase, Hammer, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Table, Badge, EmptyState } from '../ui'
 import type { SupplierReportData, SupplierTypeSummary, RetailReportData } from './retailReportTypes'
 
@@ -9,26 +10,27 @@ interface Props {
 }
 
 export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
+  const { t } = useTranslation()
   const { portfolio, supplier_types, suppliers } = data
   const totalCosts = portfolio.total_land_investment + portfolio.total_development_cost + portfolio.total_construction_cost
 
   const costBreakdown = [
     {
-      label: 'Zemljista',
+      label: t('reports.costs.land'),
       amount: portfolio.total_land_investment,
       pct: totalCosts > 0 ? (portfolio.total_land_investment / totalCosts) * 100 : 0,
       color: 'bg-blue-500',
       textColor: 'text-blue-600'
     },
     {
-      label: 'Razvoj',
+      label: t('reports.costs.development'),
       amount: portfolio.total_development_cost,
       pct: totalCosts > 0 ? (portfolio.total_development_cost / totalCosts) * 100 : 0,
       color: 'bg-amber-500',
       textColor: 'text-amber-600'
     },
     {
-      label: 'Gradnja',
+      label: t('reports.costs.construction'),
       amount: portfolio.total_construction_cost,
       pct: totalCosts > 0 ? (portfolio.total_construction_cost / totalCosts) * 100 : 0,
       color: 'bg-teal-500',
@@ -42,7 +44,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-5">
             <Briefcase className="w-5 h-5 text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900">Struktura troskova</h3>
+            <h3 className="text-base font-semibold text-gray-900">{t('reports.costs.cost_structure')}</h3>
           </div>
 
           <div className="flex gap-0.5 h-4 rounded-full overflow-hidden bg-gray-200 mb-5">
@@ -73,7 +75,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
               </div>
             ))}
             <div className="pt-3 mt-2 border-t border-gray-200 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">Ukupno</span>
+              <span className="text-sm font-semibold text-gray-800">{t('common.total')}</span>
               <span className="text-base font-bold text-gray-900">{formatCurrency(totalCosts)}</span>
             </div>
           </div>
@@ -82,11 +84,11 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-5">
             <Hammer className="w-5 h-5 text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900">Po tipu dobavljaca</h3>
+            <h3 className="text-base font-semibold text-gray-900">{t('reports.costs.by_supplier_type')}</h3>
           </div>
 
           {supplier_types.length === 0 ? (
-            <EmptyState title="Nema podataka" />
+            <EmptyState title={t('common.no_data')} />
           ) : (
             <div className="space-y-3">
               {supplier_types.map(st => (
@@ -101,23 +103,23 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
           <Users className="w-5 h-5 text-gray-600" />
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Dobavljaci</h3>
-            <p className="text-sm text-gray-500">{suppliers.length} dobavljaca</p>
+            <h3 className="text-base font-semibold text-gray-900">{t('common.suppliers')}</h3>
+            <p className="text-sm text-gray-500">{t('reports.costs.suppliers_count', { count: suppliers.length })}</p>
           </div>
         </div>
 
         {suppliers.length === 0 ? (
-          <EmptyState title="Nema podataka o dobavljacima" />
+          <EmptyState title={t('reports.costs.no_suppliers')} />
         ) : (
           <Table className="rounded-none shadow-none border-0">
             <Table.Head>
               <Table.Tr hoverable={false}>
-                <Table.Th>Dobavljac</Table.Th>
-                <Table.Th>Tip</Table.Th>
-                <Table.Th className="text-right">Ugovora</Table.Th>
-                <Table.Th className="text-right">Ugovoreno</Table.Th>
-                <Table.Th className="text-right">Placeno</Table.Th>
-                <Table.Th className="text-right">Preostalo</Table.Th>
+                <Table.Th>{t('common.supplier')}</Table.Th>
+                <Table.Th>{t('common.status')}</Table.Th>
+                <Table.Th className="text-right">{t('common.contracts')}</Table.Th>
+                <Table.Th className="text-right">{t('reports.costs.contracted')}</Table.Th>
+                <Table.Th className="text-right">{t('common.paid')}</Table.Th>
+                <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
               </Table.Tr>
             </Table.Head>
             <Table.Body>
@@ -144,6 +146,7 @@ function SupplierTypeRow({ data, formatCurrency }: {
   data: SupplierTypeSummary
   formatCurrency: (n: number) => string
 }) {
+  const { t } = useTranslation()
   const unpaid = data.total_amount - data.total_paid
   const paidPct = data.total_amount > 0 ? (data.total_paid / data.total_amount) * 100 : 0
 
@@ -154,7 +157,7 @@ function SupplierTypeRow({ data, formatCurrency }: {
           <Badge variant={typeBadgeVariants[data.type] || 'gray'} size="sm">
             {data.type}
           </Badge>
-          <span className="text-xs text-gray-500">{data.count} ugovora</span>
+          <span className="text-xs text-gray-500">{t('reports.costs.contracts_count', { count: data.count })}</span>
         </div>
         <span className="text-sm font-semibold text-gray-900">{formatCurrency(data.total_amount)}</span>
       </div>
@@ -168,8 +171,8 @@ function SupplierTypeRow({ data, formatCurrency }: {
         <span className="text-xs text-gray-500">{paidPct.toFixed(0)}%</span>
       </div>
       <div className="flex justify-between mt-1 text-xs">
-        <span className="text-teal-600">Plac. {formatCurrency(data.total_paid)}</span>
-        {unpaid > 0 && <span className="text-orange-600">Nepl. {formatCurrency(unpaid)}</span>}
+        <span className="text-teal-600">{t('reports.costs.paid_abbr')} {formatCurrency(data.total_paid)}</span>
+        {unpaid > 0 && <span className="text-orange-600">{t('reports.costs.unpaid_abbr')} {formatCurrency(unpaid)}</span>}
       </div>
     </div>
   )

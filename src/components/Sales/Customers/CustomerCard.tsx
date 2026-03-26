@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Flame, TrendingUp, AlertCircle, Star } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
@@ -6,7 +7,7 @@ import { Button } from '../../ui'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
-  activeCategory: CustomerCategory
+  activeCategory: CustomerCategory | null
   isSelected: boolean
   onToggleSelect: (id: string) => void
   onViewDetails: (customer: CustomerWithApartments) => void
@@ -25,6 +26,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   onDelete,
   onUpdateContact
 }) => {
+  const { t } = useTranslation()
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case 'hot': return 'text-red-600 bg-red-100'
@@ -88,9 +90,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
       {activeCategory === 'buyer' && customer.apartments && customer.apartments.length > 0 && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs font-semibold text-green-800 mb-2">Purchased Units</p>
+          <p className="text-xs font-semibold text-green-800 mb-2">{t('customers.card.purchased_units')}</p>
           <div className="space-y-2">
-            {customer.apartments.map((unit: any) => {
+            {customer.apartments.map((unit) => {
               const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
               const garagePrice = (unit.garage?.price || 0)
               const repositoryPrice = (unit.repository?.price || 0)
@@ -142,8 +144,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           </div>
 
           {(() => {
-            const totalPaid = customer.apartments.reduce((sum: number, unit: any) => sum + (unit.total_paid || 0), 0)
-            const totalPrice = customer.apartments.reduce((sum: number, unit: any) => {
+            const totalPaid = customer.apartments.reduce((sum, unit) => sum + (unit.total_paid || 0), 0)
+            const totalPrice = customer.apartments.reduce((sum, unit) => {
               const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
               const garPrice = unit.garage?.price || 0
               const repPrice = unit.repository?.price || 0
@@ -155,15 +157,15 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
             return (
               <div className="mt-3 pt-3 border-t border-green-300 space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium text-green-800">Total Paid:</span>
+                  <span className="font-medium text-green-800">{t('customers.card.total_paid')}:</span>
                   <span className="font-bold text-green-700">€{totalPaid.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium text-green-800">Remaining:</span>
+                  <span className="font-medium text-green-800">{t('customers.card.remaining')}:</span>
                   <span className="font-bold text-red-600">€{remaining.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-xs pt-1 border-t border-green-200">
-                  <span className="font-semibold text-green-900">Total Value:</span>
+                  <span className="font-semibold text-green-900">{t('customers.card.total_value')}:</span>
                   <span className="font-bold text-green-900">€{totalPrice.toLocaleString('hr-HR')}</span>
                 </div>
               </div>
@@ -174,7 +176,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
       {(activeCategory === 'interested' || activeCategory === 'hot_lead') && customer.preferences && (
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-xs font-semibold text-blue-800 mb-2">Preferences</p>
+          <p className="text-xs font-semibold text-blue-800 mb-2">{t('customers.card.preferences')}</p>
           <div className="text-xs text-blue-700 space-y-1">
             {customer.preferences.budget_min && customer.preferences.budget_max && (
               <div>Budget: €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K</div>
@@ -199,7 +201,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
       {activeCategory === 'backed_out' && customer.backed_out_reason && (
         <div className="mb-4 p-3 bg-red-50 rounded-lg">
-          <p className="text-xs font-semibold text-red-800 mb-1">Backed Out Reason</p>
+          <p className="text-xs font-semibold text-red-800 mb-1">{t('customers.card.backed_out_reason')}</p>
           <p className="text-xs text-red-700">{customer.backed_out_reason}</p>
         </div>
       )}
@@ -213,7 +215,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => onUpdateContact(customer.id)}
           className="mt-4"
         >
-          Update Contact Date
+          {t('customers.card.update_contact')}
         </Button>
       </div>
     </div>

@@ -81,9 +81,9 @@ export interface SubcontractorMapped {
   id: string
   subcontractor_id: string
   name: string
-  contact: string
-  job_description: string
-  deadline: string
+  contact: string | null
+  job_description: string | null
+  deadline: string | null
   cost: number
   budget_realized: number
   progress: number
@@ -92,13 +92,25 @@ export interface SubcontractorMapped {
 
 export interface ProjectWithDetails extends Project {
   subcontractors: SubcontractorMapped[]
-  invoices: any[]
+  invoices: Record<string, unknown>[]
   apartments: Apartment[]
-  milestones: any[]
+  milestones: Milestone[]
   total_spent: number
   total_revenue: number
   pending_invoices: number
   investors: string
+}
+
+export interface ProjectDisplay {
+  id: string
+  name: string
+  location: string
+  start_date: string
+  end_date: string | null
+  budget: number
+  status: string
+  investor?: string | null
+  created_at: string
 }
 
 // ── InvestmentProjects ────────────────────────────────────────────────────

@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../contexts/AuthContext'
 import { Building2, Lock, User } from 'lucide-react'
+import Input from '../ui/Input'
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { t } = useTranslation()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +20,7 @@ const LoginForm: React.FC = () => {
     const success = await login(email, password)
 
     if (!success) {
-      setError('Invalid email or password')
+      setError(t('auth.invalid_credentials'))
     }
 
     setLoading(false)
@@ -32,22 +35,22 @@ const LoginForm: React.FC = () => {
               <Building2 className="w-8 h-8 text-blue-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Cognilion</h1>
-            <p className="text-gray-600 mt-2">Admin Portal</p>
+            <p className="text-gray-600 mt-2">{t('auth.admin_portal')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                {t('auth.email')}
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
+                <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="pl-10 pr-4 py-3 transition-all duration-200"
                   placeholder="Enter your email"
                   required
                 />
@@ -56,16 +59,16 @@ const LoginForm: React.FC = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
+                <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="pl-10 pr-4 py-3 transition-all duration-200"
                   placeholder="Enter your password"
                   required
                 />
@@ -83,7 +86,7 @@ const LoginForm: React.FC = () => {
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('auth.signing_in') : t('auth.sign_in')}
             </button>
           </form>
         </div>

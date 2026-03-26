@@ -1,5 +1,6 @@
 import React from 'react'
 import { DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Table, EmptyState } from '../ui'
 import type { CustomerReportData, InvoiceSummary } from './retailReportTypes'
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurrency }) => {
+  const { t } = useTranslation()
   const totalContracts = customers.reduce((s, c) => s + c.total_contracts, 0)
   const totalAmount = customers.reduce((s, c) => s + c.total_amount, 0)
   const totalPaid = customers.reduce((s, c) => s + c.total_paid, 0)
@@ -22,52 +24,52 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           icon={<DollarSign className="w-5 h-5 text-blue-600" />}
-          label="Ugovoreno"
+          label={t('reports.sales_analysis.contracted')}
           value={formatCurrency(totalAmount)}
-          sub={`${totalContracts} ugovora`}
+          sub={t('reports.sales_analysis.contracts_count', { count: totalContracts })}
         />
         <StatCard
           icon={<CheckCircle className="w-5 h-5 text-green-600" />}
-          label="Naplaceno"
+          label={t('reports.sales_analysis.collected')}
           value={formatCurrency(totalPaid)}
-          sub={`${collectionRate.toFixed(1)}% naplata`}
+          sub={t('reports.sales_analysis.collection_rate', { rate: collectionRate.toFixed(1) })}
         />
         <StatCard
           icon={<Clock className="w-5 h-5 text-orange-600" />}
-          label="Za naplatu"
+          label={t('reports.sales_analysis.outstanding')}
           value={formatCurrency(totalRemaining)}
-          sub={`${totalArea.toLocaleString('hr-HR')} m2 prodano`}
+          sub={t('reports.sales_analysis.area_sold', { area: totalArea.toLocaleString('hr-HR') })}
         />
         <StatCard
           icon={<AlertCircle className="w-5 h-5 text-red-600" />}
-          label="U kasnjenju"
+          label={t('reports.sales_analysis.overdue')}
           value={formatCurrency(invoices.overdue_amount)}
-          sub={`${invoices.overdue} racuna`}
+          sub={t('reports.sales_analysis.invoices_count', { count: invoices.overdue })}
         />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Kupci</h3>
-            <p className="text-sm text-gray-500">{customers.length} kupaca</p>
+            <h3 className="text-base font-semibold text-gray-900">{t('common.customers')}</h3>
+            <p className="text-sm text-gray-500">{t('reports.sales_analysis.customers_count', { count: customers.length })}</p>
           </div>
           <InvoiceStatusBar invoices={invoices} />
         </div>
 
         {customers.length === 0 ? (
-          <EmptyState title="Nema podataka o kupcima" />
+          <EmptyState title={t('reports.sales_analysis.no_customers')} />
         ) : (
           <Table className="rounded-none shadow-none border-0">
             <Table.Head>
               <Table.Tr hoverable={false}>
-                <Table.Th>Kupac</Table.Th>
-                <Table.Th className="text-right">Ugovora</Table.Th>
-                <Table.Th className="text-right">Povrsina</Table.Th>
-                <Table.Th className="text-right">Ugovoreno</Table.Th>
-                <Table.Th className="text-right">Placeno</Table.Th>
-                <Table.Th className="text-right">Neplaceno</Table.Th>
-                <Table.Th className="text-right">Naplata</Table.Th>
+                <Table.Th>{t('common.customer')}</Table.Th>
+                <Table.Th className="text-right">{t('common.contracts')}</Table.Th>
+                <Table.Th className="text-right">{t('reports.sales_analysis.area')}</Table.Th>
+                <Table.Th className="text-right">{t('reports.sales_analysis.contracted')}</Table.Th>
+                <Table.Th className="text-right">{t('common.paid')}</Table.Th>
+                <Table.Th className="text-right">{t('common.unpaid')}</Table.Th>
+                <Table.Th className="text-right">{t('reports.sales_analysis.collection_col')}</Table.Th>
               </Table.Tr>
             </Table.Head>
             <Table.Body>

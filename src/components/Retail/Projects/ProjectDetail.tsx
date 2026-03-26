@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
-import { Button, Badge, LoadingSpinner, EmptyState } from '../../ui'
+import { useTranslation } from 'react-i18next'
+import { Button, Badge, LoadingSpinner, EmptyState, ConfirmDialog } from '../../ui'
+import { formatCurrency, getStatusBadgeVariant } from '../utils'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
-import { ContractFormModal } from './Modals/ContractFormModal'
-import { DevelopmentFormModal } from './Forms/DevelopmentFormModal'
-import { SalesFormModal } from './Forms/SalesFormModal'
-import { EditPhaseModal } from './Modals/EditPhaseModal'
-import { RetailPaymentHistoryModal } from './Modals/RetailPaymentHistoryModal'
-import { RetailInvoicesModal } from './Modals/RetailInvoicesModal'
-import { retailProjectService } from './Services/retailProjectService'
+import { ContractFormModal } from './modals/ContractFormModal'
+import { DevelopmentFormModal } from './forms/DevelopmentFormModal'
+import { SalesFormModal } from './forms/SalesFormModal'
+import { EditPhaseModal } from './modals/EditPhaseModal'
+import { RetailPaymentHistoryModal } from './modals/RetailPaymentHistoryModal'
+import { RetailInvoicesModal } from './modals/RetailInvoicesModal'
+import { retailProjectService } from './services/retailProjectService'
+import { useProjectDetail } from './hooks/useProjectDetail'
+import { useToast } from '../../../contexts/ToastContext'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -20,9 +24,10 @@ interface ProjectDetailProps {
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialProject, onBack, onRefresh }) => {
-  const [project, setProject] = useState(initialProject)
-  const [phaseContracts, setPhaseContracts] = useState<Record<string, RetailContract[]>>({})
-  const [loading, setLoading] = useState(false)
+  const { t } = useTranslation()
+  const toast = useToast()
+  const { project: hookProject, contractsMap: phaseContracts, loading, refetch: loadProjectDetails } = useProjectDetail(initialProject.id)
+  const project = hookProject ?? initialProject
   const [refreshing, setRefreshing] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<RetailProjectPhase | null>(null)
@@ -38,48 +43,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
   const [selectedContractForModal, setSelectedContractForModal] = useState<RetailContract | null>(null)
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
   const [phaseToEdit, setPhaseToEdit] = useState<RetailProjectPhase | null>(null)
+  const [pendingDeletePhase, setPendingDeletePhase] = useState<RetailProjectPhase | null>(null)
+  const [deletingPhase, setDeletingPhase] = useState(false)
+  const [pendingDeleteContractId, setPendingDeleteContractId] = useState<string | null>(null)
+  const [deletingContract, setDeletingContract] = useState(false)
 
   useEffect(() => {
     loadProjectDetails()
   }, [initialProject.id])
-
-  const loadProjectDetails = async () => {
-    try {
-      setLoading(true)
-      const data = await retailProjectService.fetchProjectById(initialProject.id)
-      if (data) {
-        setProject(data)
-
-        const contractsMap: Record<string, RetailContract[]> = {}
-        await Promise.all(
-          data.phases.map(async (phase) => {
-            const contracts = await retailProjectService.fetchContractsByPhase(phase.id)
-            contractsMap[phase.id] = contracts
-          })
-        )
-        setPhaseContracts(contractsMap)
-      }
-    } catch (error) {
-      console.error('Error loading project details:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
     await loadProjectDetails()
     setRefreshing(false)
     onRefresh()
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount)
   }
 
   const handleEditPhase = (phase: RetailProjectPhase) => {
@@ -98,15 +75,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     await handleRefresh()
   }
 
-  const handleDeletePhase = async (phase: RetailProjectPhase) => {
-    if (confirm(`Jeste li sigurni da želite obrisati fazu "${phase.phase_name}"?`)) {
-      try {
-        await retailProjectService.deletePhase(phase.id)
-        await handleRefresh()
-      } catch (error) {
-        console.error('Error deleting phase:', error)
-        alert('Greška pri brisanju faze')
-      }
+  const handleDeletePhase = (phase: RetailProjectPhase) => {
+    setPendingDeletePhase(phase)
+  }
+
+  const confirmDeletePhase = async () => {
+    if (!pendingDeletePhase) return
+    setDeletingPhase(true)
+    try {
+      await retailProjectService.deletePhase(pendingDeletePhase.id)
+      await handleRefresh()
+    } catch (error) {
+      console.error('Error deleting phase:', error)
+      toast.error(t('retail_projects.error_delete_phase'))
+    } finally {
+      setDeletingPhase(false)
+      setPendingDeletePhase(null)
     }
   }
 
@@ -138,15 +122,22 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     await handleRefresh()
   }
 
-  const handleDeleteContract = async (contractId: string) => {
-    if (confirm('Jeste li sigurni da želite obrisati ovaj ugovor?')) {
-      try {
-        await retailProjectService.deleteContract(contractId)
-        await handleRefresh()
-      } catch (error) {
-        console.error('Error deleting contract:', error)
-        alert('Greška pri brisanju ugovora')
-      }
+  const handleDeleteContract = (contractId: string) => {
+    setPendingDeleteContractId(contractId)
+  }
+
+  const confirmDeleteContract = async () => {
+    if (!pendingDeleteContractId) return
+    setDeletingContract(true)
+    try {
+      await retailProjectService.deleteContract(pendingDeleteContractId)
+      await handleRefresh()
+    } catch (error) {
+      console.error('Error deleting contract:', error)
+      toast.error(t('retail_projects.error_delete_contract'))
+    } finally {
+      setDeletingContract(false)
+      setPendingDeleteContractId(null)
     }
   }
 
@@ -180,27 +171,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setMilestoneContext(null)
   }
 
-  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
-    switch (status) {
-      case 'Completed':
-        return 'green'
-      case 'In Progress':
-        return 'blue'
-      case 'Planning':
-        return 'yellow'
-      default:
-        return 'gray'
-    }
-  }
-
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
-          Nazad na projekte
+          {t('retail_projects.back_to_projects')}
         </Button>
         <Button icon={RefreshCw} loading={refreshing} onClick={handleRefresh}>
-          Refresh Data
+          {t('retail_projects.detail.refresh')}
         </Button>
       </div>
 
@@ -210,7 +188,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
             <div className="flex items-center text-gray-600 mb-4">
               <MapPin className="w-5 h-5 mr-2" />
-              {project.location} - Čestica: {project.plot_number}
+              {project.location} - {t('retail_projects.plot_number')}: {project.plot_number}
             </div>
           </div>
           <Badge variant={getStatusBadgeVariant(project.status)} size="md">
@@ -220,19 +198,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-sm text-blue-600 mb-1">Površina</div>
+            <div className="text-sm text-blue-600 mb-1">{t('retail_projects.area')}</div>
             <div className="text-2xl font-bold text-blue-900">{project.total_area_m2.toLocaleString()} m²</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-sm text-green-600 mb-1">Budžet projekta</div>
+            <div className="text-sm text-green-600 mb-1">{t('retail_projects.project_budget')}</div>
             <div className="text-2xl font-bold text-green-900">{formatCurrency(project.purchase_price)}</div>
           </div>
           <div className="bg-orange-50 rounded-lg p-4">
-            <div className="text-sm text-orange-600 mb-1">Cijena po m²</div>
+            <div className="text-sm text-orange-600 mb-1">{t('retail_projects.price_per_m2')}</div>
             <div className="text-2xl font-bold text-orange-900">{formatCurrency(project.price_per_m2)}</div>
           </div>
           <div className="bg-amber-50 rounded-lg p-4">
-            <div className="text-sm text-amber-600 mb-1">Broj faza</div>
+            <div className="text-sm text-amber-600 mb-1">{t('retail_projects.phase_count')}</div>
             <div className="text-2xl font-bold text-amber-900">{project.phases.length}</div>
           </div>
         </div>
@@ -241,37 +219,37 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center mb-4">
               <Link className="w-5 h-5 mr-2 text-emerald-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Povezano zemljište</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('retail_projects.linked_land')}</h3>
             </div>
             <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <div className="flex items-center text-sm text-emerald-700 mb-1">
                     <User className="w-4 h-4 mr-1" />
-                    Vlasnik
+                    {t('retail_projects.owner')}
                   </div>
                   <div className="text-base font-semibold text-emerald-900">
                     {project.land_plot.owner_first_name} {project.land_plot.owner_last_name}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-emerald-700 mb-1">Broj čestice</div>
+                  <div className="text-sm text-emerald-700 mb-1">{t('retail_projects.plot_number')}</div>
                   <div className="text-base font-semibold text-emerald-900">{project.land_plot.plot_number}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-emerald-700 mb-1">Ukupna površina zemljišta</div>
+                  <div className="text-sm text-emerald-700 mb-1">{t('retail_projects.total_land_area')}</div>
                   <div className="text-base font-semibold text-emerald-900">{project.land_plot.total_area_m2.toLocaleString()} m²</div>
                 </div>
                 <div>
-                  <div className="text-sm text-emerald-700 mb-1">Kupljena površina</div>
+                  <div className="text-sm text-emerald-700 mb-1">{t('retail_projects.purchased_area')}</div>
                   <div className="text-base font-semibold text-emerald-900">{project.land_plot.purchased_area_m2.toLocaleString()} m²</div>
                 </div>
                 <div>
-                  <div className="text-sm text-emerald-700 mb-1">Cijena po m²</div>
+                  <div className="text-sm text-emerald-700 mb-1">{t('retail_projects.price_per_m2')}</div>
                   <div className="text-base font-semibold text-emerald-900">{formatCurrency(project.land_plot.price_per_m2)}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-emerald-700 mb-1">Ukupna cijena zemljišta</div>
+                  <div className="text-sm text-emerald-700 mb-1">{t('retail_projects.total_land_price')}</div>
                   <div className="text-base font-semibold text-emerald-900">{formatCurrency(project.land_plot.total_price)}</div>
                 </div>
               </div>
@@ -288,14 +266,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       )}
 
       {loading ? (
-        <LoadingSpinner message="Učitavam detalje..." />
+        <LoadingSpinner message={t('retail_projects.loading_details')} />
       ) : (
         <div className="space-y-6">
           {project.phases.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
               <EmptyState
-                title="Nema faza u projektu"
-                description="Faze će biti automatski kreirane"
+                title={t('retail_projects.no_phases')}
+                description={t('retail_projects.phases_auto_created')}
               />
             </div>
           ) : (
@@ -323,7 +301,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
       {project.notes && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Napomene</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('common.notes')}</h3>
           <p className="text-gray-600 whitespace-pre-wrap">{project.notes}</p>
         </div>
       )}
@@ -394,6 +372,30 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
           onSuccess={handleEditPhaseSuccess}
         />
       )}
+
+      <ConfirmDialog
+        show={!!pendingDeletePhase}
+        title={t('confirm.delete_title')}
+        message={pendingDeletePhase ? t('retail_projects.confirm_delete_phase', { name: pendingDeletePhase.phase_name }) : ''}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDeletePhase}
+        onCancel={() => setPendingDeletePhase(null)}
+        loading={deletingPhase}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteContractId}
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_contract')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteContract}
+        onCancel={() => setPendingDeleteContractId(null)}
+        loading={deletingContract}
+      />
     </div>
   )
 }

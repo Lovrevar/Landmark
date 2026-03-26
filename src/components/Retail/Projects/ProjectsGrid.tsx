@@ -1,7 +1,9 @@
 import React from 'react'
-import { MapPin, ArrowRight, DollarSign, Layers, Link, Edit2 } from 'lucide-react'
+import { MapPin, ArrowRight, Layers, Link, Edit2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectWithPhases } from '../../../types/retail'
+import { formatCurrency, getStatusBadgeVariant } from '../utils'
 
 interface ProjectsGridProps {
   projects: RetailProjectWithPhases[]
@@ -10,30 +12,7 @@ interface ProjectsGridProps {
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onEditProject }) => {
-  const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'yellow' | 'gray' => {
-    switch (status) {
-      case 'Completed':
-        return 'green'
-      case 'In Progress':
-        return 'blue'
-      case 'Planning':
-        return 'yellow'
-      case 'On Hold':
-        return 'gray'
-      default:
-        return 'gray'
-    }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
-
+  const { t } = useTranslation()
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
@@ -56,7 +35,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                 {project.land_plot_id && (
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 flex items-center">
                     <Link className="w-3 h-3 mr-1" />
-                    Povezano zemljište
+                    {t('retail_projects.linked_land')}
                   </span>
                 )}
               </div>
@@ -65,29 +44,29 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
           <div className="space-y-3 mb-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Broj čestice:</span>
+              <span className="text-sm text-gray-600">{t('retail_projects.plot_number')}:</span>
               <span className="text-sm font-semibold text-gray-900">{project.plot_number}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Površina:</span>
+              <span className="text-sm text-gray-600">{t('retail_projects.area')}:</span>
               <span className="text-sm font-semibold text-gray-900">{project.total_area_m2.toLocaleString()} m²</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Budžet projekta:</span>
+              <span className="text-sm text-gray-600">{t('retail_projects.project_budget')}:</span>
               <span className="text-sm font-semibold text-gray-900">{formatCurrency(project.purchase_price)}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Cijena po m²:</span>
+              <span className="text-sm text-gray-600">{t('retail_projects.price_per_m2')}:</span>
               <span className="text-sm font-semibold text-gray-900">{formatCurrency(project.price_per_m2)}</span>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <div className="flex items-center text-sm text-gray-600">
                 <Layers className="w-4 h-4 mr-1" />
-                Faze:
+                {t('common.phases')}:
               </div>
               <span className="text-sm font-semibold text-blue-600">{project.phases.length}</span>
             </div>
@@ -103,7 +82,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                 onEditProject(project)
               }}
             >
-              Uredi
+              {t('common.edit')}
             </Button>
             <Button
               size="sm"
@@ -113,7 +92,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                 onSelectProject(project)
               }}
             >
-              Otvori
+              {t('retail_projects.open')}
             </Button>
           </div>
         </div>
@@ -123,8 +102,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
         <div className="col-span-full">
           <EmptyState
             icon={MapPin}
-            title="Nema projekata"
-            description="Kliknite 'Dodaj projekt' da kreirate prvi projekt"
+            title={t('retail_projects.no_projects')}
+            description={t('retail_projects.no_projects_desc')}
           />
         </div>
       )}

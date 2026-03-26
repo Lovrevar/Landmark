@@ -1,6 +1,7 @@
 import React from 'react'
-import { Building2, Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { useTranslation } from 'react-i18next'
+import { Plus, Edit2, Trash2, DollarSign, Users, Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases } from './types'
 import { Button, Badge, EmptyState } from '../../ui'
@@ -42,9 +43,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onToggleExpand,
   onToggleContractType
 }) => {
+  const { t } = useTranslation()
 
   const groupedSubcontractors = phaseSubcontractors.reduce((groups, sub) => {
-    const typeKey = sub.contract_type_name || 'Uncategorized'
+    const typeKey = sub.contract_type_name || t('supervision.site_management.phase_card.uncategorized')
     if (!groups[typeKey]) {
       groups[typeKey] = []
     }
@@ -52,16 +54,17 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
     return groups
   }, {} as Record<string, typeof phaseSubcontractors>)
 
+  const uncategorizedKey = t('supervision.site_management.phase_card.uncategorized')
   const sortedContractTypeKeys = Object.keys(groupedSubcontractors).sort((a, b) => {
-    if (a === 'Uncategorized') return 1
-    if (b === 'Uncategorized') return -1
+    if (a === uncategorizedKey) return 1
+    if (b === uncategorizedKey) return -1
     return a.localeCompare(b)
   })
 
-  const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && sub.cost > 0)
-  const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || sub.cost === 0)
+  const subcontractorsWithContract = phaseSubcontractors.filter(sub => sub.has_contract !== false && (sub.cost ?? 0) > 0)
+  const subcontractorsWithoutContract = phaseSubcontractors.filter(sub => sub.has_contract === false || (sub.cost ?? 0) === 0)
 
-  const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + sub.cost, 0)
+  const totalContractCost = subcontractorsWithContract.reduce((sum, sub) => sum + (sub.cost ?? 0), 0)
 
   const totalPaidWithContract = subcontractorsWithContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
   const totalPaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
@@ -69,7 +72,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   const totalUnpaidWithContract = subcontractorsWithContract.reduce((sum, sub) => {
     const paid = sub.invoice_total_paid || 0
-    return sum + Math.max(0, sub.cost - paid)
+    return sum + Math.max(0, (sub.cost ?? 0) - paid)
   }, 0)
   const totalUnpaidWithoutContract = subcontractorsWithoutContract.reduce((sum, sub) => sum + (sub.invoice_total_owed || 0), 0)
   const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
@@ -89,13 +92,13 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             />
             <div>
               <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
-              <p className="text-gray-600">Phase {phase.phase_number} • {phaseSubcontractors.length} subcontractor{phaseSubcontractors.length !== 1 ? 's' : ''}</p>
+              <p className="text-gray-600">{t('supervision.site_management.phase_card.phase_label')} {phase.phase_number} • {phaseSubcontractors.length} {phaseSubcontractors.length !== 1 ? t('common.subcontractors') : t('common.subcontractor')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-lg font-bold text-gray-900">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
-              <p className="text-sm text-gray-600">Forecasted Budget</p>
+              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_card.forecasted_budget')}</p>
             </div>
             <Button
               variant="ghost"
@@ -114,22 +117,22 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               icon={Plus}
               onClick={() => onAddSubcontractor(phase)}
             >
-              Add Subcontractor
+              {t('supervision.subcontractors.add')}
             </Button>
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">Contracted Amount (Base)</p>
+            <p className="text-sm text-gray-700">{t('supervision.site_management.phase_card.contracted_amount')}</p>
             <p className="text-lg font-bold text-gray-900">€{totalContractCost.toLocaleString('hr-HR')}</p>
           </div>
           <div className="bg-teal-50 p-3 rounded-lg">
-            <p className="text-sm text-teal-700">Paid Out</p>
+            <p className="text-sm text-teal-700">{t('supervision.site_management.phase_card.paid_out')}</p>
             <p className="text-lg font-bold text-teal-900">€{totalPaidOut.toLocaleString('hr-HR')}</p>
           </div>
           <div className="bg-orange-50 p-3 rounded-lg">
-            <p className="text-sm text-orange-700">Unpaid Contracts</p>
+            <p className="text-sm text-orange-700">{t('supervision.site_management.phase_card.unpaid_contracts')}</p>
             <p className="text-lg font-bold text-orange-900">
               €{totalUnpaid.toLocaleString('hr-HR')}
             </p>
@@ -150,7 +153,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
         <div className="mt-4">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">Budget Utilization (Paid vs Allocated)</span>
+            <span className="text-sm text-gray-600">{t('supervision.site_management.phase_card.budget_utilization')}</span>
             <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -165,7 +168,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
           {budgetUtilization > 100 && (
             <p className="text-xs text-red-600 mt-1">
-              Over budget by €{(totalPaidOut - phase.budget_allocated).toLocaleString('hr-HR')}
+              {t('supervision.site_management.phase_card.over_budget_by')} €{(totalPaidOut - phase.budget_allocated).toLocaleString('hr-HR')}
             </p>
           )}
         </div>
@@ -176,8 +179,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           {phaseSubcontractors.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="No subcontractors yet"
-            description="No subcontractors assigned to this phase yet"
+            title={t('supervision.site_management.phase_card.no_subs_title')}
+            description={t('supervision.site_management.phase_card.no_subs_desc')}
           />
         ) : (
           <div className="space-y-4">
@@ -204,11 +207,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     </div>
                     <div className="flex items-center space-x-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Cost: </span>
+                        <span className="text-gray-600">{t('supervision.site_management.phase_card.cost')}: </span>
                         <span className="font-semibold text-gray-900">€{totalCost.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Paid: </span>
+                        <span className="text-gray-600">{t('common.paid')}: </span>
                         <span className="font-semibold text-teal-600">€{totalPaid.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -220,7 +223,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
               const actualPaid = subcontractor.invoice_total_paid || 0
               const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
-              const daysUntilDeadline = subcontractor.deadline ? differenceInDays(new Date(subcontractor.deadline), new Date()) : 0
+
               const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
               const isPaid = hasValidContract && actualPaid >= subcontractor.cost
               const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0
@@ -239,7 +242,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         <h4 className="font-semibold text-gray-900">{subcontractor.name}</h4>
                         {subcontractor.has_contract === false && (
                           <Badge variant="yellow" size="sm">
-                            BEZ UGOVORA
+                            {t('supervision.subcontractor_details.no_contract_badge')}
                           </Badge>
                         )}
                       </div>
@@ -253,9 +256,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         actualPaid > 0 ? 'blue' :
                         'gray'
                       } size="sm">
-                        {subVariance > 0 ? 'Over Budget' :
-                         isPaid && subVariance === 0 ? 'Paid' :
-                         actualPaid > 0 ? 'Partial' : 'Unpaid'}
+                        {subVariance > 0 ? t('status.over_budget') :
+                         isPaid && subVariance === 0 ? t('status.paid') :
+                         actualPaid > 0 ? t('status.partial') : t('status.unpaid')}
                       </Badge>
                     )}
                   </div>
@@ -263,7 +266,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   <div className="space-y-2 text-xs mb-3">
                     {subcontractor.deadline && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Deadline:</span>
+                        <span className="text-gray-600">{t('supervision.contract_fields.deadline')}:</span>
                         <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
                           {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
                         </span>
@@ -272,21 +275,21 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {hasValidContract ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Contract:</span>
+                          <span className="text-gray-600">{t('common.contract')}:</span>
                           <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Paid:</span>
+                          <span className="text-gray-600">{t('common.paid')}:</span>
                           <span className="font-medium text-teal-600">€{actualPaid.toLocaleString('hr-HR')}</span>
                         </div>
                         {remainingToPay > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Remaining:</span>
+                            <span className="text-gray-600">{t('common.remaining')}:</span>
                             <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">Gain/Loss:</span>
+                          <span className="text-gray-600 font-medium">{t('supervision.subcontractor_details.gain_loss')}:</span>
                           <span className={`font-bold ${
                             subVariance > 0 ? 'text-red-600' :
                             subVariance < 0 ? 'text-green-600' :
@@ -299,11 +302,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     ) : (
                       <>
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">Plaćeno ukupno:</span>
+                          <span className="text-gray-600 font-medium">{t('supervision.subcontractor_details.total_paid')}:</span>
                           <span className="font-bold text-green-600"> €{(subcontractor.invoice_total_paid || 0).toLocaleString('hr-HR')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 font-medium">Ukupno dugovi:</span>
+                          <span className="text-gray-600 font-medium">{t('supervision.site_management.phase_card.total_owed')}:</span>
                           <span className="font-bold text-orange-600">€{(subcontractor.invoice_total_owed || 0).toLocaleString('hr-HR')}</span>
                         </div>
                       </>
@@ -319,7 +322,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onOpenPaymentHistory(subcontractor)}
                       >
-                        Payments
+                        {t('common.payments')}
                       </Button>
                     )}
                     {onOpenInvoices && (
@@ -330,7 +333,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onOpenInvoices(subcontractor)}
                       >
-                        Invoices
+                        {t('common.invoices')}
                       </Button>
                     )}
                     <div className="grid grid-cols-4 gap-2">
@@ -340,7 +343,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onEditSubcontractor(subcontractor)}
                       >
-                        Edit
+                        {t('common.edit')}
                       </Button>
                       <Button
                         variant="secondary"
@@ -348,7 +351,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onOpenSubDetails(subcontractor)}
                       >
-                        Details
+                        {t('common.details')}
                       </Button>
                       {onManageMilestones && (
                         <Button
@@ -366,7 +369,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         fullWidth
                         onClick={() => onDeleteSubcontractor(subcontractor.id)}
                       >
-                        Delete
+                        {t('common.delete')}
                       </Button>
                     </div>
                   </div>

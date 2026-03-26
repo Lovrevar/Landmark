@@ -42,7 +42,7 @@ export async function generateProjectReport(
     .filter(Boolean) as string[]
 
   const bankNamesFromAllocations = (allocationsData || [])
-    .map(alloc => (alloc.bank_credits as any)?.banks?.name)
+    .map(alloc => (alloc.bank_credits as { banks?: { name?: string } | null } | null)?.banks?.name)
     .filter(Boolean) as string[]
 
   const fundingSources = [...new Set([...bankNamesFromCredits, ...bankNamesFromAllocations])].join(', ') || 'N/A'
@@ -71,13 +71,13 @@ export async function generateProjectReport(
 
   const aptGaragePriceMap = new Map<string, number>()
   for (const row of (aptGaragesData || [])) {
-    const price = (row.garages as any)?.price || 0
+    const price = (row.garages as { price?: number } | null)?.price || 0
     aptGaragePriceMap.set(row.apartment_id, (aptGaragePriceMap.get(row.apartment_id) || 0) + price)
   }
 
   const aptRepoPriceMap = new Map<string, number>()
   for (const row of (aptReposData || [])) {
-    const price = (row.repositories as any)?.price || 0
+    const price = (row.repositories as { price?: number } | null)?.price || 0
     aptRepoPriceMap.set(row.apartment_id, (aptRepoPriceMap.get(row.apartment_id) || 0) + price)
   }
 

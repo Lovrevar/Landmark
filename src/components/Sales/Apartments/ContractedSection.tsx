@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { FormField, Input, Select } from '../../ui'
 
@@ -24,9 +25,9 @@ export const emptyContractFields = (): ContractFields => ({
   kredit_etaziranje_90: null
 })
 
-export const contractFieldsFromData = (data: any): ContractFields => ({
-  datum_potpisa_predugovora: data?.datum_potpisa_predugovora || '',
-  contract_payment_type: data?.contract_payment_type || '',
+export const contractFieldsFromData = (data: Record<string, unknown>): ContractFields => ({
+  datum_potpisa_predugovora: (data?.datum_potpisa_predugovora as string) || '',
+  contract_payment_type: (data?.contract_payment_type as 'credit' | 'installments' | '') || '',
   kapara_10_posto: data?.kapara_10_posto != null ? Number(data.kapara_10_posto) : null,
   rata_1_ab_konstrukcija_30: data?.rata_1_ab_konstrukcija_30 != null ? Number(data.rata_1_ab_konstrukcija_30) : null,
   rata_2_postava_stolarije_20: data?.rata_2_postava_stolarije_20 != null ? Number(data.rata_2_postava_stolarije_20) : null,
@@ -58,6 +59,7 @@ const parseInputNumber = (val: string): number | null => {
 }
 
 export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onChange, price = 0 }) => {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   const set = (partial: Partial<ContractFields>) => onChange({ ...value, ...partial })
@@ -108,7 +110,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-150 text-left rounded-lg"
       >
-        <span className="text-sm font-semibold text-gray-700">Contracted</span>
+        <span className="text-sm font-semibold text-gray-700">{t('apartments.contracted.title')}</span>
         {open
           ? <ChevronDown className="w-4 h-4 text-gray-500" />
           : <ChevronRight className="w-4 h-4 text-gray-500" />
@@ -126,14 +128,14 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
               />
             </FormField>
 
-            <FormField label="Payment Type">
+            <FormField label={t('apartments.contracted.payment_type')}>
               <Select
                 value={value.contract_payment_type}
                 onChange={(e) => handlePaymentTypeChange(e.target.value as 'credit' | 'installments' | '')}
               >
-                <option value="">— Select —</option>
-                <option value="credit">Credit</option>
-                <option value="installments">Installments</option>
+                <option value="">{t('apartments.contracted.select')}</option>
+                <option value="credit">{t('apartments.contracted.credit')}</option>
+                <option value="installments">{t('apartments.contracted.installments')}</option>
               </Select>
             </FormField>
           </div>

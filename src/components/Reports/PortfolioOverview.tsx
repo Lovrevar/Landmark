@@ -11,6 +11,7 @@ import {
   Target,
   ArrowUpRight
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { RetailReportData } from './retailReportTypes'
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => {
+  const { t } = useTranslation()
   const { portfolio, invoices } = data
 
   return (
@@ -26,59 +28,59 @@ export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           icon={<Building2 className="w-6 h-6" />}
-          label="Projekti"
+          label={t('common.projects')}
           value={portfolio.total_projects.toString()}
-          sub={`${portfolio.active_projects} aktivnih`}
+          sub={t('reports.portfolio.active_count', { count: portfolio.active_projects })}
           color="blue"
         />
         <KpiCard
           icon={<MapPin className="w-6 h-6" />}
-          label="Zemljista"
+          label={t('reports.portfolio.land_plots')}
           value={portfolio.total_land_plots.toString()}
           sub={`${portfolio.total_land_area.toLocaleString('hr-HR')} m2`}
           color="emerald"
         />
         <KpiCard
           icon={<Users className="w-6 h-6" />}
-          label="Kupci"
+          label={t('common.customers')}
           value={portfolio.total_customers.toString()}
-          sub={`${portfolio.total_suppliers} dobavljaca`}
+          sub={t('reports.portfolio.suppliers_count', { count: portfolio.total_suppliers })}
           color="amber"
         />
         <KpiCard
           icon={<FileText className="w-6 h-6" />}
-          label="Racuni"
+          label={t('common.invoices')}
           value={invoices.total.toString()}
-          sub={invoices.overdue > 0 ? `${invoices.overdue} u kasnjenju` : 'Nema kasnjenja'}
+          sub={invoices.overdue > 0 ? t('reports.portfolio.overdue_count', { count: invoices.overdue }) : t('reports.portfolio.no_overdue')}
           color={invoices.overdue > 0 ? 'red' : 'teal'}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FinanceCard title="Investicije" icon={<Briefcase className="w-5 h-5 text-blue-600" />}>
-          <FinanceLine label="Zemljista" value={formatCurrency(portfolio.total_land_investment)} />
-          <FinanceLine label="Razvoj" value={formatCurrency(portfolio.total_development_cost)} />
-          <FinanceLine label="Gradnja" value={formatCurrency(portfolio.total_construction_cost)} />
+        <FinanceCard title={t('reports.portfolio.investments')} icon={<Briefcase className="w-5 h-5 text-blue-600" />}>
+          <FinanceLine label={t('reports.portfolio.land')} value={formatCurrency(portfolio.total_land_investment)} />
+          <FinanceLine label={t('reports.portfolio.development')} value={formatCurrency(portfolio.total_development_cost)} />
+          <FinanceLine label={t('reports.portfolio.construction')} value={formatCurrency(portfolio.total_construction_cost)} />
           <div className="pt-3 mt-3 border-t border-gray-200">
-            <FinanceLine label="Ukupni troskovi" value={formatCurrency(portfolio.total_costs)} bold />
+            <FinanceLine label={t('reports.portfolio.total_costs')} value={formatCurrency(portfolio.total_costs)} bold />
           </div>
         </FinanceCard>
 
-        <FinanceCard title="Prihodi" icon={<DollarSign className="w-5 h-5 text-green-600" />}>
-          <FinanceLine label="Ugovoreno" value={formatCurrency(portfolio.total_sales_revenue)} />
+        <FinanceCard title={t('reports.portfolio.revenue')} icon={<DollarSign className="w-5 h-5 text-green-600" />}>
+          <FinanceLine label={t('reports.portfolio.contracted')} value={formatCurrency(portfolio.total_sales_revenue)} />
           <FinanceLine
-            label="Naplaceno"
+            label={t('reports.portfolio.collected')}
             value={formatCurrency(portfolio.total_collected)}
             valueClass="text-green-600"
           />
           <FinanceLine
-            label="Za naplatu"
+            label={t('reports.portfolio.outstanding')}
             value={formatCurrency(portfolio.total_outstanding)}
             valueClass="text-orange-600"
           />
           <div className="pt-3 mt-3 border-t border-gray-200">
             <FinanceLine
-              label="Prosjecna cijena/m2"
+              label={t('reports.portfolio.avg_price_m2')}
               value={formatCurrency(portfolio.avg_price_per_m2)}
               bold
             />
@@ -86,25 +88,25 @@ export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => 
         </FinanceCard>
 
         <FinanceCard
-          title="Profitabilnost"
+          title={t('reports.portfolio.profitability')}
           icon={portfolio.profit >= 0
             ? <TrendingUp className="w-5 h-5 text-green-600" />
             : <TrendingDown className="w-5 h-5 text-red-600" />
           }
         >
           <FinanceLine
-            label="Naplaceno"
+            label={t('reports.portfolio.collected')}
             value={formatCurrency(portfolio.total_collected)}
             valueClass="text-green-600"
           />
           <FinanceLine
-            label="Ukupni troskovi"
+            label={t('reports.portfolio.total_costs')}
             value={formatCurrency(portfolio.total_costs)}
             valueClass="text-red-600"
           />
           <div className="pt-3 mt-3 border-t border-gray-200">
             <FinanceLine
-              label="Profit"
+              label={t('reports.portfolio.profit')}
               value={`${portfolio.profit >= 0 ? '+' : ''}${formatCurrency(portfolio.profit)}`}
               valueClass={portfolio.profit >= 0 ? 'text-green-600' : 'text-red-600'}
               bold
@@ -128,10 +130,10 @@ export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => 
             <Target className="w-5 h-5 text-red-600 flex-shrink-0" />
             <div>
               <p className="font-semibold text-red-900">
-                {invoices.overdue} {invoices.overdue === 1 ? 'racun' : 'racuna'} u kasnjenju
+                {t('reports.portfolio.overdue_invoices_title', { count: invoices.overdue })}
               </p>
               <p className="text-sm text-red-700">
-                Ukupno {formatCurrency(invoices.overdue_amount)} neplaceno nakon roka
+                {t('reports.portfolio.overdue_amount_desc', { amount: formatCurrency(invoices.overdue_amount) })}
               </p>
             </div>
           </div>

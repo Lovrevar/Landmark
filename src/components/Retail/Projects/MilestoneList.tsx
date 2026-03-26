@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
+import { useTranslation } from 'react-i18next'
+import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
-import { MilestoneFormModal } from './Forms/MilestoneFormModal'
-import { retailProjectService } from './Services/retailProjectService'
+import { MilestoneFormModal } from './forms/MilestoneFormModal'
+import { retailProjectService } from './services/retailProjectService'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneStats {
   totalPercentage: number
@@ -32,11 +34,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const [milestones, setMilestones] = useState<RetailContractMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<RetailContractMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
+  const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   useEffect(() => {
     loadMilestones()
@@ -57,22 +63,29 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: any) => {
+  const handleAddMilestone = async (data: { contract_id: string; milestone_name: string; description: string; percentage: number; due_date: string | null }) => {
     try {
       const milestoneNumber = await retailProjectService.getNextMilestoneNumber(contractId)
       await retailProjectService.createMilestone({
-        ...data,
-        milestone_number: milestoneNumber
+        contract_id: data.contract_id,
+        milestone_number: milestoneNumber,
+        milestone_name: data.milestone_name,
+        description: data.description,
+        percentage: data.percentage,
+        due_date: data.due_date,
+        status: 'pending',
+        notes: null,
+        completed_date: null
       })
       setShowMilestoneModal(false)
       loadMilestones()
     } catch (error) {
       console.error('Error creating milestone:', error)
-      alert('Greška pri kreiranju milestonea')
+      toast.error(t('retail_projects.milestones.error_create'))
     }
   }
 
-  const handleEditMilestone = async (data: any) => {
+  const handleEditMilestone = async (data: { contract_id: string; milestone_name: string; description: string; percentage: number; due_date: string | null }) => {
     if (!editingMilestone) return
 
     try {
@@ -87,19 +100,26 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      alert('Greška pri ažuriranju milestonea')
+      toast.error(t('retail_projects.milestones.error_update'))
     }
   }
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovaj milestone?')) return
+  const handleDeleteMilestone = (milestoneId: string) => {
+    setPendingDeleteMilestoneId(milestoneId)
+  }
 
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestoneId) return
+    setDeletingMilestone(true)
     try {
-      await retailProjectService.deleteMilestone(milestoneId)
+      await retailProjectService.deleteMilestone(pendingDeleteMilestoneId)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Greška pri brisanju milestonea')
+      toast.error(t('retail_projects.milestones.error_delete'))
+    } finally {
+      setDeletingMilestone(false)
+      setPendingDeleteMilestoneId(null)
     }
   }
 
@@ -117,12 +137,12 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Milestones plaćanja</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('retail_projects.milestones.title')}</h2>
             <p className="text-sm text-gray-600 mt-1">
               {projectName} • {phaseName} • {supplierName}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Ugovor: {formatCurrency(contractCost)}
+              {t('retail_projects.milestones.contract_label', { amount: formatCurrency(contractCost) })}
             </p>
           </div>
           <button
@@ -138,7 +158,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-blue-600 mb-1">Ukupno podijeljeno</p>
+                  <p className="text-xs text-blue-600 mb-1">{t('retail_projects.milestones.stats.total_distributed')}</p>
                   <p className="text-2xl font-bold text-blue-900">{stats.totalPercentage.toFixed(1)}%</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-blue-600 opacity-50" />
@@ -148,7 +168,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-green-600 mb-1">Plaćeno</p>
+                  <p className="text-xs text-green-600 mb-1">{t('retail_projects.milestones.stats.paid')}</p>
                   <p className="text-2xl font-bold text-green-900">{formatCurrency(stats.paidAmount)}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />
@@ -158,7 +178,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             <div className="bg-orange-50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-orange-600 mb-1">U čekanju</p>
+                  <p className="text-xs text-orange-600 mb-1">{t('retail_projects.milestones.stats.pending')}</p>
                   <p className="text-2xl font-bold text-orange-900">{formatCurrency(stats.pendingAmount)}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-orange-600 opacity-50" />
@@ -173,7 +193,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   <p className={`text-xs mb-1 ${
                     stats.remainingPercentage > 0 ? 'text-gray-600' : 'text-green-600'
                   }`}>
-                    Preostalo
+                    {t('retail_projects.milestones.stats.remaining')}
                   </p>
                   <p className={`text-2xl font-bold ${
                     stats.remainingPercentage > 0 ? 'text-gray-900' : 'text-green-900'
@@ -190,7 +210,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">
-            Milestones ({milestones.length})
+            {t('retail_projects.milestones.list_title', { count: milestones.length })}
           </h3>
           <Button
             icon={Plus}
@@ -199,16 +219,16 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               setShowMilestoneModal(true)
             }}
           >
-            Dodaj milestone
+            {t('retail_projects.milestones.add')}
           </Button>
         </div>
 
         {loading ? (
-          <LoadingSpinner message="Učitavam milestones..." />
+          <LoadingSpinner message={t('retail_projects.milestones.loading')} />
         ) : milestones.length === 0 ? (
           <EmptyState
             icon={Calendar}
-            title="Nema milestoneova za ovaj ugovor"
+            title={t('retail_projects.milestones.empty_title')}
             action={
               <Button
                 icon={Plus}
@@ -217,7 +237,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   setShowMilestoneModal(true)
                 }}
               >
-                Dodaj prvi milestone
+                {t('retail_projects.milestones.add_first')}
               </Button>
             }
           />
@@ -247,7 +267,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           {milestone.milestone_name}
                         </h4>
                         <Badge variant={isPaid ? 'green' : isPending ? 'blue' : 'gray'}>
-                          {isPaid ? 'Plaćeno' : isPending ? 'U čekanju' : 'Nije plaćeno'}
+                          {isPaid ? t('retail_projects.milestones.status_paid') : isPending ? t('retail_projects.milestones.status_pending') : t('retail_projects.milestones.status_unpaid')}
                         </Badge>
                       </div>
 
@@ -257,15 +277,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-xs text-gray-500">Postotak</p>
+                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.percentage')}</p>
                           <p className="text-lg font-semibold text-gray-900">{milestone.percentage}%</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Iznos</p>
+                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.amount')}</p>
                           <p className="text-lg font-semibold text-gray-900">{formatCurrency(amount)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Plaćeno</p>
+                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.paid_amount')}</p>
                           <p className="text-lg font-semibold text-teal-600">
                             {formatCurrency(milestone.amount_paid || 0)}
                           </p>
@@ -291,7 +311,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         </div>
                         {milestone.due_date && (
                           <div>
-                            <p className="text-xs text-gray-500">Dospijeće</p>
+                            <p className="text-xs text-gray-500">{t('retail_projects.milestones.due_date')}</p>
                             <p className="text-lg font-semibold text-gray-900">
                               {format(new Date(milestone.due_date), 'dd.MM.yyyy')}
                             </p>
@@ -338,6 +358,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
         phaseName={phaseName}
         contractCost={contractCost}
         editingMilestone={editingMilestone}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title={t('retail_projects.milestones.confirm_delete_title')}
+        message={t('retail_projects.milestones.confirm_delete_msg')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteMilestone}
+        onCancel={() => setPendingDeleteMilestoneId(null)}
+        loading={deletingMilestone}
       />
     </div>
   )

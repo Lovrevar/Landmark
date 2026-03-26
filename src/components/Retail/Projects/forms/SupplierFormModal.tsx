@@ -1,0 +1,221 @@
+import React, { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { retailProjectService } from '../services/retailProjectService'
+import type { RetailSupplier, RetailSupplierType } from '../../../../types/retail'
+import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
+
+interface SupplierFormModalProps {
+  onClose: () => void
+  onSuccess: () => void
+  supplier?: RetailSupplier
+}
+
+export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
+  onClose,
+  onSuccess,
+  supplier
+}) => {
+  const [formData, setFormData] = useState({
+    name: supplier?.name || '',
+    supplier_type_id: supplier?.supplier_type_id || '',
+    contact_person: supplier?.contact_person || '',
+    notes: supplier?.notes || ''
+  })
+  const { t } = useTranslation()
+  const [supplierTypes, setSupplierTypes] = useState<RetailSupplierType[]>([])
+  const [showNewTypeInput, setShowNewTypeInput] = useState(false)
+  const [newTypeName, setNewTypeName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    loadSupplierTypes()
+  }, [])
+
+  const loadSupplierTypes = async () => {
+    try {
+      const types = await retailProjectService.fetchSupplierTypes()
+      setSupplierTypes(types)
+    } catch (err) {
+      console.error('Error loading supplier types:', err)
+    }
+  }
+
+  const handleAddNewType = async () => {
+    if (!newTypeName.trim()) {
+      setError(t('retail_projects.supplier_form.type_name_error'))
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const newType = await retailProjectService.createSupplierType(newTypeName.trim())
+      setSupplierTypes([...supplierTypes, newType])
+      setFormData({ ...formData, supplier_type_id: newType.id })
+      setNewTypeName('')
+      setShowNewTypeInput(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('retail_projects.supplier_form.create_type_error'))
+      console.error('Error creating supplier type:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = t('retail_projects.supplier_form.name_error')
+    if (!formData.supplier_type_id) errors.supplier_type_id = t('retail_projects.supplier_form.type_error')
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const dataToSubmit = {
+        ...formData,
+        contact_person: formData.contact_person || null,
+        contact_phone: null,
+        contact_email: null,
+        oib: null,
+        address: null,
+        notes: formData.notes || null
+      }
+
+      if (supplier) {
+        await retailProjectService.updateSupplier(supplier.id, dataToSubmit)
+      } else {
+        await retailProjectService.createSupplier(dataToSubmit)
+      }
+
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('retail_projects.supplier_form.save_error'))
+      console.error('Error saving supplier:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal show={true} onClose={onClose}>
+      <Modal.Header title={supplier ? t('retail_projects.supplier_form.edit_title') : t('retail_projects.supplier_form.new_title')} onClose={onClose} />
+      <Form onSubmit={handleSubmit}>
+        <Modal.Body>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label={t('retail_projects.supplier_form.name_label')} required className="md:col-span-2" error={fieldErrors.name}>
+              <Input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </FormField>
+
+            <FormField label={t('retail_projects.supplier_form.type_label')} required error={fieldErrors.supplier_type_id}>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.supplier_type_id}
+                  onChange={(e) => setFormData({ ...formData, supplier_type_id: e.target.value })}
+                  className="flex-1"
+                >
+                  <option value="">{t('retail_projects.supplier_form.select_type')}</option>
+                  {supplierTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowNewTypeInput(!showNewTypeInput)}
+                  className="px-3"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </FormField>
+
+            {showNewTypeInput && (
+              <FormField label={t('retail_projects.supplier_form.new_type_label')} className="md:col-span-2">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    placeholder={t('retail_projects.supplier_form.new_type_placeholder')}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddNewType}
+                    disabled={loading || !newTypeName.trim()}
+                  >
+                    {t('common.add')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowNewTypeInput(false)
+                      setNewTypeName('')
+                    }}
+                    disabled={loading}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </div>
+              </FormField>
+            )}
+
+            <FormField label={t('retail_projects.supplier_form.contact_label')}>
+              <Input
+                type="text"
+                value={formData.contact_person}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+              />
+            </FormField>
+
+            <FormField label={t('retail_projects.supplier_form.notes_label')} className="md:col-span-2">
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+              />
+            </FormField>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={loading}
+          >
+            {supplier ? t('retail_projects.supplier_form.save_changes') : t('retail_projects.supplier_form.save_supplier')}
+          </Button>
+        </Modal.Footer>
+      </Form>
+    </Modal>
+  )
+}

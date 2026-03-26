@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Payment } from './types'
 import { StatCard } from '../../ui'
 
@@ -7,6 +8,7 @@ interface PaymentStatsCardsProps {
 }
 
 const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
+  const { t } = useTranslation()
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')
 
   const thisMonthAmount = payments
@@ -65,43 +67,43 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       <StatCard
-        label="Ukupno plaćanja"
+        label={t('payments.stats.total_count')}
         value={payments.length}
         color="white"
       />
 
       <StatCard
-        label="Ukupan iznos"
+        label={t('payments.stats.total_amount')}
         value={`€${totalAmount}`}
         color="white"
       />
 
       <StatCard
-        label="Ovaj mjesec"
+        label={t('payments.stats.this_month')}
         value={`€${thisMonthAmount}`}
         color="blue"
       />
 
       <StatCard
-        label="PDV Ulaz"
+        label={t('payments.stats.vat_in')}
         value={`€${vatInAmount}`}
         color="red"
       />
 
       <StatCard
-        label="PDV Izlaz"
+        label={t('payments.stats.vat_out')}
         value={`€${vatOutAmount}`}
         color="green"
       />
 
       <StatCard
-        label="Ukupno Rashod"
+        label={t('payments.stats.total_expense')}
         value={`€${totalExpense}`}
         color="red"
       />
 
       <StatCard
-        label="Ukupno Prihod"
+        label={t('payments.stats.total_income')}
         value={`€${totalIncome}`}
         color="green"
       />

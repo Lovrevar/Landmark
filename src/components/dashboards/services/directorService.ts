@@ -223,7 +223,7 @@ export async function fetchFundingMetrics(): Promise<FundingMetrics> {
   const totalBanks = (companies || []).length
   const activeFunderIds = new Set(
     (creditAllocations || [])
-      .map(alloc => (alloc.bank_credits as any)?.project_id)
+      .map(alloc => (alloc.bank_credits as { project_id?: string } | null)?.project_id)
       .filter(Boolean)
   )
   const totalBankCredit = (bankCredits || []).reduce((sum, bc) => sum + Number(bc.amount), 0)
@@ -288,7 +288,7 @@ export async function fetchAlerts(financialMetrics: FinancialMetrics, salesMetri
         newAlerts.push({
           type: 'warning',
           title: 'Credit Maturity',
-          message: `${credit.credit_name || (credit.company as any)?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
+          message: `${credit.credit_name || (credit.company as unknown as { name: string } | null)?.name || 'Credit'} of €${Number(credit.amount).toLocaleString()} matures in ${daysUntil} days`,
           date: credit.maturity_date
         })
       }

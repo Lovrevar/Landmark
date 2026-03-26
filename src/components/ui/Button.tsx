@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
+import { useFormSubmitting } from './Form'
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'amber' | 'outline-danger' | 'emerald' | 'purple'
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'amber' | 'outline-danger' | 'emerald' | 'purple' | 'info' | 'outline'
 
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon-sm' | 'icon-md' | 'icon-lg'
 
@@ -26,6 +27,8 @@ const variantStyles: Record<ButtonVariant, string> = {
   'outline-danger': 'text-red-600 bg-red-50 hover:bg-red-100',
   emerald: 'bg-emerald-600 text-white hover:bg-emerald-700',
   purple: 'bg-purple-600 text-white hover:bg-purple-700',
+  info: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+  outline: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -56,10 +59,23 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   disabled,
   className = '',
   children,
+  onClick,
   ...props
 }, ref) => {
+  const [asyncLoading, setAsyncLoading] = useState(false)
+  const formSubmitting = useFormSubmitting()
   const isIconOnly = !children && (Icon || IconRight)
-  const isDisabled = disabled || loading
+  const isLoading = loading || asyncLoading || (props.type === 'submit' && formSubmitting)
+  const isDisabled = disabled || isLoading
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!onClick) return
+    const result = onClick(e) as unknown
+    if (result instanceof Promise) {
+      setAsyncLoading(true)
+      result.finally(() => setAsyncLoading(false))
+    }
+  }
 
   const baseClasses = [
     'inline-flex items-center justify-center rounded-lg transition-colors duration-200',
@@ -75,12 +91,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       ref={ref}
       disabled={isDisabled}
       className={baseClasses}
+      onClick={onClick ? handleClick : undefined}
       {...props}
     >
-      {loading && <Loader2 className={`${iconSizes[size]} animate-spin ${children ? 'mr-2' : ''}`} />}
-      {!loading && Icon && <Icon className={`${iconSizes[size]} ${!isIconOnly ? 'mr-2' : ''}`} />}
+      {isLoading && <Loader2 className={`${iconSizes[size]} animate-spin ${children ? 'mr-2' : ''}`} />}
+      {!isLoading && Icon && <Icon className={`${iconSizes[size]} ${!isIconOnly ? 'mr-2' : ''}`} />}
       {children}
-      {!loading && IconRight && <IconRight className={`${iconSizes[size]} ${!isIconOnly ? 'ml-2' : ''}`} />}
+      {!isLoading && IconRight && <IconRight className={`${iconSizes[size]} ${!isIconOnly ? 'ml-2' : ''}`} />}
     </button>
   )
 })

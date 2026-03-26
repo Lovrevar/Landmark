@@ -1,5 +1,6 @@
 import React from 'react'
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Building2, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { RetailProjectWithPhases, RetailContract } from '../../../types/retail'
 
 interface ProjectStatisticsProps {
@@ -8,6 +9,7 @@ interface ProjectStatisticsProps {
 }
 
 export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, allContracts }) => {
+  const { t } = useTranslation()
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
@@ -44,20 +46,20 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Financijska Statistika</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('retail_projects.financial_statistics')}</h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex items-center space-x-2 mb-3">
             <TrendingDown className="w-5 h-5 text-red-600" />
-            <h4 className="font-semibold text-gray-900">Rashodi</h4>
+            <h4 className="font-semibold text-gray-900">{t('retail_projects.expenses')}</h4>
           </div>
 
           <div className="space-y-3 pl-7">
             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">Cijena Zemljišta</span>
+                <span className="text-sm text-gray-700">{t('retail_projects.land_price')}</span>
               </div>
               <span className="font-semibold text-red-700">{formatCurrency(landCost)}</span>
             </div>
@@ -65,7 +67,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div className="flex items-center space-x-2">
                 <DollarSign className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">Razvoj</span>
+                <span className="text-sm text-gray-700">{t('retail_projects.development')}</span>
               </div>
               <span className="font-semibold text-red-700">{formatCurrency(developmentCost)}</span>
             </div>
@@ -73,13 +75,13 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Building2 className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">Gradnja</span>
+                <span className="text-sm text-gray-700">{t('retail_projects.construction')}</span>
               </div>
               <span className="font-semibold text-red-700">{formatCurrency(constructionCost)}</span>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-red-100 rounded-lg border-2 border-red-200 mt-2">
-              <span className="font-semibold text-gray-900">Ukupni Rashodi</span>
+              <span className="font-semibold text-gray-900">{t('retail_projects.total_expenses')}</span>
               <span className="text-lg font-bold text-red-700">{formatCurrency(totalExpenses)}</span>
             </div>
           </div>
@@ -88,20 +90,20 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
         <div className="space-y-4">
           <div className="flex items-center space-x-2 mb-3">
             <TrendingUp className="w-5 h-5 text-green-600" />
-            <h4 className="font-semibold text-gray-900">Prihodi</h4>
+            <h4 className="font-semibold text-gray-900">{t('retail_projects.revenue')}</h4>
           </div>
 
           <div className="space-y-3 pl-7">
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
               <div className="flex items-center space-x-2">
                 <ShoppingCart className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-700">Prodaja</span>
+                <span className="text-sm text-gray-700">{t('retail_projects.sales')}</span>
               </div>
               <span className="font-semibold text-green-700">{formatCurrency(salesRevenue)}</span>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-green-100 rounded-lg border-2 border-green-200 mt-2">
-              <span className="font-semibold text-gray-900">Ukupni Prihodi</span>
+              <span className="font-semibold text-gray-900">{t('retail_projects.total_revenue')}</span>
               <span className="text-lg font-bold text-green-700">{formatCurrency(totalRevenue)}</span>
             </div>
           </div>
@@ -113,14 +115,14 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-1">
-                {profitLoss >= 0 ? 'Profit' : 'Gubitak'}
+                {profitLoss >= 0 ? t('retail_projects.profit') : t('retail_projects.loss')}
               </h4>
               <p className={`text-3xl font-bold ${profitLoss >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                 {formatCurrency(Math.abs(profitLoss))}
               </p>
               {totalRevenue > 0 && (
                 <p className="text-sm text-gray-600 mt-1">
-                  Marža: {profitMargin.toFixed(2)}%
+                  {t('retail_projects.margin')}: {profitMargin.toFixed(2)}%
                 </p>
               )}
             </div>
@@ -138,7 +140,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
       {!project.land_plot && (
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            Projekt nije povezan sa zemljištem. Povežite projekt sa zemljištem da bi se prikazala stvarna cijena zemljišta u rashodima.
+            {t('retail_projects.no_land_warning')}
           </p>
         </div>
       )}
@@ -146,7 +148,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
       {totalRevenue === 0 && (
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            Nema zabilježenih prihoda. Dodajte ugovore u Sales fazu da bi se prikazali prihodi.
+            {t('retail_projects.no_revenue_warning')}
           </p>
         </div>
       )}

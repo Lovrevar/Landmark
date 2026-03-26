@@ -1,22 +1,18 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
 import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../../ui'
-import { useCalendar } from './Hooks/useCalendar'
-import { handleSaveBudgets } from './Services/calendarService'
-import BudgetModal from './Forms/BudgetModal'
+import { useCalendar } from './hooks/useCalendar'
+import { handleSaveBudgets } from './services/calendarService'
+import BudgetModal from './forms/BudgetModal'
 import { Invoice } from './types'
 
-const monthNames = [
-  'Siječanj', 'Veljača', 'Ožujak', 'Travanj', 'Svibanj', 'Lipanj',
-  'Srpanj', 'Kolovoz', 'Rujan', 'Listopad', 'Studeni', 'Prosinac'
-]
-
-const dayNames = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']
-
 const AccountingCalendar: React.FC = () => {
+  const { t } = useTranslation()
+  const monthNames = t('calendar.months', { returnObjects: true }) as string[]
+  const dayNames = t('calendar.days', { returnObjects: true }) as string[]
   const {
     currentDate,
-    invoices,
     loading,
     selectedDate,
     selectedInvoices,
@@ -68,12 +64,12 @@ const AccountingCalendar: React.FC = () => {
 
   const getTypeLabel = (invoice: Invoice) => {
     switch(invoice.invoice_type) {
-      case 'INCOMING_SUPPLIER': return 'Ulazni - Dobavljač'
-      case 'INCOMING_INVESTMENT': return 'Ulazni - Investicije'
-      case 'INCOMING_OFFICE': return 'Ulazni - Office'
-      case 'OUTGOING_SUPPLIER': return 'Izlazni - Dobavljač'
-      case 'OUTGOING_SALES': return 'Izlazni - Prodaja'
-      case 'OUTGOING_OFFICE': return 'Izlazni - Office'
+      case 'INCOMING_SUPPLIER': return t('calendar.invoice_types.incoming_supplier')
+      case 'INCOMING_INVESTMENT': return t('calendar.invoice_types.incoming_investment')
+      case 'INCOMING_OFFICE': return t('calendar.invoice_types.incoming_office')
+      case 'OUTGOING_SUPPLIER': return t('calendar.invoice_types.outgoing_supplier')
+      case 'OUTGOING_SALES': return t('calendar.invoice_types.outgoing_sales')
+      case 'OUTGOING_OFFICE': return t('calendar.invoice_types.outgoing_office')
       default: return invoice.invoice_type
     }
   }
@@ -85,36 +81,36 @@ const AccountingCalendar: React.FC = () => {
   return (
     <div className="space-y-4">
       <StatGrid columns={2}>
-        <StatCard label="Ukupno računa" value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
-        <StatCard label="Plaćeno" value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />
-        <StatCard label="Neplaćeno" value={monthStats.unpaid} icon={Clock} color="yellow" size="sm" />
-        <StatCard label="Overdue" value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
+        <StatCard label={t('calendar.stats.total')} value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
+        <StatCard label={t('calendar.stats.paid')} value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />
+        <StatCard label={t('calendar.stats.unpaid')} value={monthStats.unpaid} icon={Clock} color="yellow" size="sm" />
+        <StatCard label={t('calendar.stats.overdue')} value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
       </StatGrid>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ukupno računa:</span>
+          <span className="text-gray-600">{t('calendar.summary.total_invoices')}</span>
           <span className="font-semibold text-gray-900">{monthStats.total}</span>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Izlazni računi:</span>
+          <span className="text-gray-600">{t('calendar.summary.outgoing_invoices')}</span>
           <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ulazni računi (plaćeno):</span>
+          <span className="text-gray-600">{t('calendar.summary.incoming_paid')}</span>
           <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Ulazni računi (neplaćeno):</span>
+          <span className="text-gray-600">{t('calendar.summary.incoming_unpaid')}</span>
           <div className="text-right">
             <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
-            <span className="text-xs text-gray-500 ml-1">({monthStats.incomingUnpaidCount} rač.)</span>
+            <span className="text-xs text-gray-500 ml-1">{t('calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
           </div>
         </div>
         <div className="border-t border-gray-300 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-700 font-medium">NETO (Prihodi - Troškovi):</span>
+          <span className="text-gray-700 font-medium">{t('calendar.summary.net_label')}</span>
           <span className={`font-bold text-lg ${monthStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             €{monthStats.netAmount.toLocaleString('hr-HR')}
           </span>
@@ -127,13 +123,13 @@ const AccountingCalendar: React.FC = () => {
               <>
                 <div className="border-t border-gray-300 my-2"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Planirani budžet (Rashodi):</span>
+                  <span className="text-gray-600">{t('calendar.summary.planned_budget')}</span>
                   <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-700 font-medium">Razlika od budžeta:</span>
+                  <span className="text-gray-700 font-medium">{t('calendar.summary.budget_difference')}</span>
                   <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? '(Ispod budžeta - dobro)' : '(Preko budžeta - loše)'}
+                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? t('calendar.summary.under_budget') : t('calendar.summary.over_budget')}
                   </span>
                 </div>
               </>
@@ -150,7 +146,7 @@ const AccountingCalendar: React.FC = () => {
           </h3>
           <div className="flex items-center space-x-2">
             <Button variant="success" size="sm" icon={DollarSign} onClick={handleOpenBudgetModal}>
-              Namjesti Budžet
+              {t('calendar.budget_button')}
             </Button>
             <Button variant="ghost" size="icon-md" icon={ChevronLeft} onClick={handlePreviousMonth} />
             <Button variant="ghost" size="icon-md" icon={ChevronRight} onClick={handleNextMonth} />
@@ -218,15 +214,15 @@ const AccountingCalendar: React.FC = () => {
         <div className="flex items-center justify-center space-x-4 mt-4 text-xs">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-gray-600">Plaćeno</span>
+            <span className="text-gray-600">{t('calendar.legend.paid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-            <span className="text-gray-600">Neplaćeno</span>
+            <span className="text-gray-600">{t('calendar.legend.unpaid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-red-500 rounded-full" />
-            <span className="text-gray-600">Overdue</span>
+            <span className="text-gray-600">{t('calendar.legend.overdue')}</span>
           </div>
         </div>
       </div>
@@ -246,23 +242,23 @@ const AccountingCalendar: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="p-4 border-b border-gray-200">
             <h4 className="font-bold text-gray-900">
-              Računi za {selectedDate.getDate()}. {monthNames[selectedDate.getMonth()]} - {selectedInvoices.length} računa
+              {t('calendar.table.heading', { day: selectedDate.getDate(), month: monthNames[selectedDate.getMonth()], count: selectedInvoices.length })}
             </h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Broj Računa</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tip</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Dobavljač/Kupac</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Moja Firma</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Kategorija</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Osnovica</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">PDV</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Ukupno</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Plaćeno</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.invoice_number')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.type')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.supplier_customer')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.my_company')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.category')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.base')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.vat')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.total')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.paid')}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -290,7 +286,7 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel(invoice)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as any).retail_supplier?.name || (invoice as any).retail_contracts?.retail_suppliers?.name || 'N/A'}
+                        {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as unknown as { retail_supplier?: { name: string } }).retail_supplier?.name || (invoice as unknown as { retail_contracts?: { retail_suppliers?: { name: string } } }).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
@@ -309,7 +305,7 @@ const AccountingCalendar: React.FC = () => {
                           variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'red'}
                           size="sm"
                         >
-                          {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'PARTIALLY_PAID' ? 'Djelomično' : 'Neplaćeno'}
+                          {invoice.status === 'PAID' ? t('common.paid') : invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
                         </Badge>
                       </td>
                     </tr>

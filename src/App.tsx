@@ -1,11 +1,11 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
 import SubcontractorManagement from './components/Supervision/Subcontractors/index'
-import ProjectDetails from './components/General/Projects/ProjectDetails'
 import ProjectDetailsEnhanced from './components/General/Projects/ProjectDetailsEnhanced'
 import ProjectsManagement from './components/General/Projects/index'
 import SiteManagement from './components/Supervision/SiteManagement/index'
@@ -43,7 +43,7 @@ import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading, user } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
     return (
@@ -61,6 +61,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   return <Layout>{children}</Layout>
+}
+
+// Guards Cashflow routes — redirects to home if the Cashflow profile has not been unlocked
+// (unlocked flag is set by Layout after correct password entry)
+const CashflowRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const unlocked = sessionStorage.getItem('cashflow_unlocked') === 'true'
+  if (!unlocked) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
 }
 
 function AppContent() {
@@ -249,7 +259,7 @@ function AppContent() {
           path="/accounting-invoices"
           element={
             <ProtectedRoute>
-              <AccountingInvoices />
+              <CashflowRoute><AccountingInvoices /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -257,7 +267,7 @@ function AppContent() {
           path="/accounting-payments"
           element={
             <ProtectedRoute>
-              <AccountingPayments />
+              <CashflowRoute><AccountingPayments /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -265,7 +275,7 @@ function AppContent() {
           path="/accounting-suppliers"
           element={
             <ProtectedRoute>
-              <AccountingSuppliers />
+              <CashflowRoute><AccountingSuppliers /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -273,7 +283,7 @@ function AppContent() {
           path="/office-suppliers"
           element={
             <ProtectedRoute>
-              <OfficeSuppliers />
+              <CashflowRoute><OfficeSuppliers /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -281,7 +291,7 @@ function AppContent() {
           path="/accounting-companies"
           element={
             <ProtectedRoute>
-              <AccountingCompanies />
+              <CashflowRoute><AccountingCompanies /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -289,7 +299,7 @@ function AppContent() {
           path="/accounting-banks"
           element={
             <ProtectedRoute>
-              <AccountingBanks />
+              <CashflowRoute><AccountingBanks /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -297,7 +307,7 @@ function AppContent() {
           path="/accounting-customers"
           element={
             <ProtectedRoute>
-              <AccountingCustomers />
+              <CashflowRoute><AccountingCustomers /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -305,7 +315,7 @@ function AppContent() {
           path="/accounting-calendar"
           element={
             <ProtectedRoute>
-              <AccountingCalendar />
+              <CashflowRoute><AccountingCalendar /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -313,7 +323,7 @@ function AppContent() {
           path="/accounting-loans"
           element={
             <ProtectedRoute>
-              <AccountingLoans />
+              <CashflowRoute><AccountingLoans /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -321,7 +331,7 @@ function AppContent() {
           path="/debt-status"
           element={
             <ProtectedRoute>
-              <DebtStatus />
+              <CashflowRoute><DebtStatus /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -329,7 +339,7 @@ function AppContent() {
           path="/accounting-approvals"
           element={
             <ProtectedRoute>
-              <AccountingApprovals />
+              <CashflowRoute><AccountingApprovals /></CashflowRoute>
             </ProtectedRoute>
           }
         />
@@ -398,7 +408,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   )
 }

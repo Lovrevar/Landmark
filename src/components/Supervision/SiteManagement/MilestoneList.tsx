@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
-import { MilestoneFormModal } from './Modals/MilestoneFormModal'
+import { MilestoneFormModal } from './modals/MilestoneFormModal'
 import {
   fetchMilestonesByContract,
   getNextMilestoneNumber,
@@ -10,9 +11,10 @@ import {
   updateMilestone,
   deleteMilestone,
   getMilestoneStatsForContract
-} from './Services/siteService'
-import { MilestoneStats } from './types'
-import { Button, Badge, EmptyState, LoadingSpinner } from '../../ui'
+} from './services/siteService'
+import { MilestoneStats, MilestoneFormData } from './types'
+import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneListProps {
   contractId: string
@@ -31,11 +33,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<SubcontractorMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
+  const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   useEffect(() => {
     loadMilestones()
@@ -56,22 +62,26 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const handleAddMilestone = async (data: any) => {
+  const handleAddMilestone = async (data: MilestoneFormData) => {
     try {
       const milestoneNumber = await getNextMilestoneNumber(contractId)
       await createMilestone({
-        ...data,
-        milestone_number: milestoneNumber
+        contract_id: data.contract_id,
+        milestone_number: milestoneNumber,
+        milestone_name: data.milestone_name,
+        description: data.description,
+        percentage: data.percentage,
+        due_date: data.due_date
       })
       setShowMilestoneModal(false)
       loadMilestones()
     } catch (error) {
       console.error('Error creating milestone:', error)
-      alert('Failed to create milestone')
+      toast.error(t('supervision.site_management.milestone_list.create_error'))
     }
   }
 
-  const handleEditMilestone = async (data: any) => {
+  const handleEditMilestone = async (data: MilestoneFormData) => {
     if (!editingMilestone) return
 
     try {
@@ -86,19 +96,26 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       loadMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      alert('Failed to update milestone')
+      toast.error(t('supervision.site_management.milestone_list.update_error'))
     }
   }
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return
+  const handleDeleteMilestone = (milestoneId: string) => {
+    setPendingDeleteMilestoneId(milestoneId)
+  }
 
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteMilestoneId) return
+    setDeletingMilestone(true)
     try {
-      await deleteMilestone(milestoneId)
+      await deleteMilestone(pendingDeleteMilestoneId)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      alert('Failed to delete milestone')
+      toast.error(t('supervision.site_management.milestone_list.delete_error'))
+    } finally {
+      setDeletingMilestone(false)
+      setPendingDeleteMilestoneId(null)
     }
   }
 
@@ -129,12 +146,12 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">Payment Milestones</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t('supervision.site_management.milestone_list.title')}</h3>
             <p className="text-sm text-gray-600 mt-1">
               {projectName} • {phaseName} • {subcontractorName}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Contract (Base): €{contractCost.toLocaleString('hr-HR')}
+              {t('supervision.site_management.milestone_list.contract_base')}: €{contractCost.toLocaleString('hr-HR')}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -142,7 +159,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               icon={Plus}
               onClick={openAddModal}
             >
-              Add Milestone
+              {t('supervision.site_management.milestone_list.add')}
             </Button>
             <Button
               variant="ghost"
@@ -156,13 +173,13 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-600">Total Allocated</p>
+              <p className="text-xs text-gray-600">{t('supervision.site_management.milestone_list.total_allocated')}</p>
               <p className="text-lg font-bold text-gray-900">{stats.total_percentage.toFixed(2)}%</p>
               <p className="text-xs text-gray-500">€{stats.total_amount.toLocaleString('hr-HR')}</p>
             </div>
             <div className={`p-3 rounded-lg ${stats.remaining_percentage === 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
               <p className={`text-xs ${stats.remaining_percentage === 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                Remaining
+                {t('common.remaining')}
               </p>
               <p className={`text-lg font-bold ${stats.remaining_percentage === 0 ? 'text-green-900' : 'text-orange-900'}`}>
                 {stats.remaining_percentage.toFixed(2)}%
@@ -172,17 +189,17 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               </p>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-xs text-blue-600">Milestones</p>
+              <p className="text-xs text-blue-600">{t('supervision.site_management.milestone_list.milestones')}</p>
               <p className="text-lg font-bold text-blue-900">{milestones.length}</p>
               <p className="text-xs text-gray-500">
-                {stats.paid_count} paid, {stats.pending_count} pending
+                {stats.paid_count} {t('status.paid')}, {stats.pending_count} {t('status.pending')}
               </p>
             </div>
             <div className="bg-teal-50 p-3 rounded-lg">
-              <p className="text-xs text-teal-600">Total Paid</p>
+              <p className="text-xs text-teal-600">{t('common.total_paid')}</p>
               <p className="text-lg font-bold text-teal-900">€{stats.total_paid.toLocaleString('hr-HR')}</p>
               <p className="text-xs text-gray-500">
-                {contractCost > 0 ? ((stats.total_paid / contractCost) * 100).toFixed(1) : 0}% of contract
+                {contractCost > 0 ? ((stats.total_paid / contractCost) * 100).toFixed(1) : 0}% {t('supervision.site_management.milestone_list.of_contract')}
               </p>
             </div>
           </div>
@@ -193,8 +210,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
         {milestones.length === 0 ? (
           <EmptyState
             icon={Calendar}
-            title="No milestones yet"
-            description="Add milestones to track progress and payments."
+            title={t('supervision.site_management.milestone_list.none_title')}
+            description={t('supervision.site_management.milestone_list.none_desc')}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -202,14 +219,14 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">#</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Description</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Percentage</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Paid</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Due Date</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_name')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('common.description')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_percentage')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('common.amount')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('common.paid')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_due_date')}</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">{t('common.status')}</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -248,7 +265,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           </div>
                           {isPartiallyPaid && (
                             <div className="text-xs text-gray-500">
-                              {paymentPercentage.toFixed(1)}% paid
+                              {paymentPercentage.toFixed(1)}% {t('status.paid')}
                             </div>
                           )}
                         </div>
@@ -265,7 +282,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           milestone.status === 'completed' ? 'blue' :
                           'gray'
                         } size="sm">
-                          {isFullyPaid ? 'Paid' : isPartiallyPaid ? 'Partially Paid' : milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
+                          {isFullyPaid ? t('status.paid') : isPartiallyPaid ? t('status.partial') : milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
@@ -290,7 +307,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50 font-semibold">
-                  <td colSpan={3} className="py-3 px-4 text-sm text-gray-900">Total</td>
+                  <td colSpan={3} className="py-3 px-4 text-sm text-gray-900">{t('common.total')}</td>
                   <td className="py-3 px-4 text-right text-sm text-gray-900">
                     {stats?.total_percentage.toFixed(2)}%
                   </td>
@@ -307,6 +324,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title={t('common.confirm_delete')}
+        message={t('supervision.site_management.milestone_list.delete_confirm')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteMilestone}
+        onCancel={() => setPendingDeleteMilestoneId(null)}
+        loading={deletingMilestone}
+      />
 
       {showMilestoneModal && (
         <MilestoneFormModal

@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, Building2, FileUp, Warehouse } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button } from '../../ui'
-import { Apartment } from '../../../lib/supabase'
-import { useSalesData } from './Hooks/useSalesData'
-import * as salesService from './Services/salesService'
+import { useTranslation } from 'react-i18next'
+import { Plus, Building2, FileUp } from 'lucide-react'
+import { LoadingSpinner, PageHeader, Button, ConfirmDialog } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
+import { Apartment, Garage, Repository } from '../../../lib/supabase'
+import { useSalesData } from './hooks/useSalesData'
+import * as salesService from './services/salesService'
 import {
   ViewMode,
   UnitType,
@@ -20,17 +22,19 @@ import {
 import { ProjectsGrid } from './ProjectsGrid'
 import { BuildingsGrid } from './BuildingsGrid'
 import { UnitsGrid } from './UnitsGrid'
-import { BuildingQuantityModal } from './Modals/BuildingQuantityModal'
-import { SingleBuildingModal } from './Modals/SingleBuildingModal'
-import { SingleUnitModal } from './Modals/SingleUnitModal'
-import { BulkUnitsModal } from './Modals/BulkUnitsModal'
-import { LinkingModal } from './Modals/LinkingModal'
-import { SaleFormModal } from './Forms/SaleFormModal'
-import { BulkPriceUpdateModal } from './Modals/BulkPriceUpdateModal'
-import { ExcelImportApartmentsModal } from './Modals/ExcelImportApartmentsModal'
-import { ExcelImportGaragesModal } from './Modals/ExcelImportGaragesModal'
+import { BuildingQuantityModal } from './modals/BuildingQuantityModal'
+import { SingleBuildingModal } from './modals/SingleBuildingModal'
+import { SingleUnitModal } from './modals/SingleUnitModal'
+import { BulkUnitsModal } from './modals/BulkUnitsModal'
+import { LinkingModal } from './modals/LinkingModal'
+import { SaleFormModal } from './forms/SaleFormModal'
+import { BulkPriceUpdateModal } from './modals/BulkPriceUpdateModal'
+import { ExcelImportApartmentsModal } from './modals/ExcelImportApartmentsModal'
+import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
 
 const SalesProjectsEnhanced: React.FC = () => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
 
   const [selectedProject, setSelectedProject] = useState<ProjectWithBuildings | null>(null)
@@ -69,6 +73,10 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false)
   const [showImportApartmentsModal, setShowImportApartmentsModal] = useState(false)
   const [showImportGaragesModal, setShowImportGaragesModal] = useState(false)
+  const [pendingDeleteBuildingId, setPendingDeleteBuildingId] = useState<string | null>(null)
+  const [deletingBuilding, setDeletingBuilding] = useState(false)
+  const [pendingDeleteUnit, setPendingDeleteUnit] = useState<{ id: string; unitType: UnitType } | null>(null)
+  const [deletingUnit, setDeletingUnit] = useState(false)
 
   const handleSelectProject = (project: ProjectWithBuildings) => {
     setSelectedProject(project)
@@ -80,15 +88,22 @@ const SalesProjectsEnhanced: React.FC = () => {
     setViewMode('units')
   }
 
-  const handleDeleteBuilding = async (buildingId: string) => {
-    if (!confirm('Are you sure you want to delete this building? All units inside will also be deleted.')) return
+  const handleDeleteBuilding = (buildingId: string) => {
+    setPendingDeleteBuildingId(buildingId)
+  }
 
+  const confirmDeleteBuilding = async () => {
+    if (!pendingDeleteBuildingId) return
+    setDeletingBuilding(true)
     try {
-      await salesService.deleteBuilding(buildingId)
+      await salesService.deleteBuilding(pendingDeleteBuildingId)
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
-      alert('Error deleting building.')
+      toast.error('Error deleting building.')
+    } finally {
+      setDeletingBuilding(false)
+      setPendingDeleteBuildingId(null)
     }
   }
 
@@ -101,7 +116,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
-      alert('Error creating buildings. Please try again.')
+      toast.error('Error creating buildings. Please try again.')
     }
   }
 
@@ -114,7 +129,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
-      alert('Error creating building. Please try again.')
+      toast.error('Error creating building. Please try again.')
     }
   }
 
@@ -135,7 +150,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
-      alert('Error creating unit. Please try again.')
+      toast.error('Error creating unit. Please try again.')
     }
   }
 
@@ -148,19 +163,26 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
-      alert('Error creating units. Please try again.')
+      toast.error('Error creating units. Please try again.')
     }
   }
 
-  const handleDeleteUnit = async (unitId: string, unitType: UnitType) => {
-    if (!confirm(`Are you sure you want to delete this ${unitType}?`)) return
+  const handleDeleteUnit = (unitId: string, unitType: UnitType) => {
+    setPendingDeleteUnit({ id: unitId, unitType })
+  }
 
+  const confirmDeleteUnit = async () => {
+    if (!pendingDeleteUnit) return
+    setDeletingUnit(true)
     try {
-      await salesService.deleteUnit(unitId, unitType)
+      await salesService.deleteUnit(pendingDeleteUnit.id, pendingDeleteUnit.unitType)
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
-      alert('Error deleting unit.')
+      toast.error('Error deleting unit.')
+    } finally {
+      setDeletingUnit(false)
+      setPendingDeleteUnit(null)
     }
   }
 
@@ -170,7 +192,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Error updating status.')
+      toast.error('Error updating status.')
     }
   }
 
@@ -180,7 +202,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking garage:', error)
-      alert('Error linking garage.')
+      toast.error('Error linking garage.')
     }
   }
 
@@ -190,7 +212,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking repository:', error)
-      alert('Error linking repository.')
+      toast.error('Error linking repository.')
     }
   }
 
@@ -200,7 +222,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking garage:', error)
-      alert('Error unlinking garage.')
+      toast.error('Error unlinking garage.')
     }
   }
 
@@ -210,11 +232,11 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking repository:', error)
-      alert('Error unlinking repository.')
+      toast.error('Error unlinking repository.')
     }
   }
 
-  const handleSellUnit = (unit: any, unitType: UnitType) => {
+  const handleSellUnit = (unit: Apartment | Garage | Repository, unitType: UnitType) => {
     setUnitForSale({ unit, type: unitType })
     setShowSaleForm(true)
   }
@@ -231,7 +253,7 @@ const SalesProjectsEnhanced: React.FC = () => {
 
   const handleSelectAllUnits = () => {
     if (!selectedBuilding) return
-    let units: any[] = []
+    let units: { id: string }[] = []
     if (activeUnitType === 'apartment') units = selectedBuilding.apartments
     else if (activeUnitType === 'garage') units = selectedBuilding.garages
     else if (activeUnitType === 'repository') units = selectedBuilding.repositories
@@ -258,7 +280,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating prices:', error)
-      alert('Error updating prices. Please try again.')
+      toast.error('Error updating prices. Please try again.')
     }
   }
 
@@ -266,81 +288,45 @@ const SalesProjectsEnhanced: React.FC = () => {
     if (!unitForSale) return
 
     try {
-      let customerId = saleData.customer_id
-
-      if (customerMode === 'new') {
-        if (!saleData.buyer_name.trim() || !saleData.buyer_email.trim()) {
-          alert('Please fill in buyer name and email')
-          return
-        }
-
-        const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
-        const lastName = lastNameParts.join(' ') || firstName
-
-        const newCustomer = await salesService.createCustomer(
-          firstName,
-          lastName,
-          saleData.buyer_email,
-          saleData.buyer_phone,
-          saleData.buyer_address
-        )
-        customerId = newCustomer.id
-      }
-
-      await salesService.createSale(
-        unitForSale.unit.id,
-        unitForSale.type,
-        customerId,
-        saleData.sale_price,
-        saleData.payment_method,
-        saleData.down_payment,
-        saleData.monthly_payment,
-        saleData.sale_date,
-        saleData.contract_signed,
-        saleData.notes
-      )
-
-      if (customerMode === 'existing' && customerId) {
-        await salesService.updateCustomerStatus(customerId, 'buyer')
-      }
-
-      const buyerDisplayName = customerMode === 'existing'
-        ? saleData.buyer_name || (customers.find(c => c.id === customerId) ? `${customers.find(c => c.id === customerId)!.name} ${customers.find(c => c.id === customerId)!.surname}` : '')
-        : saleData.buyer_name
-
-      await salesService.updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, buyerDisplayName)
-
-      if (unitForSale.type === 'apartment') {
-        await salesService.updateLinkedUnitsAfterSale(unitForSale.unit.id, buyerDisplayName)
-      }
-
+      await salesService.completeSale({
+        unitForSale,
+        saleData,
+        customerMode,
+        existingCustomers: customers
+      })
       setShowSaleForm(false)
       setUnitForSale(null)
       refetch()
     } catch (error) {
       console.error('Error completing sale:', error)
-      alert('Error completing sale. Please try again.')
+      toast.error('Error completing sale. Please try again.')
     }
   }
 
   const getUnitLabel = (unitType: UnitType) => {
-    if (unitType === 'apartment') return 'Apartments'
-    if (unitType === 'garage') return 'Garages'
-    return 'Repositories'
+    if (unitType === 'apartment') return t('sales_projects.units.apartments')
+    if (unitType === 'garage') return t('sales_projects.units.garages')
+    return t('sales_projects.units.repositories')
+  }
+
+  const getUnitLabelSingular = (unitType: UnitType) => {
+    if (unitType === 'apartment') return t('common.apartment')
+    if (unitType === 'garage') return t('common.garage')
+    return t('common.storage')
   }
 
   if (loading) {
-    return <LoadingSpinner message="Loading sales projects..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div>
       <PageHeader
-        title="Sales Projects"
+        title={t('sales_projects.title')}
         description={
-          viewMode === 'projects' ? 'Select a project to manage buildings and units' :
-          viewMode === 'buildings' ? `Managing buildings for ${selectedProject?.name}` :
-          `Managing units in ${selectedBuilding?.name}`
+          viewMode === 'projects' ? t('sales_projects.select_project') :
+          viewMode === 'buildings' ? `${t('sales_projects.managing_buildings')} ${selectedProject?.name}` :
+          `${t('sales_projects.managing_units')} ${selectedBuilding?.name}`
         }
         className="mb-6"
         actions={
@@ -352,20 +338,20 @@ const SalesProjectsEnhanced: React.FC = () => {
                   icon={FileUp}
                   onClick={() => setShowImportApartmentsModal(true)}
                 >
-                  Import from Excel
+                  {t('sales_projects.import_excel')}
                 </Button>
                 <Button
                   variant="success"
                   icon={Plus}
                   onClick={() => setShowBuildingQuantityForm(true)}
                 >
-                  Create Buildings (1-20)
+                  {t('sales_projects.create_buildings')}
                 </Button>
                 <Button
                   icon={Building2}
                   onClick={() => setShowBuildingForm(true)}
                 >
-                  Add Single Building
+                  {t('sales_projects.add_single_building')}
                 </Button>
               </>
             )}
@@ -377,7 +363,7 @@ const SalesProjectsEnhanced: React.FC = () => {
                     icon={FileUp}
                     onClick={() => setShowImportGaragesModal(true)}
                   >
-                    Import Garages from Excel
+                    {t('sales_projects.import_garages_excel')}
                   </Button>
                 )}
                 <Button
@@ -385,13 +371,13 @@ const SalesProjectsEnhanced: React.FC = () => {
                   icon={Building2}
                   onClick={() => setShowBulkUnitForm(true)}
                 >
-                  Bulk Create {getUnitLabel(activeUnitType)}
+                  {t('sales_projects.bulk_create')} {getUnitLabel(activeUnitType)}
                 </Button>
                 <Button
                   icon={Plus}
                   onClick={() => setShowUnitForm(true)}
                 >
-                  Add Single {getUnitLabel(activeUnitType).slice(0, -1)}
+                  {t('sales_projects.add_single')} {getUnitLabelSingular(activeUnitType)}
                 </Button>
               </>
             )}
@@ -535,6 +521,30 @@ const SalesProjectsEnhanced: React.FC = () => {
           setShowImportGaragesModal(false)
           refetch()
         }}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteBuildingId}
+        title={t('confirm.delete_title')}
+        message={t('sales_projects.confirm_delete_building')}
+        confirmLabel={t('confirm.delete_confirm')}
+        cancelLabel={t('confirm.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteBuilding}
+        onCancel={() => setPendingDeleteBuildingId(null)}
+        loading={deletingBuilding}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteUnit}
+        title={t('confirm.delete_title')}
+        message={pendingDeleteUnit ? t('sales_projects.confirm_delete_unit') : ''}
+        confirmLabel={t('confirm.delete_confirm')}
+        cancelLabel={t('confirm.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteUnit}
+        onCancel={() => setPendingDeleteUnit(null)}
+        loading={deletingUnit}
       />
     </div>
   )

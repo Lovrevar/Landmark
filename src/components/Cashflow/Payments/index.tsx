@@ -1,15 +1,18 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Button, Select } from '../../ui'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog } from '../../ui'
 import DateInput from '../../Common/DateInput'
-import { usePayments } from './Hooks/usePayments'
-import AccountingPaymentFormModal from './Forms/AccountingPaymentFormModal'
+import { usePayments } from './hooks/usePayments'
+import AccountingPaymentFormModal from './forms/AccountingPaymentFormModal'
 import PaymentStatsCards from './PaymentStatsCards'
 import PaymentTable from './PaymentTable'
 import { PaymentDetailView } from './PaymentDetailView'
-import { columnLabels } from '../Services/paymentHelpers'
+import { columnLabels } from '../services/paymentHelpers'
+import type { FilterMethod, FilterInvoiceType } from './types'
 
 const AccountingPayments: React.FC = () => {
+  const { t } = useTranslation()
   const {
     payments,
     invoices,
@@ -42,29 +45,33 @@ const AccountingPayments: React.FC = () => {
     handleCloseDetailView,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     filteredPayments,
     resetDateFilters
   } = usePayments()
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Plaćanja"
-        description="Pregled svih izvršenih plaćanja"
+        title={t('payments.title')}
+        description={t('payments.subtitle')}
         actions={
           <>
             <div className="relative column-menu-container">
               <Button variant="secondary" icon={Columns} onClick={() => setShowColumnMenu(!showColumnMenu)}>
-                Polja
+                {t('payments.columns_label')}
               </Button>
               {showColumnMenu && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-700">Prikaži kolone</p>
+                    <p className="text-sm font-semibold text-gray-700">{t('payments.show_columns')}</p>
                   </div>
                   {Object.entries(columnLabels).map(([key, label]) => (
                     <button
@@ -80,7 +87,7 @@ const AccountingPayments: React.FC = () => {
               )}
             </div>
             <Button variant="primary" icon={Plus} onClick={() => handleOpenModal()}>
-              Novo plaćanje
+              {t('payments.add_new')}
             </Button>
           </>
         }
@@ -94,33 +101,33 @@ const AccountingPayments: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Pretraži po broju računa, firmi, dobavljaču..."
+            placeholder={t('payments.search_placeholder')}
           />
 
           <Select
             value={filterMethod}
-            onChange={(e) => setFilterMethod(e.target.value as any)}
+            onChange={(e) => setFilterMethod(e.target.value as FilterMethod)}
           >
-            <option value="ALL">Svi načini plaćanja</option>
-            <option value="WIRE">Virman</option>
-            <option value="CASH">Gotovina</option>
-            <option value="CHECK">Ček</option>
-            <option value="CARD">Kartica</option>
+            <option value="ALL">{t('payments.filters.all_methods')}</option>
+            <option value="WIRE">{t('payments.method_wire')}</option>
+            <option value="CASH">{t('payments.method_cash')}</option>
+            <option value="CHECK">{t('payments.method_check')}</option>
+            <option value="CARD">{t('payments.method_card')}</option>
           </Select>
 
           <Select
             value={filterInvoiceType}
-            onChange={(e) => setFilterInvoiceType(e.target.value as any)}
+            onChange={(e) => setFilterInvoiceType(e.target.value as FilterInvoiceType)}
           >
-            <option value="ALL">Svi tipovi računa</option>
-            <option value="EXPENSE">Ulazni</option>
-            <option value="INCOME">Izlazni</option>
+            <option value="ALL">{t('payments.filters.all_invoice_types')}</option>
+            <option value="EXPENSE">{t('payments.filters.expense')}</option>
+            <option value="INCOME">{t('payments.filters.income')}</option>
           </Select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Datum OD</label>
+            <label className="text-xs text-gray-600 mb-1">{t('payments.filters.date_from')}</label>
             <DateInput
               value={dateFrom}
               onChange={setDateFrom}
@@ -129,7 +136,7 @@ const AccountingPayments: React.FC = () => {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Datum DO</label>
+            <label className="text-xs text-gray-600 mb-1">{t('payments.filters.date_to')}</label>
             <DateInput
               value={dateTo}
               onChange={setDateTo}
@@ -140,7 +147,7 @@ const AccountingPayments: React.FC = () => {
           <div className="flex items-end">
             {(dateFrom || dateTo) && (
               <Button variant="ghost" icon={X} onClick={resetDateFilters}>
-                Resetuj datume
+                {t('payments.filters.reset_dates')}
               </Button>
             )}
           </div>
@@ -162,10 +169,10 @@ const AccountingPayments: React.FC = () => {
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Prikazano: {filteredPayments.length} od {payments.length} plaćanja</span>
+          <span className="text-sm text-gray-600">{t('payments.shown_count', { filtered: filteredPayments.length, total: payments.length })}</span>
           <div className="flex items-center space-x-6 text-sm">
             <div>
-              <span className="text-gray-600">Ukupan iznos filtriranih: </span>
+              <span className="text-gray-600">{t('payments.filtered_total')}</span>
               <span className="font-semibold text-green-600">
                 €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
               </span>
@@ -185,6 +192,18 @@ const AccountingPayments: React.FC = () => {
         companyCredits={companyCredits}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_payment')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
       />
     </div>
   )

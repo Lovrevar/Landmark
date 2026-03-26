@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, ShoppingCart, DollarSign, Landmark } from 'lucide-react'
 import { Button } from '../../ui'
 
@@ -17,6 +18,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
   onNewLandPurchaseInvoice,
   onNewInvoice
 }) => {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center gap-2">
       <Button
@@ -25,7 +27,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewLandPurchaseInvoice}
         className="whitespace-nowrap"
       >
-        Kupoprodaja Zemljišta
+        {t('invoices.actions.new_land')}
       </Button>
       <Button
         variant="amber"
@@ -33,7 +35,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewOfficeInvoice}
         className="whitespace-nowrap"
       >
-        Novi Office Račun
+        {t('invoices.actions.new_office')}
       </Button>
       <Button
         variant="purple"
@@ -41,7 +43,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewRetailInvoice}
         className="whitespace-nowrap"
       >
-        Novi Retail Račun
+        {t('invoices.actions.new_retail')}
       </Button>
       <Button
         variant="success"
@@ -49,7 +51,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewBankInvoice}
         className="whitespace-nowrap"
       >
-        Investicije
+        {t('invoices.actions.new_bank')}
       </Button>
       <Button
         variant="primary"
@@ -57,7 +59,7 @@ export const InvoiceActionButtons: React.FC<InvoiceActionButtonsProps> = ({
         onClick={onNewInvoice}
         className="whitespace-nowrap"
       >
-        Novi račun
+        {t('invoices.actions.new')}
       </Button>
     </div>
   )

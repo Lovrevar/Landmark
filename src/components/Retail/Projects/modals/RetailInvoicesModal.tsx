@@ -1,0 +1,256 @@
+import React, { useState, useEffect } from 'react'
+import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
+import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
+import type { RetailContract } from '../../../../types/retail'
+import { retailProjectService } from '../services/retailProjectService'
+import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
+
+interface Invoice {
+  id: string
+  invoice_number: string
+  invoice_type: string
+  status: string
+  base_amount: number
+  vat_amount: number
+  total_amount: number
+  paid_amount: number
+  remaining_amount: number
+  issue_date: string
+  due_date: string
+  description: string
+  company_name: string
+  supplier_name: string | null
+  customer_name: string | null
+}
+
+interface RetailInvoicesModalProps {
+  isOpen: boolean
+  onClose: () => void
+  contract: RetailContract | null
+}
+
+export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
+  isOpen,
+  onClose,
+  contract
+}) => {
+  const { t } = useTranslation()
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (isOpen && contract) {
+      fetchInvoices()
+    }
+  }, [isOpen, contract?.id])
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+  const fetchInvoices = async () => {
+    if (!contract) return
+
+    /*console.log('🔍 RetailInvoicesModal - Fetching invoices for CONTRACT:', {
+      retail_contract_id: contract.id,
+      contract_number: contract.contract_number
+    })*/
+
+    setLoading(true)
+    try {
+      const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contract.id)
+      setInvoices(formattedInvoices)
+    } catch (error) {
+      console.error('Error fetching invoices:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
+    switch (status) {
+      case 'PAID':
+        return 'green'
+      case 'PARTIALLY_PAID':
+        return 'yellow'
+      case 'UNPAID':
+        return 'red'
+      default:
+        return 'gray'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return t('retail_projects.payment_history_modal.status_paid')
+      case 'PARTIALLY_PAID':
+        return t('retail_projects.payment_history_modal.status_partial')
+      case 'UNPAID':
+        return t('retail_projects.payment_history_modal.status_unpaid')
+      default:
+        return status
+    }
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'INCOMING_SUPPLIER':
+        return t('retail_projects.invoices_modal.type_incoming_supplier')
+      case 'OUTGOING_SUPPLIER':
+        return t('retail_projects.invoices_modal.type_outgoing_supplier')
+      case 'INCOMING_INVESTMENT':
+        return t('retail_projects.invoices_modal.type_incoming_investment')
+      case 'OUTGOING_SALES':
+        return t('retail_projects.invoices_modal.type_outgoing_sales')
+      default:
+        return type
+    }
+  }
+
+  const isOverdue = (dueDate: string, status: string) => {
+    if (status === 'PAID') return false
+    return new Date(dueDate) < new Date()
+  }
+
+  return (
+    <Modal show={isOpen && !!contract} onClose={onClose} size="full">
+      <Modal.Header
+        title={t('retail_projects.invoices_modal.title', { contract: contract?.contract_number || '' })}
+        subtitle={t('retail_projects.invoices_modal.subtitle', { amount: contract?.contract_amount.toLocaleString('hr-HR'), paid: contract?.budget_realized.toLocaleString('hr-HR') })}
+        onClose={onClose}
+      />
+      <Modal.Body>
+        {loading ? (
+          <LoadingSpinner />
+        ) : invoices.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={t('retail_projects.invoices_modal.no_invoices')}
+          />
+        ) : (
+          <div className="space-y-4">
+            {invoices.map((invoice) => (
+              <div
+                key={invoice.id}
+                className={`bg-white border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                }`}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-gray-500 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
+                      <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
+                        {getStatusLabel(invoice.status)}
+                      </Badge>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">{invoice.invoice_number}</p>
+                    <p className="text-xs text-gray-500 mt-1">{getTypeLabel(invoice.invoice_type)}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.company_label')}</label>
+                    <div className="flex items-center mb-2">
+                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                      <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
+                    </div>
+                    {invoice.supplier_name && (
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 text-blue-600 mr-2" />
+                        <p className="text-xs text-blue-600">{invoice.supplier_name}</p>
+                      </div>
+                    )}
+                    {invoice.customer_name && (
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 text-green-600 mr-2" />
+                        <p className="text-xs text-green-600">{invoice.customer_name}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.amount_label')}</label>
+                    <div className="flex items-center">
+                      <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
+                      <p className="text-lg font-bold text-gray-900">
+                        €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    {invoice.status !== 'UNPAID' && (
+                      <p className="text-xs text-green-600 mt-1">
+                        {t('retail_projects.invoices_modal.paid_label', { amount: invoice.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) })}
+                      </p>
+                    )}
+                    {invoice.remaining_amount > 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {t('retail_projects.invoices_modal.remaining_label', { amount: invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 }) })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                      <p className={`text-sm font-medium ${
+                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900'
+                      }`}>
+                        {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                      </p>
+                    </div>
+                    {isOverdue(invoice.due_date, invoice.status) && (
+                      <div className="flex items-center mt-1 text-red-600">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        <span className="text-xs font-semibold">{t('retail_projects.invoices_modal.overdue_badge')}</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('retail_projects.invoices_modal.issue_date_label')} {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                    </p>
+                  </div>
+                </div>
+
+                {invoice.description && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="text-xs font-medium text-gray-500 uppercase block mb-1">{t('retail_projects.invoices_modal.description_label')}</label>
+                    <p className="text-sm text-gray-700">{invoice.description}</p>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">{t('retail_projects.invoices_modal.base_label')}</span>
+                    <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">{t('retail_projects.invoices_modal.vat_label')}</span>
+                    <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <div className="flex justify-between items-center w-full">
+          <div className="text-sm text-gray-600">
+            {t('retail_projects.invoices_modal.total_invoices')} <span className="font-semibold">{invoices.length}</span>
+          </div>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.close')}
+          </Button>
+        </div>
+      </Modal.Footer>
+    </Modal>
+  )
+}

@@ -3,7 +3,7 @@ import React from 'react'
 interface FormFieldProps {
   label: string
   required?: boolean
-  helperText?: string
+  helperText?: React.ReactNode
   error?: string
   compact?: boolean
   children: React.ReactNode

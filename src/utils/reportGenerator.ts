@@ -1,8 +1,17 @@
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-fns'
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
+
+type ProjectForReport = Project & {
+  total_spent?: number
+  total_revenue?: number
+  tasks?: Array<{ name: string; status: string; deadline: string }>
+  subcontractors?: Array<{ name: string; progress: number; cost: number; budget_realized: number; deadline?: string; job_description?: string }>
+  apartments?: Array<{ number: string; status: string; price: number; sale_price?: number; buyer_name?: string | null }>
+  total_expenses?: number
+  completion_percentage?: number
+}
 
 // Global helper functions for PDF generation
 let pdf: jsPDF
@@ -11,6 +20,28 @@ let pageHeight: number
 let margin: number
 let contentWidth: number
 let yPosition: number
+let pdfFont = 'helvetica'
+
+// Loads NotoSans from Google Fonts to support Croatian characters (š č ć đ ž).
+// Falls back to helvetica if the fetch fails (offline, firewall, etc.).
+async function loadUnicodeFont(doc: jsPDF): Promise<void> {
+  const toBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+    return btoa(binary)
+  }
+  const [regularRes, boldRes] = await Promise.all([
+    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf'),
+    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf')
+  ])
+  if (!regularRes.ok || !boldRes.ok) throw new Error('Font fetch failed')
+  const [regularBuffer, boldBuffer] = await Promise.all([regularRes.arrayBuffer(), boldRes.arrayBuffer()])
+  doc.addFileToVFS('NotoSans-Regular.ttf', toBase64(regularBuffer))
+  doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
+  doc.addFileToVFS('NotoSans-Bold.ttf', toBase64(boldBuffer))
+  doc.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold')
+}
 
 // Helper function to add new page if needed
 const checkPageBreak = (requiredHeight: number) => {
@@ -23,13 +54,13 @@ const checkPageBreak = (requiredHeight: number) => {
 }
 
 // Helper function to add text with word wrap
-const addText = (text: string, x: number, y: number, options: any = {}) => {
+const addText = (text: string, x: number, y: number, options: { fontSize?: number; maxWidth?: number; lineHeight?: number; style?: string; color?: number[]; align?: string } = {}) => {
   const fontSize = options.fontSize || 10
   const maxWidth = options.maxWidth || contentWidth
   const lineHeight = options.lineHeight || fontSize * 0.35
 
   pdf.setFontSize(fontSize)
-  if (options.style) pdf.setFont('helvetica', options.style)
+  if (options.style) pdf.setFont(pdfFont, options.style)
 
   if (options.color) {
     if (Array.isArray(options.color)) {
@@ -57,7 +88,7 @@ const addSection = (title: string, color: number[] = [37, 99, 235]) => {
   
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(pdfFont, 'bold')
   pdf.text(title, margin + 5, yPosition + 8)
   
   yPosition += 17
@@ -80,7 +111,9 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pageHeight = pdf.internal.pageSize.getHeight()
   margin = 20
   contentWidth = pageWidth - (margin * 2)
-  
+  pdfFont = 'helvetica'
+  try { await loadUnicodeFont(pdf); pdfFont = 'NotoSans' } catch { /* fall back to helvetica */ }
+
   yPosition = margin
   
   // Header
@@ -89,11 +122,11 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(24)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(pdfFont, 'bold')
   pdf.text('LANDMARK GROUP', margin, 25)
   
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.text('Executive Project Report', margin, 32)
   
   pdf.setTextColor(0, 0, 0)
@@ -101,21 +134,21 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
 
   // Report metadata
   pdf.setFontSize(10)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, pageWidth - margin - 50, yPosition)
   pdf.text(`Total Projects: ${projects.length}`, pageWidth - margin - 50, yPosition + 5)
   yPosition += 20
 
   // Executive Summary
   pdf.setFontSize(16)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(pdfFont, 'bold')
   pdf.setTextColor(37, 99, 235)
   yPosition = addText('Executive Summary', margin, yPosition, { fontSize: 16, style: 'bold', color: [37, 99, 235] })
   yPosition += 5
 
   pdf.setTextColor(0, 0, 0)
   pdf.setFontSize(10)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
 
   const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0)
   const totalExpenses = projects.reduce((sum, p) => sum + p.total_expenses, 0)
@@ -143,12 +176,12 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.rect(margin, yPosition, contentWidth, 50, 'F')
   
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(pdfFont, 'bold')
   pdf.setTextColor(37, 99, 235)
   pdf.text('Portfolio Performance Metrics', margin + 5, yPosition + 12)
   
   pdf.setFontSize(10)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.setTextColor(0, 0, 0)
   
   const metricsY = yPosition + 20
@@ -164,10 +197,10 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   
   metrics.forEach((metric, index) => {
     const x = margin + 5 + (index * colWidth)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setFontSize(14)
     pdf.text(metric.value, x, metricsY + 8)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     pdf.setFontSize(8)
     pdf.text(metric.label, x, metricsY + 15)
   })
@@ -184,7 +217,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
     
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(12)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.text(project.name, margin + 5, yPosition + 10)
     
     pdf.setFontSize(8)
@@ -195,7 +228,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
 
     // Project overview
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     
     const projectInfo = [
       `Status: ${project.status}`,
@@ -203,8 +236,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
       `Budget: $${project.budget.toLocaleString()}`,
       `Expenses: $${project.total_expenses.toLocaleString()}`,
       `Revenue: $${project.apartment_sales.toLocaleString()}`,
-      `Completion: ${project.task_completion}%`,
-      `Investor: ${project.investor || 'N/A'}`
+      `Completion: ${project.task_completion}%`
     ]
 
     const infoY = yPosition
@@ -226,14 +258,14 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
       checkPageBreak(30)
       
       pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text('Financial Breakdown:', margin + 5, yPosition)
       yPosition += 8
 
       const budgetUsed = (project.total_expenses / project.budget) * 100
       const profitMargin = project.apartment_sales > 0 ? ((project.apartment_sales - project.total_expenses) / project.apartment_sales * 100) : 0
 
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.setFontSize(9)
       
       // Budget utilization bar
@@ -275,7 +307,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
       riskColor = [245, 158, 11] // Orange
     }
 
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setFontSize(9)
     pdf.text('Risk Assessment:', margin + 5, yPosition)
     pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2])
@@ -284,7 +316,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
 
     if (overdueTasks > 0 || budgetRisk || timelineRisk) {
       yPosition += 8
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.setFontSize(8)
       const risks = []
       if (overdueTasks > 0) risks.push(`${overdueTasks} overdue tasks`)
@@ -304,7 +336,7 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   // Footer
   const footerY = pageHeight - 15
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.setTextColor(107, 114, 128)
   pdf.text('LANDMARK GROUP - Confidential Executive Report', margin, footerY)
   pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, footerY)
@@ -314,13 +346,15 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   pdf.save(fileName)
 }
 
-export const generateProjectDetailReport = async (project: any) => {
+export const generateProjectDetailReport = async (project: ProjectForReport) => {
   pdf = new jsPDF('p', 'mm', 'a4')
   pageWidth = pdf.internal.pageSize.getWidth()
   pageHeight = pdf.internal.pageSize.getHeight()
   margin = 20
   contentWidth = pageWidth - (margin * 2)
-  
+  pdfFont = 'helvetica'
+  try { await loadUnicodeFont(pdf); pdfFont = 'NotoSans' } catch { /* fall back to helvetica */ }
+
   yPosition = margin
 
   // Header
@@ -329,11 +363,11 @@ export const generateProjectDetailReport = async (project: any) => {
   
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(pdfFont, 'bold')
   pdf.text('Project Report', margin, 20)
   
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.text(project.name, margin, 28)
   
   pdf.setTextColor(0, 0, 0)
@@ -347,11 +381,10 @@ export const generateProjectDetailReport = async (project: any) => {
     ['Status', project.status],
     ['Start Date', format(new Date(project.start_date), 'MMMM dd, yyyy')],
     ['End Date', project.end_date ? format(new Date(project.end_date), 'MMMM dd, yyyy') : 'TBD'],
-    ['Investor', project.investor || 'N/A'],
     ['Total Budget', `$${project.budget.toLocaleString()}`],
-    ['Amount Spent', `$${project.total_spent.toLocaleString()}`],
-    ['Revenue Generated', `$${project.total_revenue.toLocaleString()}`],
-    ['Expected Profit', `$${(project.total_revenue - project.total_spent).toLocaleString()}`]
+    ['Amount Spent', `$${(project.total_spent ?? 0).toLocaleString()}`],
+    ['Revenue Generated', `$${(project.total_revenue ?? 0).toLocaleString()}`],
+    ['Expected Profit', `$${((project.total_revenue ?? 0) - (project.total_spent ?? 0)).toLocaleString()}`]
   ]
 
   pdf.setFontSize(10)
@@ -359,9 +392,9 @@ export const generateProjectDetailReport = async (project: any) => {
     const y = yPosition + (index * 6)
     checkPageBreak(6)
     
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.text(`${label}:`, margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     pdf.text(value, margin + 60, y)
   })
 
@@ -372,10 +405,10 @@ export const generateProjectDetailReport = async (project: any) => {
     addSection('Tasks Summary')
     
     const tasksByStatus = {
-      'Completed': project.tasks.filter((t: Task) => t.status === 'Completed').length,
-      'In Progress': project.tasks.filter((t: Task) => t.status === 'In Progress').length,
-      'Pending': project.tasks.filter((t: Task) => t.status === 'Pending').length,
-      'Overdue': project.tasks.filter((t: Task) => new Date(t.deadline) < new Date() && t.status !== 'Completed').length
+      'Completed': project.tasks.filter((t) => t.status === 'Completed').length,
+      'In Progress': project.tasks.filter((t) => t.status === 'In Progress').length,
+      'Pending': project.tasks.filter((t) => t.status === 'Pending').length,
+      'Overdue': project.tasks.filter((t) => new Date(t.deadline) < new Date() && t.status !== 'Completed').length
     }
 
     pdf.setFontSize(10)
@@ -383,29 +416,29 @@ export const generateProjectDetailReport = async (project: any) => {
       const y = yPosition + (index * 6)
       checkPageBreak(6)
       
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${status}:`, margin + 5, y)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(`${count} tasks`, margin + 40, y)
     })
 
     yPosition += 30
 
     // Critical tasks
-    const criticalTasks = project.tasks.filter((t: Task) => 
+    const criticalTasks = project.tasks.filter((t) =>
       new Date(t.deadline) < new Date() && t.status !== 'Completed'
     )
 
     if (criticalTasks.length > 0) {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.setTextColor(239, 68, 68)
       pdf.text('Critical Tasks (Overdue):', margin + 5, yPosition)
       pdf.setTextColor(0, 0, 0)
       yPosition += 8
 
-      criticalTasks.forEach((task: Task) => {
+      criticalTasks.forEach((task) => {
         checkPageBreak(6)
-        pdf.setFont('helvetica', 'normal')
+        pdf.setFont(pdfFont, 'normal')
         pdf.setFontSize(9)
         pdf.text(`• ${task.name} (Due: ${format(new Date(task.deadline), 'MMM dd')})`, margin + 10, yPosition)
         yPosition += 5
@@ -419,31 +452,33 @@ export const generateProjectDetailReport = async (project: any) => {
     addSection('Subcontractors Summary')
     
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     
-    project.subcontractors.forEach((sub: Subcontractor, index: number) => {
+    project.subcontractors.forEach((sub) => {
       checkPageBreak(15)
       
-      const isOverdue = new Date(sub.deadline) < new Date() && sub.progress < 100
-      
-      pdf.setFont('helvetica', 'bold')
+      const progress = sub.progress ?? 0
+      const isOverdue = sub.deadline ? new Date(sub.deadline) < new Date() && progress < 100 : false
+
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(sub.name, margin + 5, yPosition)
-      
-      pdf.setFont('helvetica', 'normal')
+
+      pdf.setFont(pdfFont, 'normal')
       pdf.setFontSize(9)
-      pdf.text(`Progress: ${sub.progress}%`, margin + 5, yPosition + 5)
-      pdf.text(`Cost: $${sub.cost.toLocaleString()}`, margin + 50, yPosition + 5)
-      pdf.text(`Deadline: ${format(new Date(sub.deadline), 'MMM dd, yyyy')}`, margin + 100, yPosition + 5)
-      
+      pdf.text(`Progress: ${progress}%`, margin + 5, yPosition + 5)
+      pdf.text(`Cost: $${(sub.cost ?? 0).toLocaleString()}`, margin + 50, yPosition + 5)
+      pdf.text(`Deadline: ${sub.deadline ? format(new Date(sub.deadline), 'MMM dd, yyyy') : 'N/A'}`, margin + 100, yPosition + 5)
+
       if (isOverdue) {
         pdf.setTextColor(239, 68, 68)
-        pdf.setFont('helvetica', 'bold')
+        pdf.setFont(pdfFont, 'bold')
         pdf.text('OVERDUE', margin + 150, yPosition + 5)
         pdf.setTextColor(0, 0, 0)
       }
-      
+
       pdf.setFontSize(8)
-      pdf.text(sub.job_description.substring(0, 80) + (sub.job_description.length > 80 ? '...' : ''), margin + 5, yPosition + 10)
+      const jobDesc = sub.job_description ?? ''
+      pdf.text(jobDesc.substring(0, 80) + (jobDesc.length > 80 ? '...' : ''), margin + 5, yPosition + 10)
       
       yPosition += 18
     })
@@ -453,29 +488,29 @@ export const generateProjectDetailReport = async (project: any) => {
   if (project.apartments && project.apartments.length > 0) {
     addSection('Sales Performance', [34, 197, 94])
     
-    const soldUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Sold').length
-    const availableUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Available').length
-    const reservedUnits = project.apartments.filter((apt: Apartment) => apt.status === 'Reserved').length
+    const soldUnits = project.apartments.filter((apt) => apt.status === 'Sold').length
+    const availableUnits = project.apartments.filter((apt) => apt.status === 'Available').length
+    const reservedUnits = project.apartments.filter((apt) => apt.status === 'Reserved').length
     
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     
     const salesData = [
       ['Total Units', project.apartments.length.toString()],
       ['Units Sold', `${soldUnits} (${((soldUnits / project.apartments.length) * 100).toFixed(1)}%)`],
       ['Available Units', availableUnits.toString()],
       ['Reserved Units', reservedUnits.toString()],
-      ['Average Price', `$${(project.apartments.reduce((sum: number, apt: Apartment) => sum + apt.price, 0) / project.apartments.length).toLocaleString()}`],
-      ['Total Revenue', `$${project.total_revenue.toLocaleString()}`]
+      ['Average Price', `$${(project.apartments.reduce((sum: number, apt) => sum + apt.price, 0) / project.apartments.length).toLocaleString()}`],
+      ['Total Revenue', `$${(project.total_revenue ?? 0).toLocaleString()}`]
     ]
 
     salesData.forEach(([label, value], index) => {
       const y = yPosition + (index * 6)
       checkPageBreak(6)
       
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + 5, y)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + 60, y)
     })
 
@@ -487,26 +522,26 @@ export const generateProjectDetailReport = async (project: any) => {
   addSection('Recommendations & Next Steps', [168, 85, 247])
   
   pdf.setFontSize(10)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   
   const recommendations = []
   
-  if ((project.total_expenses / project.budget) > 0.9) {
+  if (((project.total_expenses ?? 0) / project.budget) > 0.9) {
     recommendations.push('• Monitor budget closely - approaching limit')
   }
   
-  if (project.tasks?.some((t: Task) => new Date(t.deadline) < new Date() && t.status !== 'Completed')) {
+  if (project.tasks?.some((t) => new Date(t.deadline) < new Date() && t.status !== 'Completed')) {
     recommendations.push('• Address overdue tasks immediately')
   }
   
-  if (project.subcontractors?.some((s: Subcontractor) => {
-    const progress = s.cost > 0 ? Math.min(100, (s.budget_realized / s.cost) * 100) : 0
-    return new Date(s.deadline) < new Date() && progress < 100
+  if (project.subcontractors?.some((s) => {
+    const progress = (s.cost ?? 0) > 0 ? Math.min(100, ((s.budget_realized ?? 0) / (s.cost ?? 1)) * 100) : 0
+    return s.deadline ? new Date(s.deadline) < new Date() && progress < 100 : false
   })) {
     recommendations.push('• Follow up with overdue subcontractors')
   }
   
-  if (project.completion_percentage < 50 && project.status === 'In Progress') {
+  if ((project.completion_percentage ?? 0) < 50 && project.status === 'In Progress') {
     recommendations.push('• Accelerate project timeline to meet deadlines')
   }
   
@@ -515,14 +550,14 @@ export const generateProjectDetailReport = async (project: any) => {
     recommendations.push('• Consider opportunities for cost optimization')
   }
 
-  recommendations.forEach((rec, index) => {
+  recommendations.forEach((rec) => {
     yPosition = addText(rec, margin + 5, yPosition + 6, { maxWidth: contentWidth - 10 })
   })
 
   // Footer
   const footerY = pageHeight - 15
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(pdfFont, 'normal')
   pdf.setTextColor(107, 114, 128)
   pdf.text('LANDMARK GROUP - Confidential Project Report', margin, footerY)
   pdf.text(`Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, pageWidth - margin - 50, footerY)
@@ -538,6 +573,8 @@ export const generateComprehensiveExecutiveReport = async () => {
   pageHeight = pdf.internal.pageSize.getHeight()
   margin = 20
   contentWidth = pageWidth - (margin * 2)
+  pdfFont = 'helvetica'
+  try { await loadUnicodeFont(pdf); pdfFont = 'NotoSans' } catch { /* fall back to helvetica */ }
   yPosition = margin
 
   try {
@@ -587,11 +624,11 @@ export const generateComprehensiveExecutiveReport = async () => {
 
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(26)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.text('LANDMARK GROUP', margin, 22)
 
     pdf.setFontSize(16)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     pdf.text('Comprehensive Executive Report', margin, 32)
 
     pdf.setFontSize(10)
@@ -617,14 +654,14 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(37, 99, 235)
     pdf.text('EXECUTIVE SUMMARY', margin + 5, yPosition + 6)
     yPosition += 13
 
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
 
     const summaryPoints = [
       `Portfolio: ${projects.length} projects (${projects.filter(p => p.status === 'In Progress').length} active, ${projects.filter(p => p.status === 'Completed').length} completed)`,
@@ -643,14 +680,14 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(37, 99, 235)
     pdf.text('KEY PERFORMANCE INDICATORS', margin + 5, yPosition + 6)
     yPosition += 13
 
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
 
     const kpis = [
       { label: 'Portfolio Value', value: `€${(totalBudget / 1000000).toFixed(1)}M` },
@@ -663,10 +700,10 @@ export const generateComprehensiveExecutiveReport = async () => {
     const kpiColWidth = contentWidth / 4
     kpis.forEach((kpi, index) => {
       const x = margin + (index * kpiColWidth) + 5
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.setFontSize(16)
       pdf.text(kpi.value, x, kpiY + 10)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.setFontSize(8)
       pdf.text(kpi.label, x, kpiY + 16)
     })
@@ -682,10 +719,10 @@ export const generateComprehensiveExecutiveReport = async () => {
     const kpi2Y = yPosition
     kpis2.forEach((kpi, index) => {
       const x = margin + (index * kpiColWidth) + 5
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.setFontSize(16)
       pdf.text(kpi.value, x, kpi2Y + 10)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.setFontSize(8)
       pdf.text(kpi.label, x, kpi2Y + 16)
     })
@@ -695,7 +732,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(34, 197, 94)
     pdf.text('SALES PERFORMANCE', margin + 5, yPosition + 6)
     yPosition += 13
@@ -728,16 +765,16 @@ export const generateComprehensiveExecutiveReport = async () => {
     const rightSales = salesMetrics.slice(5)
 
     leftSales.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + 45, yPosition + (index * 5))
     })
 
     rightSales.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + (contentWidth / 2) + 45, yPosition + (index * 5))
     })
     yPosition += 30
@@ -746,7 +783,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(168, 85, 247)
     pdf.text('FUNDING & FINANCIAL STRUCTURE', margin + 5, yPosition + 6)
     yPosition += 13
@@ -776,16 +813,16 @@ export const generateComprehensiveExecutiveReport = async () => {
     const rightFunding = fundingMetrics.slice(5)
 
     leftFunding.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + 50, yPosition + (index * 5))
     })
 
     rightFunding.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + (contentWidth / 2) + 50, yPosition + (index * 5))
     })
     yPosition += 30
@@ -794,7 +831,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(245, 158, 11)
     pdf.text('CONSTRUCTION & SUPERVISION STATUS', margin + 5, yPosition + 6)
     yPosition += 13
@@ -831,16 +868,16 @@ export const generateComprehensiveExecutiveReport = async () => {
     const rightConstruction = constructionMetrics.slice(5)
 
     leftConstruction.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + 50, yPosition + (index * 5))
     })
 
     rightConstruction.forEach(([label, value], index) => {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text(`${label}:`, margin + (contentWidth / 2) + 5, yPosition + (index * 5))
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.text(value, margin + (contentWidth / 2) + 50, yPosition + (index * 5))
     })
     yPosition += 30
@@ -849,7 +886,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(59, 130, 246)
     pdf.text('CASH FLOW ANALYSIS', margin + 5, yPosition + 6)
     yPosition += 13
@@ -884,14 +921,14 @@ export const generateComprehensiveExecutiveReport = async () => {
       })
     }
 
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.text('Month', margin + 5, yPosition)
     pdf.text('Inflow', margin + 35, yPosition)
     pdf.text('Outflow', margin + 70, yPosition)
     pdf.text('Net Cash Flow', margin + 110, yPosition)
     yPosition += 6
 
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     pdf.setFontSize(9)
 
     last6Months.forEach(month => {
@@ -914,9 +951,9 @@ export const generateComprehensiveExecutiveReport = async () => {
     const totalOutflow = last6Months.reduce((sum, m) => sum + m.outflow, 0)
     const totalNet = totalInflow - totalOutflow
 
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.text('6-Month Totals:', margin + 5, yPosition)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
     pdf.text(`Inflow: €${(totalInflow / 1000000).toFixed(2)}M | Outflow: €${(totalOutflow / 1000000).toFixed(2)}M | Net: €${(totalNet / 1000000).toFixed(2)}M`, margin + 5, yPosition + 5)
     yPosition += 15
 
@@ -924,7 +961,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(37, 99, 235)
     pdf.text('PROJECT-BY-PROJECT BREAKDOWN', margin + 5, yPosition + 6)
     yPosition += 13
@@ -937,7 +974,7 @@ export const generateComprehensiveExecutiveReport = async () => {
 
       pdf.setFillColor(230, 230, 230)
       pdf.rect(margin, yPosition, contentWidth, 7, 'F')
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.setFontSize(11)
       pdf.text(project.name, margin + 3, yPosition + 5)
       pdf.setFontSize(8)
@@ -945,7 +982,7 @@ export const generateComprehensiveExecutiveReport = async () => {
       yPosition += 10
 
       pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
 
       const projectApartments = apartments.filter(a => a.project_id === project.id)
       const projectSales = sales.filter(s => {
@@ -998,7 +1035,7 @@ export const generateComprehensiveExecutiveReport = async () => {
         riskColor = [245, 158, 11]
       }
 
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text('Risk:', margin + 5, yPosition)
       pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2])
       pdf.text(riskLevel, margin + 20, yPosition)
@@ -1014,14 +1051,14 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(239, 68, 68)
     pdf.text('RISK ASSESSMENT', margin + 5, yPosition + 6)
     yPosition += 13
 
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
 
     const risks = []
 
@@ -1061,10 +1098,10 @@ export const generateComprehensiveExecutiveReport = async () => {
 
     if (risks.length === 0) {
       pdf.setTextColor(34, 197, 94)
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(pdfFont, 'bold')
       pdf.text('NO CRITICAL RISKS IDENTIFIED', margin + 5, yPosition)
       pdf.setTextColor(0, 0, 0)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       yPosition += 6
       pdf.text('Portfolio is operating within acceptable risk parameters.', margin + 5, yPosition)
     } else {
@@ -1078,14 +1115,14 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setFillColor(248, 250, 252)
     pdf.rect(margin, yPosition, contentWidth, 8, 'F')
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(pdfFont, 'bold')
     pdf.setTextColor(34, 197, 94)
     pdf.text('EXECUTIVE INSIGHTS & RECOMMENDATIONS', margin + 5, yPosition + 6)
     yPosition += 13
 
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(pdfFont, 'normal')
 
     const recommendations = []
 
@@ -1143,7 +1180,7 @@ export const generateComprehensiveExecutiveReport = async () => {
     for (let i = 1; i <= pdf.getNumberOfPages(); i++) {
       pdf.setPage(i)
       pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(pdfFont, 'normal')
       pdf.setTextColor(107, 114, 128)
       pdf.text('LANDMARK GROUP - Confidential Executive Report', margin, pageHeight - 10)
       pdf.text(`Page ${i} of ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, pageHeight - 10)

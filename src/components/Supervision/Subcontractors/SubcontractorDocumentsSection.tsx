@@ -1,15 +1,19 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 import { Button } from '../../ui'
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { ContractDocumentUpload } from '../SiteManagement/ContractDocumentUpload'
-import { uploadSubcontractorDocuments } from '../SiteManagement/Services/siteService'
+import { uploadSubcontractorDocuments } from '../SiteManagement/services/siteService'
+import { useToast } from '../../../contexts/ToastContext'
 
 interface Props {
   subcontractorId: string
 }
 
 export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId }) => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [viewerKey, setViewerKey] = useState(0)
@@ -22,7 +26,7 @@ export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId
       setPendingFiles([])
       setViewerKey(k => k + 1)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Greška pri uploadu dokumenata')
+      toast.error(err instanceof Error ? err.message : t('supervision.subcontractors.upload_error'))
     } finally {
       setUploading(false)
     }
@@ -32,12 +36,12 @@ export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId
     <div className="mt-6 border-t border-gray-200 pt-6">
       <div className="flex items-center gap-2 mb-4">
         <FileText className="w-5 h-5 text-gray-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Dokumenti</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('common.documents')}</h3>
       </div>
       <ContractDocumentViewer key={viewerKey} subcontractorId={subcontractorId} />
       <div className="mt-4 border-t border-gray-200 pt-4">
         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-          Dodaj dokumente
+          {t('supervision.subcontractors.add_documents')}
         </p>
         <ContractDocumentUpload files={pendingFiles} onChange={setPendingFiles} />
         {pendingFiles.length > 0 && (
@@ -48,7 +52,7 @@ export const SubcontractorDocumentsSection: React.FC<Props> = ({ subcontractorId
             loading={uploading}
             onClick={handleUpload}
           >
-            Spremi dokumente
+            {t('supervision.subcontractors.save_documents')}
           </Button>
         )}
       </div>

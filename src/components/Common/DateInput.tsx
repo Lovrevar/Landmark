@@ -10,7 +10,7 @@ interface DateInputProps {
   max?: string
 }
 
-const DateInput: React.FC<DateInputProps> = ({ value, onChange, className, required, min, max }) => {
+const DateInput: React.FC<DateInputProps> = ({ value, onChange, className, required }) => {
   const [displayValue, setDisplayValue] = useState('')
 
   useEffect(() => {

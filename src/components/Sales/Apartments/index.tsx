@@ -1,28 +1,39 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
-import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader } from '../../ui'
+import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader, ConfirmDialog } from '../../ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './types'
-import * as apartmentService from './Services/apartmentService'
-import { BulkApartmentModal } from './Modals/BulkApartmentModal'
-import { SingleApartmentModal } from './Modals/SingleApartmentModal'
-import { EditApartmentModal } from './Modals/EditApartmentModal'
-import { ApartmentDetailsModal } from './Modals/ApartmentDetailsModal'
-import { PaymentHistoryModal } from './Modals/PaymentHistoryModal'
-import { EditPaymentModal } from './Modals/EditPaymentModal'
-import { LinkUnitsModal } from './Modals/LinkUnitsModal'
+import * as apartmentService from './services/apartmentService'
+import { useApartmentData } from './hooks/useApartmentData'
+import { BulkApartmentModal } from './modals/BulkApartmentModal'
+import { SingleApartmentModal } from './modals/SingleApartmentModal'
+import { EditApartmentModal } from './modals/EditApartmentModal'
+import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
+import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
+import { EditPaymentModal } from './modals/EditPaymentModal'
+import { LinkUnitsModal } from './modals/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
-  const { user } = useAuth()
-  const [apartments, setApartments] = useState<ApartmentWithDetails[]>([])
-  const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
+  useAuth()
+  const {
+    apartments,
+    projects,
+    buildings,
+    apartmentPaymentTotals,
+    garagePaymentTotals,
+    storagePaymentTotals,
+    linkedGarages,
+    linkedStorages,
+    loading,
+    refetch: fetchData
+  } = useApartmentData()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filterProject, setFilterProject] = useState<string>('all')
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
-  const [buildings, setBuildings] = useState<Array<{ id: string; name: string; project_id: string }>>([])
 
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [showSingleModal, setShowSingleModal] = useState(false)
@@ -35,169 +46,8 @@ const ApartmentManagement: React.FC = () => {
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
   const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
-  const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
-  const [garagePaymentTotals, setGaragePaymentTotals] = useState<Record<string, number>>({})
-  const [storagePaymentTotals, setStoragePaymentTotals] = useState<Record<string, number>>({})
-  const [linkedGarages, setLinkedGarages] = useState<Record<string, any[]>>({})
-  const [linkedStorages, setLinkedStorages] = useState<Record<string, any[]>>({})
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const { data: apartmentsData, error: apartmentsError } = await supabase
-        .from('apartments')
-        .select('*')
-        .order('number')
-
-      if (apartmentsError) throw apartmentsError
-
-      const { data: allProjects } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
-
-      const { data: allBuildings } = await supabase
-        .from('buildings')
-        .select('id, name, project_id')
-        .order('name')
-
-      setProjects(allProjects || [])
-      setBuildings(allBuildings || [])
-
-      const projectIds = [...new Set(apartmentsData?.map((a: any) => a.project_id) || [])]
-      const buildingIds = [...new Set(apartmentsData?.map((a: any) => a.building_id).filter(Boolean) || [])]
-
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('id, name')
-        .in('id', projectIds)
-
-      const { data: buildingsData } = await supabase
-        .from('buildings')
-        .select('id, name')
-        .in('id', buildingIds)
-
-      // Fetch payments from new accounting system
-      const { data: paymentsData } = await supabase
-        .from('accounting_payments')
-        .select(`
-          amount,
-          invoice:accounting_invoices!inner(
-            apartment_id
-          )
-        `)
-        .not('invoice.apartment_id', 'is', null)
-
-      const aptPaymentTotals: Record<string, number> = {}
-      const garPaymentTotals: Record<string, number> = {}
-      const storPaymentTotals: Record<string, number> = {}
-
-      if (paymentsData) {
-        paymentsData.forEach((payment: any) => {
-          const apartmentId = payment.invoice?.apartment_id
-          if (apartmentId) {
-            if (!aptPaymentTotals[apartmentId]) {
-              aptPaymentTotals[apartmentId] = 0
-            }
-            aptPaymentTotals[apartmentId] += parseFloat(payment.amount)
-          }
-        })
-      }
-      setApartmentPaymentTotals(aptPaymentTotals)
-      setGaragePaymentTotals(garPaymentTotals)
-      setStoragePaymentTotals(storPaymentTotals)
-
-      const garagesMap: Record<string, any[]> = {}
-      const storagesMap: Record<string, any[]> = {}
-
-      if (apartmentsData && apartmentsData.length > 0) {
-        const apartmentIds = apartmentsData.map((a: any) => a.id)
-
-        const { data: garageLinks } = await supabase
-          .from('apartment_garages')
-          .select(`
-            apartment_id,
-            garage:garages(id, number, size_m2, price, status)
-          `)
-          .in('apartment_id', apartmentIds)
-
-        if (garageLinks) {
-          garageLinks.forEach((link: any) => {
-            if (!garagesMap[link.apartment_id]) {
-              garagesMap[link.apartment_id] = []
-            }
-            if (link.garage) {
-              garagesMap[link.apartment_id].push(link.garage)
-            }
-          })
-        }
-
-        const { data: repositoryLinks } = await supabase
-          .from('apartment_repositories')
-          .select(`
-            apartment_id,
-            repository:repositories(id, number, size_m2, price, status)
-          `)
-          .in('apartment_id', apartmentIds)
-
-        if (repositoryLinks) {
-          repositoryLinks.forEach((link: any) => {
-            if (!storagesMap[link.apartment_id]) {
-              storagesMap[link.apartment_id] = []
-            }
-            if (link.repository) {
-              storagesMap[link.apartment_id].push(link.repository)
-            }
-          })
-        }
-      }
-
-      setLinkedGarages(garagesMap)
-      setLinkedStorages(storagesMap)
-
-      const apartmentsWithDetails: ApartmentWithDetails[] = (apartmentsData || []).map((apt: any) => {
-        const project = projectsData?.find(p => p.id === apt.project_id)
-        const building = buildingsData?.find(b => b.id === apt.building_id)
-
-        return {
-          id: apt.id,
-          number: apt.number,
-          floor: apt.floor,
-          size_m2: apt.size_m2,
-          price: apt.price,
-          status: apt.status,
-          buyer_name: apt.buyer_name,
-          project_name: project?.name || 'Unknown Project',
-          building_name: building?.name || 'No Building',
-          project_id: apt.project_id,
-          building_id: apt.building_id || '',
-          ulaz: apt.ulaz ?? null,
-          tip_stana: apt.tip_stana ?? null,
-          sobnost: apt.sobnost ?? null,
-          povrsina_otvoreno: apt.povrsina_otvoreno ?? null,
-          povrsina_ot_sa_koef: apt.povrsina_ot_sa_koef ?? null,
-          datum_potpisa_predugovora: apt.datum_potpisa_predugovora ?? null,
-          contract_payment_type: apt.contract_payment_type ?? null,
-          kapara_10_posto: apt.kapara_10_posto ?? null,
-          rata_1_ab_konstrukcija_30: apt.rata_1_ab_konstrukcija_30 ?? null,
-          rata_2_postava_stolarije_20: apt.rata_2_postava_stolarije_20 ?? null,
-          rata_3_obrtnicki_radovi_20: apt.rata_3_obrtnicki_radovi_20 ?? null,
-          rata_4_uporabna_20: apt.rata_4_uporabna_20 ?? null,
-          kredit_etaziranje_90: apt.kredit_etaziranje_90 ?? null
-        }
-      })
-
-      setApartments(apartmentsWithDetails)
-    } catch (error) {
-      console.error('Error fetching apartments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [pendingDeleteApartmentId, setPendingDeleteApartmentId] = useState<string | null>(null)
+  const [deletingApartment, setDeletingApartment] = useState(false)
 
   const handleCreateBulk = async (data: BulkApartmentData) => {
     try {
@@ -233,16 +83,21 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
-  const handleDeleteApartment = async (id: string) => {
-    const apt = apartments.find(a => a.id === id)
-    const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
-    if (!window.confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) return
+  const handleDeleteApartment = (id: string) => {
+    setPendingDeleteApartmentId(id)
+  }
 
+  const confirmDeleteApartment = async () => {
+    if (!pendingDeleteApartmentId) return
+    setDeletingApartment(true)
     try {
-      await apartmentService.deleteApartment(id)
+      await apartmentService.deleteApartment(pendingDeleteApartmentId)
       fetchData()
     } catch (error) {
       console.error('Error deleting apartment:', error)
+    } finally {
+      setDeletingApartment(false)
+      setPendingDeleteApartmentId(null)
     }
   }
 
@@ -268,13 +123,8 @@ const ApartmentManagement: React.FC = () => {
     if (!selectedApartment) return
 
     try {
-      const { data: sale } = await supabase
-        .from('sales')
-        .select('id')
-        .eq('apartment_id', selectedApartment.id)
-        .maybeSingle()
-
-      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, sale?.id || null)
+      const saleId = await apartmentService.fetchSaleIdForApartment(selectedApartment.id)
+      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, saleId)
       setShowEditPaymentModal(false)
       setEditingPayment(null)
       const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
@@ -313,25 +163,25 @@ const ApartmentManagement: React.FC = () => {
   })
 
   if (loading) {
-    return <LoadingSpinner message="Loading apartments..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Apartments"
-        description="Manage all apartments across projects"
+        title={t('apartments.title')}
+        description={t('apartments.subtitle')}
         actions={
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
-              <p className="text-sm text-gray-600">Total Apartments</p>
+              <p className="text-sm text-gray-600">{t('apartments.title')}</p>
               <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
             </div>
             <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
-              Bulk Create Apartments
+              {t('apartments.bulk_create')}
             </Button>
             <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
-              Add Single Apartment
+              {t('apartments.add')}
             </Button>
           </div>
         }
@@ -344,7 +194,7 @@ const ApartmentManagement: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onClear={() => setSearchTerm('')}
-              placeholder="Search apartments..."
+              placeholder={t('apartments.search')}
             />
           </div>
 
@@ -355,7 +205,7 @@ const ApartmentManagement: React.FC = () => {
               setFilterBuilding('all')
             }}
           >
-            <option value="all">All Projects</option>
+            <option value="all">{t('apartments.form.select_project')}</option>
             {projects.map(project => (
               <option key={project.id} value={project.id}>{project.name}</option>
             ))}
@@ -365,7 +215,7 @@ const ApartmentManagement: React.FC = () => {
             value={filterBuilding}
             onChange={(e) => setFilterBuilding(e.target.value)}
           >
-            <option value="all">All Buildings</option>
+            <option value="all">{t('apartments.form.select_building')}</option>
             {buildings
               .filter(b => filterProject === 'all' || b.project_id === filterProject)
               .map(building => (
@@ -383,7 +233,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            All
+            {t('common.status')}
           </button>
           <button
             onClick={() => setFilterStatus('Available')}
@@ -393,7 +243,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Available
+            {t('apartments.statuses.available')}
           </button>
           <button
             onClick={() => setFilterStatus('Reserved')}
@@ -403,7 +253,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Reserved
+            {t('apartments.statuses.reserved')}
           </button>
           <button
             onClick={() => setFilterStatus('Sold')}
@@ -413,7 +263,7 @@ const ApartmentManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Sold
+            {t('apartments.statuses.sold')}
           </button>
         </div>
       </div>
@@ -421,8 +271,8 @@ const ApartmentManagement: React.FC = () => {
       {filteredApartments.length === 0 ? (
         <EmptyState
           icon={Home}
-          title="No Apartments Found"
-          description="Try adjusting your filters"
+          title={t('common.no_data')}
+          description={t('apartments.search')}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -453,35 +303,35 @@ const ApartmentManagement: React.FC = () => {
               >
                 <div className="mb-3">
                   <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                  <p className="text-sm text-gray-600">Floor {apartment.floor}</p>
+                  <p className="text-sm text-gray-600">{t('common.floor')} {apartment.floor}</p>
                 </div>
 
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Project:</span>
+                    <span className="text-sm text-gray-600">{t('common.project')}:</span>
                     <span className="text-sm font-medium">{apartment.project_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Building:</span>
+                    <span className="text-sm text-gray-600">{t('common.building')}:</span>
                     <span className="text-sm font-medium">{apartment.building_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Size:</span>
+                    <span className="text-sm text-gray-600">{t('apartments.table.size')}:</span>
                     <span className="text-sm font-medium">{apartment.size_m2} m²</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Price:</span>
+                    <span className="text-sm text-gray-600">{t('apartments.table.price')}:</span>
                     <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
                   </div>
 
                   {(aptLinkedGarages.length > 0 || aptLinkedStorages.length > 0) && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-1">Linked Units:</p>
+                      <p className="text-xs font-semibold text-gray-700 mb-1">{t('apartments.link_units')}:</p>
                       {aptLinkedGarages.map((garage) => (
                         <div key={garage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
-                            Garage {garage.number}
+                            {t('common.garage')} {garage.number}
                           </span>
                           <span className="font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</span>
                         </div>
@@ -490,13 +340,13 @@ const ApartmentManagement: React.FC = () => {
                         <div key={storage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span className="flex items-center">
                             <Package className="w-3 h-3 mr-1 text-gray-600" />
-                            Storage {storage.number}
+                            {t('common.storage')} {storage.number}
                           </span>
                           <span className="font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</span>
                         </div>
                       ))}
                       <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
-                        <span className="text-xs font-semibold text-gray-700">Total Value:</span>
+                        <span className="text-xs font-semibold text-gray-700">{t('common.total')}:</span>
                         <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -505,13 +355,13 @@ const ApartmentManagement: React.FC = () => {
                   {apartment.status === 'Sold' && apartment.buyer_name && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Buyer:</span>
+                        <span className="text-sm text-gray-600">{t('apartments.table.buyer')}:</span>
                         <span className="text-sm font-medium">{apartment.buyer_name}</span>
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="flex justify-between mb-1">
-                          <span className="text-xs font-semibold text-gray-700">Overall Progress</span>
+                          <span className="text-xs font-semibold text-gray-700">{t('apartments.payment_history_modal.progress')}</span>
                           <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
@@ -541,7 +391,7 @@ const ApartmentManagement: React.FC = () => {
                     fullWidth
                     onClick={() => openPaymentHistory(apartment)}
                   >
-                    View Payments
+                    {t('apartments.payment_history')}
                   </Button>
                   {(aptLinkedGarages.length === 0 || aptLinkedStorages.length === 0) && (
                     <Button
@@ -554,7 +404,7 @@ const ApartmentManagement: React.FC = () => {
                         setShowLinkUnitsModal(true)
                       }}
                     >
-                      Link Units
+                      {t('apartments.link_units')}
                     </Button>
                   )}
                   <div className="grid grid-cols-3 gap-2">
@@ -566,7 +416,7 @@ const ApartmentManagement: React.FC = () => {
                         setShowEditModal(true)
                       }}
                     >
-                      Edit
+                      {t('common.edit')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -576,14 +426,14 @@ const ApartmentManagement: React.FC = () => {
                         setShowDetailsModal(true)
                       }}
                     >
-                      Details
+                      {t('apartments.details')}
                     </Button>
                     <Button
                       variant="danger"
                       size="sm"
                       onClick={() => handleDeleteApartment(apartment.id)}
                     >
-                      Delete
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </div>
@@ -598,11 +448,11 @@ const ApartmentManagement: React.FC = () => {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center">
               <Filter className="w-5 h-5 mr-2" />
-              <span className="font-medium">Filtered Results</span>
+              <span className="font-medium">{t('customers.sales_payments.filtered_results')}</span>
             </div>
             <div>
               Showing <span className="font-semibold">{filteredApartments.length}</span> of{' '}
-              <span className="font-semibold">{apartments.length}</span> apartments
+              <span className="font-semibold">{apartments.length}</span> {t('apartments.title').toLowerCase()}
             </div>
           </div>
         </Alert>
@@ -679,6 +529,22 @@ const ApartmentManagement: React.FC = () => {
         }}
         apartment={selectedApartment}
         onLink={fetchData}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteApartmentId}
+        title="Potvrda brisanja"
+        message={(() => {
+          const apt = apartments.find(a => a.id === pendingDeleteApartmentId)
+          const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
+          return `Are you sure you want to delete ${label}? This action cannot be undone.`
+        })()}
+        confirmLabel="Da, obriši"
+        cancelLabel="Odustani"
+        variant="danger"
+        onConfirm={confirmDeleteApartment}
+        onCancel={() => setPendingDeleteApartmentId(null)}
+        loading={deletingApartment}
       />
     </div>
   )

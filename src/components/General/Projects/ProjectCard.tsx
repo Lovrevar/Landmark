@@ -1,45 +1,17 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Calendar, TrendingUp, CheckCircle, Clock, Pause, Eye } from 'lucide-react'
+import { MapPin, Calendar, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
-import { format, differenceInDays, parseISO } from 'date-fns'
-import type { ProjectWithStats } from '../types'
+import type { ProjectWithStats } from './types'
+import { getStatusConfig, getDaysInfo } from './utils'
 
 interface Props {
   project: ProjectWithStats
 }
 
-const getStatusConfig = (status: string) => {
-  const configs = {
-    'Planning': { icon: Clock, label: 'Planning' },
-    'In Progress': { icon: TrendingUp, label: 'In Progress' },
-    'Completed': { icon: CheckCircle, label: 'Completed' },
-    'On Hold': { icon: Pause, label: 'On Hold' }
-  }
-  return configs[status as keyof typeof configs] || configs['Planning']
-}
-
-const getDaysInfo = (startDate: string, endDate: string | null) => {
-  const start = parseISO(startDate)
-  const today = new Date()
-
-  if (endDate && parseISO(endDate) < today) {
-    return { text: 'Completed', color: 'text-green-600' }
-  }
-
-  const daysElapsed = differenceInDays(today, start)
-  if (endDate) {
-    const daysRemaining = differenceInDays(parseISO(endDate), today)
-    return {
-      text: daysRemaining > 0 ? `${daysRemaining} days left` : 'Overdue',
-      color: daysRemaining > 0 ? 'text-gray-600' : 'text-red-600'
-    }
-  }
-
-  return { text: `${daysElapsed} days elapsed`, color: 'text-gray-600' }
-}
-
 const ProjectCard: React.FC<Props> = ({ project }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const statusConfig = getStatusConfig(project.status)
   const daysInfo = getDaysInfo(project.start_date, project.end_date)
@@ -69,15 +41,15 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
 
       <div className="space-y-3 mb-4">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">Budget</span>
+          <span className="text-gray-600">{t('common.budget')}</span>
           <span className="font-semibold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">Spent</span>
+          <span className="text-gray-600">{t('general_projects.card_spent')}</span>
           <span className="font-semibold text-blue-600">€{project.stats.total_spent.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">Remaining</span>
+          <span className="text-gray-600">{t('common.remaining')}</span>
           <span className="font-semibold text-green-600">
             €{(project.budget - project.stats.total_spent).toLocaleString('hr-HR')}
           </span>
@@ -86,7 +58,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
 
       <div className="mb-4">
         <div className="flex justify-between items-center text-sm mb-2">
-          <span className="text-gray-600">Progress</span>
+          <span className="text-gray-600">{t('general_projects.card_progress')}</span>
           <span className="font-semibold text-gray-900">{project.stats.completion_percentage}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -104,7 +76,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
         </div>
         <div className="text-gray-600">
           <span className="font-semibold">{project.stats.milestones_completed}</span>
-          <span>/{project.stats.milestones_total} milestones</span>
+          <span>/{project.stats.milestones_total} {t('general_projects.milestones')}</span>
         </div>
       </div>
 
@@ -118,7 +90,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
           navigate(`/projects/${project.id}`)
         }}
       >
-        View Details
+        {t('general_projects.card_view_details')}
       </Button>
     </div>
   )

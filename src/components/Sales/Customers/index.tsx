@@ -1,15 +1,19 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button } from '../../ui'
+import { PageHeader, SearchInput, Button, ConfirmDialog } from '../../ui'
 import { CustomerCategory } from './types'
-import { useCustomerData } from './Hooks/useCustomerData'
+import { useCustomerData } from './hooks/useCustomerData'
+import { useToast } from '../../../contexts/ToastContext'
 import { CategoryTabs } from './CategoryTabs'
 import { CustomerGrid } from './CustomerGrid'
-import { CustomerFormModal } from './Forms/CustomerFormModal'
-import { CustomerDetailModal } from './Modals/CustomerDetailModal'
+import { CustomerFormModal } from './forms/CustomerFormModal'
+import { CustomerDetailModal } from './modals/CustomerDetailModal'
 import { CustomerWithApartments } from './types'
 
 const CustomersManagement: React.FC = () => {
+  const { t } = useTranslation()
+  const toast = useToast()
   const [activeCategory, setActiveCategory] = useState<CustomerCategory | null>(null)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -17,6 +21,8 @@ const CustomersManagement: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<CustomerWithApartments | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [pendingDeleteCustomerId, setPendingDeleteCustomerId] = useState<string | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState(false)
 
   const {
     customers,
@@ -36,7 +42,7 @@ const CustomersManagement: React.FC = () => {
   const handleToggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
       return next
     })
   }
@@ -64,12 +70,20 @@ const CustomersManagement: React.FC = () => {
     setShowDetailModal(true)
   }
 
-  const handleDeleteCustomer = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return
+  const handleDeleteCustomer = (id: string) => {
+    setPendingDeleteCustomerId(id)
+  }
+
+  const confirmDeleteCustomer = async () => {
+    if (!pendingDeleteCustomerId) return
+    setDeletingCustomer(true)
     try {
-      await deleteCustomer(id)
-    } catch (error) {
-      alert('Error deleting customer')
+      await deleteCustomer(pendingDeleteCustomerId)
+    } catch {
+      toast.error('Error deleting customer')
+    } finally {
+      setDeletingCustomer(false)
+      setPendingDeleteCustomerId(null)
     }
   }
 
@@ -93,7 +107,7 @@ const CustomersManagement: React.FC = () => {
       .filter(email => email && email.trim() !== '')
 
     if (emails.length === 0) {
-      alert('No email addresses found for the selected customers.')
+      toast.warning('No email addresses found for the selected customers.')
       return
     }
 
@@ -104,8 +118,8 @@ const CustomersManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Customer Management"
-        description="Manage your sales pipeline and customer relationships"
+        title={t('customers.title')}
+        description={t('customers.subtitle')}
         actions={
           <>
             <Button variant="success" icon={Mail} onClick={handleExportEmails}>
@@ -114,7 +128,7 @@ const CustomersManagement: React.FC = () => {
                 : `Email All (${filteredCustomers.filter(c => c.email).length})`}
             </Button>
             <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
-              Add Customer
+              {t('customers.add')}
             </Button>
           </>
         }
@@ -131,7 +145,7 @@ const CustomersManagement: React.FC = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onClear={() => setSearchTerm('')}
-          placeholder="Search customers..."
+          placeholder={t('customers.search')}
         />
       </div>
 
@@ -160,6 +174,18 @@ const CustomersManagement: React.FC = () => {
         show={showDetailModal}
         customer={selectedCustomer}
         onClose={handleCloseDetail}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteCustomerId}
+        title={t('confirm.delete_title')}
+        message={t('confirm.are_you_sure')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDeleteCustomer}
+        onCancel={() => setPendingDeleteCustomerId(null)}
+        loading={deletingCustomer}
       />
     </div>
   )

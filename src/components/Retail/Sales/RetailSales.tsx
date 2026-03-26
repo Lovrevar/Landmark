@@ -1,92 +1,45 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
-import { ShoppingCart, Plus, Edit, Trash2, DollarSign, Calendar } from 'lucide-react'
-import type { RetailSale, RetailLandPlot, RetailCustomer } from '../../../types/retail'
+import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog } from '../../ui'
+import { useRetailSalesManager } from './hooks/useRetailSalesManager'
+import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
+import { useToast } from '../../../contexts/ToastContext'
 
-interface SaleWithRelations extends RetailSale {
-  land_plot?: RetailLandPlot
-  customer?: RetailCustomer
-}
+const emptyForm = () => ({
+  land_plot_id: '',
+  customer_id: '',
+  sale_area_m2: '',
+  sale_price_per_m2: '',
+  payment_deadline: '',
+  contract_number: '',
+  notes: ''
+})
+
+type FormState = ReturnType<typeof emptyForm>
 
 const RetailSales: React.FC = () => {
-  const [sales, setSales] = useState<SaleWithRelations[]>([])
-  const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
-  const [customers, setCustomers] = useState<RetailCustomer[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { t } = useTranslation()
+  const toast = useToast()
+  const {
+    loading, landPlots, customers, filteredSales, totalStats,
+    searchTerm, setSearchTerm, statusFilter, setStatusFilter,
+    handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, handleAddPayment
+  } = useRetailSalesManager()
+
   const [showFormModal, setShowFormModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedSale, setSelectedSale] = useState<SaleWithRelations | null>(null)
-  const [editingSale, setEditingSale] = useState<string | null>(null)
-
-  const [formData, setFormData] = useState({
-    land_plot_id: '',
-    customer_id: '',
-    sale_area_m2: '',
-    sale_price_per_m2: '',
-    payment_deadline: '',
-    contract_number: '',
-    notes: ''
-  })
-
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formData, setFormData] = useState<FormState>(emptyForm())
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [paymentFieldErrors, setPaymentFieldErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-
-      const [salesRes, plotsRes, customersRes] = await Promise.all([
-        supabase
-          .from('retail_sales')
-          .select(`
-            *,
-            land_plot:retail_land_plots(*),
-            customer:retail_customers(*)
-          `)
-          .order('payment_deadline', { ascending: true }),
-        supabase
-          .from('retail_land_plots')
-          .select('*')
-          .order('plot_number'),
-        supabase
-          .from('retail_customers')
-          .select('*')
-          .order('name')
-      ])
-
-      if (salesRes.error) throw salesRes.error
-      if (plotsRes.error) throw plotsRes.error
-      if (customersRes.error) throw customersRes.error
-
-      const updatedSales = (salesRes.data || []).map(sale => {
-        const isOverdue = new Date(sale.payment_deadline) < new Date() && sale.payment_status !== 'paid'
-        return {
-          ...sale,
-          payment_status: isOverdue ? 'overdue' : sale.payment_status
-        }
-      })
-
-      setSales(updatedSales)
-      setLandPlots(plotsRes.data || [])
-      setCustomers(customersRes.data || [])
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      alert('Greška pri učitavanju podataka')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOpenFormModal = (sale?: SaleWithRelations) => {
+  const openFormModal = (sale?: SaleWithRelations) => {
     if (sale) {
-      setEditingSale(sale.id)
+      setEditingId(sale.id)
       setFormData({
         land_plot_id: sale.land_plot_id,
         customer_id: sale.customer_id,
@@ -97,32 +50,31 @@ const RetailSales: React.FC = () => {
         notes: sale.notes || ''
       })
     } else {
-      setEditingSale(null)
-      setFormData({
-        land_plot_id: '',
-        customer_id: '',
-        sale_area_m2: '',
-        sale_price_per_m2: '',
-        payment_deadline: '',
-        contract_number: '',
-        notes: ''
-      })
+      setEditingId(null)
+      setFormData(emptyForm())
     }
     document.body.style.overflow = 'hidden'
     setShowFormModal(true)
   }
 
-  const handleCloseFormModal = () => {
+  const closeFormModal = () => {
     document.body.style.overflow = 'unset'
     setShowFormModal(false)
-    setEditingSale(null)
+    setEditingId(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    const errors: Record<string, string> = {}
+    if (!formData.land_plot_id) errors.land_plot_id = t('retail_sales.errors.select_plot')
+    if (!formData.customer_id) errors.customer_id = t('retail_sales.errors.select_customer')
+    if (!formData.sale_area_m2) errors.sale_area_m2 = t('retail_sales.errors.enter_area')
+    if (!formData.sale_price_per_m2) errors.sale_price_per_m2 = t('retail_sales.errors.enter_price')
+    if (!formData.payment_deadline) errors.payment_deadline = t('retail_sales.errors.enter_deadline')
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     try {
-      const payload = {
+      const payload: RetailSalePayload = {
         land_plot_id: formData.land_plot_id,
         customer_id: formData.customer_id,
         sale_area_m2: parseFloat(formData.sale_area_m2),
@@ -131,132 +83,62 @@ const RetailSales: React.FC = () => {
         contract_number: formData.contract_number || null,
         notes: formData.notes || null
       }
-
-      if (editingSale) {
-        const { error } = await supabase
-          .from('retail_sales')
-          .update(payload)
-          .eq('id', editingSale)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('retail_sales')
-          .insert([payload])
-
-        if (error) throw error
-      }
-
-      await fetchData()
-      handleCloseFormModal()
+      await handleSave(payload, editingId ?? undefined)
+      closeFormModal()
     } catch (error) {
       console.error('Error saving sale:', error)
-      alert('Greška pri spremanju prodaje')
+      toast.error(t('retail_sales.errors.save_error'))
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Jeste li sigurni da želite obrisati ovu prodaju?')) return
-
-    try {
-      const { error } = await supabase
-        .from('retail_sales')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      await fetchData()
-    } catch (error) {
-      console.error('Error deleting sale:', error)
-      alert('Greška pri brisanju prodaje')
-    }
-  }
-
-  const handleOpenPaymentModal = (sale: SaleWithRelations) => {
+  const openPaymentModal = (sale: SaleWithRelations) => {
     setSelectedSale(sale)
     setPaymentAmount('')
     document.body.style.overflow = 'hidden'
     setShowPaymentModal(true)
   }
 
-  const handleClosePaymentModal = () => {
+  const closePaymentModal = () => {
     document.body.style.overflow = 'unset'
     setShowPaymentModal(false)
     setSelectedSale(null)
     setPaymentAmount('')
   }
 
-  const handleAddPayment = async (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedSale) return
-
+    const pErrors: Record<string, string> = {}
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) pErrors.paymentAmount = t('retail_sales.errors.enter_payment_amount')
+    setPaymentFieldErrors(pErrors)
+    if (Object.keys(pErrors).length > 0) return
     try {
-      const amount = parseFloat(paymentAmount)
-      const newPaidAmount = selectedSale.paid_amount + amount
-      const remaining = selectedSale.total_sale_price - newPaidAmount
-
-      let newStatus: 'paid' | 'pending' | 'partial' | 'overdue' = 'pending'
-      if (remaining <= 0) {
-        newStatus = 'paid'
-      } else if (newPaidAmount > 0) {
-        newStatus = 'partial'
-      }
-
-      const { error } = await supabase
-        .from('retail_sales')
-        .update({
-          paid_amount: newPaidAmount,
-          payment_status: newStatus
-        })
-        .eq('id', selectedSale.id)
-
-      if (error) throw error
-
-      await fetchData()
-      handleClosePaymentModal()
+      await handleAddPayment(selectedSale, parseFloat(paymentAmount))
+      closePaymentModal()
     } catch (error) {
       console.error('Error adding payment:', error)
-      alert('Greška pri dodavanju plaćanja')
+      toast.error(t('retail_sales.errors.payment_error'))
     }
   }
 
-  const filteredSales = sales.filter(sale => {
-    const matchesSearch =
-      (sale.customer?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sale.land_plot?.plot_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sale.contract_number || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFormData(prev => ({ ...prev, [key]: e.target.value }))
 
-    const matchesStatus = statusFilter === 'all' || sale.payment_status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
-
-  const totalStats = {
-    total_sales: sales.length,
-    total_revenue: sales.reduce((sum, s) => sum + s.total_sale_price, 0),
-    total_paid: sales.reduce((sum, s) => sum + s.paid_amount, 0),
-    total_remaining: sales.reduce((sum, s) => sum + s.remaining_amount, 0)
-  }
-
-  if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
-  }
+  if (loading) return <LoadingSpinner message={t('common.loading')} />
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Prodaje"
-        description="Upravljanje prodajama i rokovima plaćanja"
-        actions={
-          <Button icon={Plus} onClick={() => handleOpenFormModal()}>Nova prodaja</Button>
-        }
+        title={t('retail_sales.title')}
+        description={t('retail_sales.description')}
+        actions={<Button icon={Plus} onClick={() => openFormModal()}>{t('retail_sales.new_sale')}</Button>}
       />
 
       <StatGrid columns={4}>
-        <StatCard label="Ukupno prodaja" value={totalStats.total_sales} icon={ShoppingCart} color="blue" />
-        <StatCard label="Ukupni prihod" value={'€' + totalStats.total_revenue.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
-        <StatCard label="Plaćeno" value={'€' + totalStats.total_paid.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
-        <StatCard label="Za naplatu" value={'€' + totalStats.total_remaining.toLocaleString('hr-HR')} icon={DollarSign} />
+        <StatCard label={t('retail_sales.stats.total_sales')} value={totalStats.total_sales} icon={ShoppingCart} color="blue" />
+        <StatCard label={t('retail_sales.stats.total_revenue')} value={'€' + totalStats.total_revenue.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
+        <StatCard label={t('common.paid')} value={'€' + totalStats.total_paid.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
+        <StatCard label={t('retail_sales.stats.to_collect')} value={'€' + totalStats.total_remaining.toLocaleString('hr-HR')} icon={DollarSign} />
       </StatGrid>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -265,15 +147,15 @@ const RetailSales: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm('')}
-            placeholder="Pretraži po kupcu, čestici ili ugovoru..."
+            placeholder={t('retail_sales.search_placeholder')}
             className="flex-1"
           />
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">Svi statusi</option>
-            <option value="pending">Pending</option>
-            <option value="partial">Djelomično</option>
-            <option value="paid">Plaćeno</option>
-            <option value="overdue">Kašnjenje</option>
+            <option value="all">{t('retail_sales.filter.all_statuses')}</option>
+            <option value="pending">{t('common.pending')}</option>
+            <option value="partial">{t('common.partial')}</option>
+            <option value="paid">{t('common.paid')}</option>
+            <option value="overdue">{t('status.overdue')}</option>
           </Select>
         </div>
       </div>
@@ -281,88 +163,57 @@ const RetailSales: React.FC = () => {
       {filteredSales.length === 0 ? (
         <EmptyState
           icon={ShoppingCart}
-          title={searchTerm || statusFilter !== 'all' ? 'Nema rezultata pretrage' : 'Nema prodaja'}
-          description={searchTerm || statusFilter !== 'all' ? 'Pokušajte s drugim kriterijima' : 'Dodajte prvu prodaju klikom na gumb iznad'}
+          title={searchTerm || statusFilter !== 'all' ? t('common.no_results') : t('retail_sales.no_sales')}
+          description={searchTerm || statusFilter !== 'all' ? t('retail_sales.no_results_hint') : t('retail_sales.no_sales_hint')}
         />
       ) : (
         <Table>
           <Table.Head>
             <Table.Tr>
-              <Table.Th>Kupac</Table.Th>
-              <Table.Th>Čestica</Table.Th>
-              <Table.Th>Površina</Table.Th>
-              <Table.Th>Ukupno</Table.Th>
-              <Table.Th>Plaćeno</Table.Th>
-              <Table.Th>Rok</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th className="text-right">Akcije</Table.Th>
+              <Table.Th>{t('common.customer')}</Table.Th>
+              <Table.Th>{t('common.parcel')}</Table.Th>
+              <Table.Th>{t('retail_sales.table.area')}</Table.Th>
+              <Table.Th>{t('common.total')}</Table.Th>
+              <Table.Th>{t('common.paid')}</Table.Th>
+              <Table.Th>{t('retail_sales.table.deadline')}</Table.Th>
+              <Table.Th>{t('common.status')}</Table.Th>
+              <Table.Th className="text-right">{t('common.actions')}</Table.Th>
             </Table.Tr>
           </Table.Head>
           <Table.Body>
             {filteredSales.map((sale) => (
               <Table.Tr key={sale.id}>
-                <Table.Td>
-                  <div className="text-sm font-medium text-gray-900">
-                    {sale.customer?.name || 'N/A'}
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <div className="text-sm text-gray-900">{sale.land_plot?.plot_number || 'N/A'}</div>
-                </Table.Td>
+                <Table.Td><div className="text-sm font-medium text-gray-900">{sale.customer?.name || 'N/A'}</div></Table.Td>
+                <Table.Td><div className="text-sm text-gray-900">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
                 <Table.Td>
                   <div className="text-sm text-gray-900">{sale.sale_area_m2.toLocaleString()} m²</div>
                   <div className="text-xs text-gray-500">€{sale.sale_price_per_m2}/m²</div>
                 </Table.Td>
-                <Table.Td>
-                  <div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div>
-                </Table.Td>
+                <Table.Td><div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
                 <Table.Td>
                   <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500">Preostalo: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
+                  <div className="text-xs text-gray-500">{t('common.remaining')}: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
                 </Table.Td>
-                <Table.Td>
-                  <div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div>
-                </Table.Td>
+                <Table.Td><div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
                 <Table.Td>
                   <Badge variant={
-                    sale.payment_status === 'paid'
-                      ? 'green'
-                      : sale.payment_status === 'partial'
-                      ? 'yellow'
-                      : sale.payment_status === 'overdue'
-                      ? 'red'
+                    sale.payment_status === 'paid' ? 'green'
+                      : sale.payment_status === 'partial' ? 'yellow'
+                      : sale.payment_status === 'overdue' ? 'red'
                       : 'gray'
                   }>
-                    {sale.payment_status === 'paid' ? 'Plaćeno' :
-                     sale.payment_status === 'partial' ? 'Djelomično' :
-                     sale.payment_status === 'overdue' ? 'Kašnjenje' : 'Pending'}
+                    {sale.payment_status === 'paid' ? t('common.paid') :
+                     sale.payment_status === 'partial' ? t('common.partial') :
+                     sale.payment_status === 'overdue' ? t('status.overdue') : t('common.pending')}
                   </Badge>
                 </Table.Td>
                 <Table.Td className="text-right">
                   <div className="flex items-center justify-end space-x-2">
                     {sale.payment_status !== 'paid' && (
-                      <Button
-                        icon={DollarSign}
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleOpenPaymentModal(sale)}
-                        title="Dodaj plaćanje"
-                      />
+                      <Button icon={DollarSign} variant="ghost" size="icon-sm" onClick={() => openPaymentModal(sale)} title={t('retail_sales.add_payment')} />
                     )}
-                    <Button
-                      icon={Edit}
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleOpenFormModal(sale)}
-                      title="Uredi"
-                    />
-                    <Button
-                      icon={Trash2}
-                      variant="outline-danger"
-                      size="icon-sm"
-                      onClick={() => handleDelete(sale.id)}
-                      title="Obriši"
-                    />
+                    <Button icon={Edit} variant="ghost" size="icon-sm" onClick={() => openFormModal(sale)} title={t('common.edit')} />
+                    <Button icon={Trash2} variant="outline-danger" size="icon-sm" onClick={() => handleDelete(sale.id)} title={t('common.delete')} />
                   </div>
                 </Table.Td>
               </Table.Tr>
@@ -371,123 +222,82 @@ const RetailSales: React.FC = () => {
         </Table>
       )}
 
-      <Modal show={showFormModal} onClose={handleCloseFormModal}>
-        <Modal.Header title={editingSale ? 'Uredi prodaju' : 'Nova prodaja'} onClose={handleCloseFormModal} />
-        <form onSubmit={handleSubmit}>
+      <Modal show={showFormModal} onClose={closeFormModal}>
+        <Modal.Header title={editingId ? t('retail_sales.edit_sale') : t('retail_sales.new_sale')} onClose={closeFormModal} />
+        <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <FormField label="Čestica" required>
-              <Select
-                required
-                value={formData.land_plot_id}
-                onChange={(e) => setFormData({ ...formData, land_plot_id: e.target.value })}
-              >
-                <option value="">Odaberite česticu</option>
+            <FormField label={t('common.parcel')} required error={fieldErrors.land_plot_id}>
+              <Select value={formData.land_plot_id} onChange={set('land_plot_id')}>
+                <option value="">{t('retail_sales.form.select_plot')}</option>
                 {landPlots.map((plot) => (
-                  <option key={plot.id} value={plot.id}>
-                    {plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name}
-                  </option>
+                  <option key={plot.id} value={plot.id}>{plot.plot_number} - {plot.owner_first_name} {plot.owner_last_name}</option>
                 ))}
               </Select>
             </FormField>
 
-            <FormField label="Kupac" required>
-              <Select
-                required
-                value={formData.customer_id}
-                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-              >
-                <option value="">Odaberite kupca</option>
+            <FormField label={t('common.customer')} required error={fieldErrors.customer_id}>
+              <Select value={formData.customer_id} onChange={set('customer_id')}>
+                <option value="">{t('retail_sales.form.select_customer')}</option>
                 {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
+                  <option key={customer.id} value={customer.id}>{customer.name}</option>
                 ))}
               </Select>
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Površina (m²)" required>
-                <Input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.sale_area_m2}
-                  onChange={(e) => setFormData({ ...formData, sale_area_m2: e.target.value })}
-                />
+              <FormField label={t('retail_sales.form.area')} required error={fieldErrors.sale_area_m2}>
+                <Input type="number" step="0.01" value={formData.sale_area_m2} onChange={set('sale_area_m2')} />
               </FormField>
-
-              <FormField label="Cijena po m² (€)" required>
-                <Input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.sale_price_per_m2}
-                  onChange={(e) => setFormData({ ...formData, sale_price_per_m2: e.target.value })}
-                />
+              <FormField label={t('retail_sales.form.price_per_m2')} required error={fieldErrors.sale_price_per_m2}>
+                <Input type="number" step="0.01" value={formData.sale_price_per_m2} onChange={set('sale_price_per_m2')} />
               </FormField>
             </div>
 
-            <FormField label="Rok plaćanja" required>
-              <Input
-                type="date"
-                required
-                value={formData.payment_deadline}
-                onChange={(e) => setFormData({ ...formData, payment_deadline: e.target.value })}
-              />
+            <FormField label={t('retail_sales.form.payment_deadline')} required error={fieldErrors.payment_deadline}>
+              <Input type="date" value={formData.payment_deadline} onChange={set('payment_deadline')} />
             </FormField>
 
-            <FormField label="Broj ugovora">
-              <Input
-                type="text"
-                value={formData.contract_number}
-                onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-              />
+            <FormField label={t('retail_sales.form.contract_number')}>
+              <Input type="text" value={formData.contract_number} onChange={set('contract_number')} />
             </FormField>
 
-            <FormField label="Napomene">
-              <Textarea
-                rows={3}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              />
+            <FormField label={t('common.notes')}>
+              <Textarea rows={3} value={formData.notes} onChange={set('notes')} />
             </FormField>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={handleCloseFormModal}>Odustani</Button>
-            <Button type="submit">{editingSale ? 'Spremi' : 'Dodaj'}</Button>
+            <Button variant="secondary" type="button" onClick={closeFormModal}>{t('common.cancel')}</Button>
+            <Button type="submit">{editingId ? t('common.save') : t('common.add')}</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
 
-      <Modal show={showPaymentModal && !!selectedSale} onClose={handleClosePaymentModal} size="sm">
-        <Modal.Header title="Dodaj plaćanje" onClose={handleClosePaymentModal} />
-        <form onSubmit={handleAddPayment}>
+      <Modal show={showPaymentModal && !!selectedSale} onClose={closePaymentModal} size="sm">
+        <Modal.Header title={t('retail_sales.add_payment')} onClose={closePaymentModal} />
+        <Form onSubmit={handlePaymentSubmit}>
           <Modal.Body>
             <div className="mb-4">
-              <p className="text-sm text-gray-600">Kupac</p>
+              <p className="text-sm text-gray-600">{t('common.customer')}</p>
               <p className="text-lg font-semibold">{selectedSale?.customer?.name}</p>
             </div>
-
             <div className="mb-4 bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">Ukupno:</span>
+                <span className="text-sm text-gray-600">{t('common.total')}:</span>
                 <span className="font-semibold">€{selectedSale?.total_sale_price.toLocaleString('hr-HR')}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">Plaćeno:</span>
+                <span className="text-sm text-gray-600">{t('common.paid')}:</span>
                 <span className="font-semibold text-green-600">€{selectedSale?.paid_amount.toLocaleString('hr-HR')}</span>
               </div>
               <div className="flex justify-between border-t pt-2">
-                <span className="text-sm text-gray-600">Preostalo:</span>
+                <span className="text-sm text-gray-600">{t('common.remaining')}:</span>
                 <span className="font-bold text-orange-600">€{selectedSale?.remaining_amount.toLocaleString('hr-HR')}</span>
               </div>
             </div>
-
-            <FormField label="Iznos plaćanja (€)" required>
+            <FormField label={t('retail_sales.form.payment_amount')} required error={paymentFieldErrors.paymentAmount}>
               <Input
                 type="number"
                 step="0.01"
-                required
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 max={selectedSale?.remaining_amount}
@@ -495,11 +305,23 @@ const RetailSales: React.FC = () => {
             </FormField>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" type="button" onClick={handleClosePaymentModal}>Odustani</Button>
-            <Button variant="success" type="submit">Dodaj plaćanje</Button>
+            <Button variant="secondary" type="button" onClick={closePaymentModal}>{t('common.cancel')}</Button>
+            <Button variant="success" type="submit">{t('retail_sales.add_payment')}</Button>
           </Modal.Footer>
-        </form>
+        </Form>
       </Modal>
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title={t('common.confirm_delete')}
+        message={t('retail_sales.confirm_delete_message')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

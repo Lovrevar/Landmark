@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, StatGrid, Button } from '../ui'
 import StatCard from '../ui/StatCard'
 import {
@@ -45,6 +46,7 @@ const defaultFunding: FundingMetrics = {
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<ProjectStats[]>([])
   const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics>(defaultFinancial)
   const [salesMetrics, setSalesMetrics] = useState<SalesMetrics>(defaultSales)
@@ -82,18 +84,18 @@ const DirectorDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" message="Loading comprehensive dashboard..." />
+    return <LoadingSpinner size="lg" message={t('dashboards.director.loading')} />
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">General Dashboard</h1>
-          <p className="text-gray-600 mt-1">Comprehensive overview of all business operations</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.director.general_dashboard')}</h1>
+          <p className="text-gray-600 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600">Last updated</p>
+          <p className="text-sm text-gray-600">{t('dashboards.director.last_updated')}</p>
           <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
         </div>
       </div>
@@ -105,22 +107,22 @@ const DirectorDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Home className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">Sales Performance</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.sales_performance')}</h2>
           </div>
-          <Button variant="success" onClick={() => navigate('/sales-projects')}>View Details</Button>
+          <Button variant="success" onClick={() => navigate('/sales-projects')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Sold Units" value={salesMetrics.sold_units} icon={CheckCircle} color="green" size="lg" />
-          <StatCard label="Reserved" value={salesMetrics.reserved_units} icon={Clock} color="yellow" size="lg" />
-          <StatCard label="Available" value={salesMetrics.available_units} icon={Package} color="blue" size="lg" />
-          <StatCard label="Sales Rate" value={`${salesMetrics.sales_rate.toFixed(1)}%`} icon={Percent} color="teal" size="lg" />
+          <StatCard label={t('dashboards.director.sold_units')} value={salesMetrics.sold_units} icon={CheckCircle} color="green" size="lg" />
+          <StatCard label={t('dashboards.director.reserved')} value={salesMetrics.reserved_units} icon={Clock} color="yellow" size="lg" />
+          <StatCard label={t('dashboards.director.available')} value={salesMetrics.available_units} icon={Package} color="blue" size="lg" />
+          <StatCard label={t('dashboards.director.sales_rate')} value={`${salesMetrics.sales_rate.toFixed(1)}%`} icon={Percent} color="teal" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label="Total Sales Revenue" value={`€${(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label="Avg Price per Unit" value={`€${(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_sales_revenue')} value={`€${(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.avg_price_per_unit')} value={`€${(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K`} color="gray" size="md" />
           <StatCard
-            label={`Monthly Sales (${format(new Date(), 'MMM')})`}
-            value={`${salesMetrics.monthly_sales_count} units`}
+            label={t('dashboards.director.monthly_sales', { month: format(new Date(), 'MMM') })}
+            value={`${salesMetrics.monthly_sales_count} ${t('dashboards.director.units')}`}
             subtitle={`€${(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K revenue`}
             color="gray"
             size="md"
@@ -132,26 +134,26 @@ const DirectorDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">Construction & Site Management</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.construction_site')}</h2>
           </div>
-          <Button variant="amber" onClick={() => navigate('/site-management')}>View Details</Button>
+          <Button variant="amber" onClick={() => navigate('/site-management')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard
-            label="Total Subcontractors"
+            label={t('dashboards.director.total_subcontractors')}
             value={constructionMetrics.total_subcontractors}
-            subtitle={`${constructionMetrics.active_subcontractors} active contracts`}
+            subtitle={`${constructionMetrics.active_subcontractors} ${t('dashboards.director.active_contracts')}`}
             color="blue"
             size="lg"
           />
-          <StatCard label="Completed Contracts" value={constructionMetrics.completed_contracts} subtitle="Finished work" color="green" size="lg" />
-          <StatCard label="Overdue Tasks" value={constructionMetrics.overdue_tasks} subtitle="Need attention" color="red" size="lg" />
-          <StatCard label="Critical Deadlines" value={constructionMetrics.critical_deadlines} subtitle="Within 7 days" color="orange" size="lg" />
+          <StatCard label={t('dashboards.director.completed_contracts')} value={constructionMetrics.completed_contracts} subtitle={t('dashboards.director.finished_work')} color="green" size="lg" />
+          <StatCard label={t('dashboards.director.overdue_tasks')} value={constructionMetrics.overdue_tasks} subtitle={t('dashboards.director.need_attention')} color="red" size="lg" />
+          <StatCard label={t('dashboards.director.critical_deadlines')} value={constructionMetrics.critical_deadlines} subtitle={t('dashboards.director.within_7_days')} color="orange" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label="Total Contract Value" value={`€${(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label="Total Paid" value={`€${(constructionMetrics.total_paid / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label="Pending Payments" value={`€${(constructionMetrics.pending_payments / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_contract_value')} value={`€${(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_paid')} value={`€${(constructionMetrics.total_paid / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.pending_payments')} value={`€${(constructionMetrics.pending_payments / 1000000).toFixed(2)}M`} color="gray" size="md" />
         </StatGrid>
       </div>
 
@@ -159,21 +161,21 @@ const DirectorDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">Funding & Investment</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.funding_investment')}</h2>
           </div>
-          <Button variant="primary" onClick={() => navigate('/funding-overview')}>View Details</Button>
+          <Button variant="primary" onClick={() => navigate('/funding-overview')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Funded Projects" value={fundingMetrics.total_investors} icon={Users} color="green" size="lg" />
-          <StatCard label="Investors" value={fundingMetrics.total_banks} icon={Building2} color="blue" size="lg" />
-          <StatCard label="Credit Paid Out" value={`${fundingMetrics.credit_paid_out.toFixed(0)}%`} icon={Target} color="teal" size="lg" />
-          <StatCard label="Upcoming Maturities" value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
+          <StatCard label={t('dashboards.director.funded_projects')} value={fundingMetrics.total_investors} icon={Users} color="green" size="lg" />
+          <StatCard label={t('dashboards.director.investors')} value={fundingMetrics.total_banks} icon={Building2} color="blue" size="lg" />
+          <StatCard label={t('dashboards.director.credit_paid_out')} value={`${fundingMetrics.credit_paid_out.toFixed(0)}%`} icon={Target} color="teal" size="lg" />
+          <StatCard label={t('dashboards.director.upcoming_maturities')} value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
         </div>
         <StatGrid columns={4}>
-          <StatCard label="Total Investments" value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
-          <StatCard label="Avg Interest Rate" value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
-          <StatCard label="Outstanding Debt" value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
-          <StatCard label="Monthly Debt Service" value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_investments')} value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.avg_interest_rate')} value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.outstanding_debt')} value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.monthly_debt_service')} value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />
         </StatGrid>
       </div>
 

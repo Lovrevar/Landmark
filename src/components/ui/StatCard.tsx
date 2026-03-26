@@ -1,4 +1,3 @@
-import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 
 type StatColorScheme = 'white' | 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'teal' | 'orange'
@@ -48,9 +47,11 @@ const valueStyles: Record<StatColorScheme, string> = {
 }
 
 interface StatCardProps {
-  label: string
+  label?: string
+  title?: string
   value: string | number
   subtitle?: string
+  trend?: string
   icon?: LucideIcon
   color?: StatColorScheme
   size?: 'sm' | 'md' | 'lg'
@@ -65,6 +66,7 @@ const sizeConfig = {
 
 export default function StatCard({
   label,
+  title,
   value,
   subtitle,
   icon: Icon,
@@ -72,6 +74,7 @@ export default function StatCard({
   size = 'md',
   className = '',
 }: StatCardProps) {
+  const displayLabel = label ?? title ?? ''
   const cfg = sizeConfig[size]
 
   const classes = [
@@ -85,7 +88,7 @@ export default function StatCard({
     <div className={classes}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${labelStyles[color]} mb-1`}>{label}</p>
+          <p className={`text-sm font-medium ${labelStyles[color]} mb-1`}>{displayLabel}</p>
           <p className={`${cfg.value} font-bold ${valueStyles[color]}`}>{value}</p>
           {subtitle && (
             <p className={`text-xs mt-1 ${labelStyles[color]} opacity-75`}>{subtitle}</p>

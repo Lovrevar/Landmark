@@ -76,13 +76,20 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
   })
 
   const projectReports = buildProjectReports(
-    allProjects, phasesByProject, contractsByPhase, invoicesByContract
+    allProjects as unknown as AnyRow[],
+    phasesByProject as unknown as Map<string, AnyRow[]>,
+    contractsByPhase as unknown as Map<string, AnyRow[]>,
+    invoicesByContract as unknown as Map<string, AnyRow[]>
   )
 
-  const customerReports = buildCustomerReports(allContracts, allPhases, invoicesByContract)
-  const supplierReports = buildSupplierReports(allContracts, invoicesByContract)
+  const customerReports = buildCustomerReports(
+    allContracts as unknown as AnyRow[],
+    allPhases as unknown as AnyRow[],
+    invoicesByContract as unknown as Map<string, AnyRow[]>
+  )
+  const supplierReports = buildSupplierReports(allContracts as unknown as AnyRow[])
   const supplierTypes = buildSupplierTypeSummary(supplierReports)
-  const invoiceSummary = buildInvoiceSummary(allInvoices)
+  const invoiceSummary = buildInvoiceSummary(allInvoices as unknown as AnyRow[])
 
   const totalLandInvestment = allPlots.reduce((s, p) => s + num(p.total_price), 0)
   const totalLandArea = allPlots.reduce((s, p) => s + num(p.purchased_area_m2), 0)
@@ -125,20 +132,22 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
   }
 }
 
+type AnyRow = Record<string, unknown>
+
 function buildProjectReports(
-  projects: any[],
-  phasesByProject: Map<string, any[]>,
-  contractsByPhase: Map<string, any[]>,
-  invoicesByContract: Map<string, any[]>
+  projects: AnyRow[],
+  phasesByProject: Map<string, AnyRow[]>,
+  contractsByPhase: Map<string, AnyRow[]>,
+  invoicesByContract: Map<string, AnyRow[]>
 ): ProjectReportData[] {
   return projects.map(project => {
-    const phases = phasesByProject.get(project.id) || []
+    const phases = phasesByProject.get(project.id as string) || []
     const dev = emptyPhase()
     const constr = emptyPhase()
     const sales = emptyPhase()
 
     phases.forEach(phase => {
-      const phaseContracts = contractsByPhase.get(phase.id) || []
+      const phaseContracts = contractsByPhase.get(phase.id as string) || []
       const target = phase.phase_type === 'development' ? dev
         : phase.phase_type === 'construction' ? constr
         : sales
@@ -148,10 +157,10 @@ function buildProjectReports(
       phaseContracts.forEach(c => {
         target.contract_cost += num(c.contract_amount)
         target.budget_realized += num(c.budget_realized)
-        const contractInvoices = invoicesByContract.get(c.id) || []
+        const contractInvoices = invoicesByContract.get(c.id as string) || []
         target.unpaid += contractInvoices
-          .filter((inv: any) => inv.status !== 'PAID')
-          .reduce((s: number, inv: any) => s + num(inv.remaining_amount), 0)
+          .filter((inv) => inv.status !== 'PAID')
+          .reduce((s: number, inv) => s + num(inv.remaining_amount), 0)
       })
     })
 
@@ -162,10 +171,10 @@ function buildProjectReports(
     const profit = totalCollected - totalCosts
 
     return {
-      id: project.id,
-      name: project.name,
-      location: project.location,
-      status: project.status,
+      id: project.id as string,
+      name: project.name as string,
+      location: project.location as string,
+      status: project.status as string,
       total_area_m2: num(project.total_area_m2),
       land_cost: landCost,
       development: dev,
@@ -182,22 +191,22 @@ function buildProjectReports(
 }
 
 function buildCustomerReports(
-  contracts: any[],
-  phases: any[],
-  invoicesByContract: Map<string, any[]>
+  contracts: AnyRow[],
+  phases: AnyRow[],
+  invoicesByContract: Map<string, AnyRow[]>
 ): CustomerReportData[] {
   const salesPhaseIds = new Set(
-    phases.filter(p => p.phase_type === 'sales').map(p => p.id)
+    phases.filter(p => p.phase_type === 'sales').map(p => p.id as string)
   )
 
   const customerMap = new Map<string, CustomerReportData>()
 
   contracts
-    .filter(c => c.customer_id && salesPhaseIds.has(c.phase_id))
+    .filter(c => c.customer_id && salesPhaseIds.has(c.phase_id as string))
     .forEach(c => {
-      const existing = customerMap.get(c.customer_id) || {
-        id: c.customer_id,
-        name: (c.customer as any)?.name || 'N/A',
+      const existing = customerMap.get(c.customer_id as string) || {
+        id: c.customer_id as string,
+        name: (c.customer as { name?: string } | null | undefined)?.name || 'N/A',
         total_contracts: 0,
         total_amount: 0,
         total_paid: 0,
@@ -210,12 +219,12 @@ function buildCustomerReports(
       existing.total_paid += num(c.budget_realized)
       existing.total_area_m2 += num(c.total_surface_m2 || c.land_area_m2)
 
-      const contractInvoices = invoicesByContract.get(c.id) || []
+      const contractInvoices = invoicesByContract.get(c.id as string) || []
       existing.total_remaining += contractInvoices
-        .filter((inv: any) => inv.status !== 'PAID')
-        .reduce((s: number, inv: any) => s + num(inv.remaining_amount), 0)
+        .filter((inv) => inv.status !== 'PAID')
+        .reduce((s: number, inv) => s + num(inv.remaining_amount), 0)
 
-      customerMap.set(c.customer_id, existing)
+      customerMap.set(c.customer_id as string, existing)
     })
 
   return Array.from(customerMap.values())
@@ -223,18 +232,17 @@ function buildCustomerReports(
 }
 
 function buildSupplierReports(
-  contracts: any[],
-  invoicesByContract: Map<string, any[]>
+  contracts: AnyRow[]
 ): SupplierReportData[] {
   const supplierMap = new Map<string, SupplierReportData>()
 
   contracts
     .filter(c => c.supplier_id)
     .forEach(c => {
-      const existing = supplierMap.get(c.supplier_id) || {
-        id: c.supplier_id,
-        name: (c.supplier as any)?.name || 'N/A',
-        supplier_type: (c.supplier as any)?.supplier_type?.name || 'Other',
+      const existing = supplierMap.get(c.supplier_id as string) || {
+        id: c.supplier_id as string,
+        name: (c.supplier as { name?: string; supplier_type?: { name?: string } } | null | undefined)?.name || 'N/A',
+        supplier_type: (c.supplier as { name?: string; supplier_type?: { name?: string } } | null | undefined)?.supplier_type?.name || 'Other',
         total_contracts: 0,
         total_amount: 0,
         total_paid: 0
@@ -243,7 +251,7 @@ function buildSupplierReports(
       existing.total_contracts += 1
       existing.total_amount += num(c.contract_amount)
       existing.total_paid += num(c.budget_realized)
-      supplierMap.set(c.supplier_id, existing)
+      supplierMap.set(c.supplier_id as string, existing)
     })
 
   return Array.from(supplierMap.values())
@@ -270,7 +278,7 @@ function buildSupplierTypeSummary(suppliers: SupplierReportData[]): SupplierType
     .sort((a, b) => b.total_amount - a.total_amount)
 }
 
-function buildInvoiceSummary(invoices: any[]): InvoiceSummary {
+function buildInvoiceSummary(invoices: AnyRow[]): InvoiceSummary {
   const today = new Date()
 
   return invoices.reduce((acc, inv) => {
@@ -281,7 +289,7 @@ function buildInvoiceSummary(invoices: any[]): InvoiceSummary {
 
     if (inv.status === 'PAID') {
       acc.paid += 1
-    } else if (inv.due_date && new Date(inv.due_date) < today) {
+    } else if (inv.due_date && new Date(inv.due_date as string) < today) {
       acc.overdue += 1
       acc.overdue_amount += num(inv.remaining_amount)
     } else {

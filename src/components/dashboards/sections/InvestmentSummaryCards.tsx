@@ -1,6 +1,7 @@
 import React from 'react'
 import { Building2, TrendingUp, ArrowDownRight, PieChart } from 'lucide-react'
 import StatCard from '../../ui/StatCard'
+import { useTranslation } from 'react-i18next'
 import type { FinancialSummary } from '../../../types/investment'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const InvestmentSummaryCards: React.FC<Props> = ({ financialSummary }) => {
+  const { t } = useTranslation()
   const utilization = financialSummary.total_credit_lines > 0
     ? ((financialSummary.total_used_credit / financialSummary.total_credit_lines) * 100).toFixed(1)
     : '0'
@@ -15,28 +17,28 @@ const InvestmentSummaryCards: React.FC<Props> = ({ financialSummary }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       <StatCard
-        label="Portfolio Value"
+        label={t('dashboards.investment.portfolio_value')}
         value={`€${(financialSummary.total_portfolio_value / 1000000).toFixed(1)}M`}
         icon={Building2}
         color="blue"
         size="lg"
       />
       <StatCard
-        label="Outstanding Debt"
+        label={t('dashboards.investment.outstanding_debt')}
         value={`€${(financialSummary.total_debt / 1000000).toFixed(1)}M`}
         icon={ArrowDownRight}
         color="red"
         size="lg"
       />
       <StatCard
-        label="Available Investments"
+        label={t('dashboards.investment.available_investments')}
         value={`€${(financialSummary.available_credit / 1000000).toFixed(1)}M`}
         icon={TrendingUp}
         color="green"
         size="lg"
       />
       <StatCard
-        label="Investment Utilization"
+        label={t('dashboards.investment.investment_utilization')}
         value={`${utilization}%`}
         icon={PieChart}
         color="teal"

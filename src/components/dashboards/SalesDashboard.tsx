@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import { useTranslation } from 'react-i18next'
 import StatCard from '../ui/StatCard'
 import {
   Home,
@@ -23,6 +24,7 @@ const defaultStats: SalesDashboardStats = {
 }
 
 const SalesDashboard: React.FC = () => {
+  const { t } = useTranslation()
   const [stats, setStats] = useState<SalesDashboardStats>(defaultStats)
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([])
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([])
@@ -51,29 +53,29 @@ const SalesDashboard: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" message="Loading sales dashboard..." />
+    return <LoadingSpinner size="lg" message={t('dashboards.sales.loading')} />
   }
 
-  const maxMonthlyRevenue = Math.max(...monthlyTrends.map(t => t.revenue), 1)
+  const maxMonthlyRevenue = Math.max(...monthlyTrends.map(trend => trend.revenue), 1)
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Sales Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of sales performance and metrics</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.sales.title')}</h1>
+        <p className="text-gray-600 mt-1">{t('dashboards.sales.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="Total Revenue"
+          label={t('dashboards.sales.total_revenue')}
           value={`€${(stats.totalRevenue / 1000000).toFixed(2)}M`}
-          subtitle={`${stats.soldUnits} units sold`}
+          subtitle={`${stats.soldUnits} ${t('dashboards.sales.units_sold')}`}
           icon={DollarSign}
           color="green"
           size="lg"
         />
         <StatCard
-          label="Sales Rate"
+          label={t('dashboards.sales.sales_rate')}
           value={`${stats.salesRate.toFixed(1)}%`}
           subtitle={`${stats.soldUnits} of ${stats.totalUnits}`}
           icon={TrendingUp}
@@ -81,17 +83,17 @@ const SalesDashboard: React.FC = () => {
           size="lg"
         />
         <StatCard
-          label="Avg Sale Price"
+          label={t('dashboards.sales.avg_sale_price')}
           value={`€${(stats.avgSalePrice / 1000).toFixed(0)}K`}
-          subtitle="Per unit"
+          subtitle={t('dashboards.sales.per_unit')}
           icon={Home}
           color="teal"
           size="lg"
         />
         <StatCard
-          label="Active Leads"
+          label={t('dashboards.sales.active_leads')}
           value={stats.activeLeads}
-          subtitle={`Of ${stats.totalCustomers} customers`}
+          subtitle={t('dashboards.sales.of_customers', { total: stats.totalCustomers })}
           icon={Users}
           color="orange"
           size="lg"
@@ -100,7 +102,7 @@ const SalesDashboard: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Monthly Target Progress</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.monthly_target')}</h2>
           <span className="text-sm text-gray-600">
             €{(stats.monthlyRevenue / 1000000).toFixed(2)}M / €{(stats.monthlyTarget / 1000000).toFixed(1)}M
           </span>
@@ -121,7 +123,7 @@ const SalesDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
             <BarChart3 className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">6-Month Sales Trend</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.six_month_trend')}</h2>
           </div>
           <div className="space-y-4">
             {monthlyTrends.map((trend, index) => (
@@ -146,29 +148,29 @@ const SalesDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
             <PieChart className="w-5 h-5 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Inventory Status</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.inventory_status')}</h2>
           </div>
           <div className="space-y-4">
             <StatCard
-              label="Sold"
+              label={t('dashboards.sales.sold')}
               value={`${stats.salesRate.toFixed(1)}%`}
-              subtitle={`${stats.soldUnits} units`}
+              subtitle={`${stats.soldUnits} ${t('common.units').toLowerCase()}`}
               icon={CheckCircle}
               color="green"
               size="md"
             />
             <StatCard
-              label="Reserved"
+              label={t('dashboards.sales.reserved')}
               value={`${stats.totalUnits > 0 ? ((stats.reservedUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%`}
-              subtitle={`${stats.reservedUnits} units`}
+              subtitle={`${stats.reservedUnits} ${t('common.units').toLowerCase()}`}
               icon={Calendar}
               color="yellow"
               size="md"
             />
             <StatCard
-              label="Available"
+              label={t('dashboards.sales.available')}
               value={`${stats.totalUnits > 0 ? ((stats.availableUnits / stats.totalUnits) * 100).toFixed(1) : '0'}%`}
-              subtitle={`${stats.availableUnits} units`}
+              subtitle={`${stats.availableUnits} ${t('common.units').toLowerCase()}`}
               icon={Home}
               color="blue"
               size="md"
@@ -180,19 +182,19 @@ const SalesDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center mb-6">
           <Building2 className="w-5 h-5 text-blue-600 mr-2" />
-          <h2 className="text-xl font-semibold text-gray-900">Project Performance</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.project_performance')}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Units</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sold</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reserved</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Available</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sales Rate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.project')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('dashboards.sales.total_units')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('dashboards.sales.sold')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('dashboards.sales.reserved')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('dashboards.sales.available')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('dashboards.sales.sales_rate')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.amount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -228,7 +230,7 @@ const SalesDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
             <DollarSign className="w-5 h-5 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Payment Methods</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.payment_methods')}</h2>
           </div>
           <div className="space-y-3">
             {Object.entries(paymentMethodBreakdown).map(([method, count]) => {
@@ -255,7 +257,7 @@ const SalesDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
             <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Recent Sales</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.sales.recent_sales')}</h2>
           </div>
           <div className="space-y-3">
             {recentSales.slice(0, 5).map((sale) => (
@@ -263,7 +265,7 @@ const SalesDashboard: React.FC = () => {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{sale.customer_name}</p>
                   <p className="text-xs text-gray-600">
-                    {sale.project_name} - Unit {sale.apartment_number}
+                    {sale.project_name} - {t('dashboards.sales.unit')} {sale.apartment_number}
                   </p>
                 </div>
                 <div className="text-right ml-4">

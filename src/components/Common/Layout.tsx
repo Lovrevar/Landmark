@@ -1,6 +1,8 @@
 import React, { ReactNode, useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
+import { LanguageSwitcher } from './LanguageSwitcher'
 import {
   Building2,
   LogOut,
@@ -15,8 +17,6 @@ import {
   ClipboardCheck,
   TrendingUp,
   FileText,
-  Menu,
-  X,
   FolderKanban,
   CreditCard,
   Lock,
@@ -27,12 +27,14 @@ import {
   ChevronRight,
   CheckCircle
 } from 'lucide-react'
+import Input from '../ui/Input'
 
 interface LayoutProps {
   children: ReactNode
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { t } = useTranslation()
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
   const location = useLocation()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
@@ -60,66 +62,66 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const getMenuItems = () => {
     if (user?.role === 'Supervision') {
       return [
-        { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' },
-        { name: 'Invoices', icon: FileText, path: '/invoices' }
+        { name: t('nav.site_management'), icon: Building2, path: '/site-management' },
+        { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
+        { name: t('nav.invoices'), icon: FileText, path: '/invoices' }
       ]
     }
 
     const menuConfig = {
       General: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projects', icon: FolderKanban, path: '/projects' },
-        { name: 'Reports', icon: FileText, path: '/general-reports' }
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
+        { name: t('nav.reports'), icon: FileText, path: '/general-reports' }
       ],
       Supervision: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Site Management', icon: Building2, path: '/site-management' },
-        { name: 'Subcontractors', icon: Users, path: '/subcontractors' },
-        { name: 'Work Logs', icon: ClipboardCheck, path: '/work-logs' },
-        { name: 'Payments', icon: DollarSign, path: '/payments' },
-        { name: 'Invoices', icon: FileText, path: '/invoices' }
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.site_management'), icon: Building2, path: '/site-management' },
+        { name: t('nav.subcontractors'), icon: Users, path: '/subcontractors' },
+        { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
+        { name: t('nav.invoices'), icon: FileText, path: '/invoices' }
       ],
       Sales: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Apartments', icon: Home, path: '/apartments' },
-        { name: 'Sales Projects', icon: Building2, path: '/sales-projects' },
-        { name: 'Customers', icon: Users, path: '/customers' },
-        { name: 'Payments', icon: DollarSign, path: '/sales-payments' },
-        { name: 'Reports', icon: BarChart3, path: '/sales-reports' }
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.apartments'), icon: Home, path: '/apartments' },
+        { name: t('nav.sales_projects'), icon: Building2, path: '/sales-projects' },
+        { name: t('nav.customers'), icon: Users, path: '/customers' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/sales-payments' },
+        { name: t('nav.reports'), icon: BarChart3, path: '/sales-reports' }
       ],
       Funding: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Investors', icon: Building2, path: '/banks' },
-        { name: 'Investments', icon: CreditCard, path: '/funding-credits' },
-        { name: 'Projects', icon: Building2, path: '/investment-projects' },
-        { name: 'Payments', icon: DollarSign, path: '/funding-payments' },
-        { name: 'TIC', icon: Calculator, path: '/tic' }
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.investors'), icon: Building2, path: '/banks' },
+        { name: t('nav.investments'), icon: CreditCard, path: '/funding-credits' },
+        { name: t('nav.projects'), icon: Building2, path: '/investment-projects' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' },
+        { name: t('nav.tic'), icon: Calculator, path: '/tic' }
       ],
       Cashflow: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Računi', icon: FileText, path: '/accounting-invoices' },
-        { name: 'Plaćanja', icon: DollarSign, path: '/accounting-payments' },
-        { name: 'Kalendar dospijeća', icon: Calendar, path: '/accounting-calendar' },
-        { name: 'Dobavljači', icon: Users, path: '/accounting-suppliers' },
-        { name: 'Office Dobavljači', icon: Building2, path: '/office-suppliers' },
-        { name: 'Moje firme', icon: Building2, path: '/accounting-companies' },
-        { name: 'Investicije', icon: Building2, path: '/accounting-banks' },
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.invoices'), icon: FileText, path: '/accounting-invoices' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/accounting-payments' },
+        { name: t('nav.calendar'), icon: Calendar, path: '/accounting-calendar' },
+        { name: t('nav.suppliers'), icon: Users, path: '/accounting-suppliers' },
+        { name: t('nav.office_suppliers'), icon: Building2, path: '/office-suppliers' },
+        { name: t('nav.my_companies'), icon: Building2, path: '/accounting-companies' },
+        { name: t('nav.investments'), icon: Building2, path: '/accounting-banks' },
         /*{ name: 'Krediti', icon: CreditCard, path: '/company-credits' },*/
-        { name: 'Kupci', icon: Users, path: '/accounting-customers' },
-        { name: 'Pozajmice i Prijenosi', icon: TrendingUp, path: '/accounting-loans' },
-        { name: 'Stanje duga', icon: AlertCircle, path: '/debt-status' },
-        { name: 'Odobrenja', icon: CheckCircle, path: '/accounting-approvals' }
+        { name: t('nav.customers'), icon: Users, path: '/accounting-customers' },
+        { name: t('nav.loans'), icon: TrendingUp, path: '/accounting-loans' },
+        { name: t('nav.debt_status'), icon: AlertCircle, path: '/debt-status' },
+        { name: t('nav.approvals'), icon: CheckCircle, path: '/accounting-approvals' }
       ],
       Retail: [
-        { name: 'Dashboard', icon: BarChart3, path: '/' },
-        { name: 'Projekti', icon: FolderKanban, path: '/retail-projects' },
-        { name: 'Zemljišta', icon: MapPin, path: '/retail-land-plots' },
-        { name: 'Kupci', icon: Users, path: '/retail-customers' },
-        { name: 'Prodaje', icon: ShoppingCart, path: '/retail-sales-payments' },
-        { name: 'Računi', icon: FileText, path: '/retail-invoices' },
-        { name: 'Izvještaji', icon: BarChart3, path: '/retail-reports' }
+        { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
+        { name: t('nav.projects'), icon: FolderKanban, path: '/retail-projects' },
+        { name: t('nav.land_plots'), icon: MapPin, path: '/retail-land-plots' },
+        { name: t('nav.customers'), icon: Users, path: '/retail-customers' },
+        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales-payments' },
+        { name: t('nav.invoices'), icon: FileText, path: '/retail-invoices' },
+        { name: t('nav.reports'), icon: BarChart3, path: '/retail-reports' }
       ]
     }
 
@@ -143,7 +145,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (password === 'admin') {
+    const cashflowPassword = import.meta.env.VITE_CASHFLOW_PASSWORD || 'admin'
+    if (password === cashflowPassword) {
       setCashflowUnlocked(true)
       sessionStorage.setItem('cashflow_unlocked', 'true')
       setCurrentProfile(pendingProfile!)
@@ -153,7 +156,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setPendingProfile(null)
       navigate('/')
     } else {
-      setPasswordError('Netočna šifra. Pokušajte ponovno.')
+      setPasswordError(t('profiles.wrong_password'))
     }
   }
 
@@ -167,13 +170,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-6">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center pl-8">
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
               <h1 className="text-xl font-bold text-gray-900">Cognilion</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               {user?.role !== 'Supervision' && (
                 <div className="relative" ref={profileDropdownRef}>
                   <button
@@ -203,12 +206,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   )}
                 </div>
               )}
+              <LanguageSwitcher />
               <button
                 onClick={logout}
                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-red-600 transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4 mr-1" />
-                Logout
+                {t('auth.logout')}
               </button>
             </div>
           </div>
@@ -281,25 +285,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Cashflow Access</h2>
-                <p className="text-sm text-gray-600">Unesite šifru za pristup</p>
+                <h2 className="text-xl font-bold text-gray-900">Cashflow</h2>
+                <p className="text-sm text-gray-600">{t('profiles.unlock_title')}</p>
               </div>
             </div>
 
             <form onSubmit={handlePasswordSubmit}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Šifra
+                  {t('auth.password')}
                 </label>
-                <input
+                <Input
                   type="password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value)
                     setPasswordError('')
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Unesite šifru"
+                  placeholder={t('profiles.enter_password')}
                   autoFocus
                 />
               </div>
@@ -316,14 +319,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  Potvrdi
+                  {t('common.confirm')}
                 </button>
                 <button
                   type="button"
                   onClick={handlePasswordCancel}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
                 >
-                  Odustani
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

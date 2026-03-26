@@ -1,16 +1,17 @@
 import React from 'react'
-import { LoadingSpinner, PageHeader } from '../../ui'
-import { RetailInvoiceFormModal } from './Forms/RetailInvoiceFormModal'
-import BankInvoiceFormModal from '../Banks/Forms/BankInvoiceFormModal'
-import { LandPurchaseFormModal } from './Forms/LandPurchaseFormModal'
-import { useInvoices } from './Hooks/useInvoices'
-import { InvoiceFormModal } from './Forms/InvoiceFormModal'
-import { PaymentFormModal } from '../Payments/Forms/PaymentFormModal'
+import { useTranslation } from 'react-i18next'
+import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
+import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
+import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
+import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
+import { useInvoices } from './hooks/useInvoices'
+import { InvoiceFormModal } from './forms/InvoiceFormModal'
+import { PaymentFormModal } from '../Payments/forms/PaymentFormModal'
 import { InvoiceDetailView } from './InvoiceDetailView'
 import { InvoiceTable } from './InvoiceTable'
 import { InvoiceFilters } from './InvoiceFilters'
 import { InvoiceStats } from './InvoiceStats'
-import { ColumnMenuDropdown } from '../Components/ColumnMenuDropdown'
+import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { InvoiceActionButtons } from './InvoiceActionButtons'
 import { InvoicePagination } from './InvoicePagination'
 import {
@@ -25,9 +26,10 @@ import {
   getMilestonesByContract,
   isOverdue,
   columnLabels
-} from '../Services/invoiceHelpers'
+} from '../services/invoiceHelpers'
 
 const AccountingInvoices: React.FC = () => {
+  const { t } = useTranslation()
   const {
     invoices,
     companies,
@@ -100,6 +102,10 @@ const AccountingInvoices: React.FC = () => {
     handleCloseViewModal,
     handlePaymentSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
     fetchData
   } = useInvoices()
 
@@ -160,14 +166,14 @@ const AccountingInvoices: React.FC = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner message="Učitavanje..." />
+    return <LoadingSpinner message={t('common.loading')} />
   }
 
   return (
     <div className="space-y-6 max-w-full">
       <PageHeader
-        title="Računi"
-        description="Upravljanje ulaznim i izlaznim računima"
+        title={t('invoices.title')}
+        description={t('invoices.subtitle')}
         actions={
           <div className="flex items-center gap-2">
             <ColumnMenuDropdown
@@ -205,7 +211,7 @@ const AccountingInvoices: React.FC = () => {
         onSearchChange={setSearchTerm}
         onDirectionChange={setFilterDirection}
         onCategoryChange={setFilterCategory}
-        onStatusChange={(value) => setFilterStatus(value as any)}
+        onStatusChange={(value) => setFilterStatus(value as 'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL')}
         onCompanyChange={setFilterCompany}
         onClearFilters={() => {
           setSearchTerm('')
@@ -257,12 +263,12 @@ const AccountingInvoices: React.FC = () => {
         milestones={milestones}
         refunds={refunds}
         invoiceCategories={invoiceCategories}
-        customerApartments={customerApartments}
+        customerApartments={customerApartments as unknown as { id: string; number: string; price: number }[]}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        onFormChange={setFormData}
+        onFormChange={(data) => setFormData(data as unknown as typeof formData)}
         getCustomerProjects={(customerId) => getCustomerProjects(customerId, projects, customerSales)}
-        getCustomerApartmentsByProject={(customerId, projectId) => getCustomerApartmentsByProject(customerId, projectId, customerApartments)}
+        getCustomerApartmentsByProject={(customerId, projectId) => getCustomerApartmentsByProject(customerId, projectId, customerApartments) as unknown as { id: string; number: string; price: number }[]}
         getSupplierProjects={(supplierId) => getSupplierProjects(supplierId, projects, contracts)}
         getSupplierContractsByProject={(supplierId, projectId) => getSupplierContractsByProject(supplierId, projectId, contracts)}
         getMilestonesByContract={(contractId) => getMilestonesByContract(contractId, milestones)}
@@ -278,7 +284,7 @@ const AccountingInvoices: React.FC = () => {
         creditAllocations={creditAllocations}
         onClose={handleClosePaymentModal}
         onSubmit={handlePaymentSubmit}
-        onFormChange={setPaymentFormData}
+        onFormChange={(data) => setPaymentFormData(data as unknown as typeof paymentFormData)}
         onCreditChange={fetchCreditAllocationsHandler}
       />
 
@@ -327,6 +333,18 @@ const AccountingInvoices: React.FC = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        show={!!pendingDeleteId}
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_invoice')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

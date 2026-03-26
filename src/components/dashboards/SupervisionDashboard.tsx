@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../ui'
+import { useTranslation } from 'react-i18next'
 import StatCard from '../ui/StatCard'
 import {
   ClipboardCheck,
@@ -28,16 +29,8 @@ const defaultStats: WeeklyStats = {
   critical_deadlines: 0
 }
 
-const statCards = [
-  { key: 'completed_this_week', label: 'Completed', sub: 'This week', Icon: CheckCircle2, color: 'green' as const },
-  { key: 'active_crews', label: 'Active Crews', sub: 'In progress', Icon: Users, color: 'blue' as const },
-  { key: 'active_sites', label: 'Active Sites', sub: 'Phases with work', Icon: Wrench, color: 'teal' as const },
-  { key: 'work_logs_this_week', label: 'Work Logs', sub: 'This week', Icon: ClipboardCheck, color: 'teal' as const },
-  { key: 'overdue_tasks', label: 'Overdue', sub: 'Need action', Icon: AlertTriangle, color: 'red' as const },
-  { key: 'critical_deadlines', label: 'Critical', sub: 'Due this week', Icon: Clock, color: 'orange' as const }
-]
-
 const SupervisionDashboard: React.FC = () => {
+  const { t } = useTranslation()
   const [weekLogs, setWeekLogs] = useState<WorkLog[]>([])
   const [subcontractorStatus, setSubcontractorStatus] = useState<SubcontractorStatus[]>([])
   const [stats, setStats] = useState<WeeklyStats>(defaultStats)
@@ -67,8 +60,17 @@ const SupervisionDashboard: React.FC = () => {
     }
   }
 
+  const statCards = [
+    { key: 'completed_this_week', label: t('dashboards.supervision.completed_this_week'), sub: t('dashboards.supervision.this_week_sub'), Icon: CheckCircle2, color: 'green' as const },
+    { key: 'active_crews', label: t('dashboards.supervision.active_crews'), sub: t('dashboards.supervision.in_progress_sub'), Icon: Users, color: 'blue' as const },
+    { key: 'active_sites', label: t('dashboards.supervision.active_sites'), sub: t('dashboards.supervision.phases_with_work'), Icon: Wrench, color: 'teal' as const },
+    { key: 'work_logs_this_week', label: t('dashboards.supervision.work_logs'), sub: t('dashboards.supervision.this_week_sub'), Icon: ClipboardCheck, color: 'teal' as const },
+    { key: 'overdue_tasks', label: t('dashboards.supervision.overdue'), sub: t('dashboards.supervision.need_action'), Icon: AlertTriangle, color: 'red' as const },
+    { key: 'critical_deadlines', label: t('dashboards.supervision.critical'), sub: t('dashboards.supervision.due_this_week'), Icon: Clock, color: 'orange' as const }
+  ]
+
   if (loading) {
-    return <LoadingSpinner size="lg" message="Loading supervision dashboard..." />
+    return <LoadingSpinner size="lg" message={t('dashboards.supervision.loading')} />
   }
 
   const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)
@@ -88,11 +90,11 @@ const SupervisionDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Site Supervision</h1>
-          <p className="text-gray-600 mt-1">Weekly operations and quality control</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.supervision.site_supervision')}</h1>
+          <p className="text-gray-600 mt-1">{t('dashboards.supervision.subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600">This Week</p>
+          <p className="text-sm text-gray-600">{t('dashboards.supervision.this_week')}</p>
           <p className="text-lg font-semibold text-gray-900">
             {format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd')} -{' '}
             {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd, yyyy')}
@@ -117,15 +119,15 @@ const SupervisionDashboard: React.FC = () => {
       <div className="flex space-x-2 border-b border-gray-200">
         <button className={tabClass('week')} onClick={() => setSelectedView('week')}>
           <Activity className="w-4 h-4 inline mr-2" />
-          This Week's Activity
+          {t('dashboards.supervision.tab_week')}
         </button>
         <button className={tabClass('status')} onClick={() => setSelectedView('status')}>
           <BarChart3 className="w-4 h-4 inline mr-2" />
-          Contractor Status
+          {t('dashboards.supervision.tab_status')}
         </button>
         <button className={tabClass('issues')} onClick={() => setSelectedView('issues')}>
           <AlertCircle className="w-4 h-4 inline mr-2" />
-          Issues & Alerts
+          {t('dashboards.supervision.tab_issues')}
         </button>
       </div>
 

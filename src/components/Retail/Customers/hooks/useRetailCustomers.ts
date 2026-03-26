@@ -1,0 +1,168 @@
+import { useState, useEffect, useCallback } from 'react'
+import type { CustomerWithStats, CustomerDetailView, CustomerFormData } from '../services/retailCustomerService'
+import {
+  fetchCustomersWithStats,
+  fetchCustomerContracts,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+} from '../services/retailCustomerService'
+import { useToast } from '../../../../contexts/ToastContext'
+
+const EMPTY_FORM: CustomerFormData = {
+  name: '',
+  contact_phone: '',
+  contact_email: '',
+  oib: '',
+  address: '',
+}
+
+export function useRetailCustomers() {
+  const toast = useToast()
+  const [customers, setCustomers] = useState<CustomerWithStats[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const [showFormModal, setShowFormModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetailView | null>(null)
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null)
+  const [formData, setFormData] = useState<CustomerFormData>(EMPTY_FORM)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const loadCustomers = useCallback(async () => {
+    setLoading(true)
+    try {
+      setCustomers(await fetchCustomersWithStats())
+    } catch (err) {
+      console.error('Error fetching customers:', err)
+      toast.error('Greška pri učitavanju kupaca')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadCustomers() }, [loadCustomers])
+
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.oib && c.oib.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.contact_phone && c.contact_phone.includes(searchTerm)),
+  )
+
+  const totalStats = {
+    total_customers: customers.length,
+    total_area: customers.reduce((sum, c) => sum + c.total_purchased_area, 0),
+    total_revenue: customers.reduce((sum, c) => sum + c.total_spent, 0),
+    total_remaining: customers.reduce((sum, c) => sum + c.total_remaining, 0),
+  }
+
+  const openFormModal = (customer?: CustomerWithStats) => {
+    if (customer) {
+      setEditingCustomerId(customer.id)
+      setFormData({
+        name: customer.name,
+        contact_phone: customer.contact_phone || '',
+        contact_email: customer.contact_email || '',
+        oib: customer.oib || '',
+        address: customer.address || '',
+      })
+    } else {
+      setEditingCustomerId(null)
+      setFormData(EMPTY_FORM)
+    }
+    document.body.style.overflow = 'hidden'
+    setShowFormModal(true)
+  }
+
+  const closeFormModal = () => {
+    document.body.style.overflow = 'unset'
+    setShowFormModal(false)
+    setEditingCustomerId(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Naziv je obavezan'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    try {
+      if (editingCustomerId) {
+        await updateCustomer(editingCustomerId, formData)
+      } else {
+        await createCustomer(formData)
+      }
+      await loadCustomers()
+      closeFormModal()
+    } catch (err) {
+      console.error('Error saving customer:', err)
+      toast.error('Greška pri spremanju kupca')
+    }
+  }
+
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id: string) => setPendingDeleteId(id)
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setDeleting(true)
+    try {
+      await deleteCustomer(pendingDeleteId)
+      await loadCustomers()
+    } catch (err) {
+      console.error('Error deleting customer:', err)
+      toast.error('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
+    } finally {
+      setDeleting(false)
+      setPendingDeleteId(null)
+    }
+  }
+
+  const cancelDelete = () => setPendingDeleteId(null)
+
+  const handleViewDetails = async (customer: CustomerWithStats) => {
+    try {
+      const sales = await fetchCustomerContracts(customer.id)
+      setSelectedCustomer({ ...customer, sales })
+      document.body.style.overflow = 'hidden'
+      setShowDetailsModal(true)
+    } catch (err) {
+      console.error('Error loading customer details:', err)
+      toast.error('Greška pri učitavanju detalja')
+    }
+  }
+
+  const closeDetailsModal = () => {
+    document.body.style.overflow = 'unset'
+    setShowDetailsModal(false)
+    setSelectedCustomer(null)
+  }
+
+  return {
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filteredCustomers,
+    totalStats,
+    showFormModal,
+    showDetailsModal,
+    selectedCustomer,
+    editingCustomerId,
+    formData,
+    setFormData,
+    openFormModal,
+    closeFormModal,
+    handleSubmit,
+    fieldErrors,
+    handleDelete,
+    confirmDelete,
+    cancelDelete,
+    pendingDeleteId,
+    deleting,
+    handleViewDetails,
+    closeDetailsModal,
+  }
+}

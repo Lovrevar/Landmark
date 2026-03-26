@@ -49,6 +49,7 @@ export async function fetchContractStatusData() {
 
   if (invoicesError) throw invoicesError
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (contractsData || []).map((c: any) => {
     const cost = parseFloat(c.contract_amount || 0)
     const contractInvoices = (invoicesData || []).filter(inv => inv.contract_id === c.id)
@@ -75,7 +76,7 @@ export async function fetchContractStatusData() {
   })
 }
 
-export async function fetchSubcontractorStatus(contracts: any[]): Promise<SubcontractorStatus[]> {
+export async function fetchSubcontractorStatus(contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; deadline?: string; project_name?: string; cost?: number; budget_realized?: number; phase_id?: string }>): Promise<SubcontractorStatus[]> {
   const sevenDaysAgo = format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
   const recentLogsResults = await Promise.all(
@@ -112,7 +113,7 @@ export async function fetchSubcontractorStatus(contracts: any[]): Promise<Subcon
 }
 
 export function buildWeeklyStats(
-  contracts: any[],
+  contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; phase_id?: string }>,
   subcontractorStatus: SubcontractorStatus[],
   weekLogs: WorkLog[]
 ): WeeklyStats {

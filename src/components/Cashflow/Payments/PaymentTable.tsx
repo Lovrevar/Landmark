@@ -1,8 +1,9 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { CreditCard, Edit, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Payment, VisibleColumns } from './types'
-import { getPaymentMethodLabel, getPaymentMethodColor } from '../Services/paymentHelpers'
+import { getPaymentMethodLabel, getPaymentMethodColor } from '../services/paymentHelpers'
 import { Table, Button, EmptyState } from '../../ui'
 
 interface PaymentTableProps {
@@ -20,20 +21,21 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onEdit,
   onDelete
 }) => {
+  const { t } = useTranslation()
   return (
     <Table>
       <Table.Head>
         <tr>
-          {visibleColumns.payment_date && <Table.Th>Datum plaćanja</Table.Th>}
-          {visibleColumns.invoice_number && <Table.Th>Broj računa</Table.Th>}
-          {visibleColumns.my_company && <Table.Th>Moja Firma</Table.Th>}
-          {visibleColumns.invoice_type && <Table.Th>Tip</Table.Th>}
-          {visibleColumns.company_supplier && <Table.Th>Firma/Dobavljač</Table.Th>}
-          {visibleColumns.amount && <Table.Th>Iznos</Table.Th>}
-          {visibleColumns.payment_method && <Table.Th>Način plaćanja</Table.Th>}
-          {visibleColumns.reference_number && <Table.Th>Referenca</Table.Th>}
-          {visibleColumns.description && <Table.Th>Opis</Table.Th>}
-          <Table.Th sticky>Akcije</Table.Th>
+          {visibleColumns.payment_date && <Table.Th>{t('payments.table.payment_date')}</Table.Th>}
+          {visibleColumns.invoice_number && <Table.Th>{t('payments.table.invoice_number')}</Table.Th>}
+          {visibleColumns.my_company && <Table.Th>{t('payments.table.my_company')}</Table.Th>}
+          {visibleColumns.invoice_type && <Table.Th>{t('payments.table.invoice_type')}</Table.Th>}
+          {visibleColumns.company_supplier && <Table.Th>{t('payments.table.company_supplier')}</Table.Th>}
+          {visibleColumns.amount && <Table.Th>{t('payments.table.amount')}</Table.Th>}
+          {visibleColumns.payment_method && <Table.Th>{t('payments.table.payment_method')}</Table.Th>}
+          {visibleColumns.reference_number && <Table.Th>{t('payments.table.reference_number')}</Table.Th>}
+          {visibleColumns.description && <Table.Th>{t('payments.table.description')}</Table.Th>}
+          <Table.Th sticky>{t('payments.table.actions')}</Table.Th>
         </tr>
       </Table.Head>
       <Table.Body>
@@ -42,7 +44,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1}>
               <EmptyState
                 icon={CreditCard}
-                title="Nema pronađenih plaćanja"
+                title={t('payments.table.no_payments')}
               />
             </td>
           </tr>
@@ -74,7 +76,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                       invoice.invoice_type.startsWith('INCOMING_')
                       ? 'text-red-600' : 'text-green-600'}`}>
                       {invoice.invoice_type.startsWith('INCOMING_')
-                      ? 'RASHOD' : 'PRIHOD'}
+                      ? t('payments.table.expense') : t('payments.table.income')}
                     </span>
                   </Table.Td>
                 )}
@@ -110,7 +112,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   <Table.Td className="text-gray-600 max-w-xs truncate">
                     {payment.is_cesija && payment.cesija_company_name ? (
                       <span className="font-medium text-purple-700">
-                        Cesija - {payment.cesija_company_name}
+                        {t('payments.cesija_prefix')}{payment.cesija_company_name}
                       </span>
                     ) : (
                       payment.description || '-'

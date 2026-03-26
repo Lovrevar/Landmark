@@ -8,7 +8,7 @@ const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
   maximumFractionDigits: 0
 }).format(n)
 
-async function loadUnicodeFont(pdf: any): Promise<void> {
+async function loadUnicodeFont(pdf: import('jspdf').jsPDF): Promise<void> {
   const toBase64 = (buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer)
     let binary = ''

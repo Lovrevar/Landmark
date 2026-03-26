@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
@@ -12,12 +13,13 @@ interface ProjectsGridProps {
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false }) => {
+  const { t } = useTranslation()
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Site Management</h1>
-          <p className="text-gray-600 mt-2">Manage construction phases and subcontractors by project</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('supervision.site_management.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('supervision.site_management.projects_grid.subtitle')}</p>
         </div>
         {onRefresh && (
           <Button
@@ -25,7 +27,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             icon={RefreshCw}
             loading={isRefreshing}
           >
-            Refresh Data
+            {t('common.refresh')}
           </Button>
         )}
       </div>
@@ -55,16 +57,16 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     </Badge>
                     {project.has_phases ? (
                       <Badge variant="blue" size="sm">
-                        {project.phases.length} Phases
+                        {project.phases.length} {t('supervision.site_management.projects_grid.phases')}
                       </Badge>
                     ) : (
                       <Badge variant="orange" size="sm">
-                        No Phases
+                        {t('supervision.site_management.projects_grid.no_phases')}
                       </Badge>
                     )}
                     {project.overdue_subcontractors > 0 && (
                       <Badge variant="red" size="sm">
-                        {project.overdue_subcontractors} Overdue
+                        {project.overdue_subcontractors} {t('supervision.site_management.projects_grid.overdue')}
                       </Badge>
                     )}
                   </div>
@@ -75,7 +77,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-600">Budget Allocation</span>
+                    <span className="text-sm text-gray-600">{t('supervision.site_management.projects_grid.budget_allocation')}</span>
                     <span className="text-sm font-medium text-gray-900">
                       {project.budget > 0 ? ((project.total_contracted / project.budget) * 100).toFixed(0) : 0}%
                     </span>
@@ -96,46 +98,48 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   <div className="flex items-center gap-3 mt-1">
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <span className="inline-block w-2 h-2 rounded-full bg-orange-500"></span>
-                      Paid
+                      {t('common.paid')}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                      Contracted
+                      {t('supervision.site_management.projects_grid.contracted')}
                     </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Budget</p>
+                    <p className="text-gray-600">{t('supervision.site_management.projects_grid.budget')}</p>
                     <p className="font-medium text-gray-900">€{(project.budget / 1000000).toFixed(1)}M</p>
                     {project.has_phases && (
                       <>
                         <p className="text-xs text-gray-500">
-                          €{(project.total_budget_allocated / 1000000).toFixed(1)}M allocated
+                          €{(project.total_budget_allocated / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.allocated')}
                         </p>
                         <p className="text-xs text-teal-600 font-medium">
-                          €{(project.total_paid_out / 1000000).toFixed(1)}M paid out
+                          €{(project.total_paid_out / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.paid_out')}
                         </p>
                       </>
                     )}
                   </div>
                   <div>
-                    <p className="text-gray-600">Subcontractors</p>
+                    <p className="text-gray-600">{t('supervision.subcontractors.title')}</p>
                     <p className="font-medium text-gray-900">{project.subcontractors.length}</p>
                     <p className="text-xs text-gray-500">
-                      €{(project.total_subcontractor_cost / 1000000).toFixed(1)}M costs
+                      €{(project.total_subcontractor_cost / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.costs')}
                     </p>
                   </div>
                 </div>
 
                 {daysRemaining !== null && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Timeline</span>
+                    <span className="text-gray-600">{t('supervision.site_management.projects_grid.timeline')}</span>
                     <span className={`font-medium ${
                       isProjectOverdue ? 'text-red-600' : daysRemaining < 30 ? 'text-orange-600' : 'text-green-600'
                     }`}>
-                      {daysRemaining >= 0 ? `${daysRemaining} days left` : `${Math.abs(daysRemaining)} days overdue`}
+                      {daysRemaining >= 0
+                        ? t('supervision.site_management.projects_grid.days_left', { count: daysRemaining })
+                        : t('supervision.site_management.projects_grid.days_overdue', { count: Math.abs(daysRemaining) })}
                     </span>
                   </div>
                 )}
@@ -148,8 +152,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
       {projects.length === 0 && (
         <EmptyState
           icon={Building2}
-          title="No projects available"
-          description="Projects will appear here once they are created."
+          title={t('supervision.site_management.projects_grid.no_projects')}
+          description={t('supervision.site_management.projects_grid.no_projects_desc')}
         />
       )}
     </div>
