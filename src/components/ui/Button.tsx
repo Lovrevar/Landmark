@@ -19,16 +19,16 @@ interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-blue-600 text-white hover:bg-blue-700',
-  secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+  secondary: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600',
   danger: 'bg-red-600 text-white hover:bg-red-700',
   success: 'bg-green-600 text-white hover:bg-green-700',
-  ghost: 'text-gray-700 bg-gray-100 hover:bg-gray-200',
+  ghost: 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600',
   amber: 'bg-amber-600 text-white hover:bg-amber-700',
-  'outline-danger': 'text-red-600 bg-red-50 hover:bg-red-100',
+  'outline-danger': 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30',
   emerald: 'bg-emerald-600 text-white hover:bg-emerald-700',
   purple: 'bg-purple-600 text-white hover:bg-purple-700',
-  info: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
-  outline: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+  info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50',
+  outline: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {

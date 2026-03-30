@@ -20,8 +20,8 @@ export default function FormField({
   className = '',
 }: FormFieldProps) {
   const labelClasses = compact
-    ? 'block text-xs font-medium text-gray-600 mb-1'
-    : 'block text-sm font-medium text-gray-700 mb-1'
+    ? 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+    : 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
 
   return (
     <div className={className}>
@@ -30,7 +30,7 @@ export default function FormField({
       </label>
       {children}
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-      {!error && helperText && <p className="text-xs text-gray-500 mt-1">{helperText}</p>}
+      {!error && helperText && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{helperText}</p>}
     </div>
   )
 }

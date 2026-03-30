@@ -148,8 +148,8 @@ const AccountingApprovals: React.FC = () => {
         />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -159,8 +159,8 @@ const AccountingApprovals: React.FC = () => {
           <div className="flex items-center gap-3">
             {selectedCount > 0 && (
               <>
-                <span className="text-sm text-gray-600">
-                  {t('approvals.selected_info')} <span className="font-semibold text-gray-900">{selectedCount}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('approvals.selected_info')} <span className="font-semibold text-gray-900 dark:text-white">{selectedCount}</span>
                   {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
                 </span>
                 <Button
@@ -206,43 +206,43 @@ const AccountingApprovals: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 w-10">
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
                     />
                   </th>
-                  {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.category')}</th>}
-                  {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.invoice_number')}</th>}
-                  {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.supplier_name')}</th>}
-                  {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.project_name')}</th>}
-                  {visibleColumns.phase_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.phase_name')}</th>}
-                  {visibleColumns.contract_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.contract_number')}</th>}
-                  {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.issue_date')}</th>}
-                  {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.due_date')}</th>}
-                  {visibleColumns.base_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.base_amount')}</th>}
-                  {visibleColumns.vat_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.vat_amount')}</th>}
-                  {visibleColumns.total_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.total_amount')}</th>}
-                  {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.status')}</th>}
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('approvals.table_actions')}</th>
+                  {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.category')}</th>}
+                  {visibleColumns.invoice_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.invoice_number')}</th>}
+                  {visibleColumns.supplier_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.supplier_name')}</th>}
+                  {visibleColumns.project_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.project_name')}</th>}
+                  {visibleColumns.phase_name && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.phase_name')}</th>}
+                  {visibleColumns.contract_number && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.contract_number')}</th>}
+                  {visibleColumns.issue_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.issue_date')}</th>}
+                  {visibleColumns.due_date && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.due_date')}</th>}
+                  {visibleColumns.base_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.base_amount')}</th>}
+                  {visibleColumns.vat_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.vat_amount')}</th>}
+                  {visibleColumns.total_amount && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.total_amount')}</th>}
+                  {visibleColumns.status && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.status')}</th>}
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.table_actions')}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredInvoices.map((invoice) => (
                   <tr
                     key={invoice.id}
-                    className={`hover:bg-gray-50 transition-colors ${selectedIds.has(invoice.id) ? 'bg-blue-50' : ''}`}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selectedIds.has(invoice.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                   >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(invoice.id)}
                         onChange={() => toggleSelect(invoice.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
                       />
                     </td>
                     {visibleColumns.category && (
@@ -252,30 +252,30 @@ const AccountingApprovals: React.FC = () => {
                         </Badge>
                       </td>
                     )}
-                    {visibleColumns.invoice_number && <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>}
-                    {visibleColumns.supplier_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>}
-                    {visibleColumns.project_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.project_name}</td>}
-                    {visibleColumns.phase_name && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.phase_name}</td>}
-                    {visibleColumns.contract_number && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{invoice.contract_number}</td>}
-                    {visibleColumns.issue_date && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
-                    {visibleColumns.due_date && <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.invoice_number && <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>}
+                    {visibleColumns.supplier_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>}
+                    {visibleColumns.project_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.project_name}</td>}
+                    {visibleColumns.phase_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.phase_name}</td>}
+                    {visibleColumns.contract_number && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.contract_number}</td>}
+                    {visibleColumns.issue_date && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.due_date && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
                     {visibleColumns.base_amount && (
-                      <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.vat_amount && (
-                      <td className="px-4 py-4 text-sm text-gray-900 text-right whitespace-nowrap">
+                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.total_amount && (
-                      <td className="px-4 py-4 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                      <td className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.status && (
-                      <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
                             {invoice.status}
@@ -284,7 +284,7 @@ const AccountingApprovals: React.FC = () => {
                         </div>
                       </td>
                     )}
-                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -309,7 +309,7 @@ const AccountingApprovals: React.FC = () => {
       </div>
 
       {invoices.length > 0 && filteredInvoices.length === 0 && searchTerm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           <EmptyState
             icon={AlertCircle}
             title={t('approvals.no_results.title')}

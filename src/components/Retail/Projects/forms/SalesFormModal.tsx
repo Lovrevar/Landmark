@@ -137,13 +137,13 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 px-4 py-3 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.sales_note_body')}
             </p>
           </div>
@@ -174,7 +174,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 type="text"
                 value={formData.contract_number}
                 onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })}
-                className="bg-gray-50"
+                className="bg-gray-50 dark:bg-gray-700"
                 readOnly={!!contract}
               />
             </FormField>
@@ -228,7 +228,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                 type="number"
                 step="0.01"
                 value={formData.price_per_m2}
-                className="bg-gray-50 font-semibold"
+                className="bg-gray-50 dark:bg-gray-700 font-semibold"
                 placeholder={t('retail_projects.contract_form.price_auto_placeholder')}
                 readOnly
               />
@@ -272,8 +272,8 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
           </div>
 
           {!contract && (
-            <div className="bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
-              <p className="text-sm text-green-800">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 px-4 py-3 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-300">
                 <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.note_milestones_sales')}
               </p>
             </div>

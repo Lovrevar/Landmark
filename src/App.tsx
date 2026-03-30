@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
@@ -41,6 +42,7 @@ import RetailProjects from './components/Retail/Projects/index'
 import RetailInvoicesManagement from './components/Retail/Invoices/index'
 import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
+import BudgetControl from './components/General/BudgetControl/index'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -92,6 +94,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ProjectsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/budget-control"
+          element={
+            <ProtectedRoute>
+              <BudgetControl />
             </ProtectedRoute>
           }
         />
@@ -407,11 +417,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

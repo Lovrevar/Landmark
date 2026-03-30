@@ -210,8 +210,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           )}
 
           {(formData.status === 'interested' || formData.status === 'hot_lead' || formData.status === 'negotiating') && (
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('customers.form.preferences')}</h3>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.form.preferences')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label={t('customers.form.min_budget')}>
                   <Input

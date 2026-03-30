@@ -49,7 +49,7 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
     <Table.Th
       sortable
-      className="font-semibold text-gray-600 hover:text-gray-900"
+      className="font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -71,17 +71,17 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-5 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">{t('reports.project_performance.title')}</h3>
-        <p className="text-sm text-gray-500 mt-1">{t('reports.project_performance.subtitle')}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('reports.project_performance.title')}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('reports.project_performance.subtitle')}</p>
       </div>
 
       <Table className="rounded-none shadow-none border-0">
         <Table.Head>
           <Table.Tr hoverable={false}>
             <SortHeader label={t('common.project')} field="name" />
-            <Table.Th className="font-semibold text-gray-600">{t('common.status')}</Table.Th>
+            <Table.Th className="font-semibold text-gray-600 dark:text-gray-400">{t('common.status')}</Table.Th>
             <SortHeader label={t('reports.project_performance.land')} field="land_cost" />
             <SortHeader label={t('reports.project_performance.costs')} field="total_costs" />
             <SortHeader label={t('reports.project_performance.revenue')} field="total_revenue" />
@@ -99,8 +99,8 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
               >
                 <Table.Td className="py-3">
                   <div>
-                    <p className="font-medium text-gray-900">{project.name}</p>
-                    <p className="text-xs text-gray-500">{project.location}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{project.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{project.location}</p>
                   </div>
                 </Table.Td>
                 <Table.Td className="py-3">
@@ -108,9 +108,9 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
                     {project.status}
                   </Badge>
                 </Table.Td>
-                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.land_cost)}</Table.Td>
-                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.total_costs)}</Table.Td>
-                <Table.Td className="py-3 text-gray-700">{formatCurrency(project.total_revenue)}</Table.Td>
+                <Table.Td className="py-3 text-gray-700 dark:text-gray-200">{formatCurrency(project.land_cost)}</Table.Td>
+                <Table.Td className="py-3 text-gray-700 dark:text-gray-200">{formatCurrency(project.total_costs)}</Table.Td>
+                <Table.Td className="py-3 text-gray-700 dark:text-gray-200">{formatCurrency(project.total_revenue)}</Table.Td>
                 <Table.Td className="py-3">
                   <span className={`text-sm font-semibold ${project.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {project.profit >= 0 ? '+' : ''}{formatCurrency(project.profit)}
@@ -130,7 +130,7 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
               </Table.Tr>
               {expandedId === project.id && (
                 <Table.Tr hoverable={false}>
-                  <Table.Td colSpan={8} className="px-4 py-4 bg-gray-50">
+                  <Table.Td colSpan={8} className="px-4 py-4 bg-gray-50 dark:bg-gray-700/50">
                     <ProjectExpandedDetail project={project} formatCurrency={formatCurrency} />
                   </Table.Td>
                 </Table.Tr>
@@ -138,8 +138,8 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
             </React.Fragment>
           ))}
         </Table.Body>
-        <tfoot className="bg-gray-100 border-t-2 border-gray-300">
-          <tr className="font-semibold text-gray-900">
+        <tfoot className="bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
+          <tr className="font-semibold text-gray-900 dark:text-white">
             <td className="px-4 py-3">{t('common.total')} ({projects.length})</td>
             <td className="px-4 py-3"></td>
             <td className="px-4 py-3 text-sm">{formatCurrency(totals.land_cost)}</td>
@@ -176,34 +176,34 @@ function ProjectExpandedDetail({ project, formatCurrency }: {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="bg-white rounded-lg p-4 border border-gray-200">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{t('reports.project_performance.land')}</p>
-        <p className="text-lg font-bold text-gray-900">{formatCurrency(project.land_cost)}</p>
-        <p className="text-xs text-gray-500 mt-1">{project.total_area_m2.toLocaleString('hr-HR')} m2</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('reports.project_performance.land')}</p>
+        <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(project.land_cost)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{project.total_area_m2.toLocaleString('hr-HR')} m2</p>
       </div>
       {phases.map(({ label, data }) => (
-        <div key={label} className="bg-white rounded-lg p-4 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{label}</p>
+        <div key={label} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{label}</p>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('reports.project_performance.budget_abbr')}:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('reports.project_performance.budget_abbr')}:</span>
               <span className="font-medium">{formatCurrency(data.budget_allocated)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('reports.project_performance.contracted_abbr')}:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('reports.project_performance.contracted_abbr')}:</span>
               <span className="font-medium">{formatCurrency(data.contract_cost)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('reports.project_performance.paid_abbr')}:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('reports.project_performance.paid_abbr')}:</span>
               <span className="font-medium text-teal-600">{formatCurrency(data.budget_realized)}</span>
             </div>
             {data.unpaid > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('reports.project_performance.unpaid_abbr')}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('reports.project_performance.unpaid_abbr')}:</span>
                 <span className="font-medium text-orange-600">{formatCurrency(data.unpaid)}</span>
               </div>
             )}
-            <div className="text-xs text-gray-400 pt-1">{t('reports.project_performance.contracts_count', { count: data.contracts_count })}</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 pt-1">{t('reports.project_performance.contracts_count', { count: data.contracts_count })}</div>
           </div>
         </div>
       ))}

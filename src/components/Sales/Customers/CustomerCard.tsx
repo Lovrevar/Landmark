@@ -29,10 +29,10 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   const { t } = useTranslation()
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
-      case 'hot': return 'text-red-600 bg-red-100'
-      case 'warm': return 'text-yellow-600 bg-yellow-100'
-      case 'cold': return 'text-blue-600 bg-blue-100'
-      default: return 'text-gray-600 bg-gray-100'
+      case 'hot': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
+      case 'warm': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400'
+      case 'cold': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300'
+      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400'
     }
   }
 
@@ -48,13 +48,13 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   return (
     <div
       onClick={() => onToggleSelect(customer.id)}
-      className={`bg-white rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer ${
-        isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200 hover:border-gray-300'
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer ${
+        isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {customer.name} {customer.surname}
           </h3>
           {customer.priority && (
@@ -72,16 +72,16 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       </div>
 
       <div className="space-y-2 mb-4">
-        <div className="flex items-center text-sm text-gray-600">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
           <Mail className="w-4 h-4 mr-2" />
           {customer.email}
         </div>
-        <div className="flex items-center text-sm text-gray-600">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
           <Phone className="w-4 h-4 mr-2" />
           {customer.phone}
         </div>
         {customer.last_contact_date && (
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2" />
             Last contact: {format(new Date(customer.last_contact_date), 'MMM dd, yyyy')}
           </div>
@@ -89,8 +89,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       </div>
 
       {activeCategory === 'buyer' && customer.apartments && customer.apartments.length > 0 && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs font-semibold text-green-800 mb-2">{t('customers.card.purchased_units')}</p>
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <p className="text-xs font-semibold text-green-800 dark:text-green-200 mb-2">{t('customers.card.purchased_units')}</p>
           <div className="space-y-2">
             {customer.apartments.map((unit) => {
               const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
@@ -100,20 +100,20 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
               const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
 
               return (
-                <div key={unit.id} className="bg-white rounded p-2 space-y-1">
+                <div key={unit.id} className="bg-white dark:bg-gray-700 rounded p-2 space-y-1">
                   <div className="flex justify-between items-start">
                     {unit.type === 'apartment' && (
-                      <span className="text-xs font-medium text-green-800">
+                      <span className="text-xs font-medium text-green-800 dark:text-green-200">
                         {unit.project_name} - Unit {unit.number}
                       </span>
                     )}
                     {unit.type === 'garage' && (
-                      <span className="text-xs font-medium text-orange-700">
+                      <span className="text-xs font-medium text-orange-700 dark:text-orange-400">
                         Garage {unit.number}
                       </span>
                     )}
                     {unit.type === 'repository' && (
-                      <span className="text-xs font-medium text-gray-700">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
                         Repository {unit.number}
                       </span>
                     )}
@@ -123,7 +123,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                   </div>
 
                   {unit.type === 'apartment' && (unit.garage || unit.repository) && (
-                    <div className="text-xs text-gray-600 pl-2 space-y-0.5">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 pl-2 space-y-0.5">
                       {unit.garage && (
                         <div className="flex justify-between">
                           <span className="text-orange-600">+ Garage {unit.garage.number}</span>
@@ -155,18 +155,18 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
             const remaining = totalPrice - totalPaid
 
             return (
-              <div className="mt-3 pt-3 border-t border-green-300 space-y-1">
+              <div className="mt-3 pt-3 border-t border-green-300 dark:border-green-700 space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium text-green-800">{t('customers.card.total_paid')}:</span>
+                  <span className="font-medium text-green-800 dark:text-green-200">{t('customers.card.total_paid')}:</span>
                   <span className="font-bold text-green-700">€{totalPaid.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium text-green-800">{t('customers.card.remaining')}:</span>
+                  <span className="font-medium text-green-800 dark:text-green-200">{t('customers.card.remaining')}:</span>
                   <span className="font-bold text-red-600">€{remaining.toLocaleString('hr-HR')}</span>
                 </div>
-                <div className="flex justify-between text-xs pt-1 border-t border-green-200">
-                  <span className="font-semibold text-green-900">{t('customers.card.total_value')}:</span>
-                  <span className="font-bold text-green-900">€{totalPrice.toLocaleString('hr-HR')}</span>
+                <div className="flex justify-between text-xs pt-1 border-t border-green-200 dark:border-green-700">
+                  <span className="font-semibold text-green-900 dark:text-green-100">{t('customers.card.total_value')}:</span>
+                  <span className="font-bold text-green-900 dark:text-green-100">€{totalPrice.toLocaleString('hr-HR')}</span>
                 </div>
               </div>
             )
@@ -175,9 +175,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       )}
 
       {(activeCategory === 'interested' || activeCategory === 'hot_lead') && customer.preferences && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-xs font-semibold text-blue-800 mb-2">{t('customers.card.preferences')}</p>
-          <div className="text-xs text-blue-700 space-y-1">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+          <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">{t('customers.card.preferences')}</p>
+          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
             {customer.preferences.budget_min && customer.preferences.budget_max && (
               <div>Budget: €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K</div>
             )}
@@ -191,7 +191,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
               <div>Location: {customer.preferences.preferred_location}</div>
             )}
             {customer.preferences.notes && (
-              <div className="pt-1 border-t border-blue-200 mt-2">
+              <div className="pt-1 border-t border-blue-200 dark:border-blue-700 mt-2">
                 <span className="font-medium">Notes: </span>{customer.preferences.notes}
               </div>
             )}
@@ -200,9 +200,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       )}
 
       {activeCategory === 'backed_out' && customer.backed_out_reason && (
-        <div className="mb-4 p-3 bg-red-50 rounded-lg">
-          <p className="text-xs font-semibold text-red-800 mb-1">{t('customers.card.backed_out_reason')}</p>
-          <p className="text-xs text-red-700">{customer.backed_out_reason}</p>
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <p className="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">{t('customers.card.backed_out_reason')}</p>
+          <p className="text-xs text-red-700 dark:text-red-400">{customer.backed_out_reason}</p>
         </div>
       )}
 

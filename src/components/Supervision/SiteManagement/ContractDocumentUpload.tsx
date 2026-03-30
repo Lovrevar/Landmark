@@ -72,7 +72,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
       >
         <input
           ref={inputRef}
@@ -82,36 +82,36 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
           className="hidden"
           onChange={(e) => handleFileSelect(e.target.files)}
         />
-        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-sm font-medium text-gray-700">
+        <Upload className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
           {t('supervision.site_management.doc_upload.drag_or_click')}
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {t('supervision.site_management.doc_upload.hint')}
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {files.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
             {t('supervision.site_management.doc_upload.selected_count', { count: files.length })}
           </p>
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
-              className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+              className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg"
             >
               <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{file.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(file.size)}</p>
               </div>
               <button
                 type="button"
@@ -119,7 +119,7 @@ export const ContractDocumentUpload: React.FC<ContractDocumentUploadProps> = ({
                   e.stopPropagation()
                   removeFile(index)
                 }}
-                className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
                 title={t('supervision.site_management.doc_upload.remove')}
               >
                 <X className="w-4 h-4" />

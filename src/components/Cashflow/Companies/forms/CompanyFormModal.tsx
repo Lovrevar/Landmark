@@ -69,10 +69,10 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
           )}
 
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">{t('companies.form.bank_accounts_heading')}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('companies.form.bank_accounts_heading')}</h3>
             {formData.bankAccounts.map((account, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg space-y-3 border border-gray-200">
-                <p className="text-sm font-medium text-gray-700">{t('companies.form.account_label', { number: index + 1 })}</p>
+              <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-3 border border-gray-200 dark:border-gray-700">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('companies.form.account_label', { number: index + 1 })}</p>
                 <FormField label={t('companies.form.bank_name')} required compact>
                   <Input
                     type="text"
@@ -107,8 +107,8 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
             ))}
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
               {editingCompany ? (
                 <>
                   <strong>{t('companies.form.note_label')}</strong> {t('companies.form.note_edit')}

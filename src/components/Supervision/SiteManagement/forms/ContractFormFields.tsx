@@ -45,13 +45,13 @@ export const ContractFormFields: React.FC<Props> = ({
         </FormField>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
         <div>
-          <label className="text-xs text-gray-600">{t('supervision.contract_fields.vat_amount')}</label>
-          <p className="text-lg font-semibold text-gray-900">{formatEuro(vatAmount)}</p>
+          <label className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.vat_amount')}</label>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatEuro(vatAmount)}</p>
         </div>
         <div>
-          <label className="text-xs text-gray-600">{t('supervision.contract_fields.total')}</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.total')}</label>
           <p className="text-lg font-bold text-blue-600">{formatEuro(totalAmount)}</p>
         </div>
       </div>

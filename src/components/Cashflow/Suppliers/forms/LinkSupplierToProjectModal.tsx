@@ -131,12 +131,12 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
     <Modal show={visible} onClose={handleClose} size="md">
       <div className="p-6">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Link2 className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <Link2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{t('suppliers.link.title')}</h2>
-            <p className="text-gray-600 text-sm">{t('suppliers.link.description')}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('suppliers.link.title')}</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{t('suppliers.link.description')}</p>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
           </FormField>
         </div>
 
-        <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <Button variant="ghost" onClick={handleClose}>
             {t('common.cancel')}
           </Button>

@@ -142,7 +142,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -159,7 +159,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             <div className="md:col-span-2">
               <FormField label={t('retail_projects.project_form.land_label')}>
                 {loadingLandPlots ? (
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                     {t('retail_projects.project_form.loading_land')}
                   </div>
                 ) : (
@@ -176,9 +176,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                       ))}
                     </Select>
                     {selectedPlot && (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                        <div className="font-medium text-blue-900 mb-1">{t('retail_projects.project_form.land_info_title')}</div>
-                        <div className="text-blue-800 space-y-1">
+                      <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm">
+                        <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">{t('retail_projects.project_form.land_info_title')}</div>
+                        <div className="text-blue-800 dark:text-blue-200 space-y-1">
                           <div>{t('retail_land_plots.detail.owner')}: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
                           <div>{t('retail_land_plots.detail.total_area')}: {selectedPlot.total_area_m2} m²</div>
                           <div>{t('retail_land_plots.detail.purchased_area')}: {selectedPlot.purchased_area_m2} m²</div>

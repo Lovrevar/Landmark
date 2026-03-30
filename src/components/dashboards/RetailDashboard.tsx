@@ -51,8 +51,8 @@ const RetailDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.retail.title')}</h1>
-        <p className="text-gray-600 mt-1">{t('dashboards.retail.subtitle')}</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.retail.title')}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.retail.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -91,43 +91,43 @@ const RetailDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.retail.collection')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.collection')}</h3>
             <DollarSign className="w-6 h-6 text-green-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.paid')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.paid')}</span>
               <span className="font-semibold text-green-600">{fmt(stats.total_supplier_paid)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.to_collect')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.to_collect')}</span>
               <span className="font-semibold text-orange-600">{fmt(stats.total_remaining)}</span>
             </div>
-            <div className="pt-3 border-t flex justify-between">
-              <span className="text-sm font-medium text-gray-700">{t('dashboards.retail.total_invoiced')}</span>
-              <span className="font-bold text-gray-900">{fmt(stats.total_supplier_paid + stats.total_remaining)}</span>
+            <div className="pt-3 border-t dark:border-gray-600 flex justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('dashboards.retail.total_invoiced')}</span>
+              <span className="font-bold text-gray-900 dark:text-white">{fmt(stats.total_supplier_paid + stats.total_remaining)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.retail.profit')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.profit')}</h3>
             <TrendingUp className={`w-6 h-6 ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.income')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.income')}</span>
               <span className="font-semibold text-green-600">{fmt(stats.total_paid)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.costs')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.costs')}</span>
               <span className="font-semibold text-red-600">{fmt(stats.total_costs)}</span>
             </div>
-            <div className="pt-3 border-t flex justify-between">
-              <span className="text-sm font-medium text-gray-700">{t('dashboards.retail.profit')}:</span>
+            <div className="pt-3 border-t dark:border-gray-600 flex justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('dashboards.retail.profit')}:</span>
               <span className={`font-bold text-lg ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {stats.profit >= 0 ? '+' : ''}{fmt(stats.profit)}
               </span>
@@ -135,27 +135,27 @@ const RetailDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.retail.averages')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.averages')}</h3>
             <BarChart3 className="w-6 h-6 text-blue-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.cost_per_project')}</span>
-              <span className="font-semibold text-gray-900">
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.cost_per_project')}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
                 {stats.total_projects > 0 ? fmt(stats.total_costs / stats.total_projects) : '€0'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.revenue_per_project')}</span>
-              <span className="font-semibold text-gray-900">
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.revenue_per_project')}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
                 {stats.total_projects > 0 ? fmt(stats.total_revenue / stats.total_projects) : '€0'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">{t('dashboards.retail.per_customer')}</span>
-              <span className="font-semibold text-gray-900">
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.per_customer')}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
                 {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : '€0'}
               </span>
             </div>
@@ -164,23 +164,23 @@ const RetailDashboard: React.FC = () => {
       </div>
 
       {overdueInvoices.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
           <div className="flex items-start space-x-3 mb-4">
             <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">
+              <h3 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">
                 {t('dashboards.retail.late_payments', { count: overdueInvoices.length })}
               </h3>
               <div className="space-y-2">
                 {overdueInvoices.slice(0, 5).map((invoice) => (
-                  <div key={invoice.id} className="bg-white rounded-lg p-4 border border-red-200">
+                  <div key={invoice.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-red-200 dark:border-red-800">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-medium text-gray-900">{invoice.customer_name}</p>
-                        <p className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {invoice.invoice_number} • {t('dashboards.retail.contract')} {invoice.contract_number}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {t('dashboards.retail.due')} {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                         </p>
                         <p className="text-xs text-red-600 mt-1">
@@ -191,14 +191,14 @@ const RetailDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-red-600">{fmt(invoice.remaining_amount)}</p>
-                        <p className="text-xs text-gray-500">{t('dashboards.retail.to_collect_label')}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboards.retail.to_collect_label')}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               {overdueInvoices.length > 5 && (
-                <p className="text-sm text-red-700 mt-3">
+                <p className="text-sm text-red-700 dark:text-red-400 mt-3">
                   {t('dashboards.retail.more_delays', { count: overdueInvoices.length - 5 })}
                 </p>
               )}

@@ -71,6 +71,13 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `getAccessibleProjectIds(user)` — returns `[]` for roles with full access; returns assigned project IDs for Supervision; returns `[]` for others
 - **Depends on:** AuthContext User type
 
+### evm.ts
+- `calculatePhaseEVM(plannedBudget, physicalCompletionPct, startDate, endDate, actualCost)` — computes PV, EV, AC, CPI, SPI, CV, SV, EAC, VAC for a single phase using standard EVM formulas
+- `calculateProjectEVM(phases, contracts)` — aggregates phase-level EVM across all phases of a project; derives `physicalCompletionPct` from `budget_realized / contract_amount` per phase; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`
+- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`)
+- **Used by:** `BudgetControl/hooks/useBudgetControl.ts`
+- **Depends on:** `Phase`, `ContractWithDetails` from `General/Projects/types.ts`
+
 ### excelParsers.ts
 - `parseNumber(value)` — parses a number from an Excel cell, handles European format (e.g. `"3.000,00"`)
 - `parseDate(value)` — parses a date from an Excel cell; handles Excel serial numbers, `DD.MM.YYYY` strings, and ISO strings

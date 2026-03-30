@@ -63,17 +63,17 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
 
       <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('payments.form.total_amount_label')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('payments.form.total_amount_label')}</span>
               <span className="font-medium">€{formatCurrency(payingInvoice.total_amount)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('payments.form.paid_amount_label')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('payments.form.paid_amount_label')}</span>
               <span className="font-medium text-green-600">€{formatCurrency(payingInvoice.paid_amount)}</span>
             </div>
-            <div className="flex justify-between text-base border-t border-gray-300 pt-2">
-              <span className="font-semibold text-gray-900">{t('payments.form.remaining_amount_label')}</span>
+            <div className="flex justify-between text-base border-t border-gray-300 dark:border-gray-600 pt-2">
+              <span className="font-semibold text-gray-900 dark:text-white">{t('payments.form.remaining_amount_label')}</span>
               <span className="font-bold text-red-600">€{formatCurrency(payingInvoice.remaining_amount)}</span>
             </div>
           </div>
@@ -201,13 +201,13 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     cesija_company_id: '',
                     cesija_bank_account_id: ''
                   })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   {t('payments.form.cesija_checkbox')}
                 </span>
               </label>
-              <p className="text-xs text-gray-500 mt-1 ml-6">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                 {t('payments.form.cesija_hint')}
               </p>
             </div>
@@ -226,7 +226,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               <DateInput
                 value={paymentFormData.payment_date}
                 onChange={(value) => onFormChange({ ...paymentFormData, payment_date: value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </FormField>
 

@@ -80,11 +80,11 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
       <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 <strong>{t('common.project')}:</strong> {apartment.project_name}
               </p>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 <strong>{t('common.building')}:</strong> {apartment.building_name}
               </p>
             </div>

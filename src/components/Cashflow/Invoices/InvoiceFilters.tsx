@@ -41,7 +41,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
     filterCompany !== 'ALL'
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SearchInput
           value={searchTerm}
@@ -84,14 +84,14 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
         </Select>
 
         <div className="flex items-center gap-3">
-          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
             <button
               type="button"
               onClick={() => onDirectionChange('INCOMING')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 filterDirection === 'INCOMING'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
             >
               Ulazni
@@ -99,10 +99,10 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
             <button
               type="button"
               onClick={() => onDirectionChange('OUTGOING')}
-              className={`px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
+              className={`px-4 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
                 filterDirection === 'OUTGOING'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
             >
               Izlazni

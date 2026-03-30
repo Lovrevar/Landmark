@@ -19,12 +19,12 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
         <div
           key={project.id}
           onClick={() => onSelectProject(project)}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
-              <div className="flex items-center text-sm text-gray-600 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{project.name}</h3>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <MapPin className="w-4 h-4 mr-1" />
                 {project.location}
               </div>
@@ -44,27 +44,27 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
           <div className="space-y-3 mb-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t('retail_projects.plot_number')}:</span>
-              <span className="text-sm font-semibold text-gray-900">{project.plot_number}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.plot_number')}:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{project.plot_number}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t('retail_projects.area')}:</span>
-              <span className="text-sm font-semibold text-gray-900">{project.total_area_m2.toLocaleString()} m²</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.area')}:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{project.total_area_m2.toLocaleString()} m²</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t('retail_projects.project_budget')}:</span>
-              <span className="text-sm font-semibold text-gray-900">{formatCurrency(project.purchase_price)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.project_budget')}:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(project.purchase_price)}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{t('retail_projects.price_per_m2')}:</span>
-              <span className="text-sm font-semibold text-gray-900">{formatCurrency(project.price_per_m2)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.price_per_m2')}:</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(project.price_per_m2)}</span>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-              <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Layers className="w-4 h-4 mr-1" />
                 {t('common.phases')}:
               </div>

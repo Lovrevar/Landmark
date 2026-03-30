@@ -99,11 +99,11 @@ const DebtStatus: React.FC = () => {
         />
       </StatGrid>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-4">
-          <Filter className="w-5 h-5 text-gray-500" />
+          <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('debt_status.filter_label')}
             </label>
             <Select
@@ -131,7 +131,7 @@ const DebtStatus: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         {debtData.length === 0 ? (
           <EmptyState
             icon={AlertCircle}
@@ -140,12 +140,12 @@ const DebtStatus: React.FC = () => {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center space-x-1">
@@ -155,15 +155,15 @@ const DebtStatus: React.FC = () => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('debt_status.table.type')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('debt_status.table.invoices')}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort('unpaid')}
                   >
                     <div className="flex items-center justify-end space-x-1">
@@ -175,7 +175,7 @@ const DebtStatus: React.FC = () => {
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort('paid')}
                   >
                     <div className="flex items-center justify-end space-x-1">
@@ -185,22 +185,22 @@ const DebtStatus: React.FC = () => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('debt_status.table.total')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {sortedData.map((debt) => (
-                  <tr key={debt.supplier_id} className="hover:bg-gray-50">
+                  <tr key={debt.supplier_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{debt.supplier_name}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{debt.supplier_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getSupplierTypeBadge(debt.supplier_type)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">{debt.invoice_count}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{debt.invoice_count}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className={`text-sm font-semibold ${debt.total_unpaid > 0 ? 'text-red-600' : 'text-gray-400'}`}>
@@ -213,14 +213,14 @@ const DebtStatus: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-semibold text-gray-900">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
                         €{formatEuropeanNumber(debt.total_unpaid + debt.total_paid)}
                       </div>
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-gray-50 font-semibold">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" colSpan={3}>
+                <tr className="bg-gray-50 dark:bg-gray-700/50 font-semibold">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" colSpan={3}>
                     {t('debt_status.table.grand_total')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600">
@@ -229,7 +229,7 @@ const DebtStatus: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-600">
                     €{formatEuropeanNumber(totalPaid)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
                     €{formatEuropeanNumber(totalUnpaid + totalPaid)}
                   </td>
                 </tr>

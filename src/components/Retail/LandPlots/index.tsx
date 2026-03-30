@@ -143,7 +143,7 @@ const RetailLandPlots: React.FC = () => {
         <StatCard label={t('common.paid')} value={`${totalStats.paid_count}/${totalStats.total_plots}`} icon={Calendar} color="green" />
       </StatGrid>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -175,13 +175,13 @@ const RetailLandPlots: React.FC = () => {
           <Table.Body>
             {filteredPlots.map((plot) => (
               <Table.Tr key={plot.id}>
-                <Table.Td className="font-medium text-gray-900">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
+                <Table.Td className="font-medium text-gray-900 dark:text-white">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
                 <Table.Td>{plot.plot_number}</Table.Td>
                 <Table.Td>{plot.location || '-'}</Table.Td>
                 <Table.Td>
                   <div>{plot.purchased_area_m2.toLocaleString()} m²</div>
                   {plot.purchased_area_m2 < plot.total_area_m2 && (
-                    <div className="text-xs text-gray-500">{t('retail_land_plots.table.of')} {plot.total_area_m2.toLocaleString()} m²</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{t('retail_land_plots.table.of')} {plot.total_area_m2.toLocaleString()} m²</div>
                   )}
                 </Table.Td>
                 <Table.Td>€{plot.price_per_m2.toLocaleString()}</Table.Td>
@@ -269,41 +269,41 @@ const RetailLandPlots: React.FC = () => {
             <Modal.Body>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.owner')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.owner')}</p>
                   <p className="text-lg font-semibold">{selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.plot_number')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.plot_number')}</p>
                   <p className="text-lg font-semibold">{selectedPlot.plot_number}</p>
                 </div>
                 {selectedPlot.location && (
                   <div className="col-span-2">
-                    <p className="text-sm text-gray-600">{t('retail_land_plots.detail.location')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.location')}</p>
                     <p className="text-lg font-semibold">{selectedPlot.location}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.total_area')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.total_area')}</p>
                   <p className="text-lg font-semibold">{selectedPlot.total_area_m2.toLocaleString()} m²</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.purchased_area')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.purchased_area')}</p>
                   <p className="text-lg font-semibold">{selectedPlot.purchased_area_m2.toLocaleString()} m²</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.price_per_m2')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.price_per_m2')}</p>
                   <p className="text-lg font-semibold">€{selectedPlot.price_per_m2.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_land_plots.detail.total_price')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.total_price')}</p>
                   <p className="text-lg font-semibold text-green-600">€{selectedPlot.total_price.toLocaleString()}</p>
                 </div>
               </div>
 
               {selectedPlot.notes && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{t('common.notes')}</p>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded">{selectedPlot.notes}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('common.notes')}</p>
+                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">{selectedPlot.notes}</p>
                 </div>
               )}
 
@@ -312,11 +312,11 @@ const RetailLandPlots: React.FC = () => {
                 {selectedPlot.sales && selectedPlot.sales.length > 0 ? (
                   <div className="space-y-2">
                     {selectedPlot.sales.map((sale) => (
-                      <div key={sale.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={sale.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">{sale.customer?.name || 'N/A'}</p>
-                            <p className="text-sm text-gray-600">{sale.sale_area_m2} m² x €{sale.sale_price_per_m2} = €{sale.total_sale_price.toLocaleString()}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{sale.sale_area_m2} m² x €{sale.sale_price_per_m2} = €{sale.total_sale_price.toLocaleString()}</p>
                           </div>
                           <Badge variant={
                             sale.payment_status === 'paid' ? 'green'
@@ -333,7 +333,7 @@ const RetailLandPlots: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">{t('retail_land_plots.no_sales')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('retail_land_plots.no_sales')}</p>
                 )}
               </div>
             </Modal.Body>

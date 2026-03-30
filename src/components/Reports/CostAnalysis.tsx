@@ -41,13 +41,13 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-5">
-            <Briefcase className="w-5 h-5 text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900">{t('reports.costs.cost_structure')}</h3>
+            <Briefcase className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('reports.costs.cost_structure')}</h3>
           </div>
 
-          <div className="flex gap-0.5 h-4 rounded-full overflow-hidden bg-gray-200 mb-5">
+          <div className="flex gap-0.5 h-4 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 mb-5">
             {costBreakdown.map(item => (
               item.pct > 0 && (
                 <div
@@ -64,27 +64,27 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
               <div key={item.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                  <span className="text-sm text-gray-700">{item.label}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">{item.label}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-semibold ${item.textColor}`}>{item.pct.toFixed(1)}%</span>
-                  <span className="text-sm font-medium text-gray-900 w-28 text-right">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white w-28 text-right">
                     {formatCurrency(item.amount)}
                   </span>
                 </div>
               </div>
             ))}
-            <div className="pt-3 mt-2 border-t border-gray-200 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">{t('common.total')}</span>
-              <span className="text-base font-bold text-gray-900">{formatCurrency(totalCosts)}</span>
+            <div className="pt-3 mt-2 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('common.total')}</span>
+              <span className="text-base font-bold text-gray-900 dark:text-white">{formatCurrency(totalCosts)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-5">
-            <Hammer className="w-5 h-5 text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900">{t('reports.costs.by_supplier_type')}</h3>
+            <Hammer className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('reports.costs.by_supplier_type')}</h3>
           </div>
 
           {supplier_types.length === 0 ? (
@@ -99,12 +99,12 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
-          <Users className="w-5 h-5 text-gray-600" />
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+          <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <div>
-            <h3 className="text-base font-semibold text-gray-900">{t('common.suppliers')}</h3>
-            <p className="text-sm text-gray-500">{t('reports.costs.suppliers_count', { count: suppliers.length })}</p>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('common.suppliers')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.costs.suppliers_count', { count: suppliers.length })}</p>
           </div>
         </div>
 
@@ -151,24 +151,24 @@ function SupplierTypeRow({ data, formatCurrency }: {
   const paidPct = data.total_amount > 0 ? (data.total_paid / data.total_amount) * 100 : 0
 
   return (
-    <div className="p-3 bg-gray-50 rounded-lg">
+    <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Badge variant={typeBadgeVariants[data.type] || 'gray'} size="sm">
             {data.type}
           </Badge>
-          <span className="text-xs text-gray-500">{t('reports.costs.contracts_count', { count: data.count })}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('reports.costs.contracts_count', { count: data.count })}</span>
         </div>
-        <span className="text-sm font-semibold text-gray-900">{formatCurrency(data.total_amount)}</span>
+        <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(data.total_amount)}</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+        <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
           <div
             className="bg-teal-500 h-full rounded-full"
             style={{ width: `${Math.min(100, paidPct)}%` }}
           />
         </div>
-        <span className="text-xs text-gray-500">{paidPct.toFixed(0)}%</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{paidPct.toFixed(0)}%</span>
       </div>
       <div className="flex justify-between mt-1 text-xs">
         <span className="text-teal-600">{t('reports.costs.paid_abbr')} {formatCurrency(data.total_paid)}</span>
@@ -191,8 +191,8 @@ function SupplierRow({ supplier, formatCurrency }: {
           {supplier.supplier_type}
         </Badge>
       </Table.Td>
-      <Table.Td className="py-3 text-right text-gray-700">{supplier.total_contracts}</Table.Td>
-      <Table.Td className="py-3 text-right text-gray-700">{formatCurrency(supplier.total_amount)}</Table.Td>
+      <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">{supplier.total_contracts}</Table.Td>
+      <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">{formatCurrency(supplier.total_amount)}</Table.Td>
       <Table.Td className="py-3 text-right text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
       <Table.Td className="py-3 text-right">
         <span className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>

@@ -21,10 +21,10 @@ const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats
   const withinBudget = cashFlowStats.currentMonthOutgoing <= budgetAmount
 
   return (
-    <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 border border-teal-200">
+    <div className="bg-gradient-to-br from-teal-50 dark:from-teal-900/20 to-teal-100 dark:to-teal-900/30 rounded-xl p-6 border border-teal-200 dark:border-teal-700">
       <div className="flex items-center mb-4">
         <Calendar className="w-6 h-6 text-teal-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           {t('dashboards.accounting.monthly_budget', { month: format(new Date(), 'MMMM yyyy') })}
         </h2>
       </div>
@@ -50,15 +50,15 @@ const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats
           color="white"
           size="md"
         />
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <p className="text-sm font-medium text-gray-600 mb-1">{t('dashboards.accounting.budget_status')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{t('dashboards.accounting.budget_status')}</p>
           <div className="flex items-center mt-2">
             <div className={`w-3 h-3 rounded-full mr-2 animate-pulse ${withinBudget ? 'bg-green-500' : 'bg-red-500'}`} />
             <span className={`text-xl font-bold ${withinBudget ? 'text-green-600' : 'text-red-600'}`}>
               {withinBudget ? t('dashboards.accounting.within_budget') : t('dashboards.accounting.over_budget')}
             </span>
           </div>
-          <p className="text-xs mt-1 text-gray-600 opacity-75">{t('dashboards.accounting.budget_used_pct', { pct: usagePercent })}</p>
+          <p className="text-xs mt-1 text-gray-600 dark:text-gray-400 opacity-75">{t('dashboards.accounting.budget_used_pct', { pct: usagePercent })}</p>
         </div>
       </StatGrid>
     </div>

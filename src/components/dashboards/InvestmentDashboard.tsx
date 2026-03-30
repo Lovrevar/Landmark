@@ -82,8 +82,8 @@ const InvestmentDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.investment.title')}</h1>
-          <p className="text-gray-600 mt-1">{t('dashboards.investment.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.investment.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.investment.subtitle')}</p>
         </div>
         <Button variant="danger" icon={FileDown} onClick={handleExportPDF} disabled={bankCredits.length === 0}>
           {t('dashboards.investment.export_pdf')}
@@ -93,51 +93,51 @@ const InvestmentDashboard: React.FC = () => {
       <InvestmentSummaryCards financialSummary={financialSummary} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.investment_overview')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.investment_overview')}</h3>
             <Banknote className="w-5 h-5 text-blue-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.total_investment_lines')}</span>
-              <span className="font-medium">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.total_investment_lines')}</span>
+              <span className="font-medium dark:text-gray-200">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.used_amount')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.used_amount')}</span>
               <span className="font-medium text-blue-600">€{(financialSummary.total_used_credit / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.repaid_amount')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.repaid_amount')}</span>
               <span className="font-medium text-green-600">€{(financialSummary.total_repaid_credit / 1000000).toFixed(1)}M</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.avg_interest_rate')}</span>
-              <span className="font-medium">{financialSummary.weighted_avg_interest.toFixed(2)}%</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.avg_interest_rate')}</span>
+              <span className="font-medium dark:text-gray-200">{financialSummary.weighted_avg_interest.toFixed(2)}%</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.investment_partners')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.investment_partners')}</h3>
             <CreditCard className="w-5 h-5 text-green-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.active_investors')}</span>
-              <span className="font-medium">{banks.length}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.active_investors')}</span>
+              <span className="font-medium dark:text-gray-200">{banks.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.active_investments')}</span>
-              <span className="font-medium">{bankCredits.filter(c => c.status === 'active').length}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.active_investments')}</span>
+              <span className="font-medium dark:text-gray-200">{bankCredits.filter(c => c.status === 'active').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.total_companies')}</span>
-              <span className="font-medium">{companies.length}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.total_companies')}</span>
+              <span className="font-medium dark:text-gray-200">{companies.length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">{t('dashboards.investment.upcoming_maturities_label')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.upcoming_maturities_label')}</span>
               <span className={`font-medium ${financialSummary.upcoming_maturities > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                 {financialSummary.upcoming_maturities}
               </span>
@@ -145,30 +145,30 @@ const InvestmentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{t('dashboards.investment.critical_alerts')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.critical_alerts')}</h3>
             <AlertTriangle className="w-5 h-5 text-orange-600" />
           </div>
           <div className="space-y-3">
             {financialSummary.upcoming_maturities > 0 && (
-              <div className="flex items-center p-2 bg-orange-50 border border-orange-200 rounded">
+              <div className="flex items-center p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded">
                 <Clock className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
-                <span className="text-sm text-orange-800">
+                <span className="text-sm text-orange-800 dark:text-orange-300">
                   {t('dashboards.investment.investments_maturing', { count: financialSummary.upcoming_maturities })}
                 </span>
               </div>
             )}
             {expiringUsageCount > 0 && (
-              <div className="flex items-center p-2 bg-yellow-50 border border-yellow-200 rounded">
+              <div className="flex items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
                 <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0" />
-                <span className="text-sm text-yellow-800">{t('dashboards.investment.usage_periods_expiring', { count: expiringUsageCount })}</span>
+                <span className="text-sm text-yellow-800 dark:text-yellow-400">{t('dashboards.investment.usage_periods_expiring', { count: expiringUsageCount })}</span>
               </div>
             )}
             {noCriticalIssues && (
-              <div className="flex items-center p-2 bg-green-50 border border-green-200 rounded">
+              <div className="flex items-center p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
                 <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
-                <span className="text-sm text-green-800">{t('dashboards.investment.no_critical_issues')}</span>
+                <span className="text-sm text-green-800 dark:text-green-300">{t('dashboards.investment.no_critical_issues')}</span>
               </div>
             )}
           </div>
@@ -177,24 +177,24 @@ const InvestmentDashboard: React.FC = () => {
 
       <InvestmentCreditsTable bankCredits={bankCredits} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.investment.recent_activity')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.recent_activity')}</h2>
         </div>
         <div className="p-6">
           {recentActivities.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <p>{t('dashboards.investment.no_recent_activity')}</p>
             </div>
           ) : (
             <div className="space-y-4">
               {recentActivities.map((activity) => {
                 const isExpiry = activity.type === 'maturity' || activity.type === 'usage_expiring'
-                const bgColor = activity.type === 'credit' ? 'bg-blue-50 border-blue-200' :
-                  activity.type === 'usage_expiring' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-orange-50 border-orange-200'
-                const iconBg = activity.type === 'credit' ? 'bg-blue-100' :
-                  activity.type === 'usage_expiring' ? 'bg-yellow-100' : 'bg-orange-100'
+                const bgColor = activity.type === 'credit' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700' :
+                  activity.type === 'usage_expiring' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+                  'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                const iconBg = activity.type === 'credit' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                  activity.type === 'usage_expiring' ? 'bg-yellow-100 dark:bg-yellow-900/20' : 'bg-orange-100 dark:bg-orange-900/20'
                 const iconColor = activity.type === 'credit' ? 'text-blue-600' :
                   activity.type === 'usage_expiring' ? 'text-yellow-600' : 'text-orange-600'
                 const Icon = activity.type === 'credit' ? Banknote :
@@ -206,10 +206,10 @@ const InvestmentDashboard: React.FC = () => {
                       <Icon className={`w-4 h-4 ${iconColor}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{activity.title}</p>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {format(new Date(activity.date), isExpiry ? 'MMM dd, yyyy' : 'MMM dd')}
                     </span>
                   </div>

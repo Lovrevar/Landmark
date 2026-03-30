@@ -41,7 +41,7 @@ const InvoicesManagement: React.FC = () => {
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -94,25 +94,25 @@ const InvoicesManagement: React.FC = () => {
           description={t('common.adjust_search')}
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-          <table className="w-full min-w-[1400px] bg-white">
-            <thead className="bg-gray-50 border-b border-gray-200">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <table className="w-full min-w-[1400px] bg-white dark:bg-gray-800">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">{t('supervision.invoices.col.approved')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.invoice_num')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.category')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.date')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.supplier')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.project')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.phase')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.company')}</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.amount')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supervision.invoices.col.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10">{t('supervision.invoices.col.approved')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.invoice_num')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.category')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.date')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.supplier')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.project')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.phase')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.company')}</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.amount')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('supervision.invoices.col.status')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredInvoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="px-4 py-3 text-center">
                     <Button
                       variant="ghost"
@@ -120,26 +120,26 @@ const InvoicesManagement: React.FC = () => {
                       icon={invoice.approved ? CheckSquare : Square}
                       onClick={() => handleApprove(invoice.id, invoice.approved)}
                       title={invoice.approved ? t('supervision.invoices.tooltip_approved') : t('supervision.invoices.tooltip_approve')}
-                      className={invoice.approved ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-blue-600'}
+                      className={invoice.approved ? 'text-green-600 hover:text-green-800' : 'text-gray-400 dark:text-gray-500 hover:text-blue-600'}
                     />
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.invoice_number}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <Badge variant={invoice.invoice_category === 'SUPERVISION' ? 'blue' : 'gray'} size="sm">
                       {invoice.invoice_category}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{invoice.supplier_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{invoice.project_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{invoice.phase_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{invoice.phase_name}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                      <span className="text-sm font-medium text-gray-800">{invoice.company_name}</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{invoice.company_name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">

@@ -60,7 +60,7 @@ const AccountingCompanies: React.FC = () => {
         <StatCard label={t('companies.stats.profit_loss')} value={`€${totalProfit.toLocaleString('hr-HR')}`} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
       </StatGrid>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -80,65 +80,65 @@ const AccountingCompanies: React.FC = () => {
           {filteredCompanies.map((company) => (
             <div
               key={company.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{company.name}</h3>
-                  <p className="text-sm text-gray-600">OIB: {company.oib}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{company.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">OIB: {company.oib}</p>
                 </div>
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Building2 className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
 
               <div className="space-y-3 mb-4">
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">{t('companies.card.current_balance')}</p>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('companies.card.current_balance')}</p>
                   <p className={`text-xl font-bold ${company.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     €{company.current_balance.toLocaleString('hr-HR')}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                     <div className="flex items-center mb-1">
                       <ArrowUpCircle className="w-4 h-4 text-green-600 mr-1" />
-                      <p className="text-xs text-green-700">{t('companies.card.issued')}</p>
+                      <p className="text-xs text-green-700 dark:text-green-400">{t('companies.card.issued')}</p>
                     </div>
-                    <p className="text-sm font-bold text-green-900">€{company.total_income_paid.toLocaleString('hr-HR')}</p>
-                    <p className="text-xs text-gray-600">{t('companies.card.invoices_count', { count: company.total_income_invoices })}</p>
+                    <p className="text-sm font-bold text-green-900 dark:text-green-300">€{company.total_income_paid.toLocaleString('hr-HR')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_income_invoices })}</p>
                   </div>
 
-                  <div className="bg-red-50 p-3 rounded-lg">
+                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                     <div className="flex items-center mb-1">
                       <ArrowDownCircle className="w-4 h-4 text-red-600 mr-1" />
-                      <p className="text-xs text-red-700">{t('companies.card.paid_out')}</p>
+                      <p className="text-xs text-red-700 dark:text-red-400">{t('companies.card.paid_out')}</p>
                     </div>
-                    <p className="text-sm font-bold text-red-900">€{company.total_expense_paid.toLocaleString('hr-HR')}</p>
-                    <p className="text-xs text-gray-600">{t('companies.card.invoices_count', { count: company.total_expense_invoices })}</p>
+                    <p className="text-sm font-bold text-red-900 dark:text-red-300">€{company.total_expense_paid.toLocaleString('hr-HR')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_expense_invoices })}</p>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-200">
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">{t('companies.card.revenue_label')}</span>
-                    <span className="font-medium text-gray-900">€{company.revenue.toLocaleString('hr-HR')}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('companies.card.revenue_label')}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">€{company.revenue.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">{t('companies.card.profit_loss_label')}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('companies.card.profit_loss_label')}</span>
                     <span className={`font-medium ${company.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       €{company.profit.toLocaleString('hr-HR')}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-200">
-                  <div className="flex justify-between text-xs text-gray-500">
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{t('companies.card.unpaid_income')}</span>
                     <span className="text-orange-600">€{company.total_income_unpaid.toLocaleString('hr-HR')}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500">
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{t('companies.card.unpaid_expense')}</span>
                     <span className="text-orange-600">€{company.total_expense_unpaid.toLocaleString('hr-HR')}</span>
                   </div>

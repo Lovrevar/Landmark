@@ -18,8 +18,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
     <div>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('supervision.site_management.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('supervision.site_management.projects_grid.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('supervision.site_management.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">{t('supervision.site_management.projects_grid.subtitle')}</p>
         </div>
         {onRefresh && (
           <Button
@@ -41,12 +41,12 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             <div
               key={project.id}
               onClick={() => onSelectProject(project)}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{project.location}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{project.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{project.location}</p>
                   <div className="flex items-center space-x-2">
                     <Badge variant={
                       project.status === 'Completed' ? 'green' :
@@ -71,18 +71,18 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     )}
                   </div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-gray-400" />
+                <ArrowRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               </div>
 
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-600">{t('supervision.site_management.projects_grid.budget_allocation')}</span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget_allocation')}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {project.budget > 0 ? ((project.total_contracted / project.budget) * 100).toFixed(0) : 0}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 overflow-hidden">
                     {(() => {
                       const contractedPct = project.budget > 0 ? Math.min((project.total_contracted / project.budget) * 100, 100) : 0
                       const paidPct = project.budget > 0 ? Math.min((project.total_paid_out / project.budget) * 100, 100) : 0
@@ -96,11 +96,11 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     })()}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="inline-block w-2 h-2 rounded-full bg-orange-500"></span>
                       {t('common.paid')}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
                       {t('supervision.site_management.projects_grid.contracted')}
                     </span>
@@ -109,11 +109,11 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">{t('supervision.site_management.projects_grid.budget')}</p>
-                    <p className="font-medium text-gray-900">€{(project.budget / 1000000).toFixed(1)}M</p>
+                    <p className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">€{(project.budget / 1000000).toFixed(1)}M</p>
                     {project.has_phases && (
                       <>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           €{(project.total_budget_allocated / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.allocated')}
                         </p>
                         <p className="text-xs text-teal-600 font-medium">
@@ -123,9 +123,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     )}
                   </div>
                   <div>
-                    <p className="text-gray-600">{t('supervision.subcontractors.title')}</p>
-                    <p className="font-medium text-gray-900">{project.subcontractors.length}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-gray-600 dark:text-gray-400">{t('supervision.subcontractors.title')}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{project.subcontractors.length}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       €{(project.total_subcontractor_cost / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.costs')}
                     </p>
                   </div>
@@ -133,7 +133,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
                 {daysRemaining !== null && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{t('supervision.site_management.projects_grid.timeline')}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.timeline')}</span>
                     <span className={`font-medium ${
                       isProjectOverdue ? 'text-red-600' : daysRemaining < 30 ? 'text-orange-600' : 'text-green-600'
                     }`}>

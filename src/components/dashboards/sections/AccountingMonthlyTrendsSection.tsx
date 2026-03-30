@@ -12,11 +12,11 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
   if (monthlyData.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center">
-          <Calendar className="w-5 h-5 text-gray-600 mr-2" />
-          <h2 className="text-lg font-semibold text-gray-900">
+          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-2" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {t('dashboards.accounting.monthly_trends', { year: new Date().getFullYear() })}
           </h2>
         </div>
@@ -28,9 +28,9 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
             const net = data.incoming - data.outgoing
             return (
               <div key={data.month} className="flex items-center">
-                <div className="w-24 text-sm font-medium text-gray-700">{data.month}</div>
+                <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-200">{data.month}</div>
                 <div className="flex-1 flex items-center space-x-2">
-                  <div className="flex-1 bg-gray-100 rounded-full h-8 relative overflow-hidden">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
                     <div
                       className="absolute left-0 top-0 h-full bg-green-500 flex items-center justify-end pr-2"
                       style={{ width: `${Math.min((data.incoming / maxVal) * 100, 100)}%` }}
@@ -40,7 +40,7 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex-1 bg-gray-100 rounded-full h-8 relative overflow-hidden">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
                     <div
                       className="absolute left-0 top-0 h-full bg-red-500 flex items-center justify-end pr-2"
                       style={{ width: `${Math.min((data.outgoing / maxVal) * 100, 100)}%` }}
@@ -58,14 +58,14 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
             )
           })}
         </div>
-        <div className="flex items-center justify-center space-x-6 mt-6 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-center space-x-6 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-green-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">{t('dashboards.accounting.incoming')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.accounting.incoming')}</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded mr-2" />
-            <span className="text-sm text-gray-600">{t('dashboards.accounting.outgoing')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.accounting.outgoing')}</span>
           </div>
         </div>
       </div>

@@ -33,7 +33,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
       <Modal.Header title={`${t('sales_projects.linking_modal.title')} ${apartment.number}`} onClose={onClose} />
       <Modal.Body>
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
               {t('sales_projects.linking_modal.link_garage')}
             </h4>
@@ -47,24 +47,24 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
                     apartment.linked_garages?.some(g => g.id === garage.id)
-                      ? 'border-orange-500 bg-orange-50'
-                      : 'border-gray-200 hover:border-orange-300 bg-white'
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-orange-300 bg-white dark:bg-gray-800'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">{t('common.garage')} {garage.number}</div>
-                  <div className="text-sm text-gray-600">{t('sales_projects.linking_modal.floor')} {garage.floor} • {garage.size_m2}m²</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{t('common.garage')} {garage.number}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.linking_modal.floor')} {garage.floor} • {garage.size_m2}m²</div>
                   <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableGarages.length === 0 && (
-                <p className="text-gray-500 col-span-2">{t('sales_projects.linking_modal.no_garages')}</p>
+                <p className="text-gray-500 dark:text-gray-400 col-span-2">{t('sales_projects.linking_modal.no_garages')}</p>
               )}
             </div>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-              <Package className="w-5 h-5 mr-2 text-gray-600" />
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+              <Package className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
               {t('sales_projects.linking_modal.link_repository')}
             </h4>
             <div className="grid grid-cols-2 gap-3">
@@ -77,17 +77,17 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                   }}
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
                     apartment.linked_repositories?.some(r => r.id === repository.id)
-                      ? 'border-gray-500 bg-gray-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                      ? 'border-gray-500 bg-gray-50 dark:bg-gray-700/50'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 bg-white dark:bg-gray-800'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">{t('common.storage')} {repository.number}</div>
-                  <div className="text-sm text-gray-600">{t('sales_projects.linking_modal.floor')} {repository.floor} • {repository.size_m2}m²</div>
-                  <div className="text-sm font-medium text-gray-600">€{repository.price.toLocaleString('hr-HR')}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{t('common.storage')} {repository.number}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.linking_modal.floor')} {repository.floor} • {repository.size_m2}m²</div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">€{repository.price.toLocaleString('hr-HR')}</div>
                 </button>
               ))}
               {availableRepositories.length === 0 && (
-                <p className="text-gray-500 col-span-2">{t('sales_projects.linking_modal.no_repositories')}</p>
+                <p className="text-gray-500 dark:text-gray-400 col-span-2">{t('sales_projects.linking_modal.no_repositories')}</p>
               )}
             </div>
           </div>

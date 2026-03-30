@@ -97,6 +97,35 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ---
 
+### BudgetControl
+**Path:** `General/BudgetControl/`
+
+Standalone EVM (Earned Value Management) dashboard for monitoring project budget performance. Accessible from the General profile nav.
+
+#### Hooks
+
+### hooks/useBudgetControl.ts
+- `useBudgetControl()` — fetches all projects list on mount; on project selection fetches phases and active/draft contracts, derives EVM inputs, and runs `calculateProjectEVM`
+- Derives `physical_completion_percentage` per phase as `sum(budget_realized) / sum(contract_amount)` (financial proxy — no DB column required)
+- **Returns:** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`BudgetControlData`), `loading`, `error`
+- **Calls:** supabase directly (projects, project_phases, contracts)
+- **Calls:** `calculateProjectEVM` from `src/utils/evm.ts`
+
+#### Views
+
+### index.tsx (BudgetControl)
+- Project selector dropdown at the top to switch between all projects
+- Top metric cards: TIC, Planned Budget, Committed (% of budget), Paid (% of committed), Forecast EAC (Under/Over Budget badge)
+- Budget Control bar chart (recharts): 4 bars — Planned, Committed, Paid, Forecast EAC
+- EVM Indices scatter chart (recharts): CPI and SPI plotted against Target (1.0) and Warning (0.95) reference lines
+- EVM Performance Metrics row: CPI, SPI, EAC, VAC, Completion % with progress bar
+- Card colors: green (≥ 1.0), yellow (0.95–1.0), red (< 0.95) for index cards
+- **Uses hooks:** useBudgetControl
+- **Uses lib:** recharts (BarChart, ScatterChart, ReferenceLine)
+- **Uses Ui:** LoadingSpinner
+
+---
+
 ## Notes
 - This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first

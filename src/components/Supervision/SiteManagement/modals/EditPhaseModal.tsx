@@ -117,9 +117,9 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
 
           {projectBudgetDiff !== 0 && (
             <div className={`p-4 rounded-lg border ${
-              projectBudgetDiff > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
+              projectBudgetDiff > 0 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
             }`}>
-              <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800' : 'text-blue-800'}`}>
+              <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800 dark:text-orange-400' : 'text-blue-800 dark:text-blue-200'}`}>
                 <span className="font-medium">{t('supervision.site_management.edit_phase.note_prefix')}</span>
                 ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) {t('supervision.site_management.edit_phase.will_be')} {' '}
                 {projectBudgetDiff > 0

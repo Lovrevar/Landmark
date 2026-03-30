@@ -134,8 +134,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             />
           </FormField>
 
-          <div className="border-t border-gray-200 pt-4 mt-2">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('supervision.edit_subcontractor.project_phase')}</h3>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.edit_subcontractor.project_phase')}</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField label={t('supervision.edit_subcontractor.phase')} required error={fieldErrors.phase_id}>
@@ -160,9 +160,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                       type="checkbox"
                       checked={hasContract}
                       onChange={(e) => setHasContract(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
                       {hasContract ? t('supervision.edit_subcontractor.with_contract') : t('supervision.edit_subcontractor.no_contract')}
                     </span>
                   </label>
@@ -195,8 +195,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             )}
           </div>
 
-          <div className="border-t border-gray-200 pt-4 mt-2">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('supervision.edit_subcontractor.job_details')}</h3>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.edit_subcontractor.job_details')}</h3>
 
             <FormField label={t('supervision.edit_subcontractor.job_description')} required error={fieldErrors.jobDescription}>
               <Textarea
@@ -236,13 +236,13 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                 </FormField>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg">
+              <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                 <div>
-                  <label className="text-xs text-gray-600">{t('supervision.edit_subcontractor.vat_amount')}</label>
-                  <p className="text-lg font-semibold text-gray-900">{formatEuro(vatAmount)}</p>
+                  <label className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.vat_amount')}</label>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatEuro(vatAmount)}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600">{t('supervision.edit_subcontractor.total')}</label>
+                  <label className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.total')}</label>
                   <p className="text-lg font-bold text-blue-600">{formatEuro(totalAmount)}</p>
                 </div>
                 <FormField label={t('supervision.edit_subcontractor.deadline')} required>
@@ -257,22 +257,22 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           )}
 
           {hasContract && (
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700"><strong>{t('supervision.edit_subcontractor.payment_info')}</strong></p>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300"><strong>{t('supervision.edit_subcontractor.payment_info')}</strong></p>
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('supervision.edit_subcontractor.total_paid_base')}</span>
-                  <span className="font-medium text-gray-900">{formatEuro(subcontractor.budget_realized)}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.total_paid_base')}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatEuro(subcontractor.budget_realized)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('supervision.edit_subcontractor.remaining')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.remaining')}</span>
                   <span className="font-medium text-orange-600">
                     {formatEuro(Math.max(0, totalAmount - subcontractor.budget_realized))}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-blue-200 mt-2">
-                  <span className="text-gray-600">{t('supervision.edit_subcontractor.progress')}</span>
-                  <span className="font-medium text-gray-900">
+                <div className="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+                  <span className="text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.progress')}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {totalAmount > 0
                       ? Math.min(100, ((subcontractor.budget_realized / totalAmount) * 100)).toFixed(1)
                       : 0}%
@@ -280,7 +280,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                 </div>
               </div>
               <div className="mt-3">
-                <div className="w-full bg-blue-200 rounded-full h-2">
+                <div className="w-full bg-blue-200 dark:bg-blue-900/50 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
@@ -298,14 +298,14 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           )}
 
         {hasContract && (
-          <div className="border-t border-gray-200 pt-4 mt-2">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
             <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-4 h-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.edit_subcontractor.contract_docs')}</h3>
+              <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('supervision.edit_subcontractor.contract_docs')}</h3>
             </div>
 
             <div className="mb-4">
-              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.existing_docs')}</p>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.existing_docs')}</p>
               <ContractDocumentViewer
                 key={docViewerKey}
                 subcontractorId={getTrueSubcontractorId(subcontractor)}
@@ -313,7 +313,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
 
             <div>
-              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.add_docs')}</p>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">{t('supervision.edit_subcontractor.add_docs')}</p>
               <ContractDocumentUpload
                 files={pendingFiles}
                 onChange={setPendingFiles}

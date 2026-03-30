@@ -58,8 +58,8 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
               allSelected
                 ? 'bg-blue-600 border-blue-600'
                 : someSelected
-                  ? 'bg-blue-100 border-blue-400'
-                  : 'bg-white border-gray-300 hover:border-blue-400'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400'
+                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-blue-400'
             }`}
           >
             {allSelected && (
@@ -71,7 +71,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
               <div className="w-2 h-0.5 bg-blue-600 rounded" />
             )}
           </div>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             {allSelected
               ? 'Deselect all'
               : someSelected

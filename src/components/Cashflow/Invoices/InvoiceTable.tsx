@@ -107,7 +107,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
           invoices.map((invoice) => (
             <Table.Tr
               key={invoice.id}
-              className={isOverdue(invoice.due_date, invoice.status) ? 'bg-red-50' : ''}
+              className={isOverdue(invoice.due_date, invoice.status) ? 'bg-red-50 dark:bg-red-900/20' : ''}
             >
               {visibleColumns.approved && (
                 <Table.Td>
@@ -143,17 +143,17 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.category && (
-                <Table.Td className="text-gray-600">
+                <Table.Td className="text-gray-600 dark:text-gray-400">
                   {invoice.category}
                 </Table.Td>
               )}
               {visibleColumns.issue_date && (
-                <Table.Td className="text-gray-600">
+                <Table.Td className="text-gray-600 dark:text-gray-400">
                   {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
                 </Table.Td>
               )}
               {visibleColumns.due_date && (
-                <Table.Td className="text-gray-600">
+                <Table.Td className="text-gray-600 dark:text-gray-400">
                   <span className={isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-semibold' : ''}>
                     {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                   </span>
@@ -164,16 +164,16 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                   {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                     <div className="space-y-0.5">
                       {invoice.base_amount_1 > 0 && (
-                        <div className="text-xs">€{formatCurrency(invoice.base_amount_1)} <span className="text-gray-400">(25%)</span></div>
+                        <div className="text-xs">€{formatCurrency(invoice.base_amount_1)} <span className="text-gray-400 dark:text-gray-500">(25%)</span></div>
                       )}
                       {invoice.base_amount_2 > 0 && (
-                        <div className="text-xs">€{formatCurrency(invoice.base_amount_2)} <span className="text-gray-400">(13%)</span></div>
+                        <div className="text-xs">€{formatCurrency(invoice.base_amount_2)} <span className="text-gray-400 dark:text-gray-500">(13%)</span></div>
                       )}
                       {invoice.base_amount_4 > 0 && (
-                        <div className="text-xs">€{formatCurrency(invoice.base_amount_4)} <span className="text-gray-400">(5%)</span></div>
+                        <div className="text-xs">€{formatCurrency(invoice.base_amount_4)} <span className="text-gray-400 dark:text-gray-500">(5%)</span></div>
                       )}
                       {invoice.base_amount_3 > 0 && (
-                        <div className="text-xs">€{formatCurrency(invoice.base_amount_3)} <span className="text-gray-400">(0%)</span></div>
+                        <div className="text-xs">€{formatCurrency(invoice.base_amount_3)} <span className="text-gray-400 dark:text-gray-500">(0%)</span></div>
                       )}
                     </div>
                   ) : (
@@ -182,7 +182,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.vat && (
-                <Table.Td className="text-gray-600">
+                <Table.Td className="text-gray-600 dark:text-gray-400">
                   {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                     <div className="space-y-0.5">
                       {invoice.base_amount_1 > 0 && (
@@ -234,7 +234,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     icon={Eye}
                     onClick={() => onView(invoice)}
                     title="Pregled"
-                    className="text-gray-600 hover:bg-gray-50 bg-transparent"
+                    className="text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-transparent"
                   />
                   {invoice.status !== 'PAID' && (
                     <Button
@@ -243,7 +243,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       icon={DollarSign}
                       onClick={() => onPayment(invoice)}
                       title="Plaćanje"
-                      className="text-green-600 hover:bg-green-50 bg-transparent"
+                      className="text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 bg-transparent"
                     />
                   )}
                   <Button
@@ -252,7 +252,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     icon={Edit}
                     onClick={() => onEdit(invoice)}
                     title="Uredi"
-                    className="text-blue-600 hover:bg-blue-50 bg-transparent"
+                    className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                   />
                   <Button
                     variant="ghost"
@@ -260,7 +260,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     icon={Trash2}
                     onClick={() => onDelete(invoice.id)}
                     title="Obriši"
-                    className="text-red-600 hover:bg-red-50 bg-transparent"
+                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                   />
                 </div>
               </Table.Td>

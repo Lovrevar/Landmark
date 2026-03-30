@@ -96,22 +96,22 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       />
 
       <Modal.Body>
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-sm text-gray-600">{t('supervision.payment_history.total_invoices')}</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_invoices')}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   €{loading ? '...' : totalInvoiceAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('supervision.payment_history.total_paid')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_paid')}</p>
                 <p className="text-lg font-bold text-teal-600">
                   €{loading ? '...' : totalPaidAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('supervision.payment_history.remaining')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.remaining')}</p>
                 <p className="text-lg font-bold text-orange-600">
                   €{loading ? '...' : Math.max(0, totalInvoiceAmount - totalPaidAmount).toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                 </p>
@@ -119,7 +119,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             </div>
           </div>
 
-        <h4 className="font-semibold text-gray-900 mb-3">{t('supervision.payment_history.all_payments')} ({payments.length})</h4>
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.payment_history.all_payments')} ({payments.length})</h4>
 
         {payments.length === 0 ? (
           <EmptyState
@@ -133,25 +133,25 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 const accountingPayment = payment as AccountingPayment
 
                 return (
-                  <div key={payment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div key={payment.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <span className="text-lg font-bold text-gray-900">€{payment.amount.toLocaleString('hr-HR')}</span>
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">€{payment.amount.toLocaleString('hr-HR')}</span>
                           {payment.payment_date && (
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                               {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
                             </span>
                           )}
                           {!payment.payment_date && (
-                            <span className="text-sm text-gray-400 italic">{t('supervision.edit_payment.date_not_set')}</span>
+                            <span className="text-sm text-gray-400 dark:text-gray-500 italic">{t('supervision.edit_payment.date_not_set')}</span>
                           )}
                         </div>
 
                         {isAccountingPayment && accountingPayment.invoice && (
                           <div className="flex items-center space-x-2 mb-2">
                             <FileText className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm text-gray-700">
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
                               {t('supervision.payment_history.invoice')} <span className="font-medium text-blue-600">
                                 {accountingPayment.invoice.invoice_number}
                               </span>
@@ -163,13 +163,13 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
 
                         {isAccountingPayment && accountingPayment.payment_method && (
-                          <div className="text-sm text-gray-600 mb-2">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             {t('supervision.payment_history.method')} <span className="font-medium">{accountingPayment.payment_method}</span>
                           </div>
                         )}
 
                         {isAccountingPayment && accountingPayment.reference_number && (
-                          <div className="text-sm text-gray-600 mb-2">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             {t('supervision.payment_history.ref')} {accountingPayment.reference_number}
                           </div>
                         )}
@@ -177,7 +177,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         {!isAccountingPayment && (payment as WirePayment).paid_by_bank_id && (
                           <div className="flex items-center space-x-2 mb-2">
                             <Building2 className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-gray-700">
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
                               {t('supervision.payment_history.paid_by')} <span className="font-medium text-green-600">
                                 {(payment as WirePayment & { bank?: { name: string } }).bank?.name || t('common.bank')}
                               </span>
@@ -186,12 +186,12 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
 
                         {((isAccountingPayment && accountingPayment.description) || (!isAccountingPayment && (payment as WirePayment).notes)) && (
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             {isAccountingPayment ? accountingPayment.description : (payment as WirePayment).notes}
                           </p>
                         )}
 
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {t('supervision.payment_history.created')} {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
                         </p>
                       </div>
@@ -207,7 +207,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                       )}
                       {isAccountingPayment && (
                         <div className="ml-4">
-                          <span className="text-xs text-gray-500 italic">{t('supervision.payment_history.managed_in_accounting')}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 italic">{t('supervision.payment_history.managed_in_accounting')}</span>
                         </div>
                       )}
                     </div>

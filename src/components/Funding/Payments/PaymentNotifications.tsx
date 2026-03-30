@@ -39,26 +39,26 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
   const getUrgencyColor = (level: string) => {
     switch (level) {
       case 'critical':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
       case 'high':
-        return 'bg-orange-50 border-orange-200'
+        return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
       case 'medium':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
       default:
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
     }
   }
 
   const getUrgencyTextColor = (level: string) => {
     switch (level) {
       case 'critical':
-        return 'text-red-800'
+        return 'text-red-800 dark:text-red-300'
       case 'high':
-        return 'text-orange-800'
+        return 'text-orange-800 dark:text-orange-300'
       case 'medium':
-        return 'text-yellow-800'
+        return 'text-yellow-800 dark:text-yellow-300'
       default:
-        return 'text-blue-800'
+        return 'text-blue-800 dark:text-blue-200'
     }
   }
 
@@ -97,8 +97,8 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{t('funding.payments.notifications.title')}</h2>
-            <p className="text-gray-600 mt-1">{t('funding.payments.notifications.description')}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('funding.payments.notifications.title')}</h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">{t('funding.payments.notifications.description')}</p>
           </div>
           <Button
             variant="ghost"
@@ -110,60 +110,60 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-red-700">{t('funding.payments.notifications.overdue_label')}</h3>
+              <h3 className="text-sm font-medium text-red-700 dark:text-red-400">{t('funding.payments.notifications.overdue_label')}</h3>
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
-            <p className="text-2xl font-bold text-red-900">{stats.totalOverdue}</p>
+            <p className="text-2xl font-bold text-red-900 dark:text-red-300">{stats.totalOverdue}</p>
             <p className="text-xs text-red-600 mt-1">€{stats.totalOverdueAmount.toLocaleString('hr-HR')}</p>
           </div>
 
-          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-orange-700">{t('funding.payments.notifications.this_week_label')}</h3>
+              <h3 className="text-sm font-medium text-orange-700 dark:text-orange-400">{t('funding.payments.notifications.this_week_label')}</h3>
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-2xl font-bold text-orange-900">{stats.dueThisWeek}</p>
+            <p className="text-2xl font-bold text-orange-900 dark:text-orange-300">{stats.dueThisWeek}</p>
             <p className="text-xs text-orange-600 mt-1">{t('funding.payments.notifications.due_7_days')}</p>
           </div>
 
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-700">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-yellow-700">{t('funding.payments.notifications.this_month_label')}</h3>
+              <h3 className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{t('funding.payments.notifications.this_month_label')}</h3>
               <Calendar className="w-5 h-5 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-yellow-900">{stats.dueThisMonth}</p>
+            <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-300">{stats.dueThisMonth}</p>
             <p className="text-xs text-yellow-600 mt-1">{t('funding.payments.notifications.due_30_days')}</p>
           </div>
 
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-blue-700">{t('funding.payments.notifications.total_pending_label')}</h3>
+              <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('funding.payments.notifications.total_pending_label')}</h3>
               <Bell className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-blue-900">{stats.totalPending}</p>
+            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalPending}</p>
             <p className="text-xs text-blue-600 mt-1">{t('funding.payments.notifications.active_notifications')}</p>
           </div>
 
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-green-700">{t('funding.payments.notifications.total_due_label')}</h3>
+              <h3 className="text-sm font-medium text-green-700 dark:text-green-400">{t('funding.payments.notifications.total_due_label')}</h3>
               <DollarSign className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-green-900">€{stats.totalAmountDue.toLocaleString('hr-HR')}</p>
+            <p className="text-2xl font-bold text-green-900 dark:text-green-300">€{stats.totalAmountDue.toLocaleString('hr-HR')}</p>
             <p className="text-xs text-green-600 mt-1">{t('funding.payments.notifications.all_pending')}</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 mb-4">
-          <Filter className="w-4 h-4 text-gray-500" />
+          <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           <button
             onClick={() => setSelectedFilter('all')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               selectedFilter === 'all'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('funding.payments.notifications.filter_all')} ({totalNotifications})
@@ -173,7 +173,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               selectedFilter === 'overdue'
                 ? 'bg-red-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('funding.payments.notifications.filter_overdue')} ({stats.totalOverdue})
@@ -183,7 +183,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               selectedFilter === 'week'
                 ? 'bg-orange-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('funding.payments.notifications.filter_week')} ({stats.dueThisWeek})
@@ -193,7 +193,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               selectedFilter === 'month'
                 ? 'bg-yellow-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('funding.payments.notifications.filter_month')} ({stats.dueThisMonth})
@@ -252,7 +252,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-2">
                           <div>
-                            <p className="text-xs text-gray-600">{t('funding.payments.notifications.due_date_label')}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.due_date_label')}</p>
                             <p className={`text-sm font-semibold ${getUrgencyTextColor(urgency.level)}`}>
                               {format(new Date(notification.due_date), 'MMM dd, yyyy')}
                               {isToday(new Date(notification.due_date)) && ` ${t('funding.payments.notifications.today_suffix')}`}
@@ -261,22 +261,22 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                           </div>
 
                           <div>
-                            <p className="text-xs text-gray-600">{t('funding.payments.notifications.amount_due_label')}</p>
-                            <p className="text-sm font-bold text-gray-900">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.amount_due_label')}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">
                               €{Number(notification.amount).toLocaleString('hr-HR')}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-xs text-gray-600">{t('funding.payments.notifications.urgency_label')}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.urgency_label')}</p>
                             <p className={`text-sm font-semibold ${getUrgencyTextColor(urgency.level)}`}>
                               {urgency.message}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-xs text-gray-600">{t('funding.payments.notifications.project_label')}</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.project_label')}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {notification.project_name}
                             </p>
                           </div>
@@ -325,63 +325,63 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-gray-300">
-                      <div className="bg-white bg-opacity-50 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-3">{t('funding.payments.notifications.payment_details_heading')}</h4>
+                    <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                      <div className="bg-white dark:bg-gray-800 bg-opacity-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('funding.payments.notifications.payment_details_heading')}</h4>
                         <div className="grid grid-cols-2 gap-4">
                           {notification.payment_source === 'bank' ? (
                             <>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.bank_name_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">{notification.bank_name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.bank_name_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{notification.bank_name}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.loan_type_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.loan_type_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
                                   {notification.credit_type?.replace('_', ' ')}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.payment_number_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">#{notification.payment_number}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.payment_number_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">#{notification.payment_number}</p>
                               </div>
                             </>
                           ) : (
                             <>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.subcontractor_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">{notification.subcontractor_name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.subcontractor_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{notification.subcontractor_name}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.milestone_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">{notification.milestone_name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.milestone_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{notification.milestone_name}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.milestone_percentage_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">{notification.milestone_percentage}%</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.milestone_percentage_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{notification.milestone_percentage}%</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t('funding.payments.notifications.contract_value_label')}</p>
-                                <p className="text-sm font-medium text-gray-900">€{notification.contract_value?.toLocaleString('hr-HR')}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.contract_value_label')}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">€{notification.contract_value?.toLocaleString('hr-HR')}</p>
                               </div>
                             </>
                           )}
                           <div>
-                            <p className="text-sm text-gray-600">{t('funding.payments.notifications.notification_type_label')}</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.notification_type_label')}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {getNotificationTypeLabel(notification.notification_type)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">{t('funding.payments.notifications.created_label')}</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.created_label')}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                             </p>
                           </div>
                           {notification.dismissed_at && (
                             <div>
-                              <p className="text-sm text-gray-600">{t('funding.payments.notifications.dismissed_label')}</p>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.notifications.dismissed_label')}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {format(new Date(notification.dismissed_at), 'MMM dd, yyyy HH:mm')}
                               </p>
                             </div>

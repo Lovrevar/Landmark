@@ -31,7 +31,7 @@ export default function LoadingSpinner({
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <div className={`animate-spin rounded-full ${cfg.spinner} border-b-2 border-blue-600`} />
-        {message && <span className={`text-gray-600 ${cfg.text}`}>{message}</span>}
+        {message && <span className={`text-gray-600 dark:text-gray-400 ${cfg.text}`}>{message}</span>}
       </div>
     )
   }
@@ -40,7 +40,7 @@ export default function LoadingSpinner({
     <div className={`flex items-center justify-center ${heightStyles[size]} ${className}`}>
       <div className="text-center">
         <div className={`animate-spin rounded-full ${cfg.spinner} border-b-2 border-blue-600 mx-auto`} />
-        {message && <p className={`mt-4 text-gray-600 ${cfg.text}`}>{message}</p>}
+        {message && <p className={`mt-4 text-gray-600 dark:text-gray-400 ${cfg.text}`}>{message}</p>}
       </div>
     </div>
   )

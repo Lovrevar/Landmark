@@ -68,21 +68,21 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Payment for:</p>
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Payment for:</p>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Home className="w-4 h-4 mr-2 text-blue-600" />
-                  <span className="text-sm text-gray-900">{t('common.apartment')} {apartment.number}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{t('common.apartment')} {apartment.number}</span>
                 </div>
-                <span className="text-sm font-medium text-gray-700">€{apartment.price.toLocaleString('hr-HR')}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
               {linkedGarage && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
-                    <span className="text-sm text-gray-900">{t('common.garage')} {linkedGarage.number}</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{t('common.garage')} {linkedGarage.number}</span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
                 </div>
@@ -91,13 +91,13 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Package className="w-4 h-4 mr-2 text-gray-600" />
-                    <span className="text-sm text-gray-900">{t('common.storage')} {linkedStorage.number}</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{t('common.storage')} {linkedStorage.number}</span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
-              <div className="pt-2 mt-2 border-t border-gray-300 flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-900">{t('common.total')}:</span>
+              <div className="pt-2 mt-2 border-t border-gray-300 dark:border-gray-600 flex items-center justify-between">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">{t('common.total')}:</span>
                 <span className="text-base font-bold text-green-600">€{totalPackagePrice.toLocaleString('hr-HR')}</span>
               </div>
             </div>

@@ -20,21 +20,21 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
 
   return (
     <Modal show={showModal} onClose={onClose} size="xl">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-900">{supplier.name}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{supplier.name}</h2>
             {supplier.source === 'retail' ? (
               <Badge variant="teal" size="sm">Retail</Badge>
             ) : (
               <Badge variant="blue" size="sm">Site</Badge>
             )}
           </div>
-          <p className="text-sm text-gray-600">{supplier.contact}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{supplier.contact}</p>
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <span className="sr-only">Close</span>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,32 +68,32 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
         </StatGrid>
 
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
             <Briefcase className="w-5 h-5 mr-2" />
             {t('suppliers.details.contracts_heading', { count: supplier.contracts.length })}
           </h3>
           {supplier.contracts.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">{t('suppliers.details.no_contracts')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('suppliers.details.no_contracts')}</p>
           ) : (
             <div className="space-y-3">
               {supplier.contracts.map((contract) => (
-                <div key={contract.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={contract.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{contract.contract_number}</p>
-                      <p className="text-sm text-gray-600">{contract.projects?.name || 'N/A'}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{contract.contract_number}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{contract.projects?.name || 'N/A'}</p>
                       {contract.phases?.phase_name && (
-                        <p className="text-xs text-gray-500">{contract.phases.phase_name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{contract.phases.phase_name}</p>
                       )}
-                      <p className="text-sm text-gray-600 mt-1">{contract.job_description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{contract.job_description}</p>
                     </div>
                     <Badge variant={contract.status === 'active' ? 'green' : 'gray'} size="sm">
                       {contract.status}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {contract.has_contract === false ? t('suppliers.details.invoice_value') : t('suppliers.details.contract_value')}
                       </p>
                       <p className="text-sm font-medium">
@@ -104,11 +104,11 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">{t('suppliers.details.paid')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.paid')}</p>
                       <p className="text-sm font-medium text-green-600">€{(contract.actual_paid || 0).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">{t('suppliers.details.remaining')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.remaining')}</p>
                       <p className="text-sm font-medium text-orange-600">
                         €{((contract.has_contract === false
                           ? (contract.total_invoiced || 0)
@@ -124,20 +124,20 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
             <FileText className="w-5 h-5 mr-2" />
             {t('suppliers.details.invoices_heading', { count: supplier.invoices.length })}
           </h3>
           {supplier.invoices.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">{t('suppliers.details.no_invoices')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('suppliers.details.no_invoices')}</p>
           ) : (
             <div className="space-y-3">
               {supplier.invoices.map((invoice) => (
-                <div key={invoice.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={invoice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{invoice.invoice_number}</p>
-                      <p className="text-xs text-gray-500">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
                     </div>
                     <Badge
                       variant={
@@ -151,17 +151,17 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                        invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200">
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div>
-                      <p className="text-xs text-gray-500">{t('suppliers.details.total_with_vat')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.total_with_vat')}</p>
                       <p className="text-sm font-medium">€{parseFloat((invoice.total_amount || 0).toString()).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">{t('suppliers.details.paid')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.paid')}</p>
                       <p className="text-sm font-medium text-green-600">€{(invoice.actual_paid || 0).toLocaleString('hr-HR')}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">{t('suppliers.details.remaining')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.remaining')}</p>
                       <p className="text-sm font-medium text-orange-600">
                         €{Math.max(0, parseFloat((invoice.total_amount || 0).toString()) - (invoice.actual_paid || 0)).toLocaleString('hr-HR')}
                       </p>

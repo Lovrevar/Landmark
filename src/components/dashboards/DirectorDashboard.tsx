@@ -91,23 +91,23 @@ const DirectorDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.director.general_dashboard')}</h1>
-          <p className="text-gray-600 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600">{t('dashboards.director.last_updated')}</p>
-          <p className="text-lg font-semibold text-gray-900">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.director.last_updated')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
         </div>
       </div>
 
       <DirectorAlertsSection alerts={alerts} />
       <DirectorFinancialSection metrics={financialMetrics} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Home className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.sales_performance')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.sales_performance')}</h2>
           </div>
           <Button variant="success" onClick={() => navigate('/sales-projects')}>{t('dashboards.director.view_details')}</Button>
         </div>
@@ -130,11 +130,11 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.construction_site')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.construction_site')}</h2>
           </div>
           <Button variant="amber" onClick={() => navigate('/site-management')}>{t('dashboards.director.view_details')}</Button>
         </div>
@@ -157,11 +157,11 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.funding_investment')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.funding_investment')}</h2>
           </div>
           <Button variant="primary" onClick={() => navigate('/funding-overview')}>{t('dashboards.director.view_details')}</Button>
         </div>

@@ -110,9 +110,9 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
 
               {formData.custom_payment_count > 0 && (
                 <div className="md:col-span-2 space-y-4">
-                  <h4 className="font-medium text-gray-900">{t('funding.equity_form.payment_schedule_details_heading')}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white">{t('funding.equity_form.payment_schedule_details_heading')}</h4>
                   {formData.custom_payments.map((payment, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div key={index} className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <FormField label={t('funding.equity_form.payment_date_label', { num: index + 1 })} required>
                         <Input
                           type="date"
@@ -152,12 +152,12 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                 type="text"
                 value={cashflowValue}
                 readOnly
-                className="bg-gray-50"
+                className="bg-gray-50 dark:bg-gray-700/50"
               />
             </FormField>
           )}
           <FormField label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
-            <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+            <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200">
               {moneyMultiple}
             </div>
           </FormField>

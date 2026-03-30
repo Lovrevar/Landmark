@@ -86,68 +86,68 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
       <Modal.Body className="px-6 py-4 space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.basic_info')}</h3>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.basic_info')}</h3>
             <div className="space-y-2">
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.payment_date')}</span>
-                <p className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_date')}</span>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.payment_method')}</span>
-                <p className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_method')}</span>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {getPaymentMethodLabel(payment.payment_method)}
                 </p>
               </div>
               {payment.reference_number && (
                 <div>
-                  <span className="text-sm text-gray-500">{t('payments.detail.reference_number')}</span>
-                  <p className="text-sm font-medium text-gray-900">{payment.reference_number}</p>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.reference_number')}</span>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{payment.reference_number}</p>
                 </div>
               )}
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.payment_amount')}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_amount')}</span>
                 <p className="text-lg font-bold text-green-600">
                   &euro;{formatCurrency(payment.amount)}
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.source_type')}</span>
-                <p className="text-sm font-medium text-gray-900">{getPaymentSourceTypeLabel()}</p>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.source_type')}</span>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{getPaymentSourceTypeLabel()}</p>
               </div>
               {payment.payment_source_type !== 'kompenzacija' && !payment.is_cesija && (
                 <div>
-                  <span className="text-sm text-gray-500">{t('payments.detail.source_name')}</span>
-                  <p className="text-sm font-medium text-gray-900">{getPaymentSourceName()}</p>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.source_name')}</span>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{getPaymentSourceName()}</p>
                 </div>
               )}
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.invoice')}</h3>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.invoice')}</h3>
             <div className="space-y-2">
               {invoice && (
                 <>
                   <div>
-                    <span className="text-sm text-gray-500">{t('payments.detail.invoice_number')}</span>
-                    <p className="text-sm font-medium text-gray-900">{invoice.invoice_number}</p>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_number')}</span>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">{t('payments.detail.invoice_type')}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_type')}</span>
                     <p className={`text-sm font-semibold ${isExpense ? 'text-red-600' : 'text-green-600'}`}>
                       {getInvoiceTypeLabel(invoice.invoice_type)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">{t('payments.detail.invoice_total')}</span>
-                    <p className="text-sm font-medium text-gray-900">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_total')}</span>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       &euro;{formatCurrency(invoice.total_amount)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">{t('payments.detail.invoice_remaining')}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_remaining')}</span>
                     <p className={`text-sm font-medium ${invoice.remaining_amount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                       &euro;{formatCurrency(invoice.remaining_amount)}
                     </p>
@@ -160,15 +160,15 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
 
         {invoice && (
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.entities')}</h3>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.entities')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.my_company')}</span>
-                <p className="text-sm font-medium text-gray-900">{invoice.companies?.name || '-'}</p>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.my_company')}</span>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.companies?.name || '-'}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">{t('payments.detail.company_supplier')}</span>
-                <p className="text-sm font-medium text-gray-900">{getSupplierCustomerName()}</p>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.company_supplier')}</span>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{getSupplierCustomerName()}</p>
               </div>
             </div>
           </div>
@@ -176,14 +176,14 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
 
         {payment.is_cesija && payment.cesija_company_name && (
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.cesija_section')}</h3>
-            <div className="bg-purple-50 p-3 rounded">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.cesija_section')}</h3>
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-purple-700 font-medium">{t('payments.detail.cesija_label')}</span>
+                <span className="text-sm text-purple-700 dark:text-purple-400 font-medium">{t('payments.detail.cesija_label')}</span>
               </div>
               <div className="mt-2">
-                <span className="text-sm text-purple-600">{t('payments.detail.cesija_company')}</span>
-                <p className="text-sm font-medium text-purple-900">{payment.cesija_company_name}</p>
+                <span className="text-sm text-purple-600 dark:text-purple-400">{t('payments.detail.cesija_company')}</span>
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-200">{payment.cesija_company_name}</p>
               </div>
             </div>
           </div>
@@ -191,17 +191,17 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
 
         {payment.description && (
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.description')}</h3>
-            <p className="text-sm text-gray-900 whitespace-pre-wrap">{payment.description}</p>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.description')}</h3>
+            <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{payment.description}</p>
           </div>
         )}
 
         <div className="border-t pt-4">
-          <h3 className="text-sm font-semibold text-gray-600 mb-2">{t('payments.detail.additional_info')}</h3>
+          <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.additional_info')}</h3>
           <div className="space-y-2">
             <div>
-              <span className="text-sm text-gray-500">{t('payments.detail.created_at')}</span>
-              <p className="text-sm font-medium text-gray-900">
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.created_at')}</span>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {format(new Date(payment.created_at), 'dd.MM.yyyy HH:mm')}
               </p>
             </div>

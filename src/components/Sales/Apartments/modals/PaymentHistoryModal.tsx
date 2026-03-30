@@ -76,21 +76,21 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-lg font-semibold text-gray-900 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+            <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {apartment.project_name} - {apartment.building_name} - Unit {apartment.number}
             </p>
             <div className="grid grid-cols-3 gap-4 mt-4">
               <div>
-                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.total_value')}</p>
-                <p className="text-lg font-bold text-gray-900">€{totalPrice.toLocaleString('hr-HR')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.payment_history_modal.total_value')}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">€{totalPrice.toLocaleString('hr-HR')}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.total_paid')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.payment_history_modal.total_paid')}</p>
                 <p className="text-lg font-bold text-green-600">€{totalPaid.toLocaleString('hr-HR')}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('apartments.payment_history_modal.remaining')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.payment_history_modal.remaining')}</p>
                 <p className={`text-lg font-bold ${remainingBalance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                   €{remainingBalance.toLocaleString('hr-HR')}
                 </p>
@@ -100,10 +100,10 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             {totalPrice > 0 && (
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{t('apartments.payment_history_modal.progress')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('apartments.payment_history_modal.progress')}</span>
                   <span className="font-medium">{((totalPaid / totalPrice) * 100).toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                   <div
                     className="bg-green-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(100, (totalPaid / totalPrice) * 100)}%` }}
@@ -113,16 +113,16 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             )}
 
             <div className="grid grid-cols-3 gap-3 mt-4">
-              <div className="bg-blue-50 p-2 rounded">
-                <p className="text-xs text-gray-600 flex items-center">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
+                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                   <Home className="w-3 h-3 mr-1 text-blue-600" />
                   {t('common.apartment')}
                 </p>
                 <p className="text-sm font-bold text-blue-600">€{apartment.price.toLocaleString('hr-HR')}</p>
               </div>
               {linkedGarages.length > 0 && (
-                <div className="bg-orange-50 p-2 rounded">
-                  <p className="text-xs text-gray-600 flex items-center">
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                     <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                     Garages ({linkedGarages.length})
                   </p>
@@ -130,19 +130,19 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </div>
               )}
               {linkedStorages.length > 0 && (
-                <div className="bg-gray-50 p-2 rounded">
-                  <p className="text-xs text-gray-600 flex items-center">
-                    <Package className="w-3 h-3 mr-1 text-gray-600" />
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                    <Package className="w-3 h-3 mr-1 text-gray-600 dark:text-gray-400" />
                     Storages ({linkedStorages.length})
                   </p>
-                  <p className="text-sm font-bold text-gray-600">€{storagesTotalPrice.toLocaleString('hr-HR')}</p>
+                  <p className="text-sm font-bold text-gray-600 dark:text-gray-400">€{storagesTotalPrice.toLocaleString('hr-HR')}</p>
                 </div>
               )}
             </div>
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900 mb-3">{t('apartments.payment_history_modal.all_payments')} ({payments.length})</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.payment_history_modal.all_payments')} ({payments.length})</h4>
             {payments.length === 0 ? (
               <EmptyState
                 icon={DollarSign}
@@ -156,7 +156,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                   return (
                     <div
                       key={payment.id}
-                      className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200"
+                      className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow duration-200"
                     >
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
@@ -169,14 +169,14 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                             {unitInfo.label}
                           </span>
                         </div>
-                        <div className="flex items-center text-sm text-gray-600 mb-1">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
                           <Calendar className="w-3 h-3 mr-1" />
                           {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
                         </div>
-                        <p className="text-xs text-gray-500">Customer: {payment.customer_name} {payment.customer_surname}</p>
-                        <p className="text-xs text-gray-500">Type: {payment.payment_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Customer: {payment.customer_name} {payment.customer_surname}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Type: {payment.payment_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                         {payment.notes && (
-                          <p className="text-sm text-gray-700 mt-2 italic">"{payment.notes}"</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-200 mt-2 italic">"{payment.notes}"</p>
                         )}
                       </div>
                     <div className="flex items-center space-x-2">

@@ -80,8 +80,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   const budgetUtilization = phase.budget_allocated > 0 ? (totalPaidOut / phase.budget_allocated) * 100 : 0
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -91,14 +91,14 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               onClick={onToggleExpand}
             />
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{phase.phase_name}</h3>
-              <p className="text-gray-600">{t('supervision.site_management.phase_card.phase_label')} {phase.phase_number} • {phaseSubcontractors.length} {phaseSubcontractors.length !== 1 ? t('common.subcontractors') : t('common.subcontractor')}</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{phase.phase_name}</h3>
+              <p className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_card.phase_label')} {phase.phase_number} • {phaseSubcontractors.length} {phaseSubcontractors.length !== 1 ? t('common.subcontractors') : t('common.subcontractor')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-lg font-bold text-gray-900">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
-              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_card.forecasted_budget')}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_card.forecasted_budget')}</p>
             </div>
             <Button
               variant="ghost"
@@ -123,28 +123,28 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">{t('supervision.site_management.phase_card.contracted_amount')}</p>
-            <p className="text-lg font-bold text-gray-900">€{totalContractCost.toLocaleString('hr-HR')}</p>
+          <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+            <p className="text-sm text-gray-700 dark:text-gray-200">{t('supervision.site_management.phase_card.contracted_amount')}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">€{totalContractCost.toLocaleString('hr-HR')}</p>
           </div>
-          <div className="bg-teal-50 p-3 rounded-lg">
-            <p className="text-sm text-teal-700">{t('supervision.site_management.phase_card.paid_out')}</p>
-            <p className="text-lg font-bold text-teal-900">€{totalPaidOut.toLocaleString('hr-HR')}</p>
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+            <p className="text-sm text-teal-700 dark:text-teal-400">{t('supervision.site_management.phase_card.paid_out')}</p>
+            <p className="text-lg font-bold text-teal-900 dark:text-teal-300">€{totalPaidOut.toLocaleString('hr-HR')}</p>
           </div>
-          <div className="bg-orange-50 p-3 rounded-lg">
-            <p className="text-sm text-orange-700">{t('supervision.site_management.phase_card.unpaid_contracts')}</p>
-            <p className="text-lg font-bold text-orange-900">
+          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+            <p className="text-sm text-orange-700 dark:text-orange-400">{t('supervision.site_management.phase_card.unpaid_contracts')}</p>
+            <p className="text-lg font-bold text-orange-900 dark:text-orange-300">
               €{totalUnpaid.toLocaleString('hr-HR')}
             </p>
           </div>
           <div className={`p-3 rounded-lg ${
-            (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'bg-red-50' : 'bg-green-50'
+            (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'
           }`}>
             <p className={`text-sm ${
-              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-700' : 'text-green-700'
+              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'
             }`}>Budget</p>
             <p className={`text-lg font-bold ${
-              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-900' : 'text-green-900'
+              (phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract) < 0 ? 'text-red-900 dark:text-red-300' : 'text-green-900 dark:text-green-300'
             }`}>
               €{(phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract).toLocaleString('hr-HR')}
             </p>
@@ -153,10 +153,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
         <div className="mt-4">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('supervision.site_management.phase_card.budget_utilization')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_card.budget_utilization')}</span>
             <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
             <div
               className={`h-3 rounded-full transition-all duration-300 ${
                 budgetUtilization > 100 ? 'bg-red-600' :
@@ -191,27 +191,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               const totalPaid = subcontractors.reduce((sum, sub) => sum + (sub.invoice_total_paid || 0), 0)
 
               return (
-                <div key={contractTypeName} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div key={contractTypeName} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button
                     onClick={() => onToggleContractType(contractTypeName)}
-                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center justify-between"
                   >
                     <div className="flex items-center space-x-3">
                       {isTypeExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-gray-600" />
+                        <ChevronUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-600" />
+                        <ChevronDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                       )}
-                      <span className="font-semibold text-gray-900">{contractTypeName}</span>
-                      <span className="text-sm text-gray-600">({subcontractors.length})</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{contractTypeName}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">({subcontractors.length})</span>
                     </div>
                     <div className="flex items-center space-x-4 text-sm">
                       <div>
-                        <span className="text-gray-600">{t('supervision.site_management.phase_card.cost')}: </span>
-                        <span className="font-semibold text-gray-900">€{totalCost.toLocaleString('hr-HR')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_card.cost')}: </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">€{totalCost.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">{t('common.paid')}: </span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}: </span>
                         <span className="font-semibold text-teal-600">€{totalPaid.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -230,24 +230,24 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
               return (
                 <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                  !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
-                  subVariance > 0 ? 'border-red-200 bg-red-50' :
-                  isPaid && subVariance === 0 ? 'border-green-200 bg-green-50' :
-                  actualPaid > 0 ? 'border-blue-200 bg-blue-50' :
-                  'border-gray-200 bg-gray-50'
+                  !hasValidContract ? 'border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' :
+                  subVariance > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
+                  isPaid && subVariance === 0 ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
+                  actualPaid > 0 ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' :
+                  'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                 }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900">{subcontractor.name}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{subcontractor.name}</h4>
                         {subcontractor.has_contract === false && (
                           <Badge variant="yellow" size="sm">
                             {t('supervision.subcontractor_details.no_contract_badge')}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{subcontractor.contact}</p>
-                      <p className="text-xs text-gray-500 line-clamp-2">{subcontractor.job_description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{subcontractor.contact}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{subcontractor.job_description}</p>
                     </div>
                     {hasValidContract && (
                       <Badge variant={
@@ -266,8 +266,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   <div className="space-y-2 text-xs mb-3">
                     {subcontractor.deadline && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('supervision.contract_fields.deadline')}:</span>
-                        <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                        <span className="text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.deadline')}:</span>
+                        <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
                           {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
                         </span>
                       </div>
@@ -275,25 +275,25 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {hasValidContract ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">{t('common.contract')}:</span>
-                          <span className="font-medium text-gray-900">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t('common.contract')}:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">{t('common.paid')}:</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
                           <span className="font-medium text-teal-600">€{actualPaid.toLocaleString('hr-HR')}</span>
                         </div>
                         {remainingToPay > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-600">{t('common.remaining')}:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
                             <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">{t('supervision.subcontractor_details.gain_loss')}:</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.subcontractor_details.gain_loss')}:</span>
                           <span className={`font-bold ${
                             subVariance > 0 ? 'text-red-600' :
                             subVariance < 0 ? 'text-green-600' :
-                            'text-gray-900'
+                            'text-gray-900 dark:text-white'
                           }`}>
                             {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
                           </span>
@@ -301,12 +301,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       </>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">{t('supervision.subcontractor_details.total_paid')}:</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.subcontractor_details.total_paid')}:</span>
                           <span className="font-bold text-green-600"> €{(subcontractor.invoice_total_paid || 0).toLocaleString('hr-HR')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 font-medium">{t('supervision.site_management.phase_card.total_owed')}:</span>
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.site_management.phase_card.total_owed')}:</span>
                           <span className="font-bold text-orange-600">€{(subcontractor.invoice_total_owed || 0).toLocaleString('hr-HR')}</span>
                         </div>
                       </>

@@ -19,10 +19,10 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={`text-center py-12 ${className}`}>
-      <Icon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-      <p className="text-gray-500 text-lg">{title}</p>
+      <Icon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+      <p className="text-gray-500 dark:text-gray-400 text-lg">{title}</p>
       {description && (
-        <p className="text-gray-400 text-sm mt-1">{description}</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

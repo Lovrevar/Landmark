@@ -116,8 +116,8 @@ const SalesReports: React.FC = () => {
       />
 
       {/* Report Configuration */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('reports.sales.config_title')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.sales.config_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField label={t('reports.sales.report_type')}>
             <Select
@@ -169,9 +169,9 @@ const SalesReports: React.FC = () => {
       {/* Project Report */}
       {reportType === 'project' && projectReport && !generatingReport && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('reports.sales.project_overview')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('reports.sales.project_overview')}</h2>
               <Badge variant={
                 projectReport.project.status === 'Completed' ? 'green'
                   : projectReport.project.status === 'In Progress' ? 'blue'
@@ -183,21 +183,21 @@ const SalesReports: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">{projectReport.project.name}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{projectReport.project.name}</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.location')}</span><span className="font-medium">{projectReport.project.location}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.start_date_label')}</span><span className="font-medium">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.budget')}</span><span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium">{projectReport.project.location}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">{t('reports.sales.sales_performance')}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('reports.sales.sales_performance')}</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.sales_rate_label')}</span><span className="font-bold text-green-600">{projectReport.sales_rate.toFixed(1)}%</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.average_price')}</span><span className="font-medium">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">{t('reports.sales.units_sold_label')}</span><span className="font-medium">{projectReport.sold_units} / {projectReport.total_units}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.sales_rate_label')}</span><span className="font-bold text-green-600">{projectReport.sales_rate.toFixed(1)}%</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.units_sold_label')}</span><span className="font-medium">{projectReport.sold_units} / {projectReport.total_units}</span></div>
                 </div>
               </div>
             </div>
@@ -210,8 +210,8 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.sales_rate_stat')} value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.sales.unit_status')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.unit_status')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="space-y-4">
@@ -223,7 +223,7 @@ const SalesReports: React.FC = () => {
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
-                        <span className="text-gray-700">{t(labelKey)}</span>
+                        <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold">{count} {t('reports.sales.units_label')}</span>
                     </div>
@@ -240,10 +240,10 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey}>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-600">{t(labelKey)}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t(labelKey)}</span>
                         <span className="text-sm font-medium">{((count / projectReport.total_units) * 100).toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div className={`${color} h-2 rounded-full`} style={{ width: `${(count / projectReport.total_units) * 100}%` }}></div>
                       </div>
                     </div>
@@ -254,8 +254,8 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.sales.monthly_trend')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.monthly_trend')}</h2>
             <Table>
               <Table.Head>
                 <Table.Tr>
@@ -268,7 +268,7 @@ const SalesReports: React.FC = () => {
               <Table.Body>
                 {projectReport.monthly_sales.map((month, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td className="font-medium text-gray-900">{month.month}</Table.Td>
+                    <Table.Td className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
                     <Table.Td>{month.units_sold}</Table.Td>
                     <Table.Td>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
                     <Table.Td>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
@@ -278,12 +278,12 @@ const SalesReports: React.FC = () => {
             </Table>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.sales.summary')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-3">{t('reports.sales.performance_highlights')}</h3>
-                <ul className="space-y-2 text-blue-800">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.performance_highlights')}</h3>
+                <ul className="space-y-2 text-blue-800 dark:text-blue-200">
                   <li>• {projectReport.sales_rate > 70 ? t('reports.sales.excellent') : projectReport.sales_rate > 50 ? t('reports.sales.good') : t('reports.sales.needs_improvement')} sales performance at {projectReport.sales_rate.toFixed(1)}%</li>
                   <li>• Generated €{projectReport.total_revenue.toLocaleString('hr-HR')} in total revenue</li>
                   <li>• Average unit price of €{projectReport.average_price.toLocaleString('hr-HR')}</li>
@@ -291,9 +291,9 @@ const SalesReports: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-green-900 mb-3">{t('reports.sales.recommendations')}</h3>
-                <ul className="space-y-2 text-green-800">
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">{t('reports.sales.recommendations')}</h3>
+                <ul className="space-y-2 text-green-800 dark:text-green-300">
                   {projectReport.sales_rate < 50 && <li>• {t('reports.sales.rec_marketing')}</li>}
                   {projectReport.available_units > projectReport.sold_units && <li>• {t('reports.sales.rec_convert')}</li>}
                   {projectReport.reserved_units > 0 && <li>• {t('reports.sales.rec_reserved')}</li>}
@@ -315,8 +315,8 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.avg_purchase_stat')} value={`$${customerReport.average_purchase.toLocaleString()}`} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.sales.customer_distribution')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_distribution')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="space-y-4">
@@ -328,7 +328,7 @@ const SalesReports: React.FC = () => {
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
-                        <span className="text-gray-700">{t(labelKey)}</span>
+                        <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold">{count} {t('reports.sales.customers_label')}</span>
                     </div>
@@ -345,10 +345,10 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey}>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-600">{t(labelKey)}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t(labelKey)}</span>
                         <span className="text-sm font-medium">{customerReport.total_customers > 0 ? ((count / customerReport.total_customers) * 100).toFixed(1) : '0'}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div className={`${color} h-2 rounded-full`} style={{ width: `${customerReport.total_customers > 0 ? (count / customerReport.total_customers) * 100 : 0}%` }}></div>
                       </div>
                     </div>
@@ -358,12 +358,12 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('reports.sales.customer_summary')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-3">{t('reports.sales.customer_highlights')}</h3>
-                <ul className="space-y-2 text-blue-800">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.customer_highlights')}</h3>
+                <ul className="space-y-2 text-blue-800 dark:text-blue-200">
                   <li>• {customerReport.total_customers} total customers in database</li>
                   <li>• {customerReport.buyers} successful conversions to buyers</li>
                   <li>• {customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}% conversion rate</li>
@@ -371,9 +371,9 @@ const SalesReports: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-green-900 mb-3">{t('reports.sales.sales_opportunities')}</h3>
-                <ul className="space-y-2 text-green-800">
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">{t('reports.sales.sales_opportunities')}</h3>
+                <ul className="space-y-2 text-green-800 dark:text-green-300">
                   <li>• {customerReport.interested} interested customers to nurture</li>
                   <li>• {customerReport.leads} new leads to follow up</li>
                   <li>• {t('reports.sales.focus_converting')}</li>

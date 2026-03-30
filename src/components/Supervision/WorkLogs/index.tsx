@@ -190,7 +190,7 @@ const WorkLogs: React.FC = () => {
 
             {(formData.status === 'blocker' || formData.status === 'quality_issue') && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   {formData.status === 'blocker' ? t('supervision.work_logs.form.blocker_details') : t('supervision.work_logs.form.issue_details')}
                 </label>
                 <Textarea
@@ -203,7 +203,7 @@ const WorkLogs: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('supervision.work_logs.form.additional_notes')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t('supervision.work_logs.form.additional_notes')}</label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -213,7 +213,7 @@ const WorkLogs: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Palette className="w-4 h-4 inline mr-1" />
                 {t('supervision.work_logs.form.color_label')}
               </label>
@@ -224,7 +224,7 @@ const WorkLogs: React.FC = () => {
                     type="button"
                     onClick={() => setFormData({ ...formData, color })}
                     className={`h-10 rounded-lg border-2 transition-all ${
-                      formData.color === color ? 'border-gray-900 scale-110' : 'border-gray-300'
+                      formData.color === color ? 'border-gray-900 dark:border-white scale-110' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     style={{ backgroundColor: color === 'yellow' ? '#fbbf24' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : color === 'pink' ? '#ec4899' : color === 'gray' ? '#6b7280' : color }}
                     title={color}
@@ -244,15 +244,15 @@ const WorkLogs: React.FC = () => {
       </Modal>
 
       <Card variant="default" padding="none">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <ClipboardCheck className="w-5 h-5 mr-2 text-blue-600" />
             {t('supervision.work_logs.history')}
           </h2>
         </div>
         <div className="p-6">
           {workLogs.length === 0 ? (
-            <Card variant="bordered" padding="lg" className="bg-gray-50">
+            <Card variant="bordered" padding="lg" className="bg-gray-50 dark:bg-gray-700/50">
               <EmptyState
                 icon={Wrench}
                 title={t('supervision.work_logs.no_logs')}
@@ -264,55 +264,55 @@ const WorkLogs: React.FC = () => {
               {workLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white border border-gray-200"
+                  className="border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                   style={{ borderLeftColor: log.color || 'blue' }}
                 >
                   <Card variant="bordered" padding="md">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-gray-900">{log.subcontractors?.name}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{log.subcontractors?.name}</h3>
                           <StatusBadge status={log.status} />
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {log.projects?.name} {log.project_phases?.phase_name && `• ${log.project_phases.phase_name}`}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {t('supervision.work_logs.contract_label')} {log.contracts?.contract_number} - {log.contracts?.job_description}
                         </p>
                       </div>
                       <div className="flex items-start space-x-2">
                         <div className="text-right mr-2">
-                          <div className="flex items-center text-gray-600 text-sm mb-1">
+                          <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-1">
                             <Calendar className="w-4 h-4 mr-1" />
                             {format(new Date(log.date), 'MMM dd, yyyy')}
                           </div>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {t('supervision.work_logs.logged')} {format(new Date(log.created_at), 'MMM dd, HH:mm')}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" className="text-blue-600 hover:bg-blue-50" />
-                        <Button size="icon-md" variant="ghost" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" className="text-red-600 hover:bg-red-50" />
+                        <Button size="icon-md" variant="ghost" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" />
+                        <Button size="icon-md" variant="ghost" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" />
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                      <p className="text-sm text-gray-700">{log.work_description}</p>
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-200">{log.work_description}</p>
                     </div>
 
                     {log.blocker_details && (
-                      <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
-                        <p className="text-xs font-medium text-red-800 mb-1">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 rounded-lg mb-3">
+                        <p className="text-xs font-medium text-red-800 dark:text-red-300 mb-1">
                           {log.status === 'blocker' ? t('supervision.work_logs.blocker_details_label') : t('supervision.work_logs.issue_details_label')}
                         </p>
-                        <p className="text-sm text-red-700">{log.blocker_details}</p>
+                        <p className="text-sm text-red-700 dark:text-red-400">{log.blocker_details}</p>
                       </div>
                     )}
 
                     {log.notes && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs font-medium text-gray-700 mb-1">{t('supervision.work_logs.notes_label')}</p>
-                        <p className="text-sm text-gray-600">{log.notes}</p>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">{t('supervision.work_logs.notes_label')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{log.notes}</p>
                       </div>
                     )}
                   </Card>

@@ -148,7 +148,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               label={t('supervision.milestone_form.calculated_amount')}
               helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} €${contractCost.toLocaleString('hr-HR')}`}
             >
-              <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 font-semibold">
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-semibold">
                 €{calculateAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </FormField>

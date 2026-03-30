@@ -48,11 +48,11 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
         />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">{t('common.customers')}</h3>
-            <p className="text-sm text-gray-500">{t('reports.sales_analysis.customers_count', { count: customers.length })}</p>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('common.customers')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.sales_analysis.customers_count', { count: customers.length })}</p>
           </div>
           <InvoiceStatusBar invoices={invoices} />
         </div>
@@ -80,15 +80,15 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
                 return (
                   <Table.Tr key={customer.id} className="transition-colors">
                     <Table.Td className="py-3">
-                      <p className="font-medium text-gray-900">{customer.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{customer.name}</p>
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700">
+                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {customer.total_contracts}
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700">
+                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {customer.total_area_m2.toLocaleString('hr-HR')} m2
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700">
+                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {formatCurrency(customer.total_amount)}
                     </Table.Td>
                     <Table.Td className="py-3 text-right text-green-600 font-medium">
@@ -101,13 +101,13 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
                     </Table.Td>
                     <Table.Td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                        <div className="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                           <div
                             className={`h-1.5 rounded-full ${rate >= 100 ? 'bg-green-500' : rate > 50 ? 'bg-blue-500' : 'bg-orange-500'}`}
                             style={{ width: `${Math.min(100, rate)}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-500 w-10 text-right">{rate.toFixed(0)}%</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">{rate.toFixed(0)}%</span>
                       </div>
                     </Table.Td>
                   </Table.Tr>
@@ -128,13 +128,13 @@ function StatCard({ icon, label, value, sub }: {
   sub: string
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center gap-2 mb-2">
         {icon}
-        <span className="text-xs font-medium text-gray-600 uppercase">{label}</span>
+        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">{label}</span>
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500 mt-1">{sub}</p>
+      <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{sub}</p>
     </div>
   )
 }
@@ -148,12 +148,12 @@ function InvoiceStatusBar({ invoices }: { invoices: InvoiceSummary }) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex gap-0.5 w-24 h-2 rounded-full overflow-hidden bg-gray-200">
+      <div className="flex gap-0.5 w-24 h-2 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600">
         {paidPct > 0 && <div className="bg-green-500 h-full" style={{ width: `${paidPct}%` }} />}
         {pendingPct > 0 && <div className="bg-amber-400 h-full" style={{ width: `${pendingPct}%` }} />}
         {overduePct > 0 && <div className="bg-red-500 h-full" style={{ width: `${overduePct}%` }} />}
       </div>
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" />{invoices.paid}</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" />{invoices.pending}</span>
         {invoices.overdue > 0 && (

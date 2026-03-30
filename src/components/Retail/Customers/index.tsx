@@ -54,7 +54,7 @@ const RetailCustomers: React.FC = () => {
         <StatCard label={t('common.remaining')} value={`€${totalStats.total_remaining.toLocaleString('hr-HR')}`} icon={Users} />
       </StatGrid>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -74,49 +74,49 @@ const RetailCustomers: React.FC = () => {
           {filteredCustomers.map((customer) => (
             <div
               key={customer.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{customer.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{customer.name}</h3>
                   {customer.contact_phone && (
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <Phone className="w-3 h-3 mr-1" />
                       {customer.contact_phone}
                     </div>
                   )}
                   {customer.contact_email && (
-                    <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <Mail className="w-3 h-3 mr-1" />
                       {customer.contact_email}
                     </div>
                   )}
                 </div>
-                <div className="p-2 bg-blue-100 rounded-lg">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <Users className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
 
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{t('retail_customers.card.area')}:</span>
-                  <span className="font-medium text-gray-900">{customer.total_purchased_area.toLocaleString()} m²</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('retail_customers.card.area')}:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{customer.total_purchased_area.toLocaleString()} m²</span>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                  <span className="text-gray-600">{t('common.total')}:</span>
-                  <span className="font-bold text-gray-900">€{customer.total_spent.toLocaleString('hr-HR')}</span>
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-400">{t('common.total')}:</span>
+                  <span className="font-bold text-gray-900 dark:text-white">€{customer.total_spent.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{t('common.paid')}:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
                   <span className="font-medium text-green-600">€{customer.total_paid.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{t('common.remaining')}:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
                   <span className="font-medium text-orange-600">€{customer.total_remaining.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 pt-3 border-t border-gray-200">
+              <div className="flex items-center space-x-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <Button icon={Eye} size="sm" onClick={() => handleViewDetails(customer)} className="flex-1">
                   {t('common.details')}
                 </Button>
@@ -162,24 +162,24 @@ const RetailCustomers: React.FC = () => {
             <Modal.Body>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">{t('retail_customers.form.name')}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.form.name')}</p>
                   <p className="text-lg font-semibold">{selectedCustomer.name}</p>
                 </div>
                 {selectedCustomer.contact_phone && (
                   <div>
-                    <p className="text-sm text-gray-600">{t('retail_customers.form.phone')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.form.phone')}</p>
                     <p className="text-lg font-semibold">{selectedCustomer.contact_phone}</p>
                   </div>
                 )}
                 {selectedCustomer.contact_email && (
                   <div>
-                    <p className="text-sm text-gray-600">{t('retail_customers.form.email')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.form.email')}</p>
                     <p className="text-lg font-semibold">{selectedCustomer.contact_email}</p>
                   </div>
                 )}
                 {selectedCustomer.oib && (
                   <div>
-                    <p className="text-sm text-gray-600">{t('retail_customers.form.oib')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.form.oib')}</p>
                     <p className="text-lg font-semibold">{selectedCustomer.oib}</p>
                   </div>
                 )}
@@ -187,8 +187,8 @@ const RetailCustomers: React.FC = () => {
 
               {selectedCustomer.address && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">{t('retail_customers.form.address')}</p>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded">{selectedCustomer.address}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('retail_customers.form.address')}</p>
+                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">{selectedCustomer.address}</p>
                 </div>
               )}
 
@@ -197,19 +197,19 @@ const RetailCustomers: React.FC = () => {
                 {selectedCustomer.sales && selectedCustomer.sales.length > 0 ? (
                   <div className="space-y-2">
                     {selectedCustomer.sales.map((sale) => (
-                      <div key={sale.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={sale.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">
                               {sale.phase?.project?.name || 'N/A'} - {sale.phase?.phase_name || ''}
                             </p>
-                            <p className="text-sm text-gray-600">{t('retail_customers.contract_label')}: {sale.contract_number}</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.contract_label')}: {sale.contract_number}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
                               {(sale.total_surface_m2 || sale.building_surface_m2 || 0).toLocaleString()} m²
                               {sale.price_per_m2 && ` × €${sale.price_per_m2.toLocaleString()}`}
                               {' = €'}{(sale.contract_amount || 0).toLocaleString()}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {t('common.paid')}: €{sale.paid_amount.toLocaleString()} |
                               {t('common.remaining')}: €{sale.remaining_amount.toLocaleString()}
                             </p>
@@ -228,7 +228,7 @@ const RetailCustomers: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">{t('retail_customers.no_sales')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('retail_customers.no_sales')}</p>
                 )}
               </div>
             </Modal.Body>

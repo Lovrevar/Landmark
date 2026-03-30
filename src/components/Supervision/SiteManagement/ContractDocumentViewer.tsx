@@ -81,7 +81,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-3 text-gray-500">
+      <div className="flex items-center gap-2 py-3 text-gray-500 dark:text-gray-400">
         <Loader2 className="w-4 h-4 animate-spin" />
         <span className="text-sm">{t('supervision.site_management.doc_viewer.loading')}</span>
       </div>
@@ -90,18 +90,18 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+      <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
         <AlertCircle className="w-4 h-4 text-red-500" />
-        <span className="text-sm text-red-700">{error}</span>
+        <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
       </div>
     )
   }
 
   if (documents.length === 0) {
     return (
-      <div className="text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
-        <FileText className="w-8 h-8 text-gray-300 mx-auto mb-1" />
-        <p className="text-sm text-gray-500">{t('supervision.site_management.doc_viewer.none')}</p>
+      <div className="text-center py-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-1" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('supervision.site_management.doc_viewer.none')}</p>
       </div>
     )
   }
@@ -112,12 +112,12 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       {documents.map((doc) => (
         <div
           key={doc.id}
-          className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
           <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name}</p>
-            <p className="text-xs text-gray-500">
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{doc.file_name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {formatFileSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
             </p>
           </div>
@@ -125,7 +125,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
             <button
               onClick={() => handleOpen(doc)}
               disabled={openingId === doc.id}
-              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors disabled:opacity-50"
               title={t('supervision.site_management.doc_viewer.open')}
             >
               {openingId === doc.id
@@ -137,7 +137,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
               <button
                 onClick={() => handleDelete(doc)}
                 disabled={deletingId === doc.id}
-                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
                 title={t('supervision.site_management.doc_viewer.delete')}
               >
                 {deletingId === doc.id

@@ -13,10 +13,10 @@ interface Props {
 const DirectorFinancialSection: React.FC<Props> = ({ metrics }) => {
   const { t } = useTranslation()
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl shadow-lg border border-blue-200 p-6">
+    <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-green-50 dark:to-green-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700 p-6">
       <div className="flex items-center mb-6">
         <DollarSign className="w-6 h-6 text-blue-600 mr-2" />
-        <h2 className="text-2xl font-bold text-gray-900">{t('dashboards.director.financial_overview')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.financial_overview')}</h2>
       </div>
       <StatGrid columns={5}>
         <StatCard

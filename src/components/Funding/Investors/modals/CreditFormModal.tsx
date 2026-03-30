@@ -169,8 +169,8 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
             <label className="flex items-start space-x-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -182,11 +182,11 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
                     disbursed_to_bank_account_id: checked ? formData.disbursed_to_bank_account_id : ''
                   })
                 }}
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <div className="flex-1">
-                <span className="font-medium text-gray-900">{t('banks.credit_form.disbursed_to_account_label')}</span>
-                <p className="text-sm text-gray-600 mt-1">
+                <span className="font-medium text-gray-900 dark:text-white">{t('banks.credit_form.disbursed_to_account_label')}</span>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {t('banks.credit_form.disbursed_to_account_hint')}
                 </p>
               </div>
@@ -195,16 +195,16 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
             {formData.disbursed_to_account && (
               <div className="mt-4">
                 {!formData.company_id ? (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">{t('banks.credit_form.select_company_first')}</p>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300">{t('banks.credit_form.select_company_first')}</p>
                   </div>
                 ) : loadingAccounts ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-gray-600">{t('banks.credit_form.loading_accounts')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('banks.credit_form.loading_accounts')}</p>
                   </div>
                 ) : companyBankAccounts.length === 0 ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-800">{t('banks.credit_form.no_bank_accounts')}</p>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <p className="text-sm text-red-800 dark:text-red-300">{t('banks.credit_form.no_bank_accounts')}</p>
                   </div>
                 ) : (
                   <FormField label={t('banks.credit_form.bank_account_label')} required>

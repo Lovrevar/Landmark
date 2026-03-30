@@ -85,11 +85,11 @@ const ProjectDetails: React.FC = () => {
   }
 
   const getMilestoneStatus = (milestone: ProjectMilestone) => {
-    if (milestone.completed) return { status: t('status.completed'), color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' }
+    if (milestone.completed) return { status: t('status.completed'), color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-700' }
     if (milestone.due_date && new Date(milestone.due_date) < new Date()) {
-      return { status: t('status.overdue'), color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' }
+      return { status: t('status.overdue'), color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' }
     }
-    return { status: t('status.in_progress'), color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+    return { status: t('status.in_progress'), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700' }
   }
 
   if (loading) return <LoadingSpinner message={t('general_projects.loading_details')} />
@@ -117,8 +117,8 @@ const ProjectDetails: React.FC = () => {
           }>
             {project.status}
           </Badge>
-          <span className="text-sm text-gray-500">{t('common.budget')}: €{project.budget.toLocaleString('hr-HR')}</span>
-          <span className="text-sm text-gray-500">{t('common.investor')}: {project.investors}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.budget')}: €{project.budget.toLocaleString('hr-HR')}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.investor')}: {project.investors}</span>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ const ProjectDetails: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'overview' | 'subcontractors' | 'apartments' | 'milestones')}
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                activeTab === tab.id ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
@@ -150,53 +150,53 @@ const ProjectDetails: React.FC = () => {
         </nav>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         {activeTab === 'overview' && (
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('general_projects.overview_title')}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('general_projects.overview_title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">{t('general_projects.project_details')}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('general_projects.project_details')}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('common.start_date')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.start_date')}:</span>
                     <span className="font-medium">{format(new Date(project.start_date), 'MMM dd, yyyy')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('common.end_date')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.end_date')}:</span>
                     <span className="font-medium">
                       {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : t('general_projects.tbd')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('common.budget')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.budget')}:</span>
                     <span className="font-medium">€{project.budget.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('general_projects.card_spent')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('general_projects.card_spent')}:</span>
                     <span className="font-medium">€{project.total_spent.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t('general_projects.stat_revenue')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('general_projects.stat_revenue')}:</span>
                     <span className="font-medium text-green-600">€{project.total_revenue.toLocaleString('hr-HR')}</span>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">{t('general_projects.progress_summary')}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('general_projects.progress_summary')}</h3>
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">{t('general_projects.milestone_progress')}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('general_projects.milestone_progress')}</span>
                       <span className="font-medium">{milestoneProgress.toFixed(0)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                       <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${milestoneProgress}%` }}></div>
                     </div>
                   </div>
                   <div className="text-center mt-4">
                     <p className="text-2xl font-bold text-orange-600">{project.pending_invoices}</p>
-                    <p className="text-xs text-gray-600">{t('general_projects.pending_invoices')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('general_projects.pending_invoices')}</p>
                   </div>
                 </div>
               </div>
@@ -207,47 +207,47 @@ const ProjectDetails: React.FC = () => {
         {activeTab === 'milestones' && (
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('general_projects.milestones_title')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('general_projects.milestones_title')}</h2>
               <Button icon={Plus} onClick={() => setShowMilestoneForm(true)}>{t('general_projects.add_milestone')}</Button>
             </div>
 
             <StatGrid columns={3} className="mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-blue-700">{t('general_projects.total_milestones')}</span>
+                  <span className="text-sm text-blue-700 dark:text-blue-300">{t('general_projects.total_milestones')}</span>
                   <Target className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-2xl font-bold text-blue-900">{milestoneStats.total}</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{milestoneStats.total}</p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-green-700">{t('status.completed')}</span>
+                  <span className="text-sm text-green-700 dark:text-green-400">{t('status.completed')}</span>
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 </div>
-                <p className="text-2xl font-bold text-green-900">{milestoneStats.completed}</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{milestoneStats.completed}</p>
               </div>
-              <div className="bg-red-50 p-4 rounded-lg">
+              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-red-700">{t('status.overdue')}</span>
+                  <span className="text-sm text-red-700 dark:text-red-400">{t('status.overdue')}</span>
                   <AlertTriangle className="w-4 h-4 text-red-600" />
                 </div>
-                <p className="text-2xl font-bold text-red-900">{milestoneStats.overdue}</p>
+                <p className="text-2xl font-bold text-red-900 dark:text-red-300">{milestoneStats.overdue}</p>
               </div>
             </StatGrid>
 
             <div className="mb-6">
               <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">{t('general_projects.overall_milestone_progress')}</span>
-                <span className="text-sm font-medium text-gray-900">{milestoneProgress.toFixed(1)}%</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('general_projects.overall_milestone_progress')}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{milestoneProgress.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                 <div className="bg-blue-600 h-3 rounded-full transition-all duration-300" style={{ width: `${milestoneProgress}%` }}></div>
               </div>
             </div>
 
             {showMilestoneForm && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   {editingMilestone ? t('general_projects.edit_milestone') : t('general_projects.add_new_milestone')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -272,9 +272,9 @@ const ProjectDetails: React.FC = () => {
                       id="completed"
                       checked={newMilestone.completed}
                       onChange={(e) => setNewMilestone({ ...newMilestone, completed: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
                     />
-                    <label htmlFor="completed" className="ml-2 text-sm text-gray-700">{t('general_projects.mark_as_completed')}</label>
+                    <label htmlFor="completed" className="ml-2 text-sm text-gray-700 dark:text-gray-200">{t('general_projects.mark_as_completed')}</label>
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 mt-6">
@@ -309,12 +309,12 @@ const ProjectDetails: React.FC = () => {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{milestone.name}</h3>
                               <Badge variant={milestone.completed ? 'green' : isOverdue ? 'red' : 'blue'} size="sm">
                                 {status.status}
                               </Badge>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                               {milestone.due_date && (
                                 <div className="flex items-center">
                                   <Calendar className="w-4 h-4 mr-1" />
@@ -334,7 +334,7 @@ const ProjectDetails: React.FC = () => {
                           <Button size="icon-sm" variant="ghost" icon={milestone.completed ? Circle : CheckCircle}
                             onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
                             title={milestone.completed ? t('general_projects.milestone_mark_incomplete') : t('general_projects.milestone_mark_complete')}
-                            className={milestone.completed ? 'text-gray-600 hover:bg-gray-200' : 'text-green-600 hover:bg-green-200'}
+                            className={milestone.completed ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700' : 'text-green-600 hover:bg-green-200'}
                           />
                           <Button size="icon-sm" variant="ghost" icon={Edit2}
                             onClick={() => handleEditMilestone(milestone as unknown as ProjectMilestone)}
@@ -356,7 +356,7 @@ const ProjectDetails: React.FC = () => {
 
         {activeTab === 'subcontractors' && (
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('common.subcontractors')}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('common.subcontractors')}</h2>
             {project.subcontractors.length === 0 ? (
               <EmptyState icon={Users} title={t('general_projects.no_subcontractors')} description={t('general_projects.no_subcontractors_desc')} />
             ) : (
@@ -364,22 +364,22 @@ const ProjectDetails: React.FC = () => {
                 {project.subcontractors.map((sub) => {
                   const isOverdue = sub.deadline != null && new Date(sub.deadline) < new Date() && sub.progress < 100
                   return (
-                    <div key={sub.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={sub.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900 mb-2">{sub.name}</h3>
-                          <p className="text-sm text-gray-600 mb-2">{sub.job_description}</p>
+                          <h3 className="font-medium text-gray-900 dark:text-white mb-2">{sub.name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{sub.job_description}</p>
                           <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600">{t('general_projects.contact')}: {sub.contact}</span>
-                            <span className="text-sm text-gray-600">{t('general_projects.cost')}: €{sub.cost.toLocaleString('hr-HR')}</span>
-                            <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.contact')}: {sub.contact}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.cost')}: €{sub.cost.toLocaleString('hr-HR')}</span>
+                            <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                               {t('general_projects.due')}: {sub.deadline ? format(new Date(sub.deadline), 'MMM dd, yyyy') : t('general_projects.na')}
                             </span>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <div className="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                               <div
                                 className={`h-2 rounded-full ${sub.progress === 100 ? 'bg-green-600' : 'bg-blue-600'}`}
                                 style={{ width: `${sub.progress}%` }}
@@ -399,17 +399,17 @@ const ProjectDetails: React.FC = () => {
 
         {activeTab === 'apartments' && (
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('common.apartments')}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('common.apartments')}</h2>
             {project.apartments.length === 0 ? (
               <EmptyState icon={Home} title={t('general_projects.no_apartments')} description={t('general_projects.no_apartments_desc')} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.apartments.map((apartment) => (
-                  <div key={apartment.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={apartment.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="font-medium text-gray-900">{t('common.unit')} {apartment.number}</h3>
-                        <p className="text-sm text-gray-600">{t('common.floor')} {apartment.floor}</p>
+                        <h3 className="font-medium text-gray-900 dark:text-white">{t('common.unit')} {apartment.number}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {apartment.floor}</p>
                       </div>
                       <Badge variant={
                         apartment.status === 'Sold' ? 'green' : apartment.status === 'Reserved' ? 'yellow' : 'blue'
@@ -419,16 +419,16 @@ const ProjectDetails: React.FC = () => {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('general_projects.size')}:</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.size')}:</span>
                         <span className="text-sm font-medium">{apartment.size_m2} m²</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('general_projects.price')}:</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.price')}:</span>
                         <span className="text-sm font-medium">€{apartment.price.toLocaleString('hr-HR')}</span>
                       </div>
                       {apartment.buyer_name && (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">{t('general_projects.buyer')}:</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.buyer')}:</span>
                           <span className="text-sm font-medium">{apartment.buyer_name}</span>
                         </div>
                       )}

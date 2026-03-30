@@ -38,39 +38,39 @@ export const NotificationPaymentModal: React.FC<NotificationPaymentModalProps> =
       <Modal.Header title={t('funding.payments.notification_payment_modal.title')} onClose={onClose} />
 
       <Modal.Body>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center">
             <Building2 className="w-5 h-5 mr-2" />
             {t('funding.payments.notification_payment_modal.details_heading')}
           </h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.bank_label')}</p>
-              <p className="font-medium text-blue-900">{notification.bank_name}</p>
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.bank_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{notification.bank_name}</p>
             </div>
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.loan_type_label')}</p>
-              <p className="font-medium text-blue-900">
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.loan_type_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">
                 {notification.credit_type?.replace('_', ' ').toUpperCase()}
               </p>
             </div>
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.due_date_label')}</p>
-              <p className="font-medium text-blue-900">
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.due_date_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">
                 {format(new Date(notification.due_date), 'MMM dd, yyyy')}
               </p>
             </div>
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.scheduled_amount_label')}</p>
-              <p className="font-medium text-blue-900">{Number(notification.amount).toLocaleString('hr-HR')}</p>
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.scheduled_amount_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{Number(notification.amount).toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.payment_number_label')}</p>
-              <p className="font-medium text-blue-900">#{notification.payment_number}</p>
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.payment_number_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">#{notification.payment_number}</p>
             </div>
             <div>
-              <p className="text-blue-700">{t('funding.payments.notification_payment_modal.project_label')}</p>
-              <p className="font-medium text-blue-900">{notification.project_name}</p>
+              <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.notification_payment_modal.project_label')}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{notification.project_name}</p>
             </div>
           </div>
         </div>

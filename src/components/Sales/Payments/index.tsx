@@ -28,7 +28,7 @@ const SalesPaymentsManagement: React.FC = () => {
         <StatCard label={t('customers.sales_payments.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -91,21 +91,21 @@ const SalesPaymentsManagement: React.FC = () => {
                 <Table.Td>{format(new Date(payment.payment_date), 'MMM dd, yyyy')}</Table.Td>
                 <Table.Td>
                   <div className="font-medium">{payment.invoice_number}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {payment.issue_date ? format(new Date(payment.issue_date), 'MMM dd, yyyy') : '-'}
                   </div>
                 </Table.Td>
                 <Table.Td>{payment.customer_name}</Table.Td>
                 <Table.Td>{payment.apartment_number}</Table.Td>
                 <Table.Td>{payment.project_name}</Table.Td>
-                <Table.Td align="right" className="text-gray-500">
+                <Table.Td align="right" className="text-gray-500 dark:text-gray-400">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td align="right" className="font-semibold text-green-600">
                   €{Number(payment.amount).toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td>{payment.payment_method}</Table.Td>
-                <Table.Td className="text-gray-500">{payment.bank_account_name}</Table.Td>
+                <Table.Td className="text-gray-500 dark:text-gray-400">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Body>
@@ -113,13 +113,13 @@ const SalesPaymentsManagement: React.FC = () => {
       )}
 
       {filteredPayments.length > 0 && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Filter className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">{t('customers.sales_payments.filtered_results')}</span>
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('customers.sales_payments.filtered_results')}</span>
             </div>
-            <div className="text-sm text-blue-900">
+            <div className="text-sm text-blue-900 dark:text-blue-100">
               <span className="font-semibold">{filteredPayments.length}</span> {t('customers.sales_payments.payments_totaling')}{' '}
               <span className="font-semibold">
                 €{filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}

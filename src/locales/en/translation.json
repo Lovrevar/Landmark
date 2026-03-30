@@ -192,7 +192,8 @@
     "accounting_suppliers": "Suppliers",
     "accounting_companies": "My Companies",
     "accounting_banks": "Investments",
-    "accounting_customers": "Customers"
+    "accounting_customers": "Customers",
+    "budget_control": "Budget Control"
   },
   "profiles": {
     "general": "General",
@@ -4124,5 +4125,33 @@
         "method": "Method"
       }
     }
+  },
+  "budget_control": {
+    "title": "Budget Control",
+    "subtitle": "EVM performance overview across project phases",
+    "project": "Project",
+    "tic": "TIC",
+    "tic_sub": "Total Investment Cost",
+    "planned_budget": "Planned Budget",
+    "planned_budget_sub": "Total project budget",
+    "committed": "Committed",
+    "paid": "Paid",
+    "forecast_eac": "Forecast (EAC)",
+    "of_budget": "of budget",
+    "of_committed": "of committed",
+    "under_budget": "Under Budget",
+    "over_budget": "Over Budget",
+    "budget_chart_title": "Budget Control",
+    "evm_indices_title": "EVM Performance Indices",
+    "evm_metrics_title": "EVM Performance Metrics",
+    "planned": "Planned",
+    "cpi": "CPI",
+    "spi": "SPI",
+    "eac": "EAC",
+    "vac": "VAC",
+    "completion": "Completion",
+    "current": "Current",
+    "chart_label": "Budget",
+    "no_projects": "No projects found."
   }
 }

@@ -80,7 +80,7 @@ const AccountingSuppliers: React.FC = () => {
         <StatCard label={t('suppliers.stats.total_remaining')} value={`€${suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -89,7 +89,7 @@ const AccountingSuppliers: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         {filteredSuppliers.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -98,16 +98,16 @@ const AccountingSuppliers: React.FC = () => {
           />
         ) : (
           <>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedSuppliers.map((supplier) => (
                 <div
                   key={supplier.id}
-                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between"
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer flex items-center justify-between"
                   onClick={() => handleViewDetails(supplier)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{supplier.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{supplier.name}</h3>
                       <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
                         {supplier.source === 'retail' ? 'Retail' : 'Site'}
                       </Badge>
@@ -115,7 +115,7 @@ const AccountingSuppliers: React.FC = () => {
                         <Badge variant="gray" size="sm">{supplier.supplier_type}</Badge>
                       )}
                     </div>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-1" />
                         {supplier.contact}
@@ -131,15 +131,15 @@ const AccountingSuppliers: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-6 mt-2 text-sm">
                       <div>
-                        <span className="text-gray-600">{t('suppliers.value_label')}</span>
-                        <span className="font-semibold text-gray-900">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.value_label')}</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">{t('suppliers.paid_label')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.paid_label')}</span>
                         <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString('hr-HR')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">{t('suppliers.remaining_label')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.remaining_label')}</span>
                         <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -156,26 +156,26 @@ const AccountingSuppliers: React.FC = () => {
             </div>
 
             {totalPages > 1 && (
-              <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('common.previous')}
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('common.next')}
                   </button>
                 </div>
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-gray-200">
                       {t('suppliers.pagination.shown', { from: startIndex + 1, to: Math.min(endIndex, filteredSuppliers.length), total: filteredSuppliers.length })}
                     </p>
                   </div>
@@ -184,7 +184,7 @@ const AccountingSuppliers: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
@@ -199,15 +199,15 @@ const AccountingSuppliers: React.FC = () => {
                           if (index > 0 && page - array[index - 1] > 1) {
                             return (
                               <React.Fragment key={`dots-${page}`}>
-                                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200">
                                   ...
                                 </span>
                                 <button
                                   onClick={() => setCurrentPage(page)}
                                   className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                                     currentPage === page
-                                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600'
+                                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                   }`}
                                 >
                                   {page}
@@ -221,8 +221,8 @@ const AccountingSuppliers: React.FC = () => {
                               onClick={() => setCurrentPage(page)}
                               className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                                 currentPage === page
-                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                  ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600'
+                                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                               }`}
                             >
                               {page}
@@ -232,7 +232,7 @@ const AccountingSuppliers: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
