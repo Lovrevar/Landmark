@@ -139,7 +139,29 @@ export function useChat() {
     if (!user || !activeConversationId || !content.trim()) return
     try {
       setSendingMessage(true)
-      await sendMessageService(activeConversationId, user.id, content.trim())
+      const saved = await sendMessageService(activeConversationId, user.id, content.trim())
+
+      const enrichedMsg: ChatMessage = {
+        ...saved,
+        sender: { id: user.id, username: user.username, role: user.role },
+      }
+
+      setMessages(prev => {
+        if (prev.some(m => m.id === saved.id)) return prev
+        return [...prev, enrichedMsg]
+      })
+
+      setConversations(prev => {
+        const updated = prev.map(c => {
+          if (c.id !== activeConversationId) return c
+          return { ...c, last_message: enrichedMsg }
+        })
+        return updated.sort((a, b) => {
+          const aTime = a.last_message?.created_at || a.created_at
+          const bTime = b.last_message?.created_at || b.created_at
+          return new Date(bTime).getTime() - new Date(aTime).getTime()
+        })
+      })
     } catch (err) {
       console.error('Failed to send message:', err)
     } finally {
