@@ -11,6 +11,8 @@ import {
 } from '../services/chatService'
 import { dispatchChatRead, dispatchUnreadCount } from './useChatNotifications'
 
+const POLL_INTERVAL_MS = 3000
+
 export function useChat() {
   const { user } = useAuth()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
@@ -20,10 +22,15 @@ export function useChat() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const activeConvRef = useRef<string | null>(null)
+  const messagesRef = useRef<ChatMessage[]>([])
 
   useEffect(() => {
     activeConvRef.current = activeConversationId
   }, [activeConversationId])
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   const loadConversations = useCallback(async () => {
     if (!user) return
@@ -71,6 +78,31 @@ export function useChat() {
     setActiveConversationId(conversationId)
     loadMessages(conversationId)
   }, [loadMessages])
+
+  const mergeNewMessages = useCallback((
+    incoming: ChatMessage[],
+    conversationId: string,
+  ) => {
+    if (!user) return
+
+    setMessages(prev => {
+      const existingIds = new Set(prev.map(m => m.id))
+      const newOnes = incoming.filter(m => !existingIds.has(m.id))
+      if (newOnes.length === 0) return prev
+      return [...prev, ...newOnes]
+    })
+
+    const hasNewFromOthers = incoming.some(m => {
+      const isNew = !messagesRef.current.some(em => em.id === m.id)
+      return isNew && m.sender_id !== user.id
+    })
+
+    if (hasNewFromOthers) {
+      markAsRead(conversationId, user.id)
+        .then(() => dispatchChatRead())
+        .catch(() => {})
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -134,6 +166,25 @@ export function useChat() {
       supabase.removeChannel(channel)
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user || !activeConversationId) return
+
+    const convId = activeConversationId
+
+    const interval = setInterval(async () => {
+      if (activeConvRef.current !== convId) return
+
+      try {
+        const fresh = await fetchMessages(convId)
+        mergeNewMessages(fresh, convId)
+      } catch {
+        // silent
+      }
+    }, POLL_INTERVAL_MS)
+
+    return () => clearInterval(interval)
+  }, [user, activeConversationId, mergeNewMessages])
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!user || !activeConversationId || !content.trim()) return
