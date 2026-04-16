@@ -180,7 +180,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           <div className="flex gap-2">
             <Select
               value={formData.contract_type_id}
-              onChange={(e) => merge({ contract_type_id: parseInt(e.target.value) })}
+              onChange={(e) => merge({ contract_type_id: e.target.value ? parseInt(e.target.value) : 0 })}
               disabled={loadingContractTypes}
               className="flex-1"
             >
