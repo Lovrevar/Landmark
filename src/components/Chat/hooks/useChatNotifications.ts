@@ -3,24 +3,25 @@ import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { getTotalUnreadCount } from '../services/chatService'
 
+const CHAT_UNREAD_EVENT = 'chat:unread-update'
 export const CHAT_READ_EVENT = 'chat:marked-read'
 
 export function dispatchChatRead() {
   window.dispatchEvent(new Event(CHAT_READ_EVENT))
 }
 
+export function dispatchUnreadCount(count: number) {
+  window.dispatchEvent(new CustomEvent(CHAT_UNREAD_EVENT, { detail: count }))
+}
+
 export function useChatNotifications() {
   const { user } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
   const mountedRef = useRef(true)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
+    return () => { mountedRef.current = false }
   }, [])
 
   const refreshFromDb = useCallback(async () => {
@@ -34,13 +35,6 @@ export function useChatNotifications() {
       // silently fail
     }
   }, [user])
-
-  const debouncedRefresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      refreshFromDb()
-    }, 300)
-  }, [refreshFromDb])
 
   useEffect(() => {
     refreshFromDb()
@@ -69,9 +63,21 @@ export function useChatNotifications() {
   }, [user])
 
   useEffect(() => {
-    window.addEventListener(CHAT_READ_EVENT, debouncedRefresh)
-    return () => window.removeEventListener(CHAT_READ_EVENT, debouncedRefresh)
-  }, [debouncedRefresh])
+    const handleUnreadUpdate = (e: Event) => {
+      const count = (e as CustomEvent<number>).detail
+      if (mountedRef.current) {
+        setUnreadCount(count)
+      }
+    }
+    const handleRead = () => { refreshFromDb() }
+
+    window.addEventListener(CHAT_UNREAD_EVENT, handleUnreadUpdate)
+    window.addEventListener(CHAT_READ_EVENT, handleRead)
+    return () => {
+      window.removeEventListener(CHAT_UNREAD_EVENT, handleUnreadUpdate)
+      window.removeEventListener(CHAT_READ_EVENT, handleRead)
+    }
+  }, [refreshFromDb])
 
   return { unreadCount, refresh: refreshFromDb }
 }

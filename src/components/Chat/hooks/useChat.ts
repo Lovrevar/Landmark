@@ -9,7 +9,7 @@ import {
   markAsRead,
   createConversation,
 } from '../services/chatService'
-import { dispatchChatRead } from './useChatNotifications'
+import { dispatchChatRead, dispatchUnreadCount } from './useChatNotifications'
 
 export function useChat() {
   const { user } = useAuth()
@@ -41,6 +41,11 @@ export function useChat() {
   useEffect(() => {
     loadConversations()
   }, [loadConversations])
+
+  useEffect(() => {
+    const total = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
+    dispatchUnreadCount(total)
+  }, [conversations])
 
   const loadMessages = useCallback(async (conversationId: string) => {
     if (!user) return
