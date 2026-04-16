@@ -68,8 +68,8 @@ const SubcontractorManagement: React.FC = () => {
         actions={
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm text-gray-600">{searchTerm ? t('supervision.subcontractors.showing') : t('supervision.subcontractors.total')} {t('common.subcontractors')}</p>
-              <p className="text-2xl font-bold text-gray-900">{displayCount}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{searchTerm ? t('supervision.subcontractors.showing') : t('supervision.subcontractors.total')} {t('common.subcontractors')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{displayCount}</p>
             </div>
             <Button onClick={() => { setEditingSubcontractor(null); setShowFormModal(true) }} icon={Plus}>
               {t('supervision.subcontractors.add')}
@@ -78,7 +78,7 @@ const SubcontractorManagement: React.FC = () => {
         }
       />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -133,7 +133,7 @@ const SubcontractorManagement: React.FC = () => {
                 <StatCard label={t('common.remaining')} value={`€${formatEuropean(selectedSubcontractor.total_remaining)}`} color="yellow" />
               </div>
 
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('supervision.subcontractors.all_contracts')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('supervision.subcontractors.all_contracts')}</h3>
               <SubcontractorContractsList
                 contracts={selectedSubcontractor.contracts}
                 onViewDocuments={handleViewDocuments}

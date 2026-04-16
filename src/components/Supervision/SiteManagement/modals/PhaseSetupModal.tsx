@@ -108,8 +108,8 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 
         <div className="space-y-4 mt-6">
           {phases.map((phase, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-3">{t('common.phase')} {index + 1}</h4>
+            <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">{t('common.phase')} {index + 1}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label={t('supervision.site_management.phase_setup.phase_name')}>
                   <Input
@@ -162,15 +162,15 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           ))}
         </div>
 
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-3">{t('supervision.site_management.phase_setup.budget_summary')}</h4>
+        <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <h4 className="font-medium text-gray-900 dark:text-white mb-3">{t('supervision.site_management.phase_setup.budget_summary')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.total_budget')}</p>
-              <p className="text-lg font-bold text-gray-900">€{project.budget.toLocaleString('hr-HR')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_budget')}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.total_allocated')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_allocated')}</p>
               <p className={`text-lg font-bold ${
                 totalAllocated === project.budget
                   ? 'text-green-600'
@@ -182,7 +182,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('supervision.site_management.phase_setup.difference')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.difference')}</p>
               <p className={`text-lg font-bold ${
                 difference === 0
                   ? 'text-green-600'
@@ -200,8 +200,8 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
             </div>
           </div>
           {difference !== 0 && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 {t('supervision.site_management.phase_setup.mismatch_note')}
               </p>
             </div>

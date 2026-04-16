@@ -125,13 +125,13 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 px-4 py-3 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.dev_note_body')}
             </p>
           </div>
@@ -171,10 +171,10 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
                   onChange={(e) => setFormData({ ...formData, has_contract: e.target.checked })}
                   className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                 />
-                <span className="text-sm font-medium text-gray-700">{t('retail_projects.contract_form.has_contract_label')}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('retail_projects.contract_form.has_contract_label')}</span>
               </label>
               {!formData.has_contract && (
-                <p className="text-xs text-gray-500 mt-1 ml-6">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                   {t('retail_projects.contract_form.no_contract_hint')}
                 </p>
               )}
@@ -195,7 +195,7 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, contract_amount: e.target.value })}
                 placeholder="npr. 50000"
                 disabled={!formData.has_contract}
-                className={!formData.has_contract ? 'bg-gray-100 cursor-not-allowed' : ''}
+                className={!formData.has_contract ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : ''}
               />
             </FormField>
 
@@ -223,8 +223,8 @@ export const DevelopmentFormModal: React.FC<DevelopmentFormModalProps> = ({
           </div>
 
           {!contract && (
-            <div className="bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
-              <p className="text-sm text-green-800">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 px-4 py-3 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-300">
                 <strong>{t('common.note')}:</strong> {t('retail_projects.contract_form.note_payments')}
               </p>
             </div>

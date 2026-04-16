@@ -108,17 +108,17 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
       />
 
       <Modal.Body>
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('supervision.payment_modal.contract_amount')}</span>
-            <span className="text-sm font-medium text-gray-900">€{(subcontractor.cost ?? 0).toLocaleString('hr-HR')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_modal.contract_amount')}</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">€{(subcontractor.cost ?? 0).toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('supervision.payment_modal.already_paid')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_modal.already_paid')}</span>
             <span className="text-sm font-medium text-teal-600">€{(subcontractor.budget_realized ?? 0).toLocaleString('hr-HR')}</span>
           </div>
-          <div className="flex justify-between pt-2 border-t border-gray-200">
-            <span className="text-sm font-medium text-gray-700">{t('supervision.payment_modal.remaining')}</span>
+          <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('supervision.payment_modal.remaining')}</span>
             <span className="text-sm font-bold text-orange-600">
               €{Math.max(0, (subcontractor.cost ?? 0) - (subcontractor.budget_realized ?? 0)).toLocaleString('hr-HR')}
             </span>

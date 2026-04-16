@@ -210,19 +210,19 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       <Modal.Body>
         {step === 1 && (
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+              <Upload className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 {t('sales_projects.excel_import.upload_apartment_file')}
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 Select the "Tablica stanova" Excel file (.xlsx or .csv) with apartment data
               </p>
               <input
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50"
               />
               {file && (
                 <p className="mt-2 text-sm text-green-600 flex items-center justify-center">
@@ -231,9 +231,9 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 </p>
               )}
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Expected File Format:</h4>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Expected File Format:</h4>
+              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
                 <li>Headers on row 1, data starts at row 2</li>
                 <li>Column 1 (A): zgrada (building name - must match existing building)</li>
                 <li>Column 4 (D): oznaka stana (apartment number)</li>
@@ -253,11 +253,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Import Summary</h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Import Summary</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Total rows:</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total rows:</span>
                   <span className="ml-2 font-medium">{parsedRows.length}</span>
                 </div>
                 <div>
@@ -272,16 +272,16 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
             </div>
 
             {invalidRows.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-medium text-red-900 mb-2 flex items-center">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <h4 className="font-medium text-red-900 dark:text-red-300 mb-2 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-2" />
                   Errors Found ({invalidRows.length} rows)
                 </h4>
                 <div className="max-h-48 overflow-y-auto space-y-2">
                   {invalidRows.map((row) => (
                     <div key={row.rowIndex} className="text-sm">
-                      <span className="font-medium text-red-800">Row {row.rowIndex}:</span>
-                      <span className="text-red-700 ml-2">
+                      <span className="font-medium text-red-800 dark:text-red-300">Row {row.rowIndex}:</span>
+                      <span className="text-red-700 dark:text-red-400 ml-2">
                         {row.building_label || '(no building)'} - {row.number || '(no number)'} - {row.errors.join(', ')}
                       </span>
                     </div>
@@ -290,36 +290,36 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
               </div>
             )}
 
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <div className="max-h-96 overflow-y-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Row</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Building</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Apt #</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Floor</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">m²</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Price</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Parking</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Storage</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Row</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Building</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Apt #</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Floor</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">m²</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Price</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Parking</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Storage</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {parsedRows.map((row) => (
                       <tr
                         key={row.rowIndex}
-                        className={row.errors.length > 0 || !row.building_id ? 'bg-red-50' : ''}
+                        className={row.errors.length > 0 || !row.building_id ? 'bg-red-50 dark:bg-red-900/20' : ''}
                       >
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.rowIndex}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.building_label}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.number}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.floor}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.size_m2}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">€{row.price.toLocaleString()}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.parking_label || '-'}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">{row.storage_label || '-'}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.rowIndex}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.building_label}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.number}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.floor}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.size_m2}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">€{row.price.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.parking_label || '-'}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.storage_label || '-'}</td>
                         <td className="px-3 py-2 text-sm">
                           {row.errors.length === 0 && row.building_id ? (
                             <span className="text-green-600 flex items-center">
@@ -344,25 +344,25 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
           <div className="space-y-4">
             <div className="text-center py-8">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
                 <div className="text-sm text-green-600 mb-1">{t('sales_projects.excel_import.successfully_imported')}</div>
                 <div className="text-3xl font-bold text-green-700">{importResults.success}</div>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg p-4">
                 <div className="text-sm text-red-600 mb-1">{t('sales_projects.excel_import.failed_skipped')}</div>
                 <div className="text-3xl font-bold text-red-700">{importResults.failed}</div>
               </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-4">
                 <div className="text-sm text-orange-600 mb-1">{t('sales_projects.excel_import.garages_linked')}</div>
                 <div className="text-3xl font-bold text-orange-700">{importResults.garagesCreated}</div>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">{t('sales_projects.excel_import.storages_linked')}</div>
-                <div className="text-3xl font-bold text-gray-700">{importResults.storagesCreated}</div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('sales_projects.excel_import.storages_linked')}</div>
+                <div className="text-3xl font-bold text-gray-700 dark:text-gray-200">{importResults.storagesCreated}</div>
               </div>
             </div>
           </div>

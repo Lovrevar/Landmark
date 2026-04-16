@@ -12,10 +12,10 @@ const DirectorAlertsSection: React.FC<Props> = ({ alerts }) => {
   if (alerts.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center mb-4">
         <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.director.critical_alerts', { count: alerts.length })}</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.director.critical_alerts', { count: alerts.length })}</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {alerts.slice(0, 6).map((alert, index) => (
@@ -23,10 +23,10 @@ const DirectorAlertsSection: React.FC<Props> = ({ alerts }) => {
             key={index}
             className={`p-4 rounded-lg border ${
               alert.type === 'critical'
-                ? 'bg-red-50 border-red-200'
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                 : alert.type === 'warning'
-                ? 'bg-orange-50 border-orange-200'
-                : 'bg-blue-50 border-blue-200'
+                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
             }`}
           >
             <div className="flex items-start">
@@ -39,14 +39,14 @@ const DirectorAlertsSection: React.FC<Props> = ({ alerts }) => {
               )}
               <div className="flex-1">
                 <p className={`font-semibold text-sm ${
-                  alert.type === 'critical' ? 'text-red-900' :
-                  alert.type === 'warning' ? 'text-orange-900' : 'text-blue-900'
+                  alert.type === 'critical' ? 'text-red-900 dark:text-red-300' :
+                  alert.type === 'warning' ? 'text-orange-900 dark:text-orange-300' : 'text-blue-900 dark:text-blue-100'
                 }`}>
                   {alert.title}
                 </p>
                 <p className={`text-xs mt-1 ${
-                  alert.type === 'critical' ? 'text-red-700' :
-                  alert.type === 'warning' ? 'text-orange-700' : 'text-blue-700'
+                  alert.type === 'critical' ? 'text-red-700 dark:text-red-400' :
+                  alert.type === 'warning' ? 'text-orange-700 dark:text-orange-400' : 'text-blue-700 dark:text-blue-300'
                 }`}>
                   {alert.message}
                 </p>

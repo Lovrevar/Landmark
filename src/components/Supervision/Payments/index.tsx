@@ -35,7 +35,7 @@ const PaymentsManagement: React.FC = () => {
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -102,7 +102,7 @@ const PaymentsManagement: React.FC = () => {
                 </Table.Td>
                 <Table.Td className="font-medium">{payment.subcontractor_name}</Table.Td>
                 <Table.Td>{payment.project_name}</Table.Td>
-                <Table.Td className="text-gray-500">{payment.phase_name || '-'}</Table.Td>
+                <Table.Td className="text-gray-500 dark:text-gray-400">{payment.phase_name || '-'}</Table.Td>
                 <Table.Td>
                   {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
                     <div className="flex items-center space-x-2">
@@ -110,13 +110,13 @@ const PaymentsManagement: React.FC = () => {
                       <span className="font-medium">{payment.paid_by_company_name}</span>
                     </div>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </Table.Td>
                 <Table.Td align="right" className="font-semibold text-green-600">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td className="text-gray-500 max-w-xs truncate">
+                <Table.Td className="text-gray-500 dark:text-gray-400 max-w-xs truncate">
                   {payment.notes || '-'}
                 </Table.Td>
               </Table.Tr>
@@ -126,13 +126,13 @@ const PaymentsManagement: React.FC = () => {
       )}
 
       {filteredPayments.length > 0 && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Filter className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">{t('common.filtered_results')}</span>
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('common.filtered_results')}</span>
             </div>
-            <div className="text-sm text-blue-900">
+            <div className="text-sm text-blue-900 dark:text-blue-100">
               <span className="font-semibold">{filteredPayments.length}</span> {t('supervision.payments.payments_totaling')}{' '}
               <span className="font-semibold">
                 €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}

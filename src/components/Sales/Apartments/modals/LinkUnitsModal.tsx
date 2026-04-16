@@ -82,21 +82,21 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
           <LoadingSpinner message={t('apartments.link_units_modal.loading')} />
         ) : (
           <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h5 className="font-medium text-gray-900 mb-2">{t('apartments.link_units_modal.linked')}</h5>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-2">{t('apartments.link_units_modal.linked')}</h5>
               {selectedGarages.length === 0 && selectedStorages.length === 0 ? (
-                <p className="text-sm text-gray-500">{t('apartments.link_units_modal.no_linked')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('apartments.link_units_modal.no_linked')}</p>
               ) : (
                 <div className="space-y-1">
                   {selectedGarages.map(garage => (
-                    <div key={garage.id} className="text-sm text-gray-700 flex items-center">
+                    <div key={garage.id} className="text-sm text-gray-700 dark:text-gray-200 flex items-center">
                       <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
                       {t('common.garage')} {garage.number} - €{garage.price.toLocaleString('hr-HR')}
                     </div>
                   ))}
                   {selectedStorages.map(storage => (
-                    <div key={storage.id} className="text-sm text-gray-700 flex items-center">
-                      <Package className="w-4 h-4 mr-2 text-gray-600" />
+                    <div key={storage.id} className="text-sm text-gray-700 dark:text-gray-200 flex items-center">
+                      <Package className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" />
                       {t('common.storage')} {storage.number} - €{storage.price.toLocaleString('hr-HR')}
                     </div>
                   ))}
@@ -105,12 +105,12 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                 <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
                 {t('apartments.link_units_modal.select_garages')} ({selectedGarageIds.length})
               </h4>
               {availableGarages.length === 0 ? (
-                <p className="text-gray-500 text-sm">{t('apartments.link_units_modal.no_garages')}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('apartments.link_units_modal.no_garages')}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {availableGarages.map((garage) => {
@@ -124,19 +124,19 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         disabled={!isAvailable}
                         className={`p-3 border-2 rounded-lg text-left transition-all ${
                           isSelected
-                            ? 'border-orange-500 bg-orange-50'
+                            ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
                             : isAvailable
-                              ? 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
-                              : 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                              ? 'border-gray-200 dark:border-gray-600 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                              : 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">{t('common.garage')} {garage.number}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">{t('common.garage')} {garage.number}</div>
                           {isSelected && <X className="w-4 h-4 text-orange-600" />}
                         </div>
-                        <div className="text-sm text-gray-600">{t('common.floor')} {garage.floor} • {garage.size_m2}m²</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {garage.floor} • {garage.size_m2}m²</div>
                         <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
-                        {!isAvailable && <div className="text-xs text-gray-500 mt-1">{garage.status}</div>}
+                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{garage.status}</div>}
                       </button>
                     )
                   })}
@@ -145,12 +145,12 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                <Package className="w-5 h-5 mr-2 text-gray-600" />
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                <Package className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
                 {t('apartments.link_units_modal.select_storages')} ({selectedStorageIds.length})
               </h4>
               {availableStorages.length === 0 ? (
-                <p className="text-gray-500 text-sm">{t('apartments.link_units_modal.no_storages')}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('apartments.link_units_modal.no_storages')}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {availableStorages.map((storage) => {
@@ -164,19 +164,19 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         disabled={!isAvailable}
                         className={`p-3 border-2 rounded-lg text-left transition-all ${
                           isSelected
-                            ? 'border-gray-500 bg-gray-50'
+                            ? 'border-gray-500 bg-gray-50 dark:bg-gray-700/50'
                             : isAvailable
-                              ? 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                              : 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                              ? 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                              : 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">{t('common.storage')} {storage.number}</div>
-                          {isSelected && <X className="w-4 h-4 text-gray-600" />}
+                          <div className="font-medium text-gray-900 dark:text-white">{t('common.storage')} {storage.number}</div>
+                          {isSelected && <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
                         </div>
-                        <div className="text-sm text-gray-600">{t('common.floor')} {storage.floor} • {storage.size_m2}m²</div>
-                        <div className="text-sm font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</div>
-                        {!isAvailable && <div className="text-xs text-gray-500 mt-1">{storage.status}</div>}
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {storage.floor} • {storage.size_m2}m²</div>
+                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400">€{storage.price.toLocaleString('hr-HR')}</div>
+                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{storage.status}</div>}
                       </button>
                     )
                   })}

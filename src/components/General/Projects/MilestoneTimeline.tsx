@@ -57,11 +57,11 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                 </div>
 
                 <div className="ml-6 flex-1">
-                  <div className={`bg-white rounded-lg border-2 ${status.border} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+                  <div className={`bg-white dark:bg-gray-800 rounded-lg border-2 ${status.border} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{milestone.name}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{milestone.name}</h3>
                           <Badge variant={
                             status.label === 'Completed' ? 'green'
                               : status.label === 'Overdue' ? 'red'
@@ -72,7 +72,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                         </div>
 
                         {milestone.due_date && (
-                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                             <Calendar className="w-4 h-4 mr-1" />
                             <span>{t('general_projects.milestone_due')}: {format(parseISO(milestone.due_date), 'MMM dd, yyyy')}</span>
                           </div>
@@ -116,29 +116,29 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
         })}
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-gray-700">
+              <span className="text-gray-700 dark:text-gray-200">
                 <span className="font-semibold">{milestones.filter(m => m.completed).length}</span> {t('status.completed')}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="w-5 h-5 text-blue-600" />
-              <span className="text-gray-700">
+              <span className="text-gray-700 dark:text-gray-200">
                 <span className="font-semibold">{milestones.filter(m => !m.completed && (!m.due_date || !isPast(parseISO(m.due_date)))).length}</span> {t('status.in_progress')}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
-              <span className="text-gray-700">
+              <span className="text-gray-700 dark:text-gray-200">
                 <span className="font-semibold">{milestones.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length}</span> {t('status.overdue')}
               </span>
             </div>
           </div>
-          <div className="text-gray-600">
+          <div className="text-gray-600 dark:text-gray-400">
             {t('general_projects.milestone_progress')}: <span className="font-semibold">{Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)}%</span>
           </div>
         </div>

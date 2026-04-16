@@ -174,8 +174,8 @@ const ApartmentManagement: React.FC = () => {
         actions={
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
-              <p className="text-sm text-gray-600">{t('apartments.title')}</p>
-              <p className="text-2xl font-bold text-gray-900">{apartments.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.title')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{apartments.length}</p>
             </div>
             <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
               {t('apartments.bulk_create')}
@@ -187,7 +187,7 @@ const ApartmentManagement: React.FC = () => {
         }
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -229,8 +229,8 @@ const ApartmentManagement: React.FC = () => {
             onClick={() => setFilterStatus('all')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               filterStatus === 'all'
-                ? 'bg-blue-100 text-blue-700 font-medium'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('common.status')}
@@ -239,8 +239,8 @@ const ApartmentManagement: React.FC = () => {
             onClick={() => setFilterStatus('Available')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               filterStatus === 'Available'
-                ? 'bg-blue-100 text-blue-700 font-medium'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('apartments.statuses.available')}
@@ -249,8 +249,8 @@ const ApartmentManagement: React.FC = () => {
             onClick={() => setFilterStatus('Reserved')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               filterStatus === 'Reserved'
-                ? 'bg-yellow-100 text-yellow-700 font-medium'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 font-medium'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('apartments.statuses.reserved')}
@@ -259,8 +259,8 @@ const ApartmentManagement: React.FC = () => {
             onClick={() => setFilterStatus('Sold')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
               filterStatus === 'Sold'
-                ? 'bg-green-100 text-green-700 font-medium'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {t('apartments.statuses.sold')}
@@ -295,40 +295,40 @@ const ApartmentManagement: React.FC = () => {
                 key={apartment.id}
                 className={`rounded-xl shadow-sm border p-4 transition-all duration-200 ${
                   apartment.status === 'Sold'
-                    ? 'border-green-200 bg-green-50'
+                    ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
                     : apartment.status === 'Reserved'
-                      ? 'border-yellow-200 bg-yellow-50'
-                      : 'border-gray-200 bg-white hover:shadow-md'
+                      ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md'
                 }`}
               >
                 <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900">Unit {apartment.number}</h4>
-                  <p className="text-sm text-gray-600">{t('common.floor')} {apartment.floor}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Unit {apartment.number}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {apartment.floor}</p>
                 </div>
 
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">{t('common.project')}:</span>
-                    <span className="text-sm font-medium">{apartment.project_name}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.project')}:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.project_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">{t('common.building')}:</span>
-                    <span className="text-sm font-medium">{apartment.building_name}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.building')}:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.building_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">{t('apartments.table.size')}:</span>
-                    <span className="text-sm font-medium">{apartment.size_m2} m²</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.size')}:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.size_m2} m²</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">{t('apartments.table.price')}:</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.price')}:</span>
                     <span className="text-sm font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
                   </div>
 
                   {(aptLinkedGarages.length > 0 || aptLinkedStorages.length > 0) && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-1">{t('apartments.link_units')}:</p>
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">{t('apartments.link_units')}:</p>
                       {aptLinkedGarages.map((garage) => (
-                        <div key={garage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                        <div key={garage.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                           <span className="flex items-center">
                             <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                             {t('common.garage')} {garage.number}
@@ -337,16 +337,16 @@ const ApartmentManagement: React.FC = () => {
                         </div>
                       ))}
                       {aptLinkedStorages.map((storage) => (
-                        <div key={storage.id} className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                        <div key={storage.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                           <span className="flex items-center">
-                            <Package className="w-3 h-3 mr-1 text-gray-600" />
+                            <Package className="w-3 h-3 mr-1 text-gray-600 dark:text-gray-400" />
                             {t('common.storage')} {storage.number}
                           </span>
-                          <span className="font-medium text-gray-600">€{storage.price.toLocaleString('hr-HR')}</span>
+                          <span className="font-medium text-gray-600 dark:text-gray-400">€{storage.price.toLocaleString('hr-HR')}</span>
                         </div>
                       ))}
-                      <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
-                        <span className="text-xs font-semibold text-gray-700">{t('common.total')}:</span>
+                      <div className="flex justify-between mt-1 pt-1 border-t border-gray-100 dark:border-gray-700">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t('common.total')}:</span>
                         <span className="text-xs font-bold text-green-600">€{totalPrice.toLocaleString('hr-HR')}</span>
                       </div>
                     </div>
@@ -355,16 +355,16 @@ const ApartmentManagement: React.FC = () => {
                   {apartment.status === 'Sold' && apartment.buyer_name && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">{t('apartments.table.buyer')}:</span>
-                        <span className="text-sm font-medium">{apartment.buyer_name}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.buyer')}:</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.buyer_name}</span>
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between mb-1">
-                          <span className="text-xs font-semibold text-gray-700">{t('apartments.payment_history_modal.progress')}</span>
-                          <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t('apartments.payment_history_modal.progress')}</span>
+                          <span className="text-xs font-bold text-gray-900 dark:text-white">{overallPercentage.toFixed(1)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                           <div
                             className={`h-3 rounded-full transition-all duration-300 ${
                               overallPercentage >= 100 ? 'bg-green-600' :
@@ -376,7 +376,7 @@ const ApartmentManagement: React.FC = () => {
                             }}
                           ></div>
                         </div>
-                        <div className="text-xs text-gray-600 mt-1 font-medium">
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
                           €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString('hr-HR')}
                         </div>
                       </div>

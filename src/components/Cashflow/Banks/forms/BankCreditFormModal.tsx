@@ -78,25 +78,25 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
 
       <Modal.Body>
         {calculation && (
-          <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-3">{t('banks.credit_form.schedule_preview')}</h4>
+          <div className="mb-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('banks.credit_form.schedule_preview')}</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-blue-700 mb-1">{t('banks.credit_form.principal_payment')}</p>
-                <p className="text-xl font-bold text-blue-900">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs text-blue-600">{t('banks.credit_form.every_freq', { frequency: calculation.principalFrequency })}</p>
-                <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalPrincipalPayments })}</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">{t('banks.credit_form.principal_payment')}</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{t('banks.credit_form.every_freq', { frequency: calculation.principalFrequency })}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalPrincipalPayments })}</p>
               </div>
               <div>
-                <p className="text-sm text-green-700 mb-1">{t('banks.credit_form.interest_payment')}</p>
-                <p className="text-xl font-bold text-green-900">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs text-green-600">{t('banks.credit_form.every_freq', { frequency: calculation.interestFrequency })}</p>
-                <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
+                <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('banks.credit_form.interest_payment')}</p>
+                <p className="text-xl font-bold text-green-900 dark:text-green-200">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">{t('banks.credit_form.every_freq', { frequency: calculation.interestFrequency })}</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-blue-200">
-              <p className="text-sm text-blue-700">{t('banks.credit_form.payments_start_label')}<span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
-              <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.grace_period_after', { months: newCredit.grace_period })}</p>
+            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+              <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')}<span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t('banks.credit_form.grace_period_after', { months: newCredit.grace_period })}</p>
             </div>
           </div>
         )}
@@ -206,7 +206,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             <DateInput
               value={newCredit.start_date}
               onChange={(value) => setNewCredit({ ...newCredit, start_date: value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </FormField>
 
@@ -214,7 +214,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             <DateInput
               value={newCredit.maturity_date}
               onChange={(value) => setNewCredit({ ...newCredit, maturity_date: value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </FormField>
 
@@ -222,7 +222,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             <DateInput
               value={newCredit.usage_expiration_date || ''}
               onChange={(value) => setNewCredit({ ...newCredit, usage_expiration_date: value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </FormField>
 
@@ -236,8 +236,8 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
           </FormField>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
             <label className="flex items-start space-x-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -250,11 +250,11 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
                     disbursed_to_bank_account_id: checked ? newCredit.disbursed_to_bank_account_id : undefined
                   })
                 }}
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <div className="flex-1">
-                <span className="font-medium text-gray-900">{t('banks.credit_form.disbursed_to_account_label')}</span>
-                <p className="text-sm text-gray-600 mt-1">
+                <span className="font-medium text-gray-900 dark:text-white">{t('banks.credit_form.disbursed_to_account_label')}</span>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {t('banks.credit_form.disbursed_to_account_hint')}
                 </p>
               </div>
@@ -263,16 +263,16 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             {newCredit.disbursed_to_account && (
               <div className="mt-4">
                 {!newCredit.company_id ? (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">{t('banks.credit_form.select_company_first')}</p>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300">{t('banks.credit_form.select_company_first')}</p>
                   </div>
                 ) : loadingAccounts ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-gray-600">{t('banks.credit_form.loading_accounts')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('banks.credit_form.loading_accounts')}</p>
                   </div>
                 ) : companyBankAccounts.length === 0 ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-800">{t('banks.credit_form.no_bank_accounts')}</p>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <p className="text-sm text-red-800 dark:text-red-300">{t('banks.credit_form.no_bank_accounts')}</p>
                   </div>
                 ) : (
                   <FormField label={t('banks.credit_form.bank_account_label')} required error={fieldErrors.disbursed_to_bank_account_id}>

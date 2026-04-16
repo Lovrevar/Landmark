@@ -133,21 +133,21 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-xl">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{t('retail_projects.milestones.title')}</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('retail_projects.milestones.title')}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {projectName} • {phaseName} • {supplierName}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {t('retail_projects.milestones.contract_label', { amount: formatCurrency(contractCost) })}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
@@ -155,48 +155,48 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-blue-600 mb-1">{t('retail_projects.milestones.stats.total_distributed')}</p>
-                  <p className="text-2xl font-bold text-blue-900">{stats.totalPercentage.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalPercentage.toFixed(1)}%</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-blue-600 opacity-50" />
               </div>
             </div>
 
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-green-600 mb-1">{t('retail_projects.milestones.stats.paid')}</p>
-                  <p className="text-2xl font-bold text-green-900">{formatCurrency(stats.paidAmount)}</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-300">{formatCurrency(stats.paidAmount)}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />
               </div>
             </div>
 
-            <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-orange-600 mb-1">{t('retail_projects.milestones.stats.pending')}</p>
-                  <p className="text-2xl font-bold text-orange-900">{formatCurrency(stats.pendingAmount)}</p>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-400">{formatCurrency(stats.pendingAmount)}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-orange-600 opacity-50" />
               </div>
             </div>
 
             <div className={`p-4 rounded-lg ${
-              stats.remainingPercentage > 0 ? 'bg-gray-50' : 'bg-green-50'
+              stats.remainingPercentage > 0 ? 'bg-gray-50 dark:bg-gray-700' : 'bg-green-50 dark:bg-green-900/20'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-xs mb-1 ${
-                    stats.remainingPercentage > 0 ? 'text-gray-600' : 'text-green-600'
+                    stats.remainingPercentage > 0 ? 'text-gray-600 dark:text-gray-400' : 'text-green-600'
                   }`}>
                     {t('retail_projects.milestones.stats.remaining')}
                   </p>
                   <p className={`text-2xl font-bold ${
-                    stats.remainingPercentage > 0 ? 'text-gray-900' : 'text-green-900'
+                    stats.remainingPercentage > 0 ? 'text-gray-900 dark:text-white' : 'text-green-900 dark:text-green-300'
                   }`}>
                     {stats.remainingPercentage.toFixed(1)}%
                   </p>
@@ -209,7 +209,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {t('retail_projects.milestones.list_title', { count: milestones.length })}
           </h3>
           <Button
@@ -252,18 +252,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                 <div
                   key={milestone.id}
                   className={`p-4 rounded-lg border-2 ${
-                    isPaid ? 'border-green-200 bg-green-50' :
-                    isPending ? 'border-blue-200 bg-blue-50' :
-                    'border-gray-200 bg-gray-50'
+                    isPaid ? 'border-green-200 bg-green-50 dark:bg-green-900/20' :
+                    isPending ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' :
+                    'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                           #{milestone.milestone_number}
                         </span>
-                        <h4 className="text-lg font-semibold text-gray-900">
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                           {milestone.milestone_name}
                         </h4>
                         <Badge variant={isPaid ? 'green' : isPending ? 'blue' : 'gray'}>
@@ -272,38 +272,38 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                       </div>
 
                       {milestone.description && (
-                        <p className="text-sm text-gray-600 mb-3">{milestone.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{milestone.description}</p>
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.percentage')}</p>
-                          <p className="text-lg font-semibold text-gray-900">{milestone.percentage}%</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.percentage')}</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{milestone.percentage}%</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.amount')}</p>
-                          <p className="text-lg font-semibold text-gray-900">{formatCurrency(amount)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.amount')}</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(amount)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">{t('retail_projects.milestones.paid_amount')}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.paid_amount')}</p>
                           <p className="text-lg font-semibold text-teal-600">
                             {formatCurrency(milestone.amount_paid || 0)}
                           </p>
                           {amount > 0 && (
                             <div className="mt-1">
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full transition-all ${
                                     (milestone.amount_paid || 0) >= amount
                                       ? 'bg-green-500'
                                       : (milestone.amount_paid || 0) > 0
                                       ? 'bg-teal-500'
-                                      : 'bg-gray-300'
+                                      : 'bg-gray-300 dark:bg-gray-600'
                                   }`}
                                   style={{ width: `${Math.min(100, ((milestone.amount_paid || 0) / amount) * 100)}%` }}
                                 ></div>
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {Math.min(100, ((milestone.amount_paid || 0) / amount) * 100).toFixed(1)}%
                               </p>
                             </div>
@@ -311,8 +311,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                         </div>
                         {milestone.due_date && (
                           <div>
-                            <p className="text-xs text-gray-500">{t('retail_projects.milestones.due_date')}</p>
-                            <p className="text-lg font-semibold text-gray-900">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.due_date')}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
                               {format(new Date(milestone.due_date), 'dd.MM.yyyy')}
                             </p>
                           </div>

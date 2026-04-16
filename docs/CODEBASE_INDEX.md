@@ -53,6 +53,7 @@ Module/
 | `src/contexts/AuthContext.tsx` | Global auth state |
 | `src/utils/permissions.ts` | Role-based access control |
 | `src/utils/formatters.ts` | Shared date/currency/number formatters |
+| `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
 | `src/utils/excelParsers.ts` | Excel file import helpers |
 | `src/utils/reportGenerator.ts` | Shared PDF generation utilities |
 | `src/types/investment.ts` | Shared investment types |

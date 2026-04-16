@@ -162,17 +162,17 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
       <Form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
       <Modal.Body>
-        <div className="bg-slate-50 p-5 rounded-lg mb-5">
+        <div className="bg-slate-50 dark:bg-gray-800 p-5 rounded-lg mb-5">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-semibold text-slate-800">{t('invoices.land_purchase.project_type')}</h3>
-            <div className="inline-flex rounded-lg border border-slate-300 bg-white p-1">
+            <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100">{t('invoices.land_purchase.project_type')}</h3>
+            <div className="inline-flex rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-1">
               <button
                 type="button"
                 onClick={() => setProjectType('projects')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   projectType === 'projects'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-700 hover:text-slate-900'
+                    : 'text-slate-700 dark:text-gray-200 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {t('invoices.land_purchase.projects')}
@@ -183,7 +183,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   projectType === 'retail'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-700 hover:text-slate-900'
+                    : 'text-slate-700 dark:text-gray-200 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Retail
@@ -191,16 +191,16 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
           </div>
 
-          <h3 className="text-base font-semibold text-slate-800 mb-4">{t('invoices.land_purchase.basic_info')}</h3>
+          <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{t('invoices.land_purchase.basic_info')}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {t('invoices.land_purchase.company_label')}
               </label>
               <select
                 value={formData.company_id}
                 onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white"
               >
                 <option value="">{t('invoices.land_purchase.select_company')}</option>
                 {companies.map((company) => (
@@ -213,13 +213,13 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {projectType === 'retail' ? t('invoices.land_purchase.retail_supplier_label') : t('invoices.land_purchase.supplier_label')}
               </label>
               <select
                 value={formData.supplier_id}
                 onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value, project_id: '', phase_id: '' })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white"
               >
                 <option value="">{projectType === 'retail' ? t('invoices.land_purchase.select_retail_supplier') : t('invoices.land_purchase.select_supplier')}</option>
                 {suppliers.map((supplier) => (
@@ -232,13 +232,13 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {projectType === 'retail' ? t('invoices.land_purchase.retail_project_label') : t('invoices.land_purchase.project_label')}
               </label>
               <select
                 value={formData.project_id}
                 onChange={(e) => setFormData({ ...formData, project_id: e.target.value, phase_id: '' })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white disabled:bg-slate-100 dark:disabled:bg-gray-600"
                 disabled={!formData.supplier_id}
               >
                 <option value="">{projectType === 'retail' ? t('invoices.land_purchase.select_retail_project') : t('invoices.land_purchase.select_project')}</option>
@@ -251,13 +251,13 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {t('invoices.land_purchase.phase_label')}
               </label>
               <select
                 value={formData.phase_id}
                 onChange={(e) => setFormData({ ...formData, phase_id: e.target.value, contract_id: '' })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-slate-100"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white disabled:bg-slate-100 dark:disabled:bg-gray-600"
                 disabled={!formData.project_id}
               >
                 <option value="">{t('invoices.land_purchase.select_phase')}</option>
@@ -271,13 +271,13 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
             {availableContracts.length > 0 && (
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                   {t('invoices.land_purchase.contract_label')}
                 </label>
                 <select
                   value={formData.contract_id}
                   onChange={(e) => setFormData({ ...formData, contract_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">{t('invoices.land_purchase.select_contract')}</option>
                   {availableContracts.map((contract) => (
@@ -291,7 +291,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
             )}
 
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {t('invoices.land_purchase.iban_label')}
               </label>
               <Input
@@ -304,15 +304,15 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           </div>
 
           {selectedContract && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-slate-600">{t('invoices.land_purchase.contract_number')}</span>
-                  <span className="ml-2 font-semibold text-slate-800">{selectedContract.contract_number}</span>
+                  <span className="text-slate-600 dark:text-gray-400">{t('invoices.land_purchase.contract_number')}</span>
+                  <span className="ml-2 font-semibold text-slate-800 dark:text-gray-100">{selectedContract.contract_number}</span>
                 </div>
                 <div>
-                  <span className="text-slate-600">{t('invoices.land_purchase.contract_amount')}</span>
-                  <span className="ml-2 font-semibold text-blue-700">
+                  <span className="text-slate-600 dark:text-gray-400">{t('invoices.land_purchase.contract_amount')}</span>
+                  <span className="ml-2 font-semibold text-blue-700 dark:text-blue-300">
                     {selectedContract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
                   </span>
                 </div>
@@ -322,10 +322,10 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         </div>
 
         {selectedContract && (
-          <div className="bg-slate-50 p-5 rounded-lg mb-5">
-            <h3 className="text-base font-semibold text-slate-800 mb-4">{t('invoices.land_purchase.invoice_name_section')}</h3>
+          <div className="bg-slate-50 dark:bg-gray-800 p-5 rounded-lg mb-5">
+            <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{t('invoices.land_purchase.invoice_name_section')}</h3>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {t('invoices.land_purchase.invoice_name_label')}
               </label>
               <Input
@@ -335,7 +335,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 placeholder={t('invoices.land_purchase.invoice_name_placeholder')}
               />
               {fieldErrors.invoice_name && <p className="text-xs text-red-600 mt-1">{fieldErrors.invoice_name}</p>}
-              <p className="text-xs text-slate-500 mt-1.5">
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5">
                 {t('invoices.land_purchase.invoice_name_hint')}<span className="font-semibold">{formData.invoice_name || t('invoices.land_purchase.invoice_name_default')}{t('invoices.land_purchase.invoice_name_deposit_suffix')}</span> i <span className="font-semibold">{formData.invoice_name || t('invoices.land_purchase.invoice_name_default')}{t('invoices.land_purchase.invoice_name_remaining_suffix')}</span>
               </p>
             </div>
@@ -344,11 +344,11 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
         {selectedContract && (
           <>
-            <div className="bg-green-50 p-5 rounded-lg mb-5 border border-green-200">
-              <h3 className="text-base font-semibold text-green-900 mb-4">{t('invoices.land_purchase.deposit_section')}</h3>
+            <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-lg mb-5 border border-green-200 dark:border-green-800">
+              <h3 className="text-base font-semibold text-green-900 dark:text-green-300 mb-4">{t('invoices.land_purchase.deposit_section')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.deposit_amount')}
                   </label>
                   <CurrencyInput
@@ -358,7 +358,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.deposit_due_date')}
                   </label>
                   <DateInput
@@ -369,11 +369,11 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </div>
             </div>
 
-            <div className="bg-orange-50 p-5 rounded-lg mb-5 border border-orange-200">
-              <h3 className="text-base font-semibold text-orange-900 mb-4">{t('invoices.land_purchase.remaining_section')}</h3>
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-lg mb-5 border border-orange-200 dark:border-orange-800">
+              <h3 className="text-base font-semibold text-orange-900 dark:text-orange-300 mb-4">{t('invoices.land_purchase.remaining_section')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.remaining_amount')}
                   </label>
                   <CurrencyInput
@@ -383,7 +383,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.remaining_due_date')}
                   </label>
                   <DateInput
@@ -394,17 +394,17 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </div>
             </div>
 
-            <div className={`p-4 rounded-lg ${amountMismatch ? 'bg-red-50 border border-red-300' : 'bg-blue-50'}`}>
+            <div className={`p-4 rounded-lg ${amountMismatch ? 'bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800' : 'bg-blue-50 dark:bg-blue-900/30'}`}>
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-lg font-semibold text-slate-700">{t('invoices.land_purchase.grand_total')}</span>
+                  <span className="text-lg font-semibold text-slate-700 dark:text-gray-200">{t('invoices.land_purchase.grand_total')}</span>
                   {amountMismatch && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">
                       {t('invoices.land_purchase.amount_mismatch')} {contractAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
                     </p>
                   )}
                 </div>
-                <span className={`text-2xl font-bold ${amountMismatch ? 'text-red-600' : 'text-blue-600'}`}>
+                <span className={`text-2xl font-bold ${amountMismatch ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-300'}`}>
                   {totalAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
               </div>
@@ -413,8 +413,8 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
         )}
 
         {formData.phase_id && availableContracts.length === 0 && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800">{t('invoices.land_purchase.no_contracts')}</p>
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-yellow-800 dark:text-yellow-300">{t('invoices.land_purchase.no_contracts')}</p>
           </div>
         )}
       </Modal.Body>

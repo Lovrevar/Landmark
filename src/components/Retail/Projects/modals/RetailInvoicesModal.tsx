@@ -141,27 +141,27 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
             {invoices.map((invoice) => (
               <div
                 key={invoice.id}
-                className={`bg-white border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
-                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                className={`bg-white dark:bg-gray-800 border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-500 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
+                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
                       <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
                         {getStatusLabel(invoice.status)}
                       </Badge>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">{invoice.invoice_number}</p>
-                    <p className="text-xs text-gray-500 mt-1">{getTypeLabel(invoice.invoice_type)}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTypeLabel(invoice.invoice_type)}</p>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.company_label')}</label>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('retail_projects.invoices_modal.company_label')}</label>
                     <div className="flex items-center mb-2">
-                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                      <p className="text-sm font-medium text-gray-900">{invoice.company_name}</p>
+                      <Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.company_name}</p>
                     </div>
                     {invoice.supplier_name && (
                       <div className="flex items-center">
@@ -178,10 +178,10 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.amount_label')}</label>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('retail_projects.invoices_modal.amount_label')}</label>
                     <div className="flex items-center">
-                      <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                      <p className="text-lg font-bold text-gray-900">
+                      <DollarSign className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-1" />
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
                         €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -198,11 +198,11 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
                     <div className="flex items-center">
-                      <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                      <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
                       <p className={`text-sm font-medium ${
-                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900'
+                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900 dark:text-white'
                       }`}>
                         {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                       </p>
@@ -213,26 +213,26 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                         <span className="text-xs font-semibold">{t('retail_projects.invoices_modal.overdue_badge')}</span>
                       </div>
                     )}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {t('retail_projects.invoices_modal.issue_date_label')} {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
                     </p>
                   </div>
                 </div>
 
                 {invoice.description && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <label className="text-xs font-medium text-gray-500 uppercase block mb-1">{t('retail_projects.invoices_modal.description_label')}</label>
-                    <p className="text-sm text-gray-700">{invoice.description}</p>
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase block mb-1">{t('retail_projects.invoices_modal.description_label')}</label>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">{invoice.description}</p>
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">{t('retail_projects.invoices_modal.base_label')}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('retail_projects.invoices_modal.base_label')}</span>
                     <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">{t('retail_projects.invoices_modal.vat_label')}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('retail_projects.invoices_modal.vat_label')}</span>
                     <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       </Modal.Body>
       <Modal.Footer>
         <div className="flex justify-between items-center w-full">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             {t('retail_projects.invoices_modal.total_invoices')} <span className="font-semibold">{invoices.length}</span>
           </div>
           <Button variant="secondary" onClick={onClose}>

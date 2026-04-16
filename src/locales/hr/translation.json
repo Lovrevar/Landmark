@@ -192,7 +192,8 @@
     "accounting_suppliers": "Dobavljači",
     "accounting_companies": "Moje firme",
     "accounting_banks": "Investicije",
-    "accounting_customers": "Kupci"
+    "accounting_customers": "Kupci",
+    "budget_control": "Kontrola proračuna"
   },
   "profiles": {
     "general": "General",
@@ -4126,5 +4127,33 @@
         "method": "Metoda"
       }
     }
+  },
+  "budget_control": {
+    "title": "Kontrola proračuna",
+    "subtitle": "EVM pregled performansi po fazama projekta",
+    "project": "Projekt",
+    "tic": "TIC",
+    "tic_sub": "Ukupni investicijski trošak",
+    "planned_budget": "Planirani proračun",
+    "planned_budget_sub": "Ukupni proračun projekta",
+    "committed": "Ugovoreno",
+    "paid": "Plaćeno",
+    "forecast_eac": "Prognoza (EAC)",
+    "of_budget": "od proračuna",
+    "of_committed": "od ugovorenog",
+    "under_budget": "Ispod proračuna",
+    "over_budget": "Iznad proračuna",
+    "budget_chart_title": "Kontrola proračuna",
+    "evm_indices_title": "EVM indeksi performansi",
+    "evm_metrics_title": "EVM metrike performansi",
+    "planned": "Planirano",
+    "cpi": "CPI",
+    "spi": "SPI",
+    "eac": "EAC",
+    "vac": "VAC",
+    "completion": "Dovršenost",
+    "current": "Trenutno",
+    "chart_label": "Proračun",
+    "no_projects": "Nema pronađenih projekata."
   }
 }

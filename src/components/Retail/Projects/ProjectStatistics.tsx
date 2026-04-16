@@ -45,44 +45,44 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
   const profitMargin = totalRevenue > 0 ? (profitLoss / totalRevenue) * 100 : 0
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('retail_projects.financial_statistics')}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">{t('retail_projects.financial_statistics')}</h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex items-center space-x-2 mb-3">
             <TrendingDown className="w-5 h-5 text-red-600" />
-            <h4 className="font-semibold text-gray-900">{t('retail_projects.expenses')}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">{t('retail_projects.expenses')}</h4>
           </div>
 
           <div className="space-y-3 pl-7">
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">{t('retail_projects.land_price')}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{t('retail_projects.land_price')}</span>
               </div>
-              <span className="font-semibold text-red-700">{formatCurrency(landCost)}</span>
+              <span className="font-semibold text-red-700 dark:text-red-400">{formatCurrency(landCost)}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
               <div className="flex items-center space-x-2">
                 <DollarSign className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">{t('retail_projects.development')}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{t('retail_projects.development')}</span>
               </div>
-              <span className="font-semibold text-red-700">{formatCurrency(developmentCost)}</span>
+              <span className="font-semibold text-red-700 dark:text-red-400">{formatCurrency(developmentCost)}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Building2 className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-700">{t('retail_projects.construction')}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{t('retail_projects.construction')}</span>
               </div>
-              <span className="font-semibold text-red-700">{formatCurrency(constructionCost)}</span>
+              <span className="font-semibold text-red-700 dark:text-red-400">{formatCurrency(constructionCost)}</span>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-red-100 rounded-lg border-2 border-red-200 mt-2">
-              <span className="font-semibold text-gray-900">{t('retail_projects.total_expenses')}</span>
-              <span className="text-lg font-bold text-red-700">{formatCurrency(totalExpenses)}</span>
+            <div className="flex items-center justify-between p-4 bg-red-100 dark:bg-red-900/30 rounded-lg border-2 border-red-200 dark:border-red-800 mt-2">
+              <span className="font-semibold text-gray-900 dark:text-white">{t('retail_projects.total_expenses')}</span>
+              <span className="text-lg font-bold text-red-700 dark:text-red-400">{formatCurrency(totalExpenses)}</span>
             </div>
           </div>
         </div>
@@ -90,43 +90,43 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
         <div className="space-y-4">
           <div className="flex items-center space-x-2 mb-3">
             <TrendingUp className="w-5 h-5 text-green-600" />
-            <h4 className="font-semibold text-gray-900">{t('retail_projects.revenue')}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">{t('retail_projects.revenue')}</h4>
           </div>
 
           <div className="space-y-3 pl-7">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <div className="flex items-center space-x-2">
                 <ShoppingCart className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-700">{t('retail_projects.sales')}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{t('retail_projects.sales')}</span>
               </div>
-              <span className="font-semibold text-green-700">{formatCurrency(salesRevenue)}</span>
+              <span className="font-semibold text-green-700 dark:text-green-400">{formatCurrency(salesRevenue)}</span>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-green-100 rounded-lg border-2 border-green-200 mt-2">
-              <span className="font-semibold text-gray-900">{t('retail_projects.total_revenue')}</span>
-              <span className="text-lg font-bold text-green-700">{formatCurrency(totalRevenue)}</span>
+            <div className="flex items-center justify-between p-4 bg-green-100 dark:bg-green-900/30 rounded-lg border-2 border-green-200 mt-2">
+              <span className="font-semibold text-gray-900 dark:text-white">{t('retail_projects.total_revenue')}</span>
+              <span className="text-lg font-bold text-green-700 dark:text-green-400">{formatCurrency(totalRevenue)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className={`p-6 rounded-xl ${profitLoss >= 0 ? 'bg-gradient-to-r from-green-50 to-green-100' : 'bg-gradient-to-r from-red-50 to-red-100'}`}>
+      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className={`p-6 rounded-xl ${profitLoss >= 0 ? 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/30' : 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-1">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 {profitLoss >= 0 ? t('retail_projects.profit') : t('retail_projects.loss')}
               </h4>
-              <p className={`text-3xl font-bold ${profitLoss >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+              <p className={`text-3xl font-bold ${profitLoss >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
                 {formatCurrency(Math.abs(profitLoss))}
               </p>
               {totalRevenue > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {t('retail_projects.margin')}: {profitMargin.toFixed(2)}%
                 </p>
               )}
             </div>
-            <div className={`p-4 rounded-full ${profitLoss >= 0 ? 'bg-green-200' : 'bg-red-200'}`}>
+            <div className={`p-4 rounded-full ${profitLoss >= 0 ? 'bg-green-200 dark:bg-green-800' : 'bg-red-200 dark:bg-red-800'}`}>
               {profitLoss >= 0 ? (
                 <TrendingUp className="w-8 h-8 text-green-700" />
               ) : (
@@ -138,16 +138,16 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
       </div>
 
       {!project.land_plot && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
+        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
             {t('retail_projects.no_land_warning')}
           </p>
         </div>
       )}
 
       {totalRevenue === 0 && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
+        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
             {t('retail_projects.no_revenue_warning')}
           </p>
         </div>

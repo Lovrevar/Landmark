@@ -150,31 +150,31 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
             </FormField>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg mb-6">
-            <h4 className="font-semibold text-blue-900 mb-2">{t('sales_projects.bulk_units_modal.preview')}</h4>
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.bulk_units_modal.preview')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.total_label')} {getUnitLabel()}:</span>
-                <span className="font-medium text-blue-900 ml-2">{preview.totalUnits}</span>
+                <span className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_units_modal.total_label')} {getUnitLabel()}:</span>
+                <span className="font-medium text-blue-900 dark:text-blue-100 ml-2">{preview.totalUnits}</span>
               </div>
               <div>
-                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.avg_size')}:</span>
-                <span className="font-medium text-blue-900 ml-2">{preview.avgSize} m²</span>
+                <span className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_units_modal.avg_size')}:</span>
+                <span className="font-medium text-blue-900 dark:text-blue-100 ml-2">{preview.avgSize} m²</span>
               </div>
               <div>
-                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.avg_price')}:</span>
-                <span className="font-medium text-blue-900 ml-2">
+                <span className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_units_modal.avg_price')}:</span>
+                <span className="font-medium text-blue-900 dark:text-blue-100 ml-2">
                   €{Math.round(preview.avgPrice).toLocaleString('hr-HR')}
                 </span>
               </div>
               <div>
-                <span className="text-blue-700">{t('sales_projects.bulk_units_modal.total_value')}:</span>
-                <span className="font-medium text-blue-900 ml-2">
+                <span className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_units_modal.total_value')}:</span>
+                <span className="font-medium text-blue-900 dark:text-blue-100 ml-2">
                   €{Math.round(preview.totalValue).toLocaleString('hr-HR')}
                 </span>
               </div>
             </div>
-            <p className="text-xs text-blue-600 mt-3">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
               Units will be numbered: {formData.number_prefix || defaultPrefix}
               {formData.floor_start}01, {formData.number_prefix || defaultPrefix}
               {formData.floor_start}02, etc.

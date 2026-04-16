@@ -47,22 +47,22 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
         </StatGrid>
 
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
             <DollarSign className="w-5 h-5 mr-2" />
             {t('companies.details.bank_accounts_heading', { count: company.bank_accounts.length })}
           </h3>
           {company.bank_accounts.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">{t('companies.details.no_bank_accounts')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">{t('companies.details.no_bank_accounts')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {company.bank_accounts.map((account) => (
-                <div key={account.id} className="bg-white border-2 border-blue-200 rounded-lg p-4">
-                  <p className="font-semibold text-gray-900 mb-3">{account.bank_name}</p>
+                <div key={account.id} className="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <p className="font-semibold text-gray-900 dark:text-white mb-3">{account.bank_name}</p>
                   {account.account_number && (
-                    <p className="text-xs text-gray-500 mb-2">{account.account_number}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{account.account_number}</p>
                   )}
                   <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">{t('companies.details.balance_label')}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('companies.details.balance_label')}</span>
                     <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       €{account.current_balance.toLocaleString('hr-HR')}
                     </span>
@@ -74,12 +74,12 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
         </div>
 
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2" />
             {t('companies.details.credits_heading', { count: company.credits.length })}
           </h3>
           {company.credits.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">{t('companies.details.no_credits')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">{t('companies.details.no_credits')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {company.credits.map((credit) => {
@@ -90,44 +90,44 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                 const isDisbursedToAccount = credit.disbursed_to_account || false
 
                 return (
-                  <div key={credit.id} className="bg-white border-2 border-orange-200 rounded-lg p-4">
+                  <div key={credit.id} className="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-700 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <p className="font-semibold text-gray-900">{credit.credit_name}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{credit.credit_name}</p>
                       {isExpired && (
                         <Badge variant="red" size="sm">{t('companies.details.credit_expired')}</Badge>
                       )}
                     </div>
                     <div className="space-y-1 mb-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">{isDisbursedToAccount ? t('companies.details.credit_amount_label') : t('companies.details.credit_limit_label')}</span>
-                        <span className="font-medium text-gray-900">€{credit.amount.toLocaleString('hr-HR')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{isDisbursedToAccount ? t('companies.details.credit_amount_label') : t('companies.details.credit_limit_label')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">€{credit.amount.toLocaleString('hr-HR')}</span>
                       </div>
                       {!isDisbursedToAccount && (
                         <>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">{t('companies.details.credit_used')}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_used')}</span>
                             <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">{t('companies.details.credit_available')}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_available')}</span>
                             <span className="font-bold text-green-600">€{available.toLocaleString('hr-HR')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">{t('companies.details.credit_interest')}</span>
-                            <span className="font-medium text-gray-900">{credit.interest_rate}%</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_interest')}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{credit.interest_rate}%</span>
                           </div>
                         </>
                       )}
                     </div>
 
                     {isDisbursedToAccount && credit.allocations && credit.allocations.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs font-semibold text-gray-700 mb-2">{t('companies.details.credit_purpose')}</p>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('companies.details.credit_purpose')}</p>
                         <div className="space-y-1">
                           {credit.allocations.map((allocation) => (
                             <div key={allocation.id} className="flex justify-between text-xs">
-                              <span className="text-gray-600">{allocation.project?.name || 'OPEX'}:</span>
-                              <span className="font-medium text-gray-900">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
+                              <span className="text-gray-600 dark:text-gray-400">{allocation.project?.name || 'OPEX'}:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
                             </div>
                           ))}
                         </div>
@@ -136,7 +136,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
 
                     {!isDisbursedToAccount && (
                       <>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all ${
                               utilizationPercent >= 90 ? 'bg-red-500' :
@@ -146,7 +146,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                             style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 text-right">{t('companies.details.credit_utilization', { percent: utilizationPercent.toFixed(1) })}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">{t('companies.details.credit_utilization', { percent: utilizationPercent.toFixed(1) })}</p>
                       </>
                     )}
                   </div>

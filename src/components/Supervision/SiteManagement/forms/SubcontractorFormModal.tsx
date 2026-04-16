@@ -161,11 +161,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
               type="checkbox"
               checked={!hasContract}
               onChange={(e) => setHasContract(!e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm font-medium text-gray-900">{t('supervision.subcontractor_form.no_contract')}</span>
+            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
           </label>
-          <p className="text-xs text-gray-600 mt-1 ml-6">
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
             {hasContract
               ? t('supervision.subcontractor_form.with_contract_help')
               : t('supervision.subcontractor_form.no_contract_help')}
@@ -180,7 +180,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           <div className="flex gap-2">
             <Select
               value={formData.contract_type_id}
-              onChange={(e) => merge({ contract_type_id: parseInt(e.target.value) })}
+              onChange={(e) => merge({ contract_type_id: e.target.value ? parseInt(e.target.value) : 0 })}
               disabled={loadingContractTypes}
               className="flex-1"
             >
@@ -196,15 +196,15 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         </FormField>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">{t('supervision.subcontractor_form.selection')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{t('supervision.subcontractor_form.selection')}</label>
           <div className="flex space-x-4">
             <label className="flex items-center">
               <input type="radio" checked={!useExistingSubcontractor} onChange={() => setUseExistingSubcontractor(false)} className="mr-2" />
-              <span className="text-sm text-gray-700">{t('supervision.subcontractor_form.create_new')}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-200">{t('supervision.subcontractor_form.create_new')}</span>
             </label>
             <label className="flex items-center">
               <input type="radio" checked={useExistingSubcontractor} onChange={() => setUseExistingSubcontractor(true)} className="mr-2" />
-              <span className="text-sm text-gray-700">{t('supervision.subcontractor_form.select_existing')}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-200">{t('supervision.subcontractor_form.select_existing')}</span>
             </label>
           </div>
         </div>
@@ -298,11 +298,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         )}
 
         {hasContract && (
-          <div className="mt-6 border-t border-gray-200 pt-4">
+          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
             <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-4 h-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_form.contract_docs')}</h3>
-              <span className="text-xs text-gray-500">{t('supervision.subcontractor_form.optional_label')}</span>
+              <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('supervision.subcontractor_form.contract_docs')}</h3>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t('supervision.subcontractor_form.optional_label')}</span>
             </div>
             <ContractDocumentUpload files={pendingFiles} onChange={setPendingFiles} />
           </div>

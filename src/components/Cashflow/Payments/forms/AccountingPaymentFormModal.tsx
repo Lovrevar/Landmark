@@ -208,13 +208,13 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       cesija_company_id: '',
                       cesija_bank_account_id: ''
                     })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {t('payments.form.cesija_checkbox')}
                   </span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-6">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                   {t('payments.form.cesija_hint')}
                 </p>
               </div>
@@ -273,7 +273,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               <DateInput
                 value={formData.payment_date}
                 onChange={(value) => setFormData({ ...formData, payment_date: value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </FormField>
 

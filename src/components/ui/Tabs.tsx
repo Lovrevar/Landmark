@@ -21,7 +21,7 @@ export default function Tabs<T extends string>({
   className = '',
 }: TabsProps<T>) {
   return (
-    <div className={`border-b border-gray-200 ${className}`}>
+    <div className={`border-b border-gray-200 dark:border-gray-700 ${className}`}>
       <nav className="flex gap-1" aria-label="Tabs">
         {tabs.map(tab => (
           <button
@@ -30,7 +30,7 @@ export default function Tabs<T extends string>({
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             {tab.icon}
@@ -38,8 +38,8 @@ export default function Tabs<T extends string>({
             {tab.count !== undefined && (
               <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
                 activeTab === tab.id
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-500'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
               }`}>
                 {tab.count}
               </span>

@@ -114,27 +114,27 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </Badge>
           )}
         </div>
-        <p className="text-sm text-gray-600 mt-1">{subcontractor.contact}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{subcontractor.contact}</p>
       </Modal.Header>
 
       <Modal.Body>
         <div className="space-y-6">
           {/* Job Description */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center mb-2">
-              <FileText className="w-4 h-4 text-gray-600 mr-2" />
-              <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_details.job_description')}</h3>
+              <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400 mr-2" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('supervision.subcontractor_details.job_description')}</h3>
             </div>
-            <p className="text-gray-700 text-sm">{subcontractor.job_description || t('supervision.subcontractor_details.no_description')}</p>
+            <p className="text-gray-700 dark:text-gray-200 text-sm">{subcontractor.job_description || t('supervision.subcontractor_details.no_description')}</p>
           </div>
 
           {/* Contract Information */}
           {subcontractor.has_contract !== false && contractData && (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
                   <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-blue-900">{t('supervision.subcontractor_details.contract_details')}</h3>
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('supervision.subcontractor_details.contract_details')}</h3>
                 </div>
                 {contractData.contract_type_name && (
                   <Badge variant="blue" size="sm">{contractData.contract_type_name}</Badge>
@@ -143,34 +143,34 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <p className="text-xs text-blue-700">{t('supervision.subcontractor_details.contract_number')}</p>
-                  <p className="text-sm font-semibold text-blue-900">{contractData.contract_number}</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">{t('supervision.subcontractor_details.contract_number')}</p>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{contractData.contract_number}</p>
                 </div>
                 {contractData.end_date && (
                   <div>
-                    <p className="text-xs text-blue-700">{t('supervision.subcontractor_details.deadline')}</p>
-                    <p className="text-sm font-semibold text-blue-900">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">{t('supervision.subcontractor_details.deadline')}</p>
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                       {format(new Date(contractData.end_date), 'dd.MM.yyyy')}
                     </p>
                   </div>
                 )}
               </div>
 
-              <div className="bg-white p-3 rounded-lg space-y-2">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">{t('supervision.subcontractor_details.base')}</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.subcontractor_details.base')}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     {formatEuro(contractData.base_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">{t('supervision.subcontractor_details.vat')} ({contractData.vat_rate}%)</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.subcontractor_details.vat')} ({contractData.vat_rate}%)</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     {formatEuro(contractData.vat_amount)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-900">{t('common.total')}</span>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('common.total')}</span>
                   <span className="text-lg font-bold text-blue-600">
                     {formatEuro(contractData.total_amount)}
                   </span>
@@ -181,10 +181,10 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
           {/* Contract Documents */}
           {subcontractor.has_contract !== false && (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-gray-600" />
-                <h3 className="text-sm font-semibold text-gray-900">{t('supervision.subcontractor_details.contract_docs')}</h3>
+                <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('supervision.subcontractor_details.contract_docs')}</h3>
               </div>
               <ContractDocumentViewer
                 subcontractorId={subcontractor.subcontractor_id || subcontractor.id}
@@ -196,43 +196,43 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           {/* Payment Status */}
           {subcontractor.has_contract !== false ? (
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
-                  <DollarSign className="w-4 h-4 text-gray-600 mr-1" />
-                  <p className="text-xs text-gray-600">{t('supervision.subcontractor_details.contracted_base')}</p>
+                  <DollarSign className="w-4 h-4 text-gray-600 dark:text-gray-400 mr-1" />
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.subcontractor_details.contracted_base')}</p>
                 </div>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
                   {formatEuro(contractData?.base_amount ?? contractCost)}
                 </p>
               </div>
 
-              <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+              <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-200 dark:border-teal-800">
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 text-teal-600 mr-1" />
-                  <p className="text-xs text-teal-700">{t('supervision.subcontractor_details.paid_base')}</p>
+                  <p className="text-xs text-teal-700 dark:text-teal-400">{t('supervision.subcontractor_details.paid_base')}</p>
                 </div>
-                <p className="text-xl font-bold text-teal-900">
+                <p className="text-xl font-bold text-teal-900 dark:text-teal-300">
                   {formatEuro(realized)}
                 </p>
               </div>
 
               <div className={`p-4 rounded-lg border ${
-                realized > (contractData?.base_amount ?? contractCost) ? 'bg-red-50 border-red-200' :
-                realized < (contractData?.base_amount ?? contractCost) ? 'bg-green-50 border-green-200' :
-                'bg-gray-50 border-gray-200'
+                realized > (contractData?.base_amount ?? contractCost) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
+                realized < (contractData?.base_amount ?? contractCost) ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700'
               }`}>
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 mr-1" />
                   <p className={`text-xs ${
-                    realized > (contractData?.base_amount ?? contractCost) ? 'text-red-700' :
-                    realized < (contractData?.base_amount ?? contractCost) ? 'text-green-700' :
-                    'text-gray-600'
+                    realized > (contractData?.base_amount ?? contractCost) ? 'text-red-700 dark:text-red-400' :
+                    realized < (contractData?.base_amount ?? contractCost) ? 'text-green-700 dark:text-green-400' :
+                    'text-gray-600 dark:text-gray-400'
                   }`}>{t('supervision.subcontractor_details.gain_loss')}</p>
                 </div>
                 <p className={`text-xl font-bold ${
-                  realized > (contractData?.base_amount ?? contractCost) ? 'text-red-900' :
-                  realized < (contractData?.base_amount ?? contractCost) ? 'text-green-900' :
-                  'text-gray-900'
+                  realized > (contractData?.base_amount ?? contractCost) ? 'text-red-900 dark:text-red-300' :
+                  realized < (contractData?.base_amount ?? contractCost) ? 'text-green-900 dark:text-green-400' :
+                  'text-gray-900 dark:text-white'
                 }`}>
                   {realized > (contractData?.base_amount ?? contractCost) ? '-' :
                    realized < (contractData?.base_amount ?? contractCost) ? '+' : ''}
@@ -241,18 +241,18 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               </div>
             </div>
           ) : (
-            <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-2 border-yellow-200 dark:border-yellow-700">
               <div className="flex items-center mb-2">
-                <FileText className="w-5 h-5 text-yellow-700 mr-2" />
-                <h3 className="text-sm font-semibold text-yellow-900">{t('supervision.subcontractor_details.no_contract_heading')}</h3>
+                <FileText className="w-5 h-5 text-yellow-700 dark:text-yellow-400 mr-2" />
+                <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">{t('supervision.subcontractor_details.no_contract_heading')}</h3>
               </div>
-              <div className="bg-white p-3 rounded-lg mt-3">
-                <p className="text-xs text-yellow-700 mb-1">{t('supervision.subcontractor_details.total_paid')}</p>
-                <p className="text-2xl font-bold text-yellow-900">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg mt-3">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-1">{t('supervision.subcontractor_details.total_paid')}</p>
+                <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-400">
                   {formatEuro(realized)}
                 </p>
               </div>
-              <p className="text-xs text-yellow-700 mt-3">
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-3">
                 {t('supervision.subcontractor_details.accounting_note')}
               </p>
             </div>
@@ -260,12 +260,12 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
           {/* Financing Information */}
           {funderName && (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
               <div className="flex items-center">
                 <Building2 className="w-5 h-5 text-blue-600 mr-2" />
                 <div>
-                  <p className="text-xs text-blue-700 font-medium">{t('supervision.subcontractor_details.financed_by')}</p>
-                  <p className="text-sm font-semibold text-blue-900">{funderName}</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">{t('supervision.subcontractor_details.financed_by')}</p>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{funderName}</p>
                 </div>
               </div>
             </div>
@@ -284,29 +284,29 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           )}
 
           {/* Supervision Comments Section */}
-          <div className="border-t border-gray-200 pt-6">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-gray-600" />
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
               {t('supervision.subcontractor_details.comments')}
             </h4>
 
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {comments.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">{t('supervision.subcontractor_details.no_comments')}</p>
+                <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('supervision.subcontractor_details.no_comments')}</p>
                 </div>
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className={`p-3 rounded-lg border ${
-                    comment.comment_type === 'issue' ? 'bg-red-50 border-red-200' :
-                    comment.comment_type === 'completed' ? 'bg-green-50 border-green-200' :
-                    'bg-gray-50 border-gray-200'
+                    comment.comment_type === 'issue' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
+                    comment.comment_type === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                    'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700'
                   }`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-900 text-sm">{comment.user?.username}</span>
-                        <span className="text-xs text-gray-500">({comment.user?.role})</span>
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{comment.user?.username}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">({comment.user?.role})</span>
                         <Badge
                           variant={
                             comment.comment_type === 'issue' ? 'red' :
@@ -319,17 +319,17 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                            comment.comment_type === 'issue' ? t('supervision.subcontractor_details.problem_type') : t('supervision.subcontractor_details.note_type')}
                         </Badge>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {format(new Date(comment.created_at), 'dd.MM.yyyy HH:mm')}
                       </span>
                     </div>
-                    <p className="text-gray-700 text-sm">{comment.comment}</p>
+                    <p className="text-gray-700 dark:text-gray-200 text-sm">{comment.comment}</p>
                   </div>
                 ))
               )}
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <FormField label={t('supervision.subcontractor_details.comment_type')}>
                 <Select
                   value={commentType}

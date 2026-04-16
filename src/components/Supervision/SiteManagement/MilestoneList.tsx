@@ -142,15 +142,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">{t('supervision.site_management.milestone_list.title')}</h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{t('supervision.site_management.milestone_list.title')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {projectName} • {phaseName} • {subcontractorName}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {t('supervision.site_management.milestone_list.contract_base')}: €{contractCost.toLocaleString('hr-HR')}
             </p>
           </div>
@@ -172,33 +172,33 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-600">{t('supervision.site_management.milestone_list.total_allocated')}</p>
-              <p className="text-lg font-bold text-gray-900">{stats.total_percentage.toFixed(2)}%</p>
-              <p className="text-xs text-gray-500">€{stats.total_amount.toLocaleString('hr-HR')}</p>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.site_management.milestone_list.total_allocated')}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.total_percentage.toFixed(2)}%</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">€{stats.total_amount.toLocaleString('hr-HR')}</p>
             </div>
-            <div className={`p-3 rounded-lg ${stats.remaining_percentage === 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
-              <p className={`text-xs ${stats.remaining_percentage === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+            <div className={`p-3 rounded-lg ${stats.remaining_percentage === 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
+              <p className={`text-xs ${stats.remaining_percentage === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
                 {t('common.remaining')}
               </p>
-              <p className={`text-lg font-bold ${stats.remaining_percentage === 0 ? 'text-green-900' : 'text-orange-900'}`}>
+              <p className={`text-lg font-bold ${stats.remaining_percentage === 0 ? 'text-green-900 dark:text-green-400' : 'text-orange-900 dark:text-orange-400'}`}>
                 {stats.remaining_percentage.toFixed(2)}%
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 €{((contractCost * stats.remaining_percentage) / 100).toLocaleString('hr-HR')}
               </p>
             </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-xs text-blue-600">{t('supervision.site_management.milestone_list.milestones')}</p>
-              <p className="text-lg font-bold text-blue-900">{milestones.length}</p>
-              <p className="text-xs text-gray-500">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+              <p className="text-xs text-blue-600 dark:text-blue-400">{t('supervision.site_management.milestone_list.milestones')}</p>
+              <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{milestones.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {stats.paid_count} {t('status.paid')}, {stats.pending_count} {t('status.pending')}
               </p>
             </div>
-            <div className="bg-teal-50 p-3 rounded-lg">
-              <p className="text-xs text-teal-600">{t('common.total_paid')}</p>
-              <p className="text-lg font-bold text-teal-900">€{stats.total_paid.toLocaleString('hr-HR')}</p>
-              <p className="text-xs text-gray-500">
+            <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+              <p className="text-xs text-teal-600 dark:text-teal-400">{t('common.total_paid')}</p>
+              <p className="text-lg font-bold text-teal-900 dark:text-teal-300">€{stats.total_paid.toLocaleString('hr-HR')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {contractCost > 0 ? ((stats.total_paid / contractCost) * 100).toFixed(1) : 0}% {t('supervision.site_management.milestone_list.of_contract')}
               </p>
             </div>
@@ -217,16 +217,16 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">#</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_name')}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('common.description')}</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_percentage')}</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('common.amount')}</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">{t('common.paid')}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">{t('supervision.site_management.milestone_list.col_due_date')}</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">{t('common.status')}</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">{t('common.actions')}</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">#</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('supervision.site_management.milestone_list.col_name')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.description')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('supervision.site_management.milestone_list.col_percentage')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.amount')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.paid')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('supervision.site_management.milestone_list.col_due_date')}</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.status')}</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,40 +238,40 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   const paymentPercentage = amount > 0 ? (paidAmount / amount) * 100 : 0
 
                   return (
-                    <tr key={milestone.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                    <tr key={milestone.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
                         {milestone.milestone_number}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-sm font-medium text-gray-900">{milestone.milestone_name}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{milestone.milestone_name}</div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
                           {milestone.description || '-'}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="text-sm font-semibold text-gray-900">{milestone.percentage}%</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">{milestone.percentage}%</div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="text-sm font-semibold text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
                           €{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="space-y-1">
-                          <div className="text-sm font-semibold text-gray-900">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white">
                             €{paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                           {isPartiallyPaid && (
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
                               {paymentPercentage.toFixed(1)}% {t('status.paid')}
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                           {milestone.due_date ? format(new Date(milestone.due_date), 'MMM dd, yyyy') : '-'}
                         </div>
                       </td>
@@ -306,15 +306,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-gray-50 font-semibold">
-                  <td colSpan={3} className="py-3 px-4 text-sm text-gray-900">{t('common.total')}</td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-900">
+                <tr className="bg-gray-50 dark:bg-gray-700/50 font-semibold">
+                  <td colSpan={3} className="py-3 px-4 text-sm text-gray-900 dark:text-white">{t('common.total')}</td>
+                  <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
                     {stats?.total_percentage.toFixed(2)}%
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-900">
+                  <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
                     €{stats?.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-900">
+                  <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
                     €{stats?.total_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td colSpan={3}></td>

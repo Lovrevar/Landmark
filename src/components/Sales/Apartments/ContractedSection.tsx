@@ -104,21 +104,21 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-150 text-left rounded-lg"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 text-left rounded-lg"
       >
-        <span className="text-sm font-semibold text-gray-700">{t('apartments.contracted.title')}</span>
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('apartments.contracted.title')}</span>
         {open
-          ? <ChevronDown className="w-4 h-4 text-gray-500" />
-          : <ChevronRight className="w-4 h-4 text-gray-500" />
+          ? <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          : <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         }
       </button>
 
       {open && (
-        <div className="p-4 space-y-4 bg-white rounded-b-lg border-t border-gray-200">
+        <div className="p-4 space-y-4 bg-white dark:bg-gray-800 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Datum potpisa predugovora">
               <Input
@@ -141,7 +141,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
           </div>
 
           {value.contract_payment_type && (
-            <div className="space-y-3 border-t border-gray-100 pt-3">
+            <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-3">
               <FormField label="Kapara 10% (EUR)">
                 <Input
                   type="number"

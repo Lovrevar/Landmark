@@ -124,29 +124,29 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
       />
 
       <Modal.Body>
-        <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('funding.payments.subcontractor_modal.contract_amount_label')}</span>
-            <span className="text-sm font-medium text-gray-900">{contractValue.toLocaleString('hr-HR')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.subcontractor_modal.contract_amount_label')}</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{contractValue.toLocaleString('hr-HR')}</span>
           </div>
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('funding.payments.subcontractor_modal.already_paid_label')}</span>
-            <span className="text-sm font-medium text-teal-600">{alreadyPaid.toLocaleString('hr-HR')}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.payments.subcontractor_modal.already_paid_label')}</span>
+            <span className="text-sm font-medium text-teal-600 dark:text-teal-400">{alreadyPaid.toLocaleString('hr-HR')}</span>
           </div>
-          <div className="flex justify-between pt-2 border-t border-gray-200">
-            <span className="text-sm font-medium text-gray-700">{t('funding.payments.subcontractor_modal.remaining_label')}</span>
+          <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('funding.payments.subcontractor_modal.remaining_label')}</span>
             <span className="text-sm font-bold text-orange-600">{remaining.toLocaleString('hr-HR')}</span>
           </div>
         </div>
 
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
           <div className="flex justify-between mb-1">
-            <span className="text-sm font-medium text-blue-900">{t('funding.payments.subcontractor_modal.milestone_label')}</span>
-            <span className="text-sm text-blue-700">{notification.milestone_name}</span>
+            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('funding.payments.subcontractor_modal.milestone_label')}</span>
+            <span className="text-sm text-blue-700 dark:text-blue-300">{notification.milestone_name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-blue-900">{t('funding.payments.subcontractor_modal.percentage_label')}</span>
-            <span className="text-sm text-blue-700">{notification.milestone_percentage}%</span>
+            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('funding.payments.subcontractor_modal.percentage_label')}</span>
+            <span className="text-sm text-blue-700 dark:text-blue-300">{notification.milestone_percentage}%</span>
           </div>
         </div>
 

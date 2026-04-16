@@ -67,8 +67,8 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
           </FormField>
 
           {!editingSupplier && (
-            <div className="border-t border-gray-200 pt-4 mt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('suppliers.form.link_project_optional')}</h3>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('suppliers.form.link_project_optional')}</h3>
 
               <div className="space-y-4">
                 <FormField label={t('suppliers.form.projects_label')}>

@@ -55,7 +55,7 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
-      <div className={`bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col`}>
         {children}
       </div>
     </div>
@@ -73,14 +73,14 @@ interface ModalHeaderProps {
 
 function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+        {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
       <button
         onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 transition-colors"
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
       >
         <X className="w-6 h-6" />
       </button>
@@ -111,7 +111,7 @@ interface ModalFooterProps {
 
 function ModalFooter({ children, sticky = true }: ModalFooterProps) {
   const baseClasses = [
-    'bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3 rounded-b-lg',
+    'bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end space-x-3 rounded-b-lg',
     sticky ? 'sticky bottom-0' : '',
   ].filter(Boolean).join(' ')
 

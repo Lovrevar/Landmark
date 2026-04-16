@@ -51,12 +51,12 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
       <Modal.Body>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Apartment Number</p>
-              <p className="text-lg font-semibold text-gray-900">{apartment.number}</p>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Apartment Number</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{apartment.number}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Status</p>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Status</p>
               <Badge variant={
                 apartment.status === 'Sold' ? 'green' :
                 apartment.status === 'Reserved' ? 'yellow' :
@@ -67,117 +67,117 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.location')}</h4>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.location')}</h4>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('common.project')}:</span>
-                <span className="font-medium text-gray-900">{apartment.project_name}</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('common.project')}:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{apartment.project_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('common.building')}:</span>
-                <span className="font-medium text-gray-900">{apartment.building_name}</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('common.building')}:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{apartment.building_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('apartments.form.floor')} (Etaža):</span>
-                <span className="font-medium text-gray-900">{apartment.floor}</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('apartments.form.floor')} (Etaža):</span>
+                <span className="font-medium text-gray-900 dark:text-white">{apartment.floor}</span>
               </div>
               {apartment.ulaz && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Entrance (Ulaz):</span>
-                  <span className="font-medium text-gray-900">{apartment.ulaz}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Entrance (Ulaz):</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{apartment.ulaz}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.specs')}</h4>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.specs')}</h4>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2">
               {apartment.tip_stana && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Type (Tip stana):</span>
-                  <span className="font-medium text-gray-900">{apartment.tip_stana}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Type (Tip stana):</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{apartment.tip_stana}</span>
                 </div>
               )}
               {apartment.sobnost != null && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Rooms (Sobnost):</span>
-                  <span className="font-medium text-gray-900">{apartment.sobnost}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Rooms (Sobnost):</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{apartment.sobnost}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('apartments.details_modal.saleable_area')}:</span>
-                <span className="font-medium text-gray-900">{apartment.size_m2} m²</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('apartments.details_modal.saleable_area')}:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{apartment.size_m2} m²</span>
               </div>
               {apartment.povrsina_otvoreno != null && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Open Area (Površina otvoreno):</span>
-                  <span className="font-medium text-gray-900">{apartment.povrsina_otvoreno} m²</span>
+                  <span className="text-gray-600 dark:text-gray-400">Open Area (Površina otvoreno):</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{apartment.povrsina_otvoreno} m²</span>
                 </div>
               )}
               {apartment.povrsina_ot_sa_koef != null && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Open Area w/ Coef.:</span>
-                  <span className="font-medium text-gray-900">{apartment.povrsina_ot_sa_koef} m²</span>
+                  <span className="text-gray-600 dark:text-gray-400">Open Area w/ Coef.:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{apartment.povrsina_ot_sa_koef} m²</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('apartments.table.price')}:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('apartments.table.price')}:</span>
                 <span className="font-bold text-green-600">€{apartment.price.toLocaleString('hr-HR')}</span>
               </div>
             </div>
           </div>
 
           {apartment.buyer_name && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.buyer_info')}</h4>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.buyer_info')}</h4>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t('apartments.table.buyer')}:</span>
-                <span className="font-medium text-gray-900">{apartment.buyer_name}</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('apartments.table.buyer')}:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{apartment.buyer_name}</span>
               </div>
             </div>
           )}
 
-          {showContract && <div className="border-t border-gray-200 pt-4">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">{t('apartments.details_modal.contract')}</h4>
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
+          {showContract && <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.contract')}</h4>
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-700 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Datum potpisa predugovora:</span>
-                <span className="font-medium text-gray-900">{formatDate(apartment.datum_potpisa_predugovora) || '—'}</span>
+                <span className="text-gray-600 dark:text-gray-400">Datum potpisa predugovora:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatDate(apartment.datum_potpisa_predugovora) || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Payment type:</span>
-                <span className="font-medium text-gray-900 capitalize">{apartment.contract_payment_type || '—'}</span>
+                <span className="text-gray-600 dark:text-gray-400">Payment type:</span>
+                <span className="font-medium text-gray-900 dark:text-white capitalize">{apartment.contract_payment_type || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Kapara 10%:</span>
-                <span className="font-medium text-gray-900">{formatAmount(apartment.kapara_10_posto)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Kapara 10%:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.kapara_10_posto)}</span>
               </div>
               {apartment.contract_payment_type === 'installments' && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">1. rata AB konstrukcija 30%:</span>
-                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_1_ab_konstrukcija_30)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">1. rata AB konstrukcija 30%:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.rata_1_ab_konstrukcija_30)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">2. rata postava stolarije 20%:</span>
-                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_2_postava_stolarije_20)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">2. rata postava stolarije 20%:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.rata_2_postava_stolarije_20)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">3. rata obrtnički radovi 20%:</span>
-                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_3_obrtnicki_radovi_20)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">3. rata obrtnički radovi 20%:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.rata_3_obrtnicki_radovi_20)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">4. rata uporabna 20%:</span>
-                    <span className="font-medium text-gray-900">{formatAmount(apartment.rata_4_uporabna_20)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">4. rata uporabna 20%:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.rata_4_uporabna_20)}</span>
                   </div>
                 </>
               )}
               {apartment.contract_payment_type === 'credit' && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Kredit etažiranje 90%:</span>
-                  <span className="font-medium text-gray-900">{formatAmount(apartment.kredit_etaziranje_90)}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Kredit etažiranje 90%:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatAmount(apartment.kredit_etaziranje_90)}</span>
                 </div>
               )}
             </div>

@@ -182,7 +182,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           <DateInput
             value={formData.issue_date}
             onChange={(value) => onFormChange({ ...formData, issue_date: value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </FormField>
 
@@ -190,7 +190,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           <DateInput
             value={formData.due_date}
             onChange={(value) => onFormChange({ ...formData, due_date: value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </FormField>
 

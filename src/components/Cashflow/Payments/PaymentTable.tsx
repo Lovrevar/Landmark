@@ -66,7 +66,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.my_company && (
-                  <Table.Td className="text-gray-700">
+                  <Table.Td className="text-gray-700 dark:text-gray-200">
                     {invoice.companies?.name || '-'}
                   </Table.Td>
                 )}
@@ -104,14 +104,14 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.reference_number && (
-                  <Table.Td className="text-gray-600">
+                  <Table.Td className="text-gray-600 dark:text-gray-400">
                     {payment.reference_number || '-'}
                   </Table.Td>
                 )}
                 {visibleColumns.description && (
-                  <Table.Td className="text-gray-600 max-w-xs truncate">
+                  <Table.Td className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
                     {payment.is_cesija && payment.cesija_company_name ? (
-                      <span className="font-medium text-purple-700">
+                      <span className="font-medium text-purple-700 dark:text-purple-400">
                         {t('payments.cesija_prefix')}{payment.cesija_company_name}
                       </span>
                     ) : (
@@ -130,7 +130,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onEdit(payment)
                       }}
                       title="Uredi"
-                      className="text-blue-600 hover:bg-blue-50 bg-transparent"
+                      className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                     />
                     <Button
                       variant="ghost"
@@ -141,7 +141,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onDelete(payment.id)
                       }}
                       title="Obriši"
-                      className="text-red-600 hover:bg-red-50 bg-transparent"
+                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                     />
                   </div>
                 </Table.Td>

@@ -15,10 +15,10 @@ const AccountingVATSection: React.FC<Props> = ({ vatStats }) => {
   const year = new Date().getFullYear()
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+    <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-blue-100 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
       <div className="flex items-center mb-4">
         <PieChart className="w-6 h-6 text-blue-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">{t('dashboards.accounting.vat_overview')}</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.accounting.vat_overview')}</h2>
       </div>
       <StatGrid columns={4} className="gap-6">
         <StatCard

@@ -30,17 +30,17 @@ export const ColumnMenuDropdown: React.FC<ColumnMenuDropdownProps> = ({
         {t('column_menu.button_label')}
       </Button>
       {showColumnMenu && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
-          <div className="px-3 py-2 border-b border-gray-200">
-            <p className="text-sm font-semibold text-gray-700">{t('column_menu.title')}</p>
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50 max-h-96 overflow-y-auto">
+          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('column_menu.title')}</p>
           </div>
           {Object.entries(columnLabels).map(([key, label]) => (
             <button
               key={key}
               onClick={() => onToggleColumn(key)}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center justify-between"
             >
-              <span className="text-gray-700">{label}</span>
+              <span className="text-gray-700 dark:text-gray-200">{label}</span>
               {visibleColumns[key] && <Check className="w-4 h-4 text-blue-600" />}
             </button>
           ))}

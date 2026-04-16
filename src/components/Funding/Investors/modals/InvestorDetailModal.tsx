@@ -43,56 +43,56 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
           <Modal.Body>
             <div className="flex items-center space-x-4 mb-4">
               <div className="flex items-center">
-                <Mail className="w-4 h-4 text-gray-400 mr-1" />
-                <span className="text-sm text-gray-600">{bank.contact_email}</span>
+                <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-1" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{bank.contact_email}</span>
               </div>
               <div className="flex items-center">
-                <Phone className="w-4 h-4 text-gray-400 mr-1" />
-                <span className="text-sm text-gray-600">{bank.contact_phone}</span>
+                <Phone className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-1" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{bank.contact_phone}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-3">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-blue-700">{t('funding.investors.detail_modal.credit_utilized_label')}</span>
-                    <span className="font-medium text-green-700">€{bank.credit_utilized.toLocaleString('hr-HR')}</span>
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_utilized_label')}</span>
+                    <span className="font-medium text-green-700 dark:text-green-400">€{bank.credit_utilized.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-blue-700">{t('funding.investors.detail_modal.outstanding_label')}</span>
-                    <span className="font-medium text-red-700">€{bank.outstanding_debt.toLocaleString('hr-HR')}</span>
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.outstanding_label')}</span>
+                    <span className="font-medium text-red-700 dark:text-red-400">€{bank.outstanding_debt.toLocaleString('hr-HR')}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-3">{t('funding.investors.detail_modal.credit_overview_heading')}</h4>
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-900 dark:text-green-300 mb-3">{t('funding.investors.detail_modal.credit_overview_heading')}</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-green-700">{t('funding.investors.detail_modal.active_credits_label')}</span>
-                    <span className="font-medium text-green-900">{bank.active_credits}</span>
+                    <span className="text-green-700 dark:text-green-400">{t('funding.investors.detail_modal.active_credits_label')}</span>
+                    <span className="font-medium text-green-900 dark:text-green-300">{bank.active_credits}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-green-700">{t('funding.investors.detail_modal.total_credits_label')}</span>
-                    <span className="font-medium text-green-900">{bank.total_credits}</span>
+                    <span className="text-green-700 dark:text-green-400">{t('funding.investors.detail_modal.total_credits_label')}</span>
+                    <span className="font-medium text-green-900 dark:text-green-300">{bank.total_credits}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-orange-900 mb-3">{t('funding.investors.detail_modal.risk_assessment_heading')}</h4>
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                <h4 className="font-semibold text-orange-900 dark:text-orange-300 mb-3">{t('funding.investors.detail_modal.risk_assessment_heading')}</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-orange-700">{t('funding.investors.detail_modal.credit_risk_label')}</span>
+                    <span className="text-orange-700 dark:text-orange-400">{t('funding.investors.detail_modal.credit_risk_label')}</span>
                     <span className={`font-medium ${riskLevel?.className}`}>
                       {riskLevel?.label}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-orange-700">{t('funding.investors.detail_modal.concentration_label')}</span>
-                    <span className="font-medium text-orange-900">
+                    <span className="text-orange-700 dark:text-orange-400">{t('funding.investors.detail_modal.concentration_label')}</span>
+                    <span className="font-medium text-orange-900 dark:text-orange-300">
                       {concentration}%
                     </span>
                   </div>
@@ -101,7 +101,7 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
             </div>
 
             <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-4">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
               {bank.credits.length === 0 ? (
                 <EmptyState
                   icon={CreditCard}

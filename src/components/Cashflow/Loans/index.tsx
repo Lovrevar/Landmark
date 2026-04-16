@@ -46,8 +46,8 @@ const AccountingLoans: React.FC = () => {
         }
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-4 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -58,72 +58,72 @@ const AccountingLoans: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.date')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.from')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.from_account')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.to')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.to_account')}
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.amount')}
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {t('loans.table.actions')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredLoans.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     {t('loans.empty')}
                   </td>
                 </tr>
               ) : (
                 filteredLoans.map((loan) => (
-                  <tr key={loan.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={loan.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {format(new Date(loan.loan_date), 'dd.MM.yyyy')}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {loan.from_company.name}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         <div className="font-medium">{loan.from_bank_account.bank_name}</div>
                         {loan.from_bank_account.account_number && (
-                          <div className="text-xs text-gray-500">{loan.from_bank_account.account_number}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{loan.from_bank_account.account_number}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {loan.to_company.name}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         <div className="font-medium">{loan.to_bank_account.bank_name}</div>
                         {loan.to_bank_account.account_number && (
-                          <div className="text-xs text-gray-500">{loan.to_bank_account.account_number}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{loan.to_bank_account.account_number}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
                         €{loan.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
@@ -174,7 +174,7 @@ const AccountingLoans: React.FC = () => {
               </FormField>
             )}
 
-            <div className="border-t border-gray-200 pt-4"></div>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
 
             <FormField label={t('loans.form.to_label')} required error={fieldErrors.to_company_id}>
               <div className="relative">
@@ -208,7 +208,7 @@ const AccountingLoans: React.FC = () => {
               </FormField>
             )}
 
-            <div className="border-t border-gray-200 pt-4"></div>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4"></div>
 
             <FormField label={t('loans.form.date_label')}>
               <div className="relative">
@@ -216,14 +216,14 @@ const AccountingLoans: React.FC = () => {
                 <DateInput
                   value={formData.loan_date}
                   onChange={(value) => setFormData({ ...formData, loan_date: value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </FormField>
 
             <FormField label={t('loans.form.amount_label')} required error={fieldErrors.amount}>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">€</span>
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400 font-medium">€</span>
                 <Input
                   type="number"
                   step="0.01"

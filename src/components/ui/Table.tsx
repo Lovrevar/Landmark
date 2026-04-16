@@ -7,7 +7,7 @@ interface TableRootProps {
 
 function TableRoot({ children, className = '' }: TableRootProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-max">
           {children}
@@ -23,7 +23,7 @@ interface TableHeadProps {
 
 function TableHead({ children }: TableHeadProps) {
   return (
-    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+    <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
       {children}
     </thead>
   )
@@ -35,7 +35,7 @@ interface TableBodyProps {
 
 function TableBody({ children }: TableBodyProps) {
   return (
-    <tbody className="bg-white divide-y divide-gray-200">
+    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
       {children}
     </tbody>
   )
@@ -49,9 +49,9 @@ interface ThProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
 
 function Th({ sortable = false, sticky = false, children, className = '', ...props }: ThProps) {
   const classes = [
-    'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
-    sortable ? 'cursor-pointer hover:bg-gray-100 select-none' : '',
-    sticky ? 'sticky right-0 bg-gray-50' : '',
+    'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider',
+    sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 select-none' : '',
+    sticky ? 'sticky right-0 bg-gray-50 dark:bg-gray-900' : '',
     className,
   ].filter(Boolean).join(' ')
 
@@ -65,8 +65,8 @@ interface TdProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
 
 function Td({ sticky = false, children, className = '', ...props }: TdProps) {
   const classes = [
-    'px-4 py-4 whitespace-nowrap text-sm text-gray-900',
-    sticky ? 'sticky right-0 bg-white' : '',
+    'px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100',
+    sticky ? 'sticky right-0 bg-white dark:bg-gray-800' : '',
     className,
   ].filter(Boolean).join(' ')
 
@@ -80,7 +80,7 @@ interface TrProps extends React.HTMLAttributes<HTMLTableRowElement> {
 
 function Tr({ hoverable = true, children, className = '', ...props }: TrProps) {
   const classes = [
-    hoverable ? 'hover:bg-gray-50' : '',
+    hoverable ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : '',
     className,
   ].filter(Boolean).join(' ')
 

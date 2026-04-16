@@ -76,13 +76,13 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors duration-200"
+              className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors duration-200"
               title={isExpanded ? t('retail_projects.collapse_phase') : t('retail_projects.expand_phase')}
             >
               {isExpanded ? (
@@ -92,18 +92,18 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               )}
             </button>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 <span className="mr-2">{getPhaseIcon(phase.phase_type)}</span>
                 {phase.phase_name}
               </h3>
-              <p className="text-gray-600">{t('retail_projects.phase_order', { order: phase.phase_order })} • {t('retail_projects.contracts_count', { count: phaseContracts.length })}</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('retail_projects.phase_order', { order: phase.phase_order })} • {t('retail_projects.contracts_count', { count: phaseContracts.length })}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             {phase.phase_type !== 'sales' && (
               <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(phase.budget_allocated)}</p>
-                <p className="text-sm text-gray-600">{t('retail_projects.forecasted_budget')}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(phase.budget_allocated)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.forecasted_budget')}</p>
               </div>
             )}
             <Button
@@ -131,24 +131,24 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         </div>
 
         <div className={`mt-4 grid grid-cols-1 gap-4 ${phase.phase_type === 'sales' ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700">{phase.phase_type === 'sales' ? t('retail_projects.sales_revenue_label') : t('retail_projects.contracted_amount')}</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(totalContractCost)}</p>
+          <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+            <p className="text-sm text-gray-700 dark:text-gray-200">{phase.phase_type === 'sales' ? t('retail_projects.sales_revenue_label') : t('retail_projects.contracted_amount')}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(totalContractCost)}</p>
           </div>
-          <div className="bg-teal-50 p-3 rounded-lg">
-            <p className="text-sm text-teal-700">{phase.phase_type === 'sales' ? t('retail_projects.received') : t('retail_projects.paid_out')}</p>
-            <p className="text-lg font-bold text-teal-900">{formatCurrency(totalPaidOut)}</p>
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+            <p className="text-sm text-teal-700 dark:text-teal-400">{phase.phase_type === 'sales' ? t('retail_projects.received') : t('retail_projects.paid_out')}</p>
+            <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{formatCurrency(totalPaidOut)}</p>
           </div>
-          <div className="bg-orange-50 p-3 rounded-lg">
-            <p className="text-sm text-orange-700">{phase.phase_type === 'sales' ? t('retail_projects.outstanding') : t('retail_projects.unpaid_contracts')}</p>
-            <p className="text-lg font-bold text-orange-900">{formatCurrency(totalUnpaid)}</p>
+          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+            <p className="text-sm text-orange-700 dark:text-orange-400">{phase.phase_type === 'sales' ? t('retail_projects.outstanding') : t('retail_projects.unpaid_contracts')}</p>
+            <p className="text-lg font-bold text-orange-900 dark:text-orange-400">{formatCurrency(totalUnpaid)}</p>
           </div>
           {phase.phase_type !== 'sales' && (
-            <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-              <p className={`text-sm ${availableBudget < 0 ? 'text-red-700' : 'text-green-700'}`}>
+            <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
+              <p className={`text-sm ${availableBudget < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
                 {t('retail_projects.forecasted_budget')}
               </p>
-              <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900' : 'text-green-900'}`}>
+              <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900 dark:text-red-400' : 'text-green-900 dark:text-green-400'}`}>
                 {formatCurrency(availableBudget)}
               </p>
             </div>
@@ -158,10 +158,10 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         {phase.phase_type !== 'sales' && (
           <div className="mt-4">
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-gray-600">{t('retail_projects.budget_utilization')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.budget_utilization')}</span>
               <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
               <div
                 className={`h-3 rounded-full transition-all duration-300 ${
                   budgetUtilization > 100 ? 'bg-red-600' :
@@ -226,17 +226,17 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                 <div
                   key={contract.id}
                   className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                    !hasValidContract ? 'border-yellow-200 bg-yellow-50' :
-                    gainLoss > 0 ? 'border-red-200 bg-red-50' :
-                    isPaid && gainLoss === 0 ? 'border-green-200 bg-green-50' :
-                    isPartial ? 'border-blue-200 bg-blue-50' :
-                    'border-gray-200 bg-gray-50'
+                    !hasValidContract ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20' :
+                    gainLoss > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
+                    isPaid && gainLoss === 0 ? 'border-green-200 bg-green-50 dark:bg-green-900/20' :
+                    isPartial ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' :
+                    'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">
                           {phase.phase_type === 'sales'
                             ? (contract.customer?.name || t('retail_projects.unknown_customer'))
                             : (contract.supplier?.name || t('retail_projects.unknown_supplier'))
@@ -249,9 +249,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         )}
                       </div>
                       {phase.phase_type !== 'sales' && contract.supplier?.supplier_type?.name && (
-                        <p className="text-sm text-gray-600 mb-1">{contract.supplier.supplier_type.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{contract.supplier.supplier_type.name}</p>
                       )}
-                      <p className="text-xs text-gray-500">{contract.contract_number}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{contract.contract_number}</p>
                     </div>
                     {hasValidContract && (
                       <Badge variant={getContractBadgeVariant()} size="sm">
@@ -263,33 +263,33 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   <div className="space-y-2 text-xs mb-3">
                     {contract.contract_date && phase.phase_type !== 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('retail_projects.contract_date_label')}</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.contract_date_label')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
                           {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
                         </span>
                       </div>
                     )}
                     {contract.notes && (phase.phase_type === 'development' || phase.phase_type === 'construction') && (
                       <div className="mb-2">
-                        <span className="text-gray-600">{t('retail_projects.description_label')}</span>
-                        <p className="text-gray-700 mt-1 text-xs line-clamp-2">{contract.notes}</p>
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.description_label')}</span>
+                        <p className="text-gray-700 dark:text-gray-200 mt-1 text-xs line-clamp-2">{contract.notes}</p>
                       </div>
                     )}
                     {contract.building_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('retail_projects.building_surface_label')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.building_surface_label')}</span>
                         <span className="font-medium text-blue-600">{contract.building_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.total_surface_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('retail_projects.total_surface_label')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.total_surface_label')}</span>
                         <span className="font-medium text-blue-600">{contract.total_surface_m2.toLocaleString('hr-HR')} m²</span>
                       </div>
                     )}
                     {contract.price_per_m2 && phase.phase_type === 'sales' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('retail_projects.price_per_m2_label_col')}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.price_per_m2_label_col')}</span>
                         <span className="font-medium text-teal-600">
                           {formatCurrency(contract.price_per_m2)}
                         </span>
@@ -297,8 +297,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     )}
                     {contract.end_date && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">{t('retail_projects.deadline_label')}</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.deadline_label')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
                           {format(new Date(contract.end_date), 'MMM dd, yyyy')}
                         </span>
                       </div>
@@ -306,25 +306,25 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                     {hasValidContract ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">{t('retail_projects.contract_value_label')}</span>
-                          <span className="font-medium text-gray-900">{formatCurrency(contractAmount)}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.contract_value_label')}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(contractAmount)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">{t('retail_projects.paid_label')}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.paid_label')}</span>
                           <span className="font-medium text-teal-600">{formatCurrency(actualPaid)}</span>
                         </div>
                         {remainingToPay > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-600">{t('retail_projects.remaining_label')}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.remaining_label')}</span>
                             <span className="font-medium text-orange-600">{formatCurrency(remainingToPay)}</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">{t('retail_projects.gain_loss_label')}</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('retail_projects.gain_loss_label')}</span>
                           <span className={`font-bold ${
                             gainLoss > 0 ? 'text-red-600' :
                             gainLoss < 0 ? 'text-green-600' :
-                            'text-gray-900'
+                            'text-gray-900 dark:text-white'
                           }`}>
                             {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
                           </span>
@@ -332,12 +332,12 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       </>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600 font-medium">{t('retail_projects.total_paid_label')}</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('retail_projects.total_paid_label')}</span>
                           <span className="font-bold text-green-600">{formatCurrency(actualPaid)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600 font-medium">{t('retail_projects.total_debts_label')}</span>
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('retail_projects.total_debts_label')}</span>
                           <span className="font-bold text-orange-600">{formatCurrency(contract.invoiced_remaining || 0)}</span>
                         </div>
                       </>

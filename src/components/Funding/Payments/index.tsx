@@ -70,7 +70,7 @@ const FundingPaymentsManagement: React.FC = () => {
         <StatCard label={t('funding.payments.stats.month_amount_label')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -144,13 +144,13 @@ const FundingPaymentsManagement: React.FC = () => {
                 </Table.Td>
                 <Table.Td className="font-medium">{payment.bank_name}</Table.Td>
                 <Table.Td>{payment.project_name}</Table.Td>
-                <Table.Td className="text-gray-500">
+                <Table.Td className="text-gray-500 dark:text-gray-400">
                   {payment.credit_type?.replace('_', ' ').toUpperCase()}
                 </Table.Td>
                 <Table.Td align="right" className="font-semibold text-green-600">
                   €{Number(payment.amount).toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td className="text-gray-500 max-w-xs truncate">
+                <Table.Td className="text-gray-500 dark:text-gray-400 max-w-xs truncate">
                   {payment.notes || '-'}
                 </Table.Td>
               </Table.Tr>
@@ -160,13 +160,13 @@ const FundingPaymentsManagement: React.FC = () => {
       )}
 
       {filteredPayments.length > 0 && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Filter className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-900">{t('funding.payments.filtered_results_label')}</span>
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('funding.payments.filtered_results_label')}</span>
             </div>
-            <div className="text-sm text-blue-900">
+            <div className="text-sm text-blue-900 dark:text-blue-100">
               {t('funding.payments.filtered_summary', {
                 count: filteredPayments.length,
                 total: `€${filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}`

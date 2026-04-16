@@ -141,7 +141,7 @@ const RetailSales: React.FC = () => {
         <StatCard label={t('retail_sales.stats.to_collect')} value={'€' + totalStats.total_remaining.toLocaleString('hr-HR')} icon={DollarSign} />
       </StatGrid>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row gap-4">
           <SearchInput
             value={searchTerm}
@@ -183,18 +183,18 @@ const RetailSales: React.FC = () => {
           <Table.Body>
             {filteredSales.map((sale) => (
               <Table.Tr key={sale.id}>
-                <Table.Td><div className="text-sm font-medium text-gray-900">{sale.customer?.name || 'N/A'}</div></Table.Td>
-                <Table.Td><div className="text-sm text-gray-900">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
+                <Table.Td><div className="text-sm font-medium text-gray-900 dark:text-white">{sale.customer?.name || 'N/A'}</div></Table.Td>
+                <Table.Td><div className="text-sm text-gray-900 dark:text-white">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
                 <Table.Td>
-                  <div className="text-sm text-gray-900">{sale.sale_area_m2.toLocaleString()} m²</div>
-                  <div className="text-xs text-gray-500">€{sale.sale_price_per_m2}/m²</div>
+                  <div className="text-sm text-gray-900 dark:text-white">{sale.sale_area_m2.toLocaleString()} m²</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">€{sale.sale_price_per_m2}/m²</div>
                 </Table.Td>
-                <Table.Td><div className="text-sm font-semibold text-gray-900">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
+                <Table.Td><div className="text-sm font-semibold text-gray-900 dark:text-white">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
                 <Table.Td>
                   <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500">{t('common.remaining')}: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t('common.remaining')}: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
                 </Table.Td>
-                <Table.Td><div className="text-sm text-gray-900">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
+                <Table.Td><div className="text-sm text-gray-900 dark:text-white">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
                 <Table.Td>
                   <Badge variant={
                     sale.payment_status === 'paid' ? 'green'
@@ -277,20 +277,20 @@ const RetailSales: React.FC = () => {
         <Form onSubmit={handlePaymentSubmit}>
           <Modal.Body>
             <div className="mb-4">
-              <p className="text-sm text-gray-600">{t('common.customer')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.customer')}</p>
               <p className="text-lg font-semibold">{selectedSale?.customer?.name}</p>
             </div>
-            <div className="mb-4 bg-gray-50 p-4 rounded-lg">
+            <div className="mb-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">{t('common.total')}:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.total')}:</span>
                 <span className="font-semibold">€{selectedSale?.total_sale_price.toLocaleString('hr-HR')}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">{t('common.paid')}:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
                 <span className="font-semibold text-green-600">€{selectedSale?.paid_amount.toLocaleString('hr-HR')}</span>
               </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="text-sm text-gray-600">{t('common.remaining')}:</span>
+              <div className="flex justify-between border-t dark:border-gray-600 pt-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
                 <span className="font-bold text-orange-600">€{selectedSale?.remaining_amount.toLocaleString('hr-HR')}</span>
               </div>
             </div>

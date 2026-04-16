@@ -38,9 +38,9 @@ export default function ConfirmDialog({
         if (e.target === e.currentTarget) onCancel()
       }}
     >
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-        <div className="text-gray-600 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+        <div className="text-gray-600 dark:text-gray-400 mb-6">
           {typeof message === 'string' ? <p>{message}</p> : message}
         </div>
         <div className="flex justify-end space-x-3">

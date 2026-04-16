@@ -120,7 +120,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
         onClose={onClose}
       />
       <Modal.Body>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('retail_projects.milestones.form.available_info', { amount: formatCurrency(contractCost), percent: remainingPercentage.toFixed(2) })}
         </p>
 
@@ -154,16 +154,16 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, percentage: parseFloat(e.target.value) || 0 })}
                 placeholder="30.00"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('retail_projects.milestones.form.max_label', { percent: (remainingPercentage + (editingMilestone?.percentage || 0)).toFixed(2) })}
               </p>
             </FormField>
 
             <FormField label={t('retail_projects.milestones.form.calculated_amount')}>
-              <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 font-semibold">
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-semibold">
                 {formatCurrency(calculateAmount())}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('retail_projects.milestones.form.percentage_of', { percent: formData.percentage, amount: formatCurrency(contractCost) })}
               </p>
             </FormField>

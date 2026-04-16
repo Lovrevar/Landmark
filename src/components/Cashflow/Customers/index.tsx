@@ -33,8 +33,8 @@ const AccountingCustomers: React.FC = () => {
         <StatCard label={t('accounting_customers.stats.debt')} value={`€${totalStats.total_debt.toLocaleString('hr-HR')}`} icon={TrendingDown} color="red" size="lg" />
       </StatGrid>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -49,53 +49,53 @@ const AccountingCustomers: React.FC = () => {
           ) : filteredCustomers.length === 0 ? (
             <EmptyState icon={Users} title={t('accounting_customers.empty')} />
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.customer')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.contact')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.invoices')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.apartments')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.property_price')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.paid')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.debt')}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('accounting_customers.table.actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                  <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{customer.full_name}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{customer.full_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">{customer.email || '-'}</div>
-                      <div className="text-sm text-gray-500">{customer.phone || '-'}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{customer.email || '-'}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{customer.phone || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900">{customer.total_invoices}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{customer.total_invoices}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-blue-600">{customer.total_apartments}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900">€{customer.property_price.toLocaleString('hr-HR')}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">€{customer.property_price.toLocaleString('hr-HR')}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-green-600">€{customer.total_paid.toLocaleString('hr-HR')}</span>
@@ -129,28 +129,28 @@ const AccountingCustomers: React.FC = () => {
             </StatGrid>
 
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('accounting_customers.modal.contact_heading')}</h3>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('accounting_customers.modal.contact_heading')}</h3>
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('accounting_customers.modal.email')}</span>
-                  <span className="text-gray-900 font-medium">{selectedCustomer.email || 'N/A'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.email')}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{selectedCustomer.email || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('accounting_customers.modal.phone')}</span>
-                  <span className="text-gray-900 font-medium">{selectedCustomer.phone || 'N/A'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.phone')}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{selectedCustomer.phone || 'N/A'}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('accounting_customers.modal.invoices_heading')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('accounting_customers.modal.invoices_heading')}</h3>
               {selectedCustomer.invoices.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">{t('accounting_customers.modal.no_invoices')}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('accounting_customers.modal.no_invoices')}</p>
               ) : (
                 <div className="space-y-3">
                   {selectedCustomer.invoices.map((invoice) => (
                     <div key={invoice.id} className={`border-2 rounded-lg p-4 ${
-                      isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                     }`}>
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
@@ -160,15 +160,15 @@ const AccountingCustomers: React.FC = () => {
                             ) : (
                               <ArrowDownCircle className="w-5 h-5 text-red-600" />
                             )}
-                            <p className="font-medium text-gray-900">{invoice.invoice_number}</p>
+                            <p className="font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
                             <Badge variant={isIncomeInvoice(invoice.invoice_type) ? 'green' : 'red'} size="sm">
                               {isIncomeInvoice(invoice.invoice_type) ? t('accounting_customers.modal.invoice_income') : t('accounting_customers.modal.invoice_expense')}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {t('accounting_customers.modal.invoice_company')} {invoice.company?.name || 'N/A'}
                           </p>
-                          <p className="text-xs text-gray-500">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
                         </div>
                         <Badge
                           variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'gray'}
@@ -177,17 +177,17 @@ const AccountingCustomers: React.FC = () => {
                           {invoice.status === 'PAID' ? t('accounting_customers.modal.status_paid') : invoice.status === 'PARTIALLY_PAID' ? t('accounting_customers.modal.status_partial') : t('accounting_customers.modal.status_unpaid')}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300">
+                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
                         <div>
-                          <p className="text-xs text-gray-600">{t('accounting_customers.modal.total')}</p>
-                          <p className="font-semibold text-gray-900">€{invoice.total_amount.toLocaleString('hr-HR')}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.total')}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">{t('accounting_customers.modal.paid')}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.paid')}</p>
                           <p className="font-semibold text-green-600">€{invoice.paid_amount.toLocaleString('hr-HR')}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600">{t('accounting_customers.modal.remaining')}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.remaining')}</p>
                           <p className="font-semibold text-red-600">€{invoice.remaining_amount.toLocaleString('hr-HR')}</p>
                         </div>
                       </div>

@@ -9,10 +9,10 @@ interface Props {
 }
 
 const getCardClass = (sub: SubcontractorStatus): string => {
-  if (sub.is_overdue) return 'border-red-300 bg-red-50'
-  if (sub.days_until_deadline <= 7 && sub.progress < 100) return 'border-orange-300 bg-orange-50'
-  if (sub.progress === 100) return 'border-green-300 bg-green-50'
-  return 'border-gray-200 bg-white'
+  if (sub.is_overdue) return 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
+  if (sub.days_until_deadline <= 7 && sub.progress < 100) return 'border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20'
+  if (sub.progress === 100) return 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
+  return 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
 }
 
 const getProgressColor = (sub: SubcontractorStatus): string => {
@@ -31,16 +31,16 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
   const { t } = useTranslation()
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
           <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
           {t('dashboards.supervision.subcontractor_performance')}
         </h2>
       </div>
       <div className="p-6">
         {subcontractorStatus.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">{t('dashboards.supervision.no_subcontractors')}</p>
+          <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('dashboards.supervision.no_subcontractors')}</p>
         ) : (
           <div className="space-y-3">
             {subcontractorStatus.map((sub) => (
@@ -48,21 +48,21 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">{sub.name}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
                       {sub.progress === 100 && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                       {sub.is_overdue && <XCircle className="w-5 h-5 text-red-600" />}
                     </div>
-                    <p className="text-sm text-gray-600">{sub.project_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{sub.project_name}</p>
                   </div>
                   <div className="text-right">
                     <div className={`text-2xl font-bold ${getProgressTextColor(sub)}`}>
                       {sub.progress}%
                     </div>
-                    <p className="text-xs text-gray-500">{t('dashboards.supervision.paid_out')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboards.supervision.paid_out')}</p>
                   </div>
                 </div>
 
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-3">
                   <div
                     className={`h-2 rounded-full ${getProgressColor(sub)}`}
                     style={{ width: `${sub.progress}%` }}
@@ -71,11 +71,11 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
 
                 <div className="grid grid-cols-4 gap-3">
                   <div>
-                    <p className="text-xs text-gray-600">{t('dashboards.supervision.deadline')}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.deadline')}</p>
                     <p className={`text-sm font-medium ${
                       sub.is_overdue ? 'text-red-600' :
                       sub.days_until_deadline <= 7 ? 'text-orange-600' :
-                      'text-gray-900'
+                      'text-gray-900 dark:text-white'
                     }`}>
                       {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd') : t('dashboards.supervision.na')}
                       {sub.is_overdue && <span className="ml-1">({Math.abs(sub.days_until_deadline)}d over)</span>}
@@ -85,14 +85,14 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">{t('dashboards.supervision.last_activity')}</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.last_activity')}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : t('dashboards.supervision.no_logs')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">{t('dashboards.supervision.weekly_logs')}</p>
-                    <p className="text-sm font-medium text-gray-900">{sub.recent_work_logs}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.weekly_logs')}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{sub.recent_work_logs}</p>
                   </div>
                 </div>
               </div>

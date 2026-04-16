@@ -35,25 +35,25 @@ export const BankWirePaymentModal: React.FC<BankWirePaymentModalProps> = ({
 
   const details = (
     <>
-      <h4 className="font-semibold text-blue-900 mb-2">{t('funding.payments.bank_wire_modal.details_heading')}</h4>
+      <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('funding.payments.bank_wire_modal.details_heading')}</h4>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-blue-700">{t('funding.payments.bank_wire_modal.bank_label')}</p>
-          <p className="font-medium text-blue-900">{bankName}</p>
+          <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.bank_label')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">{bankName}</p>
         </div>
         <div>
-          <p className="text-blue-700">{t('funding.payments.bank_wire_modal.loan_type_label')}</p>
-          <p className="font-medium text-blue-900">
+          <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.loan_type_label')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">
             {credit.credit_type.replace('_', ' ')}
           </p>
         </div>
         <div>
-          <p className="text-blue-700">{t('funding.payments.bank_wire_modal.outstanding_balance_label')}</p>
-          <p className="font-medium text-blue-900">{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
+          <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.outstanding_balance_label')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
         </div>
         <div>
-          <p className="text-blue-700">{t('funding.payments.bank_wire_modal.scheduled_payment_label')}</p>
-          <p className="font-medium text-blue-900">{credit.monthly_payment.toLocaleString('hr-HR')}</p>
+          <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.scheduled_payment_label')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">{credit.monthly_payment.toLocaleString('hr-HR')}</p>
         </div>
       </div>
     </>

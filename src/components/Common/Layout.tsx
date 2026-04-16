@@ -2,6 +2,7 @@ import React, { ReactNode, useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import {
   Building2,
@@ -25,7 +26,9 @@ import {
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  Sun,
+  Moon
 } from 'lucide-react'
 import Input from '../ui/Input'
 
@@ -36,6 +39,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t } = useTranslation()
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -73,6 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       General: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
+        { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
         { name: t('nav.reports'), icon: FileText, path: '/general-reports' }
       ],
       Supervision: [
@@ -168,20 +173,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="w-full px-6">
           <div className="flex justify-between h-16">
             <div className="flex items-center pl-8">
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Cognilion</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Cognilion</h1>
             </div>
             <div className="flex items-center space-x-6">
               {user?.role !== 'Supervision' && (
                 <div className="relative" ref={profileDropdownRef}>
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                   >
                     <User className="w-4 h-4" />
                     <span className="font-medium">{currentProfile}</span>
@@ -189,13 +194,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
 
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                       {(['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail'] satisfies Profile[]).map((profile) => (
                         <button
                           key={profile}
                           onClick={() => handleProfileChange(profile)}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between ${
-                            currentProfile === profile ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center justify-between ${
+                            currentProfile === profile ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                           }`}
                         >
                           <span>{profile}</span>
@@ -208,8 +213,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
               <LanguageSwitcher />
               <button
+                onClick={toggleTheme}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200"
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button
                 onClick={logout}
-                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-red-600 transition-colors duration-200"
+                className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4 mr-1" />
                 {t('auth.logout')}
@@ -221,11 +233,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <div className="flex relative">
         <aside
-          className={`relative bg-white shadow-sm border-r border-gray-200 min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex-shrink-0`}
+          className={`relative bg-white dark:bg-gray-800 shadow-sm border-r border-gray-200 dark:border-gray-700 min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex-shrink-0`}
         > 
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm flex items-center justify-center text-gray-500 hover:text-blue-600 transition-colors z-10"
+            className="absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
             title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
           >
             {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -233,7 +245,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <div className="flex flex-col h-full">
             <div className={`px-4 pt-5 pb-3 ${sidebarOpen ? 'block' : 'hidden'}`}>
-              <span className="font-semibold text-gray-800 text-base tracking-tight">Menu</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">Menu</span>
             </div>
             <div className={sidebarOpen ? 'hidden' : 'h-14'} />
 
@@ -247,8 +259,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         to={item.path}
                         className={`flex items-center py-2 px-3 rounded-lg transition-colors duration-200 group relative
                           ${isActive
-                            ? 'bg-blue-50 text-blue-600 font-medium'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                           }`}
                         title={!sidebarOpen ? item.name : undefined}
                       >
@@ -279,20 +291,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Cashflow</h2>
-                <p className="text-sm text-gray-600">{t('profiles.unlock_title')}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('profiles.unlock_title')}</p>
               </div>
             </div>
 
             <form onSubmit={handlePasswordSubmit}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('auth.password')}
                 </label>
                 <Input
@@ -308,9 +320,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
 
               {passwordError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{passwordError}</p>
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800 dark:text-red-400">{passwordError}</p>
                 </div>
               )}
 
@@ -324,7 +336,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button
                   type="button"
                   onClick={handlePasswordCancel}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
                 >
                   {t('common.cancel')}
                 </button>

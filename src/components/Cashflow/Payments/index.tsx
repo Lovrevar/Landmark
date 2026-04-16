@@ -69,17 +69,17 @@ const AccountingPayments: React.FC = () => {
                 {t('payments.columns_label')}
               </Button>
               {showColumnMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
-                  <div className="px-3 py-2 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-700">{t('payments.show_columns')}</p>
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50 max-h-96 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('payments.show_columns')}</p>
                   </div>
                   {Object.entries(columnLabels).map(([key, label]) => (
                     <button
                       key={key}
                       onClick={() => toggleColumn(key)}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center justify-between"
                     >
-                      <span className="text-gray-700">{label}</span>
+                      <span className="text-gray-700 dark:text-gray-200">{label}</span>
                       {visibleColumns[key] && <Check className="w-4 h-4 text-blue-600" />}
                     </button>
                   ))}
@@ -95,7 +95,7 @@ const AccountingPayments: React.FC = () => {
 
       <PaymentStatsCards payments={payments} />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <SearchInput
             value={searchTerm}
@@ -127,20 +127,20 @@ const AccountingPayments: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">{t('payments.filters.date_from')}</label>
+            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('payments.filters.date_from')}</label>
             <DateInput
               value={dateFrom}
               onChange={setDateFrom}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">{t('payments.filters.date_to')}</label>
+            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('payments.filters.date_to')}</label>
             <DateInput
               value={dateTo}
               onChange={setDateTo}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -167,12 +167,12 @@ const AccountingPayments: React.FC = () => {
         onClose={handleCloseDetailView}
       />
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">{t('payments.shown_count', { filtered: filteredPayments.length, total: payments.length })}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">{t('payments.shown_count', { filtered: filteredPayments.length, total: payments.length })}</span>
           <div className="flex items-center space-x-6 text-sm">
             <div>
-              <span className="text-gray-600">{t('payments.filtered_total')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('payments.filtered_total')}</span>
               <span className="font-semibold text-green-600">
                 €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
               </span>

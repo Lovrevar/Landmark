@@ -99,12 +99,12 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, price_per_m2: parseFloat(e.target.value) || 0 })}
               />
             </FormField>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <label className="block text-sm font-medium text-blue-900 mb-1">{t('sales_projects.single_unit_modal.total_price')}</label>
-              <div className="text-2xl font-bold text-blue-700">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+              <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('sales_projects.single_unit_modal.total_price')}</label>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                 €{(formData.size_m2 * formData.price_per_m2).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className="text-xs text-blue-600 mt-1">
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 {formData.size_m2} m² × €{formData.price_per_m2.toLocaleString('en-US', { minimumFractionDigits: 2 })} per m²
               </p>
             </div>

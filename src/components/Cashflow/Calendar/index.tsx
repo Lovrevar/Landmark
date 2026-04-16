@@ -87,30 +87,30 @@ const AccountingCalendar: React.FC = () => {
         <StatCard label={t('calendar.stats.overdue')} value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
       </StatGrid>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+      <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{t('calendar.summary.total_invoices')}</span>
-          <span className="font-semibold text-gray-900">{monthStats.total}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.total_invoices')}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">{monthStats.total}</span>
         </div>
-        <div className="border-t border-gray-300 my-2"></div>
+        <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{t('calendar.summary.outgoing_invoices')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.outgoing_invoices')}</span>
           <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{t('calendar.summary.incoming_paid')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.incoming_paid')}</span>
           <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{t('calendar.summary.incoming_unpaid')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.incoming_unpaid')}</span>
           <div className="text-right">
             <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
-            <span className="text-xs text-gray-500 ml-1">{t('calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{t('calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
           </div>
         </div>
-        <div className="border-t border-gray-300 my-2"></div>
+        <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-700 font-medium">{t('calendar.summary.net_label')}</span>
+          <span className="text-gray-700 dark:text-gray-200 font-medium">{t('calendar.summary.net_label')}</span>
           <span className={`font-bold text-lg ${monthStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             €{monthStats.netAmount.toLocaleString('hr-HR')}
           </span>
@@ -121,13 +121,13 @@ const AccountingCalendar: React.FC = () => {
             const difference = budget.budget_amount - monthStats.incomingPaid
             return (
               <>
-                <div className="border-t border-gray-300 my-2"></div>
+                <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t('calendar.summary.planned_budget')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.planned_budget')}</span>
                   <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-700 font-medium">{t('calendar.summary.budget_difference')}</span>
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{t('calendar.summary.budget_difference')}</span>
                   <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? t('calendar.summary.under_budget') : t('calendar.summary.over_budget')}
                   </span>
@@ -139,9 +139,9 @@ const AccountingCalendar: React.FC = () => {
         })()}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
             {monthNames[month]} {year}
           </h3>
           <div className="flex items-center space-x-2">
@@ -155,7 +155,7 @@ const AccountingCalendar: React.FC = () => {
 
         <div className="grid grid-cols-7 gap-1">
           {dayNames.map(day => (
-            <div key={day} className="text-center text-xs font-semibold text-gray-600 py-2">
+            <div key={day} className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400 py-2">
               {day}
             </div>
           ))}
@@ -187,12 +187,12 @@ const AccountingCalendar: React.FC = () => {
                 onClick={() => handleDateClick(day)}
                 className={`
                   aspect-square p-1 rounded-lg border text-sm transition-all relative
-                  ${isToday ? 'border-blue-500 bg-blue-50 font-bold' : 'border-gray-200'}
-                  ${isSelected ? 'ring-2 ring-blue-500 bg-blue-100' : 'hover:bg-gray-50'}
+                  ${isToday ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 font-bold' : 'border-gray-200 dark:border-gray-700'}
+                  ${isSelected ? 'ring-2 ring-blue-500 bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}
                   ${dayInvoices.length > 0 ? 'font-semibold' : ''}
                 `}
               >
-                <div className="text-gray-900">{day}</div>
+                <div className="text-gray-900 dark:text-white">{day}</div>
                 {dayInvoices.length > 0 && (
                   <div className="flex justify-center space-x-0.5 mt-0.5">
                     {hasOverdue && (
@@ -214,15 +214,15 @@ const AccountingCalendar: React.FC = () => {
         <div className="flex items-center justify-center space-x-4 mt-4 text-xs">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-gray-600">{t('calendar.legend.paid')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.paid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-            <span className="text-gray-600">{t('calendar.legend.unpaid')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.unpaid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-red-500 rounded-full" />
-            <span className="text-gray-600">{t('calendar.legend.overdue')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.overdue')}</span>
           </div>
         </div>
       </div>
@@ -239,60 +239,60 @@ const AccountingCalendar: React.FC = () => {
       />
 
       {selectedDate && selectedInvoices.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h4 className="font-bold text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h4 className="font-bold text-gray-900 dark:text-white">
               {t('calendar.table.heading', { day: selectedDate.getDate(), month: monthNames[selectedDate.getMonth()], count: selectedInvoices.length })}
             </h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.invoice_number')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.type')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.supplier_customer')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.my_company')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.category')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.base')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.vat')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.total')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.paid')}</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{t('calendar.table.status')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.invoice_number')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.type')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.supplier_customer')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.my_company')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.category')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.base')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.vat')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.total')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.paid')}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.status')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {selectedInvoices.map(invoice => {
                   const isOverdue = new Date(invoice.due_date) < today && invoice.status !== 'PAID'
 
                   return (
                     <tr
                       key={invoice.id}
-                      className={`hover:bg-gray-50 ${
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
                         invoice.status === 'PAID'
-                          ? 'bg-green-50'
+                          ? 'bg-green-50 dark:bg-green-900/20'
                           : isOverdue
-                          ? 'bg-red-50'
-                          : 'bg-yellow-50'
+                          ? 'bg-red-50 dark:bg-red-900/20'
+                          : 'bg-yellow-50 dark:bg-yellow-900/20'
                       }`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-sm text-gray-900">{invoice.invoice_number}</span>
+                          <span className="font-semibold text-sm text-gray-900 dark:text-white">{invoice.invoice_number}</span>
                           {isOverdue && (
                             <AlertCircle className="w-4 h-4 text-red-600" />
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700">{getTypeLabel(invoice)}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-200">{getTypeLabel(invoice)}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                         {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as unknown as { retail_supplier?: { name: string } }).retail_supplier?.name || (invoice as unknown as { retail_contracts?: { retail_suppliers?: { name: string } } }).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.company?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{invoice.category || '-'}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
-                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{invoice.company?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{invoice.category || '-'}</td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
                       <td className={`px-4 py-3 text-right text-sm font-semibold ${
                         invoice.invoice_type.startsWith('INCOMING_')
                           ? 'text-red-600'

@@ -56,7 +56,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
           {monthNames.map((monthName, idx) => {
             const monthNum = idx + 1
             return (
-              <div key={monthNum} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div key={monthNum} className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <FormField label={monthName}>
                   <Input
                     type="number"
@@ -72,10 +72,10 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
           })}
         </div>
 
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-blue-900">{t('calendar.budget_modal.annual_total')}</span>
-            <span className="font-bold text-blue-900 text-lg">
+            <span className="font-medium text-blue-900 dark:text-blue-100">{t('calendar.budget_modal.annual_total')}</span>
+            <span className="font-bold text-blue-900 dark:text-blue-100 text-lg">
               €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString('hr-HR')}
             </span>
           </div>

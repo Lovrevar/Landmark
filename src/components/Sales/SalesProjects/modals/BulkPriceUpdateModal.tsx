@@ -89,16 +89,16 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
       />
       <Modal.Body>
         <Form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">{t('sales_projects.bulk_price.selection_summary')}</h3>
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.bulk_price.selection_summary')}</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-blue-700">{t('sales_projects.bulk_price.selected_units')}:</p>
-                <p className="font-bold text-blue-900">{selectedUnits.length}</p>
+                <p className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_price.selected_units')}:</p>
+                <p className="font-bold text-blue-900 dark:text-blue-100">{selectedUnits.length}</p>
               </div>
               <div>
-                <p className="text-blue-700">{t('sales_projects.bulk_price.current_price_range')}:</p>
-                <p className="font-bold text-blue-900">
+                <p className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_price.current_price_range')}:</p>
+                <p className="font-bold text-blue-900 dark:text-blue-100">
                   €{priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   {priceRange.min !== priceRange.max && (
                     <> - €{priceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
@@ -109,7 +109,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('sales_projects.bulk_price.adjustment_type')}
             </label>
             <div className="grid grid-cols-2 gap-4">
@@ -118,8 +118,8 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 onClick={() => setAdjustmentType('increase')}
                 className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                   adjustmentType === 'increase'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -130,8 +130,8 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 onClick={() => setAdjustmentType('decrease')}
                 className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                   adjustmentType === 'decrease'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 <Minus className="w-5 h-5 mr-2" />
@@ -153,20 +153,20 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
           {adjustmentValue && parseFloat(adjustmentValue) > 0 && (
             <div className={`border-2 rounded-lg p-4 ${
-              adjustmentType === 'increase' ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
+              adjustmentType === 'increase' ? 'border-green-300 bg-green-50 dark:bg-green-900/20' : 'border-red-300 bg-red-50 dark:bg-red-900/20'
             }`}>
               <h3 className={`font-semibold mb-3 ${
-                adjustmentType === 'increase' ? 'text-green-900' : 'text-red-900'
+                adjustmentType === 'increase' ? 'text-green-900 dark:text-green-400' : 'text-red-900 dark:text-red-400'
               }`}>
                 {t('sales_projects.bulk_price.price_preview')}
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="bg-white rounded-lg p-3 border border-gray-200">
-                  <p className="text-xs text-gray-600 mb-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                     {adjustmentType === 'increase' ? '+' : '-'}€{adjustment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
                   </p>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700">{t('sales_projects.bulk_price.new_price_range')}:</span>
+                    <span className="text-gray-700 dark:text-gray-200">{t('sales_projects.bulk_price.new_price_range')}:</span>
                     <span className={`font-bold text-lg ${
                       adjustmentType === 'increase' ? 'text-green-700' : 'text-red-700'
                     }`}>
@@ -177,16 +177,16 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                  <span className="text-gray-700">{t('sales_projects.bulk_price.current_total_value')}:</span>
+                <div className="flex justify-between items-center pt-3 border-t border-gray-300 dark:border-gray-600">
+                  <span className="text-gray-700 dark:text-gray-200">{t('sales_projects.bulk_price.current_total_value')}:</span>
                   <span className="font-semibold">€{totalCurrentValue.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">{t('sales_projects.bulk_price.new_total_value')}:</span>
+                  <span className="text-gray-700 dark:text-gray-200">{t('sales_projects.bulk_price.new_total_value')}:</span>
                   <span className="font-semibold">€{totalNewValue.toLocaleString('hr-HR')}</span>
                 </div>
-                <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                  <span className="font-bold text-gray-900">{t('sales_projects.bulk_price.total_value_change')}:</span>
+                <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400 dark:border-gray-600">
+                  <span className="font-bold text-gray-900 dark:text-white">{t('sales_projects.bulk_price.total_value_change')}:</span>
                   <span className={`font-bold text-lg ${
                     totalValueChange >= 0 ? 'text-green-700' : 'text-red-700'
                   }`}>

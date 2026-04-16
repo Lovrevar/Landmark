@@ -91,18 +91,18 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
       <Modal.Body>
         <p className="text-xs text-blue-600 mb-4">{t('retail_projects.payment_history_modal.amounts_note')}</p>
 
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.contract_amount')}</p>
-              <p className="text-lg font-bold text-gray-900">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.payment_history_modal.contract_amount')}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.total_paid')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.payment_history_modal.total_paid')}</p>
               <p className="text-lg font-bold text-teal-600">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">{t('retail_projects.payment_history_modal.remaining')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.payment_history_modal.remaining')}</p>
               <p className="text-lg font-bold text-orange-600">
                 €{Math.max(0, contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
               </p>
@@ -110,18 +110,18 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
           </div>
         </div>
 
-        <h4 className="font-semibold text-gray-900 mb-3">{t('retail_projects.payment_history_modal.all_payments', { count: payments.length })}</h4>
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('retail_projects.payment_history_modal.all_payments', { count: payments.length })}</h4>
 
         {loading ? (
           <LoadingSpinner message={t('common.loading')} />
         ) : payments.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             {t('retail_projects.payment_history_modal.no_payments')}
           </div>
         ) : (
           <div className="space-y-3">
             {payments.map((payment) => (
-              <div key={payment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div key={payment.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -129,24 +129,24 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                         <span className="text-lg font-bold text-teal-700">
                           €{payment.base_amount_paid.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {t('retail_projects.payment_history_modal.with_vat', { amount: payment.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
                         </span>
                       </div>
                       {payment.payment_date && (
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
                           {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
                         </span>
                       )}
                       {!payment.payment_date && (
-                        <span className="text-sm text-gray-400 italic">{t('retail_projects.payment_history_modal.no_date')}</span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500 italic">{t('retail_projects.payment_history_modal.no_date')}</span>
                       )}
                     </div>
 
                     {payment.invoice && (
                       <div className="flex items-center space-x-2 mb-2">
                         <FileText className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
                           {t('retail_projects.payment_history_modal.invoice_label')} <span className="font-medium text-blue-600">
                             {payment.invoice.invoice_number}
                           </span>
@@ -165,7 +165,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                     )}
 
                     {payment.payment_method && (
-                      <div className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         {t('retail_projects.payment_history_modal.payment_method_label')} <span className="font-medium">{payment.payment_method}</span>
                       </div>
                     )}
@@ -177,20 +177,20 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                     )}
 
                     {payment.company_bank_account && (
-                      <div className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         {t('retail_projects.payment_history_modal.account_label')} {payment.company_bank_account.bank_name}
                         {payment.company_bank_account.account_number && ` - ${payment.company_bank_account.account_number}`}
                       </div>
                     )}
 
                     {payment.credit && (
-                      <div className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         {t('retail_projects.payment_history_modal.credit_label')} {payment.credit.credit_name}
                       </div>
                     )}
 
                     {payment.reference_number && (
-                      <div className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         {t('retail_projects.payment_history_modal.reference_label')} {payment.reference_number}
                       </div>
                     )}
@@ -201,12 +201,12 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                       </p>
                     )}
 
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
                       {t('retail_projects.payment_history_modal.created_label')} {format(new Date(payment.created_at), 'dd.MM.yyyy HH:mm')}
                     </p>
                   </div>
                   <div className="ml-4">
-                    <span className="text-xs text-gray-500 italic">{t('retail_projects.payment_history_modal.managed_in_accounting')}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 italic">{t('retail_projects.payment_history_modal.managed_in_accounting')}</span>
                   </div>
                 </div>
               </div>

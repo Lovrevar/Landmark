@@ -82,20 +82,20 @@ const SupervisionDashboard: React.FC = () => {
   const tabClass = (view: 'week' | 'status' | 'issues') =>
     `px-4 py-2 font-medium transition-colors ${
       selectedView === view
-        ? 'text-blue-600 border-b-2 border-blue-600'
-        : 'text-gray-600 hover:text-gray-900'
+        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
     }`
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('dashboards.supervision.site_supervision')}</h1>
-          <p className="text-gray-600 mt-1">{t('dashboards.supervision.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.supervision.site_supervision')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.supervision.subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600">{t('dashboards.supervision.this_week')}</p>
-          <p className="text-lg font-semibold text-gray-900">
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.supervision.this_week')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd')} -{' '}
             {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd, yyyy')}
           </p>
@@ -116,7 +116,7 @@ const SupervisionDashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex space-x-2 border-b border-gray-200">
+      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
         <button className={tabClass('week')} onClick={() => setSelectedView('week')}>
           <Activity className="w-4 h-4 inline mr-2" />
           {t('dashboards.supervision.tab_week')}

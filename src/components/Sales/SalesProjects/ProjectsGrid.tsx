@@ -19,13 +19,13 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
       {projects.map((project) => (
         <div
           key={project.id}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
           onClick={() => onSelectProject(project)}
         >
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
-              <p className="text-sm text-gray-600">{project.location}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{project.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{project.location}</p>
             </div>
             <Badge variant={getStatusBadgeVariant(project.status)}>
               {project.status}
@@ -35,22 +35,22 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{project.total_buildings}</p>
-              <p className="text-xs text-gray-600">{t('sales_projects.buildings')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.buildings')}</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{project.total_units}</p>
-              <p className="text-xs text-gray-600">{t('sales_projects.total_units')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{project.total_units}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.total_units')}</p>
             </div>
           </div>
 
           <div className="mb-4">
             <div className="flex justify-between mb-1">
-              <span className="text-sm text-gray-600">{t('sales_projects.sales_progress')}</span>
-              <span className="text-sm font-medium">
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.sales_progress')}</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {project.total_units > 0 ? ((project.sold_units / project.total_units) * 100).toFixed(1) : '0'}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
               <div
                 className="bg-green-600 h-2 rounded-full"
                 style={{ width: `${project.total_units > 0 ? (project.sold_units / project.total_units) * 100 : 0}%` }}
@@ -58,9 +58,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             </div>
           </div>
 
-          <div className="border-t pt-3">
+          <div className="border-t dark:border-gray-700 pt-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">{t('sales_projects.revenue')}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.revenue')}</span>
               <span className="font-bold text-green-600">€{project.total_revenue.toLocaleString('hr-HR')}</span>
             </div>
           </div>

@@ -263,7 +263,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               <DateInput
                 value={formData.issue_date}
                 onChange={(value) => setFormData({ ...formData, issue_date: value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </FormField>
 
@@ -271,7 +271,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               <DateInput
                 value={formData.due_date}
                 onChange={(value) => setFormData({ ...formData, due_date: value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </FormField>
 
@@ -280,7 +280,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.base_amount_1}
                 onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
                 placeholder="0,00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
             </FormField>
@@ -290,7 +290,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.base_amount_2}
                 onChange={(value) => setFormData({ ...formData, base_amount_2: value })}
                 placeholder="0,00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
             </FormField>
@@ -300,7 +300,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.base_amount_4}
                 onChange={(value) => setFormData({ ...formData, base_amount_4: value })}
                 placeholder="0,00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
             </FormField>
@@ -310,7 +310,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
                 value={formData.base_amount_3}
                 onChange={(value) => setFormData({ ...formData, base_amount_3: value })}
                 placeholder="0,00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 min={0}
               />
             </FormField>

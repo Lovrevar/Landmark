@@ -17,75 +17,75 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
   }
 
   return (
-    <Card variant="bordered" padding="none" className="col-span-2 bg-gray-50 p-4 space-y-2">
+    <Card variant="bordered" padding="none" className="col-span-2 bg-gray-50 dark:bg-gray-700/50 p-4 space-y-2">
       <Card.Header className="!mb-2">
-        <div className="text-sm font-medium text-gray-700">{t('invoices.preview.title')}</div>
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('invoices.preview.title')}</div>
       </Card.Header>
 
       <Card.Body className="space-y-2">
         {formData.base_amount_1 > 0 && (
-          <div className="space-y-1 pb-2 border-b border-gray-200">
+          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.base_vat25')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.base_vat25')}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.vat25')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat25')}</span>
               <span className="font-medium">€{formatCurrency(calc.vat1)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600">{t('common.subtotal')}:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(calc.subtotal1)}</span>
             </div>
           </div>
         )}
 
         {formData.base_amount_2 > 0 && (
-          <div className="space-y-1 pb-2 border-b border-gray-200">
+          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.base_vat13')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.base_vat13')}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.vat13')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat13')}</span>
               <span className="font-medium">€{formatCurrency(calc.vat2)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600">{t('common.subtotal')}:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(calc.subtotal2)}</span>
             </div>
           </div>
         )}
 
         {formData.base_amount_4 > 0 && (
-          <div className="space-y-1 pb-2 border-b border-gray-200">
+          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.base_vat5')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.base_vat5')}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.vat5')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat5')}</span>
               <span className="font-medium">€{formatCurrency(calc.vat4)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600">{t('common.subtotal')}:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(calc.subtotal4)}</span>
             </div>
           </div>
         )}
 
         {formData.base_amount_3 > 0 && (
-          <div className="space-y-1 pb-2 border-b border-gray-200">
+          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.base_vat0')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.base_vat0')}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('invoices.preview.vat0')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat0')}</span>
               <span className="font-medium">€0.00</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600">{t('common.subtotal')}:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(calc.subtotal3)}</span>
             </div>
           </div>

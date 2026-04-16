@@ -35,7 +35,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
       <Modal.Header title={title} onClose={onClose} />
 
       <Modal.Body>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           {details}
         </div>
 
