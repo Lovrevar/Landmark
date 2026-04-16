@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { getTotalUnreadCount } from '../services/chatService'
@@ -12,33 +12,52 @@ export function dispatchChatRead() {
 export function useChatNotifications() {
   const { user } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
+  const mountedRef = useRef(true)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
+  const refreshFromDb = useCallback(async () => {
     if (!user) return
     try {
       const count = await getTotalUnreadCount(user.id)
-      setUnreadCount(count)
+      if (mountedRef.current) {
+        setUnreadCount(count)
+      }
     } catch {
       // silently fail
     }
   }, [user])
 
+  const debouncedRefresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      refreshFromDb()
+    }, 300)
+  }, [refreshFromDb])
+
   useEffect(() => {
-    refresh()
-  }, [refresh])
+    refreshFromDb()
+  }, [refreshFromDb])
 
   useEffect(() => {
     if (!user) return
 
     const channel = supabase
-      .channel('chat-notifications')
+      .channel('layout-chat-notifications')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         (payload) => {
           const msg = payload.new as { sender_id: string }
           if (msg.sender_id !== user.id) {
-            refresh()
+            setUnreadCount(prev => prev + 1)
           }
         },
       )
@@ -47,13 +66,12 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, refresh])
+  }, [user])
 
   useEffect(() => {
-    const handler = () => refresh()
-    window.addEventListener(CHAT_READ_EVENT, handler)
-    return () => window.removeEventListener(CHAT_READ_EVENT, handler)
-  }, [refresh])
+    window.addEventListener(CHAT_READ_EVENT, debouncedRefresh)
+    return () => window.removeEventListener(CHAT_READ_EVENT, debouncedRefresh)
+  }, [debouncedRefresh])
 
-  return { unreadCount, refresh }
+  return { unreadCount, refresh: refreshFromDb }
 }
