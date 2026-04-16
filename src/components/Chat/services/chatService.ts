@@ -1,6 +1,10 @@
 import { supabase } from '../../../lib/supabase'
 import type { ChatConversation, ChatMessage, ChatUser } from '../../../types/chat'
 
+const MSG_FIELDS = 'id, conversation_id, sender_id, content, created_at, file_url, file_name, file_size, file_type'
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024
+
 export async function fetchAllUsers(): Promise<ChatUser[]> {
   const { data, error } = await supabase
     .from('users')
@@ -62,7 +66,7 @@ export async function fetchConversations(userId: string): Promise<ChatConversati
 
     const { data: lastMsg } = await supabase
       .from('chat_messages')
-      .select('id, conversation_id, sender_id, content, created_at')
+      .select(MSG_FIELDS)
       .eq('conversation_id', conv.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -108,7 +112,7 @@ export async function fetchMessages(
 ): Promise<ChatMessage[]> {
   const { data, error } = await supabase
     .from('chat_messages')
-    .select('id, conversation_id, sender_id, content, created_at')
+    .select(MSG_FIELDS)
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -132,15 +136,58 @@ export async function fetchMessages(
     .reverse()
 }
 
+export async function uploadChatFile(
+  file: File,
+  conversationId: string,
+): Promise<{ url: string; name: string; size: number; type: string }> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`Datoteka prelazi limit od 25 MB`)
+  }
+
+  const ext = file.name.split('.').pop() || 'bin'
+  const path = `${conversationId}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
+
+  const { error: uploadErr } = await supabase.storage
+    .from('chat-attachments')
+    .upload(path, file)
+
+  if (uploadErr) throw uploadErr
+
+  const { data: urlData } = supabase.storage
+    .from('chat-attachments')
+    .getPublicUrl(path)
+
+  return {
+    url: urlData.publicUrl,
+    name: file.name,
+    size: file.size,
+    type: file.type || 'application/octet-stream',
+  }
+}
+
 export async function sendMessage(
   conversationId: string,
   senderId: string,
   content: string,
+  attachment?: { url: string; name: string; size: number; type: string } | null,
 ): Promise<ChatMessage> {
+  const row: Record<string, unknown> = {
+    conversation_id: conversationId,
+    sender_id: senderId,
+    content,
+  }
+
+  if (attachment) {
+    row.file_url = attachment.url
+    row.file_name = attachment.name
+    row.file_size = attachment.size
+    row.file_type = attachment.type
+  }
+
   const { data, error } = await supabase
     .from('chat_messages')
-    .insert({ conversation_id: conversationId, sender_id: senderId, content })
-    .select('id, conversation_id, sender_id, content, created_at')
+    .insert(row)
+    .select(MSG_FIELDS)
     .single()
 
   if (error) throw error

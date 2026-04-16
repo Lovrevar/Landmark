@@ -31,4 +31,8 @@ export interface ChatMessage {
   content: string
   created_at: string
   sender?: ChatUser
+  file_url?: string | null
+  file_name?: string | null
+  file_size?: number | null
+  file_type?: string | null
 }

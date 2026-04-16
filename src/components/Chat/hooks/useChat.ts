@@ -6,6 +6,7 @@ import {
   fetchConversations,
   fetchMessages,
   sendMessage as sendMessageService,
+  uploadChatFile,
   markAsRead,
   createConversation,
 } from '../services/chatService'
@@ -186,39 +187,60 @@ export function useChat() {
     return () => clearInterval(interval)
   }, [user, activeConversationId, mergeNewMessages])
 
-  const handleSendMessage = useCallback(async (content: string) => {
-    if (!user || !activeConversationId || !content.trim()) return
+  const appendMessageAndUpdateConversations = useCallback((
+    enrichedMsg: ChatMessage,
+    convId: string,
+  ) => {
+    setMessages(prev => {
+      if (prev.some(m => m.id === enrichedMsg.id)) return prev
+      return [...prev, enrichedMsg]
+    })
+
+    setConversations(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== convId) return c
+        return { ...c, last_message: enrichedMsg }
+      })
+      return updated.sort((a, b) => {
+        const aTime = a.last_message?.created_at || a.created_at
+        const bTime = b.last_message?.created_at || b.created_at
+        return new Date(bTime).getTime() - new Date(aTime).getTime()
+      })
+    })
+  }, [])
+
+  const handleSendMessage = useCallback(async (content: string, file?: File | null) => {
+    if (!user || !activeConversationId) return
+    if (!content.trim() && !file) return
+
     try {
       setSendingMessage(true)
-      const saved = await sendMessageService(activeConversationId, user.id, content.trim())
+
+      let attachment: { url: string; name: string; size: number; type: string } | null = null
+      if (file) {
+        attachment = await uploadChatFile(file, activeConversationId)
+      }
+
+      const saved = await sendMessageService(
+        activeConversationId,
+        user.id,
+        content.trim(),
+        attachment,
+      )
 
       const enrichedMsg: ChatMessage = {
         ...saved,
         sender: { id: user.id, username: user.username, role: user.role },
       }
 
-      setMessages(prev => {
-        if (prev.some(m => m.id === saved.id)) return prev
-        return [...prev, enrichedMsg]
-      })
-
-      setConversations(prev => {
-        const updated = prev.map(c => {
-          if (c.id !== activeConversationId) return c
-          return { ...c, last_message: enrichedMsg }
-        })
-        return updated.sort((a, b) => {
-          const aTime = a.last_message?.created_at || a.created_at
-          const bTime = b.last_message?.created_at || b.created_at
-          return new Date(bTime).getTime() - new Date(aTime).getTime()
-        })
-      })
+      appendMessageAndUpdateConversations(enrichedMsg, activeConversationId)
     } catch (err) {
       console.error('Failed to send message:', err)
+      throw err
     } finally {
       setSendingMessage(false)
     }
-  }, [user, activeConversationId])
+  }, [user, activeConversationId, appendMessageAndUpdateConversations])
 
   const handleCreateConversation = useCallback(async (
     participantIds: string[],

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Users, User, MessageCircle } from 'lucide-react'
+import { Plus, Users, User, MessageCircle, Paperclip } from 'lucide-react'
 import type { ChatConversation } from '../../types/chat'
 import SearchInput from '../ui/SearchInput'
 import LoadingSpinner from '../ui/LoadingSpinner'
@@ -101,9 +101,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
             const isActive = conv.id === activeConversationId
             const displayName = getConversationDisplayName(conv, currentUserId)
             const lastMsg = conv.last_message
+            const lastMsgText = lastMsg
+              ? lastMsg.content?.trim()
+                ? truncate(lastMsg.content, 40)
+                : lastMsg.file_name
+                  ? lastMsg.file_name
+                  : ''
+              : ''
+            const lastMsgPrefix = lastMsg && lastMsg.sender_id === currentUserId ? t('chat.you') + ': ' : ''
             const lastMsgPreview = lastMsg
-              ? `${lastMsg.sender_id === currentUserId ? t('chat.you') + ': ' : ''}${truncate(lastMsg.content, 40)}`
+              ? `${lastMsgPrefix}${lastMsgText}`
               : t('chat.no_messages')
+            const lastMsgHasFile = lastMsg?.file_url && !lastMsg.content?.trim()
 
             return (
               <button
@@ -147,7 +156,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     )}
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                      {lastMsgHasFile && <Paperclip className="w-3 h-3 flex-shrink-0" />}
                       {lastMsgPreview}
                     </p>
                     {conv.unread_count > 0 && (
