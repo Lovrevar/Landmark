@@ -46,7 +46,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           <div className="mb-4">
             <div className="flex justify-between mb-1">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.sales_progress')}</span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {project.total_units > 0 ? ((project.sold_units / project.total_units) * 100).toFixed(1) : '0'}%
               </span>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { LoadingSpinner, Button } from '../ui'
 import { useTranslation } from 'react-i18next'
-import { useToast } from '../../contexts/ToastContext'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 import {
   Banknote,
   AlertTriangle,
@@ -25,7 +25,6 @@ const defaultFinancialSummary: FinancialSummary = {
 
 const InvestmentDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const toast = useToast()
   const [companies, setCompanies] = useState<Company[]>([])
   const [banks, setBanks] = useState<Bank[]>([])
   const [bankCredits, setBankCredits] = useState<BankCredit[]>([])
@@ -37,14 +36,10 @@ const InvestmentDashboard: React.FC = () => {
     loadAll()
   }, [])
 
-  const handleExportPDF = async () => {
-    try {
-      await generateInvestmentReportPDF(financialSummary, bankCredits, [])
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error(t('dashboards.investment.pdf_error'))
-    }
-  }
+  const { run: handleExportPDF } = useAsyncExport(
+    () => generateInvestmentReportPDF(financialSummary, bankCredits, []),
+    'dashboards.investment.pdf_error'
+  )
 
   const loadAll = async () => {
     setLoading(true)

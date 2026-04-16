@@ -14,16 +14,16 @@ const getPaymentUnitInfo = (
   if (payment.garage_id) {
     const garage = linkedGarages.find(g => g.id === payment.garage_id)
     if (garage) {
-      return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100' }
+      return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' }
     }
   }
   if (payment.storage_id) {
     const storage = linkedStorages.find(s => s.id === payment.storage_id)
     if (storage) {
-      return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600', bgColor: 'bg-gray-100' }
+      return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' }
     }
   }
-  return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100' }
+  return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' }
 }
 
 interface PaymentHistoryModalProps {

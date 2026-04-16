@@ -309,15 +309,15 @@ const ApartmentManagement: React.FC = () => {
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.project')}:</span>
-                    <span className="text-sm font-medium">{apartment.project_name}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.project_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.building')}:</span>
-                    <span className="text-sm font-medium">{apartment.building_name}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.building_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.size')}:</span>
-                    <span className="text-sm font-medium">{apartment.size_m2} m²</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.size_m2} m²</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.price')}:</span>
@@ -356,13 +356,13 @@ const ApartmentManagement: React.FC = () => {
                     <>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.table.buyer')}:</span>
-                        <span className="text-sm font-medium">{apartment.buyer_name}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{apartment.buyer_name}</span>
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between mb-1">
                           <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t('apartments.payment_history_modal.progress')}</span>
-                          <span className="text-xs font-bold">{overallPercentage.toFixed(1)}%</span>
+                          <span className="text-xs font-bold text-gray-900 dark:text-white">{overallPercentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                           <div

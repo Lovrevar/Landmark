@@ -60,7 +60,7 @@ const GeneralReports: React.FC = () => {
             icon={Download}
             onClick={handleGeneratePDF}
             loading={generatingPDF}
-            className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg font-semibold"
+            className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
           >
             {t('reports.general.export_pdf')}
           </Button>

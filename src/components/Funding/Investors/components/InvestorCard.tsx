@@ -60,7 +60,7 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
       <div className="mb-4">
         <div className="flex justify-between mb-1">
           <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_utilization')}</span>
-          <span className="text-sm font-medium">{bank.credit_utilization.toFixed(1)}%</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white">{bank.credit_utilization.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
           <div

@@ -78,7 +78,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
                   className={`p-3 border-2 rounded-lg text-left transition-colors ${
                     apartment.linked_repositories?.some(r => r.id === repository.id)
                       ? 'border-gray-500 bg-gray-50 dark:bg-gray-700/50'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 bg-white dark:bg-gray-800'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800'
                   }`}
                 >
                   <div className="font-medium text-gray-900 dark:text-white">{t('common.storage')} {repository.number}</div>

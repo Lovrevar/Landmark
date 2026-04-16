@@ -16,6 +16,7 @@ import { generateRetailReportPdf } from '../Reports/pdf/retailReportPdf'
 import { fetchRetailReportData } from '../Reports/services/retailReportService'
 import type { RetailReportData } from '../Reports/retailReportTypes'
 import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
 
@@ -24,7 +25,6 @@ const RetailReports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [data, setData] = useState<RetailReportData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [exporting, setExporting] = useState(false)
 
   const tabs = useMemo<{ id: TabId; label: string; icon: React.ReactNode }[]>(() => [
     { id: 'overview', label: t('reports.retail.tab_overview'), icon: <BarChart3 className="w-4 h-4" /> },
@@ -49,17 +49,8 @@ const RetailReports: React.FC = () => {
     }
   }
 
-  const handleExportPdf = async () => {
-    if (!data) return
-    try {
-      setExporting(true)
-      await generateRetailReportPdf(data)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-    } finally {
-      setExporting(false)
-    }
-  }
+  const { exporting, run: runExportPdf } = useAsyncExport(generateRetailReportPdf)
+  const handleExportPdf = () => { if (data) runExportPdf(data) }
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('hr-HR', {

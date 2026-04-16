@@ -84,7 +84,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     <Warehouse className="w-4 h-4 mr-2 text-orange-600" />
                     <span className="text-sm text-gray-900 dark:text-white">{t('common.garage')} {linkedGarage.number}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">€{linkedGarage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
               {linkedStorage && (
@@ -93,7 +93,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
                     <Package className="w-4 h-4 mr-2 text-gray-600" />
                     <span className="text-sm text-gray-900 dark:text-white">{t('common.storage')} {linkedStorage.number}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">€{linkedStorage.price.toLocaleString('hr-HR')}</span>
                 </div>
               )}
               <div className="pt-2 mt-2 border-t border-gray-300 dark:border-gray-600 flex items-center justify-between">

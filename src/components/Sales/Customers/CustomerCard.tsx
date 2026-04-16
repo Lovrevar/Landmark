@@ -132,7 +132,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                       )}
                       {unit.repository && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">+ Repository {unit.repository.number}</span>
+                          <span className="text-gray-600 dark:text-gray-400">+ Repository {unit.repository.number}</span>
                           <span>€{(unit.repository.price / 1000).toFixed(0)}K</span>
                         </div>
                       )}

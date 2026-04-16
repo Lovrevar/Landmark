@@ -96,7 +96,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                   ))}
                   {selectedStorages.map(storage => (
                     <div key={storage.id} className="text-sm text-gray-700 dark:text-gray-200 flex items-center">
-                      <Package className="w-4 h-4 mr-2 text-gray-600" />
+                      <Package className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" />
                       {t('common.storage')} {storage.number} - €{storage.price.toLocaleString('hr-HR')}
                     </div>
                   ))}
@@ -166,13 +166,13 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                           isSelected
                             ? 'border-gray-500 bg-gray-50 dark:bg-gray-700/50'
                             : isAvailable
-                              ? 'border-gray-200 dark:border-gray-600 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                              ? 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                               : 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="font-medium text-gray-900 dark:text-white">{t('common.storage')} {storage.number}</div>
-                          {isSelected && <X className="w-4 h-4 text-gray-600" />}
+                          {isSelected && <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {storage.floor} • {storage.size_m2}m²</div>
                         <div className="text-sm font-medium text-gray-600 dark:text-gray-400">€{storage.price.toLocaleString('hr-HR')}</div>

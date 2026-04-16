@@ -242,7 +242,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
               <div className="space-y-2 mb-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.size')}:</span>
-                  <span className="text-sm font-medium">{unit.size_m2} m²</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{unit.size_m2} m²</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.price_per_m2')}:</span>
@@ -269,7 +269,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   <>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.buyer')}:</span>
-                      <span className="text-sm font-medium">{unit.sale_info.buyer_name}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{unit.sale_info.buyer_name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.sale_price')}:</span>
@@ -277,18 +277,18 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.down_payment')}:</span>
-                      <span className="text-sm font-medium">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
                     </div>
                     {unit.sale_info.monthly_payment > 0 && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.monthly')}:</span>
-                        <span className="text-sm font-medium">€{unit.sale_info.monthly_payment.toLocaleString()}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.monthly_payment.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="mt-2">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-500 dark:text-gray-400">{t('sales_projects.unit_detail.payment_progress')}</span>
-                        <span className="text-xs font-medium">
+                        <span className="text-xs font-medium text-gray-900 dark:text-white">
                           €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString('hr-HR')}
                         </span>
                       </div>

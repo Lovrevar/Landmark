@@ -91,7 +91,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.specs')}</h4>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2">
               {apartment.tip_stana && (
@@ -130,7 +130,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
           </div>
 
           {apartment.buyer_name && (
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.buyer_info')}</h4>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{t('apartments.table.buyer')}:</span>
@@ -139,7 +139,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
             </div>
           )}
 
-          {showContract && <div className="border-t border-gray-200 pt-4">
+          {showContract && <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.contract')}</h4>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-700 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">

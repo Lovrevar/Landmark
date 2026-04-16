@@ -119,7 +119,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                   adjustmentType === 'increase'
                     ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -131,7 +131,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
                 className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                   adjustmentType === 'decrease'
                     ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 <Minus className="w-5 h-5 mr-2" />

@@ -185,9 +185,9 @@ const SalesReports: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{projectReport.project.name}</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium">{projectReport.project.location}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
                 </div>
               </div>
 
@@ -196,8 +196,8 @@ const SalesReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.sales_rate_label')}</span><span className="font-bold text-green-600">{projectReport.sales_rate.toFixed(1)}%</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.units_sold_label')}</span><span className="font-medium">{projectReport.sold_units} / {projectReport.total_units}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.units_sold_label')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.sold_units} / {projectReport.total_units}</span></div>
                 </div>
               </div>
             </div>
@@ -225,7 +225,7 @@ const SalesReports: React.FC = () => {
                         <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
-                      <span className="font-semibold">{count} {t('reports.sales.units_label')}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.units_label')}</span>
                     </div>
                   ))}
                 </div>
@@ -241,7 +241,7 @@ const SalesReports: React.FC = () => {
                     <div key={labelKey}>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t(labelKey)}</span>
-                        <span className="text-sm font-medium">{((count / projectReport.total_units) * 100).toFixed(1)}%</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{((count / projectReport.total_units) * 100).toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div className={`${color} h-2 rounded-full`} style={{ width: `${(count / projectReport.total_units) * 100}%` }}></div>
@@ -330,7 +330,7 @@ const SalesReports: React.FC = () => {
                         <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
-                      <span className="font-semibold">{count} {t('reports.sales.customers_label')}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.customers_label')}</span>
                     </div>
                   ))}
                 </div>
@@ -346,7 +346,7 @@ const SalesReports: React.FC = () => {
                     <div key={labelKey}>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t(labelKey)}</span>
-                        <span className="text-sm font-medium">{customerReport.total_customers > 0 ? ((count / customerReport.total_customers) * 100).toFixed(1) : '0'}%</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{customerReport.total_customers > 0 ? ((count / customerReport.total_customers) * 100).toFixed(1) : '0'}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div className={`${color} h-2 rounded-full`} style={{ width: `${customerReport.total_customers > 0 ? (count / customerReport.total_customers) * 100 : 0}%` }}></div>

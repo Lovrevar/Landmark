@@ -55,7 +55,7 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
                 <p className="text-xs text-green-600">{building.sold_garages} {t('sales_projects.sold')}</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-gray-600">{building.total_repositories}</p>
+                <p className="text-lg font-bold text-gray-600 dark:text-gray-400">{building.total_repositories}</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.units.repositories')}</p>
                 <p className="text-xs text-green-600">{building.sold_repositories} {t('sales_projects.sold')}</p>
               </div>
