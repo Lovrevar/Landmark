@@ -3,6 +3,12 @@ import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { getTotalUnreadCount } from '../services/chatService'
 
+export const CHAT_READ_EVENT = 'chat:marked-read'
+
+export function dispatchChatRead() {
+  window.dispatchEvent(new Event(CHAT_READ_EVENT))
+}
+
 export function useChatNotifications() {
   const { user } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
@@ -32,7 +38,7 @@ export function useChatNotifications() {
         (payload) => {
           const msg = payload.new as { sender_id: string }
           if (msg.sender_id !== user.id) {
-            setUnreadCount(prev => prev + 1)
+            refresh()
           }
         },
       )
@@ -41,11 +47,13 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user, refresh])
 
-  const clearCount = useCallback(() => {
-    setUnreadCount(0)
-  }, [])
+  useEffect(() => {
+    const handler = () => refresh()
+    window.addEventListener(CHAT_READ_EVENT, handler)
+    return () => window.removeEventListener(CHAT_READ_EVENT, handler)
+  }, [refresh])
 
-  return { unreadCount, refresh, clearCount }
+  return { unreadCount, refresh }
 }

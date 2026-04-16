@@ -9,6 +9,7 @@ import {
   markAsRead,
   createConversation,
 } from '../services/chatService'
+import { dispatchChatRead } from './useChatNotifications'
 
 export function useChat() {
   const { user } = useAuth()
@@ -48,6 +49,7 @@ export function useChat() {
       const data = await fetchMessages(conversationId)
       setMessages(data)
       await markAsRead(conversationId, user.id)
+      dispatchChatRead()
       setConversations(prev =>
         prev.map(c =>
           c.id === conversationId ? { ...c, unread_count: 0 } : c,
@@ -94,7 +96,9 @@ export function useChat() {
             })
 
             if (newMsg.sender_id !== user.id) {
-              markAsRead(newMsg.conversation_id, user.id).catch(() => {})
+              markAsRead(newMsg.conversation_id, user.id)
+                .then(() => dispatchChatRead())
+                .catch(() => {})
             }
           }
 
