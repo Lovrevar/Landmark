@@ -4155,5 +4155,20 @@
     "current": "Trenutno",
     "chart_label": "Proračun",
     "no_projects": "Nema pronađenih projekata."
+  },
+  "chat": {
+    "new_conversation": "Nova konverzacija",
+    "search_users": "Pretraži korisnike...",
+    "type_message": "Napiši poruku...",
+    "send": "Pošalji",
+    "no_conversations": "Nema konverzacija",
+    "start_conversation": "Započni razgovor",
+    "no_messages": "Nema poruka",
+    "select_conversation": "Odaberite razgovor",
+    "select_conversation_desc": "Odaberite razgovor iz liste ili započnite novi",
+    "you": "Vi",
+    "group_name_placeholder": "Naziv grupe (npr. Prečko Zapad)",
+    "create_group": "Kreiraj grupu",
+    "start_chat": "Započni chat"
   }
 }
