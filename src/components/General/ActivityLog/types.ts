@@ -54,10 +54,7 @@ export const ACTION_CATEGORIES = [
   'land_plot',
   'export',
   'conversation',
-  'message',
   'calendar_event',
-  'task',
-  'task_comment',
 ] as const
 
 export type ActionCategory = (typeof ACTION_CATEGORIES)[number]
@@ -96,8 +93,5 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   retail_invoice: '/retail-invoices',
   land_plot: '/retail-land-plots',
   conversation: '/chat',
-  message: '/chat',
   calendar_event: '/calendar',
-  task: '/tasks',
-  task_comment: '/tasks',
 }

@@ -4363,10 +4363,7 @@
       "land_plot": "Land Plot",
       "export": "Export",
       "conversation": "Conversation",
-      "message": "Message",
-      "calendar_event": "Calendar Event",
-      "task": "Task",
-      "task_comment": "Task Comment"
+      "calendar_event": "Calendar Event"
     },
     "actions": {
       "auth.login": "User logged in",
@@ -4463,18 +4460,10 @@
       "export.report_pdf": "Report exported as PDF",
       "conversation.create": "Conversation created",
       "conversation.delete": "Conversation deleted",
-      "message.send": "Message sent",
       "calendar_event.create": "Calendar event created",
       "calendar_event.respond": "Responded to calendar event",
       "calendar_event.delete": "Calendar event deleted",
-      "calendar_event.acknowledge_all": "Calendar events acknowledged",
-      "task.create": "Task created",
-      "task.update": "Task updated",
-      "task.status_change": "Task status changed",
-      "task.delete": "Task deleted",
-      "task.acknowledge_all": "Tasks acknowledged",
-      "task_comment.create": "Task comment added",
-      "task_comment.delete": "Task comment deleted"
+      "calendar_event.acknowledge_all": "Calendar events acknowledged"
     }
   }
 }

@@ -18,9 +18,9 @@
 | **UI** | [UI.md](./modules/UI.md) | Primitive component library |
 | **Core** | [CORE.md](./modules/CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./modules/ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
-| **Chat** | `src/components/Chat/` | 1:1 and group conversations, file attachments, unread tracking |
-| **Calendar** | `src/components/Calendar/` | Personal/shared events, RSVP, month view, day detail |
-| **Tasks** | `src/components/Tasks/` | Personal/assigned/private tasks, comments, status tracking |
+| **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
+| **Calendar** | [CALENDAR.md](./CALENDAR.md) | Personal/shared events, RSVP, month view, day detail |
+| **Tasks** | [TASKS.md](./TASKS.md) | Personal/assigned/private tasks, comments, status tracking |
 
 ---
 

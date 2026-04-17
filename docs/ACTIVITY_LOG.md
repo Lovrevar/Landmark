@@ -253,22 +253,15 @@ logActivity({
 | `land_plot.update` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `invoice.approve` | H | `Retail/Invoices/services/retailInvoiceService.ts` |
 
-### Chat / Calendar / Tasks
+### Chat / Calendar
 
 | Action | Severity | File |
 |---|---|---|
 | `conversation.create` | M | `Chat/services/chatService.ts` |
-| `message.send` | L | `Chat/services/chatService.ts` |
 | `calendar_event.create` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.respond` | L | `Calendar/services/calendarService.ts` |
 | `calendar_event.delete` | H | `Calendar/services/calendarService.ts` |
 | `calendar_event.acknowledge_all` | L | `Calendar/services/calendarService.ts` |
-| `task.create` | M | `Tasks/services/tasksService.ts` |
-| `task.status_change` | M | `Tasks/services/tasksService.ts` |
-| `task.delete` | H | `Tasks/services/tasksService.ts` |
-| `task.acknowledge_all` | L | `Tasks/services/tasksService.ts` |
-| `task_comment.create` | L | `Tasks/services/tasksService.ts` |
-| `task_comment.delete` | M | `Tasks/services/tasksService.ts` |
 
 ---
 

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { getTotalUnreadCount } from '../services/chatService'
 
 export const CHAT_READ_EVENT = 'chat:marked-read'
 
-const POLL_INTERVAL_MS = 15_000
+const POLL_INTERVAL_MS = 60_000
 
 export function dispatchChatRead() {
   window.dispatchEvent(new Event(CHAT_READ_EVENT))
@@ -56,6 +57,28 @@ export function useChatNotifications() {
       window.removeEventListener('chat:unread-update', handleUpdate)
     }
   }, [refreshFromDb])
+
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('chat-notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `sender_id=neq.${user.id}`,
+        },
+        () => refreshFromDb(),
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, refreshFromDb])
 
   return { unreadCount, refresh: refreshFromDb }
 }

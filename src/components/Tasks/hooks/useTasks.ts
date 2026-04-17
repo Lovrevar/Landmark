@@ -54,12 +54,12 @@ export function useTasks() {
 
   const toggleStatus = useCallback(async (task: Task) => {
     const next = task.status === 'done' ? 'todo' : 'done'
-    await updateTaskStatus(task.id, next, task.title)
+    await updateTaskStatus(task.id, next)
     await load()
   }, [load])
 
   const remove = useCallback(async (task: Task) => {
-    await deleteTask(task.id, task.title)
+    await deleteTask(task.id)
     await load()
   }, [load])
 

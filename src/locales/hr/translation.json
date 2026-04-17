@@ -4364,10 +4364,7 @@
     "land_plot": "Zemljišna čestica",
     "export": "Izvoz",
     "conversation": "Razgovor",
-    "message": "Poruka",
-    "calendar_event": "Događaj kalendara",
-    "task": "Zadatak",
-    "task_comment": "Komentar zadatka"
+    "calendar_event": "Događaj kalendara"
   },
   "actions": {
     "auth.login": "Korisnik se prijavio",
@@ -4464,18 +4461,10 @@
     "export.report_pdf": "Izvještaj izvezen kao PDF",
     "conversation.create": "Razgovor kreiran",
     "conversation.delete": "Razgovor obrisan",
-    "message.send": "Poruka poslana",
     "calendar_event.create": "Događaj kalendara kreiran",
     "calendar_event.respond": "Odgovoreno na događaj",
     "calendar_event.delete": "Događaj kalendara obrisan",
-    "calendar_event.acknowledge_all": "Događaji označeni pregledanima",
-    "task.create": "Zadatak kreiran",
-    "task.update": "Zadatak ažuriran",
-    "task.status_change": "Status zadatka promijenjen",
-    "task.delete": "Zadatak obrisan",
-    "task.acknowledge_all": "Zadaci označeni pregledanima",
-    "task_comment.create": "Komentar zadatka dodan",
-    "task_comment.delete": "Komentar zadatka obrisan"
+    "calendar_event.acknowledge_all": "Događaji označeni pregledanima"
   }
 }
 }

@@ -193,18 +193,6 @@ export async function sendMessage(
 
   if (error) throw error
 
-  logActivity({
-    action: 'message.send',
-    entity: 'message',
-    entityId: data.id,
-    severity: 'low',
-    metadata: {
-      conversation_id: conversationId,
-      has_attachment: !!attachment,
-      file_name: attachment?.name,
-    },
-  })
-
   return data
 }
 

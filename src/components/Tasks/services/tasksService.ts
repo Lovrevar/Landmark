@@ -1,5 +1,4 @@
 import { supabase } from '../../../lib/supabase'
-import { logActivity } from '../../../lib/activityLog'
 import type { Task, TaskUser, NewTaskInput, TaskStatus, TaskComment } from '../../../types/tasks'
 
 const TASK_FIELDS = 'id, title, description, created_by, due_date, due_time, status, priority, is_private, completed_at, created_at, updated_at'
@@ -109,26 +108,12 @@ export async function createTask(input: NewTaskInput, userId: string): Promise<T
     })
   }
 
-  logActivity({
-    action: 'task.create',
-    entity: 'task',
-    entityId: inserted.id,
-    severity: 'medium',
-    metadata: {
-      entity_name: input.title,
-      priority: input.priority,
-      is_private: input.is_private,
-      assignee_count: input.is_private ? 1 : input.assignee_ids.length,
-    },
-  })
-
   return inserted as Task
 }
 
 export async function updateTaskStatus(
   taskId: string,
   status: TaskStatus,
-  taskTitle?: string,
 ): Promise<void> {
   const patch: Record<string, unknown> = {
     status,
@@ -142,31 +127,11 @@ export async function updateTaskStatus(
     .update(patch)
     .eq('id', taskId)
   if (error) throw error
-
-  logActivity({
-    action: 'task.status_change',
-    entity: 'task',
-    entityId: taskId,
-    severity: 'medium',
-    metadata: {
-      entity_name: taskTitle,
-      status,
-      changed_fields: Object.keys(patch),
-    },
-  })
 }
 
-export async function deleteTask(taskId: string, taskTitle?: string): Promise<void> {
+export async function deleteTask(taskId: string): Promise<void> {
   const { error } = await supabase.from('tasks').delete().eq('id', taskId)
   if (error) throw error
-
-  logActivity({
-    action: 'task.delete',
-    entity: 'task',
-    entityId: taskId,
-    severity: 'high',
-    metadata: { entity_name: taskTitle },
-  })
 }
 
 export async function getUnacknowledgedTaskCount(userId: string): Promise<number> {
@@ -200,50 +165,21 @@ export async function fetchTaskComments(taskId: string): Promise<TaskComment[]> 
 export async function createTaskComment(taskId: string, userId: string, comment: string): Promise<void> {
   const trimmed = comment.trim()
   if (!trimmed) return
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('task_comments')
     .insert({ task_id: taskId, user_id: userId, comment: trimmed })
-    .select('id')
-    .maybeSingle()
   if (error) throw error
-
-  logActivity({
-    action: 'task_comment.create',
-    entity: 'task_comment',
-    entityId: data?.id ?? null,
-    severity: 'low',
-    metadata: { task_id: taskId },
-  })
 }
 
-export async function deleteTaskComment(commentId: string, taskId?: string): Promise<void> {
+export async function deleteTaskComment(commentId: string): Promise<void> {
   const { error } = await supabase.from('task_comments').delete().eq('id', commentId)
   if (error) throw error
-
-  logActivity({
-    action: 'task_comment.delete',
-    entity: 'task_comment',
-    entityId: commentId,
-    severity: 'medium',
-    metadata: { task_id: taskId },
-  })
 }
 
 export async function acknowledgeAllTasks(userId: string): Promise<void> {
-  const { data } = await supabase
+  await supabase
     .from('task_assignees')
     .update({ acknowledged_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('acknowledged_at', null)
-    .select('id')
-
-  const count = data?.length ?? 0
-  if (count > 0) {
-    logActivity({
-      action: 'task.acknowledge_all',
-      entity: 'task',
-      severity: 'low',
-      metadata: { count },
-    })
-  }
 }
