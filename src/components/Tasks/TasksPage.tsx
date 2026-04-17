@@ -6,6 +6,7 @@ import { dispatchTasksRead } from './hooks/useTasksNotifications'
 import type { Task } from '../../types/tasks'
 import TaskCard from './TaskCard'
 import NewTaskModal from './NewTaskModal'
+import TaskDetailModal from './TaskDetailModal'
 
 type TabKey = 'assigned' | 'created' | 'private'
 
@@ -15,6 +16,7 @@ const TasksPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<TabKey>('assigned')
   const [showNew, setShowNew] = useState(false)
+  const [selected, setSelected] = useState<Task | null>(null)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -104,13 +106,14 @@ const TasksPage: React.FC = () => {
               currentUserId={user?.id || ''}
               onToggleStatus={handleToggleStatus}
               onDelete={handleDelete}
-              onClick={() => {}}
+              onClick={(t) => setSelected(t)}
             />
           ))}
         </div>
       )}
 
       <NewTaskModal show={showNew} onClose={() => setShowNew(false)} onCreated={load} />
+      <TaskDetailModal task={selected} onClose={() => setSelected(null)} />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { supabase } from '../../../lib/supabase'
-import type { Task, TaskUser, NewTaskInput, TaskStatus } from '../../../types/tasks'
+import type { Task, TaskUser, NewTaskInput, TaskStatus, TaskComment } from '../../../types/tasks'
 
 const TASK_FIELDS = 'id, title, description, created_by, due_date, due_time, status, priority, is_private, completed_at, created_at, updated_at'
 
@@ -140,6 +140,38 @@ export async function getUnacknowledgedTaskCount(userId: string): Promise<number
     .is('acknowledged_at', null)
   if (error) return 0
   return count || 0
+}
+
+export async function fetchTaskComments(taskId: string): Promise<TaskComment[]> {
+  const { data, error } = await supabase
+    .from('task_comments')
+    .select('id, task_id, user_id, comment, created_at, updated_at')
+    .eq('task_id', taskId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  const comments = (data || []) as TaskComment[]
+  if (comments.length === 0) return []
+  const userIds = [...new Set(comments.map(c => c.user_id))]
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, username, role')
+    .in('id', userIds)
+  const userMap = new Map<string, TaskUser>((users || []).map(u => [u.id, u]))
+  return comments.map(c => ({ ...c, user: userMap.get(c.user_id) }))
+}
+
+export async function createTaskComment(taskId: string, userId: string, comment: string): Promise<void> {
+  const trimmed = comment.trim()
+  if (!trimmed) return
+  const { error } = await supabase
+    .from('task_comments')
+    .insert({ task_id: taskId, user_id: userId, comment: trimmed })
+  if (error) throw error
+}
+
+export async function deleteTaskComment(commentId: string): Promise<void> {
+  const { error } = await supabase.from('task_comments').delete().eq('id', commentId)
+  if (error) throw error
 }
 
 export async function acknowledgeAllTasks(userId: string): Promise<void> {

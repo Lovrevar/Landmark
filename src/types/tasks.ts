@@ -63,6 +63,16 @@ export interface CalendarEvent {
   participants?: EventParticipant[]
 }
 
+export interface TaskComment {
+  id: string
+  task_id: string
+  user_id: string
+  comment: string
+  created_at: string
+  updated_at: string
+  user?: TaskUser
+}
+
 export interface NewTaskInput {
   title: string
   description: string
