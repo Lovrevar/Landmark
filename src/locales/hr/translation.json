@@ -1114,7 +1114,7 @@
       "refinancing": "Refinanciranje"
     }
   },
-  "calendar": {
+  "cashflow_calendar": {
     "title": "Kalendar dospijeća",
     "subtitle": "Pregled svih dospijeća",
     "months": [

@@ -73,6 +73,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showProfileDropdown])
 
+  useEffect(() => {
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+      setPendingProfile('Cashflow')
+      setShowPasswordModal(true)
+    }
+  }, [currentProfile, cashflowUnlocked])
+
   const getMenuItems = () => {
     if (user?.role === 'Supervision') {
       return [
@@ -177,6 +184,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   const handlePasswordCancel = () => {
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+      setCurrentProfile('General')
+      navigate('/')
+    }
     setShowPasswordModal(false)
     setPassword('')
     setPasswordError('')

@@ -26,7 +26,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
   onBudgetChange
 }) => {
   const { t } = useTranslation()
-  const monthNames = t('calendar.months', { returnObjects: true }) as string[]
+  const monthNames = t('cashflow_calendar.months', { returnObjects: true }) as string[]
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = parseInt(e.target.value)
@@ -36,12 +36,12 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
   return (
     <Modal show={showBudgetModal} onClose={onClose} size="xl">
       <Modal.Header
-        title={t('calendar.budget_modal.title')}
+        title={t('cashflow_calendar.budget_modal.title')}
         onClose={onClose}
       />
 
       <Modal.Body>
-        <FormField label={t('calendar.budget_modal.year_label')}>
+        <FormField label={t('cashflow_calendar.budget_modal.year_label')}>
           <Select
             value={budgetYear}
             onChange={handleYearChange}
@@ -74,7 +74,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
 
         <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-blue-900 dark:text-blue-100">{t('calendar.budget_modal.annual_total')}</span>
+            <span className="font-medium text-blue-900 dark:text-blue-100">{t('cashflow_calendar.budget_modal.annual_total')}</span>
             <span className="font-bold text-blue-900 dark:text-blue-100 text-lg">
               €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString('hr-HR')}
             </span>
@@ -87,7 +87,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
           {t('common.cancel')}
         </Button>
         <Button variant="success" onClick={onSave}>
-          {t('calendar.budget_modal.save_button')}
+          {t('cashflow_calendar.budget_modal.save_button')}
         </Button>
       </Modal.Footer>
     </Modal>

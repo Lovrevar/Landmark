@@ -9,8 +9,8 @@ import { Invoice } from './types'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
-  const monthNames = t('calendar.months', { returnObjects: true }) as string[]
-  const dayNames = t('calendar.days', { returnObjects: true }) as string[]
+  const monthNames = t('cashflow_calendar.months', { returnObjects: true }) as string[]
+  const dayNames = t('cashflow_calendar.days', { returnObjects: true }) as string[]
   const {
     currentDate,
     loading,
@@ -64,12 +64,12 @@ const AccountingCalendar: React.FC = () => {
 
   const getTypeLabel = (invoice: Invoice) => {
     switch(invoice.invoice_type) {
-      case 'INCOMING_SUPPLIER': return t('calendar.invoice_types.incoming_supplier')
-      case 'INCOMING_INVESTMENT': return t('calendar.invoice_types.incoming_investment')
-      case 'INCOMING_OFFICE': return t('calendar.invoice_types.incoming_office')
-      case 'OUTGOING_SUPPLIER': return t('calendar.invoice_types.outgoing_supplier')
-      case 'OUTGOING_SALES': return t('calendar.invoice_types.outgoing_sales')
-      case 'OUTGOING_OFFICE': return t('calendar.invoice_types.outgoing_office')
+      case 'INCOMING_SUPPLIER': return t('cashflow_calendar.invoice_types.incoming_supplier')
+      case 'INCOMING_INVESTMENT': return t('cashflow_calendar.invoice_types.incoming_investment')
+      case 'INCOMING_OFFICE': return t('cashflow_calendar.invoice_types.incoming_office')
+      case 'OUTGOING_SUPPLIER': return t('cashflow_calendar.invoice_types.outgoing_supplier')
+      case 'OUTGOING_SALES': return t('cashflow_calendar.invoice_types.outgoing_sales')
+      case 'OUTGOING_OFFICE': return t('cashflow_calendar.invoice_types.outgoing_office')
       default: return invoice.invoice_type
     }
   }
@@ -81,36 +81,36 @@ const AccountingCalendar: React.FC = () => {
   return (
     <div className="space-y-4">
       <StatGrid columns={2}>
-        <StatCard label={t('calendar.stats.total')} value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
-        <StatCard label={t('calendar.stats.paid')} value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />
-        <StatCard label={t('calendar.stats.unpaid')} value={monthStats.unpaid} icon={Clock} color="yellow" size="sm" />
-        <StatCard label={t('calendar.stats.overdue')} value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
+        <StatCard label={t('cashflow_calendar.stats.total')} value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
+        <StatCard label={t('cashflow_calendar.stats.paid')} value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />
+        <StatCard label={t('cashflow_calendar.stats.unpaid')} value={monthStats.unpaid} icon={Clock} color="yellow" size="sm" />
+        <StatCard label={t('cashflow_calendar.stats.overdue')} value={monthStats.overdue} icon={AlertCircle} color="red" size="sm" />
       </StatGrid>
 
       <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.total_invoices')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.total_invoices')}</span>
           <span className="font-semibold text-gray-900 dark:text-white">{monthStats.total}</span>
         </div>
         <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.outgoing_invoices')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.outgoing_invoices')}</span>
           <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.incoming_paid')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.incoming_paid')}</span>
           <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.incoming_unpaid')}</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.incoming_unpaid')}</span>
           <div className="text-right">
             <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{t('calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{t('cashflow_calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
           </div>
         </div>
         <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-200 font-medium">{t('calendar.summary.net_label')}</span>
+          <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cashflow_calendar.summary.net_label')}</span>
           <span className={`font-bold text-lg ${monthStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             €{monthStats.netAmount.toLocaleString('hr-HR')}
           </span>
@@ -123,13 +123,13 @@ const AccountingCalendar: React.FC = () => {
               <>
                 <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{t('calendar.summary.planned_budget')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.planned_budget')}</span>
                   <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString('hr-HR')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-700 dark:text-gray-200 font-medium">{t('calendar.summary.budget_difference')}</span>
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cashflow_calendar.summary.budget_difference')}</span>
                   <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? t('calendar.summary.under_budget') : t('calendar.summary.over_budget')}
+                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? t('cashflow_calendar.summary.under_budget') : t('cashflow_calendar.summary.over_budget')}
                   </span>
                 </div>
               </>
@@ -146,7 +146,7 @@ const AccountingCalendar: React.FC = () => {
           </h3>
           <div className="flex items-center space-x-2">
             <Button variant="success" size="sm" icon={DollarSign} onClick={handleOpenBudgetModal}>
-              {t('calendar.budget_button')}
+              {t('cashflow_calendar.budget_button')}
             </Button>
             <Button variant="ghost" size="icon-md" icon={ChevronLeft} onClick={handlePreviousMonth} />
             <Button variant="ghost" size="icon-md" icon={ChevronRight} onClick={handleNextMonth} />
@@ -214,15 +214,15 @@ const AccountingCalendar: React.FC = () => {
         <div className="flex items-center justify-center space-x-4 mt-4 text-xs">
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.paid')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.legend.paid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.unpaid')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.legend.unpaid')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-red-500 rounded-full" />
-            <span className="text-gray-600 dark:text-gray-400">{t('calendar.legend.overdue')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.legend.overdue')}</span>
           </div>
         </div>
       </div>
@@ -242,23 +242,23 @@ const AccountingCalendar: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h4 className="font-bold text-gray-900 dark:text-white">
-              {t('calendar.table.heading', { day: selectedDate.getDate(), month: monthNames[selectedDate.getMonth()], count: selectedInvoices.length })}
+              {t('cashflow_calendar.table.heading', { day: selectedDate.getDate(), month: monthNames[selectedDate.getMonth()], count: selectedInvoices.length })}
             </h4>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.invoice_number')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.type')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.supplier_customer')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.my_company')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.category')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.base')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.vat')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.total')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.paid')}</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('calendar.table.status')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.invoice_number')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.type')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.supplier_customer')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.my_company')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.category')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.base')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.vat')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.total')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.paid')}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">{t('cashflow_calendar.table.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

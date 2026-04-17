@@ -1113,7 +1113,7 @@
       "refinancing": "Refinancing"
     }
   },
-  "calendar": {
+  "cashflow_calendar": {
     "title": "Due Date Calendar",
     "subtitle": "Overview of all due dates",
     "months": [
