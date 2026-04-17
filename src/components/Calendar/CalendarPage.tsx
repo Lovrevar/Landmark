@@ -7,6 +7,7 @@ import type { CalendarEvent, EventType } from '../../types/tasks'
 import MonthView from './MonthView'
 import NewEventModal from './NewEventModal'
 import EventDetailModal from './EventDetailModal'
+import DayEventsModal from './DayEventsModal'
 
 const monthName = (d: Date) => d.toLocaleDateString('hr-HR', { month: 'long', year: 'numeric' })
 
@@ -23,8 +24,8 @@ const CalendarPage: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
-  const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined)
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -61,8 +62,7 @@ const CalendarPage: React.FC = () => {
   }, [events])
 
   const openDay = (d: Date) => {
-    setDefaultDate(d.toISOString().slice(0, 10))
-    setShowNew(true)
+    setSelectedDay(d)
   }
 
   const prevMonth = () => setAnchor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
@@ -81,7 +81,7 @@ const CalendarPage: React.FC = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400">Sastanci, podsjetnici i rokovi</p>
           </div>
         </div>
-        <button onClick={() => { setDefaultDate(undefined); setShowNew(true) }}
+        <button onClick={() => setShowNew(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
           <Plus className="w-4 h-4" /> Novi dogadaj
         </button>
@@ -163,8 +163,14 @@ const CalendarPage: React.FC = () => {
         </aside>
       </div>
 
-      <NewEventModal show={showNew} onClose={() => setShowNew(false)} onCreated={load} defaultDate={defaultDate} />
+      <NewEventModal show={showNew} onClose={() => setShowNew(false)} onCreated={load} />
       <EventDetailModal event={selected} onClose={() => setSelected(null)} onChanged={load} />
+      <DayEventsModal
+        date={selectedDay}
+        events={events}
+        onClose={() => setSelectedDay(null)}
+        onEventClick={(e) => { setSelectedDay(null); setSelected(e) }}
+      />
     </div>
   )
 }
