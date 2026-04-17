@@ -29,10 +29,15 @@ import {
   CheckCircle,
   Sun,
   Moon,
-  ScrollText
+  ScrollText,
+  MessageCircle,
+  CheckSquare
 } from 'lucide-react'
 import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
+import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
+import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
+import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 
 interface LayoutProps {
   children: ReactNode
@@ -52,6 +57,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [cashflowUnlocked, setCashflowUnlocked] = useState(() => sessionStorage.getItem('cashflow_unlocked') === 'true')
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const { unreadCount } = useChatNotifications()
+  const { unreadCount: taskUnread } = useTasksNotifications()
+  const { unreadCount: eventUnread } = useCalendarNotifications()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -214,6 +222,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   )}
                 </div>
               )}
+              <button
+                onClick={() => navigate('/chat')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/chat'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Chat"
+              >
+                <MessageCircle className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate('/tasks')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/tasks'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Zadaci"
+              >
+                <CheckSquare className="w-5 h-5" />
+                {taskUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {taskUnread > 99 ? '99+' : taskUnread}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate('/calendar')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/calendar'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Kalendar"
+              >
+                <Calendar className="w-5 h-5" />
+                {eventUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {eventUnread > 99 ? '99+' : eventUnread}
+                  </span>
+                )}
+              </button>
               <LanguageSwitcher />
               <button
                 onClick={toggleTheme}

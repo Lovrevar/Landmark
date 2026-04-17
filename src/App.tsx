@@ -44,6 +44,9 @@ import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
 import BudgetControl from './components/General/BudgetControl/index'
 import ActivityLog from './components/General/ActivityLog/index'
+import ChatPage from './components/Chat/ChatPage'
+import TasksPage from './components/Tasks/TasksPage'
+import CalendarPage from './components/Calendar/CalendarPage'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -415,6 +418,30 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ActivityLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <CalendarPage />
             </ProtectedRoute>
           }
         />
