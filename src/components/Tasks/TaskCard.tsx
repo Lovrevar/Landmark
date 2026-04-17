@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Clock, Lock, Trash2, Check } from 'lucide-react'
 import type { Task, TaskPriority } from '../../types/tasks'
 
@@ -17,21 +18,8 @@ const priorityBorder: Record<TaskPriority, string> = {
   urgent: 'border-l-red-500',
 }
 
-const priorityLabel: Record<TaskPriority, string> = {
-  low: 'Niski',
-  normal: 'Normalni',
-  high: 'Visoki',
-  urgent: 'Hitno',
-}
-
-const statusLabel: Record<Task['status'], string> = {
-  todo: 'Za obaviti',
-  in_progress: 'U tijeku',
-  done: 'Zavrseno',
-  cancelled: 'Otkazano',
-}
-
 const TaskCard: React.FC<Props> = ({ task, currentUserId, onToggleStatus, onDelete, onClick }) => {
+  const { t } = useTranslation()
   const done = task.status === 'done'
   const canDelete = task.created_by === currentUserId
 
@@ -43,7 +31,7 @@ const TaskCard: React.FC<Props> = ({ task, currentUserId, onToggleStatus, onDele
       <button
         onClick={(e) => { e.stopPropagation(); onToggleStatus(task) }}
         className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${done ? 'bg-green-500 border-green-500' : 'border-gray-400 hover:border-blue-500'}`}
-        title={done ? 'Oznaci kao nedovrseno' : 'Oznaci kao zavrseno'}
+        title={done ? t('tasks.card.mark_undone') : t('tasks.card.mark_done')}
       >
         {done && <Check className="w-4 h-4 text-white" />}
       </button>
@@ -57,7 +45,7 @@ const TaskCard: React.FC<Props> = ({ task, currentUserId, onToggleStatus, onDele
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(task) }}
               className="text-gray-400 hover:text-red-500"
-              title="Obrisi"
+              title={t('tasks.card.delete')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -73,8 +61,8 @@ const TaskCard: React.FC<Props> = ({ task, currentUserId, onToggleStatus, onDele
               {task.due_date}{task.due_time ? ` ${task.due_time.slice(0, 5)}` : ''}
             </span>
           )}
-          <span className="text-gray-500 dark:text-gray-400">{priorityLabel[task.priority]}</span>
-          <span className="text-gray-500 dark:text-gray-400">{statusLabel[task.status]}</span>
+          <span className="text-gray-500 dark:text-gray-400">{t(`tasks.priority.${task.priority}`)}</span>
+          <span className="text-gray-500 dark:text-gray-400">{t(`tasks.status.${task.status}`)}</span>
           {task.assignees && task.assignees.length > 0 && (
             <div className="flex -space-x-1">
               {task.assignees.slice(0, 3).map(a => (

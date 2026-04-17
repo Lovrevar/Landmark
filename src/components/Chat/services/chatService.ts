@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { logActivity } from '../../../lib/activityLog'
 import type { ChatConversation, ChatMessage, ChatUser } from '../../../types/chat'
 
 const MSG_FIELDS = 'id, conversation_id, sender_id, content, created_at, file_url, file_name, file_size, file_type'
@@ -141,7 +142,7 @@ export async function uploadChatFile(
   conversationId: string,
 ): Promise<{ url: string; name: string; size: number; type: string }> {
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`Datoteka prelazi limit od 25 MB`)
+    throw new Error('FILE_TOO_LARGE')
   }
 
   const ext = file.name.split('.').pop() || 'bin'
@@ -191,6 +192,19 @@ export async function sendMessage(
     .single()
 
   if (error) throw error
+
+  logActivity({
+    action: 'message.send',
+    entity: 'message',
+    entityId: data.id,
+    severity: 'low',
+    metadata: {
+      conversation_id: conversationId,
+      has_attachment: !!attachment,
+      file_name: attachment?.name,
+    },
+  })
+
   return data
 }
 
@@ -224,6 +238,18 @@ export async function createConversation(
     .insert(rows)
 
   if (pErr) throw pErr
+
+  logActivity({
+    action: 'conversation.create',
+    entity: 'conversation',
+    entityId: conv.id,
+    severity: 'medium',
+    metadata: {
+      entity_name: name,
+      is_group: isGroup,
+      participant_count: allParticipants.length,
+    },
+  })
 
   return conv.id
 }

@@ -4157,6 +4157,7 @@
     "no_projects": "Nema pronađenih projekata."
   },
   "chat": {
+    "title": "Chat",
     "new_conversation": "Nova konverzacija",
     "search_users": "Pretraži korisnike...",
     "type_message": "Napiši poruku...",
@@ -4169,7 +4170,130 @@
     "you": "Vi",
     "group_name_placeholder": "Naziv grupe (npr. Prečko Zapad)",
     "create_group": "Kreiraj grupu",
-    "start_chat": "Započni chat"
+    "start_chat": "Započni chat",
+    "participants_count": "{{count}} sudionika",
+    "file_too_large": "Datoteka prelazi limit od 25 MB",
+    "send_failed": "Slanje nije uspjelo. Pokušajte ponovno.",
+    "time_now": "sada",
+    "today": "Danas",
+    "yesterday": "Jučer",
+    "unknown_user": "Nepoznato",
+    "file_fallback": "Datoteka",
+    "image_fallback": "Slika"
+  },
+  "calendar": {
+    "title": "Kalendar",
+    "subtitle": "Sastanci, podsjetnici i rokovi",
+    "new_event": "Novi događaj",
+    "today": "Danas",
+    "upcoming": "Nadolazeće",
+    "no_events_today": "Nema događaja",
+    "no_upcoming": "Ništa nije planirano",
+    "no_events_day": "Nema događaja na ovaj dan",
+    "loading": "Učitavanje...",
+    "more_events": "+{{count}} više",
+    "events_for_day": "{{count}} događaj(a)",
+    "day_names": {
+      "mon": "Pon",
+      "tue": "Uto",
+      "wed": "Sri",
+      "thu": "Čet",
+      "fri": "Pet",
+      "sat": "Sub",
+      "sun": "Ned"
+    },
+    "event_type": {
+      "meeting": "Sastanak",
+      "personal": "Osobno",
+      "deadline": "Rok",
+      "reminder": "Podsjetnik"
+    },
+    "modal": {
+      "new_title": "Novi događaj",
+      "title_label": "Naslov",
+      "description_label": "Opis",
+      "location_label": "Lokacija",
+      "date_label": "Datum",
+      "start_time_label": "Od",
+      "end_time_label": "Do",
+      "type_label": "Vrsta",
+      "private_label": "Privatno (samo ja vidim)",
+      "participants_label": "Sudionici",
+      "create_button": "Kreiraj događaj",
+      "saving": "Spremanje..."
+    },
+    "detail": {
+      "private_badge": "Privatno",
+      "start": "Početak",
+      "end": "Kraj",
+      "created_by": "Kreirao",
+      "participants": "Sudionici",
+      "accept": "Prihvati",
+      "decline": "Odbij",
+      "delete": "Obriši",
+      "delete_confirm_title": "Obrisati događaj?",
+      "delete_confirm_message": "Ova radnja se ne može poništiti."
+    },
+    "response": {
+      "accepted": "Prihvaćeno",
+      "declined": "Odbijeno",
+      "pending": "Čeka odgovor"
+    }
+  },
+  "tasks": {
+    "title": "Zadaci",
+    "subtitle": "Upravljaj svojim obvezama i delegiraj kolegama",
+    "new_task": "Novi zadatak",
+    "loading": "Učitavanje...",
+    "empty": "Nema zadataka u ovoj kategoriji",
+    "tabs": {
+      "assigned": "Dodijeljeni meni",
+      "created": "Dodijelio sam",
+      "private": "Privatni"
+    },
+    "priority": {
+      "low": "Nizak",
+      "normal": "Normalan",
+      "high": "Visok",
+      "urgent": "Hitno"
+    },
+    "status": {
+      "todo": "Za napraviti",
+      "in_progress": "U tijeku",
+      "done": "Gotovo",
+      "cancelled": "Otkazano"
+    },
+    "modal": {
+      "new_title": "Novi zadatak",
+      "title_label": "Naslov",
+      "description_label": "Opis",
+      "due_date_label": "Rok (datum)",
+      "due_time_label": "Vrijeme",
+      "priority_label": "Prioritet",
+      "private_label": "Privatno (samo ja vidim)",
+      "assign_label": "Dodijeli korisnicima",
+      "create_button": "Kreiraj zadatak",
+      "saving": "Spremanje..."
+    },
+    "card": {
+      "mark_done": "Označi kao gotovo",
+      "mark_undone": "Označi kao nije gotovo",
+      "delete": "Obriši"
+    },
+    "detail": {
+      "assigned_by": "Dodijelio: {{username}}",
+      "private_badge": "Privatno",
+      "assignees": "Dodijeljeno",
+      "comments": "Komentari ({{count}})",
+      "no_comments": "Još nema komentara. Budite prvi!",
+      "comment_placeholder": "Napiši komentar... (Ctrl+Enter za slanje)",
+      "send_comment": "Pošalji",
+      "delete_comment": "Obriši",
+      "delete_task_confirm_title": "Obrisati zadatak?",
+      "delete_task_confirm_message": "Ova radnja se ne može poništiti.",
+      "delete_comment_confirm_title": "Obrisati komentar?",
+      "delete_comment_confirm_message": "Ova radnja se ne može poništiti."
+    }
   },
  "activity_log": {
   "title": "Zapisnik aktivnosti",
@@ -4238,7 +4362,12 @@
     "retail_invoice": "Retail račun",
     "retail_contract": "Retail ugovor",
     "land_plot": "Zemljišna čestica",
-    "export": "Izvoz"
+    "export": "Izvoz",
+    "conversation": "Razgovor",
+    "message": "Poruka",
+    "calendar_event": "Događaj kalendara",
+    "task": "Zadatak",
+    "task_comment": "Komentar zadatka"
   },
   "actions": {
     "auth.login": "Korisnik se prijavio",
@@ -4332,7 +4461,21 @@
     "export.debt_pdf": "Stanje duga izvezeno kao PDF",
     "export.tic_excel": "TIC izvezen kao Excel",
     "export.tic_pdf": "TIC izvezen kao PDF",
-    "export.report_pdf": "Izvještaj izvezen kao PDF"
+    "export.report_pdf": "Izvještaj izvezen kao PDF",
+    "conversation.create": "Razgovor kreiran",
+    "conversation.delete": "Razgovor obrisan",
+    "message.send": "Poruka poslana",
+    "calendar_event.create": "Događaj kalendara kreiran",
+    "calendar_event.respond": "Odgovoreno na događaj",
+    "calendar_event.delete": "Događaj kalendara obrisan",
+    "calendar_event.acknowledge_all": "Događaji označeni pregledanima",
+    "task.create": "Zadatak kreiran",
+    "task.update": "Zadatak ažuriran",
+    "task.status_change": "Status zadatka promijenjen",
+    "task.delete": "Zadatak obrisan",
+    "task.acknowledge_all": "Zadaci označeni pregledanima",
+    "task_comment.create": "Komentar zadatka dodan",
+    "task_comment.delete": "Komentar zadatka obrisan"
   }
 }
 }

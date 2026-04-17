@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { logActivity } from '../../../lib/activityLog'
 import type { CalendarEvent, EventResponse, NewEventInput, TaskUser } from '../../../types/tasks'
 
 const EVENT_FIELDS = 'id, title, description, location, created_by, start_at, end_at, event_type, is_private, all_day, created_at, updated_at'
@@ -106,23 +107,58 @@ export async function createEvent(input: NewEventInput, userId: string): Promise
     await supabase.from('calendar_event_participants').insert(rows)
   }
 
+  logActivity({
+    action: 'calendar_event.create',
+    entity: 'calendar_event',
+    entityId: inserted.id,
+    severity: 'medium',
+    metadata: {
+      entity_name: input.title,
+      event_type: input.event_type,
+      is_private: input.is_private,
+      participant_count: input.is_private ? 1 : input.participant_ids.length,
+    },
+  })
+
   return inserted as CalendarEvent
 }
 
 export async function respondToEvent(
   participantId: string,
   response: EventResponse,
+  eventId?: string,
+  eventTitle?: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('calendar_event_participants')
     .update({ response, acknowledged_at: new Date().toISOString() })
     .eq('id', participantId)
   if (error) throw error
+
+  logActivity({
+    action: 'calendar_event.respond',
+    entity: 'calendar_event',
+    entityId: eventId ?? null,
+    severity: 'low',
+    metadata: {
+      entity_name: eventTitle,
+      response,
+      participant_id: participantId,
+    },
+  })
 }
 
-export async function deleteEvent(eventId: string): Promise<void> {
+export async function deleteEvent(eventId: string, eventTitle?: string): Promise<void> {
   const { error } = await supabase.from('calendar_events').delete().eq('id', eventId)
   if (error) throw error
+
+  logActivity({
+    action: 'calendar_event.delete',
+    entity: 'calendar_event',
+    entityId: eventId,
+    severity: 'high',
+    metadata: { entity_name: eventTitle },
+  })
 }
 
 export async function getUnacknowledgedEventCount(userId: string): Promise<number> {
@@ -136,9 +172,20 @@ export async function getUnacknowledgedEventCount(userId: string): Promise<numbe
 }
 
 export async function acknowledgeAllEvents(userId: string): Promise<void> {
-  await supabase
+  const { data } = await supabase
     .from('calendar_event_participants')
     .update({ acknowledged_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('acknowledged_at', null)
+    .select('id')
+
+  const count = data?.length ?? 0
+  if (count > 0) {
+    logActivity({
+      action: 'calendar_event.acknowledge_all',
+      entity: 'calendar_event',
+      severity: 'low',
+      metadata: { count },
+    })
+  }
 }

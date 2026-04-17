@@ -44,9 +44,9 @@ import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
 import BudgetControl from './components/General/BudgetControl/index'
 import ActivityLog from './components/General/ActivityLog/index'
-import ChatPage from './components/Chat/ChatPage'
-import TasksPage from './components/Tasks/TasksPage'
-import CalendarPage from './components/Calendar/CalendarPage'
+import ChatPage from './components/Chat'
+import TasksPage from './components/Tasks'
+import CalendarPage from './components/Calendar'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()

@@ -4156,6 +4156,7 @@
     "no_projects": "No projects found."
   },
   "chat": {
+    "title": "Chat",
     "new_conversation": "New conversation",
     "search_users": "Search users...",
     "type_message": "Type a message...",
@@ -4168,7 +4169,130 @@
     "you": "You",
     "group_name_placeholder": "Group name (e.g. Project West)",
     "create_group": "Create group",
-    "start_chat": "Start chat"
+    "start_chat": "Start chat",
+    "participants_count": "{{count}} participants",
+    "file_too_large": "File exceeds 25 MB limit",
+    "send_failed": "Send failed. Try again.",
+    "time_now": "now",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "unknown_user": "Unknown",
+    "file_fallback": "File",
+    "image_fallback": "Image"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Meetings, reminders and deadlines",
+    "new_event": "New event",
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "no_events_today": "No events",
+    "no_upcoming": "Nothing planned",
+    "no_events_day": "No events on this day",
+    "loading": "Loading...",
+    "more_events": "+{{count}} more",
+    "events_for_day": "{{count}} event(s)",
+    "day_names": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "event_type": {
+      "meeting": "Meeting",
+      "personal": "Personal",
+      "deadline": "Deadline",
+      "reminder": "Reminder"
+    },
+    "modal": {
+      "new_title": "New event",
+      "title_label": "Title",
+      "description_label": "Description",
+      "location_label": "Location",
+      "date_label": "Date",
+      "start_time_label": "From",
+      "end_time_label": "To",
+      "type_label": "Type",
+      "private_label": "Private (only I see)",
+      "participants_label": "Participants",
+      "create_button": "Create event",
+      "saving": "Saving..."
+    },
+    "detail": {
+      "private_badge": "Private",
+      "start": "Start",
+      "end": "End",
+      "created_by": "Created by",
+      "participants": "Participants",
+      "accept": "Accept",
+      "decline": "Decline",
+      "delete": "Delete",
+      "delete_confirm_title": "Delete event?",
+      "delete_confirm_message": "This action cannot be undone."
+    },
+    "response": {
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "pending": "Awaiting response"
+    }
+  },
+  "tasks": {
+    "title": "Tasks",
+    "subtitle": "Manage your obligations and delegate to colleagues",
+    "new_task": "New task",
+    "loading": "Loading...",
+    "empty": "No tasks in this category",
+    "tabs": {
+      "assigned": "Assigned to me",
+      "created": "Assigned by me",
+      "private": "Private"
+    },
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "status": {
+      "todo": "To do",
+      "in_progress": "In progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "modal": {
+      "new_title": "New task",
+      "title_label": "Title",
+      "description_label": "Description",
+      "due_date_label": "Due (date)",
+      "due_time_label": "Time",
+      "priority_label": "Priority",
+      "private_label": "Private (only I see)",
+      "assign_label": "Assign to users",
+      "create_button": "Create task",
+      "saving": "Saving..."
+    },
+    "card": {
+      "mark_done": "Mark as done",
+      "mark_undone": "Mark as not done",
+      "delete": "Delete"
+    },
+    "detail": {
+      "assigned_by": "Assigned by: {{username}}",
+      "private_badge": "Private",
+      "assignees": "Assignees",
+      "comments": "Comments ({{count}})",
+      "no_comments": "No comments yet. Be the first!",
+      "comment_placeholder": "Write a comment... (Ctrl+Enter to send)",
+      "send_comment": "Send",
+      "delete_comment": "Delete",
+      "delete_task_confirm_title": "Delete task?",
+      "delete_task_confirm_message": "This action cannot be undone.",
+      "delete_comment_confirm_title": "Delete comment?",
+      "delete_comment_confirm_message": "This action cannot be undone."
+    }
   },
   "activity_log": {
     "title": "Activity Log",
@@ -4237,7 +4361,12 @@
       "retail_invoice": "Retail Invoice",
       "retail_contract": "Retail Contract",
       "land_plot": "Land Plot",
-      "export": "Export"
+      "export": "Export",
+      "conversation": "Conversation",
+      "message": "Message",
+      "calendar_event": "Calendar Event",
+      "task": "Task",
+      "task_comment": "Task Comment"
     },
     "actions": {
       "auth.login": "User logged in",
@@ -4331,7 +4460,21 @@
       "export.debt_pdf": "Debt exported as PDF",
       "export.tic_excel": "TIC exported as Excel",
       "export.tic_pdf": "TIC exported as PDF",
-      "export.report_pdf": "Report exported as PDF"
+      "export.report_pdf": "Report exported as PDF",
+      "conversation.create": "Conversation created",
+      "conversation.delete": "Conversation deleted",
+      "message.send": "Message sent",
+      "calendar_event.create": "Calendar event created",
+      "calendar_event.respond": "Responded to calendar event",
+      "calendar_event.delete": "Calendar event deleted",
+      "calendar_event.acknowledge_all": "Calendar events acknowledged",
+      "task.create": "Task created",
+      "task.update": "Task updated",
+      "task.status_change": "Task status changed",
+      "task.delete": "Task deleted",
+      "task.acknowledge_all": "Tasks acknowledged",
+      "task_comment.create": "Task comment added",
+      "task_comment.delete": "Task comment deleted"
     }
   }
 }

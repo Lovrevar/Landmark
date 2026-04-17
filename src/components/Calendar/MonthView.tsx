@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { CalendarEvent, EventType } from '../../types/tasks'
 
 interface Props {
@@ -22,9 +23,11 @@ const typeBg: Record<EventType, string> = {
   reminder: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200',
 }
 
-const dayNames = ['Pon', 'Uto', 'Sri', 'Cet', 'Pet', 'Sub', 'Ned']
+const dayNameKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 const MonthView: React.FC<Props> = ({ anchor, events, onDayClick, onEventClick }) => {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
   const { cells, monthIdx } = useMemo(() => {
     const year = anchor.getFullYear()
     const month = anchor.getMonth()
@@ -57,9 +60,9 @@ const MonthView: React.FC<Props> = ({ anchor, events, onDayClick, onEventClick }
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        {dayNames.map(n => (
-          <div key={n} className="py-2 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
-            {n}
+        {dayNameKeys.map(key => (
+          <div key={key} className="py-2 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+            {t(`calendar.day_names.${key}`)}
           </div>
         ))}
       </div>
@@ -88,12 +91,12 @@ const MonthView: React.FC<Props> = ({ anchor, events, onDayClick, onEventClick }
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${typeDot[e.event_type]}`} />
                     <span className="truncate">
-                      {new Date(e.start_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })} {e.title}
+                      {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} {e.title}
                     </span>
                   </button>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 px-2">+{dayEvents.length - 3} jos</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 px-2">{t('calendar.more_events', { count: dayEvents.length - 3 })}</div>
                 )}
               </div>
             </div>

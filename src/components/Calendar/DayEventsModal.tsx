@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Clock, MapPin } from 'lucide-react'
 import Modal from '../ui/Modal'
 import type { CalendarEvent, EventType } from '../../types/tasks'
@@ -17,14 +18,10 @@ const typeBg: Record<EventType, string> = {
   reminder: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800',
 }
 
-const typeLabel: Record<EventType, string> = {
-  meeting: 'Sastanak',
-  personal: 'Osobno',
-  deadline: 'Rok',
-  reminder: 'Podsjetnik',
-}
-
 const DayEventsModal: React.FC<Props> = ({ date, events, onClose, onEventClick }) => {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+
   const dayEvents = useMemo(() => {
     if (!date) return []
     const key = date.toDateString()
@@ -35,7 +32,7 @@ const DayEventsModal: React.FC<Props> = ({ date, events, onClose, onEventClick }
 
   if (!date) return null
 
-  const title = date.toLocaleDateString('hr-HR', {
+  const title = date.toLocaleDateString(dateLocale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -44,12 +41,12 @@ const DayEventsModal: React.FC<Props> = ({ date, events, onClose, onEventClick }
 
   return (
     <Modal show={!!date} onClose={onClose} size="md">
-      <Modal.Header title={title} subtitle={`${dayEvents.length} dogadaj(a)`} onClose={onClose} />
+      <Modal.Header title={title} subtitle={t('calendar.events_for_day', { count: dayEvents.length })} onClose={onClose} />
       <Modal.Body>
         {dayEvents.length === 0 ? (
           <div className="py-10 text-center">
             <Clock className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Nema dogadaja na ovaj dan</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('calendar.no_events_day')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -61,13 +58,13 @@ const DayEventsModal: React.FC<Props> = ({ date, events, onClose, onEventClick }
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                    {typeLabel[e.event_type]}
+                    {t(`calendar.event_type.${e.event_type}`)}
                   </span>
                   <span className="text-xs font-medium flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {new Date(e.start_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                     {' - '}
-                    {new Date(e.end_at).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="font-semibold text-sm">{e.title}</div>
@@ -86,7 +83,7 @@ const DayEventsModal: React.FC<Props> = ({ date, events, onClose, onEventClick }
       </Modal.Body>
       <Modal.Footer>
         <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-          Zatvori
+          {t('common.close')}
         </button>
       </Modal.Footer>
     </Modal>

@@ -30,16 +30,17 @@ function shouldShowSender(messages: ChatMessage[], index: number, isGroup: boole
   return messages[index].sender_id !== messages[index - 1].sender_id
 }
 
-function getDisplayName(conv: ChatConversation, currentUserId: string): string {
+function getDisplayName(
+  conv: ChatConversation,
+  currentUserId: string,
+  unknownLabel: string,
+  chatLabel: string,
+): string {
   if (conv.name) return conv.name
   const others = conv.participants
     .filter(p => p.user_id !== currentUserId)
-    .map(p => p.user?.username || 'Unknown')
-  return others.join(', ') || 'Chat'
-}
-
-function getParticipantCount(conv: ChatConversation): string {
-  return `${conv.participants.length} sudionika`
+    .map(p => p.user?.username || unknownLabel)
+  return others.join(', ') || chatLabel
 }
 
 function formatFileSize(bytes: number): string {
@@ -81,7 +82,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
     if (!file) return
 
     if (file.size > MAX_FILE_SIZE) {
-      setFileError('Datoteka prelazi limit od 25 MB')
+      setFileError(t('chat.file_too_large'))
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
@@ -105,8 +106,11 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
       setInputValue('')
       setPendingFile(null)
       setFileError(null)
-    } catch {
-      setFileError('Slanje nije uspjelo. Pokusajte ponovno.')
+    } catch (err) {
+      const msg = err instanceof Error && err.message === 'FILE_TOO_LARGE'
+        ? t('chat.file_too_large')
+        : t('chat.send_failed')
+      setFileError(msg)
     }
   }
 
@@ -133,7 +137,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
     )
   }
 
-  const displayName = getDisplayName(conversation, currentUserId)
+  const displayName = getDisplayName(conversation, currentUserId, t('chat.unknown_user'), t('chat.title'))
+  const participantsLabel = t('chat.participants_count', { count: conversation.participants.length })
   const canSend = inputValue.trim() || pendingFile
 
   return (
@@ -162,7 +167,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
           </p>
           {conversation.is_group && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {getParticipantCount(conversation)}
+              {participantsLabel}
             </p>
           )}
         </div>

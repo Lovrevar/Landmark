@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Download, FileText, FileSpreadsheet, Image as ImageIcon, File } from 'lucide-react'
 import type { ChatMessage } from '../../types/chat'
 
@@ -13,15 +14,20 @@ function formatTime(dateStr: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatDateSeparator(dateStr: string): string {
+function formatDateSeparator(
+  dateStr: string,
+  locale: string,
+  todayLabel: string,
+  yesterdayLabel: string,
+): string {
   const d = new Date(dateStr)
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
 
-  if (d.toDateString() === today.toDateString()) return 'Danas'
-  if (d.toDateString() === yesterday.toDateString()) return 'Jucer'
-  return d.toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })
+  if (d.toDateString() === today.toDateString()) return todayLabel
+  if (d.toDateString() === yesterday.toDateString()) return yesterdayLabel
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function formatFileSize(bytes: number): string {
@@ -45,11 +51,13 @@ function isImageFile(mimeType: string | null | undefined): boolean {
 }
 
 export function DateSeparator({ date }: { date: string }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
   return (
     <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
       <span className="text-xs text-gray-400 dark:text-gray-500 font-medium px-2">
-        {formatDateSeparator(date)}
+        {formatDateSeparator(date, locale, t('chat.today'), t('chat.yesterday'))}
       </span>
       <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
     </div>
@@ -63,6 +71,7 @@ function FileAttachment({
   message: ChatMessage
   isOwn: boolean
 }) {
+  const { t } = useTranslation()
   if (!message.file_url) return null
 
   const Icon = getFileIcon(message.file_type)
@@ -78,7 +87,7 @@ function FileAttachment({
       >
         <img
           src={message.file_url}
-          alt={message.file_name || 'Image'}
+          alt={message.file_name || t('chat.image_fallback')}
           className="max-w-[240px] max-h-[200px] rounded-lg object-cover"
           loading="lazy"
         />
@@ -104,7 +113,7 @@ function FileAttachment({
         <p className={`text-xs font-medium truncate ${
           isOwn ? 'text-white' : 'text-gray-800 dark:text-gray-200'
         }`}>
-          {message.file_name || 'Datoteka'}
+          {message.file_name || t('chat.file_fallback')}
         </p>
         {message.file_size && (
           <p className={`text-[10px] ${
@@ -122,6 +131,7 @@ function FileAttachment({
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, showSender }) => {
+  const { t } = useTranslation()
   const hasFile = !!message.file_url
   const hasText = !!message.content?.trim()
 
@@ -130,7 +140,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, showSende
       <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
         {showSender && !isOwn && (
           <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-0.5 ml-3">
-            {message.sender?.username || 'Unknown'}
+            {message.sender?.username || t('chat.unknown_user')}
           </p>
         )}
         <div

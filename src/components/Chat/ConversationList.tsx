@@ -17,15 +17,17 @@ interface ConversationListProps {
 function getConversationDisplayName(
   conv: ChatConversation,
   currentUserId: string,
+  unknownLabel: string,
+  chatLabel: string,
 ): string {
   if (conv.name) return conv.name
   const others = conv.participants
     .filter(p => p.user_id !== currentUserId)
-    .map(p => p.user?.username || 'Unknown')
-  return others.join(', ') || 'Chat'
+    .map(p => p.user?.username || unknownLabel)
+  return others.join(', ') || chatLabel
 }
 
-function formatLastMessageTime(dateStr: string): string {
+function formatLastMessageTime(dateStr: string, locale: string, nowLabel: string): string {
   const d = new Date(dateStr)
   const now = new Date()
   const diff = now.getTime() - d.getTime()
@@ -33,11 +35,11 @@ function formatLastMessageTime(dateStr: string): string {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (mins < 1) return 'sada'
+  if (mins < 1) return nowLabel
   if (mins < 60) return `${mins}m`
   if (hours < 24) return `${hours}h`
   if (days < 7) return `${days}d`
-  return d.toLocaleDateString('hr-HR', { day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
 }
 
 function truncate(text: string, maxLen: number): string {
@@ -53,12 +55,16 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onSelect,
   onNewConversation,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [search, setSearch] = useState('')
+  const unknownLabel = t('chat.unknown_user')
+  const chatLabel = t('chat.title')
+  const nowLabel = t('chat.time_now')
+  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
 
   const filtered = conversations.filter(c => {
     if (!search.trim()) return true
-    const name = getConversationDisplayName(c, currentUserId).toLowerCase()
+    const name = getConversationDisplayName(c, currentUserId, unknownLabel, chatLabel).toLowerCase()
     return name.includes(search.toLowerCase())
   })
 
@@ -66,7 +72,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('chat.title')}</h2>
           <button
             onClick={onNewConversation}
             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
@@ -99,7 +105,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
         ) : (
           filtered.map(conv => {
             const isActive = conv.id === activeConversationId
-            const displayName = getConversationDisplayName(conv, currentUserId)
+            const displayName = getConversationDisplayName(conv, currentUserId, unknownLabel, chatLabel)
             const lastMsg = conv.last_message
             const lastMsgText = lastMsg
               ? lastMsg.content?.trim()
@@ -151,7 +157,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     </p>
                     {lastMsg && (
                       <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
-                        {formatLastMessageTime(lastMsg.created_at)}
+                        {formatLastMessageTime(lastMsg.created_at, dateLocale, nowLabel)}
                       </span>
                     )}
                   </div>
