@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 export interface ApprovedInvoice {
   id: string
@@ -130,10 +131,25 @@ export async function hideInvoice(invoiceId: string, userId: string): Promise<vo
     hidden_by: userId
   })
   if (error && error.code !== '23505') throw error
+
+  logActivity({
+    userId,
+    action: 'invoice.hide',
+    entity: 'invoice',
+    entityId: invoiceId,
+    metadata: { severity: 'medium' },
+  })
 }
 
 export async function bulkHideInvoices(invoiceIds: string[], userId: string): Promise<void> {
   for (const id of invoiceIds) {
     await hideInvoice(id, userId)
   }
+
+  logActivity({
+    userId,
+    action: 'invoice.bulk_hide',
+    entity: 'invoice',
+    metadata: { severity: 'medium', count: invoiceIds.length },
+  })
 }

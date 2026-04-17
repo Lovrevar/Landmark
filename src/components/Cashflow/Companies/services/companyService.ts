@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { CompanyStats, CompanyFormData } from '../types'
 
 export const fetchCompaniesWithStats = async (): Promise<CompanyStats[]> => {
@@ -79,6 +80,8 @@ export const createCompany = async (formData: CompanyFormData) => {
 
   if (companyError) throw companyError
 
+  logActivity({ action: 'company.create', entity: 'company', entityId: companyData.id, metadata: { severity: 'medium', entity_name: formData.name } })
+
   const bankAccountsToInsert = formData.bankAccounts.map(acc => ({
     company_id: companyData.id,
     bank_name: acc.bank_name,
@@ -122,6 +125,18 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
         .eq('id', account.id)
 
       if (updateError) throw updateError
+
+      logActivity({
+        action: 'bank_account.balance_reset',
+        entity: 'bank_account',
+        entityId: account.id,
+        metadata: {
+          severity: 'high',
+          new_balance: account.current_balance,
+          reset_date: account.balance_reset_at || null,
+          entity_name: account.bank_name,
+        },
+      })
 
       await recalculateBankAccountBalance(account.id, resetAt)
     }
@@ -204,6 +219,8 @@ export const deleteCompany = async (companyId: string) => {
     .eq('id', companyId)
 
   if (error) throw error
+
+  logActivity({ action: 'company.delete', entity: 'company', entityId: companyId, metadata: { severity: 'high' } })
 }
 
 export const fetchCompanyDetails = async (companyId: string) => {

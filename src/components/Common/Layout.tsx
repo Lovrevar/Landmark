@@ -28,8 +28,10 @@ import {
   ChevronRight,
   CheckCircle,
   Sun,
-  Moon
+  Moon,
+  ScrollText
 } from 'lucide-react'
+import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
 
 interface LayoutProps {
@@ -78,7 +80,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
         { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
-        { name: t('nav.reports'), icon: FileText, path: '/general-reports' }
+        { name: t('nav.reports'), icon: FileText, path: '/general-reports' },
+        ...(canViewActivityLog(user) ? [{ name: t('nav.activity_log'), icon: ScrollText, path: '/activity-log' }] : []),
       ],
       Supervision: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },

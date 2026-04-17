@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { BankWithCredits, Company } from '../types'
 import { useToast } from '../../../../contexts/ToastContext'
 
@@ -82,8 +83,11 @@ export function useBankData() {
       return
     }
     try {
-      const { error } = await supabase.from('banks').insert(newBank)
+      const { data: inserted, error } = await supabase.from('banks').insert(newBank).select('id').maybeSingle()
       if (error) throw error
+
+      logActivity({ action: 'investor.create', entity: 'investor', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: newBank.name } })
+
       onDone()
       await fetchData()
     } catch (error) {
@@ -101,6 +105,9 @@ export function useBankData() {
     try {
       const { error } = await supabase.from('banks').update(newBank).eq('id', editingBank.id)
       if (error) throw error
+
+      logActivity({ action: 'investor.update', entity: 'investor', entityId: editingBank.id, metadata: { severity: 'medium', entity_name: newBank.name } })
+
       onDone()
       await fetchData()
     } catch (error) {
@@ -120,6 +127,9 @@ export function useBankData() {
     try {
       const { error } = await supabase.from('banks').delete().eq('id', pendingDeleteId)
       if (error) throw error
+
+      logActivity({ action: 'investor.delete', entity: 'investor', entityId: pendingDeleteId, metadata: { severity: 'high' } })
+
       await fetchData()
     } catch (error) {
       console.error('Error deleting bank:', error)

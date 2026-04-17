@@ -1,4 +1,5 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale } from '../types'
 
 export interface CompleteSalePayload {
@@ -43,6 +44,8 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
     saleData.contract_signed,
     saleData.notes
   )
+
+  logActivity({ action: 'sale.create', entity: 'sale', metadata: { severity: 'high', entity_name: saleData.buyer_name, sale_price: saleData.sale_price } })
 
   if (customerMode === 'existing' && customerId) {
     await updateCustomerStatus(customerId, 'buyer')
@@ -217,10 +220,12 @@ export const createBulkBuildings = async (projectId: string, quantity: number) =
     .insert(buildingsToCreate)
 
   if (error) throw error
+
+  logActivity({ action: 'building.bulk_create', entity: 'building', metadata: { severity: 'medium', count: quantity } })
 }
 
 export const createBuilding = async (projectId: string, name: string, description: string, totalFloors: number) => {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('buildings')
     .insert({
       project_id: projectId,
@@ -228,8 +233,12 @@ export const createBuilding = async (projectId: string, name: string, descriptio
       description,
       total_floors: totalFloors
     })
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'building.create', entity: 'building', entityId: inserted?.id ?? null, projectId, metadata: { severity: 'medium', entity_name: name } })
 }
 
 export const deleteBuilding = async (buildingId: string) => {
@@ -239,6 +248,8 @@ export const deleteBuilding = async (buildingId: string) => {
     .eq('id', buildingId)
 
   if (error) throw error
+
+  logActivity({ action: 'building.delete', entity: 'building', entityId: buildingId, metadata: { severity: 'high' } })
 }
 
 export const createUnit = async (
@@ -594,4 +605,6 @@ export const bulkUpdateUnitPrice = async (
   if (errors.length > 0) {
     throw new Error(`Failed to update ${errors.length} units`)
   }
+
+  logActivity({ action: 'apartment.bulk_price_update', entity: 'apartment', metadata: { severity: 'high', count: unitIds.length, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
 }

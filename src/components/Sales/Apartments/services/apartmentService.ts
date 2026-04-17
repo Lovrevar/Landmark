@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { ApartmentFormData, BulkApartmentData } from '../types'
 
 export const createSingleApartment = async (data: ApartmentFormData) => {
@@ -30,6 +31,9 @@ export const createSingleApartment = async (data: ApartmentFormData) => {
     .single()
 
   if (error) throw error
+
+  logActivity({ action: 'apartment.create', entity: 'apartment', entityId: apartment.id, metadata: { severity: 'medium', entity_name: data.number } })
+
   return apartment
 }
 
@@ -54,6 +58,9 @@ export const createBulkApartments = async (data: BulkApartmentData) => {
     .select()
 
   if (error) throw error
+
+  logActivity({ action: 'apartment.bulk_create', entity: 'apartment', metadata: { severity: 'medium', count: data.quantity } })
+
   return created
 }
 
@@ -66,6 +73,9 @@ export const updateApartment = async (id: string, updates: Partial<ApartmentForm
     .single()
 
   if (error) throw error
+
+  logActivity({ action: 'apartment.update', entity: 'apartment', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
   return data
 }
 
@@ -76,6 +86,8 @@ export const deleteApartment = async (id: string) => {
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({ action: 'apartment.delete', entity: 'apartment', entityId: id, metadata: { severity: 'high' } })
 }
 
 // DEPRECATED: Payment creation moved to Accounting module

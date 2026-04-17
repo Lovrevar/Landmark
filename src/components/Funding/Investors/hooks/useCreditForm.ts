@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { BankCredit } from '../../../../lib/supabase'
 import { INITIAL_CREDIT_FORM, type CreditFormData, type CompanyBankAccount } from '../types'
 import { calculateAnnuityPayment, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
@@ -115,6 +116,8 @@ export function useCreditForm(onSaved: () => Promise<void>) {
 
       if (error) throw error
 
+      logActivity({ action: 'bank_credit.create', entity: 'bank_credit', metadata: { severity: 'high', entity_name: newCredit.credit_name, amount: newCredit.amount } })
+
       resetCreditForm()
       await onSaved()
     } catch (error) {
@@ -171,6 +174,8 @@ export function useCreditForm(onSaved: () => Promise<void>) {
 
       if (error) throw error
 
+      logActivity({ action: 'bank_credit.update', entity: 'bank_credit', entityId: editingCredit.id, metadata: { severity: 'high', entity_name: newCredit.credit_name } })
+
       resetCreditForm()
       await onSaved()
     } catch (error) {
@@ -190,6 +195,9 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     try {
       const { error } = await supabase.from('bank_credits').delete().eq('id', pendingDeleteId)
       if (error) throw error
+
+      logActivity({ action: 'bank_credit.delete', entity: 'bank_credit', entityId: pendingDeleteId, metadata: { severity: 'high' } })
+
       await onSaved()
     } catch (error) {
       console.error('Error deleting credit:', error)

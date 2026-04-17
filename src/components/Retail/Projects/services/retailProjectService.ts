@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type {
   RetailProject,
   RetailProjectPhase,
@@ -84,6 +85,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_project.create', entity: 'retail_project', entityId: data.id, metadata: { severity: 'medium', entity_name: project.name } })
+
     return data
   },
 
@@ -96,6 +100,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_project.update', entity: 'retail_project', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
     return data
   },
 
@@ -151,6 +158,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_phase.create', entity: 'retail_phase', entityId: data.id, metadata: { severity: 'medium', entity_name: phase.phase_name } })
+
     return data
   },
 
@@ -200,6 +210,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_phase.update', entity: 'retail_phase', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
     return data
   },
 
@@ -374,6 +387,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_contract.create', entity: 'retail_contract', entityId: data.id, metadata: { severity: 'medium', entity_name: contract.contract_number } })
+
     return data
   },
 

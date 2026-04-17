@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { OfficeSupplierWithStats, Invoice, OfficeSupplierFormData } from '../types'
 
 export const fetchSuppliersWithStats = async (): Promise<OfficeSupplierWithStats[]> => {
@@ -44,11 +45,15 @@ export const createSupplier = async (formData: OfficeSupplierFormData): Promise<
     vat_id: formData.vat_id || null
   }
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('office_suppliers')
     .insert([supplierData])
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'office_supplier.create', entity: 'office_supplier', entityId: inserted?.id ?? null, metadata: { severity: 'low', entity_name: formData.name } })
 }
 
 export const updateSupplier = async (id: string, formData: OfficeSupplierFormData): Promise<void> => {
@@ -76,6 +81,8 @@ export const deleteSupplier = async (id: string): Promise<void> => {
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({ action: 'office_supplier.delete', entity: 'office_supplier', entityId: id, metadata: { severity: 'medium' } })
 }
 
 export const fetchSupplierInvoices = async (supplierId: string): Promise<Invoice[]> => {

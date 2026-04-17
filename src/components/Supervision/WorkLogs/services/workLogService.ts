@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 export interface WorkLog {
   id: string
@@ -100,7 +101,7 @@ export async function fetchContractsByPhase(phaseId: string): Promise<WorkLogCon
 }
 
 export async function createWorkLog(data: WorkLogFormData, subcontractorId: string, userId: string | undefined): Promise<void> {
-  const { error } = await supabase.from('work_logs').insert([{
+  const { data: inserted, error } = await supabase.from('work_logs').insert([{
     contract_id: data.contract_id,
     project_id: data.project_id,
     phase_id: data.phase_id || null,
@@ -112,9 +113,11 @@ export async function createWorkLog(data: WorkLogFormData, subcontractorId: stri
     notes: data.notes,
     color: data.color,
     created_by: userId,
-  }])
+  }]).select('id').maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'work_log.create', entity: 'work_log', entityId: inserted?.id ?? null, projectId: data.project_id, metadata: { severity: 'low', status: data.status } })
 }
 
 export async function updateWorkLog(id: string, data: WorkLogFormData, subcontractorId: string): Promise<void> {
@@ -135,9 +138,13 @@ export async function updateWorkLog(id: string, data: WorkLogFormData, subcontra
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({ action: 'work_log.update', entity: 'work_log', entityId: id, projectId: data.project_id, metadata: { severity: 'low' } })
 }
 
 export async function deleteWorkLog(id: string): Promise<void> {
   const { error } = await supabase.from('work_logs').delete().eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'work_log.delete', entity: 'work_log', entityId: id, metadata: { severity: 'medium' } })
 }

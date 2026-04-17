@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { RetailLandPlot, RetailSale } from '../../../../types/retail'
 
 export interface LandPlotWithProject extends RetailLandPlot {
@@ -51,9 +52,13 @@ export async function upsertLandPlot(payload: LandPlotPayload, id?: string): Pro
   if (id) {
     const { error } = await supabase.from('retail_land_plots').update(payload).eq('id', id)
     if (error) throw error
+
+    logActivity({ action: 'land_plot.update', entity: 'land_plot', entityId: id, metadata: { severity: 'medium', entity_name: payload.plot_number } })
   } else {
-    const { error } = await supabase.from('retail_land_plots').insert([payload])
+    const { data: inserted, error } = await supabase.from('retail_land_plots').insert([payload]).select('id').maybeSingle()
     if (error) throw error
+
+    logActivity({ action: 'land_plot.create', entity: 'land_plot', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: payload.plot_number } })
   }
 }
 

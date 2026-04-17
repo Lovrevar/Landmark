@@ -110,12 +110,13 @@ const SalesDashboard: React.FC = () => {
         <div className="relative">
           <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-8">
             <div
-              className="bg-gradient-to-r from-blue-500 to-green-500 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-              style={{ width: `${Math.min((stats.monthlyRevenue / stats.monthlyTarget) * 100, 100)}%` }}
-            >
-              {((stats.monthlyRevenue / stats.monthlyTarget) * 100).toFixed(1)}%
-            </div>
+              className="bg-gradient-to-r from-blue-500 to-green-500 h-8 rounded-full"
+              style={{ width: `${Math.min((stats.monthlyRevenue / stats.monthlyTarget) * 100, 100)}%`, minWidth: (stats.monthlyRevenue / stats.monthlyTarget) * 100 > 0 ? '2rem' : '0' }}
+            ></div>
           </div>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white dark:text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+            {((stats.monthlyRevenue / stats.monthlyTarget) * 100).toFixed(1)}%
+          </span>
         </div>
       </div>
 

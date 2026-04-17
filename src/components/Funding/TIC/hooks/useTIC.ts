@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { useAuth } from '../../../../contexts/AuthContext'
 import { LineItem, calculateTotals } from '../utils/ticFormatters'
 
@@ -118,6 +119,9 @@ export function useTIC() {
           .eq('id', ticId)
 
         if (error) throw error
+
+        logActivity({ action: 'tic.update', entity: 'tic_line_item', entityId: ticId, projectId: selectedProjectId, metadata: { severity: 'medium' } })
+
         showMessage('success', 'TIC uspješno ažuriran')
       } else {
         const { data, error } = await supabase
@@ -128,6 +132,9 @@ export function useTIC() {
 
         if (error) throw error
         setTicId(data.id)
+
+        logActivity({ action: 'tic.update', entity: 'tic_line_item', entityId: data.id, projectId: selectedProjectId, metadata: { severity: 'medium' } })
+
         showMessage('success', 'TIC uspješno spremljen')
       }
     } catch (error) {

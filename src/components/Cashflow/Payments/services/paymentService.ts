@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
 
 export const fetchPayments = async () => {
@@ -132,11 +133,20 @@ export const createPayment = async (formData: PaymentFormData) => {
     created_by: user?.id
   }
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('accounting_payments')
     .insert([paymentData])
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: 'payment.create',
+    entity: 'payment',
+    entityId: inserted?.id ?? null,
+    metadata: { severity: 'high', amount: formData.amount, invoice_id: formData.invoice_id },
+  })
 }
 
 export const updatePayment = async (id: string, formData: PaymentFormData) => {
@@ -166,6 +176,13 @@ export const updatePayment = async (id: string, formData: PaymentFormData) => {
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({
+    action: 'payment.update',
+    entity: 'payment',
+    entityId: id,
+    metadata: { severity: 'high', amount: formData.amount, invoice_id: formData.invoice_id },
+  })
 }
 
 export const deletePayment = async (id: string) => {
@@ -175,4 +192,11 @@ export const deletePayment = async (id: string) => {
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({
+    action: 'payment.delete',
+    entity: 'payment',
+    entityId: id,
+    metadata: { severity: 'high' },
+  })
 }

@@ -126,6 +126,52 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ---
 
+### ActivityLog
+**Path:** `General/ActivityLog/`
+
+Director-only audit trail UI. Displays all logged mutations across the platform with server-side filtering and pagination. Full documentation: [`docs/ACTIVITY_LOG.md`](./ACTIVITY_LOG.md).
+
+#### Services
+
+### services/activityLogQueryService.ts
+- `fetchActivityLogs(filters, offset, limit)` — wraps `get_activity_logs` RPC with all filter parameters
+- `fetchLogUsers()` — fetches users for the user filter dropdown
+- `fetchProjects()` — fetches projects for the project filter dropdown
+- **Depends on:** supabase client, `ActivityLogEntry` type
+
+#### Hooks
+
+### hooks/useActivityLog.ts
+- `useActivityLog()` — manages filter state, debounced search (500ms), server-side pagination, reference data for dropdowns, and detail modal state
+- **Calls:** activityLogQueryService.ts
+- **Returns:** logs, loading, totalCount, pagination, all filter state + setters, selectedLog, resetFilters, refetch
+
+#### Views
+
+### index.tsx (ActivityLog)
+- Director-only guard via `canViewActivityLog(user)` — redirects to `/` for non-Directors
+- Filter bar: search, user, category, severity, project, date range, reset
+- Results table with pagination
+- **Uses hooks:** useActivityLog
+- **Uses Ui:** PageHeader, SearchInput, Select, Pagination, LoadingSpinner, EmptyState, Button
+
+### ActivityLogTable.tsx
+- Table columns: Timestamp (hr-HR), User (name + role badge), Action (i18n), Entity (type + truncated ID), Project, Severity (colored badge), Details (eye icon)
+- **Uses Ui:** Table, Badge
+
+### ActivityLogDetailModal.tsx
+- Three-section detail view: User info, Entity info, Metadata key-value pairs
+- "View Entity" navigation button when entity has a known route
+- **Uses Ui:** Modal, Badge, Button
+
+### types.ts
+- `ActivityLogEntry` — row shape from RPC
+- `ACTION_CATEGORIES` — 35 category prefixes for filtering
+- `ENTITY_ROUTE_MAP` — entity-to-route mapping for navigation
+- `ActivityLogFilters`, `SeverityFilter`, `ActionCategory` — filter types
+
+---
+
 ## Notes
 - This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first

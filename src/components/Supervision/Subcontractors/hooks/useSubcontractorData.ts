@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { SubcontractorSummary, SubcontractorContract } from '../types'
 
 export const useSubcontractorData = () => {
@@ -124,6 +125,8 @@ export const useSubcontractorData = () => {
   const deleteSubcontractor = async (id: string): Promise<void> => {
     const { error } = await supabase.from('subcontractors').delete().eq('id', id)
     if (error) throw error
+
+    logActivity({ action: 'subcontractor.delete', entity: 'subcontractor', entityId: id, metadata: { severity: 'high' } })
   }
 
   return { subcontractors, loading, fetchData, deleteSubcontractor }

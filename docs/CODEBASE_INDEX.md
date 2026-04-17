@@ -17,6 +17,7 @@
 | **General** | [GENERAL.md](./modules/GENERAL.md) | Shared project/milestone management |
 | **UI** | [UI.md](./modules/UI.md) | Primitive component library |
 | **Core** | [CORE.md](./modules/CORE.md) | Contexts, hooks, lib, types, utils |
+| **Activity Log** | [ACTIVITY_LOG.md](./modules/ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
 
 ---
 
@@ -58,3 +59,4 @@ Module/
 | `src/utils/reportGenerator.ts` | Shared PDF generation utilities |
 | `src/types/investment.ts` | Shared investment types |
 | `src/types/retail.ts` | Shared retail types |
+| `src/lib/activityLog.ts` | Fire-and-forget audit logger (`logActivity`) |

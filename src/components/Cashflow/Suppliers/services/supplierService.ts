@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { SupplierSummary, Contract, Invoice, SupplierFormData, Project, Phase } from '../types'
 
 export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
@@ -175,6 +176,8 @@ export const updateSupplier = async (id: string, formData: SupplierFormData): Pr
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({ action: 'supplier.update', entity: 'supplier', entityId: id, metadata: { severity: 'low', entity_name: formData.name } })
 }
 
 export const createSupplier = async (formData: SupplierFormData): Promise<string> => {
@@ -231,6 +234,8 @@ export const createSupplier = async (formData: SupplierFormData): Promise<string
     if (contractError) throw contractError
   }
 
+  logActivity({ action: 'supplier.create', entity: 'supplier', entityId: newSupplier.id, projectId: formData.project_id || null, metadata: { severity: 'low', entity_name: formData.name } })
+
   return newSupplier.id
 }
 
@@ -238,6 +243,8 @@ export const deleteSupplier = async (supplier: SupplierSummary): Promise<void> =
   const table = supplier.source === 'retail' ? 'retail_suppliers' : 'subcontractors'
   const { error } = await supabase.from(table).delete().eq('id', supplier.id)
   if (error) throw error
+
+  logActivity({ action: 'supplier.delete', entity: 'supplier', entityId: supplier.id, metadata: { severity: 'medium', entity_name: supplier.name } })
 }
 
 export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{ contracts: Contract[], invoices: Invoice[] }> => {

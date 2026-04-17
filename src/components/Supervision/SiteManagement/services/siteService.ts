@@ -1,4 +1,5 @@
 import { supabase, ProjectPhase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { PhaseFormInput } from '../types'
 
 export const fetchAllProjects = async () => {
@@ -190,6 +191,8 @@ export const createPhases = async (projectId: string, phases: PhaseFormInput[]) 
     .insert(phasesToInsert)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.create', entity: 'phase', projectId, metadata: { severity: 'medium', count: phases.length } })
 }
 
 export const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
@@ -274,6 +277,8 @@ export const updatePhase = async (
     .eq('id', phaseId)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.update', entity: 'phase', entityId: phaseId, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
 
 export const deletePhase = async (phaseId: string) => {
@@ -283,6 +288,8 @@ export const deletePhase = async (phaseId: string) => {
     .eq('id', phaseId)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.delete', entity: 'phase', entityId: phaseId, metadata: { severity: 'high' } })
 }
 
 export const resequencePhases = async (phases: ProjectPhase[]) => {
@@ -300,11 +307,15 @@ export const createSubcontractor = async (data: {
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('subcontractors')
     .insert(data)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: data.name } })
 }
 
 export const createSubcontractorWithReturn = async (data: {
@@ -320,6 +331,8 @@ export const createSubcontractorWithReturn = async (data: {
     .single()
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: newSubcontractor.id, metadata: { severity: 'medium', entity_name: data.name } })
 
   return newSubcontractor
 }
@@ -455,6 +468,8 @@ export const updateSubcontractor = async (
     }
     await recalculatePhaseBudget(updates.phase_id)
   }
+
+  logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: contract.subcontractor_id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
 
 export const deleteSubcontractor = async (contractId: string) => {
@@ -464,6 +479,8 @@ export const deleteSubcontractor = async (contractId: string) => {
     .eq('id', contractId)
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.delete', entity: 'subcontractor', entityId: contractId, metadata: { severity: 'high' } })
 }
 
 export const getSubcontractorDetails = async (contractId: string) => {
@@ -724,6 +741,8 @@ export const createMilestone = async (data: {
 
   if (error) throw error
 
+  logActivity({ action: 'contract_milestone.create', entity: 'milestone', entityId: newMilestone.id, metadata: { severity: 'low', entity_name: data.milestone_name } })
+
   return newMilestone
 }
 
@@ -742,6 +761,8 @@ export const updateMilestone = async (
     .eq('id', milestoneId)
 
   if (error) throw error
+
+  logActivity({ action: 'contract_milestone.update', entity: 'milestone', entityId: milestoneId, metadata: { severity: 'low', changed_fields: Object.keys(updates) } })
 }
 
 export const updateMilestoneStatus = async (
@@ -769,6 +790,8 @@ export const deleteMilestone = async (milestoneId: string) => {
     .eq('id', milestoneId)
 
   if (error) throw error
+
+  logActivity({ action: 'contract_milestone.delete', entity: 'milestone', entityId: milestoneId, metadata: { severity: 'medium' } })
 }
 
 export const validateMilestonePercentagesForContract = async (
@@ -987,6 +1010,8 @@ export const uploadSubcontractorDocuments = async (subcontractorId: string, cont
     results.push({ filePath, fileName: file.name })
   }
 
+  logActivity({ action: 'document.upload', entity: 'document', metadata: { severity: 'medium', count: files.length, subcontractor_id: subcontractorId } })
+
   return results
 }
 
@@ -1025,6 +1050,8 @@ export const deleteSubcontractorDocument = async (documentId: string, filePath: 
     .eq('id', documentId)
 
   if (dbError) throw dbError
+
+  logActivity({ action: 'document.delete', entity: 'document', entityId: documentId, metadata: { severity: 'medium' } })
 }
 
 export const getContractDocumentSignedUrl = async (filePath: string) => {

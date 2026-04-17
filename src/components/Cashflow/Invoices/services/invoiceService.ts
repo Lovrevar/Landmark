@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
 
 export const fetchData = async (
@@ -301,12 +302,30 @@ export const handleSubmit = async (
       .eq('id', editingInvoice.id)
 
     if (error) throw error
+
+    logActivity({
+      action: 'invoice.update',
+      entity: 'invoice',
+      entityId: editingInvoice.id,
+      projectId: (formData.project_id as string) || null,
+      metadata: { severity: 'medium', entity_name: formData.invoice_number },
+    })
   } else {
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from('accounting_invoices')
       .insert([invoiceData])
+      .select('id')
+      .maybeSingle()
 
     if (error) throw error
+
+    logActivity({
+      action: 'invoice.create',
+      entity: 'invoice',
+      entityId: inserted?.id ?? null,
+      projectId: (formData.project_id as string) || null,
+      metadata: { severity: 'high', entity_name: formData.invoice_number },
+    })
   }
 }
 
@@ -351,6 +370,13 @@ export const handleDelete = async (id: string) => {
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({
+    action: 'invoice.delete',
+    entity: 'invoice',
+    entityId: id,
+    metadata: { severity: 'high' },
+  })
 }
 
 export const fetchCreditAllocations = async (creditId: string) => {

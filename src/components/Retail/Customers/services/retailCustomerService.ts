@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { RetailCustomer } from '../../../../types/retail'
 
 export interface CustomerWithStats extends RetailCustomer {
@@ -144,14 +145,16 @@ export async function fetchCustomerContracts(customerId: string): Promise<Retail
 }
 
 export async function createCustomer(data: CustomerFormData): Promise<void> {
-  const { error } = await supabase.from('retail_customers').insert([{
+  const { data: inserted, error } = await supabase.from('retail_customers').insert([{
     name: data.name,
     contact_phone: data.contact_phone || null,
     contact_email: data.contact_email || null,
     oib: data.oib || null,
     address: data.address || null,
-  }])
+  }]).select('id').maybeSingle()
   if (error) throw error
+
+  logActivity({ action: 'retail_customer.create', entity: 'retail_customer', entityId: inserted?.id ?? null, metadata: { severity: 'low', entity_name: data.name } })
 }
 
 export async function updateCustomer(id: string, data: CustomerFormData): Promise<void> {
@@ -166,6 +169,8 @@ export async function updateCustomer(id: string, data: CustomerFormData): Promis
     })
     .eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'retail_customer.update', entity: 'retail_customer', entityId: id, metadata: { severity: 'low', entity_name: data.name } })
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
@@ -174,4 +179,6 @@ export async function deleteCustomer(id: string): Promise<void> {
     .delete()
     .eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'retail_customer.delete', entity: 'retail_customer', entityId: id, metadata: { severity: 'medium' } })
 }

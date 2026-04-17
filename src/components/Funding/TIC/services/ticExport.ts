@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { logActivity } from '../../../../lib/activityLog'
 
 interface LineItem {
   name: string
@@ -130,6 +131,8 @@ export const exportToExcel = (
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+
+  logActivity({ action: 'export.tic_excel', entity: 'report', metadata: { severity: 'low', format: 'excel' } })
 }
 
 export const exportToPDF = (
@@ -313,4 +316,6 @@ export const exportToPDF = (
     ? `TIC_${projectName.replace(/\s+/g, '_')}_${documentDate}.pdf`
     : `TIC_Struktura_Troskova_${documentDate}.pdf`
   pdf.save(pdfFileName)
+
+  logActivity({ action: 'export.tic_pdf', entity: 'report', metadata: { severity: 'low', format: 'pdf' } })
 }

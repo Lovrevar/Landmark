@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { BankCredit, CreditAllocation, AllocationFormData, RawCreditInvoice, CreditInvoiceRow } from '../types'
 import { mapCreditInvoice } from '../types'
 
@@ -133,8 +134,10 @@ export async function createAllocation(creditId: string, form: AllocationFormDat
     payload.refinancing_entity_id = form.refinancing_entity_id
   }
 
-  const { error } = await supabase.from('credit_allocations').insert(payload)
+  const { data: inserted, error } = await supabase.from('credit_allocations').insert(payload).select('id').maybeSingle()
   if (error) throw error
+
+  logActivity({ action: 'credit_allocation.create', entity: 'credit_allocation', entityId: inserted?.id ?? null, metadata: { severity: 'high', amount: form.allocated_amount, allocation_type: form.allocation_type } })
 }
 
 export async function deleteAllocation(allocationId: string): Promise<void> {
@@ -144,6 +147,8 @@ export async function deleteAllocation(allocationId: string): Promise<void> {
     .eq('id', allocationId)
 
   if (error) throw error
+
+  logActivity({ action: 'credit_allocation.delete', entity: 'credit_allocation', entityId: allocationId, metadata: { severity: 'high' } })
 }
 
 export async function fetchCreditInvoices(

@@ -1,5 +1,6 @@
 import * as XLSX from '@e965/xlsx'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 export interface ImportResult {
   updated: number
@@ -79,6 +80,8 @@ export async function importGaragesFromExcel(file: File, buildingId: string): Pr
       errors.push(`Garage ${row.number}: ${message}`)
     }
   }
+
+  logActivity({ action: 'garage.import_excel', entity: 'garage', metadata: { severity: 'high', created_count: created, updated_count: updated, error_count: errors.length } })
 
   return { created, updated, errors }
 }

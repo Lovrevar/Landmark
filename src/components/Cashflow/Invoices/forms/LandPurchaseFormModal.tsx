@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal, Form } from '../../../ui'
+import { Button, Modal, Form, Input } from '../../../ui'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormData'
