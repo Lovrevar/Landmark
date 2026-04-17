@@ -1,0 +1,151 @@
+import { supabase } from '../../../lib/supabase'
+import type { Task, TaskUser, NewTaskInput, TaskStatus } from '../../../types/tasks'
+
+const TASK_FIELDS = 'id, title, description, created_by, due_date, due_time, status, priority, is_private, completed_at, created_at, updated_at'
+
+export async function fetchTaskUsers(): Promise<TaskUser[]> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, role')
+    .order('username')
+  if (error) throw error
+  return data || []
+}
+
+export async function fetchMyTasks(userId: string): Promise<Task[]> {
+  const { data: assignRows, error: aErr } = await supabase
+    .from('task_assignees')
+    .select('task_id')
+    .eq('user_id', userId)
+  if (aErr) throw aErr
+
+  const assignedTaskIds = (assignRows || []).map(r => r.task_id)
+
+  const { data: created, error: cErr } = await supabase
+    .from('tasks')
+    .select(TASK_FIELDS)
+    .eq('created_by', userId)
+  if (cErr) throw cErr
+
+  let assignedTasks: Task[] = []
+  if (assignedTaskIds.length > 0) {
+    const { data: assigned, error: aErr2 } = await supabase
+      .from('tasks')
+      .select(TASK_FIELDS)
+      .in('id', assignedTaskIds)
+    if (aErr2) throw aErr2
+    assignedTasks = (assigned || []) as Task[]
+  }
+
+  const byId = new Map<string, Task>()
+  ;[...(created || []), ...assignedTasks].forEach(t => byId.set(t.id, t as Task))
+
+  const tasks = Array.from(byId.values())
+  await hydrateTaskRelations(tasks)
+  return tasks.sort((a, b) => (b.created_at).localeCompare(a.created_at))
+}
+
+async function hydrateTaskRelations(tasks: Task[]) {
+  if (tasks.length === 0) return
+  const ids = tasks.map(t => t.id)
+  const creatorIds = [...new Set(tasks.map(t => t.created_by))]
+
+  const [{ data: assignees }, { data: creators }] = await Promise.all([
+    supabase
+      .from('task_assignees')
+      .select('id, task_id, user_id, acknowledged_at, created_at')
+      .in('task_id', ids),
+    supabase
+      .from('users')
+      .select('id, username, role')
+      .in('id', creatorIds),
+  ])
+
+  const userIds = [...new Set((assignees || []).map(a => a.user_id))]
+  const { data: users } = userIds.length
+    ? await supabase.from('users').select('id, username, role').in('id', userIds)
+    : { data: [] as TaskUser[] }
+
+  const userMap = new Map<string, TaskUser>((users || []).map(u => [u.id, u]))
+  const creatorMap = new Map<string, TaskUser>((creators || []).map(u => [u.id, u]))
+
+  tasks.forEach(t => {
+    t.creator = creatorMap.get(t.created_by)
+    t.assignees = (assignees || [])
+      .filter(a => a.task_id === t.id)
+      .map(a => ({ ...a, user: userMap.get(a.user_id) }))
+  })
+}
+
+export async function createTask(input: NewTaskInput, userId: string): Promise<Task> {
+  const { data: inserted, error } = await supabase
+    .from('tasks')
+    .insert({
+      title: input.title,
+      description: input.description,
+      due_date: input.due_date,
+      due_time: input.due_time,
+      priority: input.priority,
+      is_private: input.is_private,
+      created_by: userId,
+    })
+    .select(TASK_FIELDS)
+    .single()
+  if (error) throw error
+
+  if (!input.is_private && input.assignee_ids.length > 0) {
+    const rows = input.assignee_ids.map(uid => ({
+      task_id: inserted.id,
+      user_id: uid,
+    }))
+    const { error: aErr } = await supabase.from('task_assignees').insert(rows)
+    if (aErr) throw aErr
+  } else if (input.is_private) {
+    // a private task is assigned only to its creator
+    await supabase.from('task_assignees').insert({
+      task_id: inserted.id,
+      user_id: userId,
+      acknowledged_at: new Date().toISOString(),
+    })
+  }
+
+  return inserted as Task
+}
+
+export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
+  const patch: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  }
+  if (status === 'done') patch.completed_at = new Date().toISOString()
+  else patch.completed_at = null
+
+  const { error } = await supabase
+    .from('tasks')
+    .update(patch)
+    .eq('id', taskId)
+  if (error) throw error
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  if (error) throw error
+}
+
+export async function getUnacknowledgedTaskCount(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('task_assignees')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('acknowledged_at', null)
+  if (error) return 0
+  return count || 0
+}
+
+export async function acknowledgeAllTasks(userId: string): Promise<void> {
+  await supabase
+    .from('task_assignees')
+    .update({ acknowledged_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .is('acknowledged_at', null)
+}
