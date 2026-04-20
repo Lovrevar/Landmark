@@ -21,13 +21,24 @@ export interface User {
 
 export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding' | 'Cashflow' | 'Retail'
 
+export type LoginErrorCode =
+  | 'invalid_credentials'
+  | 'email_not_confirmed'
+  | 'too_many_requests'
+  | 'network_error'
+  | 'no_user_record'
+  | 'unknown'
+
+export type AuthResult = { success: true } | { success: false; code: LoginErrorCode }
+
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   loading: boolean
   currentProfile: Profile
   setCurrentProfile: (profile: Profile) => void
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<AuthResult>
+  resetPassword: (email: string) => Promise<AuthResult>
   logout: () => Promise<void>
   hasProjectAccess: (projectId: string) => boolean
 }
@@ -88,7 +99,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           `)
           .eq('user_id', data.id)
 
-        if (!projectError && projectData) {
+        if (projectError) {
+          console.warn('[auth] project_managers fetch failed for Supervision user', {
+            userId: data.id,
+            error: projectError,
+          })
+        } else if (projectData) {
           assignedProjects = (projectData as unknown as Array<{ id: string; project_id: string; assigned_at: string; projects?: { name: string } | null }>).map((pm) => ({
             id: pm.id,
             project_id: pm.project_id,
@@ -176,7 +192,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const mapAuthError = (error: unknown): LoginErrorCode => {
+    if (!error || typeof error !== 'object') return 'unknown'
+    const err = error as { message?: string; status?: number; code?: string; name?: string }
+    const msg = (err.message || '').toLowerCase()
+    const code = (err.code || '').toLowerCase()
+
+    if (err.name === 'TypeError' && msg.includes('fetch')) return 'network_error'
+    if (err.status === 429 || code.includes('rate_limit') || msg.includes('rate limit')) return 'too_many_requests'
+    if (msg.includes('email not confirmed') || code === 'email_not_confirmed') return 'email_not_confirmed'
+    if (msg.includes('invalid login credentials') || code === 'invalid_credentials') return 'invalid_credentials'
+    return 'unknown'
+  }
+
+  const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -184,8 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       })
 
       if (error) {
-        console.error('Login error:', error)
-        return false
+        return { success: false, code: mapAuthError(error) }
       }
 
       if (data.user) {
@@ -203,14 +231,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             entityId: userData.id,
             metadata: { severity: 'low' },
           })
-          return true
+          return { success: true }
         }
+        return { success: false, code: 'no_user_record' }
       }
 
-      return false
+      return { success: false, code: 'unknown' }
     } catch (error) {
-      console.error('Login exception:', error)
-      return false
+      return { success: false, code: mapAuthError(error) }
+    }
+  }
+
+  const resetPassword = async (email: string): Promise<AuthResult> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password'
+      })
+      if (error) {
+        return { success: false, code: mapAuthError(error) }
+      }
+      return { success: true }
+    } catch (error) {
+      return { success: false, code: mapAuthError(error) }
     }
   }
 
@@ -261,6 +303,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     currentProfile,
     setCurrentProfile: handleSetCurrentProfile,
     login,
+    resetPassword,
     logout,
     hasProjectAccess
   }

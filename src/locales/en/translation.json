@@ -149,7 +149,23 @@
     "invalid_credentials": "Invalid email or password",
     "admin_portal": "Admin Portal",
     "welcome": "Welcome",
-    "logout": "Logout"
+    "logout": "Logout",
+    "email_required": "Email is required",
+    "email_invalid": "Please enter a valid email address",
+    "password_required": "Password is required",
+    "error_invalid_credentials": "Incorrect email or password",
+    "error_email_not_confirmed": "Please confirm your email before signing in",
+    "error_too_many_requests": "Too many attempts. Please wait a moment and try again",
+    "error_network_error": "Can't reach the server. Check your connection and try again",
+    "error_no_user_record": "Your account is not set up. Please contact an administrator",
+    "error_unknown": "Something went wrong. Please try again",
+    "forgot_password": "Forgot your password?",
+    "reset_password": "Reset your password",
+    "reset_password_subtitle": "Enter your email and we'll send you a reset link",
+    "send_reset_link": "Send reset link",
+    "sending_reset_link": "Sending...",
+    "reset_link_sent": "If an account exists for that email, a reset link is on its way",
+    "back_to_sign_in": "Back to sign in"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -2162,7 +2178,9 @@
         "days_left": "{{count}} days left",
         "days_overdue": "{{count}} days overdue",
         "no_projects": "No Projects",
-        "no_projects_desc": "Add your first project to the system"
+        "no_projects_desc": "Add your first project to the system",
+        "no_assignments_title": "No projects assigned",
+        "no_assignments_hint": "You are not assigned to any projects yet. Contact an administrator to get access."
       },
       "project_detail": {
         "back_to_projects": "Back to Projects",

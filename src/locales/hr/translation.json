@@ -149,7 +149,23 @@
     "invalid_credentials": "Netočan email ili lozinka",
     "admin_portal": "Admin Portal",
     "welcome": "Dobrodošli",
-    "logout": "Odjava"
+    "logout": "Odjava",
+    "email_required": "Email je obavezan",
+    "email_invalid": "Unesite valjanu email adresu",
+    "password_required": "Lozinka je obavezna",
+    "error_invalid_credentials": "Netočan email ili lozinka",
+    "error_email_not_confirmed": "Potvrdite svoj email prije prijave",
+    "error_too_many_requests": "Previše pokušaja. Pričekajte trenutak i pokušajte ponovno",
+    "error_network_error": "Poslužitelj nije dostupan. Provjerite vezu i pokušajte ponovno",
+    "error_no_user_record": "Vaš račun nije postavljen. Obratite se administratoru",
+    "error_unknown": "Nešto je pošlo po zlu. Pokušajte ponovno",
+    "forgot_password": "Zaboravili ste lozinku?",
+    "reset_password": "Resetirajte lozinku",
+    "reset_password_subtitle": "Unesite svoj email i poslat ćemo vam poveznicu za resetiranje",
+    "send_reset_link": "Pošalji poveznicu za resetiranje",
+    "sending_reset_link": "Slanje...",
+    "reset_link_sent": "Ako račun za taj email postoji, poveznica za resetiranje je na putu",
+    "back_to_sign_in": "Natrag na prijavu"
   },
   "nav": {
     "dashboard": "Nadzorna ploča",
@@ -193,7 +209,8 @@
     "accounting_companies": "Moje firme",
     "accounting_banks": "Investicije",
     "accounting_customers": "Kupci",
-    "budget_control": "Kontrola proračuna"
+    "budget_control": "Kontrola proračuna",
+    "activity_log": "Dnevnik aktivnosti"
   },
   "profiles": {
     "general": "General",
@@ -2163,7 +2180,9 @@
         "days_left": "{{count}} dana preostalo",
         "days_overdue": "{{count}} dana kašnjenja",
         "no_projects": "Nema projekata",
-        "no_projects_desc": "Dodajte prvi projekt u sustavu"
+        "no_projects_desc": "Dodajte prvi projekt u sustavu",
+        "no_assignments_title": "Nemate dodijeljenih projekata",
+        "no_assignments_hint": "Još niste dodijeljeni ni jednom projektu. Obratite se administratoru za pristup."
       },
       "project_detail": {
         "back_to_projects": "Natrag na projekte",

@@ -194,6 +194,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setPendingProfile(null)
   }
 
+  useEffect(() => {
+    if (!showPasswordModal) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault()
+        handlePasswordCancel()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [showPasswordModal])
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -372,7 +384,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit}>
+            <form onSubmit={handlePasswordSubmit} noValidate>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('auth.password')}
@@ -386,15 +398,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                   placeholder={t('profiles.enter_password')}
                   autoFocus
+                  aria-invalid={!!passwordError}
+                  className={passwordError ? 'border-red-500 focus:ring-red-500' : ''}
                 />
+                {passwordError && (
+                  <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                )}
               </div>
 
-              {passwordError && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800 dark:text-red-400">{passwordError}</p>
-                </div>
-              )}
 
               <div className="flex space-x-3">
                 <button

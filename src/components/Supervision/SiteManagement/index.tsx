@@ -245,14 +245,14 @@ const SiteManagement: React.FC = () => {
     setMilestoneContext(null)
   }
 
+  const accessibleProjectIds = isSupervisionRole(user) ? getAccessibleProjectIds(user) : null
+  const filteredProjects = accessibleProjectIds
+    ? projects.filter(p => accessibleProjectIds.includes(p.id))
+    : projects
+
   if (loading) {
     return <LoadingSpinner message="Loading site management..." />
   }
-
-  const filteredProjects = isSupervisionRole(user)
-    ? projects.filter(p => getAccessibleProjectIds(user).includes(p.id))
-    : projects
-
 
   const userCanManagePayments = canManagePayments(user)
 
@@ -471,6 +471,7 @@ const SiteManagement: React.FC = () => {
       onSelectProject={setSelectedProject}
       onRefresh={fetchProjects}
       isRefreshing={loading}
+      emptyStateVariant={isSupervisionRole(user) ? 'no_assignments' : 'no_projects'}
     />
   )
 }
