@@ -69,11 +69,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <Layout>{children}</Layout>
 }
 
-// Guards Cashflow routes — redirects to home if the Cashflow profile has not been unlocked
-// (unlocked flag is set by Layout after correct password entry)
+// Guards Cashflow routes — requires both the Cashflow password unlock AND a role
+// of Director or Accounting. The password alone is not sufficient.
 const CashflowRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth()
   const unlocked = sessionStorage.getItem('cashflow_unlocked') === 'true'
-  if (!unlocked) {
+  const roleAllowed = user?.role === 'Director' || user?.role === 'Accounting'
+  if (!unlocked || !roleAllowed) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>

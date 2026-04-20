@@ -59,6 +59,7 @@ interface InvoiceFormFieldsProps {
   refunds: Refund[]
   invoiceCategories: { id: string; name: string }[]
   customerApartments: Apartment[]
+  fieldErrors?: Record<string, string>
   onFormChange: (data: InvoiceFieldFormData) => void
   getCustomerProjects: (customerId: string) => Project[]
   getCustomerApartmentsByProject: (customerId: string, projectId: string) => Apartment[]
@@ -79,6 +80,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
   projects,
   refunds,
   invoiceCategories,
+  fieldErrors,
   onFormChange,
   getCustomerProjects,
   getCustomerApartmentsByProject,
@@ -87,10 +89,11 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
   getMilestonesByContract
 }) => {
   const { t } = useTranslation()
+  const errors = fieldErrors || {}
   return (
     <div className="p-6 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label={t('invoices.form.type_label')} required>
+        <FormField label={t('invoices.form.type_label')} required error={errors.invoice_type}>
           <Select
             value={formData.invoice_type}
             onChange={(e) => onFormChange({
@@ -132,6 +135,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           banks={banks}
           projects={projects}
           refunds={refunds}
+          fieldErrors={errors}
           onFormChange={(data) => onFormChange({ ...formData, ...data } as InvoiceFieldFormData)}
           getCustomerProjects={getCustomerProjects}
           getCustomerApartmentsByProject={getCustomerApartmentsByProject}
@@ -140,7 +144,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           getMilestonesByContract={getMilestonesByContract}
         />
 
-        <FormField label={t('invoices.form.company_label')} required>
+        <FormField label={t('invoices.form.company_label')} required error={errors.company_id}>
           <Select
             value={formData.company_id}
             onChange={(e) => onFormChange({ ...formData, company_id: e.target.value })}
@@ -152,7 +156,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           </Select>
         </FormField>
 
-        <FormField label={t('invoices.form.number_label')} required>
+        <FormField label={t('invoices.form.number_label')} required error={errors.invoice_number}>
           <Input
             type="text"
             value={formData.invoice_number}
@@ -178,7 +182,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label={t('invoices.form.issue_date_label')} required>
+        <FormField label={t('invoices.form.issue_date_label')} required error={errors.issue_date}>
           <DateInput
             value={formData.issue_date}
             onChange={(value) => onFormChange({ ...formData, issue_date: value })}
@@ -186,7 +190,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label={t('invoices.form.due_date_label')} required>
+        <FormField label={t('invoices.form.due_date_label')} required error={errors.due_date}>
           <DateInput
             value={formData.due_date}
             onChange={(value) => onFormChange({ ...formData, due_date: value })}
@@ -194,7 +198,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label={t('invoices.form.base_25')}>
+        <FormField label={t('invoices.form.base_25')} error={errors.base_amount_1}>
           <CurrencyInput
             value={formData.base_amount_1}
             onChange={(value) => onFormChange({ ...formData, base_amount_1: value })}
@@ -230,7 +234,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label={t('invoices.form.category_label')} required>
+        <FormField label={t('invoices.form.category_label')} required error={errors.category}>
           <Select
             value={formData.category}
             onChange={(e) => onFormChange({ ...formData, category: e.target.value })}

@@ -17,7 +17,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
   }
 
   return (
-    <Card variant="bordered" padding="none" className="col-span-2 bg-gray-50 dark:bg-gray-700/50 p-4 space-y-2">
+    <Card variant="bordered" padding="none" className="col-span-2 bg-gray-50 dark:bg-gray-700/50 p-4 space-y-2 text-gray-900 dark:text-gray-100">
       <Card.Header className="!mb-2">
         <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('invoices.preview.title')}</div>
       </Card.Header>

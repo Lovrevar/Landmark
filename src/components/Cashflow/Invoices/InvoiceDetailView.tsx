@@ -192,7 +192,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">25% PDV:</span>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_1)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_1)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_1 || invoice.base_amount_1 * 0.25)}</p>
                       </div>
                     </div>
@@ -201,7 +201,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">13% PDV:</span>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_2)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_2)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_2 || invoice.base_amount_2 * 0.13)}</p>
                       </div>
                     </div>
@@ -210,7 +210,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">5% PDV:</span>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_4)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_4)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_4 || invoice.base_amount_4 * 0.05)}</p>
                       </div>
                     </div>
@@ -219,7 +219,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">0% PDV:</span>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_3)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_3)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;0.00</p>
                       </div>
                     </div>

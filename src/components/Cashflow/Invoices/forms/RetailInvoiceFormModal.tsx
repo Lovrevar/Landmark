@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, Button, Textarea, FormField, Alert, Form } from '../../../ui'
 import { upsertRetailInvoice } from '../services/invoiceService'
+import { isInvoiceNumberDuplicateError, checkDuplicateInvoiceNumber } from '../services/invoiceValidation'
 import { RetailInvoiceFormFields } from './RetailInvoiceFormFields'
 import { RetailInvoiceCalculationSummary } from './RetailInvoiceCalculationSummary'
 import { useRetailInvoiceData } from '../hooks/useRetailInvoiceData'
@@ -115,6 +116,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   }
 
   const [formData, setFormData] = useState<RetailInvoiceFormData>(getInitialFormData())
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const {
     companies,
@@ -184,20 +186,43 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
 
-    try {
-      if (!formData.company_id) throw new Error(t('invoices.retail.error_company'))
-      if (!formData.entity_id) throw new Error(t('invoices.retail.error_entity'))
-      if (!formData.retail_project_id) throw new Error(t('invoices.retail.error_project'))
-      if (!formData.retail_contract_id) throw new Error(t('invoices.retail.error_contract'))
-      if (!formData.invoice_number) throw new Error(t('invoices.retail.error_number'))
-      if (!formData.issue_date) throw new Error(t('invoices.retail.error_issue_date'))
-      if (!formData.due_date) throw new Error(t('invoices.retail.error_due_date'))
+    const errors: Record<string, string> = {}
+    if (!formData.company_id) errors.company_id = t('invoices.retail.error_company')
+    if (!formData.entity_id) errors.entity_id = t('invoices.retail.error_entity')
+    if (!formData.retail_project_id) errors.retail_project_id = t('invoices.retail.error_project')
+    if (!formData.retail_contract_id) errors.retail_contract_id = t('invoices.retail.error_contract')
+    if (!formData.invoice_number || !formData.invoice_number.trim()) errors.invoice_number = t('invoices.retail.error_number')
+    if (!formData.issue_date) errors.issue_date = t('invoices.retail.error_issue_date')
+    if (!formData.due_date) errors.due_date = t('invoices.retail.error_due_date')
+    if (formData.issue_date && formData.due_date && formData.due_date < formData.issue_date) {
+      errors.due_date = t('invoices.form.error_due_date_before_issue')
+    }
+    if (!formData.category) errors.category = t('invoices.retail.error_category')
+    if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
+      errors.base_amount_1 = t('invoices.retail.error_base')
+    }
 
-      if (formData.base_amount_1 === 0 && formData.base_amount_2 === 0 && formData.base_amount_3 === 0 && formData.base_amount_4 === 0) {
-        throw new Error(t('invoices.retail.error_base'))
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    setLoading(true)
+
+    try {
+      const retailCounterpartyColumn = formData.entity_type === 'supplier' ? 'retail_supplier_id' : 'retail_customer_id'
+      const isDuplicate = await checkDuplicateInvoiceNumber({
+        companyId: formData.company_id,
+        counterpartyColumn: retailCounterpartyColumn,
+        counterpartyId: formData.entity_id,
+        invoiceNumber: formData.invoice_number,
+        issueDate: formData.issue_date,
+        excludeId: editingInvoice?.id,
+      })
+      if (isDuplicate) {
+        setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
+        setLoading(false)
+        return
       }
 
       calculateVatAndTotal()
@@ -249,7 +274,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       onClose()
     } catch (err: unknown) {
       console.error('Error creating retail invoice:', err)
-      setError(err instanceof Error ? err.message : t('invoices.retail.error_create'))
+      if (isInvoiceNumberDuplicateError(err)) {
+        setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
+      } else {
+        setError(err instanceof Error ? err.message : t('invoices.retail.error_create'))
+      }
     } finally {
       setLoading(false)
     }
@@ -278,6 +307,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
             milestones={milestones}
             invoiceCategories={invoiceCategories}
             refunds={refunds}
+            fieldErrors={fieldErrors}
           />
 
           <RetailInvoiceCalculationSummary

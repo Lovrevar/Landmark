@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types'
 import * as invoiceService from '../services/invoiceService'
+import { validateInvoice, isInvoiceNumberDuplicateError, checkDuplicateInvoiceNumber, getCounterpartyColumn } from '../services/invoiceValidation'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useInvoiceColumns } from './useInvoiceColumns'
 import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../services/invoiceFormDefaults'
@@ -8,6 +10,7 @@ import { useToast } from '../../../../contexts/ToastContext'
 
 export const useInvoices = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
@@ -55,6 +58,7 @@ export const useInvoices = () => {
 
   const [formData, setFormData] = useState(getDefaultInvoiceFormData())
   const [paymentFormData, setPaymentFormData] = useState(getDefaultPaymentFormData())
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const { visibleColumns, setVisibleColumns, showColumnMenu, setShowColumnMenu } = useInvoiceColumns()
 
@@ -133,6 +137,7 @@ export const useInvoices = () => {
   }
 
   const handleOpenModal = (invoice?: Invoice) => {
+    setFieldErrors({})
     if (invoice) {
       if (invoice.invoice_category === 'RETAIL') {
         setEditingInvoice(invoice)
@@ -209,18 +214,53 @@ export const useInvoices = () => {
     setShowInvoiceModal(false)
     setEditingInvoice(null)
     setIsOfficeInvoice(false)
+    setFieldErrors({})
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const errors = validateInvoice(formData as unknown as Record<string, unknown>, t)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+    setFieldErrors({})
+
     try {
+      const counterpartyColumn = getCounterpartyColumn(formData.invoice_type as string)
+      if (counterpartyColumn) {
+        const counterpartyId = String(
+          (formData as unknown as Record<string, unknown>)[counterpartyColumn] || ''
+        )
+        if (counterpartyId) {
+          const isDuplicate = await checkDuplicateInvoiceNumber({
+            companyId: formData.company_id as string,
+            counterpartyColumn,
+            counterpartyId,
+            invoiceNumber: formData.invoice_number as string,
+            issueDate: formData.issue_date as string,
+            excludeId: editingInvoice?.id,
+          })
+          if (isDuplicate) {
+            setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
+            return
+          }
+        }
+      }
+
       await invoiceService.handleSubmit(formData, editingInvoice, isOfficeInvoice)
       await fetchData()
       handleCloseModal()
     } catch (error) {
       console.error('Error saving invoice:', error)
-      toast.error('Greška prilikom spremanja računa')
+      if (isInvoiceNumberDuplicateError(error)) {
+        setFieldErrors({
+          invoice_number: t('invoices.form.error_invoice_number_duplicate'),
+        })
+      } else {
+        toast.error(t('invoices.form.error_save'))
+      }
     }
   }
 
@@ -265,6 +305,34 @@ export const useInvoices = () => {
     e.preventDefault()
 
     if (!payingInvoice) return
+
+    const source = paymentFormData.payment_source_type
+    const isCesija = paymentFormData.is_cesija
+
+    if (!isCesija && source === 'bank_account' && !paymentFormData.company_bank_account_id) {
+      toast.error(t('payments.form.error_bank_account_required'))
+      return
+    }
+    if (!isCesija && source === 'credit' && !paymentFormData.credit_id) {
+      toast.error(t('payments.form.error_credit_required'))
+      return
+    }
+    if (!isCesija && source === 'credit' && !paymentFormData.credit_allocation_id) {
+      toast.error(t('payments.form.error_credit_allocation_required'))
+      return
+    }
+    if (isCesija && !paymentFormData.cesija_company_id) {
+      toast.error(t('payments.form.error_cesija_company_required'))
+      return
+    }
+    if (isCesija && source === 'bank_account' && !paymentFormData.cesija_bank_account_id) {
+      toast.error(t('payments.form.error_bank_account_required'))
+      return
+    }
+    if (isCesija && source === 'credit' && (!paymentFormData.cesija_credit_id || !paymentFormData.cesija_credit_allocation_id)) {
+      toast.error(t('payments.form.error_credit_required'))
+      return
+    }
 
     try {
       await invoiceService.handlePaymentSubmit(paymentFormData, payingInvoice)
@@ -343,6 +411,7 @@ export const useInvoices = () => {
     payingInvoice,
     formData,
     paymentFormData,
+    fieldErrors,
     visibleColumns,
     setInvoices,
     setSearchTerm,

@@ -73,6 +73,7 @@ const AccountingInvoices: React.FC = () => {
     payingInvoice,
     formData,
     paymentFormData,
+    fieldErrors,
     visibleColumns,
     setSearchTerm,
     setFilterDirection,
@@ -264,6 +265,7 @@ const AccountingInvoices: React.FC = () => {
         refunds={refunds}
         invoiceCategories={invoiceCategories}
         customerApartments={customerApartments as unknown as { id: string; number: string; price: number }[]}
+        fieldErrors={fieldErrors}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         onFormChange={(data) => setFormData(data as unknown as typeof formData)}

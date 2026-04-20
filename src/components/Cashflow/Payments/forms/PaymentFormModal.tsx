@@ -66,7 +66,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">{t('payments.form.total_amount_label')}</span>
-              <span className="font-medium">€{formatCurrency(payingInvoice.total_amount)}</span>
+              <span className="font-medium text-gray-900 dark:text-white">€{formatCurrency(payingInvoice.total_amount)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">{t('payments.form.paid_amount_label')}</span>

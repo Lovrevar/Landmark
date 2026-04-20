@@ -12,46 +12,46 @@ _The reference example for this whole document. Later phases replicate this shap
 
 **Golden path**
 
-- add an invoice with all fields entered (type, company, supplier, project, invoice number, issue date, due date, single VAT rate with base amount, category, description)   ( )
+- add an invoice with all fields entered (type, company, supplier, project, invoice number, issue date, due date, single VAT rate with base amount, category, description)   (+)
 
 **Missing required fields** — each line expects an inline validation error and no record created
 
-- add an invoice with the invoice type missing   ( )
-- add an invoice with the company missing   ( )
-- add an invoice with the supplier missing (for `INCOMING_SUPPLIER` type)   ( )
-- add an invoice with the office supplier missing (for `INCOMING_OFFICE` type)   ( )
-- add an invoice with the customer missing (for `OUTGOING_SALES` type)   ( )
-- add an invoice with the invoice number missing   ( )
-- add an invoice with the issue date missing   ( )
-- add an invoice with the due date missing   ( )
-- add an invoice with zero base amount across all four VAT slots   ( )
-- add an invoice with the category missing   ( )
+- add an invoice with the invoice type missing   (+)
+- add an invoice with the company missing   (+)
+- add an invoice with the supplier missing (for `INCOMING_SUPPLIER` type)   (+)
+- add an invoice with the office supplier missing (for `INCOMING_OFFICE` type)   (+)
+- add an invoice with the customer missing (for `OUTGOING_SALES` type)   (+)
+- add an invoice with the invoice number missing   (+)
+- add an invoice with the issue date missing   (+)
+- add an invoice with the due date missing   (+)
+- add an invoice with zero base amount across all four VAT slots   (+)
+- add an invoice with the category missing   (+)
 
 **Invalid values**
 
-- add an invoice with a duplicate invoice number (same supplier, same year)   ( )
-- add an invoice with a negative base amount   ( )
-- add an invoice with a due date before the issue date   ( )
-- add an invoice with an issue date more than 1 year in the future   ( )
-- add an invoice with a non-numeric reference number containing letters   ( )
-- add an invoice with an IBAN that fails checksum   ( )
-- add an invoice with a description of 5000+ characters   ( )
+- add an invoice with a duplicate invoice number (same supplier, same year)   (-)
+- add an invoice with a negative base amount   (+)
+- add an invoice with a due date before the issue date   (+)
+- add an invoice with an issue date more than 1 year in the future   (-)
+- add an invoice with a non-numeric reference number containing letters   (-)
+- add an invoice with an IBAN that fails checksum   (-)
+- add an invoice with a description of 5000+ characters   (-)
 - add an invoice with Croatian diacritics (čćšđž) in the description and verify display + PDF render   ( )
 
 **Multi-VAT (Croatian requirement: up to 4 rates on one invoice)**
 
-- add an invoice with 1 VAT rate, verify total = base + VAT   ( )
-- add an invoice with 2 different VAT rates, verify per-rate breakdown and grand total   ( )
-- add an invoice with 3 different VAT rates   ( )
-- add an invoice with 4 different VAT rates — the full multi-VAT case   ( )
-- add an invoice where one VAT slot is 0% and verify it's handled as exempt, not empty   ( )
+- add an invoice with 1 VAT rate, verify total = base + VAT   (+)
+- add an invoice with 2 different VAT rates, verify per-rate breakdown and grand total   (+)
+- add an invoice with 3 different VAT rates   (+)
+- add an invoice with 4 different VAT rates — the full multi-VAT case   (+)
+- add an invoice where one VAT slot is 0% and verify it's handled as exempt, not empty   (+)
 
 **Conditional field behaviour**
 
-- change invoice type after selecting a supplier — supplier/project/contract fields must reset   ( )
-- select a customer then a project — apartment dropdown should only list that customer's apartments on that project   ( )
-- select a supplier then a project — contract dropdown should only list that supplier's contracts on that project   ( )
-- select a contract — milestone dropdown should only list that contract's milestones   ( )
+- change invoice type after selecting a supplier — supplier/project/contract fields must reset   (+)
+- select a customer then a project — apartment dropdown should only list that customer's apartments on that project   (+)
+- select a supplier then a project — contract dropdown should only list that supplier's contracts on that project   (+)
+- select a contract — milestone dropdown should only list that contract's milestones   (+)
 
 **Attachments**
 
@@ -62,27 +62,27 @@ _The reference example for this whole document. Later phases replicate this shap
 
 **Cancel / close**
 
-- open Add Invoice, fill fields, press Esc — modal closes, nothing saved   ( )
-- open Add Invoice, click backdrop — modal closes, nothing saved   ( )
-- open Add Invoice, click the X button — modal closes, nothing saved   ( )
+- open Add Invoice, fill fields, press Esc — modal closes, nothing saved   (+)
+- open Add Invoice, click backdrop — modal closes, nothing saved   (+)
+- open Add Invoice, click the X button — modal closes, nothing saved   (+)
 
 **Permissions**
 
-- log in as Sales, open Cashflow profile — verify Add Invoice is hidden or disabled   (N/A if Sales lacks Cashflow access)   ( )
-- log in as Supervision, attempt to reach Cashflow Invoices — expect redirect or hidden nav   ( )
+- log in as Sales, open Cashflow profile — verify Add Invoice is hidden or disabled   (N/A if Sales lacks Cashflow access)   (+)
+- log in as Supervision, attempt to reach Cashflow Invoices — expect redirect or hidden nav   (+)
 
 **Activity log**
 
-- after a successful add, open Activity Log and verify a row exists with action `invoice.create`, severity medium, entity link opens the new invoice   ( )
+- after a successful add, open Activity Log and verify a row exists with action `invoice.create`, severity medium, entity link opens the new invoice   (+)
 
 ### Edit Invoice
 
 _Precondition: at least one saved invoice, at least one with a recorded payment, at least one "office" invoice._
 
-- open an existing invoice → click Edit — form pre-fills every field with current values   ( )
+- open an existing invoice → click Edit — form pre-fills every field with current values   (+)
 - change only the description, save — row updates, activity log records `invoice.update` with `changed_fields: ["description"]`   ( )
-- change only the VAT breakdown (e.g. shift from 1 rate to 2), save — totals recompute, VAT summary reflects change   ( )
-- change the invoice type after save-edit (e.g. from `INCOMING_SUPPLIER` to `OUTGOING_SALES`) — dependent fields (supplier/customer/project) clear and must be refilled   ( )
+- change only the VAT breakdown (e.g. shift from 1 rate to 2), save — totals recompute, VAT summary reflects change   (+)
+- change the invoice type after save-edit (e.g. from `INCOMING_SUPPLIER` to `OUTGOING_SALES`) — dependent fields (supplier/customer/project) clear and must be refilled   (+)
 - edit an invoice that already has a payment — verify amount and invoice number are either locked or produce a visible warning (overpayment risk)   ( )
 - edit an office invoice — the form swaps to office-supplier entity; supplier field is hidden   ( )
 - change attachment: upload a replacement PDF — old attachment is removed, new one linked   ( )

@@ -7,6 +7,7 @@ import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
 import { Alert, Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { createBankInvoice } from '../../Invoices/services/invoiceService'
+import { checkDuplicateInvoiceNumber, isInvoiceNumberDuplicateError } from '../../Invoices/services/invoiceValidation'
 import { useToast } from '../../../../contexts/ToastContext'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
@@ -102,6 +103,19 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     setLoading(true)
 
     try {
+      const isDuplicate = await checkDuplicateInvoiceNumber({
+        companyId: formData.company_id,
+        counterpartyColumn: 'bank_id',
+        counterpartyId: formData.bank_id,
+        invoiceNumber: formData.invoice_number,
+        issueDate: formData.issue_date,
+      })
+      if (isDuplicate) {
+        setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
+        setLoading(false)
+        return
+      }
+
       calculateTotal()
 
       const invoiceData = {
@@ -131,7 +145,11 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       onClose()
     } catch (error: unknown) {
       console.error('Error creating invoice:', error)
-      toast.error(t('banks.invoice_form.error_create') + ': ' + (error instanceof Error ? error.message : String(error)))
+      if (isInvoiceNumberDuplicateError(error)) {
+        setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
+      } else {
+        toast.error(t('banks.invoice_form.error_create') + ': ' + (error instanceof Error ? error.message : String(error)))
+      }
     } finally {
       setLoading(false)
     }

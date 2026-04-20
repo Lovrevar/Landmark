@@ -23,9 +23,11 @@ import {
 } from '../services/paymentService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 export const usePayments = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [payments, setPayments] = useState<Payment[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -208,6 +210,26 @@ export const usePayments = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const source = formData.payment_source_type
+    const isCesija = formData.is_cesija
+
+    if (!isCesija && source === 'bank_account' && !formData.company_bank_account_id) {
+      toast.error(t('payments.form.error_bank_account_required'))
+      return
+    }
+    if (!isCesija && source === 'credit' && !formData.credit_id) {
+      toast.error(t('payments.form.error_credit_required'))
+      return
+    }
+    if (isCesija && !formData.cesija_company_id) {
+      toast.error(t('payments.form.error_cesija_company_required'))
+      return
+    }
+    if (isCesija && !formData.cesija_bank_account_id) {
+      toast.error(t('payments.form.error_bank_account_required'))
+      return
+    }
 
     try {
       if (editingPayment) {
