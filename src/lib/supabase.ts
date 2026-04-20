@@ -8,7 +8,28 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
   key: supabaseAnonKey ? 'Present' : 'Missing'
 })*/
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+  },
+})
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) return
+      const expiresAt = data.session.expires_at ?? 0
+      const secondsLeft = expiresAt - Math.floor(Date.now() / 1000)
+      if (secondsLeft < 60) {
+        void supabase.auth.refreshSession()
+      }
+    })
+  })
+}
 
 export type User = {
   id: string

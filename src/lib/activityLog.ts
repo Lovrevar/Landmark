@@ -12,11 +12,12 @@ interface LogActivityParams {
 }
 
 /**
- * Fire-and-forget activity logger.
- * Inserts a row into activity_logs asynchronously.
- * Never throws — a logging failure must not block the user's action.
+ * Activity logger. Never throws — a logging failure must not block the user's action.
+ * Returns a Promise so callers that need the insert to complete before the next
+ * step (e.g. logout, which clears the session) can `await` it.
+ * Fire-and-forget callers can ignore the return value.
  */
-export function logActivity(params: LogActivityParams): void {
+export function logActivity(params: LogActivityParams): Promise<void> {
   const { action, entity, entityId, projectId, metadata = {}, severity } = params
 
   const record: Record<string, unknown> = {
@@ -30,16 +31,34 @@ export function logActivity(params: LogActivityParams): void {
   if (params.userId && params.userRole) {
     record.user_id = params.userId
     record.user_role = params.userRole
-    insertLog(record)
-  } else {
-    resolveUserThenInsert(record)
+    return insertLog(record)
   }
+  return resolveUserThenInsert(record)
 }
 
 async function insertLog(record: Record<string, unknown>): Promise<void> {
   try {
     const { error } = await supabase.from('activity_logs').insert([record])
-    if (error) console.warn('[activityLog] insert failed:', error.message)
+    if (!error) return
+
+    const message = (error.message || '').toLowerCase()
+    const isAuthError =
+      error.code === 'PGRST301' ||
+      message.includes('jwt') ||
+      message.includes('unauthorized')
+
+    if (isAuthError) {
+      const { error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError) {
+        console.warn('[activityLog] refresh after 401 failed:', refreshError.message)
+        return
+      }
+      const { error: retryError } = await supabase.from('activity_logs').insert([record])
+      if (retryError) console.warn('[activityLog] insert retry failed:', retryError.message)
+      return
+    }
+
+    console.warn('[activityLog] insert failed:', error.message)
   } catch (err) {
     console.warn('[activityLog] unexpected error:', err)
   }
@@ -66,7 +85,7 @@ async function resolveUserThenInsert(record: Record<string, unknown>): Promise<v
 
     record.user_id = userData.id
     record.user_role = userData.role
-    insertLog(record)
+    await insertLog(record)
   } catch (err) {
     console.warn('[activityLog] unexpected error resolving user:', err)
   }

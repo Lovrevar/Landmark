@@ -258,7 +258,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     if (user) {
-      logActivity({
+      await logActivity({
         userId: user.id,
         userRole: user.role,
         action: 'auth.logout',
