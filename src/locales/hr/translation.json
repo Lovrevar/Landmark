@@ -4229,9 +4229,42 @@
     "no_events_today": "Nema događaja",
     "no_upcoming": "Ništa nije planirano",
     "no_events_day": "Nema događaja na ovaj dan",
+    "no_events_in_range": "Nema događaja u ovom rasponu",
     "loading": "Učitavanje...",
     "more_events": "+{{count}} više",
     "events_for_day": "{{count}} događaj(a)",
+    "view_switcher": {
+      "label": "Prikaz kalendara",
+      "day": "Dan",
+      "week": "Tjedan",
+      "month": "Mjesec",
+      "agenda": "Raspored"
+    },
+    "filter": {
+      "project_any": "Bilo koji projekt",
+      "participant_any": "Bilo koji sudionik",
+      "search_placeholder": "Pretraži događaje...",
+      "clear": "Očisti filtere"
+    },
+    "mini_month": {
+      "prev": "Prethodni mjesec",
+      "next": "Sljedeći mjesec"
+    },
+    "next_up": {
+      "title": "Slijedi",
+      "empty": "Nema nadolazećih",
+      "now": "Sada",
+      "in_minutes": "Za {{count}} min",
+      "in_hours": "Za {{count}} h",
+      "in_days": "Za {{count}} d",
+      "in_weeks": "Za {{count}} tj."
+    },
+    "team_calendars": {
+      "title": "Kalendari tima",
+      "empty": "Nema dostupnih kolega",
+      "busy_summary": "Sati zauzeto u prikazu",
+      "hours": "{{count}} h"
+    },
     "day_names": {
       "mon": "Pon",
       "tue": "Uto",
@@ -4255,11 +4288,58 @@
       "date_label": "Datum",
       "start_time_label": "Od",
       "end_time_label": "Do",
+      "end_before_start": "Vrijeme završetka mora biti nakon početka",
       "type_label": "Vrsta",
       "private_label": "Privatno (samo ja vidim)",
       "participants_label": "Sudionici",
+      "participant_placeholder": "Pretraži i dodaj sudionike...",
+      "participant_no_results": "Nema odgovarajućih korisnika",
+      "project_label": "Projekt",
+      "project_placeholder": "Poveži s projektom (opcionalno)",
+      "busy_label": "Zauzeto",
+      "free_label": "Slobodno",
+      "busy_description": "Drugima se prikazuje kao zauzeto u kalendaru",
+      "reminders": {
+        "label": "Podsjetnici",
+        "add": "+ Dodaj podsjetnik",
+        "remove": "Ukloni",
+        "none": "Bez podsjetnika"
+      },
+      "reminder": {
+        "at_time": "U trenutku događaja",
+        "minutes": "{{count}} min prije",
+        "hours": "{{count}} h prije",
+        "days": "{{count}} d prije",
+        "weeks": "{{count}} tj. prije"
+      },
+      "recurrence": {
+        "label": "Ponavljanje",
+        "preset": {
+          "none": "Ne ponavlja se",
+          "daily": "Dnevno",
+          "weekly": "Tjedno",
+          "monthly": "Mjesečno",
+          "yearly": "Godišnje",
+          "custom": "Prilagođeno"
+        },
+        "every": "Svakih",
+        "on_days": "Na dane",
+        "freq": {
+          "daily": "dan(a)",
+          "weekly": "tjedan(a)",
+          "monthly": "mjesec(i)"
+        },
+        "ends": "Završava",
+        "end": {
+          "never": "Nikad",
+          "on": "Na datum",
+          "after": "Nakon"
+        },
+        "occurrences": "ponavljanja"
+      },
       "create_button": "Kreiraj događaj",
-      "saving": "Spremanje..."
+      "saving": "Spremanje...",
+      "error_generic": "Događaj nije moguće kreirati. Pokušajte ponovno."
     },
     "detail": {
       "private_badge": "Privatno",
@@ -4269,14 +4349,39 @@
       "participants": "Sudionici",
       "accept": "Prihvati",
       "decline": "Odbij",
+      "accept_this": "Prihvati ovu pojavu",
+      "decline_this": "Odbij ovu pojavu",
+      "accept_series": "Prihvati cijeli niz",
+      "decline_series": "Odbij cijeli niz",
       "delete": "Obriši",
       "delete_confirm_title": "Obrisati događaj?",
-      "delete_confirm_message": "Ova radnja se ne može poništiti."
+      "delete_confirm_message": "Ova radnja se ne može poništiti.",
+      "recurring": "Ponavljajući",
+      "reminders": "Podsjetnici",
+      "delete_single": "Obriši ovu pojavu",
+      "delete_series": "Obriši cijeli niz",
+      "delete_single_title": "Obrisati ovu pojavu?",
+      "delete_single_message": "Uklonit će se samo ova pojava. Ostale pojave u nizu ostaju."
     },
     "response": {
       "accepted": "Prihvaćeno",
       "declined": "Odbijeno",
       "pending": "Čeka odgovor"
+    },
+    "awaiting": {
+      "title": "Čekaju moj odgovor",
+      "empty": "Nema pozivnica koje čekaju odgovor.",
+      "accept": "Prihvati ovu pojavu",
+      "decline": "Odbij ovu pojavu",
+      "more": "+ još {{count}}"
+    },
+    "toolbar": {
+      "show_tasks": "Prikaži zadatke",
+      "hide_tasks": "Sakrij zadatke"
+    },
+    "task_pill": {
+      "lane": "Zadaci",
+      "overdue": "Kasni"
     }
   },
   "tasks": {
@@ -4299,20 +4404,107 @@
     "status": {
       "todo": "Za napraviti",
       "in_progress": "U tijeku",
-      "done": "Gotovo",
-      "cancelled": "Otkazano"
+      "done": "Gotovo"
+    },
+    "toolbar": {
+      "search_placeholder": "Pretraži zadatke",
+      "filter": "Filter",
+      "clear_filters": "Ukloni filtere",
+      "status": "Status",
+      "project": "Projekt",
+      "any_project": "Bilo koji projekt",
+      "assignees": "Dodijeljeni",
+      "sort": "Sortiraj",
+      "sort_due": "Po roku",
+      "sort_created": "Po datumu kreiranja",
+      "sort_title": "Po naslovu",
+      "group_by": "Grupiraj po",
+      "group_none": "Bez grupiranja",
+      "group_project": "Po projektu",
+      "group_status": "Po statusu",
+      "group_due": "Po roku",
+      "show_completed": "Prikaži gotove"
+    },
+    "group": {
+      "no_project": "Bez projekta",
+      "due_bucket": {
+        "overdue": "U kašnjenju",
+        "today": "Danas",
+        "tomorrow": "Sutra",
+        "this_week": "Ovaj tjedan",
+        "later": "Kasnije",
+        "no_due": "Bez roka"
+      }
+    },
+    "row": {
+      "cycle_status_hint": "Klikni za promjenu statusa",
+      "unread": "Nepročitane izmjene",
+      "overdue_prefix": "U kašnjenju,",
+      "delete": "Obriši"
     },
     "modal": {
       "new_title": "Novi zadatak",
+      "edit_title": "Uredi zadatak",
       "title_label": "Naslov",
       "description_label": "Opis",
+      "description_placeholder": "Napiši opis u Markdownu...",
+      "description_empty_preview": "Nema ništa za pregled",
+      "description_hint": "Podržava Markdown: **bold**, *italic*, liste, linkove, kod.",
+      "desc_edit": "Uredi",
+      "desc_preview": "Pregled",
       "due_date_label": "Rok (datum)",
       "due_time_label": "Vrijeme",
       "priority_label": "Prioritet",
-      "private_label": "Privatno (samo ja vidim)",
+      "status_label": "Status",
+      "project_label": "Projekt",
+      "project_placeholder": "Bez projekta",
+      "project_search_placeholder": "Pretraži projekte",
+      "reminders_label": "Podsjetnici",
+      "private_label": "Privatno",
+      "private_description": "Samo ti vidiš ovaj zadatak",
       "assign_label": "Dodijeli korisnicima",
+      "assign_placeholder": "Pretraži korisnike",
       "create_button": "Kreiraj zadatak",
-      "saving": "Spremanje..."
+      "save_button": "Spremi promjene",
+      "saving": "Spremanje...",
+      "discard_title": "Odbaciti promjene?",
+      "discard_message": "Imate nespremljene promjene. Zatvoriti bez spremanja?",
+      "discard_confirm": "Odbaci"
+    },
+    "reminders": {
+      "none": "Nema podsjetnika",
+      "custom_placeholder": "Minute",
+      "custom_add": "Dodaj",
+      "minutes_before_one": "{{count}} minutu prije",
+      "minutes_before_few": "{{count}} minute prije",
+      "minutes_before_other": "{{count}} minuta prije",
+      "hours_before_one": "{{count}} sat prije",
+      "hours_before_few": "{{count}} sata prije",
+      "hours_before_other": "{{count}} sati prije",
+      "days_before_one": "{{count}} dan prije",
+      "days_before_few": "{{count}} dana prije",
+      "days_before_other": "{{count}} dana prije",
+      "presets": {
+        "5_min": "5 min",
+        "15_min": "15 min",
+        "60_min": "1 sat",
+        "1440_min": "1 dan",
+        "2880_min": "2 dana"
+      }
+    },
+    "attachments": {
+      "label": "Privici",
+      "drop_hint": "Povuci datoteke ovdje ili klikni za prijenos",
+      "limits": "Do {{size}} MB po datoteci, ukupno {{count}} datoteka",
+      "size_limit": "Neke datoteke premašuju ograničenje od {{max}} MB i preskočene su",
+      "count_limit": "Dosegnuto ograničenje privitaka ({{max}} po zadatku)",
+      "uploading": "Prenosi se...",
+      "failed": "Prijenos nije uspio",
+      "none": "Još nema privitaka",
+      "create_first": "Spremi zadatak za dodavanje privitaka"
+    },
+    "mentions": {
+      "search_placeholder": "Pretraži korisnike za spominjanje"
     },
     "card": {
       "mark_done": "Označi kao gotovo",
@@ -4320,12 +4512,22 @@
       "delete": "Obriši"
     },
     "detail": {
-      "assigned_by": "Dodijelio: {{username}}",
+      "header": "Zadatak",
+      "assigned_by": "Kreirao {{username}}",
+      "completed_badge": "Završeno",
       "private_badge": "Privatno",
       "assignees": "Dodijeljeno",
+      "no_assignees": "Nema dodijeljenih",
+      "no_description": "Nema opisa",
+      "activity": "Aktivnost",
+      "no_activity": "Još nema aktivnosti",
+      "show_less": "Prikaži manje",
+      "show_all": "Prikaži sve ({{count}})",
+      "delete_task": "Obriši zadatak",
+      "unknown_user": "Nepoznati korisnik",
       "comments": "Komentari ({{count}})",
       "no_comments": "Još nema komentara. Budite prvi!",
-      "comment_placeholder": "Napiši komentar... (Ctrl+Enter za slanje)",
+      "comment_placeholder": "Napiši komentar — koristi @ za spominjanje, Ctrl+Enter za slanje",
       "send_comment": "Pošalji",
       "delete_comment": "Obriši",
       "delete_task_confirm_title": "Obrisati zadatak?",
@@ -4403,7 +4605,8 @@
     "land_plot": "Zemljišna čestica",
     "export": "Izvoz",
     "conversation": "Razgovor",
-    "calendar_event": "Događaj kalendara"
+    "calendar_event": "Događaj kalendara",
+    "task": "Zadatak"
   },
   "actions": {
     "auth.login": "Korisnik se prijavio",
@@ -4501,9 +4704,21 @@
     "conversation.create": "Razgovor kreiran",
     "conversation.delete": "Razgovor obrisan",
     "calendar_event.create": "Događaj kalendara kreiran",
+    "calendar_event.update": "Događaj kalendara ažuriran",
     "calendar_event.respond": "Odgovoreno na događaj",
     "calendar_event.delete": "Događaj kalendara obrisan",
-    "calendar_event.acknowledge_all": "Događaji označeni pregledanima"
+    "calendar_event.exception_create": "Pojava događaja izmijenjena",
+    "calendar_event.exception_delete": "Izmjena pojave uklonjena",
+    "calendar_event.acknowledge_all": "Događaji označeni pregledanima",
+    "task.create": "kreirao je zadatak",
+    "task.update": "ažurirao je zadatak",
+    "task.status_change": "promijenio je status",
+    "task.delete": "obrisao je zadatak",
+    "task.assign": "dodao je dodijeljene",
+    "task.unassign": "uklonio je dodijeljene",
+    "task.comment": "komentirao je",
+    "task.attachment_add": "dodao je privitak",
+    "task.attachment_remove": "uklonio je privitak"
   }
 }
 }

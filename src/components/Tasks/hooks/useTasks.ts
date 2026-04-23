@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import {
   acknowledgeAllTasks,
   createTask,
   deleteTask,
   fetchMyTasks,
+  setAssignees,
+  updateTask,
   updateTaskStatus,
 } from '../services/tasksService'
 import { dispatchTasksRead } from './useTasksNotifications'
-import type { NewTaskInput, Task } from '../../../types/tasks'
+import type { NewTaskInput, Task, TaskStatus, UpdateTaskInput } from '../../../types/tasks'
 
 export function useTasks() {
   const { user } = useAuth()
@@ -33,43 +35,55 @@ export function useTasks() {
     acknowledgeAllTasks(user.id).then(() => dispatchTasksRead())
   }, [user])
 
-  const { assigned, created, privateTasks } = useMemo(() => {
-    if (!user) return { assigned: [] as Task[], created: [] as Task[], privateTasks: [] as Task[] }
-    const assignedList: Task[] = []
-    const createdList: Task[] = []
-    const privateList: Task[] = []
-    tasks.forEach(t => {
-      if (t.is_private && t.created_by === user.id) privateList.push(t)
-      else if (t.created_by === user.id) createdList.push(t)
-      if (!t.is_private && t.assignees?.some(a => a.user_id === user.id)) assignedList.push(t)
-    })
-    return { assigned: assignedList, created: createdList, privateTasks: privateList }
-  }, [tasks, user])
-
   const create = useCallback(async (input: NewTaskInput) => {
     if (!user) return
-    await createTask(input, user.id)
+    await createTask(input, user.id, user.role)
     await load()
   }, [user, load])
 
-  const toggleStatus = useCallback(async (task: Task) => {
-    const next = task.status === 'done' ? 'todo' : 'done'
-    await updateTaskStatus(task.id, next)
-    await load()
-  }, [load])
+  const setStatus = useCallback(
+    async (task: Task, next: TaskStatus) => {
+      if (!user) return
+      await updateTaskStatus(task.id, next, user.id, user.role, task.title)
+      await load()
+    },
+    [user, load],
+  )
+
+  const toggleStatus = useCallback(
+    async (task: Task) => {
+      const next: TaskStatus = task.status === 'done' ? 'todo' : 'done'
+      await setStatus(task, next)
+    },
+    [setStatus],
+  )
 
   const remove = useCallback(async (task: Task) => {
-    await deleteTask(task.id)
+    if (!user) return
+    await deleteTask(task.id, user.id, user.role, task.title)
     await load()
-  }, [load])
+  }, [user, load])
+
+  const update = useCallback(
+    async (task: Task, patch: UpdateTaskInput, assigneeIds?: string[]) => {
+      if (!user) return
+      if (Object.keys(patch).length > 0) {
+        await updateTask(task.id, patch, user.id, user.role, task.title)
+      }
+      if (assigneeIds && !patch.is_private) {
+        await setAssignees(task.id, assigneeIds, user.id, user.role)
+      }
+      await load()
+    },
+    [user, load],
+  )
 
   return {
     tasks,
-    assigned,
-    created,
-    privateTasks,
     loading,
     create,
+    update,
+    setStatus,
     toggleStatus,
     remove,
     refresh: load,

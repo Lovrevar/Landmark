@@ -4227,9 +4227,42 @@
     "no_events_today": "No events",
     "no_upcoming": "Nothing planned",
     "no_events_day": "No events on this day",
+    "no_events_in_range": "No events in this range",
     "loading": "Loading...",
     "more_events": "+{{count}} more",
     "events_for_day": "{{count}} event(s)",
+    "view_switcher": {
+      "label": "Calendar view",
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "agenda": "Agenda"
+    },
+    "filter": {
+      "project_any": "Any project",
+      "participant_any": "Any participant",
+      "search_placeholder": "Search events...",
+      "clear": "Clear filters"
+    },
+    "mini_month": {
+      "prev": "Previous month",
+      "next": "Next month"
+    },
+    "next_up": {
+      "title": "Next up",
+      "empty": "Nothing upcoming",
+      "now": "Now",
+      "in_minutes": "In {{count}} min",
+      "in_hours": "In {{count}} h",
+      "in_days": "In {{count}} d",
+      "in_weeks": "In {{count}} wk"
+    },
+    "team_calendars": {
+      "title": "Team calendars",
+      "empty": "No teammates available",
+      "busy_summary": "Busy hours in view",
+      "hours": "{{count}} h"
+    },
     "day_names": {
       "mon": "Mon",
       "tue": "Tue",
@@ -4253,11 +4286,58 @@
       "date_label": "Date",
       "start_time_label": "From",
       "end_time_label": "To",
+      "end_before_start": "End time must be after start time",
       "type_label": "Type",
       "private_label": "Private (only I see)",
       "participants_label": "Participants",
+      "participant_placeholder": "Search and add participants...",
+      "participant_no_results": "No matching users",
+      "project_label": "Project",
+      "project_placeholder": "Link to a project (optional)",
+      "busy_label": "Busy",
+      "free_label": "Free",
+      "busy_description": "Shows on your calendar as busy to others",
+      "reminders": {
+        "label": "Reminders",
+        "add": "+ Add reminder",
+        "remove": "Remove",
+        "none": "No reminders"
+      },
+      "reminder": {
+        "at_time": "At time of event",
+        "minutes": "{{count}} min before",
+        "hours": "{{count}} h before",
+        "days": "{{count}} d before",
+        "weeks": "{{count}} wk before"
+      },
+      "recurrence": {
+        "label": "Repeat",
+        "preset": {
+          "none": "Does not repeat",
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly",
+          "yearly": "Yearly",
+          "custom": "Custom"
+        },
+        "every": "Every",
+        "on_days": "On days",
+        "freq": {
+          "daily": "day(s)",
+          "weekly": "week(s)",
+          "monthly": "month(s)"
+        },
+        "ends": "Ends",
+        "end": {
+          "never": "Never",
+          "on": "On date",
+          "after": "After"
+        },
+        "occurrences": "occurrence(s)"
+      },
       "create_button": "Create event",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "error_generic": "Couldn't create the event. Please try again."
     },
     "detail": {
       "private_badge": "Private",
@@ -4267,14 +4347,39 @@
       "participants": "Participants",
       "accept": "Accept",
       "decline": "Decline",
+      "accept_this": "Accept this",
+      "decline_this": "Decline this",
+      "accept_series": "Accept series",
+      "decline_series": "Decline series",
       "delete": "Delete",
       "delete_confirm_title": "Delete event?",
-      "delete_confirm_message": "This action cannot be undone."
+      "delete_confirm_message": "This action cannot be undone.",
+      "recurring": "Recurring",
+      "reminders": "Reminders",
+      "delete_single": "Delete this occurrence",
+      "delete_series": "Delete series",
+      "delete_single_title": "Delete this occurrence?",
+      "delete_single_message": "Only this occurrence will be removed. Other occurrences remain."
     },
     "response": {
       "accepted": "Accepted",
       "declined": "Declined",
       "pending": "Awaiting response"
+    },
+    "awaiting": {
+      "title": "Awaiting my response",
+      "empty": "No invitations awaiting a response.",
+      "accept": "Accept this occurrence",
+      "decline": "Decline this occurrence",
+      "more": "+ {{count}} more"
+    },
+    "toolbar": {
+      "show_tasks": "Show tasks",
+      "hide_tasks": "Hide tasks"
+    },
+    "task_pill": {
+      "lane": "Tasks",
+      "overdue": "Overdue"
     }
   },
   "tasks": {
@@ -4297,20 +4402,104 @@
     "status": {
       "todo": "To do",
       "in_progress": "In progress",
-      "done": "Done",
-      "cancelled": "Cancelled"
+      "done": "Done"
+    },
+    "toolbar": {
+      "search_placeholder": "Search tasks",
+      "filter": "Filter",
+      "clear_filters": "Clear filters",
+      "status": "Status",
+      "project": "Project",
+      "any_project": "Any project",
+      "assignees": "Assignees",
+      "sort": "Sort",
+      "sort_due": "By due date",
+      "sort_created": "By creation date",
+      "sort_title": "By title",
+      "group_by": "Group by",
+      "group_none": "No grouping",
+      "group_project": "By project",
+      "group_status": "By status",
+      "group_due": "By due date",
+      "show_completed": "Show completed"
+    },
+    "group": {
+      "no_project": "No project",
+      "due_bucket": {
+        "overdue": "Overdue",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "this_week": "This week",
+        "later": "Later",
+        "no_due": "No due date"
+      }
+    },
+    "row": {
+      "cycle_status_hint": "Click to change status",
+      "unread": "Unread updates",
+      "overdue_prefix": "Overdue,",
+      "delete": "Delete"
     },
     "modal": {
       "new_title": "New task",
+      "edit_title": "Edit task",
       "title_label": "Title",
       "description_label": "Description",
+      "description_placeholder": "Write a description in Markdown...",
+      "description_empty_preview": "Nothing to preview yet",
+      "description_hint": "Supports Markdown: **bold**, *italic*, lists, links, code.",
+      "desc_edit": "Edit",
+      "desc_preview": "Preview",
       "due_date_label": "Due (date)",
       "due_time_label": "Time",
       "priority_label": "Priority",
-      "private_label": "Private (only I see)",
+      "status_label": "Status",
+      "project_label": "Project",
+      "project_placeholder": "No project",
+      "project_search_placeholder": "Search projects",
+      "reminders_label": "Reminders",
+      "private_label": "Private",
+      "private_description": "Only you see this task",
       "assign_label": "Assign to users",
+      "assign_placeholder": "Search users",
       "create_button": "Create task",
-      "saving": "Saving..."
+      "save_button": "Save changes",
+      "saving": "Saving...",
+      "discard_title": "Discard changes?",
+      "discard_message": "You have unsaved changes. Close without saving?",
+      "discard_confirm": "Discard"
+    },
+    "reminders": {
+      "none": "No reminders set",
+      "custom_placeholder": "Minutes",
+      "custom_add": "Add",
+      "minutes_before_one": "{{count}} minute before",
+      "minutes_before_other": "{{count}} minutes before",
+      "hours_before_one": "{{count}} hour before",
+      "hours_before_other": "{{count}} hours before",
+      "days_before_one": "{{count}} day before",
+      "days_before_other": "{{count}} days before",
+      "presets": {
+        "5_min": "5 min",
+        "15_min": "15 min",
+        "60_min": "1 hour",
+        "1440_min": "1 day",
+        "2880_min": "2 days"
+      }
+    },
+    "attachments": {
+      "label": "Attachments",
+      "drop_hint": "Drag files here or click to upload",
+      "limits": "Up to {{size}} MB per file, {{count}} files total",
+      "size_limit": "Some files exceed the {{max}} MB limit and were skipped",
+      "count_limit": "Attachment limit reached ({{max}} per task)",
+      "uploading": "Uploading...",
+      "failed": "Upload failed",
+      "none": "No attachments yet",
+      "create_first": "Save the task to add attachments"
+    },
+    "mentions": {
+      "search_placeholder": "Search users to mention"
     },
     "card": {
       "mark_done": "Mark as done",
@@ -4318,12 +4507,22 @@
       "delete": "Delete"
     },
     "detail": {
-      "assigned_by": "Assigned by: {{username}}",
+      "header": "Task",
+      "assigned_by": "Created by {{username}}",
+      "completed_badge": "Completed",
       "private_badge": "Private",
       "assignees": "Assignees",
+      "no_assignees": "No assignees",
+      "no_description": "No description",
+      "activity": "Activity",
+      "no_activity": "No activity yet",
+      "show_less": "Show less",
+      "show_all": "Show all ({{count}})",
+      "delete_task": "Delete task",
+      "unknown_user": "Unknown user",
       "comments": "Comments ({{count}})",
       "no_comments": "No comments yet. Be the first!",
-      "comment_placeholder": "Write a comment... (Ctrl+Enter to send)",
+      "comment_placeholder": "Write a comment — use @ to mention, Ctrl+Enter to send",
       "send_comment": "Send",
       "delete_comment": "Delete",
       "delete_task_confirm_title": "Delete task?",
@@ -4401,7 +4600,8 @@
       "land_plot": "Land Plot",
       "export": "Export",
       "conversation": "Conversation",
-      "calendar_event": "Calendar Event"
+      "calendar_event": "Calendar Event",
+      "task": "Task"
     },
     "actions": {
       "auth.login": "User logged in",
@@ -4499,9 +4699,21 @@
       "conversation.create": "Conversation created",
       "conversation.delete": "Conversation deleted",
       "calendar_event.create": "Calendar event created",
+      "calendar_event.update": "Calendar event updated",
       "calendar_event.respond": "Responded to calendar event",
       "calendar_event.delete": "Calendar event deleted",
-      "calendar_event.acknowledge_all": "Calendar events acknowledged"
+      "calendar_event.exception_create": "Recurring event occurrence overridden",
+      "calendar_event.exception_delete": "Recurring event override removed",
+      "calendar_event.acknowledge_all": "Calendar events acknowledged",
+      "task.create": "created the task",
+      "task.update": "updated the task",
+      "task.status_change": "changed the status",
+      "task.delete": "deleted the task",
+      "task.assign": "added assignees",
+      "task.unassign": "removed assignees",
+      "task.comment": "commented",
+      "task.attachment_add": "added an attachment",
+      "task.attachment_remove": "removed an attachment"
     }
   }
 }

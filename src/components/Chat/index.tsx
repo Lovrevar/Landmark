@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useChat } from './hooks/useChat'
 import ConversationList from './ConversationList'

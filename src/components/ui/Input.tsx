@@ -26,7 +26,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
       }
     : props.onFocus
 
-  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} onFocus={handleFocus} />
+  const handleWheel = props.type === 'number'
+    ? (e: React.WheelEvent<HTMLInputElement>) => {
+        e.currentTarget.blur()
+        props.onWheel?.(e)
+      }
+    : props.onWheel
+
+  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} onFocus={handleFocus} onWheel={handleWheel} />
 })
 
 Input.displayName = 'Input'

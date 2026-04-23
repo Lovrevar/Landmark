@@ -19,8 +19,8 @@
 | **Core** | [CORE.md](./modules/CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./modules/ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
-| **Calendar** | [CALENDAR.md](./CALENDAR.md) | Personal/shared events, RSVP, month view, day detail |
-| **Tasks** | [TASKS.md](./TASKS.md) | Personal/assigned/private tasks, comments, status tracking |
+| **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
+| **Tasks** | [TASKS.md](./TASKS.md) | Tasks with 3-state status, projects, reminders, attachments, @mention comments, activity log |
 
 ---
 

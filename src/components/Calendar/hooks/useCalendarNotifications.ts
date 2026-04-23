@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
-import { getUnacknowledgedEventCount } from '../services/calendarService'
+import { fetchPendingCount } from '../services/calendarService'
 
 export const CALENDAR_READ_EVENT = 'calendar:marked-read'
 const POLL_INTERVAL_MS = 20_000
+const WINDOW_DAYS = 30
 
 export function dispatchCalendarRead() {
   window.dispatchEvent(new Event(CALENDAR_READ_EVENT))
@@ -22,7 +23,9 @@ export function useCalendarNotifications() {
   const refresh = useCallback(async () => {
     if (!user) return
     try {
-      const c = await getUnacknowledgedEventCount(user.id)
+      const now = new Date()
+      const to = new Date(now.getTime() + WINDOW_DAYS * 24 * 60 * 60 * 1000)
+      const c = await fetchPendingCount(user.id, now.toISOString(), to.toISOString())
       if (mountedRef.current) setUnreadCount(c)
     } catch {
       /* ignore */

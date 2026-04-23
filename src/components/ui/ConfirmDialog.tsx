@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import Button from './Button'
 
@@ -43,9 +44,9 @@ export default function ConfirmDialog({
 
   if (!show) return null
 
-  return (
+  const dialogContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
@@ -76,4 +77,6 @@ export default function ConfirmDialog({
       </div>
     </div>
   )
+
+  return createPortal(dialogContent, document.body)
 }

@@ -55,6 +55,7 @@ export const ACTION_CATEGORIES = [
   'export',
   'conversation',
   'calendar_event',
+  'task',
 ] as const
 
 export type ActionCategory = (typeof ACTION_CATEGORIES)[number]
@@ -94,4 +95,5 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   land_plot: '/retail-land-plots',
   conversation: '/chat',
   calendar_event: '/calendar',
+  task: '/tasks',
 }

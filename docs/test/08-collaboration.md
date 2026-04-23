@@ -11,13 +11,13 @@ _Route: `/calendar`. Global red badge sits on the calendar icon in the Layout he
 ### Month view & navigation
 
 ```
-open /calendar → current month grid renders (6 rows × 7 cols), today highlighted            ( )
-day-of-week headers are localized to active language (HR → "Pon, Uto, ..." ; EN → "Mon, Tue, ...")  ( )
-click "Next" → anchor advances one month, events re-fetch for new 3-month window            ( )
-click "Prev" → anchor moves back one month                                                  ( )
-click "Today" → grid jumps back to current month                                            ( )
-sidebar shows "Today's events" and "Upcoming" (next 5) sections                             ( )
-badge on header calendar icon clears on first visit (acknowledge_all runs on mount)         ( )
+open /calendar → current month grid renders (6 rows × 7 cols), today highlighted            (+)
+day-of-week headers are localized to active language (HR → "Pon, Uto, ..." ; EN → "Mon, Tue, ...")  (+)
+click "Next" → anchor advances one month, events re-fetch for new 3-month window            (+)
+click "Prev" → anchor moves back one month                                                  (+)
+click "Today" → grid jumps back to current month                                            (+)
+sidebar shows "Today's events" and "Upcoming" (next 5) sections                             (+)
+badge on header calendar icon clears on first visit (acknowledge_all runs on mount)         (+)
 ```
 
 ### Create event (NewEventModal)
@@ -25,26 +25,26 @@ badge on header calendar icon clears on first visit (acknowledge_all runs on mou
 _All fields default to sensible values: today's date, 09:00→10:00, type = meeting._
 
 ```
-create event with all fields filled (title, description, location, participants)           ( )
-create event with title empty → Create button stays disabled                                ( )
-create event with date cleared → Create button stays disabled                               ( )
-create event with whitespace-only title → Create button stays disabled (title.trim() check) ( )
-pick each event type in turn (meeting / personal / deadline / reminder) → colored pill updates   ( )
-toggle "Private" → participants picker disappears; on save event has a single self-participant ( )
-select 0 participants on a non-private event → saves with only creator auto-accepted        ( )
-select multiple participants → each gets a row with response='pending'                      ( )
-set end_time earlier than start_time → form still saves (no client-side guard; confirm DB accepts) ( )
-cancel → modal closes, no event created, list unchanged                                     ( )
-close via X / Esc / backdrop → same as cancel                                               ( )
+create event with all fields filled (title, description, location, participants)           (+)
+create event with title empty → Create button stays disabled                                (+)
+create event with date cleared → Create button stays disabled                               (+)
+create event with whitespace-only title → Create button stays disabled (title.trim() check) (+)
+pick each event type in turn (meeting / personal / deadline / reminder) → colored pill updates   (+)
+toggle "Private" → participants picker disappears; on save event has a single self-participant (+)
+select 0 participants on a non-private event → saves with only creator auto-accepted        (+)
+select multiple participants → each gets a row with response='pending'                      (+)
+set end_time earlier than start_time → form still saves (no client-side guard; confirm DB accepts) (+)
+cancel → modal closes, no event created, list unchanged                                     (+)
+close via X / Esc / backdrop → same as cancel                                               (+)
 ```
 
 ### Day detail & "+N more" overflow
 
 ```
-day with ≤3 events → all render inline in the cell                                          ( )
-day with 4+ events → shows first 3 plus "+N more" affordance                                ( )
-click "+N more" → DayEventsModal opens listing every event for that day                     ( )
-click an event inside DayEventsModal → EventDetailModal opens on top                        ( )
+day with ≤3 events → all render inline in the cell                                          (+)
+day with 4+ events → shows first 3 plus "+N more" affordance                                (+)
+click "+N more" → DayEventsModal opens listing every event for that day                     (+)
+click an event inside DayEventsModal → EventDetailModal opens on top                        (+)
 ```
 
 ### Event detail & RSVP (EventDetailModal)
@@ -141,61 +141,64 @@ conversation.create logged to activity log (medium); message sends NOT logged   
 
 ## Tasks
 
-_Route: `/tasks`. Three tabs: Assigned to me, Created by me, Private. Global red badge on Layout for unacknowledged `task_assignees.acknowledged_at IS NULL` rows. Mutations are intentionally NOT activity-logged._
+_Route: `/tasks`. Three tabs: Assigned to me, Created by me, Private. Global red badge for unacknowledged `task_assignees.acknowledged_at IS NULL` rows. Every mutation is activity-logged with `entity='task'` and action `task.<verb>`._
 
-### Create task (NewTaskModal)
+### Create task (TaskModal, create mode)
 
 ```
-create task with title only → saves with priority=normal, no due date, no assignees         ( )
+create task with title only → saves with status=todo, no due date, no assignees             ( )
 create task with title empty → Create button disabled                                       ( )
 create task with whitespace-only title → Create button disabled (title.trim() check)        ( )
-create task with description and due date/time → appears in list with due badge             ( )
-create task with only due_time and no due_date → saves (due_date nullable)                  ( )
-cycle each priority button (low / normal / high / urgent) → border highlights selected      ( )
+fill title, status=in_progress, project, due date/time, 1 assignee, markdown description → saves  ( )
 toggle Private → assignees picker hides; on save task has 1 self-assignee auto-acknowledged ( )
-create task and assign multiple users → each sees it in their "Assigned to me" tab          ( )
-create non-private task with zero assignees → saves (assignee_ids=[]) — creator still sees it in "Created by me" only  ( )
-cancel → modal closes, state resets on next open                                            ( )
+reminder chips: click each preset (5 / 15 / 60 / 1440 / 2880 min) → added to list, click again removes ( )
+reminder custom entry: type "45" + Add → "45 min before" chip appears                       ( )
+description tabs: switch to Preview → markdown renders (bold / list / code block); Edit → textarea back ( )
+attachments section is hidden in create mode (hint: "Save the task to add attachments")     ( )
+Ctrl+Enter in any field → submits the form                                                  ( )
+Esc with clean form → closes; Esc with dirty form → ConfirmDialog ("Discard changes?")      ( )
+activity_logs gains one row with action='task.create' and metadata.entity_name = title      ( )
 ```
 
-### Task list tabs & cards
+### Toolbar, tabs, and rows
 
 ```
-open /tasks → defaults to "Assigned to me" tab                                              ( )
-tab "Created by me" → shows tasks where creator = self                                      ( )
-tab "Private" → shows only private tasks created by self (lock icon on each card)           ( )
-TaskCard left border color matches priority (gray/blue/orange/red)                          ( )
-TaskCard shows up to 3 assignee avatars plus "+N" overflow for more                         ( )
-delete button only visible to the task creator on their own cards                           ( )
+default tab is "Assigned to me"; counts in tab badges match list length                     ( )
+"Created by me" tab → tasks where creator = self                                            ( )
+"Private" tab → only private tasks created by self (lock icon on each row)                  ( )
+search box (debounced 200 ms) matches title + description, case-insensitive                 ( )
+filter dropdown: Status / Project / Assignees; clearing restores full list                  ( )
+sort dropdown: Due date / Created / Title → list reorders immediately                       ( )
+group-by toggle: None / Project / Status / Due date → sections render with counts           ( )
+"Show completed" off → done rows hidden; on → reappear                                      ( )
+filter/sort/group/search state survives a page reload (localStorage per user)               ( )
+seed 150 tasks → virtualization kicks in (@tanstack/react-virtual); scrolling stays smooth  ( )
+TaskRow left accent turns red when due_date < now AND status != done (overdue indicator)    ( )
+TaskRow shows project tag, attachment icon+count (if any), unread-comment dot (if any)      ( )
+avatars: 3 overlapping circles + "+N" chip when > 3 assignees                               ( )
+status pill click cycles todo → in_progress → done → todo                                   ( )
 ```
 
-### Status transitions
+### Task detail drawer (TaskDetail)
 
 ```
-click status checkbox on a todo task → flips to 'done', completed_at set, card styling updates ( )
-click status checkbox on a done task → flips back to 'todo', completed_at cleared           ( )
-non-creator non-assignee cannot see someone else's private task (not in their list)         ( )
-```
-
-### Delete task
-
-```
-creator clicks delete → ConfirmDialog opens (pending-item pattern, not window.confirm)      ( )
-confirm → task removed, assignees + comments cascade                                        ( )
-cancel → task still in list                                                                 ( )
-non-creator (only assignee) does NOT see a delete button                                    ( )
-```
-
-### Task detail & comments (TaskDetailModal)
-
-```
-open a task → details, assignee chips, and threaded comments render                         ( )
-type comment and press Ctrl/Cmd+Enter → comment sends, appears at end of thread             ( )
-send whitespace-only comment → silently no-ops (service trims and skips empty)              ( )
-own comments render right-aligned, others left-aligned                                      ( )
-delete own comment → inline ConfirmDialog; confirm removes the row                          ( )
-try to delete another user's comment → delete button is not rendered                        ( )
-close modal and reopen → comments re-fetch (hook re-runs on taskId change)                  ( )
+click a row → drawer slides in from the right (portal)                                      ( )
+inline edit title → blur or Enter commits; activity_logs gains task.update row              ( )
+change status segmented → auto-saves; row reflects immediately (optimistic)                 ( )
+change project via SearchableSelect → saves; activity_logs row includes changed_fields      ( )
+assignee picker (non-private only): add/remove → task.assign / task.unassign logged         ( )
+description: Edit/Preview tabs mirror TaskModal; Preview renders markdown safely            ( )
+attachments: drag-drop a ≤25 MB file → appears in list with signed-url image thumb          ( )
+upload 11th file → rejected with "Maximum 10 attachments per task" toast                    ( )
+upload a 26 MB file → rejected with size-limit toast; nothing uploaded to storage           ( )
+delete attachment as uploader → removed; activity_logs gains task.attachment_remove         ( )
+delete attachment as creator (but not uploader) → allowed per RLS                           ( )
+Activity tab: last 3 entries shown; "Show all" expands to full list ordered newest-first    ( )
+Comments tab: composer with MentionPicker; type "@" → user popover, arrow-key navigation    ( )
+select a user via Enter/click → token "@[username](uuid)" inserted at caret                 ( )
+submit comment with Ctrl+Enter → appears in thread; mentions render as blue chips           ( )
+delete own comment → inline ConfirmDialog removes row; other users' comments show no delete ( )
+Delete button bottom-left → ConfirmDialog (danger); confirm → cascade delete + drawer close ( )
 ```
 
 ### Global unread badge
@@ -203,6 +206,92 @@ close modal and reopen → comments re-fetch (hook re-runs on taskId change)    
 ```
 user A creates a task assigning user B → within 20 s B's header badge increments            ( )
 B opens /tasks → badge clears on mount (acknowledgeAllTasks + dispatchTasksRead)            ( )
-the task itself stays in B's list until completed or deleted (badge ≠ visibility)           ( )
+task stays in B's list until completed or deleted (badge ≠ visibility)                      ( )
 A deletes the task before B sees it → B's badge decrements on next 20 s poll                ( )
+```
+
+### Realtime
+
+```
+two sessions same user → A edits title in drawer → B's list row updates within ~1 s         ( )
+A adds a comment → B's unread-comment dot appears on the row                                ( )
+A uploads an attachment → B's attachment icon + count updates                               ( )
+```
+
+### Reminder delivery (requires dispatch-task-reminders edge fn + cron)
+
+```
+set reminder_offsets=[15] on a task due in ~16 min → function fires once near T-15 min      ( )
+re-run dispatcher manually → no duplicate send (task_reminder_sends idempotency table)      ( )
+update due_date forward → earlier send row still present; new send fires at new T-offset    ( )
+```
+
+---
+
+## Calendar tasks overlay
+
+_Depends on the Tasks module; toggled per user on the Calendar toolbar._
+
+### Show Tasks toggle
+
+```
+default: toggle off; no task pills visible anywhere in calendar                             ( )
+click "Show tasks" on toolbar (right, next to ViewSwitcher) → tasks appear in the view       ( )
+refresh page → toggle state persists (useCalendarPreferences.showTasks, localStorage)       ( )
+filter bar project filter: selecting a project prunes both events AND tasks                 ( )
+filter bar participant filter: prunes both events AND tasks by assignee/creator             ( )
+event-type chips do NOT affect tasks (tasks have no event_type)                             ( )
+search input narrows tasks by title + description as well                                   ( )
+```
+
+### MonthView rendering
+
+```
+task pills render BELOW the up-to-3 event segments in each day cell                         ( )
+task pills are thinner (h-4) and use Square/CheckSquare icon instead of left accent bar     ( )
+overdue task → red left accent; status=done → line-through + dim                            ( )
+cell with 4+ events AND 4+ tasks → "+N more" count sums the overflows                       ( )
+click the checkbox icon → status flips todo ↔ done (optimistic, refreshes from server)      ( )
+click the title → TaskDetail drawer opens (NOT the event modal)                             ( )
+```
+
+### WeekView & DayView rendering
+
+```
+all-day "Tasks" lane appears above the hour grid (only when tasks exist in range)           ( )
+tasks never render inside hour slots (a due date is a deadline, not a time block)           ( )
+lane label is localized ("Tasks" / "Zadaci")                                                ( )
+task pill time prefix shown when task has a due_time                                        ( )
+```
+
+### AgendaView rendering
+
+```
+tasks interleave with events inside each day group, sorted by due_at / start                ( )
+task rows use the shared TaskPill (checkbox + title) not the event card layout              ( )
+clicking a task → TaskDetail drawer; clicking an event → EventDetailModal                   ( )
+```
+
+### NextUp sidebar
+
+```
+toggle off → NextUp shows only events                                                       ( )
+toggle on → tasks due within the next 24 h are merged into the list, sorted by time         ( )
+overdue tasks from earlier today still appear (filter: due_at > now - 5 min)                ( )
+```
+
+### DayEventsModal ("+N more" overflow)
+
+```
+open day overflow modal → tasks list first (above events) with a divider                    ( )
+click a task pill inside the modal → modal closes, TaskDetail drawer opens                  ( )
+click an event → modal closes, EventDetailModal opens (existing behavior unchanged)         ( )
+```
+
+### Cross-cutting
+
+```
+realtime: user A creates a task with a due_date in the visible month → B's calendar pill appears within ~1 s  ( )
+toggling a pill checkbox → activity_logs gains task.status_change row                       ( )
+switching view (month → week → agenda) → tasks re-render in the view-specific layout        ( )
 ```
