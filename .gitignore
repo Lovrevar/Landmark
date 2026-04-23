@@ -34,3 +34,6 @@ playwright/.cache/
 
 # Graphify output
 graphify-out/
+
+# Typescript cache
+*.tsbuildinfo
