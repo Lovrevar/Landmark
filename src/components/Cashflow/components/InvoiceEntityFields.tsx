@@ -41,6 +41,7 @@ interface InvoiceEntityFieldsProps {
   banks: Bank[]
   projects: Project[]
   refunds: Refund[]
+  fieldErrors?: Record<string, string>
   onFormChange: (data: InvoiceFormData) => void
   getCustomerProjects: (customerId: string) => Project[]
   getCustomerApartmentsByProject: (customerId: string, projectId: string) => Apartment[]
@@ -58,6 +59,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
   banks,
   projects,
   refunds,
+  fieldErrors,
   onFormChange,
   getCustomerProjects,
   getCustomerApartmentsByProject,
@@ -66,11 +68,12 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
   getMilestonesByContract
 }) => {
   const { t } = useTranslation()
+  const errors = fieldErrors || {}
 
   return (
     <>
       {formData.invoice_type === 'INCOMING_SUPPLIER' && (
-        <FormField label={t('invoice_entity.supplier_label')} required>
+        <FormField label={t('invoice_entity.supplier_label')} required error={errors.supplier_id}>
           <Select
             value={formData.supplier_id}
             onChange={(e) => {
@@ -110,7 +113,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {(formData.invoice_type === 'INCOMING_OFFICE' || formData.invoice_type === 'OUTGOING_OFFICE') && (
-        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? t('invoice_entity.office_buyer_label') : t('invoice_entity.office_supplier_label')} required>
+        <FormField label={formData.invoice_type === 'OUTGOING_OFFICE' ? t('invoice_entity.office_buyer_label') : t('invoice_entity.office_supplier_label')} required error={errors.office_supplier_id}>
           <Select
             value={formData.office_supplier_id}
             onChange={(e) => onFormChange({ ...formData, office_supplier_id: e.target.value })}
@@ -138,7 +141,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'INCOMING_INVESTMENT' && (
-        <FormField label={t('invoice_entity.bank_label')}>
+        <FormField label={t('invoice_entity.bank_label')} required error={errors.bank_id}>
           <Select
             value={formData.bank_id}
             onChange={(e) => onFormChange({ ...formData, bank_id: e.target.value })}
@@ -152,7 +155,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SUPPLIER' && (
-        <FormField label={t('invoice_entity.buyer_label')} required>
+        <FormField label={t('invoice_entity.buyer_label')} required error={errors.supplier_id}>
           <Select
             value={formData.supplier_id}
             onChange={(e) => onFormChange({ ...formData, supplier_id: e.target.value })}
@@ -166,7 +169,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
       )}
 
       {formData.invoice_type === 'OUTGOING_SALES' && (
-        <FormField label={t('invoice_entity.buyer_label')} required>
+        <FormField label={t('invoice_entity.buyer_label')} required error={errors.customer_id}>
           <Select
             value={formData.customer_id}
             onChange={(e) => {
@@ -222,6 +225,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
           <FormField
             label={formData.project_id ? t('invoice_entity.contract_label') : t('invoice_entity.contract_optional_label')}
             required={!!formData.project_id}
+            error={errors.contract_id}
           >
             <Select
               value={formData.contract_id}

@@ -28,9 +28,16 @@ import {
   ChevronRight,
   CheckCircle,
   Sun,
-  Moon
+  Moon,
+  ScrollText,
+  MessageCircle,
+  CheckSquare
 } from 'lucide-react'
+import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
+import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
+import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
+import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 
 interface LayoutProps {
   children: ReactNode
@@ -50,6 +57,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [cashflowUnlocked, setCashflowUnlocked] = useState(() => sessionStorage.getItem('cashflow_unlocked') === 'true')
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const { unreadCount } = useChatNotifications()
+  const { unreadCount: taskUnread } = useTasksNotifications()
+  const { unreadCount: eventUnread } = useCalendarNotifications()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -62,6 +72,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showProfileDropdown])
+
+  useEffect(() => {
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+      setPendingProfile('Cashflow')
+      setShowPasswordModal(true)
+    }
+  }, [currentProfile, cashflowUnlocked])
 
   const getMenuItems = () => {
     if (user?.role === 'Supervision') {
@@ -78,7 +95,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
         { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
-        { name: t('nav.reports'), icon: FileText, path: '/general-reports' }
+        { name: t('nav.reports'), icon: FileText, path: '/general-reports' },
+        ...(canViewActivityLog(user) ? [{ name: t('nav.activity_log'), icon: ScrollText, path: '/activity-log' }] : []),
       ],
       Supervision: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
@@ -166,11 +184,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   const handlePasswordCancel = () => {
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+      setCurrentProfile('General')
+      navigate('/')
+    }
     setShowPasswordModal(false)
     setPassword('')
     setPasswordError('')
     setPendingProfile(null)
   }
+
+  useEffect(() => {
+    if (!showPasswordModal) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault()
+        handlePasswordCancel()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [showPasswordModal])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -211,6 +245,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   )}
                 </div>
               )}
+              <button
+                onClick={() => navigate('/chat')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/chat'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Chat"
+              >
+                <MessageCircle className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate('/tasks')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/tasks'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Zadaci"
+              >
+                <CheckSquare className="w-5 h-5" />
+                {taskUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {taskUnread > 99 ? '99+' : taskUnread}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate('/calendar')}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname === '/calendar'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title="Kalendar"
+              >
+                <Calendar className="w-5 h-5" />
+                {eventUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white dark:ring-gray-800">
+                    {eventUnread > 99 ? '99+' : eventUnread}
+                  </span>
+                )}
+              </button>
               <LanguageSwitcher />
               <button
                 onClick={toggleTheme}
@@ -302,7 +384,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit}>
+            <form onSubmit={handlePasswordSubmit} noValidate>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('auth.password')}
@@ -316,15 +398,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                   placeholder={t('profiles.enter_password')}
                   autoFocus
+                  aria-invalid={!!passwordError}
+                  className={passwordError ? 'border-red-500 focus:ring-red-500' : ''}
                 />
+                {passwordError && (
+                  <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                )}
               </div>
 
-              {passwordError && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800 dark:text-red-400">{passwordError}</p>
-                </div>
-              )}
 
               <div className="flex space-x-3">
                 <button

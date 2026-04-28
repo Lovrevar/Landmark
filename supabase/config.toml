@@ -1,0 +1,15 @@
+# Supabase project configuration.
+# Edge Function schedules are declared here; the Supabase CLI reads this file
+# when running `supabase functions deploy`.
+
+project_id = "cognilion"
+
+# ----------------------------------------------------------------------------
+# Edge Functions
+# ----------------------------------------------------------------------------
+
+[functions.dispatch-calendar-reminders]
+# Fires every minute. The function itself is idempotent — duplicate ticks are
+# rejected by the calendar_reminder_sends unique constraint.
+schedule = "* * * * *"
+verify_jwt = false

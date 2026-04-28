@@ -1,4 +1,5 @@
 import { supabase, ProjectPhase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { PhaseFormInput } from '../types'
 
 export const fetchAllProjects = async () => {
@@ -190,6 +191,8 @@ export const createPhases = async (projectId: string, phases: PhaseFormInput[]) 
     .insert(phasesToInsert)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.create', entity: 'phase', projectId, metadata: { severity: 'medium', count: phases.length } })
 }
 
 export const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
@@ -262,6 +265,12 @@ export const updatePhase = async (
     status?: 'planning' | 'active' | 'completed' | 'on_hold'
   }
 ) => {
+  const { data: phaseRow } = await supabase
+    .from('project_phases')
+    .select('project_id')
+    .eq('id', phaseId)
+    .maybeSingle()
+
   const { error } = await supabase
     .from('project_phases')
     .update({
@@ -274,15 +283,25 @@ export const updatePhase = async (
     .eq('id', phaseId)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.update', entity: 'phase', entityId: phaseId, projectId: phaseRow?.project_id ?? null, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
 
 export const deletePhase = async (phaseId: string) => {
+  const { data: phaseRow } = await supabase
+    .from('project_phases')
+    .select('project_id')
+    .eq('id', phaseId)
+    .maybeSingle()
+
   const { error } = await supabase
     .from('project_phases')
     .delete()
     .eq('id', phaseId)
 
   if (error) throw error
+
+  logActivity({ action: 'phase.delete', entity: 'phase', entityId: phaseId, projectId: phaseRow?.project_id ?? null, metadata: { severity: 'high' } })
 }
 
 export const resequencePhases = async (phases: ProjectPhase[]) => {
@@ -300,11 +319,15 @@ export const createSubcontractor = async (data: {
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
 }) => {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('subcontractors')
     .insert(data)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: data.name } })
 }
 
 export const createSubcontractorWithReturn = async (data: {
@@ -320,6 +343,8 @@ export const createSubcontractorWithReturn = async (data: {
     .single()
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: newSubcontractor.id, metadata: { severity: 'medium', entity_name: data.name } })
 
   return newSubcontractor
 }
@@ -367,7 +392,7 @@ export const updateSubcontractor = async (
   // First, get the contract to find the subcontractor
   const { data: contract, error: contractError } = await supabase
     .from('contracts')
-    .select('subcontractor_id, phase_id')
+    .select('subcontractor_id, phase_id, project_id')
     .eq('id', contractId)
     .single()
 
@@ -455,15 +480,25 @@ export const updateSubcontractor = async (
     }
     await recalculatePhaseBudget(updates.phase_id)
   }
+
+  logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: contract.subcontractor_id, projectId: contract.project_id ?? null, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
 
 export const deleteSubcontractor = async (contractId: string) => {
+  const { data: contractRow } = await supabase
+    .from('contracts')
+    .select('project_id')
+    .eq('id', contractId)
+    .maybeSingle()
+
   const { error } = await supabase
     .from('contracts')
     .delete()
     .eq('id', contractId)
 
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.delete', entity: 'subcontractor', entityId: contractId, projectId: contractRow?.project_id ?? null, metadata: { severity: 'high' } })
 }
 
 export const getSubcontractorDetails = async (contractId: string) => {
@@ -724,6 +759,14 @@ export const createMilestone = async (data: {
 
   if (error) throw error
 
+  const { data: contractRow } = await supabase
+    .from('contracts')
+    .select('project_id')
+    .eq('id', data.contract_id)
+    .maybeSingle()
+
+  logActivity({ action: 'contract_milestone.create', entity: 'milestone', entityId: newMilestone.id, projectId: contractRow?.project_id ?? null, metadata: { severity: 'low', entity_name: data.milestone_name } })
+
   return newMilestone
 }
 
@@ -742,6 +785,15 @@ export const updateMilestone = async (
     .eq('id', milestoneId)
 
   if (error) throw error
+
+  const { data: milestoneRow } = await supabase
+    .from('subcontractor_milestones')
+    .select('contract:contracts!inner(project_id)')
+    .eq('id', milestoneId)
+    .maybeSingle()
+  const projectId = (milestoneRow?.contract as unknown as { project_id: string } | null)?.project_id ?? null
+
+  logActivity({ action: 'contract_milestone.update', entity: 'milestone', entityId: milestoneId, projectId, metadata: { severity: 'low', changed_fields: Object.keys(updates) } })
 }
 
 export const updateMilestoneStatus = async (
@@ -763,12 +815,21 @@ export const updateMilestoneStatus = async (
 }
 
 export const deleteMilestone = async (milestoneId: string) => {
+  const { data: milestoneRow } = await supabase
+    .from('subcontractor_milestones')
+    .select('contract:contracts!inner(project_id)')
+    .eq('id', milestoneId)
+    .maybeSingle()
+  const projectId = (milestoneRow?.contract as unknown as { project_id: string } | null)?.project_id ?? null
+
   const { error } = await supabase
     .from('subcontractor_milestones')
     .delete()
     .eq('id', milestoneId)
 
   if (error) throw error
+
+  logActivity({ action: 'contract_milestone.delete', entity: 'milestone', entityId: milestoneId, projectId, metadata: { severity: 'medium' } })
 }
 
 export const validateMilestonePercentagesForContract = async (
@@ -987,6 +1048,18 @@ export const uploadSubcontractorDocuments = async (subcontractorId: string, cont
     results.push({ filePath, fileName: file.name })
   }
 
+  let projectId: string | null = null
+  if (contractId) {
+    const { data: contractRow } = await supabase
+      .from('contracts')
+      .select('project_id')
+      .eq('id', contractId)
+      .maybeSingle()
+    projectId = contractRow?.project_id ?? null
+  }
+
+  logActivity({ action: 'document.upload', entity: 'document', projectId, metadata: { severity: 'medium', count: files.length, subcontractor_id: subcontractorId } })
+
   return results
 }
 
@@ -1013,6 +1086,13 @@ export const fetchDocumentsByContract = async (contractId: string) => {
 }
 
 export const deleteSubcontractorDocument = async (documentId: string, filePath: string) => {
+  const { data: docRow } = await supabase
+    .from('subcontractor_documents')
+    .select('contract:contracts(project_id)')
+    .eq('id', documentId)
+    .maybeSingle()
+  const projectId = (docRow?.contract as unknown as { project_id: string } | null)?.project_id ?? null
+
   const { error: storageError } = await supabase.storage
     .from('contract-documents')
     .remove([filePath])
@@ -1025,6 +1105,8 @@ export const deleteSubcontractorDocument = async (documentId: string, filePath: 
     .eq('id', documentId)
 
   if (dbError) throw dbError
+
+  logActivity({ action: 'document.delete', entity: 'document', entityId: documentId, projectId, metadata: { severity: 'medium' } })
 }
 
 export const getContractDocumentSignedUrl = async (filePath: string) => {

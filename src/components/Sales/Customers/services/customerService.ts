@@ -1,4 +1,5 @@
 import { supabase, Customer } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
 
 export const customerService = {
@@ -154,11 +155,15 @@ export const customerService = {
   },
 
   async createCustomer(customerData: Partial<Customer>): Promise<void> {
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from('customers')
       .insert([customerData])
+      .select('id')
+      .maybeSingle()
 
     if (error) throw error
+
+    logActivity({ action: 'customer.create', entity: 'customer', entityId: inserted?.id ?? null, metadata: { severity: 'low', entity_name: `${customerData.name || ''} ${customerData.surname || ''}`.trim() } })
   },
 
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<void> {
@@ -168,6 +173,8 @@ export const customerService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'customer.update', entity: 'customer', entityId: id, metadata: { severity: 'low', changed_fields: Object.keys(customerData) } })
   },
 
   async deleteCustomer(id: string): Promise<void> {
@@ -177,6 +184,8 @@ export const customerService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'customer.delete', entity: 'customer', entityId: id, metadata: { severity: 'medium' } })
   },
 
   async updateLastContact(customerId: string): Promise<void> {

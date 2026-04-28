@@ -35,6 +35,10 @@ export const isDirectorRole = (user: User | null): boolean => {
   return user.role === 'Director'
 }
 
+export const canViewActivityLog = (user: User | null): boolean => {
+  return isDirectorRole(user)
+}
+
 export const getAccessibleProjectIds = (user: User | null): string[] => {
   if (!user) return []
 

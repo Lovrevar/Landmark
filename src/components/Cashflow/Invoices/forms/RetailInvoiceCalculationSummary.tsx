@@ -24,7 +24,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
   }
 
   return (
-    <div className="col-span-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
+    <div className="col-span-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2 text-gray-900 dark:text-gray-100">
       <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t('invoices.form.vat_preview')}</div>
 
       {base_amount_1 > 0 && (

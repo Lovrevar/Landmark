@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 export interface AvailableUnit {
   id: string
@@ -82,5 +83,12 @@ export async function saveUnitLinks(
       .from('apartment_repositories')
       .insert(storageLinks)
     if (storageError) throw storageError
+  }
+
+  if (garageIds.length > 0) {
+    logActivity({ action: 'apartment.link_garage', entity: 'apartment', entityId: apartmentId, metadata: { severity: 'low', count: garageIds.length } })
+  }
+  if (storageIds.length > 0) {
+    logActivity({ action: 'apartment.link_repository', entity: 'apartment', entityId: apartmentId, metadata: { severity: 'low', count: storageIds.length } })
   }
 }

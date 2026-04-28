@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal, Form } from '../../../ui'
+import { Button, Modal, Form, Input } from '../../../ui'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormData'
 import { createLandPurchaseInvoices, LandPurchaseFormData } from '../services/landPurchaseService'
+import { checkDuplicateInvoiceNumber, isInvoiceNumberDuplicateError } from '../services/invoiceValidation'
 import { useToast } from '../../../../contexts/ToastContext'
 
 interface LandPurchaseFormModalProps {
@@ -110,14 +111,45 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     if (!supplier_id) errors.supplier_id = t('invoices.land_purchase.error_supplier')
     if (!selectedContract) errors.contract_id = t('invoices.land_purchase.error_contract')
     if (!invoice_name.trim()) errors.invoice_name = t('invoices.land_purchase.error_invoice_name')
+
+    if (selectedContract) {
+      const totalAmount = deposit_amount + remaining_amount
+      if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
+        const mismatchMessage = `${t('invoices.land_purchase.amount_mismatch')} ${selectedContract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €`
+        errors.deposit_amount = mismatchMessage
+        errors.remaining_amount = mismatchMessage
+      }
+    }
+
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
     setLoading(true)
 
     try {
-      const totalAmount = deposit_amount + remaining_amount
-      if (Math.abs(totalAmount - selectedContract!.base_amount) > 0.01) {
+      const counterpartyColumn = projectType === 'retail' ? 'retail_supplier_id' : 'supplier_id'
+      const depositNumber = `${invoice_name}-Kapara`
+      const remainingNumber = `${invoice_name}-Preostalo`
+
+      const [depositDup, remainingDup] = await Promise.all([
+        deposit_amount > 0 ? checkDuplicateInvoiceNumber({
+          companyId: company_id,
+          counterpartyColumn,
+          counterpartyId: supplier_id,
+          invoiceNumber: depositNumber,
+          issueDate: selectedContract!.contract_date,
+        }) : Promise.resolve(false),
+        remaining_amount > 0 ? checkDuplicateInvoiceNumber({
+          companyId: company_id,
+          counterpartyColumn,
+          counterpartyId: supplier_id,
+          invoiceNumber: remainingNumber,
+          issueDate: selectedContract!.contract_date,
+        }) : Promise.resolve(false),
+      ])
+
+      if (depositDup || remainingDup) {
+        setFieldErrors({ invoice_name: t('invoices.form.error_invoice_number_duplicate') })
         setLoading(false)
         return
       }
@@ -127,7 +159,11 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       handleClose()
     } catch (error) {
       console.error('Error creating land purchase invoices:', error)
-      toast.error(t('invoices.land_purchase.error_create'))
+      if (isInvoiceNumberDuplicateError(error)) {
+        setFieldErrors({ invoice_name: t('invoices.form.error_invoice_number_duplicate') })
+      } else {
+        toast.error(t('invoices.land_purchase.error_create'))
+      }
     } finally {
       setLoading(false)
     }
@@ -355,6 +391,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                     value={formData.deposit_amount}
                     onChange={(value) => setFormData({ ...formData, deposit_amount: value })}
                   />
+                  {fieldErrors.deposit_amount && <p className="text-xs text-red-600 mt-1">{fieldErrors.deposit_amount}</p>}
                 </div>
 
                 <div>
@@ -380,6 +417,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                     value={formData.remaining_amount}
                     onChange={(value) => setFormData({ ...formData, remaining_amount: value })}
                   />
+                  {fieldErrors.remaining_amount && <p className="text-xs text-red-600 mt-1">{fieldErrors.remaining_amount}</p>}
                 </div>
 
                 <div>

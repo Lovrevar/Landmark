@@ -59,6 +59,7 @@ interface InvoiceFormModalProps {
   refunds: Refund[]
   invoiceCategories: { id: string; name: string }[]
   customerApartments: Apartment[]
+  fieldErrors?: Record<string, string>
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
   onFormChange: (data: InvoiceModalFormData) => void
@@ -85,6 +86,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
   refunds,
   invoiceCategories,
   customerApartments,
+  fieldErrors,
   onClose,
   onSubmit,
   onFormChange,
@@ -119,6 +121,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
             refunds={refunds}
             invoiceCategories={invoiceCategories}
             customerApartments={customerApartments}
+            fieldErrors={fieldErrors}
             onFormChange={onFormChange}
             getCustomerProjects={getCustomerProjects}
             getCustomerApartmentsByProject={getCustomerApartmentsByProject}

@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
 import type { RetailLandPlot, RetailCustomer, RetailSale } from '../../../../types/retail'
 
@@ -53,15 +54,21 @@ export async function upsertRetailSale(payload: RetailSalePayload, id?: string):
   if (id) {
     const { error } = await supabase.from('retail_sales').update(payload).eq('id', id)
     if (error) throw error
+
+    logActivity({ action: 'retail_sale.create', entity: 'retail_sale', entityId: id, metadata: { severity: 'high', sale_area_m2: payload.sale_area_m2 } })
   } else {
-    const { error } = await supabase.from('retail_sales').insert([payload])
+    const { data: inserted, error } = await supabase.from('retail_sales').insert([payload]).select('id').maybeSingle()
     if (error) throw error
+
+    logActivity({ action: 'retail_sale.create', entity: 'retail_sale', entityId: inserted?.id ?? null, metadata: { severity: 'high', sale_area_m2: payload.sale_area_m2 } })
   }
 }
 
 export async function deleteRetailSale(id: string): Promise<void> {
   const { error } = await supabase.from('retail_sales').delete().eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'retail_sale.delete', entity: 'retail_sale', entityId: id, metadata: { severity: 'high' } })
 }
 
 export async function recordRetailSalePayment(

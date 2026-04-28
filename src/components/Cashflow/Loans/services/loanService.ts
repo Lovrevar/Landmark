@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { CompanyLoan, Company, BankAccount } from '../types'
 
 export const fetchLoans = async () => {
@@ -48,8 +49,13 @@ export const createLoan = async (loanData: {
   const { data, error } = await supabase
     .from('company_loans')
     .insert(loanData)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({ action: 'loan.create', entity: 'loan', entityId: data?.id ?? null, metadata: { severity: 'high', amount: loanData.amount } })
+
   return data
 }
 
@@ -60,4 +66,6 @@ export const deleteLoan = async (loanId: string) => {
     .eq('id', loanId)
 
   if (error) throw error
+
+  logActivity({ action: 'loan.delete', entity: 'loan', entityId: loanId, metadata: { severity: 'high' } })
 }

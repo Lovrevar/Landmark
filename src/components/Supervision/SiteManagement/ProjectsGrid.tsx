@@ -10,9 +10,10 @@ interface ProjectsGridProps {
   onSelectProject: OnSelectProjectCallback
   onRefresh?: () => void
   isRefreshing?: boolean
+  emptyStateVariant?: 'no_projects' | 'no_assignments'
 }
 
-export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false }) => {
+export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false, emptyStateVariant = 'no_projects' }) => {
   const { t } = useTranslation()
   return (
     <div>
@@ -152,8 +153,16 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
       {projects.length === 0 && (
         <EmptyState
           icon={Building2}
-          title={t('supervision.site_management.projects_grid.no_projects')}
-          description={t('supervision.site_management.projects_grid.no_projects_desc')}
+          title={t(
+            emptyStateVariant === 'no_assignments'
+              ? 'supervision.site_management.projects_grid.no_assignments_title'
+              : 'supervision.site_management.projects_grid.no_projects'
+          )}
+          description={t(
+            emptyStateVariant === 'no_assignments'
+              ? 'supervision.site_management.projects_grid.no_assignments_hint'
+              : 'supervision.site_management.projects_grid.no_projects_desc'
+          )}
         />
       )}
     </div>

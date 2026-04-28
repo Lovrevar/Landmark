@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 interface ApartmentRowData {
   building_id: string
@@ -131,6 +132,8 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
     await supabase.from('apartment_repositories').upsert({ apartment_id: apartmentId, repository_id: storageId }, { onConflict: 'apartment_id,repository_id' })
     storageCreated = true
   }
+
+  logActivity({ action: 'apartment.import_excel', entity: 'apartment', entityId: apartmentId, projectId, metadata: { severity: 'high', entity_name: row.number, garage_created: garageCreated, storage_created: storageCreated } })
 
   return { garageCreated, storageCreated }
 }

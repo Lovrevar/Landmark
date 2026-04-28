@@ -43,6 +43,10 @@ import RetailInvoicesManagement from './components/Retail/Invoices/index'
 import TICManagement from './components/Funding/TIC/index'
 import CreditsManagement from './components/Funding/Investments/index'
 import BudgetControl from './components/General/BudgetControl/index'
+import ActivityLog from './components/General/ActivityLog/index'
+import ChatPage from './components/Chat'
+import TasksPage from './components/Tasks'
+import CalendarPage from './components/Calendar'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -65,11 +69,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <Layout>{children}</Layout>
 }
 
-// Guards Cashflow routes — redirects to home if the Cashflow profile has not been unlocked
-// (unlocked flag is set by Layout after correct password entry)
+// Guards Cashflow routes — requires both the Cashflow password unlock AND a role
+// of Director or Accounting. The password alone is not sufficient.
 const CashflowRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth()
   const unlocked = sessionStorage.getItem('cashflow_unlocked') === 'true'
-  if (!unlocked) {
+  const roleAllowed = user?.role === 'Director' || user?.role === 'Accounting'
+  if (!unlocked || !roleAllowed) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>
@@ -406,6 +412,38 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <RetailReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/activity-log"
+          element={
+            <ProtectedRoute>
+              <ActivityLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <CalendarPage />
             </ProtectedRoute>
           }
         />

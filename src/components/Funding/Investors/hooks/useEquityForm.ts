@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { INITIAL_EQUITY_FORM, type EquityFormData } from '../types'
 import { format } from 'date-fns'
 import { useToast } from '../../../../contexts/ToastContext'
@@ -41,6 +42,8 @@ export function useEquityForm(onSaved: () => Promise<void>) {
         })
 
       if (error) throw error
+
+      logActivity({ action: 'equity_investment.create', entity: 'equity_investment', metadata: { severity: 'high', amount: newEquity.amount } })
 
       setShowEquityForm(false)
       setNewEquity({ ...INITIAL_EQUITY_FORM })

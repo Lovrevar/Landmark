@@ -27,10 +27,10 @@ const AccountingCustomers: React.FC = () => {
       />
 
       <StatGrid columns={4}>
-        <StatCard label={t('accounting_customers.stats.total_invoices')} value={totalStats.total_invoices} icon={FileText} size="lg" />
-        <StatCard label={t('accounting_customers.stats.property_value')} value={`€${totalStats.total_property_value.toLocaleString('hr-HR')}`} icon={DollarSign} color="gray" size="lg" />
-        <StatCard label={t('accounting_customers.stats.paid')} value={`€${totalStats.total_paid.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" size="lg" />
-        <StatCard label={t('accounting_customers.stats.debt')} value={`€${totalStats.total_debt.toLocaleString('hr-HR')}`} icon={TrendingDown} color="red" size="lg" />
+        <StatCard label={t('accounting_customers.stats.total_invoices')} value={totalStats.total_invoices} icon={FileText} />
+        <StatCard label={t('accounting_customers.stats.property_value')} value={`€${totalStats.total_property_value.toLocaleString('hr-HR')}`} icon={DollarSign} color="gray" />
+        <StatCard label={t('accounting_customers.stats.paid')} value={`€${totalStats.total_paid.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+        <StatCard label={t('accounting_customers.stats.debt')} value={`€${totalStats.total_debt.toLocaleString('hr-HR')}`} icon={TrendingDown} color="red" />
       </StatGrid>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">

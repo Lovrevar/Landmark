@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
 
 export interface RetailInvoiceWithDetails {
@@ -79,6 +80,8 @@ export async function toggleRetailInvoiceApproval(invoiceId: string, currentAppr
     .update({ approved: !currentApproved })
     .eq('id', invoiceId)
   if (error) throw error
+
+  logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
 }
 
 export function exportRetailInvoicesCSV(invoices: RetailInvoiceWithDetails[]): void {

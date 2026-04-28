@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  LineChart,
-  Line,
   ReferenceLine,
   ResponsiveContainer,
   ScatterChart,
@@ -106,19 +104,11 @@ export default function BudgetControl() {
       ]
     : []
 
-  const evmLineData = data
-    ? [
-        { x: t('budget_control.current'), CPI: data.metrics.CPI, SPI: data.metrics.SPI },
-      ]
-    : []
-
   const scatterCPI = data ? [{ x: t('budget_control.current'), y: data.metrics.CPI }] : []
   const scatterSPI = data ? [{ x: t('budget_control.current'), y: data.metrics.SPI }] : []
 
   const cpiStatus = data ? getIndexStatus(data.metrics.CPI, 'CPI') : null
   const spiStatus = data ? getIndexStatus(data.metrics.SPI, 'SPI') : null
-
-  const vacStatus = data && data.metrics.VAC >= 0 ? 'good' : 'bad'
 
   return (
     <div className="p-6 space-y-6">
@@ -210,7 +200,7 @@ export default function BudgetControl() {
                   <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
                   <YAxis tickFormatter={formatEuro} tick={{ fill: '#6b7280', fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value: number) => formatEuroFull(value)}
+                    formatter={(value) => formatEuroFull(Number(value))}
                     contentStyle={tooltipStyle}
                   />
                   <Legend />
@@ -236,7 +226,7 @@ export default function BudgetControl() {
                   />
                   <YAxis domain={[0, 2]} tick={{ fill: '#6b7280', fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value: number) => value.toFixed(2)}
+                    formatter={(value) => Number(value).toFixed(2)}
                     contentStyle={tooltipStyle}
                   />
                   <Legend />

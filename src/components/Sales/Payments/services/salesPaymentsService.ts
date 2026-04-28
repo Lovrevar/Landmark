@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
 
 export interface SalesPaymentWithDetails {
@@ -118,4 +119,6 @@ export function exportSalesPaymentsCSV(payments: SalesPaymentWithDetails[]): voi
   a.href = url
   a.download = `sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
   a.click()
+
+  logActivity({ action: 'export.payments_csv', entity: 'report', metadata: { severity: 'low', format: 'csv', row_count: payments.length } })
 }

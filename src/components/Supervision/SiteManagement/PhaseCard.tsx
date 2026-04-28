@@ -154,7 +154,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         <div className="mt-4">
           <div className="flex justify-between mb-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_card.budget_utilization')}</span>
-            <span className="text-sm font-medium">{budgetUtilization.toFixed(1)}%</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{budgetUtilization.toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
             <div

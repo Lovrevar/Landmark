@@ -17,6 +17,10 @@
 | **General** | [GENERAL.md](./modules/GENERAL.md) | Shared project/milestone management |
 | **UI** | [UI.md](./modules/UI.md) | Primitive component library |
 | **Core** | [CORE.md](./modules/CORE.md) | Contexts, hooks, lib, types, utils |
+| **Activity Log** | [ACTIVITY_LOG.md](./modules/ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
+| **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
+| **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
+| **Tasks** | [TASKS.md](./TASKS.md) | Tasks with 3-state status, projects, reminders, attachments, @mention comments, activity log |
 
 ---
 
@@ -58,3 +62,4 @@ Module/
 | `src/utils/reportGenerator.ts` | Shared PDF generation utilities |
 | `src/types/investment.ts` | Shared investment types |
 | `src/types/retail.ts` | Shared retail types |
+| `src/lib/activityLog.ts` | Fire-and-forget audit logger (`logActivity`) |

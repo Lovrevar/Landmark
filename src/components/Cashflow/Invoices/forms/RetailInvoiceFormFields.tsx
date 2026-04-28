@@ -26,6 +26,7 @@ interface RetailInvoiceFormFieldsProps {
   milestones: RetailMilestone[]
   invoiceCategories: InvoiceCategory[]
   refunds: Refund[]
+  fieldErrors?: Record<string, string>
 }
 
 export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = ({
@@ -38,9 +39,11 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
   contracts,
   milestones,
   invoiceCategories,
-  refunds
+  refunds,
+  fieldErrors
 }) => {
   const { t } = useTranslation()
+  const errors = fieldErrors || {}
   const getEntityOptions = () => {
     if (formData.entity_type === 'supplier') {
       return suppliers.map(s => ({ id: s.id, name: s.name }))
@@ -71,7 +74,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         </Select>
       </FormField>
 
-      <FormField label={formData.entity_type === 'supplier' ? t('invoices.retail.entity_supplier') : t('invoices.retail.entity_customer')} required>
+      <FormField label={formData.entity_type === 'supplier' ? t('invoices.retail.entity_supplier') : t('invoices.retail.entity_customer')} required error={errors.entity_id}>
         <Select
           value={formData.entity_id}
           onChange={(e) => setFormData({ ...formData, entity_id: e.target.value })}
@@ -97,7 +100,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         </FormField>
       )}
 
-      <FormField label={t('invoices.retail.company_label')} required>
+      <FormField label={t('invoices.retail.company_label')} required error={errors.company_id}>
         <Select
           value={formData.company_id}
           onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
@@ -109,7 +112,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         </Select>
       </FormField>
 
-      <FormField label={t('invoices.retail.project_label')} required>
+      <FormField label={t('invoices.retail.project_label')} required error={errors.retail_project_id}>
         <Select
           value={formData.retail_project_id}
           onChange={(e) => setFormData({ ...formData, retail_project_id: e.target.value })}
@@ -123,7 +126,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         </Select>
       </FormField>
 
-      <FormField label={t('invoices.retail.contract_label')} required>
+      <FormField label={t('invoices.retail.contract_label')} required error={errors.retail_contract_id}>
         <Select
           value={formData.retail_contract_id}
           onChange={(e) => setFormData({ ...formData, retail_contract_id: e.target.value })}
@@ -175,7 +178,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         )}
       </div>
 
-      <FormField label={t('invoices.form.number_label')} required>
+      <FormField label={t('invoices.form.number_label')} required error={errors.invoice_number}>
         <Input
           type="text"
           value={formData.invoice_number}
@@ -202,7 +205,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         />
       </FormField>
 
-      <FormField label={t('invoices.form.issue_date_label')} required>
+      <FormField label={t('invoices.form.issue_date_label')} required error={errors.issue_date}>
         <DateInput
           value={formData.issue_date}
           onChange={(value) => setFormData({ ...formData, issue_date: value })}
@@ -210,7 +213,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         />
       </FormField>
 
-      <FormField label={t('invoices.form.due_date_label')} required>
+      <FormField label={t('invoices.form.due_date_label')} required error={errors.due_date}>
         <DateInput
           value={formData.due_date}
           onChange={(value) => setFormData({ ...formData, due_date: value })}
@@ -218,7 +221,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         />
       </FormField>
 
-      <FormField label={t('invoices.retail.base_25')}>
+      <FormField label={t('invoices.retail.base_25')} error={errors.base_amount_1}>
         <CurrencyInput
           value={formData.base_amount_1}
           onChange={(value) => setFormData({ ...formData, base_amount_1: value })}
@@ -254,7 +257,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         />
       </FormField>
 
-      <FormField label={t('invoices.form.category_label')} required>
+      <FormField label={t('invoices.form.category_label')} required error={errors.category}>
         <Select
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}

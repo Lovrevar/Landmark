@@ -280,7 +280,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
             <FormField label={t('payments.form.amount_label')} required>
               <Input
                 type="number"
-                step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
               />

@@ -35,6 +35,14 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - Also exports legacy shared types: `User`, `Profile`, `Project`, `Task`, `Invoice`, `Subcontractor`, `Contract`, `WirePayment`, `ApartmentPayment`, `Building`, `Garage`, `Repository`, `LinkedUnit`, `Apartment`, `TaskComment`, `Todo`, `WorkLog`, `SubcontractorComment`, `Customer`, `Sale`, `Lead`, `Bank`, `BankCredit`, `Investor`, `ProjectInvestment`, `ProjectPhase`, `ProjectMilestone`, `BankCreditPayment`, `InvestorPayment`, `SubcontractorMilestone`, `PaymentNotification`
 - **Note:** Prefer module-specific types defined in each module's own `types.ts`. These legacy exports exist for backwards compatibility.
 
+### activityLog.ts
+- `logActivity(params)` — fire-and-forget audit logger. Inserts a row into `activity_logs` asynchronously. Never throws — failures go to `console.warn`.
+- **Params:** `{ action, entity, entityId?, projectId?, metadata?, severity?, userId?, userRole? }`
+- When `userId`/`userRole` are omitted, resolves them from the Supabase auth session internally
+- `severity` is merged into `metadata.severity` — not a separate column
+- **Call pattern:** Place immediately after a successful `supabase.from().insert/update/delete` call in service or hook files
+- **Full documentation:** [`docs/ACTIVITY_LOG.md`](./ACTIVITY_LOG.md)
+- **Depends on:** supabase client
 
 ---
 

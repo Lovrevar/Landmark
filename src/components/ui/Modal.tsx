@@ -34,6 +34,18 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
     }
   }, [show])
 
+  useEffect(() => {
+    if (!show) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [show, onClose])
+
   if (!show) return null
 
   const handleMouseDown = (e: React.MouseEvent) => {
