@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Send, Users, User, ArrowLeft, MessageCircle, Paperclip, X, FileText, Loader2 } from 'lucide-react'
 import type { ChatConversation, ChatMessage } from '../../types/chat'
@@ -63,12 +63,48 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const firstUnreadRef = useRef<HTMLDivElement>(null)
+  const initialScrollConvIdRef = useRef<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const firstUnreadId = useMemo(() => {
+    if (!conversation) return null
+    const me = conversation.participants.find(p => p.user_id === currentUserId)
+    const lastReadAt = me?.last_read_at
+    if (!lastReadAt) return null
+    const found = messages.find(
+      m => m.sender_id !== currentUserId && m.created_at > lastReadAt,
+    )
+    return found?.id ?? null
+  }, [conversation, currentUserId, messages])
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (!conversation) {
+      initialScrollConvIdRef.current = null
+      return
+    }
+    if (loading) return
+
+    if (initialScrollConvIdRef.current === conversation.id) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
+
+    if (messages.length === 0) return
+
+    initialScrollConvIdRef.current = conversation.id
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (firstUnreadRef.current) {
+          firstUnreadRef.current.scrollIntoView({ behavior: 'auto', block: 'start' })
+        } else {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+        }
+      })
+    })
+  }, [conversation, loading, messages])
 
   useEffect(() => {
     if (conversation) {
@@ -187,11 +223,13 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
                 {shouldShowDateSeparator(messages, idx) && (
                   <DateSeparator date={msg.created_at} />
                 )}
-                <MessageBubble
-                  message={msg}
-                  isOwn={msg.sender_id === currentUserId}
-                  showSender={shouldShowSender(messages, idx, conversation.is_group)}
-                />
+                <div ref={msg.id === firstUnreadId ? firstUnreadRef : undefined}>
+                  <MessageBubble
+                    message={msg}
+                    isOwn={msg.sender_id === currentUserId}
+                    showSender={shouldShowSender(messages, idx, conversation.is_group)}
+                  />
+                </div>
               </React.Fragment>
             ))}
             <div ref={messagesEndRef} />
