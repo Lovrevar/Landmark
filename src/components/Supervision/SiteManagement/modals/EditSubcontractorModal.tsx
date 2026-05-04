@@ -198,7 +198,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.edit_subcontractor.job_details')}</h3>
 
-            <FormField label={t('supervision.edit_subcontractor.job_description')} required error={fieldErrors.jobDescription}>
+            <FormField label={t('supervision.edit_subcontractor.job_description')}>
               <Textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
@@ -344,7 +344,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             const errors: Record<string, string> = {}
             if (!selectedPhaseId) errors.phase_id = t('supervision.edit_subcontractor.errors.phase_required')
             if (!name.trim()) errors.name = t('supervision.edit_subcontractor.errors.name_required')
-            if (!jobDescription.trim()) errors.jobDescription = t('supervision.edit_subcontractor.errors.job_required')
             setFieldErrors(errors)
             if (Object.keys(errors).length > 0) return
 

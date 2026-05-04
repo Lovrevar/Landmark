@@ -23,6 +23,7 @@ import RetailSalesPaymentsManagement from './components/Retail/Sales/index'
 import WorkLogs from './components/Supervision/WorkLogs/index'
 import FundingPaymentsManagement from './components/Funding/Payments/index'
 import GeneralReports from './components/Reports/GeneralReports'
+import DocumentsPage from './components/Documents/index'
 import AccountingInvoices from './components/Cashflow/Invoices/index'
 import AccountingPayments from './components/Cashflow/Payments/index'
 import AccountingSuppliers from './components/Cashflow/Suppliers/index'
@@ -444,6 +445,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CalendarPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute>
+              <DocumentsPage />
             </ProtectedRoute>
           }
         />

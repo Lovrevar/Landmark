@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
-import { ContractDocument } from './types'
-import { fetchSubcontractorDocuments, fetchDocumentsByContract, deleteSubcontractorDocument, getContractDocumentSignedUrl } from './services/siteService'
+import {
+  fetchDocumentsByEntity,
+  getDocumentSignedUrl,
+  deleteDocument,
+} from '../../Documents/services/documentService'
+import type { DocumentWithRelations } from '../../Documents/types'
 import { formatFileSize } from '../../../utils/formatters'
 import { useToast } from '../../../contexts/ToastContext'
 import { ConfirmDialog } from '../../ui'
@@ -21,12 +25,12 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
 }) => {
   const { t } = useTranslation()
   const toast = useToast()
-  const [documents, setDocuments] = useState<ContractDocument[]>([])
+  const [documents, setDocuments] = useState<DocumentWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openingId, setOpeningId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<ContractDocument | null>(null)
+  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<DocumentWithRelations | null>(null)
 
   useEffect(() => {
     if (contractId || subcontractorId) {
@@ -39,8 +43,8 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
       setLoading(true)
       setError(null)
       const docs = contractId
-        ? await fetchDocumentsByContract(contractId)
-        : await fetchSubcontractorDocuments(subcontractorId)
+        ? await fetchDocumentsByEntity('contract', contractId)
+        : await fetchDocumentsByEntity('subcontractor', subcontractorId)
       setDocuments(docs)
     } catch {
       setError(t('supervision.site_management.doc_viewer.load_error'))
@@ -49,10 +53,10 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     }
   }
 
-  const handleOpen = async (doc: ContractDocument) => {
+  const handleOpen = async (doc: DocumentWithRelations) => {
     try {
       setOpeningId(doc.id)
-      const url = await getContractDocumentSignedUrl(doc.file_path)
+      const url = await getDocumentSignedUrl(doc.file_path, doc.source)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch {
       toast.error(t('supervision.site_management.doc_viewer.open_error'))
@@ -61,7 +65,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     }
   }
 
-  const handleDelete = (doc: ContractDocument) => {
+  const handleDelete = (doc: DocumentWithRelations) => {
     setPendingDeleteDoc(doc)
   }
 
@@ -69,7 +73,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     if (!pendingDeleteDoc) return
     try {
       setDeletingId(pendingDeleteDoc.id)
-      await deleteSubcontractorDocument(pendingDeleteDoc.id, pendingDeleteDoc.file_path)
+      await deleteDocument(pendingDeleteDoc.id)
       setDocuments((prev) => prev.filter((d) => d.id !== pendingDeleteDoc.id))
     } catch {
       toast.error(t('supervision.site_management.doc_viewer.delete_error'))

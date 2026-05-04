@@ -31,7 +31,8 @@ import {
   Moon,
   ScrollText,
   MessageCircle,
-  CheckSquare
+  CheckSquare,
+  Files
 } from 'lucide-react'
 import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
@@ -86,7 +87,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.site_management'), icon: Building2, path: '/site-management' },
         { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
         { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
-        { name: t('nav.invoices'), icon: FileText, path: '/invoices' }
+        { name: t('nav.invoices'), icon: FileText, path: '/invoices' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' }
       ]
     }
 
@@ -95,6 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
         { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: FileText, path: '/general-reports' },
         ...(canViewActivityLog(user) ? [{ name: t('nav.activity_log'), icon: ScrollText, path: '/activity-log' }] : []),
       ],
@@ -104,7 +107,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.subcontractors'), icon: Users, path: '/subcontractors' },
         { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
         { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
-        { name: t('nav.invoices'), icon: FileText, path: '/invoices' }
+        { name: t('nav.invoices'), icon: FileText, path: '/invoices' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
       Sales: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
@@ -112,6 +116,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.sales_projects'), icon: Building2, path: '/sales-projects' },
         { name: t('nav.customers'), icon: Users, path: '/customers' },
         { name: t('nav.payments'), icon: DollarSign, path: '/sales-payments' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: BarChart3, path: '/sales-reports' }
       ],
       Funding: [
@@ -120,7 +125,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.investments'), icon: CreditCard, path: '/funding-credits' },
         { name: t('nav.projects'), icon: Building2, path: '/investment-projects' },
         { name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' },
-        { name: t('nav.tic'), icon: Calculator, path: '/tic' }
+        { name: t('nav.tic'), icon: Calculator, path: '/tic' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
       Cashflow: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
@@ -135,7 +141,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.customers'), icon: Users, path: '/accounting-customers' },
         { name: t('nav.loans'), icon: TrendingUp, path: '/accounting-loans' },
         { name: t('nav.debt_status'), icon: AlertCircle, path: '/debt-status' },
-        { name: t('nav.approvals'), icon: CheckCircle, path: '/accounting-approvals' }
+        { name: t('nav.approvals'), icon: CheckCircle, path: '/accounting-approvals' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
       Retail: [
         { name: t('nav.dashboard'), icon: BarChart3, path: '/' },
@@ -144,6 +151,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.customers'), icon: Users, path: '/retail-customers' },
         { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales-payments' },
         { name: t('nav.invoices'), icon: FileText, path: '/retail-invoices' },
+        { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: BarChart3, path: '/retail-reports' }
       ]
     }
