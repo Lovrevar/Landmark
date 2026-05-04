@@ -96,4 +96,5 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   conversation: '/chat',
   calendar_event: '/calendar',
   task: '/tasks',
+  document: '/documents',
 }

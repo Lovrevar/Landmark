@@ -194,6 +194,7 @@
     "site_management": "Site Management",
     "land_plots": "Land Plots",
     "tic": "TIC",
+    "documents": "Documents",
     "lock_profile": "Lock Profile",
     "switch_profile": "Switch Profile",
     "general": "General",
@@ -4531,6 +4532,101 @@
       "delete_comment_confirm_message": "This action cannot be undone."
     }
   },
+  "documents": {
+    "upload_modal": {
+      "title": "Upload document",
+      "file_label": "File",
+      "drag_or_click": "Drag a file here or click to select",
+      "any_type_hint": "Any file type, up to 50 MB",
+      "remove_file": "Remove file",
+      "category_label": "Category",
+      "category_loading": "Loading categories...",
+      "project_label": "Project",
+      "project_placeholder": "Select a project",
+      "subcontractor_label": "Subcontractor",
+      "subcontractor_placeholder": "Select a subcontractor",
+      "seller_label": "Seller",
+      "seller_placeholder": "Select a seller",
+      "contract_label": "Contract",
+      "contract_placeholder": "Select a contract",
+      "unit_label": "Unit",
+      "unit_placeholder": "Select a unit",
+      "customer_label": "Customer",
+      "customer_placeholder": "Select a customer",
+      "credit_label": "Credit",
+      "credit_placeholder": "Select a credit",
+      "search_placeholder": "Search...",
+      "loading": "Loading...",
+      "description_label": "Description",
+      "description_placeholder": "Brief description of the document...",
+      "char_counter": "{{count}} / {{max}}",
+      "submit": "Upload",
+      "uploading": "Uploading...",
+      "cancel": "Cancel",
+      "errors": {
+        "file_required": "Please select a file",
+        "file_too_large": "File exceeds {{limit}} MB",
+        "category_required": "Please select a category",
+        "field_required": "This field is required"
+      },
+      "toast": {
+        "success": "Document uploaded",
+        "error_generic": "Failed to upload document"
+      }
+    },
+    "page": {
+      "title": "Documents",
+      "subtitle": "All documents at a glance",
+      "upload": "Upload document",
+      "categories_header": "Categories",
+      "all_documents": "All documents",
+      "search_placeholder": "Search by file name...",
+      "project_filter_placeholder": "All projects",
+      "subcontractor_filter_placeholder": "All subcontractors",
+      "uploaded_from": "From",
+      "uploaded_to": "To",
+      "clear_filters": "Clear filters",
+      "table": {
+        "filename": "Name",
+        "category": "Category",
+        "project": "Project",
+        "uploaded_at": "Date",
+        "size": "Size",
+        "actions": "Actions",
+        "description": "Description",
+        "no_description": "No description",
+        "other_associations": "Other associations",
+        "expand": "Expand",
+        "collapse": "Collapse"
+      },
+      "actions": {
+        "open": "Open",
+        "delete": "Delete"
+      },
+      "delete_confirm_title": "Delete document?",
+      "delete_confirm_message": "Document \"{{name}}\" will be permanently deleted.",
+      "empty": {
+        "title": "No documents",
+        "description": "Adjust the filters or upload a new document."
+      },
+      "entity_label": {
+        "project": "Project",
+        "phase": "Phase",
+        "subcontractor": "Subcontractor",
+        "contract": "Contract",
+        "unit": "Unit",
+        "customer": "Customer",
+        "credit": "Credit",
+        "company": "Company"
+      },
+      "toast": {
+        "load_error": "Failed to load documents",
+        "open_error": "Failed to open document",
+        "delete_error": "Failed to delete document",
+        "delete_success": "Document deleted"
+      }
+    }
+  },
   "activity_log": {
     "title": "Activity Log",
     "description": "Audit trail of all user actions across the platform",
@@ -4660,6 +4756,7 @@
       "contract_milestone.update": "Contract milestone updated",
       "contract_milestone.delete": "Contract milestone deleted",
       "document.upload": "Document uploaded",
+      "document.update": "Document updated",
       "document.delete": "Document deleted",
       "work_log.create": "Work log created",
       "work_log.update": "Work log updated",

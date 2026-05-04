@@ -1,6 +1,8 @@
 import { supabase, ProjectPhase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { PhaseFormInput } from '../types'
+import { uploadDocument } from '../../../Documents/services/documentService'
+import type { AssociationInput } from '../../../Documents/types'
 
 export const fetchAllProjects = async () => {
   const { data: projectsData, error: projectsError } = await supabase
@@ -1006,116 +1008,43 @@ export const fetchContractTypes = async () => {
   return data || []
 }
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024
-
-export const uploadSubcontractorDocuments = async (subcontractorId: string, contractId: string | null, files: File[]) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
-  const results = []
-
-  for (const file of files) {
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`File "${file.name}" exceeds the 25MB limit`)
-    }
-
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const timestamp = Date.now()
-    const filePath = `subcontractors/${subcontractorId}/${timestamp}_${sanitizedName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('contract-documents')
-      .upload(filePath, file, { contentType: 'application/pdf' })
-
-    if (uploadError) throw uploadError
-
-    const { error: dbError } = await supabase
-      .from('subcontractor_documents')
-      .insert({
-        subcontractor_id: subcontractorId,
-        contract_id: contractId ?? null,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-        uploaded_by: user.id
-      })
-
-    if (dbError) {
-      await supabase.storage.from('contract-documents').remove([filePath])
-      throw dbError
-    }
-
-    results.push({ filePath, fileName: file.name })
-  }
+export const uploadSubcontractorDocuments = async (
+  subcontractorId: string,
+  contractId: string | null,
+  files: File[],
+) => {
+  const { data: cat, error: catErr } = await supabase
+    .from('document_categories')
+    .select('id')
+    .eq('code', 'IZVODACI')
+    .maybeSingle()
+  if (catErr) throw catErr
+  if (!cat) throw new Error('Document category IZVODACI not found')
+  const categoryId = cat.id as string
 
   let projectId: string | null = null
+  let phaseId: string | null = null
   if (contractId) {
-    const { data: contractRow } = await supabase
+    const { data: contractRow, error: contractErr } = await supabase
       .from('contracts')
-      .select('project_id')
+      .select('project_id, phase_id')
       .eq('id', contractId)
       .maybeSingle()
-    projectId = contractRow?.project_id ?? null
+    if (contractErr) throw contractErr
+    projectId = (contractRow?.project_id as string | undefined) ?? null
+    phaseId   = (contractRow?.phase_id   as string | undefined) ?? null
   }
 
-  logActivity({ action: 'document.upload', entity: 'document', projectId, metadata: { severity: 'medium', count: files.length, subcontractor_id: subcontractorId } })
+  const associations: AssociationInput[] = [
+    { entityType: 'subcontractor', entityId: subcontractorId },
+  ]
+  if (contractId) associations.push({ entityType: 'contract', entityId: contractId })
+  if (projectId)  associations.push({ entityType: 'project',  entityId: projectId  })
+  if (phaseId)    associations.push({ entityType: 'phase',    entityId: phaseId    })
 
-  return results
-}
-
-export const fetchSubcontractorDocuments = async (subcontractorId: string) => {
-  const { data, error } = await supabase
-    .from('subcontractor_documents')
-    .select('*')
-    .eq('subcontractor_id', subcontractorId)
-    .order('uploaded_at', { ascending: false })
-
-  if (error) throw error
-  return data || []
-}
-
-export const fetchDocumentsByContract = async (contractId: string) => {
-  const { data, error } = await supabase
-    .from('subcontractor_documents')
-    .select('*')
-    .eq('contract_id', contractId)
-    .order('uploaded_at', { ascending: false })
-
-  if (error) throw error
-  return data || []
-}
-
-export const deleteSubcontractorDocument = async (documentId: string, filePath: string) => {
-  const { data: docRow } = await supabase
-    .from('subcontractor_documents')
-    .select('contract:contracts(project_id)')
-    .eq('id', documentId)
-    .maybeSingle()
-  const projectId = (docRow?.contract as unknown as { project_id: string } | null)?.project_id ?? null
-
-  const { error: storageError } = await supabase.storage
-    .from('contract-documents')
-    .remove([filePath])
-
-  if (storageError) throw storageError
-
-  const { error: dbError } = await supabase
-    .from('subcontractor_documents')
-    .delete()
-    .eq('id', documentId)
-
-  if (dbError) throw dbError
-
-  logActivity({ action: 'document.delete', entity: 'document', entityId: documentId, projectId, metadata: { severity: 'medium' } })
-}
-
-export const getContractDocumentSignedUrl = async (filePath: string) => {
-  const { data, error } = await supabase.storage
-    .from('contract-documents')
-    .createSignedUrl(filePath, 3600)
-
-  if (error) throw error
-  return data.signedUrl
+  for (const file of files) {
+    await uploadDocument(file, { categoryId, associations })
+  }
 }
 
 export const createContractType = async (name: string, description: string | null): Promise<number> => {
