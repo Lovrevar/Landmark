@@ -4563,14 +4563,17 @@
       "submit": "Upload",
       "uploading": "Uploading...",
       "cancel": "Cancel",
+      "selected_count": "Selected files: {{count}}",
       "errors": {
-        "file_required": "Please select a file",
+        "file_required": "Please select at least one file",
         "file_too_large": "File exceeds {{limit}} MB",
+        "file_too_large_named": "File \"{{name}}\" exceeds {{limit}} MB",
         "category_required": "Please select a category",
         "field_required": "This field is required"
       },
       "toast": {
         "success": "Document uploaded",
+        "success_many": "{{count}} documents uploaded",
         "error_generic": "Failed to upload document"
       }
     },

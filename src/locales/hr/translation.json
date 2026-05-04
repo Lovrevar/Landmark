@@ -4568,14 +4568,17 @@
       "submit": "Učitaj",
       "uploading": "Učitavanje...",
       "cancel": "Odustani",
+      "selected_count": "Odabrano datoteka: {{count}}",
       "errors": {
-        "file_required": "Odaberite datoteku",
+        "file_required": "Odaberite barem jednu datoteku",
         "file_too_large": "Datoteka prelazi {{limit}} MB",
+        "file_too_large_named": "Datoteka \"{{name}}\" prelazi {{limit}} MB",
         "category_required": "Odaberite kategoriju",
         "field_required": "Obavezno polje"
       },
       "toast": {
         "success": "Dokument učitan",
+        "success_many": "Učitano dokumenata: {{count}}",
         "error_generic": "Greška pri učitavanju dokumenta"
       }
     },
