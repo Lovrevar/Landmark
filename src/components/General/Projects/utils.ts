@@ -1,6 +1,49 @@
 import { Clock, TrendingUp, CheckCircle, Pause, AlertTriangle } from 'lucide-react'
 import { differenceInDays, parseISO, isPast } from 'date-fns'
 import type { Milestone } from './types'
+import { RESIDENTIAL_HR_TEMPLATE } from './data/milestoneTemplates'
+
+export const NO_PHASE_KEY = '__no_phase'
+
+const KNOWN_PHASE_ORDER: string[] = RESIDENTIAL_HR_TEMPLATE.phases.map(p => p.phaseLabel)
+
+export interface PhaseBucket {
+  key: string
+  items: Milestone[]
+}
+
+export function buildPhaseBuckets(milestones: Milestone[]): PhaseBucket[] {
+  const map = new Map<string, Milestone[]>()
+  for (const m of milestones) {
+    const key = m.phase ?? NO_PHASE_KEY
+    const bucket = map.get(key)
+    if (bucket) bucket.push(m)
+    else map.set(key, [m])
+  }
+  const knownInOrder = KNOWN_PHASE_ORDER.filter(label => map.has(label))
+  const unknownSorted = Array.from(map.keys())
+    .filter(k => k !== NO_PHASE_KEY && !KNOWN_PHASE_ORDER.includes(k))
+    .sort((a, b) => a.localeCompare(b))
+  const orderedKeys = [...knownInOrder, ...unknownSorted]
+  if (map.has(NO_PHASE_KEY)) orderedKeys.push(NO_PHASE_KEY)
+  return orderedKeys.map(key => ({ key, items: map.get(key)! }))
+}
+
+export interface PhaseStatus {
+  key: string
+  total: number
+  completed: number
+  overdue: number
+}
+
+export function computePhaseStatuses(buckets: PhaseBucket[]): PhaseStatus[] {
+  return buckets.map(b => ({
+    key: b.key,
+    total: b.items.length,
+    completed: b.items.filter(m => m.completed).length,
+    overdue: b.items.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length
+  }))
+}
 
 export const getStatusConfig = (status: string) => {
   const configs = {

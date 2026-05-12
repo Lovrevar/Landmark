@@ -444,6 +444,7 @@ export type ProjectMilestone = {
   completed: boolean
   order_index: number
   created_at: string
+  phase: string | null
 }
 
 export type BankCreditPayment = {

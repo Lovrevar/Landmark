@@ -21,6 +21,7 @@ export interface Milestone {
   due_date: string | null
   completed: boolean
   created_at?: string
+  phase?: string | null
 }
 
 // ── ProjectDetailsEnhanced ────────────────────────────────────────────────

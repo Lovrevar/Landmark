@@ -38,11 +38,15 @@ import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
+import AiChatWidget from '../AiChat/AiChatWidget'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 
 interface LayoutProps {
   children: ReactNode
 }
+
+const configuredCashflowPassword = (import.meta.env.VITE_CASHFLOW_PASSWORD ?? '').trim()
+const cashflowConfigured = configuredCashflowPassword.length > 0
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t } = useTranslation()
@@ -175,9 +179,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!cashflowConfigured) return
 
-    const cashflowPassword = import.meta.env.VITE_CASHFLOW_PASSWORD || 'admin'
-    if (password === cashflowPassword) {
+    if (password === configuredCashflowPassword) {
       setCashflowUnlocked(true)
       sessionStorage.setItem('cashflow_unlocked', 'true')
       setCurrentProfile(pendingProfile!)
@@ -379,6 +383,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
 
+      <AiChatWidget />
+
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
@@ -388,49 +394,68 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('profiles.unlock_title')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {cashflowConfigured
+                    ? t('profiles.unlock_title')
+                    : t('profiles.cashflow_misconfigured_title')}
+                </p>
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit} noValidate>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('auth.password')}
-                </label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setPasswordError('')
-                  }}
-                  placeholder={t('profiles.enter_password')}
-                  autoFocus
-                  aria-invalid={!!passwordError}
-                  className={passwordError ? 'border-red-500 focus:ring-red-500' : ''}
-                />
-                {passwordError && (
-                  <p className="text-xs text-red-600 mt-1">{passwordError}</p>
-                )}
-              </div>
+            {cashflowConfigured ? (
+              <form onSubmit={handlePasswordSubmit} noValidate>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('auth.password')}
+                  </label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setPasswordError('')
+                    }}
+                    placeholder={t('profiles.enter_password')}
+                    autoFocus
+                    aria-invalid={!!passwordError}
+                    className={passwordError ? 'border-red-500 focus:ring-red-500' : ''}
+                  />
+                  {passwordError && (
+                    <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                  )}
+                </div>
 
 
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  {t('common.confirm')}
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    {t('common.confirm')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePasswordCancel}
+                    className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                  {t('profiles.cashflow_misconfigured_body')}
+                </p>
                 <button
                   type="button"
                   onClick={handlePasswordCancel}
-                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
                 >
                   {t('common.cancel')}
                 </button>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}

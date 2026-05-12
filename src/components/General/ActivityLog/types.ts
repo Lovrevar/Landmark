@@ -81,6 +81,7 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   bank_account: '/accounting-banks',
   customer: '/customers',
   apartment: '/apartments',
+  milestone: '/projects',
   building: '/sales-projects',
   sale: '/sales-payments',
   subcontractor: '/subcontractors',

@@ -4,7 +4,8 @@ import {
   addMilestone as svcAddMilestone,
   updateMilestone as svcUpdateMilestone,
   deleteMilestone as svcDeleteMilestone,
-  toggleMilestoneCompletion as svcToggleMilestone
+  toggleMilestoneCompletion as svcToggleMilestone,
+  bulkAddMilestones as svcBulkAddMilestones
 } from '../services/milestoneService'
 import { useToast } from '../../../../contexts/ToastContext'
 
@@ -74,6 +75,20 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
     }
   }
 
+  const handleBulkAddMilestones = async (
+    rows: Array<{ name: string; due_date: string | null; phase: string | null }>
+  ): Promise<void> => {
+    if (!projectId || rows.length === 0) return
+    try {
+      await svcBulkAddMilestones(projectId, rows)
+      onMutated()
+    } catch (error) {
+      console.error('Error bulk-adding milestones:', error)
+      toast.error('Error adding milestones from template.')
+      throw error
+    }
+  }
+
   return {
     editingMilestone,
     setEditingMilestone,
@@ -84,6 +99,7 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
     cancelDeleteMilestone,
     pendingDeleteMilestoneId,
     deletingMilestone,
-    handleToggleMilestone
+    handleToggleMilestone,
+    handleBulkAddMilestones
   }
 }

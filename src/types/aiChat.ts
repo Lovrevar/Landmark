@@ -1,0 +1,48 @@
+import type { Database } from './database'
+
+// Generated row types narrow only the role column. The DB CHECK
+// enforces 'user' | 'assistant' but the generated type widens to string.
+export type AiSession = Database['public']['Tables']['ai_sessions']['Row']
+
+type AiMessageRowGen = Database['public']['Tables']['ai_messages']['Row']
+export type AiMessageRow = Omit<AiMessageRowGen, 'role'> & {
+  role: 'user' | 'assistant'
+}
+
+// SSE event taxonomy — must match the backend's Event union exactly.
+// See supabase/functions/ai-chat/index.ts.
+export type AiChatEvent =
+  | { type: 'session'; session_id: string }
+  | { type: 'turn'; role: 'assistant'; text: string }
+  | { type: 'tool_call'; tool: string; input: unknown; tool_use_id: string }
+  | { type: 'tool_result'; tool: string; output: unknown; tool_use_id: string; is_error: boolean }
+  | { type: 'done'; stop_reason: string; usage: { input_tokens: number; output_tokens: number } }
+  | { type: 'error'; code: string; message: string }
+
+// Callbacks the consumer passes to streamMessage. Each fires once per event
+// of that type as it arrives off the SSE stream. onAny fires for every event
+// (useful for logging / state machines that want a single integration point).
+export interface AiChatStreamCallbacks {
+  onSession?: (e: Extract<AiChatEvent, { type: 'session' }>) => void
+  onTurn?: (e: Extract<AiChatEvent, { type: 'turn' }>) => void
+  onToolCall?: (e: Extract<AiChatEvent, { type: 'tool_call' }>) => void
+  onToolResult?: (e: Extract<AiChatEvent, { type: 'tool_result' }>) => void
+  onDone?: (e: Extract<AiChatEvent, { type: 'done' }>) => void
+  onError?: (e: Extract<AiChatEvent, { type: 'error' }>) => void
+  onAny?: (e: AiChatEvent) => void
+}
+
+// Thrown by streamMessage when the HTTP response is a flat 4xx/5xx error
+// envelope (pre-stream failures: bad_request, message_too_long,
+// session_not_found, etc.). Mid-stream errors are NOT thrown — they arrive
+// as `error` events and are surfaced via onError/onAny.
+export class AiChatHttpError extends Error {
+  readonly status: number
+  readonly code: string
+  constructor(status: number, code: string, message: string) {
+    super(message)
+    this.name = 'AiChatHttpError'
+    this.status = status
+    this.code = code
+  }
+}

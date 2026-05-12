@@ -6210,7 +6210,8 @@ CREATE TABLE public.project_milestones (
     name text NOT NULL,
     due_date date,
     completed boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    phase text
 );
 
 
@@ -8702,6 +8703,13 @@ CREATE INDEX idx_project_managers_project_id ON public.project_managers USING bt
 --
 
 CREATE INDEX idx_project_managers_user_id ON public.project_managers USING btree (user_id);
+
+
+--
+-- Name: project_milestones_phase_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_milestones_phase_idx ON public.project_milestones USING btree (project_id, phase);
 
 
 --
