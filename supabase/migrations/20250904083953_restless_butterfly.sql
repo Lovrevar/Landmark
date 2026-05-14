@@ -1,0 +1,5 @@
+-- Migration 20250904083953: original content removed during history reconciliation.
+-- Original content: Demo data (projects, tasks, subcontractors, apartments, invoices, todos)
+-- Reason: Seed/test data not needed for replay in fresh environments.
+-- Original SQL is preserved in git history.
+-- This file is intentionally a no-op.
