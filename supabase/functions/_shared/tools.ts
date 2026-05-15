@@ -1,0 +1,338 @@
+// AI chat tool catalog.
+//
+// This file defines the 10 tools the assistant can invoke and the role-based
+// filter that selects which tools each user is allowed to use. Each handler
+// is currently a stub that echoes its input back; real handlers move to
+// ./tool-handlers.ts in Phase 3.2.
+//
+// Descriptions are model-facing English: they are the only signal the model
+// uses to choose tools, so they must be specific (what / when / non-obvious
+// constraints).
+
+import type { AuthContext, Role } from './auth.ts'
+import {
+  handleGetInvoiceSummary,
+  handleGetProjectDetails,
+  handleGetProjectFinancialSummary,
+  handleGetSubcontractorPaymentStatus,
+  handleListContracts,
+  handleListPaymentsForSubcontractor,
+  handleListProjectPhases,
+  handleListUnpaidInvoices,
+  handleSearchProjects,
+  handleSearchSubcontractors,
+  type GetInvoiceSummaryInput,
+  type GetProjectDetailsInput,
+  type GetProjectFinancialSummaryInput,
+  type GetSubcontractorPaymentStatusInput,
+  type ListContractsInput,
+  type ListPaymentsForSubcontractorInput,
+  type ListProjectPhasesInput,
+  type ListUnpaidInvoicesInput,
+  type SearchProjectsInput,
+  type SearchSubcontractorsInput,
+} from './tool-handlers.ts'
+
+export interface ToolDefinition<I = Record<string, unknown>, O = unknown> {
+  name: string
+  description: string
+  // JSON Schema shaped for Anthropic's tools API. We intentionally don't pull
+  // in a JSON Schema type from a library — the field is documentation for the
+  // model, not runtime-validated here. Phase 3.2 may add validation per tool.
+  input_schema: Record<string, unknown>
+  requiredRoles: Role[]
+  handler: (input: I, ctx: AuthContext) => Promise<O>
+}
+
+const ALL_ROLES: Role[] = ['Director', 'Accounting', 'Sales', 'Supervision', 'Investment']
+const FINANCE_ROLES: Role[] = ['Director', 'Accounting']
+const FINANCE_PLUS_SUPERVISION: Role[] = ['Director', 'Accounting', 'Supervision']
+
+// ---------------------------------------------------------------------------
+// TOOLS
+// ---------------------------------------------------------------------------
+// Order matches the role-gating table in the spec. Phase 3.2 batches will
+// replace each stub handler with real logic.
+
+export const TOOLS: ToolDefinition[] = [
+  {
+    name: 'search_projects',
+    description:
+      'Search for construction projects by name using a case-insensitive substring match. ' +
+      'Use this when the user mentions a project by name and you need its UUID for a subsequent tool call. ' +
+      'Returns up to `limit` matches with id, name, location, and status. Does NOT search retail projects.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Substring to match against project name. Case-insensitive.',
+          minLength: 1,
+        },
+        limit: {
+          type: 'integer',
+          description: 'Maximum number of results to return.',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleSearchProjects(input as SearchProjectsInput, ctx),
+  },
+
+  {
+    name: 'get_project_details',
+    description:
+      'Fetch full details for a single project: name, location, start/end dates, budget, status, and ' +
+      'counts of phases, contracts, and milestones. Use this after `search_projects` has returned a ' +
+      'project_id, when the user asks "tell me about project X" or wants a status overview.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'The project UUID, typically obtained from `search_projects`.',
+        },
+      },
+      required: ['project_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleGetProjectDetails(input as GetProjectDetailsInput, ctx),
+  },
+
+  {
+    name: 'list_project_phases',
+    description:
+      'List all phases for a given project, ordered by phase_number. Each phase includes its name, ' +
+      'start/end dates, status, and the static `budget_allocated` figure. ' +
+      'Note: the `budget_used` column on the phase row is NOT trigger-maintained and may be stale; ' +
+      'if the user wants accurate spend numbers, call `get_project_financial_summary` instead.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'The project UUID whose phases to list.',
+        },
+      },
+      required: ['project_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleListProjectPhases(input as ListProjectPhasesInput, ctx),
+  },
+
+  {
+    name: 'search_subcontractors',
+    description:
+      'Search subcontractors (the construction-side suppliers) by name using a case-insensitive substring match. ' +
+      'Use this when the user references a subcontractor by name and you need their UUID. ' +
+      'Note: in this codebase, `accounting_invoices.supplier_id` points to subcontractors — there is no separate ' +
+      '"suppliers" table. Returns id, name, contact, and active_contracts_count.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Substring to match against subcontractor name. Case-insensitive.',
+          minLength: 1,
+        },
+        limit: {
+          type: 'integer',
+          description: 'Maximum number of results to return.',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleSearchSubcontractors(input as SearchSubcontractorsInput, ctx),
+  },
+
+  {
+    name: 'list_contracts',
+    description:
+      'List construction contracts with optional filters by project_id, phase_id, subcontractor_id, and status. ' +
+      'Use this when the user asks about active or completed contracts, or wants to see work agreements with a ' +
+      'particular subcontractor. The `budget_realized` field is automatically maintained from payments and is the ' +
+      'authoritative spend figure for a contract.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string', format: 'uuid', description: 'Filter to contracts on this project.' },
+        phase_id: { type: 'string', format: 'uuid', description: 'Filter to contracts on this phase.' },
+        subcontractor_id: { type: 'string', format: 'uuid', description: 'Filter to contracts with this subcontractor.' },
+        status: {
+          type: 'string',
+          enum: ['draft', 'active', 'completed', 'terminated'],
+          description: 'Filter by contract status. Note: lowercase values, distinct from project/invoice status casing.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+          description: 'Maximum number of results to return.',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleListContracts(input as ListContractsInput, ctx),
+  },
+
+  {
+    name: 'get_subcontractor_payment_status',
+    description:
+      'Compute the headline payment status for a single subcontractor: total contracted amount, total invoiced ' +
+      'amount, total paid, and outstanding balance. Use this when the user asks "is X paid up?" or "how much do we ' +
+      'still owe X?". Construction-side only — retail invoices and retail suppliers are not aggregated here.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        subcontractor_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'The subcontractor UUID, typically obtained from `search_subcontractors`.',
+        },
+      },
+      required: ['subcontractor_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: FINANCE_ROLES,
+    handler: (input, ctx) =>
+      handleGetSubcontractorPaymentStatus(input as GetSubcontractorPaymentStatusInput, ctx),
+  },
+
+  {
+    name: 'list_unpaid_invoices',
+    description:
+      'List invoices with status UNPAID or PARTIALLY_PAID, optionally filtered by subcontractor_id or project_id. ' +
+      'Use this for questions like "what do we still owe?" or "show me overdue invoices on project X". ' +
+      'For Supervision users, RLS will scope results to projects they manage.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        subcontractor_id: { type: 'string', format: 'uuid', description: 'Filter to invoices for this subcontractor (via supplier_id).' },
+        project_id: { type: 'string', format: 'uuid', description: 'Filter to invoices for this project.' },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+          description: 'Maximum number of results to return.',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    requiredRoles: FINANCE_PLUS_SUPERVISION,
+    handler: (input, ctx) => handleListUnpaidInvoices(input as ListUnpaidInvoicesInput, ctx),
+  },
+
+  {
+    name: 'list_payments_for_subcontractor',
+    description:
+      'List individual payment records made against invoices belonging to a given subcontractor. Use this when the ' +
+      'user wants the payment history for a specific subcontractor, not aggregate totals. Joins through ' +
+      '`accounting_invoices.supplier_id`; returns payment_date, amount, payment_method, and the linked invoice number.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        subcontractor_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'The subcontractor UUID whose payment history to fetch.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+          description: 'Maximum number of payment rows to return.',
+        },
+      },
+      required: ['subcontractor_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: FINANCE_ROLES,
+    handler: (input, ctx) =>
+      handleListPaymentsForSubcontractor(input as ListPaymentsForSubcontractorInput, ctx),
+  },
+
+  {
+    name: 'get_invoice_summary',
+    description:
+      'Aggregate invoice statistics across the whole accounting_invoices table with optional filters by ' +
+      'invoice_type, status, company_id, and a free-text search term. Returns filtered_count, filtered_unpaid_sum, ' +
+      'and total_unpaid_sum. Use this for "how many unpaid invoices do we have?" or "what is the total outstanding ' +
+      'for company X?". Backed by the `get_invoice_statistics` RPC.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        invoice_type: {
+          type: 'string',
+          description: 'Invoice type filter. Use "ALL" or omit for all types.',
+          default: 'ALL',
+        },
+        status: {
+          type: 'string',
+          enum: ['ALL', 'UNPAID', 'PAID', 'PARTIALLY_PAID', 'UNPAID_AND_PARTIAL'],
+          default: 'ALL',
+          description: 'Invoice status filter. Note: SHOUTING_SNAKE_CASE — distinct from contracts/projects status casing.',
+        },
+        company_id: { type: 'string', format: 'uuid', description: 'Filter to invoices issued to/from this accounting_companies.id.' },
+        search_term: { type: 'string', description: 'Free-text substring filter applied across invoice_number and related entities.' },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    requiredRoles: FINANCE_ROLES,
+    handler: (input, ctx) => handleGetInvoiceSummary(input as GetInvoiceSummaryInput, ctx),
+  },
+
+  {
+    name: 'get_project_financial_summary',
+    description:
+      'Compute a project\'s financial rollup: total project budget, sum of contract amounts, sum of contract ' +
+      '`budget_realized` (paid via invoices), unpaid invoice total, and remaining budget. ' +
+      'Use this for questions like "how is project X doing financially?" or "is project X over budget?". ' +
+      'Construction-side only — retail projects are not included.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'The project UUID to summarize.',
+        },
+      },
+      required: ['project_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: FINANCE_ROLES,
+    handler: (input, ctx) =>
+      handleGetProjectFinancialSummary(input as GetProjectFinancialSummaryInput, ctx),
+  },
+]
+
+// ---------------------------------------------------------------------------
+// Role filter
+// ---------------------------------------------------------------------------
+
+// Returns the subset of TOOLS the given user is allowed to invoke based on
+// their role. No project-scoping here — that's per-handler logic in 3.2.
+export function selectAvailableTools(ctx: AuthContext): ToolDefinition[] {
+  return TOOLS.filter((t) => t.requiredRoles.includes(ctx.role))
+}

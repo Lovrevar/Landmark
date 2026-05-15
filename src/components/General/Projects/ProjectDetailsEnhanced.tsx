@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -12,14 +12,18 @@ import {
   Home,
   Briefcase,
   Plus,
-  Target
+  Target,
+  LayoutTemplate
 } from 'lucide-react'
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
+import MilestoneTemplateModal from './forms/MilestoneTemplateModal'
 import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
+import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
+import { buildPhaseBuckets, computePhaseStatuses } from './utils'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 
 const ProjectDetailsEnhanced: React.FC = () => {
@@ -36,6 +40,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
 
   const loadData = useCallback(async () => {
@@ -56,7 +61,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
     }
   }, [id])
 
-  const { handleAddMilestone, handleToggleMilestone, handleDeleteMilestone } = useMilestoneManagement(id, loadData)
+  const { handleAddMilestone, handleToggleMilestone, handleDeleteMilestone, handleBulkAddMilestones } = useMilestoneManagement(id, loadData)
+
+  const phaseStatuses = useMemo(() => computePhaseStatuses(buildPhaseBuckets(milestones)), [milestones])
+  const phaseCollapse = usePhaseCollapseState(id, phaseStatuses)
 
   useEffect(() => {
     if (id) loadData()
@@ -416,7 +424,23 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.milestones_title')}</h3>
-                <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>{t('general_projects.add_milestone')}</Button>
+                <div className="flex items-center gap-2">
+                  {milestones.length > 0 && phaseStatuses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={phaseCollapse.allExpanded ? phaseCollapse.collapseAll : phaseCollapse.expandAll}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline focus:outline-none focus:underline"
+                    >
+                      {phaseCollapse.allExpanded
+                        ? t('general_projects.milestone_template.collapse_all')
+                        : t('general_projects.milestone_template.expand_all')}
+                    </button>
+                  )}
+                  <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
+                    {t('general_projects.use_template')}
+                  </Button>
+                  <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>{t('general_projects.add_milestone')}</Button>
+                </div>
               </div>
 
               {showMilestoneForm && (
@@ -451,12 +475,33 @@ const ProjectDetailsEnhanced: React.FC = () => {
                 </div>
               )}
 
-              <MilestoneTimeline
-                milestones={milestones}
-                onToggleComplete={handleToggleMilestone}
-                onDelete={handleDeleteMilestone}
-                editable={true}
-              />
+              {milestones.length === 0 ? (
+                <EmptyState
+                  icon={Target}
+                  title={t('general_projects.milestones_empty_title')}
+                  description={t('general_projects.milestones_empty_desc')}
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
+                        {t('general_projects.use_template')}
+                      </Button>
+                      <Button onClick={() => setShowMilestoneForm(true)}>
+                        {t('general_projects.add_first_milestone')}
+                      </Button>
+                    </div>
+                  }
+                />
+              ) : (
+                <MilestoneTimeline
+                  milestones={milestones}
+                  onToggleComplete={handleToggleMilestone}
+                  onDelete={handleDeleteMilestone}
+                  editable={true}
+                  groupByPhase
+                  isPhaseExpanded={phaseCollapse.isExpanded}
+                  onTogglePhase={phaseCollapse.toggle}
+                />
+              )}
             </div>
           )}
         </div>
@@ -472,6 +517,14 @@ const ProjectDetailsEnhanced: React.FC = () => {
           }}
         />
       )}
+
+      <MilestoneTemplateModal
+        show={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        projectId={id ?? ''}
+        projectStartDate={project?.start_date ?? null}
+        onSubmit={handleBulkAddMilestones}
+      />
     </div>
   )
 }

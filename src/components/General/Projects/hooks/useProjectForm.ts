@@ -64,8 +64,8 @@ export function useProjectForm(
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     setError('')
 
     if (!form.name.trim()) {

@@ -13,3 +13,6 @@ project_id = "cognilion"
 # rejected by the calendar_reminder_sends unique constraint.
 # schedule = "* * * * *"
 verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = true
