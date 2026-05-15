@@ -597,5 +597,5 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - `retailInvoiceTypes.ts` inside `Invoices/` defines types that bridge Cashflow and Retail invoice structures — handle carefully when modifying
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments
-- The Cashflow profile is password-protected — never bypass this protection
+- **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`

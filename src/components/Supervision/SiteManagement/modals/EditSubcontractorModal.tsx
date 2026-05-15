@@ -309,6 +309,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               <ContractDocumentViewer
                 key={docViewerKey}
                 subcontractorId={getTrueSubcontractorId(subcontractor)}
+                contractId={getContractId(subcontractor) ?? undefined}
               />
             </div>
 

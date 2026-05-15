@@ -188,6 +188,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               </div>
               <ContractDocumentViewer
                 subcontractorId={subcontractor.subcontractor_id || subcontractor.id}
+                contractId={subcontractor.contract_id || subcontractor.id}
                 readOnly
               />
             </div>

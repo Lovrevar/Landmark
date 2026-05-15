@@ -26,7 +26,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     if (!form.budget) errors.budget = t('general_projects.form_error_budget')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    if (e) handleSubmit(e)
+    handleSubmit(e)
   }
 
   return (

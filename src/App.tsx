@@ -48,6 +48,7 @@ import ActivityLog from './components/General/ActivityLog/index'
 import ChatPage from './components/Chat'
 import TasksPage from './components/Tasks'
 import CalendarPage from './components/Calendar'
+import AiChatProvider from './components/AiChat/AiChatProvider'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -467,7 +468,10 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <AppContent />
+          {/* Step 5.5 insertion — provider mounted early to unblock 5.4a verification */}
+          <AiChatProvider>
+            <AppContent />
+          </AiChatProvider>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
