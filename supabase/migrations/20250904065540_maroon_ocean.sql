@@ -1,22 +1,3 @@
-
-
-CREATE TABLE IF NOT EXISTS todos (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title text NOT NULL,
-  description text DEFAULT '',
-  completed boolean DEFAULT false,
-  due_date date,
-  created_at timestamptz DEFAULT now()
-);
-
-
-ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "Users can manage their own todos"
-  ON todos
-  FOR ALL
-  TO authenticated
-  USING (user_id = auth.uid());
-;
+-- Migration 20250904065540: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.

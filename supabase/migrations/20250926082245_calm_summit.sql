@@ -1,27 +1,3 @@
-
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'project_investments' AND column_name = 'mortgages_insurance'
-  ) THEN
-    ALTER TABLE project_investments ADD COLUMN mortgages_insurance numeric(15,2) DEFAULT 0;
-
-  END IF;
-
-END $$;
-
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'project_investments' AND column_name = 'notes'
-  ) THEN
-    ALTER TABLE project_investments ADD COLUMN notes text DEFAULT '';
-
-  END IF;
-
-END $$;
-;
+-- Migration 20250926082245: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.

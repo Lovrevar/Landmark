@@ -1,15 +1,3 @@
-/*
-  # Remove tasks table and related functionality
-
-  This migration removes the tasks table from the database as task functionality
-  has been removed from the application.
-
-  ## Changes
-  - Drop tasks table
-  
-  ## Notes
-  - This is a destructive operation
-  - Task data will be permanently deleted
-*/
-
-DROP TABLE IF EXISTS tasks CASCADE;
+-- Migration 20251014121251: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.

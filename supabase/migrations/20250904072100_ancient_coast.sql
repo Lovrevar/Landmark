@@ -1,5 +1,3 @@
--- Migration 20250904072100: original content removed during history reconciliation.
--- Original content: Initial demo users (pre-Supabase-Auth bootstrap data)
--- Reason: Seed/test data not needed for replay in fresh environments.
--- Original SQL is preserved in git history.
--- This file is intentionally a no-op.
+-- Migration 20250904072100: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.

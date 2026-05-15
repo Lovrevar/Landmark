@@ -1,28 +1,3 @@
-
-
-CREATE TABLE IF NOT EXISTS users (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  username text UNIQUE NOT NULL,
-  password text NOT NULL,
-  role text NOT NULL CHECK (role IN ('Director', 'Accounting', 'Sales', 'Supervision')),
-  created_at timestamptz DEFAULT now()
-);
-
-
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "Users can read user data"
-  ON users
-  FOR SELECT
-  TO authenticated
-  USING (true);
-
-
--- Insert sample users for testing
-INSERT INTO users (username, password, role) VALUES 
-  ('director', 'pass123', 'Director'),
-  ('accountant', 'pass123', 'Accounting'),
-  ('salesperson', 'pass123', 'Sales'),
-  ('supervisor', 'pass123', 'Supervision');
-;
+-- Migration 20250904065458: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.
