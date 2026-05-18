@@ -1,13 +1,3 @@
-/*
-  # Remove progress column from subcontractors table
-  
-  1. Changes
-    - Drop the `progress` column from `subcontractors` table
-    - Progress tracking belongs to individual contracts, not to subcontractors themselves
-  
-  2. Rationale
-    - A subcontractor can have multiple contracts with different progress levels
-    - Progress should be tracked at the contract level, not at the subcontractor level
-*/
-
-ALTER TABLE subcontractors DROP COLUMN IF EXISTS progress;
+-- Migration 20260119090209: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.

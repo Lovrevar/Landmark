@@ -37,3 +37,6 @@ graphify-out/
 
 # Typescript cache
 *.tsbuildinfo
+
+# Supabase temp folder
+supabase/.temp/

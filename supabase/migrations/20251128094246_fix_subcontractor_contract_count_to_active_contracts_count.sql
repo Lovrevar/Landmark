@@ -1,0 +1,3 @@
+-- Migration 20251128094246: original content superseded by baseline.
+-- Original SQL preserved in git history before the baseline reconciliation commit.
+-- This file is intentionally a no-op for fresh-environment replay.
