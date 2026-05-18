@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog, Pagination } from '../../ui'
 import DateInput from '../../Common/DateInput'
 import { usePayments } from './hooks/usePayments'
 import AccountingPaymentFormModal from './forms/AccountingPaymentFormModal'
@@ -50,6 +50,11 @@ const AccountingPayments: React.FC = () => {
     pendingDeleteId,
     deleting,
     filteredPayments,
+    paginatedPayments,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalCount,
     resetDateFilters
   } = usePayments()
 
@@ -155,7 +160,7 @@ const AccountingPayments: React.FC = () => {
       </div>
 
       <PaymentTable
-        payments={filteredPayments}
+        payments={paginatedPayments}
         visibleColumns={visibleColumns}
         onView={handleViewPayment}
         onEdit={handleOpenModal}
@@ -167,19 +172,21 @@ const AccountingPayments: React.FC = () => {
         onClose={handleCloseDetailView}
       />
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600 dark:text-gray-400">{t('payments.shown_count', { filtered: filteredPayments.length, total: payments.length })}</span>
-          <div className="flex items-center space-x-6 text-sm">
-            <div>
-              <span className="text-gray-600 dark:text-gray-400">{t('payments.filtered_total')}</span>
-              <span className="font-semibold text-green-600">
-                €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setCurrentPage}
+        itemLabel={t('payments.pagination.item_label')}
+        extra={
+          <span>
+            <span className="text-gray-600 dark:text-gray-400 mr-2">{t('payments.filtered_total')}</span>
+            <span className="font-semibold text-green-600">
+              €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
+            </span>
+          </span>
+        }
+      />
 
       <AccountingPaymentFormModal
         showModal={showPaymentModal}

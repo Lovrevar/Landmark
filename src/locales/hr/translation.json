@@ -591,6 +591,9 @@
     "wire_payment": "Virman plaćanje",
     "record_payment": "Zabileži plaćanje",
     "payment_history": "Povijest plaćanja",
+    "pagination": {
+      "item_label": "plaćanja"
+    },
     "table": {
       "date": "Datum plaćanja",
       "invoice": "Račun",
@@ -2606,7 +2609,10 @@
         "status": "Status"
       },
       "tooltip_approved": "Odobreno",
-      "tooltip_approve": "Klikni za odobrivanje"
+      "tooltip_approve": "Klikni za odobrivanje",
+      "pagination": {
+        "item_label": "računi"
+      }
     },
     "payments": {
       "title": "Upravljanje plaćanjima",
@@ -4635,6 +4641,9 @@
       "uploaded_from": "Od datuma",
       "uploaded_to": "Do datuma",
       "clear_filters": "Očisti filtere",
+      "pagination": {
+        "item_label": "dokumenata"
+      },
       "table": {
         "filename": "Naziv",
         "category": "Kategorija",

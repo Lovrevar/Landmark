@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -8,6 +9,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void
   itemLabel?: string
   className?: string
+  extra?: ReactNode
 }
 
 export default function Pagination({
@@ -17,6 +19,7 @@ export default function Pagination({
   onPageChange,
   itemLabel = 'stavki',
   className = '',
+  extra,
 }: PaginationProps) {
   const { t } = useTranslation()
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -27,10 +30,13 @@ export default function Pagination({
 
   return (
     <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          {t('pagination.showing', { from, to, total: totalCount })} {itemLabel}
-        </span>
+      <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-6 text-sm">
+          <span className="text-gray-600 dark:text-gray-400">
+            {t('pagination.showing', { from, to, total: totalCount })} {itemLabel}
+          </span>
+          {extra}
+        </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}

@@ -515,6 +515,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
             setShowEditModal(false)
             loadData()
           }}
+          onDeleted={() => {
+            setShowEditModal(false)
+            navigate('/projects')
+          }}
         />
       )}
 

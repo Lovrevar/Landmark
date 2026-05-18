@@ -7,14 +7,15 @@ interface ProjectFormModalProps {
   projectId?: string | null
   onClose: () => void
   onSuccess: () => void
+  onDeleted?: () => void
 }
 
-const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose, onSuccess }) => {
+const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose, onSuccess, onDeleted }) => {
   const { t } = useTranslation()
   const { form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting } = useProjectForm(
     projectId,
     onSuccess,
-    onSuccess
+    onDeleted ?? onSuccess
   )
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 

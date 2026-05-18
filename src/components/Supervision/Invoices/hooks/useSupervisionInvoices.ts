@@ -16,6 +16,8 @@ export function useSupervisionInvoices() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [filterApproved, setFilterApproved] = useState<'all' | 'approved' | 'not_approved'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 100
   const [stats, setStats] = useState<InvoiceStats>({
     totalInvoices: 0, totalAmount: 0, invoicesThisMonth: 0, amountThisMonth: 0,
   })
@@ -60,6 +62,15 @@ export function useSupervisionInvoices() {
     return matchesSearch && matchesDateRange && matchesFilter && matchesApproved
   }), [invoices, searchTerm, filterStatus, filterApproved, dateRange])
 
+  const paginatedInvoices = useMemo(
+    () => filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredInvoices, currentPage]
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterStatus, filterApproved, dateRange.start, dateRange.end])
+
   const handleApprove = async (invoiceId: string, currentApproved: boolean) => {
     try {
       await toggleInvoiceApproval(invoiceId, currentApproved)
@@ -78,6 +89,11 @@ export function useSupervisionInvoices() {
     loading,
     stats,
     filteredInvoices,
+    paginatedInvoices,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalCount: filteredInvoices.length,
     searchTerm,
     setSearchTerm,
     filterStatus,
