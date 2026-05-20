@@ -57,14 +57,31 @@ export interface DocumentWithRelations extends Document {
 }
 
 export interface DocumentFilters {
-  categoryId?: string
-  includeChildren?: boolean
+  // Pre-resolved category set (selected category + descendants if applicable).
+  // Empty / undefined means "any category".
+  categoryIds?: string[]
   entityType?: EntityType
   entityId?: string
   fileNameSearch?: string
   uploadedFrom?: string
   uploadedTo?: string
   projectId?: string
+}
+
+export interface PaginationParams {
+  offset: number
+  limit: number
+}
+
+export interface PaginatedDocuments {
+  documents: DocumentWithRelations[]
+  totalCount: number
+}
+
+export interface DocumentCategoryCounts {
+  byCategoryId: Map<string, number>
+  uncategorizedCount: number
+  total: number
 }
 
 export interface AssociationInput {

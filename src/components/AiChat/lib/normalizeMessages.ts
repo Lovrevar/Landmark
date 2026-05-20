@@ -1,17 +1,44 @@
-import type { AiChatEvent, AiMessageRow } from '../../../types/aiChat'
+import type { AiAttachmentRow, AiChatEvent, AiMessageRow } from '../../../types/aiChat'
+
+// Branch metadata attached to user RenderMessages that sit at a fork in the
+// tree (i.e. their underlying row has siblings sharing the same parent_id).
+// The store uses prev/nextSiblingLeafId to switch the active branch — both
+// are pre-computed as the most-recent leaf of the chosen sibling's subtree.
+export interface BranchInfo {
+  siblingIndex: number  // 0-based among siblings sorted by created_at asc
+  siblingCount: number
+  prevSiblingLeafId: string | null
+  nextSiblingLeafId: string | null
+}
 
 export type RenderMessage =
-  | { kind: 'user'; id: string; text: string; createdAt: string }
-  | { kind: 'assistant'; id: string; text: string; createdAt: string }
+  | {
+      kind: 'user'
+      id: string
+      rowId: string
+      text: string
+      createdAt: string
+      branch?: BranchInfo
+      // Populated from the ai_message_attachments side-table on history
+      // reload. Live optimistic rows leave this undefined; canonical rows
+      // after reload have an array (possibly empty when none were sent).
+      attachments?: AiAttachmentRow[]
+    }
+  | { kind: 'assistant'; id: string; rowId: string; text: string; createdAt: string }
   | {
       kind: 'tool'
       id: string
+      rowId: string
       tool: string
       toolUseId: string
       status: 'pending' | 'done' | 'error'
       createdAt: string
     }
-  | { kind: 'error'; id: string; code: string; message: string; createdAt: string }
+  | { kind: 'error'; id: string; rowId: string; code: string; message: string; createdAt: string }
+  // User-initiated cancel. Appended client-side by stopStreaming(); never
+  // persisted server-side, so it disappears on session reload. Distinct from
+  // 'error' so the UI can render it neutrally rather than in red.
+  | { kind: 'interrupted'; id: string; rowId: string; createdAt: string }
 
 // Anthropic Messages API content block shapes. The AiMessageRow.content column
 // is Json in the DB; we narrow per-block via the `type` discriminator.
@@ -43,26 +70,145 @@ function isToolUseBlock(b: ContentBlock): b is ToolUseBlock {
   return b.type === 'tool_use'
 }
 
-export function normalizeFromPersistedRows(rows: AiMessageRow[]): RenderMessage[] {
+// ---------------------------------------------------------------------------
+// Tree helpers
+// ---------------------------------------------------------------------------
+
+interface TreeIndex {
+  byId: Map<string, AiMessageRow>
+  childrenByParent: Map<string, AiMessageRow[]>  // key '' for parent_id=null roots
+}
+
+function indexTree(rows: AiMessageRow[]): TreeIndex {
+  const byId = new Map<string, AiMessageRow>()
+  const childrenByParent = new Map<string, AiMessageRow[]>()
+  for (const r of rows) {
+    byId.set(r.id, r)
+    const key = r.parent_id ?? ''
+    const list = childrenByParent.get(key) ?? []
+    list.push(r)
+    childrenByParent.set(key, list)
+  }
+  // Sort each sibling list by created_at asc so sibling index is stable.
+  for (const list of childrenByParent.values()) {
+    list.sort((a, b) => a.created_at.localeCompare(b.created_at))
+  }
+  return { byId, childrenByParent }
+}
+
+// Greatest created_at among `rootId` and all its descendants. Used to pick
+// the active leaf when switching to a sibling subtree.
+export function findLatestLeafInSubtree(rows: AiMessageRow[], rootId: string): string | null {
+  const { byId, childrenByParent } = indexTree(rows)
+  const root = byId.get(rootId)
+  if (!root) return null
+  let bestId = root.id
+  let bestAt = root.created_at
+  const stack: AiMessageRow[] = [root]
+  while (stack.length) {
+    const node = stack.pop()!
+    if (node.created_at > bestAt) {
+      bestAt = node.created_at
+      bestId = node.id
+    }
+    const kids = childrenByParent.get(node.id) ?? []
+    for (const k of kids) stack.push(k)
+  }
+  return bestId
+}
+
+// Pick the row in `rows` with the largest created_at — the implicit active
+// leaf for a freshly loaded session. Returns null when rows is empty.
+export function computeMostRecentLeaf(rows: AiMessageRow[]): string | null {
+  if (rows.length === 0) return null
+  let best = rows[0]
+  for (const r of rows) {
+    if (r.created_at > best.created_at) best = r
+  }
+  return best.id
+}
+
+// Walk parent_id pointers from `leafId` to a root, returning the path in
+// root→leaf order. Returns [] if leafId is missing or the chain is broken.
+export function walkActivePath(rows: AiMessageRow[], leafId: string | null): AiMessageRow[] {
+  if (!leafId) return []
+  const { byId } = indexTree(rows)
+  const path: AiMessageRow[] = []
+  let cursor: string | null = leafId
+  const seen = new Set<string>()
+  while (cursor) {
+    if (seen.has(cursor)) break
+    seen.add(cursor)
+    const row = byId.get(cursor)
+    if (!row) break
+    path.unshift(row)
+    cursor = row.parent_id
+  }
+  return path
+}
+
+// ---------------------------------------------------------------------------
+// Active-branch normalisation: rows + chosen leaf → RenderMessage[] with
+// branch metadata on user rows that have siblings.
+// ---------------------------------------------------------------------------
+
+export function deriveActiveBranch(
+  rows: AiMessageRow[],
+  activeLeafId: string | null,
+): RenderMessage[] {
+  if (rows.length === 0 || activeLeafId === null) return []
+
+  const { childrenByParent } = indexTree(rows)
+  const path = walkActivePath(rows, activeLeafId)
+  if (path.length === 0) return []
+
+  // Pre-compute branch info per row on the path.
+  const branchByRowId = new Map<string, BranchInfo>()
+  for (const r of path) {
+    const key = r.parent_id ?? ''
+    const siblings = childrenByParent.get(key) ?? []
+    if (siblings.length > 1) {
+      const idx = siblings.findIndex((s) => s.id === r.id)
+      const prevSib = idx > 0 ? siblings[idx - 1] : null
+      const nextSib = idx < siblings.length - 1 ? siblings[idx + 1] : null
+      branchByRowId.set(r.id, {
+        siblingIndex: idx,
+        siblingCount: siblings.length,
+        prevSiblingLeafId: prevSib ? findLatestLeafInSubtree(rows, prevSib.id) : null,
+        nextSiblingLeafId: nextSib ? findLatestLeafInSubtree(rows, nextSib.id) : null,
+      })
+    }
+  }
+
   const out: RenderMessage[] = []
 
-  for (const row of rows) {
+  for (const row of path) {
     const blocks = (Array.isArray(row.content) ? row.content : []) as ContentBlock[]
 
     if (row.role === 'user') {
-      const first = blocks[0]
-      if (first && isTextBlock(first)) {
+      // The user content is now a mixed array: optional image/document
+      // blocks followed by a single text block (see edge function
+      // buildUserContentBlocks). The text block is what we render in the
+      // bubble; attachments come from the side-table on the row, not from
+      // the JSONB blocks themselves.
+      const textBlock = blocks.find(isTextBlock)
+      if (textBlock) {
+        const branch = branchByRowId.get(row.id)
         out.push({
           kind: 'user',
           id: `${row.id}:0`,
-          text: first.text,
+          rowId: row.id,
+          text: textBlock.text,
           createdAt: row.created_at,
+          ...(branch ? { branch } : {}),
+          ...(row.attachments && row.attachments.length > 0
+            ? { attachments: row.attachments }
+            : {}),
         })
         continue
       }
 
-      // Otherwise treat as a tool_result-only row: locate matching tool rows
-      // emitted from earlier assistant rows and update their status in place.
+      // tool_result-only row: update the matching tool message in place.
       for (const block of blocks) {
         if (!isToolResultBlock(block)) continue
         const target = out.find(
@@ -80,14 +226,13 @@ export function normalizeFromPersistedRows(rows: AiMessageRow[]): RenderMessage[
       continue
     }
 
-    // role === 'assistant' — iterate content blocks in order. Text blocks
-    // emit assistant rows; tool_use blocks emit pending tool rows. Other
-    // block types (e.g. thinking, future) are silently skipped.
+    // role === 'assistant'
     blocks.forEach((block, blockIndex) => {
       if (isTextBlock(block)) {
         out.push({
           kind: 'assistant',
           id: `${row.id}:${blockIndex}`,
+          rowId: row.id,
           text: block.text,
           createdAt: row.created_at,
         })
@@ -95,6 +240,7 @@ export function normalizeFromPersistedRows(rows: AiMessageRow[]): RenderMessage[
         out.push({
           kind: 'tool',
           id: `${row.id}:${blockIndex}`,
+          rowId: row.id,
           tool: block.name,
           toolUseId: block.id,
           status: 'pending',
@@ -107,6 +253,13 @@ export function normalizeFromPersistedRows(rows: AiMessageRow[]): RenderMessage[
   return out
 }
 
+// ---------------------------------------------------------------------------
+// Live-stream reducer. Called from useAiChatStore as each SSE event arrives.
+// Optimistically appended RenderMessages have synthetic ids (no `:blockIndex`
+// suffix) and no rowId yet — that's fine, the post-stream loadSession reload
+// replaces them with canonical rows.
+// ---------------------------------------------------------------------------
+
 export function applyEventToMessages(
   messages: RenderMessage[],
   event: AiChatEvent,
@@ -117,29 +270,35 @@ export function applyEventToMessages(
     case 'done':
       return messages
 
-    case 'turn':
+    case 'turn': {
+      const id = generateId()
       return [
         ...messages,
         {
           kind: 'assistant',
-          id: generateId(),
+          id,
+          rowId: id,
           text: event.text,
           createdAt: new Date().toISOString(),
         },
       ]
+    }
 
-    case 'tool_call':
+    case 'tool_call': {
+      const id = generateId()
       return [
         ...messages,
         {
           kind: 'tool',
-          id: generateId(),
+          id,
+          rowId: id,
           tool: event.tool,
           toolUseId: event.tool_use_id,
           status: 'pending',
           createdAt: new Date().toISOString(),
         },
       ]
+    }
 
     case 'tool_result': {
       const idx = messages.findIndex(
@@ -158,16 +317,19 @@ export function applyEventToMessages(
       return next
     }
 
-    case 'error':
+    case 'error': {
+      const id = generateId()
       return [
         ...messages,
         {
           kind: 'error',
-          id: generateId(),
+          id,
+          rowId: id,
           code: event.code,
           message: event.message,
           createdAt: new Date().toISOString(),
         },
       ]
+    }
   }
 }

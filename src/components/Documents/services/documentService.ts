@@ -5,11 +5,14 @@ import type {
   Document,
   DocumentAssociation,
   DocumentCategory,
+  DocumentCategoryCounts,
   DocumentCategoryNode,
   DocumentFilters,
   DocumentSource,
   DocumentWithRelations,
   EntityType,
+  PaginatedDocuments,
+  PaginationParams,
   UpdateDocumentInput,
   UploadDocumentInput,
 } from '../types'
@@ -21,6 +24,10 @@ const SIGNED_URL_TTL_SECONDS = 3600
 
 const DOC_WITH_RELATIONS_SELECT =
   '*, category:document_categories(*), associations:document_associations(*)'
+
+// Default unbounded-feeling cap for entity-scoped fetches (fetchDocumentsByEntity).
+// A single contract or subcontractor isn't expected to have anywhere near this many.
+const ENTITY_FETCH_LIMIT = 5000
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,86 +111,64 @@ export async function fetchDocumentsByEntity(
   entityType: EntityType,
   entityId: string,
 ): Promise<DocumentWithRelations[]> {
-  return fetchDocuments({ entityType, entityId })
+  const { documents } = await fetchDocuments(
+    { entityType, entityId },
+    { offset: 0, limit: ENTITY_FETCH_LIMIT },
+  )
+  return documents
 }
 
 export async function fetchDocuments(
   filters: DocumentFilters,
-): Promise<DocumentWithRelations[]> {
-  // Resolve category scope (with optional descendant inclusion via path prefix).
-  let categoryIds: string[] | undefined
-  if (filters.categoryId) {
-    if (filters.includeChildren) {
-      const { data: allCats, error: catsErr } = await supabase
-        .from('document_categories')
-        .select('id, path')
-      if (catsErr) throw catsErr
+  pagination: PaginationParams = { offset: 0, limit: 100 },
+): Promise<PaginatedDocuments> {
+  const categoryIds =
+    filters.categoryIds && filters.categoryIds.length > 0 ? filters.categoryIds : null
 
-      const parent = (allCats ?? []).find(c => c.id === filters.categoryId)
-      if (!parent) return []
+  const fileNameSearch =
+    filters.fileNameSearch && filters.fileNameSearch.trim()
+      ? `%${escapeLike(filters.fileNameSearch.trim())}%`
+      : null
 
-      const prefix = `${parent.path}/`
-      categoryIds = (allCats ?? [])
-        .filter(c => c.id === filters.categoryId || (c.path as string).startsWith(prefix))
-        .map(c => c.id as string)
+  const { data, error } = await supabase.rpc('search_documents', {
+    p_category_ids: categoryIds,
+    p_project_id: filters.projectId ?? null,
+    p_entity_type: filters.entityType ?? null,
+    p_entity_id: filters.entityId ?? null,
+    p_file_name_search: fileNameSearch,
+    p_uploaded_from: filters.uploadedFrom ?? null,
+    p_uploaded_to: filters.uploadedTo ?? null,
+    p_offset: pagination.offset,
+    p_limit: pagination.limit,
+  })
 
-      if (categoryIds.length === 0) return []
-    } else {
-      categoryIds = [filters.categoryId]
-    }
-  }
-
-  // Collect document-id sets from association-based filters; intersect at the end.
-  const idSets: Set<string>[] = []
-
-  if (filters.entityType && filters.entityId) {
-    const { data, error } = await supabase
-      .from('document_associations')
-      .select('document_id')
-      .eq('entity_type', filters.entityType)
-      .eq('entity_id', filters.entityId)
-    if (error) throw error
-    idSets.push(new Set((data ?? []).map(r => r.document_id as string)))
-  }
-
-  if (filters.projectId) {
-    const { data, error } = await supabase
-      .from('document_associations')
-      .select('document_id')
-      .eq('entity_type', 'project')
-      .eq('entity_id', filters.projectId)
-    if (error) throw error
-    idSets.push(new Set((data ?? []).map(r => r.document_id as string)))
-  }
-
-  let restrictedIds: string[] | undefined
-  if (idSets.length > 0) {
-    const intersected = idSets.reduce<Set<string>>(
-      (acc, set, i) => (i === 0 ? set : new Set([...acc].filter(x => set.has(x)))),
-      new Set<string>(),
-    )
-    if (intersected.size === 0) return []
-    restrictedIds = [...intersected]
-  }
-
-  let query = supabase
-    .from('documents')
-    .select(DOC_WITH_RELATIONS_SELECT)
-    .order('uploaded_at', { ascending: false })
-
-  if (categoryIds) query = query.in('category_id', categoryIds)
-  if (restrictedIds) query = query.in('id', restrictedIds)
-
-  if (filters.fileNameSearch && filters.fileNameSearch.trim()) {
-    const pattern = `%${escapeLike(filters.fileNameSearch.trim())}%`
-    query = query.ilike('file_name', pattern)
-  }
-  if (filters.uploadedFrom) query = query.gte('uploaded_at', filters.uploadedFrom)
-  if (filters.uploadedTo)   query = query.lte('uploaded_at', filters.uploadedTo)
-
-  const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as DocumentWithRelations[]
+
+  const rows = (data ?? []) as { document: DocumentWithRelations; total_count: number }[]
+  return {
+    documents: rows.map(r => r.document),
+    totalCount: rows.length > 0 ? Number(rows[0].total_count) : 0,
+  }
+}
+
+// One round-trip grouped count for the sidebar tree. NULL category_id rows
+// contribute to `total` and `uncategorizedCount`, but no category node claims them.
+export async function fetchCategoryCounts(): Promise<DocumentCategoryCounts> {
+  const { data, error } = await supabase.rpc('get_document_category_counts')
+  if (error) throw error
+
+  const byCategoryId = new Map<string, number>()
+  let uncategorizedCount = 0
+  let total = 0
+
+  for (const row of (data ?? []) as { category_id: string | null; doc_count: number }[]) {
+    const n = Number(row.doc_count)
+    total += n
+    if (row.category_id) byCategoryId.set(row.category_id, n)
+    else uncategorizedCount += n
+  }
+
+  return { byCategoryId, uncategorizedCount, total }
 }
 
 // ---------------------------------------------------------------------------

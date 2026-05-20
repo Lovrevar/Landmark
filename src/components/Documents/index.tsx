@@ -6,7 +6,7 @@ import {
 import { format } from 'date-fns'
 
 import {
-  PageHeader, Button, Table, Badge, EmptyState, LoadingSpinner, ConfirmDialog,
+  PageHeader, Button, Table, Badge, EmptyState, LoadingSpinner, ConfirmDialog, Pagination,
 } from '../ui'
 import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
 import { useToast } from '../../contexts/ToastContext'
@@ -14,7 +14,7 @@ import { formatFileSize } from '../../utils/formatters'
 import { supabase } from '../../lib/supabase'
 
 import {
-  fetchCategories, fetchDocuments, getDocumentSignedUrl, deleteDocument,
+  fetchCategories, fetchCategoryCounts, fetchDocuments, getDocumentSignedUrl, deleteDocument,
 } from './services/documentService'
 import type {
   DocumentAssociation,
@@ -26,10 +26,8 @@ import type {
 } from './types'
 import { DocumentUploadModal } from './DocumentUploadModal'
 
-// NOTE: load-all approach. Acceptable while document counts stay below ~500.
-// Revisit (server-side pagination + indexed counts) if it grows past that.
-
 const SEARCH_DEBOUNCE_MS = 600
+const PAGE_SIZE = 100
 
 export default function DocumentsPage() {
   const { t } = useTranslation()
@@ -37,8 +35,11 @@ export default function DocumentsPage() {
 
   const [categoryTree, setCategoryTree] = useState<DocumentCategoryNode[]>([])
   const [categoryById, setCategoryById] = useState<Map<string, DocumentCategory>>(new Map())
+  const [descendantsById, setDescendantsById] = useState<Map<string, string[]>>(new Map())
   const [categoryCounts, setCategoryCounts] = useState<Map<string, number>>(new Map())
-  const [totalCount, setTotalCount] = useState(0)
+  const [sidebarTotalCount, setSidebarTotalCount] = useState(0)
+  const [listTotalCount, setListTotalCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
@@ -72,20 +73,20 @@ export default function DocumentsPage() {
     setLoading(true)
     Promise.all([
       fetchCategories(),
-      fetchAllDocCategoryIds(),
+      fetchCategoryCounts(),
       fetchProjectOptions(),
       fetchSubcontractorOptions(),
       fetchPhaseOptions(),
       fetchContractOptions(),
       fetchCreditOptions(),
     ])
-      .then(([tree, allCatIds, projects, subs, phases, contracts, credits]) => {
+      .then(([tree, counts, projects, subs, phases, contracts, credits]) => {
         if (cancelled) return
         setCategoryTree(tree)
         setCategoryById(buildIdMap(tree))
-        const { byId, total } = computeCounts(tree, allCatIds)
-        setCategoryCounts(byId)
-        setTotalCount(total)
+        setDescendantsById(buildDescendantsMap(tree))
+        setCategoryCounts(rollupCounts(tree, counts.byCategoryId))
+        setSidebarTotalCount(counts.total)
         setProjectOptions(projects)
         setSubcontractorOptions(subs)
         setPhaseOptions(phases)
@@ -109,35 +110,48 @@ export default function DocumentsPage() {
 
   // ---- List fetch on filter change --------------------------------------
 
-  const filterParams: DocumentFilters = useMemo(() => ({
-    ...(selectedCategoryId && { categoryId: selectedCategoryId, includeChildren: true }),
-    ...(projectId && { projectId }),
-    ...(subcontractorId && { entityType: 'subcontractor' as EntityType, entityId: subcontractorId }),
-    ...(debouncedSearch.trim() && { fileNameSearch: debouncedSearch.trim() }),
-    ...(uploadedFrom && { uploadedFrom: `${uploadedFrom}T00:00:00.000Z` }),
-    ...(uploadedTo   && { uploadedTo:   `${uploadedTo}T23:59:59.999Z` }),
-  }), [selectedCategoryId, projectId, subcontractorId, debouncedSearch, uploadedFrom, uploadedTo])
+  const filterParams: DocumentFilters = useMemo(() => {
+    const categoryIds = selectedCategoryId
+      ? descendantsById.get(selectedCategoryId) ?? [selectedCategoryId]
+      : undefined
+    return {
+      ...(categoryIds && { categoryIds }),
+      ...(projectId && { projectId }),
+      ...(subcontractorId && { entityType: 'subcontractor' as EntityType, entityId: subcontractorId }),
+      ...(debouncedSearch.trim() && { fileNameSearch: debouncedSearch.trim() }),
+      ...(uploadedFrom && { uploadedFrom: `${uploadedFrom}T00:00:00.000Z` }),
+      ...(uploadedTo   && { uploadedTo:   `${uploadedTo}T23:59:59.999Z` }),
+    }
+  }, [selectedCategoryId, descendantsById, projectId, subcontractorId, debouncedSearch, uploadedFrom, uploadedTo])
+
+  // Reset to page 1 whenever any filter changes (the underlying result set shifts).
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterParams])
 
   useEffect(() => {
     if (loading) return // wait for initial load
     let cancelled = false
     setListLoading(true)
-    fetchDocuments(filterParams)
-      .then(docs => { if (!cancelled) setDocuments(docs) })
+    fetchDocuments(filterParams, { offset: (currentPage - 1) * PAGE_SIZE, limit: PAGE_SIZE })
+      .then(({ documents, totalCount }) => {
+        if (cancelled) return
+        setDocuments(documents)
+        setListTotalCount(totalCount)
+      })
       .catch(() => { if (!cancelled) toast.error(t('documents.page.toast.load_error')) })
       .finally(() => { if (!cancelled) setListLoading(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterParams, loading])
+  }, [filterParams, currentPage, loading])
 
   // ---- Mutation refresh --------------------------------------------------
 
   const refreshCounts = async () => {
     try {
-      const allCatIds = await fetchAllDocCategoryIds()
-      const { byId, total } = computeCounts(categoryTree, allCatIds)
-      setCategoryCounts(byId)
-      setTotalCount(total)
+      const counts = await fetchCategoryCounts()
+      setCategoryCounts(rollupCounts(categoryTree, counts.byCategoryId))
+      setSidebarTotalCount(counts.total)
     } catch {
       // count refresh is best-effort; the list refresh below is the source of truth
     }
@@ -146,8 +160,12 @@ export default function DocumentsPage() {
   const refreshList = async () => {
     setListLoading(true)
     try {
-      const docs = await fetchDocuments(filterParams)
-      setDocuments(docs)
+      const result = await fetchDocuments(filterParams, {
+        offset: (currentPage - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+      })
+      setDocuments(result.documents)
+      setListTotalCount(result.totalCount)
     } catch {
       toast.error(t('documents.page.toast.load_error'))
     } finally {
@@ -261,7 +279,7 @@ export default function DocumentsPage() {
               <Folder className="w-4 h-4" />
               {t('documents.page.all_documents')}
             </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{totalCount}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{sidebarTotalCount}</span>
           </button>
 
           <div className="mt-1">
@@ -351,6 +369,14 @@ export default function DocumentsPage() {
             breadcrumbFor={breadcrumbFor}
             onOpen={handleOpen}
             onDelete={(doc) => setPendingDelete(doc)}
+          />
+
+          <Pagination
+            currentPage={currentPage}
+            pageSize={PAGE_SIZE}
+            totalCount={listTotalCount}
+            onPageChange={setCurrentPage}
+            itemLabel={t('documents.page.pagination.item_label')}
           />
         </section>
       </div>
@@ -669,31 +695,35 @@ function buildIdMap(tree: DocumentCategoryNode[]): Map<string, DocumentCategory>
   return m
 }
 
-function computeCounts(
-  tree: DocumentCategoryNode[],
-  docCategoryIds: (string | null)[],
-): { byId: Map<string, number>; total: number } {
-  const own = new Map<string, number>()
-  let total = 0
-  for (const id of docCategoryIds) {
-    total++
-    if (id) own.set(id, (own.get(id) ?? 0) + 1)
+// For each category node, the list of ids covering that node plus all descendants.
+// Used to expand a single-category click into a flat uuid[] for the search RPC.
+function buildDescendantsMap(tree: DocumentCategoryNode[]): Map<string, string[]> {
+  const m = new Map<string, string[]>()
+  const collect = (node: DocumentCategoryNode): string[] => {
+    const ids: string[] = [node.id]
+    for (const child of node.children) ids.push(...collect(child))
+    m.set(node.id, ids)
+    return ids
   }
+  for (const root of tree) collect(root)
+  return m
+}
+
+// Roll grouped (own-only) counts up through the tree so each node's number
+// reflects its own documents plus those of its descendants.
+function rollupCounts(
+  tree: DocumentCategoryNode[],
+  ownByCategoryId: Map<string, number>,
+): Map<string, number> {
   const totals = new Map<string, number>()
   const visit = (node: DocumentCategoryNode): number => {
-    let sum = own.get(node.id) ?? 0
+    let sum = ownByCategoryId.get(node.id) ?? 0
     for (const child of node.children) sum += visit(child)
     totals.set(node.id, sum)
     return sum
   }
   for (const root of tree) visit(root)
-  return { byId: totals, total }
-}
-
-async function fetchAllDocCategoryIds(): Promise<(string | null)[]> {
-  const { data, error } = await supabase.from('documents').select('category_id')
-  if (error) throw error
-  return (data ?? []).map(r => (r.category_id as string | null) ?? null)
+  return totals
 }
 
 async function fetchProjectOptions(): Promise<SearchableOption[]> {

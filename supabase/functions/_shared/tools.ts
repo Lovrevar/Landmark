@@ -32,6 +32,16 @@ import {
   type SearchProjectsInput,
   type SearchSubcontractorsInput,
 } from './tool-handlers.ts'
+import { handleSearchHelp, type HelpSearchContext, type SearchHelpInput } from './help-search.ts'
+
+/**
+ * Per-request, non-auth context threaded into every tool handler. Existing
+ * handlers ignore it (TS allows a 2-arg function to satisfy this 3-arg type);
+ * search_help reads `helpSearch` to apply route boost and to log telemetry.
+ */
+export interface ToolHandlerExtras {
+  helpSearch: HelpSearchContext
+}
 
 export interface ToolDefinition<I = Record<string, unknown>, O = unknown> {
   name: string
@@ -41,7 +51,7 @@ export interface ToolDefinition<I = Record<string, unknown>, O = unknown> {
   // model, not runtime-validated here. Phase 3.2 may add validation per tool.
   input_schema: Record<string, unknown>
   requiredRoles: Role[]
-  handler: (input: I, ctx: AuthContext) => Promise<O>
+  handler: (input: I, ctx: AuthContext, extras: ToolHandlerExtras) => Promise<O>
 }
 
 const ALL_ROLES: Role[] = ['Director', 'Accounting', 'Sales', 'Supervision', 'Investment']
@@ -324,6 +334,31 @@ export const TOOLS: ToolDefinition[] = [
     requiredRoles: FINANCE_ROLES,
     handler: (input, ctx) =>
       handleGetProjectFinancialSummary(input as GetProjectFinancialSummaryInput, ctx),
+  },
+
+  {
+    name: 'search_help',
+    description:
+      'Pretraži bazu znanja o platformi Cognilion za informacije o stranicama, tijekovima rada, ' +
+      'domenskim pojmovima i pristupu po ulogama. Pozovite kada korisnik pita "kako", "gdje", ' +
+      '"što je", "zašto ne vidim", ili treba pomoć s navigacijom kroz aplikaciju. ' +
+      'Vraća do 5 najrelevantnijih unosa iz baze znanja kao markdown. ' +
+      'Ne koristite za pretragu konkretnih podataka (projekata, ugovora, plaćanja) — za to postoje drugi alati.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Pitanje korisnika ili ključne riječi za pretragu baze znanja, na hrvatskom ili engleskom.',
+          minLength: 1,
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx, extras) =>
+      handleSearchHelp(input as SearchHelpInput, ctx, extras.helpSearch),
   },
 ]
 

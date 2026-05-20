@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Pagination } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { format } from 'date-fns'
 import { useSupervisionInvoices } from './hooks/useSupervisionInvoices'
@@ -11,6 +11,11 @@ const InvoicesManagement: React.FC = () => {
     loading,
     stats,
     filteredInvoices,
+    paginatedInvoices,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalCount,
     searchTerm,
     setSearchTerm,
     filterStatus,
@@ -94,6 +99,7 @@ const InvoicesManagement: React.FC = () => {
           description={t('common.adjust_search')}
         />
       ) : (
+        <>
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <table className="w-full min-w-[1400px] bg-white dark:bg-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -111,7 +117,7 @@ const InvoicesManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredInvoices.map((invoice) => (
+              {paginatedInvoices.map((invoice) => (
                 <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="px-4 py-3 text-center">
                     <Button
@@ -156,6 +162,14 @@ const InvoicesManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setCurrentPage}
+          itemLabel={t('supervision.invoices.pagination.item_label')}
+        />
+        </>
       )}
     </div>
   )

@@ -29,19 +29,32 @@
 //             if it doesn't exist. The Director role check is a second line
 //             of defense for the in-dev case.
 //
-// Persistence remains incremental and runs to completion regardless of the
-// client's connection state. Session and message ownership is enforced in
-// this layer with explicit user_id / session_id filters on the service
-// client; tool handlers still use the JWT-scoped userClient internally.
+// Persistence is incremental. Cancellation is honoured: when the client
+// disconnects (fetch reader closes), `req.signal` aborts the per-request
+// AbortController, which is propagated to `anthropic.messages.create` and
+// checked at iteration boundaries — no further DB rows are written after the
+// abort, and no `error` event is emitted (the client is gone). The same
+// controller is also tripped by the 90s timeout, which still surfaces as a
+// mid-stream `error` event with code 'request_timeout'. Anything persisted
+// BEFORE the abort (user turn, any complete assistant turn already inserted)
+// stays — partial-but-real responses survive the cancel by design.
+//
+// Session and message ownership is enforced in this layer with explicit
+// user_id / session_id filters on the service client; tool handlers still
+// use the JWT-scoped userClient internally.
 
-// TODO: pin @anthropic-ai/sdk version before prod deploy
-import Anthropic from 'npm:@anthropic-ai/sdk'
+// Pinned to a known-good release with stable AbortSignal support on
+// messages.create. Bump deliberately; do not float on `latest`.
+import Anthropic from 'npm:@anthropic-ai/sdk@0.97.0'
+import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
 import { corsHeaders, handlePreflight } from '../_shared/cors.ts'
 import { authenticate, type AuthContext } from '../_shared/auth.ts'
-import { selectAvailableTools, TOOLS } from '../_shared/tools.ts'
+import { selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
 import { buildSystemPrompt } from '../_shared/prompts.ts'
 import { checkRateLimit } from '../_shared/rateLimit.ts'
+import { describeRoute, sanitizeRoute } from '../_shared/routeLabels.ts'
+import type { HelpSearchContext } from '../_shared/help-search.ts'
 import type { Json } from '../_shared/database.ts'
 
 const jsonHeaders = { ...corsHeaders, 'content-type': 'application/json' }
@@ -98,9 +111,46 @@ interface InMemoryMessage {
   content: unknown
 }
 
+// Multimodal attachments. Files are uploaded to the `ai-chat-attachments`
+// bucket BEFORE the chat request lands; the client passes their metadata
+// (storage_path + size/kind/mime) here so the edge function can validate,
+// download bytes, and build Anthropic image/document/text blocks. For
+// kind='text' the content is already extracted client-side and ≤50KB.
+type AttachmentKind = 'image' | 'pdf' | 'text'
+interface AttachmentInput {
+  storage_path: string
+  file_name: string
+  file_size: number
+  mime_type: string
+  kind: AttachmentKind
+  extracted_text?: string | null
+}
+
 interface ChatRequestBody {
   session_id?: string | null
   message?: string
+  // When set, the new user message is inserted as a sibling of the referenced
+  // row (same parent_id) — a new branch in the conversation tree. Requires a
+  // real session_id; rejected on brand-new conversations.
+  edit_message_id?: string | null
+  // For non-edit sends on an existing session, the active branch's leaf id.
+  // The new user message will hang off this parent. Null only for the first
+  // message in a session (or, equivalently, when the session was just
+  // created server-side).
+  parent_message_id?: string | null
+  // location.pathname from the React Router context at send time. Used to
+  // prepend a "[Kontekst: ...]" line to the in-memory user message and to
+  // route-boost help-KB lookups. Sanitized server-side; the persisted user
+  // row never contains the route line.
+  current_route?: string | null
+  // Per-message file attachments. Server re-validates size, kind, MIME and
+  // storage_path prefix; client limits are advisory only.
+  attachments?: AttachmentInput[] | null
+  // Client-proposed UUID for the to-be-created session. Lets the client
+  // upload attachments to `{auth_user_id}/{session_id}/...` BEFORE the
+  // server creates the session row. Honoured only when session_id is null;
+  // ignored if a session with the same id already exists.
+  proposed_session_id?: string | null
 }
 
 interface DebugRequestBody {
@@ -116,6 +166,16 @@ interface ChatStreamPrep {
   newlyCreatedSession: boolean
   messages: InMemoryMessage[]
   userMessage: string
+  // The id of the row we last inserted on this request — starts as the user
+  // turn we just persisted. The orchestration loop chains every subsequent
+  // row (assistant + tool_result) off this id so the tree stays well-formed.
+  lastInsertedId: string
+  // Resolved page-context for this request. `routePattern` and `routeLabel`
+  // are populated when the client-supplied path resolves via routeLabels.ts;
+  // null when missing/unknown (no context line is prepended in that case).
+  // `routeRaw` is the sanitized client input — used in telemetry only.
+  helpSearch: HelpSearchContext
+  routeLabel: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -130,10 +190,34 @@ class SSEWriter {
   private readonly encoder = new TextEncoder()
   private heartbeatTimer: number | undefined
   private closed = false
+  // Third disconnect-detection source: when any write throws, the underlying
+  // socket is dead. Invoked exactly once. Used by streamChatResponse to trip
+  // the per-request AbortController even if req.signal and writer.closed both
+  // miss the event (which is what we suspect is happening in Supabase's Edge
+  // runtime — the BadResource error suggests Deno sees the dead socket but
+  // never propagates it as a clean signal to user code).
+  private readonly onWriteFailure: (() => void) | undefined
+  private writeFailureFired = false
 
-  constructor(writer: WritableStreamDefaultWriter<Uint8Array>) {
+  constructor(
+    writer: WritableStreamDefaultWriter<Uint8Array>,
+    onWriteFailure?: () => void,
+  ) {
     this.writer = writer
+    this.onWriteFailure = onWriteFailure
     this.scheduleHeartbeat()
+  }
+
+  private notifyWriteFailure(): void {
+    if (this.writeFailureFired) return
+    this.writeFailureFired = true
+    // Mark closed so subsequent writes are silent no-ops.
+    this.closed = true
+    if (this.heartbeatTimer !== undefined) {
+      clearTimeout(this.heartbeatTimer)
+      this.heartbeatTimer = undefined
+    }
+    this.onWriteFailure?.()
   }
 
   private scheduleHeartbeat(): void {
@@ -143,9 +227,11 @@ class SSEWriter {
     }
     this.heartbeatTimer = setTimeout(() => {
       if (this.closed) return
-      // Fire-and-forget — if the writer was closed mid-flight we swallow.
-      this.writer.write(this.encoder.encode(': keepalive\n\n')).catch(() => {})
-      this.scheduleHeartbeat()
+      // Use the heartbeat as a live-connection probe: if the write throws,
+      // the socket is gone — notify so the parent can abort the SDK call.
+      this.writer.write(this.encoder.encode(': keepalive\n\n'))
+        .then(() => this.scheduleHeartbeat())
+        .catch(() => this.notifyWriteFailure())
     }, HEARTBEAT_INTERVAL_MS)
   }
 
@@ -157,7 +243,7 @@ class SSEWriter {
       )
       this.scheduleHeartbeat()
     } catch {
-      // Client disconnected or writer already closed — silently absorb.
+      this.notifyWriteFailure()
     }
   }
 
@@ -167,7 +253,7 @@ class SSEWriter {
       await this.writer.write(this.encoder.encode(`: ${text}\n\n`))
       this.scheduleHeartbeat()
     } catch {
-      // ignore
+      this.notifyWriteFailure()
     }
   }
 
@@ -194,10 +280,11 @@ async function dispatchTool(
   name: string,
   input: unknown,
   ctx: AuthContext,
+  extras: ToolHandlerExtras,
 ): Promise<unknown> {
   const tool = TOOLS.find((t) => t.name === name)
   if (!tool) throw new Error(`unknown tool: ${name}`)
-  return await tool.handler(input as Record<string, unknown>, ctx)
+  return await tool.handler(input as Record<string, unknown>, ctx, extras)
 }
 
 // Race the tool handler against a 15s timeout and normalise failure modes
@@ -207,10 +294,11 @@ async function dispatchToolWithTimeout(
   name: string,
   input: unknown,
   ctx: AuthContext,
+  extras: ToolHandlerExtras,
 ): Promise<{ output: unknown; isError: boolean }> {
   try {
     const output = await Promise.race([
-      dispatchTool(name, input, ctx),
+      dispatchTool(name, input, ctx, extras),
       new Promise<never>((_, rej) =>
         setTimeout(() => rej(new Error('tool_timeout')), 15000),
       ),
@@ -290,6 +378,174 @@ function flatError(code: string, message: string, status: number): Response {
   })
 }
 
+// ---------------------------------------------------------------------------
+// Attachments: limits, whitelists, validation, multimodal block builder.
+// ---------------------------------------------------------------------------
+
+const MAX_ATTACHMENTS_PER_MESSAGE = 4
+const ATTACHMENT_SIZE_LIMITS: Record<AttachmentKind, number> = {
+  image: 5 * 1024 * 1024,
+  pdf: 10 * 1024 * 1024,
+  text: 2 * 1024 * 1024,
+}
+const EXTRACTED_TEXT_MAX_BYTES = 50 * 1024
+
+const ATTACHMENT_MIME_WHITELIST: Record<AttachmentKind, Set<string>> = {
+  image: new Set(['image/png', 'image/jpeg', 'image/webp']),
+  pdf: new Set(['application/pdf']),
+  text: new Set([
+    'text/plain',
+    'text/csv',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+  ]),
+}
+const ATTACHMENT_EXT_WHITELIST: Record<AttachmentKind, Set<string>> = {
+  image: new Set(['png', 'jpg', 'jpeg', 'webp']),
+  pdf: new Set(['pdf']),
+  text: new Set(['txt', 'csv', 'xls', 'xlsx']),
+}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Validate per-attachment shape, size, kind/MIME/extension whitelist, and
+// the storage_path prefix. Returns a flat error Response on the first
+// failure, or null on success. `authUserId` is the auth.users.id used as
+// the first storage path segment (NOT public.users.id — that's what the
+// bucket RLS compares to auth.uid()).
+function validateAttachments(
+  attachments: AttachmentInput[],
+  authUserId: string,
+): Response | null {
+  if (attachments.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+    return flatError(
+      'too_many_attachments',
+      `Maksimalno ${MAX_ATTACHMENTS_PER_MESSAGE} priloga po poruci.`,
+      400,
+    )
+  }
+  for (let i = 0; i < attachments.length; i++) {
+    const att = attachments[i]
+    if (!att || typeof att !== 'object') {
+      return flatError('invalid_attachment', `Neispravan prilog na poziciji ${i}.`, 400)
+    }
+    if (att.kind !== 'image' && att.kind !== 'pdf' && att.kind !== 'text') {
+      return flatError('invalid_attachment_kind', `Nepoznata vrsta priloga: ${att.kind}.`, 400)
+    }
+    if (typeof att.mime_type !== 'string' || !ATTACHMENT_MIME_WHITELIST[att.kind].has(att.mime_type)) {
+      return flatError(
+        'unsupported_attachment_type',
+        `Format datoteke "${att.mime_type}" nije podržan.`,
+        400,
+      )
+    }
+    if (typeof att.file_name !== 'string' || att.file_name.length === 0 || att.file_name.length > 255) {
+      return flatError('invalid_attachment', `Ime datoteke nije ispravno.`, 400)
+    }
+    const ext = att.file_name.toLowerCase().split('.').pop() ?? ''
+    if (!ATTACHMENT_EXT_WHITELIST[att.kind].has(ext)) {
+      return flatError(
+        'unsupported_attachment_type',
+        `Ekstenzija ".${ext}" ne odgovara vrsti priloga.`,
+        400,
+      )
+    }
+    if (typeof att.file_size !== 'number' || att.file_size <= 0 || !Number.isFinite(att.file_size)) {
+      return flatError('invalid_attachment', `Veličina datoteke nije ispravna.`, 400)
+    }
+    if (att.file_size > ATTACHMENT_SIZE_LIMITS[att.kind]) {
+      return flatError(
+        'attachment_too_large',
+        `Datoteka "${att.file_name}" prelazi maksimalnu veličinu.`,
+        400,
+      )
+    }
+    // Storage path must live under the user's prefix and not escape via
+    // traversal. The service client bypasses bucket RLS, so this prefix
+    // check is the actual security control.
+    if (typeof att.storage_path !== 'string'
+      || !att.storage_path.startsWith(`${authUserId}/`)
+      || att.storage_path.includes('..')
+      || att.storage_path.startsWith('/')
+      || att.storage_path.includes('\0')) {
+      return flatError(
+        'attachment_path_rejected',
+        'Putanja priloga nije ispravna.',
+        400,
+      )
+    }
+    if (att.kind === 'text') {
+      if (typeof att.extracted_text !== 'string' || att.extracted_text.length === 0) {
+        return flatError(
+          'invalid_attachment',
+          `Tekstualni prilog "${att.file_name}" nema sadržaja.`,
+          400,
+        )
+      }
+      const byteLen = new TextEncoder().encode(att.extracted_text).byteLength
+      if (byteLen > EXTRACTED_TEXT_MAX_BYTES) {
+        return flatError(
+          'attachment_too_large',
+          `Izvučeni tekst priloga "${att.file_name}" prelazi 50 KB.`,
+          400,
+        )
+      }
+    } else if (att.extracted_text !== null && att.extracted_text !== undefined) {
+      return flatError(
+        'invalid_attachment',
+        `extracted_text smije postojati samo za tekstualne priloge.`,
+        400,
+      )
+    }
+  }
+  return null
+}
+
+// Build the multimodal content array for the user's turn. Image and PDF
+// bytes are downloaded from the bucket (service-role; prefix check in
+// validateAttachments is what keeps cross-user paths out) and base64
+// encoded into Anthropic image/document blocks. Text-kind attachments use
+// the already-extracted UTF-8 from the client. The plain text block
+// carrying the user's typed message is appended LAST so context (the
+// files) precedes the question — and so the route-augmentation later can
+// find it by type.
+async function buildUserContentBlocks(
+  userText: string,
+  attachments: AttachmentInput[],
+  serviceClient: AuthContext['serviceClient'],
+): Promise<AnthropicBlock[]> {
+  const out: AnthropicBlock[] = []
+  for (const att of attachments) {
+    if (att.kind === 'text') {
+      out.push({
+        type: 'text',
+        text: `[Priložena datoteka: ${att.file_name}]\n\n${att.extracted_text ?? ''}`,
+      })
+      continue
+    }
+    const { data, error } = await serviceClient.storage
+      .from('ai-chat-attachments')
+      .download(att.storage_path)
+    if (error || !data) {
+      throw new Error(`attachment_download_failed:${att.storage_path}`)
+    }
+    const bytes = new Uint8Array(await data.arrayBuffer())
+    const base64 = encodeBase64(bytes)
+    if (att.kind === 'image') {
+      out.push({
+        type: 'image',
+        source: { type: 'base64', media_type: att.mime_type, data: base64 },
+      })
+    } else {
+      out.push({
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+      })
+    }
+  }
+  out.push({ type: 'text', text: userText })
+  return out
+}
+
 // Fire-and-forget title backfill for newly-created sessions. The first 60
 // characters of the user's opening message become the thread title; failures
 // are logged but never propagated to the caller.
@@ -340,6 +596,23 @@ async function handleChat(
     return flatError('bad_request', 'message is required and must be a non-empty string', 400)
   }
 
+  // ---- Attachments: validation up front, before rate-limit so a malformed
+  //      payload doesn't consume the per-window budget. ----
+  const rawAttachments = Array.isArray(body.attachments) ? body.attachments : []
+  const editIdEarly = typeof body.edit_message_id === 'string' && body.edit_message_id.length > 0
+    ? body.edit_message_id
+    : null
+  if (rawAttachments.length > 0 && editIdEarly) {
+    return flatError(
+      'edit_with_attachments_unsupported',
+      'Uređivanje poruke ne podržava priloge.',
+      400,
+    )
+  }
+  const attachmentValidation = validateAttachments(rawAttachments, ctx.authUserId)
+  if (attachmentValidation) return attachmentValidation
+  const attachments: AttachmentInput[] = rawAttachments
+
   // ---- Rate limit check ----
   // Pre-session: blocks before we touch ai_sessions/ai_messages, so an
   // over-limit request leaves no trace beyond the log line below. Debug
@@ -365,9 +638,37 @@ async function handleChat(
   let newlyCreatedSession = false
 
   if (body.session_id == null) {
+    // Client may propose a UUID so attachments can be uploaded under the
+    // final `{auth_user_id}/{session_id}/...` path before the row exists.
+    // Honour it only if (a) syntactically a uuid and (b) no session with
+    // that id already exists. Otherwise fall through to a server-generated
+    // id.
+    const proposed = typeof body.proposed_session_id === 'string'
+      && UUID_RE.test(body.proposed_session_id)
+      ? body.proposed_session_id
+      : null
+    let proposedTaken = false
+    if (proposed) {
+      const { data: existing, error: probeError } = await ctx.serviceClient
+        .from('ai_sessions')
+        .select('id')
+        .eq('id', proposed)
+        .maybeSingle()
+      if (probeError) {
+        console.error('[ai-chat] proposed session probe failed', {
+          userId: ctx.userId,
+          code: probeError.code,
+        })
+        return flatError('internal_error', 'Failed to check proposed session', 500)
+      }
+      proposedTaken = !!existing
+    }
+    const insertPayload: { user_id: string; title: null; id?: string } =
+      { user_id: ctx.userId, title: null }
+    if (proposed && !proposedTaken) insertPayload.id = proposed
     const { data: created, error: createError } = await ctx.serviceClient
       .from('ai_sessions')
-      .insert({ user_id: ctx.userId, title: null })
+      .insert(insertPayload)
       .select('id')
       .single()
 
@@ -401,48 +702,231 @@ async function handleChat(
     sessionId = existing.id
   }
 
-  // ---- Load history ----
-  const { data: historyRows, error: historyError } = await ctx.serviceClient
-    .from('ai_messages')
-    .select('role, content')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
+  // ---- Resolve the parent of the new user row ----
+  // Two modes:
+  //   - Edit: insert as a sibling of the target user message, so they share
+  //     a parent and become switchable branches in the UI.
+  //   - Regular send: chain off the active leaf supplied by the client.
+  // First message in a new session: parent stays null.
+  const editMessageId = typeof body.edit_message_id === 'string' && body.edit_message_id.length > 0
+    ? body.edit_message_id
+    : null
+  const clientParentId = typeof body.parent_message_id === 'string' && body.parent_message_id.length > 0
+    ? body.parent_message_id
+    : null
 
-  if (historyError) {
-    console.error('[ai-chat] history load failed', {
-      userId: ctx.userId,
-      sessionId,
-      code: historyError.code,
-    })
-    return flatError('internal_error', 'Failed to load history', 500)
+  let newParentId: string | null = null
+
+  if (editMessageId) {
+    if (newlyCreatedSession) {
+      return flatError(
+        'invalid_request',
+        'Cannot edit a message in a brand-new conversation.',
+        400,
+      )
+    }
+
+    const { data: target, error: targetError } = await ctx.serviceClient
+      .from('ai_messages')
+      .select('id, role, parent_id')
+      .eq('id', editMessageId)
+      .eq('session_id', sessionId)
+      .maybeSingle()
+
+    if (targetError) {
+      console.error('[ai-chat] edit target lookup failed', {
+        userId: ctx.userId,
+        sessionId,
+        code: targetError.code,
+      })
+      return flatError('internal_error', 'Failed to look up message to edit.', 500)
+    }
+    if (!target) {
+      return flatError('not_found', 'Message not found.', 404)
+    }
+    if (target.role !== 'user') {
+      return flatError('invalid_request', 'Only user messages can be edited.', 400)
+    }
+    newParentId = target.parent_id
+  } else if (clientParentId && !newlyCreatedSession) {
+    // Validate the client-supplied parent belongs to this session.
+    const { data: parent, error: parentError } = await ctx.serviceClient
+      .from('ai_messages')
+      .select('id')
+      .eq('id', clientParentId)
+      .eq('session_id', sessionId)
+      .maybeSingle()
+
+    if (parentError) {
+      console.error('[ai-chat] parent lookup failed', {
+        userId: ctx.userId,
+        sessionId,
+        code: parentError.code,
+      })
+      return flatError('internal_error', 'Failed to look up parent message.', 500)
+    }
+    if (!parent) {
+      return flatError('not_found', 'Parent message not found.', 404)
+    }
+    newParentId = parent.id
   }
 
-  const messages: InMemoryMessage[] = (historyRows ?? []).map((r) => ({
-    role: r.role as 'user' | 'assistant',
-    content: r.content,
-  }))
+  // ---- Load history along the active branch ----
+  // The model needs the ancestor chain root → newParentId so the new turn
+  // is contextualised by the correct branch. For a brand-new conversation
+  // (newParentId === null), this is empty.
+  const messages: InMemoryMessage[] = []
+  if (newParentId !== null) {
+    const { data: sessionRows, error: historyError } = await ctx.serviceClient
+      .from('ai_messages')
+      .select('id, role, content, parent_id')
+      .eq('session_id', sessionId)
+
+    if (historyError) {
+      console.error('[ai-chat] history load failed', {
+        userId: ctx.userId,
+        sessionId,
+        code: historyError.code,
+      })
+      return flatError('internal_error', 'Failed to load history', 500)
+    }
+
+    const byId = new Map<string, { id: string; role: string; content: Json; parent_id: string | null }>()
+    for (const r of sessionRows ?? []) {
+      byId.set(r.id, r as { id: string; role: string; content: Json; parent_id: string | null })
+    }
+
+    // Walk parents from newParentId to root; collect into chain.
+    const chain: Array<{ role: 'user' | 'assistant'; content: Json }> = []
+    let cursor: string | null = newParentId
+    const seen = new Set<string>()
+    while (cursor) {
+      if (seen.has(cursor)) {
+        console.error('[ai-chat] cycle detected in parent chain', {
+          userId: ctx.userId,
+          sessionId,
+          cursor,
+        })
+        return flatError('internal_error', 'Conversation tree is corrupted.', 500)
+      }
+      seen.add(cursor)
+      const row = byId.get(cursor)
+      if (!row) break
+      chain.unshift({ role: row.role as 'user' | 'assistant', content: row.content })
+      cursor = row.parent_id
+    }
+    for (const m of chain) messages.push(m)
+  }
+
+  // ---- Build the multimodal user-turn content ----
+  // Image/PDF bytes come from the bucket (service role; the prefix check in
+  // validateAttachments is what keeps cross-user paths out). The full block
+  // array — including base64 image/document blocks — is what gets persisted
+  // as ai_messages.content, so history reload replays the exact same input
+  // to Anthropic without re-downloading from storage.
+  let userContent: AnthropicBlock[]
+  try {
+    userContent = attachments.length > 0
+      ? await buildUserContentBlocks(userMessage, attachments, ctx.serviceClient)
+      : [{ type: 'text', text: userMessage }]
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('[ai-chat] attachment processing failed', {
+      userId: ctx.userId,
+      sessionId,
+      err: errMsg,
+    })
+    return flatError(
+      'attachment_processing_failed',
+      'Greška pri obradi priloga.',
+      500,
+    )
+  }
 
   // ---- Persist + append the user turn ----
-  const userContent: TextBlock[] = [{ type: 'text', text: userMessage }]
-  const { error: userInsertError } = await ctx.serviceClient
+  const { data: userInsertRow, error: userInsertError } = await ctx.serviceClient
     .from('ai_messages')
     .insert({
       session_id: sessionId,
       role: 'user',
       content: userContent as unknown as Json,
+      parent_id: newParentId,
     })
+    .select('id')
+    .single()
 
-  if (userInsertError) {
+  if (userInsertError || !userInsertRow) {
     console.error('[ai-chat] user message insert failed', {
       userId: ctx.userId,
       sessionId,
-      code: userInsertError.code,
+      code: userInsertError?.code,
     })
     return flatError('internal_error', 'Failed to persist user message', 500)
   }
   messages.push({ role: 'user', content: userContent })
 
-  return { sessionId, newlyCreatedSession, messages, userMessage }
+  // ---- Persist attachment side-table rows ----
+  // The user row is the authoritative replay record; this side-table feeds
+  // chip/thumbnail rendering. If this insert fails we roll back the user
+  // row (best-effort) so the UI doesn't get a half-linked message.
+  if (attachments.length > 0) {
+    const attachmentRows = attachments.map((att) => ({
+      message_id: userInsertRow.id,
+      storage_path: att.storage_path,
+      file_name: att.file_name,
+      file_size: att.file_size,
+      mime_type: att.mime_type,
+      kind: att.kind,
+      extracted_text: att.kind === 'text' ? att.extracted_text ?? null : null,
+    }))
+    const { error: attachInsertError } = await ctx.serviceClient
+      .from('ai_message_attachments')
+      .insert(attachmentRows)
+    if (attachInsertError) {
+      console.error('[ai-chat] attachment insert failed; rolling back user row', {
+        userId: ctx.userId,
+        sessionId,
+        messageId: userInsertRow.id,
+        code: attachInsertError.code,
+      })
+      // Best-effort cleanup. Failures here are logged-only — the user
+      // row delete will cascade-clean any partially-inserted attachment
+      // rows via the FK, and the storage objects are best-effort
+      // removed too so a retry can reuse the same paths.
+      await ctx.serviceClient
+        .from('ai_messages')
+        .delete()
+        .eq('id', userInsertRow.id)
+      await ctx.serviceClient
+        .storage
+        .from('ai-chat-attachments')
+        .remove(attachments.map((a) => a.storage_path))
+        .catch(() => undefined)
+      return flatError('internal_error', 'Failed to persist attachments', 500)
+    }
+  }
+
+  // ---- Resolve the route context ----
+  // Sanitize the client-supplied path and try to match a known route pattern.
+  // Unknown / malformed values silently drop to no-context — we never want a
+  // garbage path interpolated into the prompt.
+  const sanitizedRoute = sanitizeRoute(body.current_route ?? null)
+  const routeDesc = sanitizedRoute ? describeRoute(sanitizedRoute) : null
+  const helpSearch: HelpSearchContext = {
+    currentRoutePattern: routeDesc?.pattern ?? null,
+    currentRouteRaw: sanitizedRoute,
+  }
+  const routeLabel = routeDesc?.label ?? null
+
+  return {
+    sessionId,
+    newlyCreatedSession,
+    messages,
+    userMessage,
+    lastInsertedId: userInsertRow.id,
+    helpSearch,
+    routeLabel,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -460,8 +944,11 @@ async function runOrchestrationLoop(
   ctx: AuthContext,
   sse: SSEWriter,
   prep: ChatStreamPrep,
+  signal: AbortSignal,
+  onDbCancel: () => void,
 ): Promise<void> {
   const { sessionId, newlyCreatedSession, messages, userMessage } = prep
+  let lastInsertedId: string = prep.lastInsertedId
   const model = Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6'
   const system = buildSystemPrompt(ctx)
   const availableTools = selectAvailableTools(ctx).map((t) => ({
@@ -469,11 +956,83 @@ async function runOrchestrationLoop(
     description: t.description,
     input_schema: t.input_schema,
   }))
+  const extras: ToolHandlerExtras = { helpSearch: prep.helpSearch }
+
+  // Prepend a "[Kontekst: ...]" line to the LAST message in the in-memory
+  // array (which is always the just-persisted user turn). This is deliberately
+  // done in-memory only — the ai_messages row already stored the user's raw
+  // text in handleChat. Replaying the augmented message into the persisted
+  // history would leak a stale route into every follow-up turn.
+  //
+  // With attachments, the user content can be a mixed array: image and
+  // document blocks precede the trailing text block. We mutate just the
+  // text block (by type, not by index) so the route context is prepended
+  // to the typed message without clobbering image/document blocks.
+  if (prep.routeLabel && messages.length > 0) {
+    const last = messages[messages.length - 1]
+    if (last.role === 'user' && Array.isArray(last.content)) {
+      const blocks = last.content as AnthropicBlock[]
+      const textIdx = blocks.findIndex((b) => b.type === 'text')
+      if (textIdx !== -1) {
+        const contextLine =
+          `[Kontekst: korisnik je trenutno na ${prep.helpSearch.currentRoutePattern} — ${prep.routeLabel}]`
+        const original = (blocks[textIdx] as TextBlock).text
+        const augmented = blocks.slice()
+        augmented[textIdx] = { type: 'text', text: `${contextLine}\n\n${original}` }
+        messages[messages.length - 1] = { role: 'user', content: augmented }
+      }
+    }
+  }
 
   const MAX_ITERATIONS = 10
   let lastUsage = { input_tokens: 0, output_tokens: 0 }
 
+  // Loop start instant. Cancel beacons (ai_sessions.cancel_requested_at) only
+  // count if their timestamp is strictly greater than this — that way a stop
+  // from a previous turn that's still sitting in the column doesn't kill a
+  // fresh turn on the same session.
+  const requestStartedAt = new Date().toISOString()
+
+  // Poll the DB-backed cancel beacon. Returns true iff the user pressed stop
+  // since this loop started (or the per-request controller already aborted,
+  // in which case the signal-based path is doing its job and we exit anyway).
+  // On query error we fail open — Supabase hiccups should not lock the user
+  // into an unstoppable loop, but they also should not surface a fake cancel.
+  const isCancelled = async (): Promise<boolean> => {
+    if (signal.aborted) return true
+    const { data, error } = await ctx.serviceClient
+      .from('ai_sessions')
+      .select('cancel_requested_at')
+      .eq('id', sessionId)
+      .eq('user_id', ctx.userId)
+      .maybeSingle()
+    if (error) {
+      console.error('[ai-chat] cancel beacon read failed', {
+        userId: ctx.userId,
+        sessionId,
+        code: error.code,
+      })
+      return false
+    }
+    const beacon = data?.cancel_requested_at
+    if (!beacon) return false
+    if (beacon > requestStartedAt) {
+      console.log('[ai-chat] cancel beacon trip', {
+        userId: ctx.userId,
+        sessionId,
+        beacon,
+        requestStartedAt,
+      })
+      onDbCancel()
+      return true
+    }
+    return false
+  }
+
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    // Iteration boundary: bail before issuing the next Anthropic call.
+    if (await isCancelled()) return
+
     let response: Awaited<ReturnType<typeof anthropic.messages.create>>
     try {
       response = await anthropic.messages.create({
@@ -483,8 +1042,19 @@ async function runOrchestrationLoop(
         system,
         tools: availableTools as unknown as Parameters<typeof anthropic.messages.create>[0]['tools'],
         messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
-      })
+      }, { signal })
     } catch (err) {
+      // If the abort fired, the SDK's thrown error is a consequence — swallow
+      // it. Caller decides whether to log a 'client_disconnect' line or emit
+      // the 'request_timeout' error event based on which source aborted us.
+      if (signal.aborted) {
+        console.log('[ai-chat] anthropic call aborted', {
+          userId: ctx.userId,
+          sessionId,
+          iteration,
+        })
+        return
+      }
       const mapped = mapAnthropicError(err)
       if (mapped.shouldLog) {
         const errorClass = err instanceof Error ? err.constructor.name : typeof err
@@ -513,8 +1083,10 @@ async function runOrchestrationLoop(
     }
 
     // Persist assistant row BEFORE emitting any of its events. The DB row is
-    // the durable contract; the wire is a projection of it.
-    const { error: assistantInsertError } = await ctx.serviceClient
+    // the durable contract; the wire is a projection of it. parent_id chains
+    // off whatever row was inserted last on this request — initially the
+    // user turn, then assistant ↔ tool_result alternation through the loop.
+    const { data: assistantRow, error: assistantInsertError } = await ctx.serviceClient
       .from('ai_messages')
       .insert({
         session_id: sessionId,
@@ -524,14 +1096,17 @@ async function runOrchestrationLoop(
         input_tokens: response.usage?.input_tokens ?? null,
         output_tokens: response.usage?.output_tokens ?? null,
         stop_reason: response.stop_reason ?? null,
+        parent_id: lastInsertedId,
       })
+      .select('id')
+      .single()
 
-    if (assistantInsertError) {
+    if (assistantInsertError || !assistantRow) {
       console.error('[ai-chat] assistant message insert failed', {
         userId: ctx.userId,
         sessionId,
         iteration,
-        code: assistantInsertError.code,
+        code: assistantInsertError?.code,
       })
       await sse.writeEvent('error', {
         type: 'error',
@@ -541,6 +1116,7 @@ async function runOrchestrationLoop(
       return
     }
 
+    lastInsertedId = assistantRow.id
     messages.push({ role: 'assistant', content: response.content })
 
     // Emit events in content-block order: text -> turn, tool_use -> tool_call.
@@ -589,7 +1165,10 @@ async function runOrchestrationLoop(
       const toolResultBlocks: ToolResultBlock[] = []
 
       for (const tu of toolUses) {
-        const { output, isError } = await dispatchToolWithTimeout(tu.name, tu.input, ctx)
+        const { output, isError } = await dispatchToolWithTimeout(tu.name, tu.input, ctx, extras)
+        // After-dispatch boundary: if the user cancelled while the tool ran,
+        // drop the result on the floor — no SSE event, no DB row.
+        if (await isCancelled()) return
         await sse.writeEvent('tool_result', {
           type: 'tool_result',
           tool: tu.name,
@@ -606,20 +1185,23 @@ async function runOrchestrationLoop(
         })
       }
 
-      const { error: toolResultInsertError } = await ctx.serviceClient
+      const { data: toolResultRow, error: toolResultInsertError } = await ctx.serviceClient
         .from('ai_messages')
         .insert({
           session_id: sessionId,
           role: 'user',
           content: toolResultBlocks as unknown as Json,
+          parent_id: lastInsertedId,
         })
+        .select('id')
+        .single()
 
-      if (toolResultInsertError) {
+      if (toolResultInsertError || !toolResultRow) {
         console.error('[ai-chat] tool_result insert failed', {
           userId: ctx.userId,
           sessionId,
           iteration,
-          code: toolResultInsertError.code,
+          code: toolResultInsertError?.code,
         })
         await sse.writeEvent('error', {
           type: 'error',
@@ -629,6 +1211,7 @@ async function runOrchestrationLoop(
         return
       }
 
+      lastInsertedId = toolResultRow.id
       messages.push({ role: 'user', content: toolResultBlocks })
       continue
     }
@@ -662,6 +1245,7 @@ async function runOrchestrationLoop(
       input_tokens: lastUsage.input_tokens,
       output_tokens: lastUsage.output_tokens,
       stop_reason: 'tool_limit_reached',
+      parent_id: lastInsertedId,
     })
   if (limitInsertError) {
     console.error('[ai-chat] limit message insert failed', {
@@ -685,20 +1269,58 @@ async function runOrchestrationLoop(
 }
 
 // ---------------------------------------------------------------------------
-// Stream response builder — flushes `: ready`, emits the session event,
-// races the orchestration loop against the 90s request timeout, and cleans
-// up timers + writer in finally. The async work runs in the background;
-// this function returns the Response synchronously.
+// Stream response builder — flushes `: ready`, emits the session event, and
+// runs the orchestration loop under a single AbortController that is tripped
+// by either (a) client disconnect via `req.signal` or (b) the 90s request
+// timeout. The cause is tracked in `abortReason` so the post-loop branch
+// can emit the right event (or no event, for client disconnect).
 // ---------------------------------------------------------------------------
 
-function streamChatResponse(ctx: AuthContext, prep: ChatStreamPrep): Response {
+function streamChatResponse(
+  ctx: AuthContext,
+  prep: ChatStreamPrep,
+  reqSignal: AbortSignal,
+): Response {
   const stream = new TransformStream<Uint8Array, Uint8Array>()
   const writer = stream.writable.getWriter()
-  const sse = new SSEWriter(writer)
+
+  // One controller per request. The SDK call, the iteration-boundary checks,
+  // and the post-tool-dispatch checks all read its signal.
+  const controller = new AbortController()
+  // Set on first abort source to fire. Read by the post-loop branch.
+  let abortReason: 'client_disconnect' | 'request_timeout' | null = null
+
+  const onClientDisconnect = (source: string): void => {
+    if (abortReason !== null) return
+    abortReason = 'client_disconnect'
+    console.log('[ai-chat] client disconnect detected', {
+      userId: ctx.userId,
+      sessionId: prep.sessionId,
+      source,
+    })
+    controller.abort()
+  }
+
+  // Primary detection: Deno's req.signal aborts on client TCP disconnect.
+  if (reqSignal.aborted) {
+    onClientDisconnect('req.signal.already_aborted')
+  } else {
+    reqSignal.addEventListener('abort', () => onClientDisconnect('req.signal'), { once: true })
+  }
+
+  // Secondary detection: when Deno's HTTP layer cancels the readable side of
+  // our response (because the client closed the TCP connection), the writable
+  // side enters the errored state and writer.closed rejects.
+  writer.closed.catch(() => onClientDisconnect('writer.closed'))
+
+  // Tertiary detection (most reliable in Supabase's Edge runtime): the SSE
+  // writer notifies us when any write — including the 15s heartbeat probe —
+  // throws because the socket is dead. This catches cases where neither
+  // req.signal nor writer.closed surfaces the disconnect.
+  const sse = new SSEWriter(writer, () => onClientDisconnect('sse.write_failed'))
 
   ;(async () => {
     let timeoutHandle: number | undefined
-    let timedOut = false
     try {
       // Flush headers + signal liveness to any proxy. Must precede real work.
       await sse.writeComment('ready')
@@ -709,51 +1331,63 @@ function streamChatResponse(ctx: AuthContext, prep: ChatStreamPrep): Response {
         session_id: prep.sessionId,
       })
 
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => {
-          timedOut = true
-          reject(new Error('request_timeout'))
-        }, REQUEST_TIMEOUT_MS)
-      })
+      timeoutHandle = setTimeout(() => {
+        if (abortReason !== null) return
+        abortReason = 'request_timeout'
+        controller.abort()
+      }, REQUEST_TIMEOUT_MS)
 
-      try {
-        await Promise.race([
-          runOrchestrationLoop(ctx, sse, prep),
-          timeoutPromise,
-        ])
-      } catch (err) {
-        if (timedOut) {
-          console.error('[ai-chat] request timeout', {
-            userId: ctx.userId,
-            sessionId: prep.sessionId,
-          })
-          await sse.writeEvent('error', {
-            type: 'error',
-            code: 'request_timeout',
-            message: 'Zahtjev je trajao predugo. Pokušajte ponovno.',
-          })
-        } else {
-          throw err
-        }
+      await runOrchestrationLoop(
+        ctx,
+        sse,
+        prep,
+        controller.signal,
+        () => onClientDisconnect('db_cancel_beacon'),
+      )
+
+      if (abortReason === 'request_timeout') {
+        console.error('[ai-chat] request timeout', {
+          userId: ctx.userId,
+          sessionId: prep.sessionId,
+        })
+        await sse.writeEvent('error', {
+          type: 'error',
+          code: 'request_timeout',
+          message: 'Zahtjev je trajao predugo. Pokušajte ponovno.',
+        })
+      } else if (abortReason === 'client_disconnect') {
+        // Silent on the wire — the reader is gone. (Detection log already
+        // emitted by onClientDisconnect with the triggering source.)
       }
     } catch (err) {
-      console.error('[ai-chat] stream worker error', {
-        userId: ctx.userId,
-        sessionId: prep.sessionId,
-        reason: err instanceof Error ? err.message : String(err),
-      })
-      // Best-effort: surface a generic error event so the client doesn't see
-      // a silent close after `: ready`. writeEvent is a no-op if already closed.
-      await sse.writeEvent('error', {
-        type: 'error',
-        code: 'internal_error',
-        message: 'Interna greška u toku.',
-      })
+      // Anything that throws past the loop's own catch is either an abort
+      // that escaped (silent) or a genuine bug (emit + log loudly).
+      if (controller.signal.aborted) {
+        console.log('[ai-chat] stream aborted', {
+          userId: ctx.userId,
+          sessionId: prep.sessionId,
+          reason: abortReason ?? 'unknown_abort',
+        })
+      } else {
+        console.error('[ai-chat] stream worker error', {
+          userId: ctx.userId,
+          sessionId: prep.sessionId,
+          reason: err instanceof Error ? err.message : String(err),
+        })
+        await sse.writeEvent('error', {
+          type: 'error',
+          code: 'internal_error',
+          message: 'Interna greška u toku.',
+        })
+      }
     } finally {
       if (timeoutHandle !== undefined) {
         clearTimeout(timeoutHandle)
         timeoutHandle = undefined
       }
+      // The reqSignal listener is `{ once: true }` and reqSignal is request-
+      // scoped — no manual remove is needed (or possible: it was registered
+      // via an arrow wrapper so the original reference isn't kept).
       await sse.close()
     }
   })()
@@ -774,6 +1408,14 @@ function streamChatResponse(ctx: AuthContext, prep: ChatStreamPrep): Response {
 // ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
+  // Diagnostic: unconditional request-entry log. Confirms which build of the
+  // function is live. If you don't see this line in `supabase functions logs`
+  // for every request, the deploy didn't actually replace the running version.
+  console.log('[ai-chat] request', {
+    method: req.method,
+    build: 'cancel-support-v2',
+  })
+
   const preflight = handlePreflight(req)
   if (preflight) return preflight
 
@@ -834,7 +1476,12 @@ Deno.serve(async (req) => {
 
       try {
         const toolInput = (body.input ?? {}) as Record<string, unknown>
-        const output = await dispatchTool(toolName, toolInput, auth)
+        // The debug branch has no route context — pass a null pair so
+        // search_help still works (without route boost / telemetry).
+        const debugExtras: ToolHandlerExtras = {
+          helpSearch: { currentRoutePattern: null, currentRouteRaw: null },
+        }
+        const output = await dispatchTool(toolName, toolInput, auth, debugExtras)
         return new Response(
           JSON.stringify({ ok: true, debug: { tool: toolName, output } }),
           { status: 200, headers: jsonHeaders },
@@ -859,7 +1506,7 @@ Deno.serve(async (req) => {
     if (chatResult instanceof Response) {
       return chatResult
     }
-    return streamChatResponse(auth, chatResult)
+    return streamChatResponse(auth, chatResult, req.signal)
   } catch (err) {
     console.error('[ai-chat] unhandled error', {
       reason: err instanceof Error ? err.message : String(err),

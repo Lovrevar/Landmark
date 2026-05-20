@@ -40,10 +40,19 @@ export default function AiChatMessageList() {
   const showTypingIndicator =
     isStreaming && messages.length > 0 && messages[messages.length - 1].kind === 'user'
 
+  // Index of the last assistant message — used to gate the regenerate button.
+  let lastAssistantIndex = -1
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].kind === 'assistant') {
+      lastAssistantIndex = i
+      break
+    }
+  }
+
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-      {messages.map((m) => (
-        <AiChatMessage key={m.id} message={m} />
+      {messages.map((m, i) => (
+        <AiChatMessage key={m.id} message={m} isLastAssistant={i === lastAssistantIndex} />
       ))}
       {showTypingIndicator && (
         <div className="flex justify-start">

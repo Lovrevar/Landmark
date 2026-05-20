@@ -591,6 +591,9 @@
     "wire_payment": "Wire Payment",
     "record_payment": "Record Payment",
     "payment_history": "Payment History",
+    "pagination": {
+      "item_label": "payments"
+    },
     "table": {
       "date": "Payment Date",
       "invoice": "Invoice",
@@ -2602,7 +2605,10 @@
         "status": "Status"
       },
       "tooltip_approved": "Approved",
-      "tooltip_approve": "Click to approve"
+      "tooltip_approve": "Click to approve",
+      "pagination": {
+        "item_label": "invoices"
+      }
     },
     "payments": {
       "title": "Payments Management",
@@ -4628,6 +4634,9 @@
       "uploaded_from": "From",
       "uploaded_to": "To",
       "clear_filters": "Clear filters",
+      "pagination": {
+        "item_label": "documents"
+      },
       "table": {
         "filename": "Name",
         "category": "Category",

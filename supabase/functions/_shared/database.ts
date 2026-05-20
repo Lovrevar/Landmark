@@ -1,4 +1,3 @@
-// Auto-generated. Regenerate via `npm run db:types`. Do not edit by hand.
 export type Json =
   | string
   | number
@@ -298,20 +297,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "accounting_invoices_investment_id_fkey"
-            columns: ["investment_id"]
-            isOneToOne: false
-            referencedRelation: "project_investments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounting_invoices_investor_id_fkey"
-            columns: ["investor_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "accounting_invoices_milestone_id_fkey"
             columns: ["milestone_id"]
             isOneToOne: false
@@ -582,14 +567,98 @@ export type Database = {
           },
         ]
       }
+      ai_help_searches: {
+        Row: {
+          created_at: string
+          current_route: string | null
+          id: string
+          query: string
+          returned_ids: string[]
+          top_similarity: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_route?: string | null
+          id?: string
+          query: string
+          returned_ids?: string[]
+          top_similarity?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_route?: string | null
+          id?: string
+          query?: string
+          returned_ids?: string[]
+          top_similarity?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_help_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_message_attachments: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_size: number
+          id: string
+          kind: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_size: number
+          id?: string
+          kind: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_size?: number
+          id?: string
+          kind?: string
+          message_id?: string
+          mime_type?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: Json
           created_at: string
+          edited_at: string | null
           id: string
           input_tokens: number | null
           model: string | null
           output_tokens: number | null
+          parent_id: string | null
           role: string
           session_id: string
           stop_reason: string | null
@@ -597,10 +666,12 @@ export type Database = {
         Insert: {
           content: Json
           created_at?: string
+          edited_at?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
           output_tokens?: number | null
+          parent_id?: string | null
           role: string
           session_id: string
           stop_reason?: string | null
@@ -608,15 +679,24 @@ export type Database = {
         Update: {
           content?: Json
           created_at?: string
+          edited_at?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
           output_tokens?: number | null
+          parent_id?: string | null
           role?: string
           session_id?: string
           stop_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_messages_session_id_fkey"
             columns: ["session_id"]
@@ -628,6 +708,7 @@ export type Database = {
       }
       ai_sessions: {
         Row: {
+          cancel_requested_at: string | null
           created_at: string
           id: string
           title: string | null
@@ -635,6 +716,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string | null
@@ -642,6 +724,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string | null
@@ -1441,60 +1524,6 @@ export type Database = {
           },
         ]
       }
-      companies: {
-        Row: {
-          address: string | null
-          bank_account: string | null
-          bank_name: string | null
-          city: string | null
-          contact_email: string | null
-          contact_person: string | null
-          contact_phone: string | null
-          country: string | null
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          postal_code: string | null
-          tax_id: string | null
-          vat_id: string | null
-        }
-        Insert: {
-          address?: string | null
-          bank_account?: string | null
-          bank_name?: string | null
-          city?: string | null
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          country?: string | null
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          postal_code?: string | null
-          tax_id?: string | null
-          vat_id?: string | null
-        }
-        Update: {
-          address?: string | null
-          bank_account?: string | null
-          bank_name?: string | null
-          city?: string | null
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          country?: string | null
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          postal_code?: string | null
-          tax_id?: string | null
-          vat_id?: string | null
-        }
-        Relationships: []
-      }
       company_bank_accounts: {
         Row: {
           account_number: string | null
@@ -1996,80 +2025,6 @@ export type Database = {
           },
         ]
       }
-      funding_payments: {
-        Row: {
-          amount: number
-          bank_credit_id: string | null
-          bank_id: string | null
-          created_at: string | null
-          created_by: string | null
-          id: string
-          investor_id: string | null
-          notes: string | null
-          payment_date: string
-          payment_type: string
-          project_investment_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          amount?: number
-          bank_credit_id?: string | null
-          bank_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          investor_id?: string | null
-          notes?: string | null
-          payment_date?: string
-          payment_type?: string
-          project_investment_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number
-          bank_credit_id?: string | null
-          bank_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          investor_id?: string | null
-          notes?: string | null
-          payment_date?: string
-          payment_type?: string
-          project_investment_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "funding_payments_bank_credit_id_fkey"
-            columns: ["bank_credit_id"]
-            isOneToOne: false
-            referencedRelation: "bank_credits"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "funding_payments_bank_id_fkey"
-            columns: ["bank_id"]
-            isOneToOne: false
-            referencedRelation: "banks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "funding_payments_investor_id_fkey"
-            columns: ["investor_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "funding_payments_project_investment_id_fkey"
-            columns: ["project_investment_id"]
-            isOneToOne: false
-            referencedRelation: "project_investments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       garages: {
         Row: {
           building_id: string
@@ -2153,54 +2108,6 @@ export type Database = {
           },
         ]
       }
-      investors: {
-        Row: {
-          contact_email: string | null
-          contact_person: string | null
-          contact_phone: string | null
-          created_at: string | null
-          expected_return: number | null
-          id: string
-          investment_start: string | null
-          name: string
-          notes: string | null
-          preferred_sectors: string | null
-          risk_profile: string | null
-          total_invested: number | null
-          type: string | null
-        }
-        Insert: {
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          expected_return?: number | null
-          id?: string
-          investment_start?: string | null
-          name: string
-          notes?: string | null
-          preferred_sectors?: string | null
-          risk_profile?: string | null
-          total_invested?: number | null
-          type?: string | null
-        }
-        Update: {
-          contact_email?: string | null
-          contact_person?: string | null
-          contact_phone?: string | null
-          created_at?: string | null
-          expected_return?: number | null
-          id?: string
-          investment_start?: string | null
-          name?: string
-          notes?: string | null
-          preferred_sectors?: string | null
-          risk_profile?: string | null
-          total_invested?: number | null
-          type?: string | null
-        }
-        Relationships: []
-      }
       invoice_categories: {
         Row: {
           created_at: string | null
@@ -2224,66 +2131,6 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
-      }
-      leads: {
-        Row: {
-          apartment_preferences: string | null
-          budget_range_max: number
-          budget_range_min: number
-          created_at: string | null
-          customer_id: string
-          id: string
-          last_contact_date: string | null
-          next_follow_up: string | null
-          notes: string | null
-          priority: string
-          project_id: string
-          status: string
-        }
-        Insert: {
-          apartment_preferences?: string | null
-          budget_range_max?: number
-          budget_range_min?: number
-          created_at?: string | null
-          customer_id: string
-          id?: string
-          last_contact_date?: string | null
-          next_follow_up?: string | null
-          notes?: string | null
-          priority?: string
-          project_id: string
-          status?: string
-        }
-        Update: {
-          apartment_preferences?: string | null
-          budget_range_max?: number
-          budget_range_min?: number
-          created_at?: string | null
-          customer_id?: string
-          id?: string
-          last_contact_date?: string | null
-          next_follow_up?: string | null
-          notes?: string | null
-          priority?: string
-          project_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "leads_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       monthly_budgets: {
         Row: {
@@ -2347,152 +2194,6 @@ export type Database = {
           vat_id?: string | null
         }
         Relationships: []
-      }
-      old_invoices: {
-        Row: {
-          amount: number
-          created_at: string | null
-          due_date: string
-          id: string
-          paid: boolean | null
-          project_id: string
-          subcontractor_id: string | null
-        }
-        Insert: {
-          amount?: number
-          created_at?: string | null
-          due_date: string
-          id?: string
-          paid?: boolean | null
-          project_id: string
-          subcontractor_id?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          due_date?: string
-          id?: string
-          paid?: boolean | null
-          project_id?: string
-          subcontractor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoices_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_subcontractor_id_fkey"
-            columns: ["subcontractor_id"]
-            isOneToOne: false
-            referencedRelation: "subcontractors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_investments: {
-        Row: {
-          amount: number
-          bank_id: string | null
-          created_at: string | null
-          credit_seniority: string | null
-          disbursed_to_account: boolean | null
-          disbursed_to_bank_account_id: string | null
-          expected_return: number | null
-          grace_period: number | null
-          id: string
-          investment_date: string
-          investment_type: string | null
-          investor_id: string | null
-          maturity_date: string | null
-          mortgages_insurance: number | null
-          notes: string | null
-          payment_schedule: string | null
-          percentage_stake: number | null
-          project_id: string | null
-          status: string | null
-          terms: string | null
-          usage_expiration_date: string | null
-        }
-        Insert: {
-          amount?: number
-          bank_id?: string | null
-          created_at?: string | null
-          credit_seniority?: string | null
-          disbursed_to_account?: boolean | null
-          disbursed_to_bank_account_id?: string | null
-          expected_return?: number | null
-          grace_period?: number | null
-          id?: string
-          investment_date: string
-          investment_type?: string | null
-          investor_id?: string | null
-          maturity_date?: string | null
-          mortgages_insurance?: number | null
-          notes?: string | null
-          payment_schedule?: string | null
-          percentage_stake?: number | null
-          project_id?: string | null
-          status?: string | null
-          terms?: string | null
-          usage_expiration_date?: string | null
-        }
-        Update: {
-          amount?: number
-          bank_id?: string | null
-          created_at?: string | null
-          credit_seniority?: string | null
-          disbursed_to_account?: boolean | null
-          disbursed_to_bank_account_id?: string | null
-          expected_return?: number | null
-          grace_period?: number | null
-          id?: string
-          investment_date?: string
-          investment_type?: string | null
-          investor_id?: string | null
-          maturity_date?: string | null
-          mortgages_insurance?: number | null
-          notes?: string | null
-          payment_schedule?: string | null
-          percentage_stake?: number | null
-          project_id?: string | null
-          status?: string | null
-          terms?: string | null
-          usage_expiration_date?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_investment_disbursed_bank_account"
-            columns: ["disbursed_to_bank_account_id"]
-            isOneToOne: false
-            referencedRelation: "company_bank_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_investments_bank_id_fkey"
-            columns: ["bank_id"]
-            isOneToOne: false
-            referencedRelation: "banks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_investments_investor_id_fkey"
-            columns: ["investor_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_investments_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       project_managers: {
         Row: {
@@ -3309,54 +3010,6 @@ export type Database = {
           },
         ]
       }
-      subcontractor_documents: {
-        Row: {
-          contract_id: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          id: string
-          subcontractor_id: string
-          uploaded_at: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          contract_id?: string | null
-          file_name: string
-          file_path: string
-          file_size?: number
-          id?: string
-          subcontractor_id: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          contract_id?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          subcontractor_id?: string
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contract_documents_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subcontractor_documents_subcontractor_id_fkey"
-            columns: ["subcontractor_id"]
-            isOneToOne: false
-            referencedRelation: "subcontractors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       subcontractor_milestones: {
         Row: {
           completed_date: string | null
@@ -3453,13 +3106,6 @@ export type Database = {
             columns: ["financed_by_bank_id"]
             isOneToOne: false
             referencedRelation: "banks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subcontractors_financed_by_investor_id_fkey"
-            columns: ["financed_by_investor_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
             referencedColumns: ["id"]
           },
         ]
@@ -3582,35 +3228,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      task_reminder_sends: {
-        Row: {
-          id: string
-          offset_min: number
-          sent_at: string
-          task_id: string
-        }
-        Insert: {
-          id?: string
-          offset_min: number
-          sent_at?: string
-          task_id: string
-        }
-        Update: {
-          id?: string
-          offset_min?: number
-          sent_at?: string
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_reminder_sends_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -3896,20 +3513,7 @@ export type Database = {
           difference: number
         }[]
       }
-      count_invoices_with_search: {
-        Args: {
-          p_company_id?: string
-          p_invoice_type?: string
-          p_search_term?: string
-          p_status?: string
-        }
-        Returns: number
-      }
       fix_subcontractor_budget_integrity: { Args: never; Returns: undefined }
-      generate_payment_schedule: {
-        Args: { investment_id: string }
-        Returns: undefined
-      }
       get_activity_logs: {
         Args: {
           p_action_prefix?: string
@@ -3949,23 +3553,19 @@ export type Database = {
           payment_method: string
         }[]
       }
-      get_bank_credit_payments: {
-        Args: { credit_uuid: string }
-        Returns: {
-          amount: number
-          created_at: string
-          description: string
-          id: string
-          payment_date: string
-          payment_method: string
-        }[]
-      }
       get_busy_blocks: {
         Args: { p_from: string; p_to: string; p_user_ids: string[] }
         Returns: {
           end_at: string
           start_at: string
           user_id: string
+        }[]
+      }
+      get_document_category_counts: {
+        Args: never
+        Returns: {
+          category_id: string
+          doc_count: number
         }[]
       }
       get_event_creator: { Args: { p_event_id: string }; Returns: string }
@@ -4046,17 +3646,6 @@ export type Database = {
           vat_rate_4: number
         }[]
       }
-      get_investor_payments: {
-        Args: { investor_uuid: string }
-        Returns: {
-          amount: number
-          created_at: string
-          description: string
-          id: string
-          payment_date: string
-          payment_method: string
-        }[]
-      }
       get_invoice_statistics: {
         Args: {
           p_company_id?: string
@@ -4109,6 +3698,23 @@ export type Database = {
       replace_document_associations: {
         Args: { p_associations: Json; p_document_id: string }
         Returns: undefined
+      }
+      search_documents: {
+        Args: {
+          p_category_ids?: string[]
+          p_entity_id?: string
+          p_entity_type?: string
+          p_file_name_search?: string
+          p_limit?: number
+          p_offset?: number
+          p_project_id?: string
+          p_uploaded_from?: string
+          p_uploaded_to?: string
+        }
+        Returns: {
+          document: Json
+          total_count: number
+        }[]
       }
       update_overdue_notifications: { Args: never; Returns: undefined }
       user_has_project_access:

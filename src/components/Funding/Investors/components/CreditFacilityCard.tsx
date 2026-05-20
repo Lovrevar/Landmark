@@ -103,7 +103,7 @@ const CreditFacilityCard: React.FC<CreditFacilityCardProps> = ({ credit, onEdit,
       <div className="mb-3">
         <div className="flex justify-between mb-1">
           <span className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.credit_facility_card.repayment_progress_label')}</span>
-          <span className="text-xs font-medium">{paymentRatio.toFixed(1)}%</span>
+          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{paymentRatio.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
           <div

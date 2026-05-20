@@ -229,11 +229,11 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">{t('retail_projects.invoices_modal.base_label')}</span>
-                    <span className="ml-2 font-medium">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">€{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">{t('retail_projects.invoices_modal.vat_label')}</span>
-                    <span className="ml-2 font-medium">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">€{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>

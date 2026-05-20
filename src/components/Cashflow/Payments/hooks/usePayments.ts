@@ -40,6 +40,8 @@ export const usePayments = () => {
   const [filterInvoiceType, setFilterInvoiceType] = useState<FilterInvoiceType>('ALL')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 100
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
@@ -303,6 +305,12 @@ export const usePayments = () => {
     return matchesSearch && matchesMethod && matchesInvoiceType && matchesDateFrom && matchesDateTo
   })
 
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterMethod, filterInvoiceType, dateFrom, dateTo])
+
   const resetDateFilters = () => {
     setDateFrom('')
     setDateTo('')
@@ -345,6 +353,11 @@ export const usePayments = () => {
     pendingDeleteId,
     deleting,
     filteredPayments,
+    paginatedPayments,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalCount: filteredPayments.length,
     resetDateFilters
   }
 }
