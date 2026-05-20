@@ -1,5 +1,5 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "cognilion",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "kb:embed": "node scripts/build-help-kb-embeddings.mjs"
+    "kb:embed": "node --env-file=.env scripts/build-help-kb-embeddings.mjs"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",

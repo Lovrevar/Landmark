@@ -310,14 +310,6 @@ export function useAiChatStore(): AiChatStore {
       const effectiveSessionId = capturedSessionId ?? proposedSessionId ?? ''
       const userText = trimmed
 
-      // Render-friendly attachments for the optimistic row. We don't have
-      // real ai_message_attachments rows yet, but the renderer can use the
-      // file metadata to show chips immediately. reloadActiveBranch later
-      // replaces this with canonical rows.
-      const optimisticAttachments = pendingSnapshot
-        .map((p) => p.meta)
-        .filter((m): m is AttachmentMeta => !!m)
-
       // Optimistic user row. Bookkeeping ids are synthetic (no underlying DB
       // row yet) — that's fine, the post-stream reloadActiveBranch() replaces
       // this state with canonical rows.
@@ -338,14 +330,33 @@ export function useAiChatStore(): AiChatStore {
       // Track which paths we ourselves uploaded in this send call so we can
       // cleanup orphans on a post-upload failure.
       const uploadedPathsThisCall: string[] = []
+      // Flips true once the SSE stream delivers its first event. By then the
+      // edge function's handleChat has already persisted the user row AND
+      // the ai_message_attachments rows (that happens before the
+      // orchestration loop streams anything). So this doubles as "the turn
+      // and its attachments are committed server-side" — used to decide
+      // whether to clear the pending tray and whether the uploaded objects
+      // are still orphans. Needed because Supabase's Edge runtime can throw
+      // on stream teardown AFTER the full response was delivered, which
+      // would otherwise route a fully-successful send through the catch.
+      let turnCommitted = false
 
       try {
         // ---- Upload phase ----
-        // Re-resolve the pending list (state may have changed since
-        // pendingSnapshot was taken; but for uploads we only touch entries
-        // that still need a meta — pre-uploaded entries are reused as-is).
-        const uploadsToDo = pendingSnapshot.filter((p) => !p.meta)
-        for (const p of uploadsToDo) {
+        // Upload every pending entry that lacks a meta and collect the
+        // results into a LOCAL array. We must NOT read pendingAttachmentsRef
+        // afterwards to build the request: that ref is synced from state via
+        // a useEffect, and no render has committed between the
+        // setPendingAttachments calls below and the request build — the ref
+        // would be stale and the attachments would silently drop from the
+        // request (the message would send as text-only).
+        const collectedMetas: AttachmentMeta[] = []
+        for (const p of pendingSnapshot) {
+          if (p.meta) {
+            // Already uploaded on an earlier attempt — reuse as-is.
+            collectedMetas.push(p.meta)
+            continue
+          }
           // Mark uploading
           setPendingAttachments((prev) =>
             prev.map((q) => (q.id === p.id ? { ...q, status: 'uploading' } : q)),
@@ -353,6 +364,7 @@ export function useAiChatStore(): AiChatStore {
           try {
             const meta = await uploadAiAttachment(p.file, effectiveSessionId)
             uploadedPathsThisCall.push(meta.storage_path)
+            collectedMetas.push(meta)
             setPendingAttachments((prev) =>
               prev.map((q) =>
                 q.id === p.id ? { ...q, status: 'uploaded', meta } : q,
@@ -398,23 +410,19 @@ export function useAiChatStore(): AiChatStore {
           }
         }
 
-        // Build the attachment payload for the request: anything in the
-        // tray that has meta (whether uploaded in this call or earlier).
-        const requestAttachments: AttachmentRequestBody[] = pendingAttachmentsRef.current
-          .map((p) => p.meta)
-          .filter((m): m is AttachmentMeta => !!m)
-          .map((m) => ({
-            storage_path: m.storage_path,
-            file_name: m.file_name,
-            file_size: m.file_size,
-            mime_type: m.mime_type,
-            kind: m.kind,
-            extracted_text: m.extracted_text ?? null,
-          }))
+        // Build the attachment payload from the LOCAL collected metas.
+        const requestAttachments: AttachmentRequestBody[] = collectedMetas.map((m) => ({
+          storage_path: m.storage_path,
+          file_name: m.file_name,
+          file_size: m.file_size,
+          mime_type: m.mime_type,
+          kind: m.kind,
+          extracted_text: m.extracted_text ?? null,
+        }))
 
         // Patch the optimistic user row with the uploaded attachments so
         // the chip strip on the user's bubble appears immediately.
-        if (optimisticAttachments.length > 0 || requestAttachments.length > 0) {
+        if (requestAttachments.length > 0) {
           const renderAtts = requestAttachments.map((r, idx) => ({
             id: `optimistic-${optimisticId}-${idx}`,
             message_id: optimisticId,
@@ -450,6 +458,11 @@ export function useAiChatStore(): AiChatStore {
           proposedSessionId,
           signal: controller.signal,
           callbacks: {
+            onAny: () => {
+              // Any event means handleChat finished — user row + attachments
+              // are persisted server-side.
+              turnCommitted = true
+            },
             onSession: (event) => {
               if (!isNewConversation) return
               setCurrentSessionId(event.session_id)
@@ -479,13 +492,10 @@ export function useAiChatStore(): AiChatStore {
           },
         })
 
-        // Stream succeeded — the server has persisted the user row AND the
-        // attachment side-table rows atomically. Clear the pending tray
-        // WITHOUT deleting storage objects (those are now linked to the
-        // canonical row).
-        if (pendingAttachmentsRef.current.length > 0) {
-          setPendingAttachments([])
-        }
+        // Clean resolution — the turn is committed. (The tray is cleared in
+        // `finally` via turnCommitted, so a post-delivery stream-teardown
+        // throw still clears it.)
+        turnCommitted = true
 
         // Reload to pick up the canonical rows (with real ids + parent_ids
         // and the freshly-computed active leaf). For a new conversation the
@@ -494,11 +504,11 @@ export function useAiChatStore(): AiChatStore {
         const sid = capturedSessionId ?? currentSessionIdRef.current
         if (sid) await reloadActiveBranch(sid)
       } catch (err) {
-        // Send failed AFTER successful uploads (HTTP error, network, etc.).
-        // Clean up the orphan objects so storage doesn't accumulate paths
-        // that have no DB row. The server's own rollback handles the case
-        // where it inserted the user row but failed on attachments.
-        if (uploadedPathsThisCall.length > 0) {
+        // Clean up orphan storage objects ONLY if the turn never reached the
+        // server. Once any event arrived, handleChat already linked the
+        // attachments to a persisted message — deleting them here would
+        // break the saved attachments on the next history reload.
+        if (uploadedPathsThisCall.length > 0 && !turnCommitted) {
           await Promise.all(uploadedPathsThisCall.map(deleteAiAttachment))
         }
         if (err instanceof DOMException && err.name === 'AbortError') {
@@ -509,6 +519,9 @@ export function useAiChatStore(): AiChatStore {
         ) {
           // Some environments surface AbortError as a plain Error.
         } else if (err instanceof AiChatHttpError) {
+          // AiChatHttpError is only thrown for a non-OK HTTP response, i.e.
+          // a pre-stream failure — the turn was NOT persisted. Surface it
+          // and leave the pending tray intact so the user can retry.
           const errId = genId()
           setMessages((prev) => [
             ...prev,
@@ -523,20 +536,33 @@ export function useAiChatStore(): AiChatStore {
           ])
         } else {
           console.error('[useAiChatStore] streamMessage failed:', err)
-          const errId = genId()
-          setMessages((prev) => [
-            ...prev,
-            {
-              kind: 'error',
-              id: errId,
-              rowId: errId,
-              code: 'unknown_error',
-              message: 'Neočekivana greška. Pokušajte ponovno.',
-              createdAt: new Date().toISOString(),
-            },
-          ])
+          // If events had already arrived, the response was delivered and
+          // this is a stream-teardown artifact (Supabase Edge runtime) — not
+          // a real failure. Don't show a misleading error bubble.
+          if (!turnCommitted) {
+            const errId = genId()
+            setMessages((prev) => [
+              ...prev,
+              {
+                kind: 'error',
+                id: errId,
+                rowId: errId,
+                code: 'unknown_error',
+                message: 'Neočekivana greška. Pokušajte ponovno.',
+                createdAt: new Date().toISOString(),
+              },
+            ])
+          }
         }
       } finally {
+        // The turn (and its attachments) are committed server-side once any
+        // event arrived — clear the pending tray. Done here, not on the
+        // success path, so a post-delivery stream-teardown throw still
+        // clears it. Storage objects are NOT deleted: they're linked to the
+        // persisted message now.
+        if (turnCommitted) {
+          setPendingAttachments([])
+        }
         // Guard cleanup by controller identity: if a later newConversation /
         // selectSession / sendMessage replaced our controller, this stream's
         // late completion must not clobber the newer stream's state.

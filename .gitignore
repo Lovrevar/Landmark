@@ -23,8 +23,17 @@ vite.config.ts.timestamp-*
 *.njsproj
 *.sln
 *.sw?
+
+# Env files — ignore all, keep examples
 .env
-.env.test
+.env.*
+!.env*.example
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# One-off import/report artifacts
+nin-import-report.json
 
 # Playwright / E2E
 e2e/.auth/
@@ -40,3 +49,5 @@ graphify-out/
 
 # Supabase temp folder
 supabase/.temp/
+# Local backup of .git made during repo recovery — delete once verified
+.git.bak/
