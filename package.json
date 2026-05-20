@@ -14,7 +14,8 @@
     "e2e:seed": "node scripts/seed-e2e.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "kb:embed": "node scripts/build-help-kb-embeddings.mjs"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",

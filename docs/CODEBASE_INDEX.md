@@ -18,6 +18,7 @@
 | **UI** | [UI.md](./modules/UI.md) | Primitive component library |
 | **Core** | [CORE.md](./modules/CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./modules/ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
+| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 10-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Tasks with 3-state status, projects, reminders, attachments, @mention comments, activity log |

@@ -4,9 +4,21 @@ import type { Database } from './database'
 // enforces 'user' | 'assistant' but the generated type widens to string.
 export type AiSession = Database['public']['Tables']['ai_sessions']['Row']
 
+export type AttachmentKind = 'image' | 'pdf' | 'text'
+
+type AiAttachmentRowGen = Database['public']['Tables']['ai_message_attachments']['Row']
+// Narrow `kind` from `string` to the DB CHECK union.
+export type AiAttachmentRow = Omit<AiAttachmentRowGen, 'kind'> & {
+  kind: AttachmentKind
+}
+
 type AiMessageRowGen = Database['public']['Tables']['ai_messages']['Row']
 export type AiMessageRow = Omit<AiMessageRowGen, 'role'> & {
   role: 'user' | 'assistant'
+  // Populated by loadSession via a batched side-table query. Live (in-flight)
+  // optimistic rows leave this undefined; canonical rows after reload have
+  // an array (possibly empty).
+  attachments?: AiAttachmentRow[]
 }
 
 // SSE event taxonomy — must match the backend's Event union exactly.

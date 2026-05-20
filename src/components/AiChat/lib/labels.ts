@@ -27,7 +27,38 @@ export const ERROR_LABELS_HR: Record<string, string> = {
   internal_error: 'Interna greška.',
   load_failed: 'Greška pri učitavanju razgovora.',
   unknown_error: 'Neočekivana greška. Pokušajte ponovno.',
+  // Attachment-related (server-side codes; mirror the strings the edge
+  // function returns so a generic error rendering still picks the right
+  // Croatian text if the message bubble path is bypassed).
+  too_many_attachments: 'Maksimalno 4 priloga po poruci.',
+  invalid_attachment: 'Prilog nije ispravan.',
+  invalid_attachment_kind: 'Nepoznata vrsta priloga.',
+  unsupported_attachment_type: 'Format datoteke nije podržan.',
+  attachment_too_large: 'Datoteka je prevelika.',
+  attachment_path_rejected: 'Putanja priloga nije ispravna.',
+  attachment_processing_failed: 'Greška pri obradi priloga.',
+  edit_with_attachments_unsupported: 'Uređivanje poruke ne podržava priloge.',
+  // Client-side AttachmentError.code values.
+  too_large: 'Datoteka je prevelika.',
+  unsupported_type: 'Format datoteke nije podržan.',
+  extraction_failed: 'Greška pri čitanju datoteke.',
+  upload_failed: 'Greška pri prijenosu datoteke.',
+  no_session: 'Niste prijavljeni.',
 }
+
+// UI strings rendered directly by AiChat components. Kept here rather than
+// in i18next to match the rest of the AiChat module's convention (the
+// module is Croatian-only by design — no English UI is shipped).
+export const UI_LABELS_HR = {
+  paperclipTooltip: 'Priloži datoteku',
+  dropOverlay: 'Pustite datoteku za prilaganje',
+  removeAttachment: 'Ukloni prilog',
+  uploading: 'Učitavanje...',
+  uploadFailed: 'Greška pri prijenosu',
+  attachmentLimitReached: 'Maksimalno 4 priloga po poruci',
+  openImage: 'Otvori sliku',
+  downloadAttachment: 'Preuzmi datoteku',
+} as const
 
 export function toolLabel(tool: string): string {
   return TOOL_LABELS_HR[tool] || tool

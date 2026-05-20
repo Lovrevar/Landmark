@@ -45,10 +45,13 @@
       mirroring the chat_* policy style.
     - Four separate policies per table (SELECT / INSERT / UPDATE / DELETE).
 
-  ai_messages is append-only by application contract: no UI path mutates
-  message rows after insert. RLS still permits owner-scoped UPDATE in v1
-  — append-only is NOT enforced at the database level. Do not assume DB
-  immutability when reasoning about message rows.
+  ai_messages is a tree, not a chain: see migration
+  20260519120000_ai_messages_parent_id.sql for the parent_id column. The
+  rendered conversation is one root-to-leaf path through the tree; edits
+  and regenerates create sibling branches under a shared parent rather
+  than mutating or deleting existing rows. RLS permits owner-scoped
+  UPDATE and DELETE for cleanup paths, but the normal write path is
+  insert-only.
 */
 
 -- ============================================================================

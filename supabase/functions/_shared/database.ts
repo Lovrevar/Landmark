@@ -582,6 +582,50 @@ export type Database = {
           },
         ]
       }
+      ai_message_attachments: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_size: number
+          id: string
+          kind: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_size: number
+          id?: string
+          kind: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_size?: number
+          id?: string
+          kind?: string
+          message_id?: string
+          mime_type?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: Json
@@ -590,6 +634,7 @@ export type Database = {
           input_tokens: number | null
           model: string | null
           output_tokens: number | null
+          parent_id: string | null
           role: string
           session_id: string
           stop_reason: string | null
@@ -601,6 +646,7 @@ export type Database = {
           input_tokens?: number | null
           model?: string | null
           output_tokens?: number | null
+          parent_id?: string | null
           role: string
           session_id: string
           stop_reason?: string | null
@@ -612,11 +658,19 @@ export type Database = {
           input_tokens?: number | null
           model?: string | null
           output_tokens?: number | null
+          parent_id?: string | null
           role?: string
           session_id?: string
           stop_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_messages_session_id_fkey"
             columns: ["session_id"]
@@ -628,6 +682,7 @@ export type Database = {
       }
       ai_sessions: {
         Row: {
+          cancel_requested_at: string | null
           created_at: string
           id: string
           title: string | null
@@ -635,6 +690,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string | null
@@ -642,6 +698,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string | null

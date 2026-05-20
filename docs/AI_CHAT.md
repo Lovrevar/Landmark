@@ -7,6 +7,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Data Model](#data-model)
+- [Attachments](#attachments)
 - [Tool Catalog](#tool-catalog)
 - [System Prompt](#system-prompt)
 - [Frontend Architecture](#frontend-architecture)
@@ -125,7 +126,7 @@ SSE is unidirectional (server → client) and that exactly matches our model —
 
 ## Data Model
 
-Two tables back the feature; see [supabase/migrations/20260507120000_create_ai_chat_tables.sql](../supabase/migrations/20260507120000_create_ai_chat_tables.sql) for the full DDL.
+Three tables back the feature; see [supabase/migrations/20260507120000_create_ai_chat_tables.sql](../supabase/migrations/20260507120000_create_ai_chat_tables.sql) for the original DDL and [supabase/migrations/20260520130000_create_ai_message_attachments.sql](../supabase/migrations/20260520130000_create_ai_message_attachments.sql) for the attachments side-table added in May 2026.
 
 ### `ai_sessions`
 
@@ -136,6 +137,7 @@ Two tables back the feature; see [supabase/migrations/20260507120000_create_ai_c
 | `title` | `text` | yes | Backfilled from the first 60 chars of the opening user message |
 | `created_at` | `timestamptz` | no | default `now()` |
 | `updated_at` | `timestamptz` | no | maintained via `public.update_updated_at_column()` trigger |
+| `cancel_requested_at` | `timestamptz` | yes | Cancel beacon written by the chat stop button. The orchestration loop polls this and treats any value newer than its own request start as a cancel. See [Cancellation](#cancellation). |
 
 Index: `ai_sessions_user_id_updated_at_idx (user_id, updated_at DESC)` — supports the only list query the frontend issues ("my recent threads, newest first").
 
@@ -151,15 +153,36 @@ Index: `ai_sessions_user_id_updated_at_idx (user_id, updated_at DESC)` — suppo
 | `input_tokens` | `integer` | yes | populated on assistant rows only |
 | `output_tokens` | `integer` | yes | populated on assistant rows only |
 | `stop_reason` | `text` | yes | populated on assistant rows only |
-| `created_at` | `timestamptz` | no | default `now()` — primary sort key |
+| `created_at` | `timestamptz` | no | default `now()` — also breaks ties when picking the active branch |
+| `parent_id` | `uuid` | yes | self-reference to the previous message in this branch; null on the first message of a session. The conversation is a tree, not a chain — siblings under the same `parent_id` are alternative branches created by edits/regenerates |
 
-Index: `ai_messages_session_id_created_at_idx (session_id, created_at)` — supports both the in-order load of a thread and the RLS join from `ai_messages` → `ai_sessions` for ownership checks.
+Indexes:
+- `ai_messages_session_id_created_at_idx (session_id, created_at)` — supports loading every row of a session in one pass and the RLS join to `ai_sessions`.
+- `ai_messages_parent_id_idx (parent_id)` — supports the "siblings of this row" query the active-branch derivation runs on every load and branch switch.
+
+### `ai_message_attachments`
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `uuid` | no | PK, default `gen_random_uuid()` |
+| `message_id` | `uuid` | no | FK → `public.ai_messages(id)`, ON DELETE CASCADE |
+| `storage_path` | `text` | no | Object path in the `ai-chat-attachments` bucket. Convention: `{auth_user_id}/{session_id}/{uuid}.{ext}`. The first segment is `auth.users.id` (not `public.users.id`) — that's what the bucket RLS compares against `auth.uid()`. |
+| `file_name` | `text` | no | Original filename as supplied by the browser; used for chip labels and download names |
+| `file_size` | `integer` | no | Raw byte count; CHECK `file_size > 0` |
+| `mime_type` | `text` | no | Whitelisted server-side per kind (see [Attachments](#attachments)) |
+| `kind` | `text` | no | CHECK `kind IN ('image','pdf','text')` |
+| `extracted_text` | `text` | yes | UTF-8 representation for `kind='text'`; NULL otherwise. CHECK `(kind='text') OR (extracted_text IS NULL)`. Already truncated to ≤50 KB by the client before insert. |
+| `created_at` | `timestamptz` | no | default `now()` |
+
+Index: `ai_message_attachments_message_id_idx (message_id)` — every render and lifecycle path looks up attachments by their owning message.
+
+This table is **denormalised replay metadata**, not the authoritative attachment record. The user's `ai_messages.content` JSONB row already contains the fully base64-encoded `image` / `document` blocks plus the user's typed text — that JSONB is what the orchestration loop replays into Anthropic on every follow-up turn (no re-download from storage). The side-table feeds chip/thumbnail rendering in the UI and lets us delete storage objects atomically when a message (or its session) is deleted via the `ON DELETE CASCADE`.
 
 ### Ownership and RLS
 
-Both tables have RLS enabled with four owner-scoped policies each (SELECT / INSERT / UPDATE / DELETE). Ownership is established via the canonical scalar subquery `(SELECT u.id FROM public.users u WHERE u.auth_user_id = auth.uid())`. For `ai_messages`, the policy joins through the owning `ai_sessions` row.
+All three tables have RLS enabled with four owner-scoped policies each (SELECT / INSERT / UPDATE / DELETE). Ownership is established via the canonical scalar subquery `(SELECT u.id FROM public.users u WHERE u.auth_user_id = auth.uid())`. For `ai_messages` the policy joins through the owning `ai_sessions` row; for `ai_message_attachments` it joins through `ai_messages` and then `ai_sessions` (a two-hop EXISTS).
 
-RLS in v1 still permits owner-scoped UPDATE on `ai_messages`. Append-only is an application contract, not a DB invariant. Do not write code that depends on row immutability.
+RLS permits owner-scoped UPDATE and DELETE on `ai_messages`, but the application's normal write path is insert-only. Edits and regenerates insert new sibling rows under a shared `parent_id`; nothing is ever rewritten or deleted on a fork. Deletes happen only when the parent session is deleted (the FK cascade clears `ai_messages` for the whole session).
 
 ### The row sequence
 
@@ -175,11 +198,80 @@ Note that step 3 is `role='user'`, not `role='tool'`. This is the Anthropic Mess
 
 `model`, `input_tokens`, `output_tokens`, and `stop_reason` are populated only on assistant rows. They are NULL on all user-role rows, including the role='user' tool_result envelopes from step 3.
 
-`ai_sessions.title` starts NULL. On a session's first successful chat round, `backfillTitleIfNew` writes the first 60 trimmed characters of the user's opening message to the column. The title can be edited later via UI (no edit path exists in v1).
+`ai_sessions.title` starts NULL. On a session's first successful chat round, `backfillTitleIfNew` writes the first 60 trimmed characters of the user's opening message to the column. The title can be edited later via the session menu in the chat header (Preimenuj), which UPDATEs `ai_sessions.title` directly under the existing owner-scoped RLS policy. Deleting a session (Obriši in the same menu) DELETEs the `ai_sessions` row; the FK `ON DELETE CASCADE` from `ai_messages` removes every row in the conversation in the same statement.
 
-### Why append-only
+### Branching (edit / regenerate)
 
-We never mutate or delete `ai_messages` rows from application code. Resume-on-refresh becomes trivial — just load all rows for the session in `created_at` order. Editing a message would require re-numbering, re-validating against the Anthropic message-history contract (which forbids gaps in tool_use → tool_result pairings), and inventing UI semantics for what "edit" even means in a conversation that the model has already responded to. Append-only sidesteps all of that.
+The chat UI lets the user fork prior turns:
+
+- **Edit a user message** — hover the user bubble → pencil → edit text → Spremi. The backend looks up the target row's `parent_id` and inserts the new user message as a **sibling** under that parent. Nothing is deleted. The orchestration loop then streams a new assistant response under the new user row, creating a fresh branch in the tree.
+- **Regenerate the last assistant response** — hover the last assistant bubble → refresh. Mechanically identical to editing the most recent user message with its own text: a new user-row sibling is created, then a fresh assistant response under it.
+- **Branch switcher** — every user message in the active view that has siblings shows a `‹ N/M ›` control beneath the bubble. Clicking the arrows asks the store to walk into a sibling's subtree (picking its most-recent leaf) and re-renders the conversation along that path.
+
+The active branch is computed implicitly: the row with the largest `created_at` in the session is the active leaf, and walking `parent_id` back to root yields the active path. This means a freshly streamed branch is always the one shown on reload — there is no per-session "selected branch" pointer, by design. Branch switches via the arrows are client-side only; they do not persist across `loadSession` calls.
+
+Every persisted row carries an explicit `parent_id`. New user rows chain off the active leaf (or off `target.parent_id` for an edit). The assistant row from each Anthropic turn points at the row it answers (the user message or a prior tool_result). Tool-result rows (role='user' with `tool_result` blocks only) point at the assistant row that emitted the `tool_use` blocks they answer. The next assistant turn in a tool loop points at the tool_result row.
+
+The client passes `parent_message_id` (its current active leaf id) on every non-edit send. For edits it passes `edit_message_id` instead and the server derives the sibling's parent from the target. Edits are rejected (`invalid_request`) when there is no `session_id` yet (brand-new conversation) or when the target is not a user-role row; edits go through the same rate-limit gate as fresh sends.
+
+---
+
+## Attachments
+
+Users can paperclip or drag-drop files onto a message. The model sees them as multimodal content blocks: `image` (PNG/JPEG/WEBP) and `document` (PDF) blocks via Anthropic's vision/document API, plus inline text blocks for TXT/CSV/Excel.
+
+### Upload flow
+
+1. The user picks or drops files in `AiChatInput`; the store records them in `pendingAttachments` with `status='pending'`.
+2. On send, the store kicks off `uploadAiAttachment` per pending entry. For new conversations the store generates a `proposed_session_id` UUID upfront so the storage path can use the final `{auth_user_id}/{session_id}/...` shape before the server creates the session row.
+3. After all uploads succeed, the store calls `streamMessage` with the attachment metadata (`storage_path`, `file_name`, `file_size`, `mime_type`, `kind`, `extracted_text`).
+4. The edge function re-validates everything server-side, downloads bytes from storage (service-role; the path-prefix check is the security control), base64-encodes them into Anthropic `image`/`document` blocks, and persists the full multimodal array as the user row's `content` JSONB. It then bulk-inserts `ai_message_attachments` rows; if that fails it rolls back the user row and best-effort-deletes the storage objects.
+
+### Storage
+
+A private Supabase Storage bucket `ai-chat-attachments` is provisioned by [supabase/migrations/20260520130100_create_ai_chat_attachments_bucket.sql](../supabase/migrations/20260520130100_create_ai_chat_attachments_bucket.sql). Objects are stored at `{auth_user_id}/{session_id}/{uuid}.{ext}` and accessible only to the owner via four `storage.objects` RLS policies that scope SELECT/INSERT/UPDATE/DELETE to `(storage.foldername(name))[1] = auth.uid()::text`. The bucket is `public=false`; rendered images and download chips use `createSignedUrl` with a 3600s TTL (matching `documentService.ts` / `tasksService.ts`). If a chat panel stays open past 1h the next image click triggers an `onError` refetch — pragmatic mitigation, not a hard fix.
+
+**Why `auth.users.id`, not `public.users.id`.** Storage RLS uses `auth.uid()` directly. The path-prefix check in [supabase/functions/ai-chat/index.ts](../supabase/functions/ai-chat/index.ts) (`storage_path.startsWith(authUserId + '/')`) must use the same value, hence the `authUserId` field on `AuthContext`. Mixing the two would either let users into each other's prefixes (the service-role download bypasses RLS — only the prefix check stops cross-user reads) or break valid uploads.
+
+### Multimodal content blocks
+
+The user row's `content` JSONB is the authoritative replay format. A row sent with one image and a typed question persists as something like:
+
+```jsonc
+[
+  { "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": "<base64>" } },
+  { "type": "text", "text": "Što je na ovoj slici?" }
+]
+```
+
+For text-kind attachments the block is a plain text block prefixed with `[Priložena datoteka: <name>]\n\n<extracted text>` — no separate `document` block. `runOrchestrationLoop` finds the text block by `type` (it's always last in our convention but the lookup is type-keyed so a different ordering wouldn't silently clobber image/document blocks) when prepending the `[Kontekst: ...]` line.
+
+On history reload, `loadSession` runs a second batched query against `ai_message_attachments` (`message_id IN (...)`) to populate render-side chips and thumbnails. The query is **fail-open**: a side-table hiccup degrades UI (no chips) but does not block history load, because the model still has full fidelity via the JSONB.
+
+### Limits
+
+| Kind | Raw size cap | Notes |
+|---|---|---|
+| Image | 5 MB | `image/png`, `image/jpeg`, `image/webp`; extensions `.png` / `.jpg` / `.jpeg` / `.webp` |
+| PDF | 10 MB | `application/pdf`; extension `.pdf` |
+| Text | 2 MB raw | `text/plain`, `text/csv`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/vnd.ms-excel`; extensions `.txt` / `.csv` / `.xls` / `.xlsx` |
+| Extracted text | 50 KB | Hard cap after parsing. Anything beyond is truncated with `\n\n...[truncated]`. Excel parses **first sheet only** to CSV via `@e965/xlsx`; the system prompt instructs the model to disclaim multi-sheet workbooks. |
+
+Hard cap of **4 attachments per message**, enforced both client- and server-side. Both the MIME type AND the filename extension must pass the per-kind whitelist (defense in depth against MIME spoofing).
+
+### Edit + attachments interaction
+
+Editing a message creates a new sibling branch under the same `parent_id`. By design **attachments are dropped on edit**: the new sibling has none. The original attachments remain linked to the original sibling, which is still reachable via the `‹ N/M ›` branch switcher. The edge function explicitly rejects `attachments` combined with `edit_message_id` (`edit_with_attachments_unsupported`) so a misbehaving client can't half-attach.
+
+### Cleanup and orphans
+
+Three places can produce orphan storage objects (uploaded bytes without a DB row):
+
+- **User cancels mid-upload** — `removePendingAttachment` cleans up the object if the upload had already succeeded.
+- **Send fails after uploads succeeded** — `sendMessage`'s catch block iterates the in-call uploaded paths and best-effort-deletes them.
+- **Server-side attachment insert fails after user row succeeds** — `handleChat` deletes the user row and best-effort-removes the storage objects before returning 500.
+
+These cover the common cases; a hard crash mid-flight can still leak. No background cleanup job exists yet — orphan accumulation is acceptable for v1 and documented in [Known Limitations](#known-limitations).
 
 ---
 
@@ -409,21 +501,7 @@ Set in the Supabase dashboard under Edge Functions → Secrets:
 npx supabase functions deploy ai-chat --project-ref ktfaimjkcvhkftwbnnwy
 ```
 
-This bundles the `ai-chat/index.ts` entry point along with all imports from `_shared/`. There is no per-function `import_map.json` for ai-chat; remote imports (`npm:@anthropic-ai/sdk`, `npm:@supabase/supabase-js@2`) are resolved at deploy time.
-
-### Applying migrations (workaround for the desync)
-
-`supabase db push` does NOT work cleanly on `Landmark-Test`. Two problems compound:
-
-1. Migration `20251009095621_fix_wire_payments_created_by_reference.sql` is corrupted with literal `\n` strings in place of real newlines; the CLI can't parse it as SQL.
-2. Only 2 of 223 migrations are registered in `supabase_migrations.schema_migrations`. The CLI thinks the other 221 still need to apply, but they were applied historically through some other path.
-
-Workaround for any new migration:
-
-1. Apply the SQL file manually via `psql` against the Landmark-Test database.
-2. Manually register it: `INSERT INTO supabase_migrations.schema_migrations (version, statements, name) VALUES (...)`.
-
-This is hygiene work filed for separate attention. The AI chat migration [supabase/migrations/20260507120000_create_ai_chat_tables.sql](../supabase/migrations/20260507120000_create_ai_chat_tables.sql) was applied via this workaround.
+This bundles the `ai-chat/index.ts` entry point along with all imports from `_shared/`. There is no per-function `import_map.json` for ai-chat; remote imports (`npm:@anthropic-ai/sdk@0.97.0`, `npm:@supabase/supabase-js@2`) are pinned at the import site and resolved at deploy time. Do not float `@anthropic-ai/sdk` on `latest`. The SDK's `AbortSignal` support on `messages.create` is kept wired up but is currently a no-op cancellation source — see [Cancellation](#cancellation) for why we rely on a DB beacon instead.
 
 ### Type generation
 
@@ -465,7 +543,35 @@ Every assistant `ai_messages` row carries `input_tokens`, `output_tokens`, `mode
 
 ### The 90-second request timeout
 
-`REQUEST_TIMEOUT_MS = 90_000` in [supabase/functions/ai-chat/index.ts](../supabase/functions/ai-chat/index.ts). Fires as a mid-stream `error` event with `code: 'request_timeout'` and a Croatian message — NOT a 504, because the response has already been upgraded to 200 / `text/event-stream` by the time the timer fires. The orchestration loop continues running on the function side until Supabase's invocation cap kills it; persistence already in progress runs to completion.
+`REQUEST_TIMEOUT_MS = 90_000` in [supabase/functions/ai-chat/index.ts](../supabase/functions/ai-chat/index.ts). Fires as a mid-stream `error` event with `code: 'request_timeout'` and a Croatian message — NOT a 504, because the response has already been upgraded to 200 / `text/event-stream` by the time the timer fires. The timeout aborts the per-request `AbortController`, which cancels the in-flight Anthropic call and exits the orchestration loop at the next iteration boundary; no further DB rows are written for that turn.
+
+### Cancellation
+
+Two independent cancellation paths feed a single per-request `AbortController` in `streamChatResponse`:
+
+1. **DB-backed cancel beacon** — the real client-initiated cancel. When the user clicks stop in the chat input, the frontend (`useAiChatStore.stopStreaming`) writes `now()` into `ai_sessions.cancel_requested_at` via supabase-js. The orchestration loop polls that column at every iteration boundary and after every tool dispatch (`isCancelled()` in [supabase/functions/ai-chat/index.ts](../supabase/functions/ai-chat/index.ts)). If the beacon's timestamp is strictly greater than the loop's own `requestStartedAt`, the loop trips the controller and exits. The strict-greater comparison is what lets a stale beacon from a previous turn coexist with a fresh turn on the same session without false-positive cancels.
+
+2. **90s request timeout** — a `setTimeout` in the worker trips the same controller and surfaces a mid-stream `error` event with `code: 'request_timeout'`, exactly as before.
+
+The controller's signal is also passed to `anthropic.messages.create({...}, { signal })` and there are three legacy transport-layer abort sources still wired up (`req.signal`, `writer.closed.catch`, and `SSEWriter`'s write-failure callback). All three are currently no-ops in Supabase's Edge runtime — they're left in place because they're harmless and would provide instant cancellation if the runtime ever starts surfacing client disconnect to user code. The DB beacon is the only mechanism we have actually observed crossing the runtime boundary.
+
+The post-loop branch reads `abortReason` to decide what to emit on the wire:
+
+- `'client_disconnect'` (set by any of: `req.signal`, `writer.closed`, `sse.write_failed`, or `db_cancel_beacon`) → no SSE event (the client either disconnected or has already locally aborted its reader); one log line `[ai-chat] client disconnect detected` carrying the triggering source.
+- `'request_timeout'` → `event: error` with `code: 'request_timeout'` and a Croatian message.
+- `null` (loop completed normally) → nothing extra; `done` was already emitted by the loop.
+
+#### Cancel latency
+
+With the DB-beacon mechanism, the worst-case cancel latency is the duration of a single in-flight Anthropic call (typically a few seconds, up to ~30s for a slow turn) plus one tool's 15s timeout if the cancel arrives while a tool handler is running. The poll itself is one indexed `SELECT cancel_requested_at FROM ai_sessions WHERE id = ?` per checkpoint — negligible.
+
+#### Persistence semantics
+
+Any DB row written BEFORE the cancel trip stays — the user turn (always persisted in `handleChat` before the stream opens), any complete assistant turn already inserted earlier in the loop, and any tool_result row whose insert completed. Rows that would have followed are not written. Stopping mid-stream therefore preserves whatever the user already saw on screen; on a refresh / `loadSession` they see the partial conversation up to the point of cancel.
+
+#### Why DB-backed and not transport-layer
+
+Supabase Edge Runtime 1.74.0 (compatible with Deno v2.1.4 at time of writing) does not surface client TCP disconnect into user code through any of the standard channels: `req.signal` does not abort, `writer.closed` does not reject when the readable side is consumed by a dead connection, and writes to the `TransformStream` writable continue to succeed because the queue is in-memory. Deno's internal HTTP layer DOES detect the dead socket — it surfaces as a `BadResource: Bad resource ID` error logged from `runtime/01_http.js` — but that error is not propagated back to the handler. Until that gap is closed upstream, the DB beacon is the only reliable cross-runtime cancel signal.
 
 ### The 10-iteration tool loop limit
 
@@ -524,7 +630,6 @@ The `-N` flag is essential — it disables curl's output buffering. Without it t
 
 Items below are filed for later attention. Each notes where the canonical follow-up record lives.
 
-- **`npm:@anthropic-ai/sdk` is unpinned.** Imported as `npm:@anthropic-ai/sdk` with no version specifier. Pin to a specific version before any prod deploy. (TODO in [supabase/functions/ai-chat/index.ts](../supabase/functions/ai-chat/index.ts).)
 - **Migration history desync on Landmark-Test.** 221 of 223 migrations are not registered in `supabase_migrations.schema_migrations`. Fixing requires a one-time reconciliation pass. (Filed: hygiene backlog; see [Deployment](#deployment).)
 - **Corrupted migration file.** [supabase/migrations/20251009095621_fix_wire_payments_created_by_reference.sql](../supabase/migrations/20251009095621_fix_wire_payments_created_by_reference.sql) contains literal `\n` strings in place of newlines and cannot be parsed by `psql` or the Supabase CLI without preprocessing.
 - **`db:types` script does not preserve the comment header.** Manual re-prepend is required after each regeneration.
@@ -533,8 +638,9 @@ Items below are filed for later attention. Each notes where the canonical follow
 - **Optimistic user row can diverge from server state.** If the network drops mid-stream BEFORE the backend persists the user row, the local row exists but the server has nothing. Documented in [src/components/AiChat/hooks/useAiChatStore.ts](../src/components/AiChat/hooks/useAiChatStore.ts) with explicit instructions not to "fix" by double-writing.
 - **Client-side session timestamp is provisional.** When a new session is synthesised on the `session` event, its `created_at` / `updated_at` come from `new Date().toISOString()` on the client; the canonical values are written by the server. `sessionsLoaded:false` causes the next `open()` to re-fetch and replace.
 - **No `Retry-After` header on 429s.** Frontend cannot tell the user when to retry; it can only show the generic Croatian message.
-- **No request cancellation propagation to Anthropic.** When the user aborts (via `newConversation` / `selectSession`), the client closes its reader, but the server's in-flight Anthropic call continues until it completes or Supabase's invocation cap kills it. Tokens already spent are not refunded.
 - **Untranslated `profiles.cashflow_misconfigured_*` strings.** The Croatian text added during Phase 1.5 has not been reviewed by a native speaker.
 - **`src/lib/supabase.ts` ambient types coexist with generated ones.** The Supabase client there is not typed with the `Database` generic; AI chat code uses the generated types directly via `Database['public']['Tables'][...]['Row']`. Unifying is out of scope for the AI chat work.
 - **No automated test coverage.** Unit, integration, and E2E coverage was skipped per the Phase 6 scope decision. Manual verification only.
+- **Attachment orphan leak on hard crash.** The three known orphan paths (upload-fail, send-fail, attachment-insert-fail) all have best-effort cleanup, but a hard browser/edge crash mid-flight can leave bytes in `ai-chat-attachments` without a matching DB row. No background sweeper exists yet — see [Attachments → Cleanup and orphans](#cleanup-and-orphans).
+- **Persisted JSONB grows large with image-heavy sessions.** A 10 MB PDF base64-encodes to ~13 MB and is stored verbatim on the user row. A session with 4×10 MB PDFs has ~52 MB of row payload; `loadSession` materialises all of it. Postgres TOAST handles it, but extracting base64 to a side-table and reconstituting server-side is a candidate v2 optimisation.
 - **Funtana project has 5 phases but 0 contracts in test data.** Known-incomplete test-data state, not an AI chat bug. Tool responses correctly reflect what's in the DB.
