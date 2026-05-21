@@ -21,6 +21,29 @@ export type AiMessageRow = Omit<AiMessageRowGen, 'role'> & {
   attachments?: AiAttachmentRow[]
 }
 
+// ---------------------------------------------------------------------------
+// create_document — the agent-authored document spec. It is carried in the
+// input of a `create_document` tool_use block (no dedicated SSE event), and
+// the file itself is generated client-side on download. See
+// components/AiChat/lib/documentGenerator.ts.
+// ---------------------------------------------------------------------------
+export type DocumentFormat = 'pdf' | 'xlsx' | 'markdown'
+
+export interface DocumentSheet {
+  name: string
+  columns: string[]
+  rows: Array<Array<string | number | boolean | null>>
+}
+
+export interface DocumentSpec {
+  title: string
+  format: DocumentFormat
+  // Present for 'pdf' and 'markdown'.
+  markdown?: string
+  // Present for 'xlsx'.
+  sheets?: DocumentSheet[]
+}
+
 // SSE event taxonomy — must match the backend's Event union exactly.
 // See supabase/functions/ai-chat/index.ts.
 export type AiChatEvent =

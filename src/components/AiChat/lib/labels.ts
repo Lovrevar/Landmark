@@ -9,6 +9,7 @@ export const TOOL_LABELS_HR: Record<string, string> = {
   get_invoice_summary: 'Sažetak računa',
   get_project_financial_summary: 'Financijski sažetak projekta',
   list_unpaid_invoices: 'Neplaćeni računi',
+  create_document: 'Izrada dokumenta',
 }
 
 export const ERROR_LABELS_HR: Record<string, string> = {
@@ -58,6 +59,9 @@ export const UI_LABELS_HR = {
   attachmentLimitReached: 'Maksimalno 4 priloga po poruci',
   openImage: 'Otvori sliku',
   downloadAttachment: 'Preuzmi datoteku',
+  downloadDocument: 'Preuzmi dokument',
+  preparingDocument: 'Priprema dokumenta...',
+  documentGenerationFailed: 'Greška pri izradi dokumenta.',
 } as const
 
 export function toolLabel(tool: string): string {

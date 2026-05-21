@@ -49,5 +49,7 @@ graphify-out/
 
 # Supabase temp folder
 supabase/.temp/
+# Deno lockfile — regenerated locally when type-checking edge functions
+supabase/functions/deno.lock
 # Local backup of .git made during repo recovery — delete once verified
 .git.bak/

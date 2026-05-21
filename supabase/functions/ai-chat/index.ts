@@ -56,6 +56,20 @@ import { checkRateLimit } from '../_shared/rateLimit.ts'
 import { describeRoute, sanitizeRoute } from '../_shared/routeLabels.ts'
 import type { HelpSearchContext } from '../_shared/help-search.ts'
 import type { Json } from '../_shared/database.ts'
+import {
+  applyMessageCacheBreakpoint,
+  ATTACHMENT_KEEP_RECENT,
+  buildSummaryUserText,
+  type ChainMessage,
+  type ContentBlock,
+  enforceHardCeiling,
+  injectSummaryBanner,
+  planCompaction,
+  renderTurnsForSummary,
+  selectKeptChain,
+  stripOldAttachments,
+  SUMMARY_SYSTEM_PROMPT,
+} from '../_shared/context-window.ts'
 
 const jsonHeaders = { ...corsHeaders, 'content-type': 'application/json' }
 
@@ -572,6 +586,118 @@ async function backfillTitleIfNew(
 }
 
 // ---------------------------------------------------------------------------
+// Post-turn context compaction. Best-effort and off the user's critical
+// path: once the turn's answer has been delivered, fold older turns into
+// the session's running summary so the NEXT turn starts from a compact
+// base. Never throws — a compaction failure must not surface to the user;
+// it just means the next turn replays a little more history and retries.
+// ---------------------------------------------------------------------------
+
+async function maybeCompactSession(ctx: AuthContext, sessionId: string): Promise<void> {
+  try {
+    const { data: rows, error } = await ctx.serviceClient
+      .from('ai_messages')
+      .select('id, role, content, parent_id, created_at')
+      .eq('session_id', sessionId)
+    if (error || !rows || rows.length === 0) return
+
+    // The branch we just extended ends at the newest leaf — a row that is no
+    // other row's parent. Among leaves (branches), the newest created_at is
+    // the one this request just used.
+    const parentIds = new Set(
+      rows.map((r) => r.parent_id).filter((p): p is string => p !== null),
+    )
+    const leaves = rows.filter((r) => !parentIds.has(r.id))
+    let leaf = leaves[0] ?? rows[0]
+    for (const r of leaves) if (r.created_at > leaf.created_at) leaf = r
+
+    const byId = new Map<string, (typeof rows)[number]>()
+    for (const r of rows) byId.set(r.id, r)
+    const chain: ChainMessage[] = []
+    const seen = new Set<string>()
+    let cursor: string | null = leaf.id
+    while (cursor) {
+      if (seen.has(cursor)) break
+      seen.add(cursor)
+      const row = byId.get(cursor)
+      if (!row) break
+      chain.unshift({
+        id: row.id,
+        role: row.role as 'user' | 'assistant',
+        content: Array.isArray(row.content) ? row.content as unknown as ContentBlock[] : [],
+      })
+      cursor = row.parent_id
+    }
+
+    const { data: meta } = await ctx.serviceClient
+      .from('ai_sessions')
+      .select('context_summary, summary_through_message_id')
+      .eq('id', sessionId)
+      .maybeSingle()
+
+    const plan = planCompaction(
+      chain,
+      meta?.context_summary ?? null,
+      meta?.summary_through_message_id ?? null,
+    )
+    if (!plan) return
+
+    // A cheaper/faster model can be pointed at summarisation via
+    // AI_CHAT_SUMMARY_MODEL; it defaults to the main chat model.
+    const summaryModel = Deno.env.get('AI_CHAT_SUMMARY_MODEL')
+      ?? Deno.env.get('AI_CHAT_MODEL')
+      ?? 'claude-sonnet-4-6'
+
+    const rendered = renderTurnsForSummary(plan.summarizeTurns)
+    const resp = await anthropic.messages.create({
+      model: summaryModel,
+      max_tokens: 2048,
+      system: SUMMARY_SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: buildSummaryUserText(plan.priorSummary, rendered),
+      }],
+    })
+    const summaryText = (resp.content as AnthropicBlock[])
+      .filter((b): b is TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n')
+      .trim()
+    if (!summaryText) return
+
+    const { error: updateError } = await ctx.serviceClient
+      .from('ai_sessions')
+      .update({
+        context_summary: summaryText,
+        summary_through_message_id: plan.newBoundaryId,
+      })
+      .eq('id', sessionId)
+      .eq('user_id', ctx.userId)
+    if (updateError) {
+      console.error('[ai-chat] compaction persist failed', {
+        userId: ctx.userId,
+        sessionId,
+        code: updateError.code,
+      })
+      return
+    }
+
+    console.log('[ai-chat] session compacted', {
+      userId: ctx.userId,
+      sessionId,
+      summarizedTurns: plan.summarizeTurns.length,
+      summaryChars: summaryText.length,
+    })
+  } catch (err) {
+    console.error('[ai-chat] compaction failed (non-fatal)', {
+      userId: ctx.userId,
+      sessionId,
+      reason: err instanceof Error ? err.message : String(err),
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pre-stream phase — validation, session resolution, history load, and
 // user-message persistence. Returns either a flat Response (any failure
 // surfaces here, before the stream is opened) or a ChatStreamPrep ready
@@ -797,7 +923,7 @@ async function handleChat(
     }
 
     // Walk parents from newParentId to root; collect into chain.
-    const chain: Array<{ role: 'user' | 'assistant'; content: Json }> = []
+    const chain: ChainMessage[] = []
     let cursor: string | null = newParentId
     const seen = new Set<string>()
     while (cursor) {
@@ -812,10 +938,45 @@ async function handleChat(
       seen.add(cursor)
       const row = byId.get(cursor)
       if (!row) break
-      chain.unshift({ role: row.role as 'user' | 'assistant', content: row.content })
+      chain.unshift({
+        id: row.id,
+        role: row.role as 'user' | 'assistant',
+        content: Array.isArray(row.content) ? row.content as unknown as ContentBlock[] : [],
+      })
       cursor = row.parent_id
     }
-    for (const m of chain) messages.push(m)
+
+    // ---- Context-window management ----
+    // A long-lived thread would otherwise replay its entire history on every
+    // turn and eventually exceed the model's context window. Older turns are
+    // folded into a running summary (built by the post-turn compaction step
+    // and stored on ai_sessions); here we apply whatever summary already
+    // exists, enforce a hard backstop, and strip stale attachments. See
+    // _shared/context-window.ts.
+    const { data: sessionMeta } = await ctx.serviceClient
+      .from('ai_sessions')
+      .select('context_summary, summary_through_message_id')
+      .eq('id', sessionId)
+      .maybeSingle()
+
+    const { keptChain, summaryText } = selectKeptChain(
+      chain,
+      sessionMeta?.context_summary ?? null,
+      sessionMeta?.summary_through_message_id ?? null,
+    )
+    for (const m of enforceHardCeiling(keptChain)) {
+      messages.push({ role: m.role, content: m.content })
+    }
+    // Drop image/PDF bytes from all but the most recent few history messages
+    // — they are the single biggest context cost and rarely relevant once
+    // the conversation has moved on. Runs before the new user turn is
+    // appended below, so the current message's attachments are kept.
+    stripOldAttachments(messages, ATTACHMENT_KEEP_RECENT)
+    // Fold the running summary into the oldest surviving message as plain
+    // context (in-memory only — the persisted rows are never rewritten).
+    if (summaryText && messages.length > 0) {
+      injectSummaryBanner(messages[0], summaryText)
+    }
   }
 
   // ---- Build the multimodal user-turn content ----
@@ -950,12 +1111,23 @@ async function runOrchestrationLoop(
   const { sessionId, newlyCreatedSession, messages, userMessage } = prep
   let lastInsertedId: string = prep.lastInsertedId
   const model = Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6'
-  const system = buildSystemPrompt(ctx)
-  const availableTools = selectAvailableTools(ctx).map((t) => ({
+  // The system prompt and tool schemas are byte-identical on every turn of
+  // every session — mark them as a cacheable prefix so after the first call
+  // they are billed at the cache-read rate (~0.1x). The conversation-array
+  // breakpoint is slid forward each iteration by applyMessageCacheBreakpoint.
+  const system = [{
+    type: 'text',
+    text: buildSystemPrompt(ctx),
+    cache_control: { type: 'ephemeral' },
+  }]
+  const availableTools: Array<Record<string, unknown>> = selectAvailableTools(ctx).map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: t.input_schema,
   }))
+  if (availableTools.length > 0) {
+    availableTools[availableTools.length - 1].cache_control = { type: 'ephemeral' }
+  }
   const extras: ToolHandlerExtras = { helpSearch: prep.helpSearch }
 
   // Prepend a "[Kontekst: ...]" line to the LAST message in the in-memory
@@ -1033,13 +1205,21 @@ async function runOrchestrationLoop(
     // Iteration boundary: bail before issuing the next Anthropic call.
     if (await isCancelled()) return
 
+    // Slide the prompt-cache breakpoint onto the current last message so the
+    // whole conversation-so-far becomes a cacheable prefix for the next call.
+    applyMessageCacheBreakpoint(messages)
+
     let response: Awaited<ReturnType<typeof anthropic.messages.create>>
     try {
       response = await anthropic.messages.create({
         model,
-        // Tunable — Sonnet 4.x supports up to 8192 default; raise if real conversations get truncated.
-        max_tokens: 4096,
-        system,
+        // Headroom for create_document, whose tool-call payload carries an
+        // entire authored document. Too low and the model truncates mid
+        // tool-call (stop_reason 'max_tokens'); the terminal-branch
+        // truncation guard below turns any leftover truncation into a clean
+        // error instead of a stuck client-side spinner.
+        max_tokens: 8192,
+        system: system as unknown as Parameters<typeof anthropic.messages.create>[0]['system'],
         tools: availableTools as unknown as Parameters<typeof anthropic.messages.create>[0]['tools'],
         messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
       }, { signal })
@@ -1216,6 +1396,79 @@ async function runOrchestrationLoop(
       continue
     }
 
+    // Truncation guard. A terminal stop_reason (almost always 'max_tokens')
+    // with tool_use blocks present means the model ran out of output budget
+    // MID tool-call — e.g. while authoring a large create_document payload.
+    // The tool_call events were already emitted, so the client now has
+    // spinners that would never resolve. Close them out: synthesize error
+    // tool_results, persist them (so a history reload stays consistent),
+    // and tell the user what happened.
+    if (toolUses.length > 0) {
+      console.warn('[ai-chat] response truncated mid tool_use', {
+        userId: ctx.userId,
+        sessionId,
+        iteration,
+        stopReason,
+        toolCount: toolUses.length,
+      })
+      const truncationOutput = { error: 'response truncated before the tool call completed' }
+      const toolResultBlocks: ToolResultBlock[] = []
+      for (const tu of toolUses) {
+        await sse.writeEvent('tool_result', {
+          type: 'tool_result',
+          tool: tu.name,
+          output: truncationOutput,
+          tool_use_id: tu.id,
+          is_error: true,
+        })
+        toolResultBlocks.push({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: JSON.stringify(truncationOutput),
+          is_error: true,
+        })
+      }
+      const { data: truncResultRow } = await ctx.serviceClient
+        .from('ai_messages')
+        .insert({
+          session_id: sessionId,
+          role: 'user',
+          content: toolResultBlocks as unknown as Json,
+          parent_id: lastInsertedId,
+        })
+        .select('id')
+        .single()
+
+      const truncationText = stopReason === 'max_tokens'
+        ? 'Dokument je prevelik da bi stao u jedan odgovor. Zatražite kraći dokument ili ga podijelite na više manjih.'
+        : 'Odgovor nije dovršen. Pokušajte ponovno.'
+      const truncationContent: TextBlock[] = [{ type: 'text', text: truncationText }]
+      if (truncResultRow) {
+        await ctx.serviceClient
+          .from('ai_messages')
+          .insert({
+            session_id: sessionId,
+            role: 'assistant',
+            content: truncationContent as unknown as Json,
+            model: response.model ?? model,
+            stop_reason: stopReason,
+            parent_id: truncResultRow.id,
+          })
+      }
+      await sse.writeEvent('turn', {
+        type: 'turn',
+        role: 'assistant',
+        text: truncationText,
+      })
+      await sse.writeEvent('done', {
+        type: 'done',
+        stop_reason: stopReason,
+        usage: lastUsage,
+      })
+      await backfillTitleIfNew(ctx, sessionId, userMessage, newlyCreatedSession)
+      return
+    }
+
     // Terminal stop_reason (end_turn, max_tokens, stop_sequence, or anything
     // else surfaced by the SDK). Emit done with the raw value — don't normalise.
     await sse.writeEvent('done', {
@@ -1358,6 +1611,15 @@ function streamChatResponse(
       } else if (abortReason === 'client_disconnect') {
         // Silent on the wire — the reader is gone. (Detection log already
         // emitted by onClientDisconnect with the triggering source.)
+      }
+
+      // The turn finished cleanly. Off the user's critical path — they
+      // already have their answer — fold older turns into the running
+      // summary so the next turn starts from a compact base. This holds the
+      // SSE connection open a few extra seconds; the heartbeat covers it.
+      // maybeCompactSession never throws, so it cannot trip the catch below.
+      if (abortReason === null) {
+        await maybeCompactSession(ctx, prep.sessionId)
       }
     } catch (err) {
       // Anything that throws past the loop's own catch is either an abort

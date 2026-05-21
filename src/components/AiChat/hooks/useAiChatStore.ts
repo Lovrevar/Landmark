@@ -473,6 +473,8 @@ export function useAiChatStore(): AiChatStore {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 cancel_requested_at: null,
+                context_summary: null,
+                summary_through_message_id: null,
               }
               setSessions((prev) => [synthesized, ...prev])
               setSessionsLoaded(false)

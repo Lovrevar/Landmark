@@ -1,6 +1,6 @@
 // AI chat tool catalog.
 //
-// This file defines the 10 tools the assistant can invoke and the role-based
+// This file defines the 12 tools the assistant can invoke and the role-based
 // filter that selects which tools each user is allowed to use. Each handler
 // is currently a stub that echoes its input back; real handlers move to
 // ./tool-handlers.ts in Phase 3.2.
@@ -11,6 +11,7 @@
 
 import type { AuthContext, Role } from './auth.ts'
 import {
+  handleCreateDocument,
   handleGetInvoiceSummary,
   handleGetProjectDetails,
   handleGetProjectFinancialSummary,
@@ -21,6 +22,7 @@ import {
   handleListUnpaidInvoices,
   handleSearchProjects,
   handleSearchSubcontractors,
+  type CreateDocumentInput,
   type GetInvoiceSummaryInput,
   type GetProjectDetailsInput,
   type GetProjectFinancialSummaryInput,
@@ -91,7 +93,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
-    handler: (input, ctx) => handleSearchProjects(input as SearchProjectsInput, ctx),
+    handler: (input, ctx) => handleSearchProjects(input as unknown as SearchProjectsInput, ctx),
   },
 
   {
@@ -113,7 +115,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
-    handler: (input, ctx) => handleGetProjectDetails(input as GetProjectDetailsInput, ctx),
+    handler: (input, ctx) => handleGetProjectDetails(input as unknown as GetProjectDetailsInput, ctx),
   },
 
   {
@@ -136,7 +138,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
-    handler: (input, ctx) => handleListProjectPhases(input as ListProjectPhasesInput, ctx),
+    handler: (input, ctx) => handleListProjectPhases(input as unknown as ListProjectPhasesInput, ctx),
   },
 
   {
@@ -166,7 +168,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
-    handler: (input, ctx) => handleSearchSubcontractors(input as SearchSubcontractorsInput, ctx),
+    handler: (input, ctx) => handleSearchSubcontractors(input as unknown as SearchSubcontractorsInput, ctx),
   },
 
   {
@@ -199,7 +201,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
-    handler: (input, ctx) => handleListContracts(input as ListContractsInput, ctx),
+    handler: (input, ctx) => handleListContracts(input as unknown as ListContractsInput, ctx),
   },
 
   {
@@ -222,7 +224,7 @@ export const TOOLS: ToolDefinition[] = [
     },
     requiredRoles: FINANCE_ROLES,
     handler: (input, ctx) =>
-      handleGetSubcontractorPaymentStatus(input as GetSubcontractorPaymentStatusInput, ctx),
+      handleGetSubcontractorPaymentStatus(input as unknown as GetSubcontractorPaymentStatusInput, ctx),
   },
 
   {
@@ -248,7 +250,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_PLUS_SUPERVISION,
-    handler: (input, ctx) => handleListUnpaidInvoices(input as ListUnpaidInvoicesInput, ctx),
+    handler: (input, ctx) => handleListUnpaidInvoices(input as unknown as ListUnpaidInvoicesInput, ctx),
   },
 
   {
@@ -278,7 +280,7 @@ export const TOOLS: ToolDefinition[] = [
     },
     requiredRoles: FINANCE_ROLES,
     handler: (input, ctx) =>
-      handleListPaymentsForSubcontractor(input as ListPaymentsForSubcontractorInput, ctx),
+      handleListPaymentsForSubcontractor(input as unknown as ListPaymentsForSubcontractorInput, ctx),
   },
 
   {
@@ -309,7 +311,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_ROLES,
-    handler: (input, ctx) => handleGetInvoiceSummary(input as GetInvoiceSummaryInput, ctx),
+    handler: (input, ctx) => handleGetInvoiceSummary(input as unknown as GetInvoiceSummaryInput, ctx),
   },
 
   {
@@ -333,7 +335,7 @@ export const TOOLS: ToolDefinition[] = [
     },
     requiredRoles: FINANCE_ROLES,
     handler: (input, ctx) =>
-      handleGetProjectFinancialSummary(input as GetProjectFinancialSummaryInput, ctx),
+      handleGetProjectFinancialSummary(input as unknown as GetProjectFinancialSummaryInput, ctx),
   },
 
   {
@@ -358,7 +360,83 @@ export const TOOLS: ToolDefinition[] = [
     },
     requiredRoles: ALL_ROLES,
     handler: (input, ctx, extras) =>
-      handleSearchHelp(input as SearchHelpInput, ctx, extras.helpSearch),
+      handleSearchHelp(input as unknown as SearchHelpInput, ctx, extras.helpSearch),
+  },
+
+  {
+    name: 'create_document',
+    description:
+      'Generate a downloadable document for the user — a PDF, an Excel spreadsheet, or a Markdown file. ' +
+      'The user receives it as a Download button in the chat. ' +
+      'Call this ONLY when the user explicitly asks for a document, report file, export, PDF, or Excel — ' +
+      'never for an ordinary answer. ' +
+      'You author the full content yourself from data you have ALREADY gathered with the other tools; ' +
+      'this tool fetches nothing on its own — call the data tools first. ' +
+      'Use format "pdf" or "markdown" with the `markdown` field for prose write-ups (reports, summaries, memos). ' +
+      'Use format "xlsx" with the `sheets` field for tabular data exports. ' +
+      'Stay within the limits: markdown <= 50000 chars; <= 10 sheets, <= 50 columns and <= 5000 rows per sheet. ' +
+      'After the tool succeeds, briefly tell the user the document is ready — do NOT paste its full content into the reply.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 200,
+          description: 'Document title. Also the basis for the download filename.',
+        },
+        format: {
+          type: 'string',
+          enum: ['pdf', 'xlsx', 'markdown'],
+          description: 'pdf/markdown for prose write-ups; xlsx for tabular data.',
+        },
+        markdown: {
+          type: 'string',
+          maxLength: 50000,
+          description:
+            'Document body as Markdown. Required for "pdf" and "markdown" formats; ignored for "xlsx". ' +
+            'Supports headings (#, ##, ###), paragraphs, **bold**, and bullet/numbered lists.',
+        },
+        sheets: {
+          type: 'array',
+          maxItems: 10,
+          description: 'Worksheets. Required for "xlsx" format; ignored otherwise.',
+          items: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+                minLength: 1,
+                maxLength: 31,
+                description: 'Worksheet name (<= 31 characters).',
+              },
+              columns: {
+                type: 'array',
+                maxItems: 50,
+                items: { type: 'string' },
+                description: 'Header row — one string per column.',
+              },
+              rows: {
+                type: 'array',
+                maxItems: 5000,
+                items: {
+                  type: 'array',
+                  maxItems: 50,
+                  items: { type: ['string', 'number', 'boolean', 'null'] },
+                },
+                description: 'Data rows. Each row is an array of cells aligned to `columns`.',
+              },
+            },
+            required: ['name', 'columns', 'rows'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['title', 'format'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input) => handleCreateDocument(input as unknown as CreateDocumentInput),
   },
 ]
 

@@ -864,3 +864,112 @@ export async function handleGetProjectFinancialSummary(
     },
   }
 }
+
+// ---------------------------------------------------------------------------
+// create_document — validation-only handler.
+//
+// Unlike every other tool, this one reads nothing: the model authors the
+// whole document and passes the spec in `input`. The handler's only job is
+// to validate that agent-supplied spec and hand back a clean confirmation.
+// The actual PDF / xlsx / Markdown file is generated client-side when the
+// user clicks Download — the spec rides in the persisted tool_use block, so
+// no storage bucket is involved. See docs/AI_CHAT.md.
+// ---------------------------------------------------------------------------
+
+export type DocumentFormat = 'pdf' | 'xlsx' | 'markdown'
+
+export interface DocumentSheetInput {
+  name: string
+  columns: string[]
+  rows: Array<Array<string | number | boolean | null>>
+}
+
+export interface CreateDocumentInput {
+  title: string
+  format: DocumentFormat
+  markdown?: string
+  sheets?: DocumentSheetInput[]
+}
+
+export type CreateDocumentOutput =
+  | { data: { ok: true; title: string; format: DocumentFormat; summary: string } }
+  | { error: string }
+
+// Size caps. The spec is persisted in the tool_use block and replayed to the
+// model on every subsequent turn until the context-window compaction step
+// ages it out — so these caps bound both the document and the replay cost.
+const DOC_TITLE_MAX = 200
+const DOC_MARKDOWN_MAX = 50_000
+const DOC_MAX_SHEETS = 10
+const DOC_SHEET_NAME_MAX = 31 // Excel's hard worksheet-name limit
+const DOC_MAX_COLUMNS = 50
+const DOC_MAX_ROWS = 5_000
+const DOC_SPEC_BYTES_MAX = 60_000 // total serialized spec
+
+export async function handleCreateDocument(
+  input: CreateDocumentInput,
+): Promise<CreateDocumentOutput> {
+  const title = typeof input?.title === 'string' ? input.title.trim() : ''
+  if (!title) return { error: 'Document title is required.' }
+  if (title.length > DOC_TITLE_MAX) {
+    return { error: `Document title exceeds ${DOC_TITLE_MAX} characters.` }
+  }
+
+  const format = input?.format
+  if (format !== 'pdf' && format !== 'xlsx' && format !== 'markdown') {
+    return { error: 'Document format must be one of: pdf, xlsx, markdown.' }
+  }
+
+  if (format === 'xlsx') {
+    const sheets = input?.sheets
+    if (!Array.isArray(sheets) || sheets.length === 0) {
+      return { error: 'An xlsx document requires a non-empty `sheets` array.' }
+    }
+    if (sheets.length > DOC_MAX_SHEETS) {
+      return { error: `An xlsx document allows at most ${DOC_MAX_SHEETS} sheets.` }
+    }
+    for (const sheet of sheets) {
+      const name = typeof sheet?.name === 'string' ? sheet.name.trim() : ''
+      if (!name) return { error: 'Every sheet needs a non-empty name.' }
+      if (name.length > DOC_SHEET_NAME_MAX) {
+        return { error: `Sheet name exceeds ${DOC_SHEET_NAME_MAX} characters.` }
+      }
+      if (!Array.isArray(sheet.columns) || sheet.columns.length === 0) {
+        return { error: `Sheet "${name}" needs a non-empty \`columns\` array.` }
+      }
+      if (sheet.columns.length > DOC_MAX_COLUMNS) {
+        return { error: `Sheet "${name}" exceeds ${DOC_MAX_COLUMNS} columns.` }
+      }
+      if (!Array.isArray(sheet.rows)) {
+        return { error: `Sheet "${name}" needs a \`rows\` array.` }
+      }
+      if (sheet.rows.length > DOC_MAX_ROWS) {
+        return { error: `Sheet "${name}" exceeds ${DOC_MAX_ROWS} rows.` }
+      }
+      for (const row of sheet.rows) {
+        if (!Array.isArray(row)) {
+          return { error: `Every row in sheet "${name}" must be an array of cells.` }
+        }
+      }
+    }
+  } else {
+    // pdf | markdown — both carry the body in `markdown`.
+    const markdown = typeof input?.markdown === 'string' ? input.markdown : ''
+    if (!markdown.trim()) {
+      return { error: `A ${format} document requires a non-empty \`markdown\` body.` }
+    }
+    if (markdown.length > DOC_MARKDOWN_MAX) {
+      return { error: `Document body exceeds ${DOC_MARKDOWN_MAX} characters.` }
+    }
+  }
+
+  if (JSON.stringify(input).length > DOC_SPEC_BYTES_MAX) {
+    return { error: 'Document is too large; produce a smaller or more focused one.' }
+  }
+
+  const summary = format === 'xlsx'
+    ? `Excel dokument "${title}" je spreman za preuzimanje.`
+    : `Dokument "${title}" (${format}) je spreman za preuzimanje.`
+
+  return { data: { ok: true, title, format, summary } }
+}
