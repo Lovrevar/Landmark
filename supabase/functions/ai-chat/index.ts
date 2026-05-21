@@ -51,7 +51,7 @@ import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 import { corsHeaders, handlePreflight } from '../_shared/cors.ts'
 import { authenticate, type AuthContext } from '../_shared/auth.ts'
 import { selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
-import { buildSystemPrompt } from '../_shared/prompts.ts'
+import { buildStaticSystemPrompt, buildUserContext } from '../_shared/prompts.ts'
 import { checkRateLimit } from '../_shared/rateLimit.ts'
 import { describeRoute, sanitizeRoute } from '../_shared/routeLabels.ts'
 import type { HelpSearchContext } from '../_shared/help-search.ts'
@@ -1111,15 +1111,26 @@ async function runOrchestrationLoop(
   const { sessionId, newlyCreatedSession, messages, userMessage } = prep
   let lastInsertedId: string = prep.lastInsertedId
   const model = Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6'
-  // The system prompt and tool schemas are byte-identical on every turn of
-  // every session — mark them as a cacheable prefix so after the first call
-  // they are billed at the cache-read rate (~0.1x). The conversation-array
-  // breakpoint is slid forward each iteration by applyMessageCacheBreakpoint.
-  const system = [{
-    type: 'text',
-    text: buildSystemPrompt(ctx),
-    cache_control: { type: 'ephemeral' },
-  }]
+  // The system prompt is split into two blocks. The first is the static
+  // instruction body — byte-identical for every user — and carries the cache
+  // breakpoint, so the tool schemas + static system text become a cacheable
+  // prefix shared across users of the same role (tools are role-filtered, so
+  // role is the caching granularity). The second block is the small per-user
+  // context (identity, role, role/email-specific notes); it sits after the
+  // breakpoint and is not itself a cross-user cache prefix. The
+  // conversation-array breakpoint is slid forward each iteration by
+  // applyMessageCacheBreakpoint.
+  const system = [
+    {
+      type: 'text',
+      text: buildStaticSystemPrompt(),
+      cache_control: { type: 'ephemeral' },
+    },
+    {
+      type: 'text',
+      text: buildUserContext(ctx),
+    },
+  ]
   const availableTools: Array<Record<string, unknown>> = selectAvailableTools(ctx).map((t) => ({
     name: t.name,
     description: t.description,
