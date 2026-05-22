@@ -16,6 +16,7 @@ import { errorLabel, toolLabel } from './lib/labels'
 import { useAiChat } from './AiChatProvider'
 import { useAutoGrowTextarea } from './hooks/useAutoGrowTextarea'
 import MessageAttachment from './components/MessageAttachment'
+import DocumentCard from './components/DocumentCard'
 
 interface AiChatMessageProps {
   message: RenderMessage
@@ -215,6 +216,9 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
         </div>
       )
     }
+
+    case 'document':
+      return <DocumentCard message={message} />
 
     case 'error':
       return (

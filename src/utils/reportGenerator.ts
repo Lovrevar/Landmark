@@ -2,6 +2,7 @@ import jsPDF from 'jspdf'
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
+import { loadUnicodeFont } from './pdfFont'
 
 type ProjectForReport = Project & {
   total_spent?: number
@@ -22,26 +23,8 @@ let contentWidth: number
 let yPosition: number
 let pdfFont = 'helvetica'
 
-// Loads NotoSans from Google Fonts to support Croatian characters (š č ć đ ž).
-// Falls back to helvetica if the fetch fails (offline, firewall, etc.).
-async function loadUnicodeFont(doc: jsPDF): Promise<void> {
-  const toBase64 = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer)
-    let binary = ''
-    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-    return btoa(binary)
-  }
-  const [regularRes, boldRes] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf'),
-    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf')
-  ])
-  if (!regularRes.ok || !boldRes.ok) throw new Error('Font fetch failed')
-  const [regularBuffer, boldBuffer] = await Promise.all([regularRes.arrayBuffer(), boldRes.arrayBuffer()])
-  doc.addFileToVFS('NotoSans-Regular.ttf', toBase64(regularBuffer))
-  doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
-  doc.addFileToVFS('NotoSans-Bold.ttf', toBase64(boldBuffer))
-  doc.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold')
-}
+// loadUnicodeFont (NotoSans, Croatian glyph support) lives in ./pdfFont and
+// is shared with the AI chat document generator.
 
 // Helper function to add new page if needed
 const checkPageBreak = (requiredHeight: number) => {

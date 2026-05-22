@@ -24,5 +24,15 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+  },
+  {
+    // Playwright e2e tests are not React: fixture signatures use empty `{}`
+    // destructuring patterns, and the `use` callback is the Playwright fixture
+    // API — the React Hooks plugin otherwise misreads it as the `use` hook.
+    files: ['e2e/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'no-empty-pattern': 'off',
+    },
   }
 );

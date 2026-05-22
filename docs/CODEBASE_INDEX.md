@@ -22,6 +22,7 @@
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Tasks with 3-state status, projects, reminders, attachments, @mention comments, activity log |
+| **Email Doc Sorting** | [EMAIL_DOCUMENT_SORTING.md](./EMAIL_DOCUMENT_SORTING.md) | Auto-classify emailed documents into the Documents system via Make.com + Claude |
 
 ---
 

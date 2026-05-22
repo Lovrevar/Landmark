@@ -10,6 +10,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 - [Attachments](#attachments)
 - [Tool Catalog](#tool-catalog)
 - [System Prompt](#system-prompt)
+- [Context-Window Management](#context-window-management)
 - [Frontend Architecture](#frontend-architecture)
 - [Security Posture](#security-posture)
 - [Deployment](#deployment)
@@ -23,7 +24,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 
 The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 10 tools exposed by a Supabase Edge Function.
 
-In v1 the assistant explicitly does NOT mutate any data, does NOT touch files or uploads, does NOT generate reports or exports, and does NOT have access to the retail/land-development side of the platform — only construction-side data is reachable. Refusal phrasing for out-of-scope requests is baked into the system prompt.
+The assistant explicitly does NOT mutate any data and does NOT have access to the retail/land-development side of the platform — only construction-side data is reachable. Refusal phrasing for out-of-scope requests is baked into the system prompt. It *can*, since the document-generation work, produce downloadable PDF / Excel / Markdown files on request (see [Document generation](#document-generation)) — that reads data but changes nothing.
 
 The feature shipped over Phases 0–6 between roughly 2026-05-07 (first migration committed: [supabase/migrations/20260507120000_create_ai_chat_tables.sql](../supabase/migrations/20260507120000_create_ai_chat_tables.sql)) and 2026-05-12. It replaces nothing — it is a greenfield feature built on the official `@anthropic-ai/sdk` Deno import.
 
@@ -138,8 +139,12 @@ Three tables back the feature; see [supabase/migrations/20260507120000_create_ai
 | `created_at` | `timestamptz` | no | default `now()` |
 | `updated_at` | `timestamptz` | no | maintained via `public.update_updated_at_column()` trigger |
 | `cancel_requested_at` | `timestamptz` | yes | Cancel beacon written by the chat stop button. The orchestration loop polls this and treats any value newer than its own request start as a cancel. See [Cancellation](#cancellation). |
+| `context_summary` | `text` | yes | Running natural-language summary of the older part of the conversation. NULL until the thread is long enough to need its first compaction. Written only by the post-turn compaction step. See [Context-Window Management](#context-window-management). |
+| `summary_through_message_id` | `uuid` | yes | FK → `ai_messages(id)`, ON DELETE SET NULL. The id of the last message covered by `context_summary` — the summary is only applied to a branch whose ancestor chain contains this id. |
 
 Index: `ai_sessions_user_id_updated_at_idx (user_id, updated_at DESC)` — supports the only list query the frontend issues ("my recent threads, newest first").
+
+> The compaction step UPDATEs `ai_sessions`, so the `update_updated_at_column()` trigger bumps `updated_at` whenever a thread is compacted. This is harmless — the thread *was* just used — but means a compacted thread re-sorts to the top of the recent list on its compaction turn.
 
 ### `ai_messages`
 
@@ -277,7 +282,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 ## Tool Catalog
 
-10 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
+12 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
 
 ### Role gating
 
@@ -293,6 +298,9 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 | `list_payments_for_subcontractor` | ✓ | ✓ |   |   |   |
 | `get_invoice_summary` | ✓ | ✓ |   |   |   |
 | `get_project_financial_summary` | ✓ | ✓ |   |   |   |
+| `create_document` | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+`search_help` (omitted from the table) is also available to every role.
 
 Three role-buckets in code: `ALL_ROLES` (every role), `FINANCE_ROLES` (Director + Accounting), `FINANCE_PLUS_SUPERVISION` (the finance pair plus Supervision, the latter scoped to assigned projects by handler logic).
 
@@ -308,6 +316,7 @@ Three role-buckets in code: `ALL_ROLES` (every role), `FINANCE_ROLES` (Director 
 - **`list_payments_for_subcontractor`** — individual payment records (date, amount, method, cesija flag, linked invoice number) for one subcontractor; joins through `accounting_invoices.supplier_id`.
 - **`get_invoice_summary`** — aggregate counts and unpaid sums across `accounting_invoices`, backed by the `get_invoice_statistics` SECURITY DEFINER RPC.
 - **`get_project_financial_summary`** — full financial rollup for a single project: project budget, contract sums and realised spend, invoice totals via both direct `project_id` and transitive `contract_id` paths (deduped), plus a derived summary block with `committed` / `spent` / `remaining_to_*` / `over_budget` fields.
+- **`create_document`** — produces a downloadable PDF, Excel (`.xlsx`), or Markdown file for the user. Unlike every other tool it reads no data: the model authors the whole document from data it already gathered, and the handler only *validates* the spec. See [Document generation](#document-generation).
 
 ### Data-model landmines the tools navigate around
 
@@ -324,7 +333,17 @@ Each landmine below has been observed in the wild and is encoded in handler logi
 
 ### Why we curate tools instead of giving Claude SQL
 
-Curation buys us four things at once: it enforces role-gating at the function layer (cleaner and more auditable than relying on RLS to be set up correctly for every read path); it pre-validates inputs (UUID format checks, limit clamps, ilike-wildcard escaping); it surfaces only the fields we want the model to see (notably hiding `budget_used`); and it bounds the cost surface (the model cannot author an accidentally-expensive query against a 50M-row table). The trade-off is that adding new query shapes requires writing handler code, but in practice the same 10 tools cover the vast majority of useful questions.
+Curation buys us four things at once: it enforces role-gating at the function layer (cleaner and more auditable than relying on RLS to be set up correctly for every read path); it pre-validates inputs (UUID format checks, limit clamps, ilike-wildcard escaping); it surfaces only the fields we want the model to see (notably hiding `budget_used`); and it bounds the cost surface (the model cannot author an accidentally-expensive query against a 50M-row table). The trade-off is that adding new query shapes requires writing handler code, but in practice the curated tool set covers the vast majority of useful questions.
+
+### Document generation
+
+`create_document` lets the assistant hand the user a downloadable file — a PDF or Markdown write-up, or an Excel (`.xlsx`) data export. It is deliberately **not** a server-side document service. The design:
+
+- **The model authors the document.** The tool input *is* the document: a `title`, a `format` (`pdf` | `xlsx` | `markdown`), and either a `markdown` body (for `pdf`/`markdown`) or a `sheets` array (for `xlsx`). The model writes that content from data it already fetched with the other tools — `create_document` itself reads nothing.
+- **The handler only validates.** [`handleCreateDocument`](../supabase/functions/_shared/tool-handlers.ts) checks format/field presence and enforces size caps (markdown ≤ 50 000 chars; ≤ 10 sheets, ≤ 50 columns, ≤ 5 000 rows each; ≤ 60 KB total serialized spec). It touches no database or storage. Its `tool_result` is a short confirmation string only — **not** the spec echoed back — so the spec is not double-counted in context-window replay.
+- **The file is generated client-side, on download.** The document spec rides in the persisted `tool_use` block inside `ai_messages.content`. The frontend reconstructs it ([`parseDocumentSpec`](../src/components/AiChat/lib/normalizeMessages.ts) → a `document` RenderMessage) and renders a download card ([`DocumentCard`](../src/components/AiChat/components/DocumentCard.tsx)). Clicking Download runs [`documentGenerator.ts`](../src/components/AiChat/lib/documentGenerator.ts), which builds the file in the browser — jsPDF (with the shared NotoSans loader, [`pdfFont.ts`](../src/utils/pdfFont.ts)) for PDF, `@e965/xlsx` for Excel, a plain blob for Markdown.
+
+Consequences of this design: **no storage bucket and no new table** — the spec lives in the message row, so a document is re-downloadable from history after a reload. PDF rendering covers a minimal Markdown subset (headings, paragraphs, **bold**, bullet/numbered lists); tables render best-effort. PDF generation fetches NotoSans from `fonts.gstatic.com` on download and falls back to Helvetica offline (Croatian glyphs degrade), matching the Reports module's behavior.
 
 ---
 
@@ -344,6 +363,46 @@ The Croatian-language system prompt is built per-request by `buildSystemPrompt` 
 ### Why the prompt lives in code, not a DB row
 
 The prompt iterates rapidly during development and each iteration ships in the same commit as any related handler / schema / tool-description change. Storing it in a row would mean every prompt change is a schema-config change, with no commit-level versioning, no review history, and no atomic "the code and prompt match" guarantee. The prompt is logically part of the function, not part of the data.
+
+---
+
+## Context-Window Management
+
+Every chat turn replays the full ancestor chain (root → leaf) to Anthropic — that is how the assistant keeps conversation context (see [The row sequence](#the-row-sequence)). Left unbounded, a thread a user keeps open indefinitely would eventually produce a chain that exceeds the model's ~200K-token context window, at which point *every* call on that thread fails. Three mechanisms keep the replayed history bounded. They live in [supabase/functions/_shared/context-window.ts](../supabase/functions/_shared/context-window.ts) and are wired into the edge function's history-load and orchestration paths.
+
+### 1. Running summary (compaction)
+
+When a thread's un-summarised history grows past `COMPACT_TRIGGER_TOKENS` (60K estimated tokens), the older turns are folded into a natural-language summary:
+
+- **When** — after a turn completes cleanly, `maybeCompactSession` runs in `streamChatResponse`, *after* the `done` event. It is off the user's critical path: the answer is already delivered; compaction just prepares the next turn. It is best-effort and never throws — a failure simply means the next turn replays a bit more history and retries.
+- **What** — the chain is grouped into *turns* (a real user message plus every assistant / tool_use / tool_result row until the next real user message). The most recent turns within `KEEP_TOKEN_BUDGET` (20K) are kept verbatim; everything older is summarised. A summarisation call to Anthropic (model `AI_CHAT_SUMMARY_MODEL`, defaulting to the main chat model) produces the summary; it is incremental — an existing summary is passed back in and folded together with the newly-aged turns into one updated summary.
+- **Where stored** — `ai_sessions.context_summary` plus `ai_sessions.summary_through_message_id`, the id of the last message the summary covers.
+- **On send** — `selectKeptChain` applies the stored summary: it replays `[summary] + [turns after the boundary]` instead of the whole chain. The summary text is folded into the oldest surviving message as plain context (in-memory only — persisted `ai_messages` rows are never rewritten, mirroring the route-context trick).
+
+**Branch safety.** The conversation is a tree. A summary computed for one branch must not silently apply to a sibling. The summary is therefore keyed to `summary_through_message_id`: it is applied only if that id appears in the current branch's ancestor chain. If the user edited/regenerated *before* the boundary, the id is absent and the summary is ignored — the next compaction rebuilds one for the new branch. The `ON DELETE SET NULL` FK means deleting the boundary message also cleanly invalidates the summary.
+
+**Turn-atomic trimming.** All trimming cuts on turn boundaries, never inside a turn. This guarantees a `tool_use` block is never separated from its matching `tool_result` — a split Anthropic rejects outright.
+
+### 2. Attachment stripping
+
+Base64 image/PDF bytes are by far the largest per-message cost and are replayed verbatim on every turn. `stripOldAttachments` replaces `image` / `document` blocks with a short Croatian text placeholder on every history message except the most recent `ATTACHMENT_KEEP_RECENT` (6). The just-sent user turn is appended *after* stripping, so the current message's attachments are always intact; an uploaded file stays visible to the model for roughly three follow-up turns.
+
+### 3. Hard ceiling (backstop)
+
+`enforceHardCeiling` drops whole oldest turns if the assembled history still exceeds `HARD_CEILING_TOKENS` (130K) after the summary is applied. With compaction running this essentially never fires; it exists for the first turn on a thread that was already long before this feature shipped.
+
+### Prompt caching
+
+Independently of trimming, the request is structured for [Anthropic prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) so the stable, repeated prefix is billed at the cache-read rate (~0.1×) instead of full rate:
+
+- The **system prompt** and **tool schemas** are byte-identical on every turn — each carries a `cache_control: ephemeral` breakpoint.
+- `applyMessageCacheBreakpoint` slides a third breakpoint onto the last block of the last message before every Anthropic call, so the whole conversation-so-far becomes a cacheable prefix for the next call (and for the next iteration of the tool loop).
+
+Caching does not shrink the context window — it only cuts cost and latency — so it complements, rather than replaces, the three trimming mechanisms above.
+
+### Tunables
+
+All thresholds are module constants in [context-window.ts](../supabase/functions/_shared/context-window.ts) (`COMPACT_TRIGGER_TOKENS`, `KEEP_TOKEN_BUDGET`, `HARD_CEILING_TOKENS`, `ATTACHMENT_KEEP_RECENT`); token figures are deliberately rough estimates (chars / 4, with flat costs for image/document blocks) that drive threshold decisions only. The summarisation model is the `AI_CHAT_SUMMARY_MODEL` env var.
 
 ---
 
@@ -491,6 +550,7 @@ Set in the Supabase dashboard under Edge Functions → Secrets:
 
 - **`ANTHROPIC_API_KEY`** (required). Available to all edge functions automatically once set.
 - **`AI_CHAT_MODEL`** (optional). Defaults to `claude-sonnet-4-6` if unset. Override via `npx supabase secrets set AI_CHAT_MODEL=<model-id> --project-ref ktfaimjkcvhkftwbnnwy`.
+- **`AI_CHAT_SUMMARY_MODEL`** (optional). Model used for the post-turn context-compaction summary (see [Context-Window Management](#context-window-management)). Defaults to `AI_CHAT_MODEL`'s value. Point it at a cheaper/faster model (e.g. a Haiku) to cut compaction cost.
 - **`AI_CHAT_DEBUG_ENABLED`** (dev only). Set to the literal string `'true'` to unlock the Director-only debug branch. Must be unset or any other value on production-adjacent environments — the function checks for strict equality with `'true'`.
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by the Supabase runtime.
@@ -642,5 +702,5 @@ Items below are filed for later attention. Each notes where the canonical follow
 - **`src/lib/supabase.ts` ambient types coexist with generated ones.** The Supabase client there is not typed with the `Database` generic; AI chat code uses the generated types directly via `Database['public']['Tables'][...]['Row']`. Unifying is out of scope for the AI chat work.
 - **No automated test coverage.** Unit, integration, and E2E coverage was skipped per the Phase 6 scope decision. Manual verification only.
 - **Attachment orphan leak on hard crash.** The three known orphan paths (upload-fail, send-fail, attachment-insert-fail) all have best-effort cleanup, but a hard browser/edge crash mid-flight can leave bytes in `ai-chat-attachments` without a matching DB row. No background sweeper exists yet — see [Attachments → Cleanup and orphans](#cleanup-and-orphans).
-- **Persisted JSONB grows large with image-heavy sessions.** A 10 MB PDF base64-encodes to ~13 MB and is stored verbatim on the user row. A session with 4×10 MB PDFs has ~52 MB of row payload; `loadSession` materialises all of it. Postgres TOAST handles it, but extracting base64 to a side-table and reconstituting server-side is a candidate v2 optimisation.
+- **Persisted JSONB grows large with image-heavy sessions.** A 10 MB PDF base64-encodes to ~13 MB and is stored verbatim on the user row. A session with 4×10 MB PDFs has ~52 MB of row payload; `loadSession` materialises all of it. Postgres TOAST handles it, but extracting base64 to a side-table and reconstituting server-side is a candidate v2 optimisation. Note this is a *storage* concern only — the *replay* cost is bounded by attachment stripping (see [Context-Window Management](#context-window-management)); old attachment bytes are not re-sent to Anthropic on every turn.
 - **Funtana project has 5 phases but 0 contracts in test data.** Known-incomplete test-data state, not an AI chat bug. Tool responses correctly reflect what's in the DB.

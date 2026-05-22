@@ -1,4 +1,10 @@
-import type { AiAttachmentRow, AiChatEvent, AiMessageRow } from '../../../types/aiChat'
+import type {
+  AiAttachmentRow,
+  AiChatEvent,
+  AiMessageRow,
+  DocumentSheet,
+  DocumentSpec,
+} from '../../../types/aiChat'
 
 // Branch metadata attached to user RenderMessages that sit at a fork in the
 // tree (i.e. their underlying row has siblings sharing the same parent_id).
@@ -32,6 +38,18 @@ export type RenderMessage =
       tool: string
       toolUseId: string
       status: 'pending' | 'done' | 'error'
+      createdAt: string
+    }
+  // A `create_document` tool call. Distinct from 'tool' because the UI
+  // renders a download card from the agent-authored spec carried in the
+  // tool_use input. status mirrors the tool lifecycle (pending → done/error).
+  | {
+      kind: 'document'
+      id: string
+      rowId: string
+      toolUseId: string
+      status: 'pending' | 'done' | 'error'
+      spec: DocumentSpec
       createdAt: string
     }
   | { kind: 'error'; id: string; rowId: string; code: string; message: string; createdAt: string }
@@ -68,6 +86,58 @@ function isTextBlock(b: ContentBlock): b is TextBlock {
 }
 function isToolUseBlock(b: ContentBlock): b is ToolUseBlock {
   return b.type === 'tool_use'
+}
+
+// Strictly parse a `create_document` tool_use input into a DocumentSpec.
+// Returns null on ANY malformed/unexpected shape — the caller then falls
+// back to a plain `tool` message, so a buggy model turn can never crash
+// rendering. This is the client-side mirror of the edge function's
+// handleCreateDocument validation; never trust the wire.
+export function parseDocumentSpec(input: unknown): DocumentSpec | null {
+  if (typeof input !== 'object' || input === null) return null
+  const o = input as Record<string, unknown>
+
+  const title = typeof o.title === 'string' ? o.title.trim() : ''
+  if (!title) return null
+
+  const format = o.format
+  if (format !== 'pdf' && format !== 'xlsx' && format !== 'markdown') return null
+
+  if (format === 'xlsx') {
+    if (!Array.isArray(o.sheets) || o.sheets.length === 0) return null
+    const sheets: DocumentSheet[] = []
+    for (const raw of o.sheets) {
+      if (typeof raw !== 'object' || raw === null) return null
+      const s = raw as Record<string, unknown>
+      const name = typeof s.name === 'string' ? s.name : ''
+      if (!name) return null
+      if (!Array.isArray(s.columns) || !s.columns.every((c) => typeof c === 'string')) {
+        return null
+      }
+      if (!Array.isArray(s.rows)) return null
+      const rows: DocumentSheet['rows'] = []
+      for (const r of s.rows) {
+        if (!Array.isArray(r)) return null
+        rows.push(
+          r.map((cell) =>
+            cell === null ||
+            typeof cell === 'string' ||
+            typeof cell === 'number' ||
+            typeof cell === 'boolean'
+              ? cell
+              : String(cell),
+          ),
+        )
+      }
+      sheets.push({ name, columns: s.columns as string[], rows })
+    }
+    return { title, format, sheets }
+  }
+
+  // pdf | markdown
+  const markdown = typeof o.markdown === 'string' ? o.markdown : ''
+  if (!markdown.trim()) return null
+  return { title, format, markdown }
 }
 
 // ---------------------------------------------------------------------------
@@ -212,8 +282,10 @@ export function deriveActiveBranch(
       for (const block of blocks) {
         if (!isToolResultBlock(block)) continue
         const target = out.find(
-          (m) => m.kind === 'tool' && m.toolUseId === block.tool_use_id,
-        ) as Extract<RenderMessage, { kind: 'tool' }> | undefined
+          (m) =>
+            (m.kind === 'tool' || m.kind === 'document') &&
+            m.toolUseId === block.tool_use_id,
+        ) as Extract<RenderMessage, { kind: 'tool' | 'document' }> | undefined
         if (!target) {
           console.warn(
             '[normalizeMessages] tool_result with no matching tool_use:',
@@ -237,6 +309,21 @@ export function deriveActiveBranch(
           createdAt: row.created_at,
         })
       } else if (isToolUseBlock(block)) {
+        if (block.name === 'create_document') {
+          const spec = parseDocumentSpec(block.input)
+          if (spec) {
+            out.push({
+              kind: 'document',
+              id: `${row.id}:${blockIndex}`,
+              rowId: row.id,
+              toolUseId: block.id,
+              status: 'pending',
+              spec,
+              createdAt: row.created_at,
+            })
+            return
+          }
+        }
         out.push({
           kind: 'tool',
           id: `${row.id}:${blockIndex}`,
@@ -286,6 +373,23 @@ export function applyEventToMessages(
 
     case 'tool_call': {
       const id = generateId()
+      if (event.tool === 'create_document') {
+        const spec = parseDocumentSpec(event.input)
+        if (spec) {
+          return [
+            ...messages,
+            {
+              kind: 'document',
+              id,
+              rowId: id,
+              toolUseId: event.tool_use_id,
+              status: 'pending',
+              spec,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        }
+      }
       return [
         ...messages,
         {
@@ -302,7 +406,9 @@ export function applyEventToMessages(
 
     case 'tool_result': {
       const idx = messages.findIndex(
-        (m) => m.kind === 'tool' && m.toolUseId === event.tool_use_id,
+        (m) =>
+          (m.kind === 'tool' || m.kind === 'document') &&
+          m.toolUseId === event.tool_use_id,
       )
       if (idx === -1) {
         console.warn(
@@ -312,7 +418,7 @@ export function applyEventToMessages(
         return messages
       }
       const next = messages.slice()
-      const existing = next[idx] as Extract<RenderMessage, { kind: 'tool' }>
+      const existing = next[idx] as Extract<RenderMessage, { kind: 'tool' | 'document' }>
       next[idx] = { ...existing, status: event.is_error ? 'error' : 'done' }
       return next
     }

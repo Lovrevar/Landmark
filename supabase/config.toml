@@ -9,10 +9,17 @@ project_id = "cognilion"
 # ----------------------------------------------------------------------------
 
 [functions.dispatch-calendar-reminders]
-# Fires every minute. The function itself is idempotent — duplicate ticks are
-# rejected by the calendar_reminder_sends unique constraint.
-# schedule = "* * * * *"
+# DISABLED — not in use. `enabled = false` tells `supabase functions deploy`
+# to skip this function while keeping its source in the repo. Remove the
+# supabase/functions/dispatch-calendar-reminders/ directory to drop it entirely.
+enabled = false
 verify_jwt = false
 
 [functions.ai-chat]
 verify_jwt = true
+
+[functions.sort-document]
+# Called by the Make.com email-automation scenario, not a browser — there is
+# no user JWT. The function authenticates the caller itself via a shared
+# secret (x-doc-sort-secret header), so Supabase's JWT gate is disabled.
+verify_jwt = false

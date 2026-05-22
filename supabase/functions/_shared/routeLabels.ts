@@ -89,6 +89,7 @@ export function sanitizeRoute(raw: unknown): string | null {
   const h = path.indexOf('#')
   if (h !== -1) path = path.slice(0, h)
   // Reject control chars and whitespace; routes don't contain them.
+  // eslint-disable-next-line no-control-regex -- intentionally rejects control chars in routes
   if (/[\s\x00-\x1f]/.test(path)) return null
   return path
 }

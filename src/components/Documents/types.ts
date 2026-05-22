@@ -13,6 +13,7 @@ export type DocumentSource =
   | 'legacy_subcontractor'
   | 'accounting_sync'
   | 'filesystem_scan'
+  | 'email_import'
 
 export interface DocumentCategory {
   id: string
@@ -49,6 +50,9 @@ export interface Document {
   description: string | null
   uploaded_by: string | null
   uploaded_at: string
+  // SHA-256 of the file bytes. Populated only for email-imported documents
+  // (source = 'email_import'), where it powers retry deduplication.
+  content_hash: string | null
 }
 
 export interface DocumentWithRelations extends Document {

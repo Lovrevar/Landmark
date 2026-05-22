@@ -709,29 +709,42 @@ export type Database = {
       ai_sessions: {
         Row: {
           cancel_requested_at: string | null
+          context_summary: string | null
           created_at: string
           id: string
+          summary_through_message_id: string | null
           title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           cancel_requested_at?: string | null
+          context_summary?: string | null
           created_at?: string
           id?: string
+          summary_through_message_id?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           cancel_requested_at?: string | null
+          context_summary?: string | null
           created_at?: string
           id?: string
+          summary_through_message_id?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_sessions_summary_through_message_id_fkey"
+            columns: ["summary_through_message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_sessions_user_id_fkey"
             columns: ["user_id"]
@@ -1978,6 +1991,7 @@ export type Database = {
       documents: {
         Row: {
           category_id: string | null
+          content_hash: string | null
           description: string | null
           file_name: string
           file_path: string
@@ -1991,6 +2005,7 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          content_hash?: string | null
           description?: string | null
           file_name: string
           file_path: string
@@ -2004,6 +2019,7 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          content_hash?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
