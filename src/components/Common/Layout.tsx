@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect, useRef } from 'react'
+import React, { ReactNode, Suspense, useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
@@ -44,6 +44,7 @@ import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
+import PageFallback from './PageFallback'
 
 interface LayoutProps {
   children: ReactNode
@@ -458,7 +459,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </aside>
 
         <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
-          {children}
+          <Suspense fallback={<PageFallback />}>
+            {children}
+          </Suspense>
         </main>
       </div>
 

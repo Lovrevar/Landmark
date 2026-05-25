@@ -71,22 +71,21 @@ export default function DocumentsPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    // Counts are fetched by a separate filter-aware effect below; we only need
+    // the category tree + option lists here to drive the first render.
     Promise.all([
       fetchCategories(),
-      fetchCategoryCounts(),
       fetchProjectOptions(),
       fetchSubcontractorOptions(),
       fetchPhaseOptions(),
       fetchContractOptions(),
       fetchCreditOptions(),
     ])
-      .then(([tree, counts, projects, subs, phases, contracts, credits]) => {
+      .then(([tree, projects, subs, phases, contracts, credits]) => {
         if (cancelled) return
         setCategoryTree(tree)
         setCategoryById(buildIdMap(tree))
         setDescendantsById(buildDescendantsMap(tree))
-        setCategoryCounts(rollupCounts(tree, counts.byCategoryId))
-        setSidebarTotalCount(counts.total)
         setProjectOptions(projects)
         setSubcontractorOptions(subs)
         setPhaseOptions(phases)
@@ -110,19 +109,26 @@ export default function DocumentsPage() {
 
   // ---- List fetch on filter change --------------------------------------
 
+  // Filters shared by the list and the sidebar counts. The sidebar deliberately
+  // does NOT apply the category selection (see countFilters below) — otherwise
+  // picking a category would zero out every other bucket in the tree.
+  const countFilters: DocumentFilters = useMemo(() => ({
+    ...(projectId && { projectId }),
+    ...(subcontractorId && { entityType: 'subcontractor' as EntityType, entityId: subcontractorId }),
+    ...(debouncedSearch.trim() && { fileNameSearch: debouncedSearch.trim() }),
+    ...(uploadedFrom && { uploadedFrom: `${uploadedFrom}T00:00:00.000Z` }),
+    ...(uploadedTo   && { uploadedTo:   `${uploadedTo}T23:59:59.999Z` }),
+  }), [projectId, subcontractorId, debouncedSearch, uploadedFrom, uploadedTo])
+
   const filterParams: DocumentFilters = useMemo(() => {
     const categoryIds = selectedCategoryId
       ? descendantsById.get(selectedCategoryId) ?? [selectedCategoryId]
       : undefined
     return {
+      ...countFilters,
       ...(categoryIds && { categoryIds }),
-      ...(projectId && { projectId }),
-      ...(subcontractorId && { entityType: 'subcontractor' as EntityType, entityId: subcontractorId }),
-      ...(debouncedSearch.trim() && { fileNameSearch: debouncedSearch.trim() }),
-      ...(uploadedFrom && { uploadedFrom: `${uploadedFrom}T00:00:00.000Z` }),
-      ...(uploadedTo   && { uploadedTo:   `${uploadedTo}T23:59:59.999Z` }),
     }
-  }, [selectedCategoryId, descendantsById, projectId, subcontractorId, debouncedSearch, uploadedFrom, uploadedTo])
+  }, [selectedCategoryId, descendantsById, countFilters])
 
   // Reset to page 1 whenever any filter changes (the underlying result set shifts).
   useEffect(() => {
@@ -145,11 +151,29 @@ export default function DocumentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterParams, currentPage, loading])
 
+  // Sidebar counts must track filter changes — without this, the per-category
+  // numbers stay frozen at their global load-time values while the right-hand
+  // list narrows.
+  useEffect(() => {
+    if (loading) return
+    let cancelled = false
+    fetchCategoryCounts(countFilters)
+      .then(counts => {
+        if (cancelled) return
+        setCategoryCounts(rollupCounts(categoryTree, counts.byCategoryId))
+        setSidebarTotalCount(counts.total)
+      })
+      .catch(() => {
+        // best-effort; the list fetch above will still surface any auth/RPC errors
+      })
+    return () => { cancelled = true }
+  }, [countFilters, categoryTree, loading])
+
   // ---- Mutation refresh --------------------------------------------------
 
   const refreshCounts = async () => {
     try {
-      const counts = await fetchCategoryCounts()
+      const counts = await fetchCategoryCounts(countFilters)
       setCategoryCounts(rollupCounts(categoryTree, counts.byCategoryId))
       setSidebarTotalCount(counts.total)
     } catch {

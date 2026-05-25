@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Assert required secrets are present
         run: |
           for var in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_CASHFLOW_PASSWORD SUPABASE_SERVICE_ROLE_KEY E2E_ALLOWED_SUPABASE_URL; do

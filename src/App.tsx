@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -6,62 +6,57 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import Dashboard from './components/Common/Dashboard'
-import SubcontractorManagement from './components/Supervision/Subcontractors/index'
-import ProjectDetailsEnhanced from './components/General/Projects/ProjectDetailsEnhanced'
-import ProjectsManagement from './components/General/Projects/index'
-import SiteManagement from './components/Supervision/SiteManagement/index'
-import SalesProjects from './components/Sales/SalesProjects/index'
-import CustomersManagement from './components/Sales/Customers/index'
-import SalesReports from './components/Reports/SalesReports'
-import BanksManagement from './components/Funding/Investors/index'
-import InvestmentProjects from './components/Funding/Projects/index'
-import PaymentsManagement from './components/Supervision/Payments/index'
-import InvoicesManagement from './components/Supervision/Invoices/index'
-import ApartmentManagement from './components/Sales/Apartments/index'
-import SalesPaymentsManagement from './components/Sales/Payments/index'
-import RetailSalesPaymentsManagement from './components/Retail/Sales/index'
-import WorkLogs from './components/Supervision/WorkLogs/index'
-import FundingPaymentsManagement from './components/Funding/Payments/index'
-import GeneralReports from './components/Reports/GeneralReports'
-import DocumentsPage from './components/Documents/index'
-import AccountingInvoices from './components/Cashflow/Invoices/index'
-import AccountingPayments from './components/Cashflow/Payments/index'
-import AccountingSuppliers from './components/Cashflow/Suppliers/index'
-import OfficeSuppliers from './components/Cashflow/OfficeSuppliers/index'
-import AccountingCompanies from './components/Cashflow/Companies/index'
-import AccountingBanks from './components/Cashflow/Banks/index'
-import AccountingCustomers from './components/Cashflow/Customers/index'
-import AccountingCalendar from './components/Cashflow/Calendar/index'
-import AccountingLoans from './components/Cashflow/Loans/index'
-import DebtStatus from './components/Cashflow/DebtStatus/index'
-import AccountingApprovals from './components/Cashflow/Approvals/index'
-import RetailLandPlots from './components/Retail/LandPlots/index'
-import RetailCustomers from './components/Retail/Customers/index'
-import RetailSales from './components/Retail/Sales/RetailSales'
-import RetailReports from './components/Reports/RetailReports'
-import RetailProjects from './components/Retail/Projects/index'
-import RetailInvoicesManagement from './components/Retail/Invoices/index'
-import TICManagement from './components/Funding/TIC/index'
-import CreditsManagement from './components/Funding/Investments/index'
-import BudgetControl from './components/General/BudgetControl/index'
-import ActivityLog from './components/General/ActivityLog/index'
-import ChatPage from './components/Chat'
-import TasksPage from './components/Tasks'
-import CalendarPage from './components/Calendar'
+import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
+
+const SubcontractorManagement = lazy(() => import('./components/Supervision/Subcontractors/index'))
+const ProjectDetailsEnhanced = lazy(() => import('./components/General/Projects/ProjectDetailsEnhanced'))
+const ProjectsManagement = lazy(() => import('./components/General/Projects/index'))
+const SiteManagement = lazy(() => import('./components/Supervision/SiteManagement/index'))
+const SalesProjects = lazy(() => import('./components/Sales/SalesProjects/index'))
+const CustomersManagement = lazy(() => import('./components/Sales/Customers/index'))
+const SalesReports = lazy(() => import('./components/Reports/SalesReports'))
+const BanksManagement = lazy(() => import('./components/Funding/Investors/index'))
+const InvestmentProjects = lazy(() => import('./components/Funding/Projects/index'))
+const PaymentsManagement = lazy(() => import('./components/Supervision/Payments/index'))
+const InvoicesManagement = lazy(() => import('./components/Supervision/Invoices/index'))
+const ApartmentManagement = lazy(() => import('./components/Sales/Apartments/index'))
+const SalesPaymentsManagement = lazy(() => import('./components/Sales/Payments/index'))
+const RetailSalesPaymentsManagement = lazy(() => import('./components/Retail/Sales/index'))
+const WorkLogs = lazy(() => import('./components/Supervision/WorkLogs/index'))
+const FundingPaymentsManagement = lazy(() => import('./components/Funding/Payments/index'))
+const GeneralReports = lazy(() => import('./components/Reports/GeneralReports'))
+const DocumentsPage = lazy(() => import('./components/Documents/index'))
+const AccountingInvoices = lazy(() => import('./components/Cashflow/Invoices/index'))
+const AccountingPayments = lazy(() => import('./components/Cashflow/Payments/index'))
+const AccountingSuppliers = lazy(() => import('./components/Cashflow/Suppliers/index'))
+const OfficeSuppliers = lazy(() => import('./components/Cashflow/OfficeSuppliers/index'))
+const AccountingCompanies = lazy(() => import('./components/Cashflow/Companies/index'))
+const AccountingBanks = lazy(() => import('./components/Cashflow/Banks/index'))
+const AccountingCustomers = lazy(() => import('./components/Cashflow/Customers/index'))
+const AccountingCalendar = lazy(() => import('./components/Cashflow/Calendar/index'))
+const AccountingLoans = lazy(() => import('./components/Cashflow/Loans/index'))
+const DebtStatus = lazy(() => import('./components/Cashflow/DebtStatus/index'))
+const AccountingApprovals = lazy(() => import('./components/Cashflow/Approvals/index'))
+const RetailLandPlots = lazy(() => import('./components/Retail/LandPlots/index'))
+const RetailCustomers = lazy(() => import('./components/Retail/Customers/index'))
+const RetailSales = lazy(() => import('./components/Retail/Sales/RetailSales'))
+const RetailReports = lazy(() => import('./components/Reports/RetailReports'))
+const RetailProjects = lazy(() => import('./components/Retail/Projects/index'))
+const RetailInvoicesManagement = lazy(() => import('./components/Retail/Invoices/index'))
+const TICManagement = lazy(() => import('./components/Funding/TIC/index'))
+const CreditsManagement = lazy(() => import('./components/Funding/Investments/index'))
+const BudgetControl = lazy(() => import('./components/General/BudgetControl/index'))
+const ActivityLog = lazy(() => import('./components/General/ActivityLog/index'))
+const ChatPage = lazy(() => import('./components/Chat'))
+const TasksPage = lazy(() => import('./components/Tasks'))
+const CalendarPage = lazy(() => import('./components/Calendar'))
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
+    return <PageFallback />
   }
 
   if (!isAuthenticated) {
@@ -134,30 +129,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <SiteManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sales-projects"
-          element={
-            <ProtectedRoute>
-              <SalesProjects />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/customers"
-          element={
-            <ProtectedRoute>
-              <CustomersManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sales-reports"
-          element={
-            <ProtectedRoute>
-              <SalesReports />
             </ProtectedRoute>
           }
         />
