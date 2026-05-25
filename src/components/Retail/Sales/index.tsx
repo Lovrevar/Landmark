@@ -99,24 +99,24 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           <Table.Body>
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
-                <Table.Td>{format(new Date(payment.payment_date), 'dd.MM.yyyy')}</Table.Td>
-                <Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.payment_date')}>{format(new Date(payment.payment_date), 'dd.MM.yyyy')}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.invoice')}>
                   <div className="font-medium">{payment.invoice_number}</div>
                   <div className="text-xs text-gray-500">
                     {payment.issue_date ? format(new Date(payment.issue_date), 'dd.MM.yyyy') : '-'}
                   </div>
                 </Table.Td>
-                <Table.Td>{payment.customer_name}</Table.Td>
-                <Table.Td>{payment.contract_number}</Table.Td>
-                <Table.Td>{payment.project_name}</Table.Td>
-                <Table.Td align="right" className="text-gray-500">
+                <Table.Td label={t('common.customer')}>{payment.customer_name}</Table.Td>
+                <Table.Td label={t('common.contract')}>{payment.contract_number}</Table.Td>
+                <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.invoice_total')} align="right" className="text-gray-500">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td>{payment.payment_method}</Table.Td>
-                <Table.Td className="text-gray-500">{payment.bank_account_name}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.method')}>{payment.payment_method}</Table.Td>
+                <Table.Td label={t('common.bank')} className="text-gray-500">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Body>

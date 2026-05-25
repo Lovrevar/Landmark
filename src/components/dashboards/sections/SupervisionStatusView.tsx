@@ -69,7 +69,7 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.deadline')}</p>
                     <p className={`text-sm font-medium ${

@@ -43,7 +43,7 @@ const AccountingCustomers: React.FC = () => {
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto responsive-table">
           {loading ? (
             <LoadingSpinner size="sm" message={t('common.loading')} />
           ) : filteredCustomers.length === 0 ? (
@@ -81,26 +81,26 @@ const AccountingCustomers: React.FC = () => {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredCustomers.map((customer) => (
                   <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label={t('accounting_customers.table.customer')} className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">{customer.full_name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label={t('accounting_customers.table.contact')} className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600 dark:text-gray-400">{customer.email || '-'}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">{customer.phone || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('accounting_customers.table.invoices')} className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">{customer.total_invoices}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('accounting_customers.table.apartments')} className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-blue-600">{customer.total_apartments}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('accounting_customers.table.property_price')} className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">€{customer.property_price.toLocaleString('hr-HR')}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('accounting_customers.table.paid')} className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-green-600">€{customer.total_paid.toLocaleString('hr-HR')}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('accounting_customers.table.debt')} className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-red-600">€{(customer.property_price - customer.total_paid).toLocaleString('hr-HR')}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -177,7 +177,7 @@ const AccountingCustomers: React.FC = () => {
                           {invoice.status === 'PAID' ? t('accounting_customers.modal.status_paid') : invoice.status === 'PARTIALLY_PAID' ? t('accounting_customers.modal.status_partial') : t('accounting_customers.modal.status_unpaid')}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
                         <div>
                           <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.total')}</p>
                           <p className="font-semibold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</p>

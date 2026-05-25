@@ -119,7 +119,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
 
       {open && (
         <div className="p-4 space-y-4 bg-white dark:bg-gray-800 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Datum potpisa predugovora">
               <Input
                 type="date"
@@ -155,7 +155,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
 
               {value.contract_payment_type === 'installments' && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField label="1. rata AB konstrukcija 30% (EUR)">
                       <Input
                         type="number"
@@ -177,7 +177,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
                       />
                     </FormField>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField label="3. rata obrtnički radovi 20% (EUR)">
                       <Input
                         type="number"

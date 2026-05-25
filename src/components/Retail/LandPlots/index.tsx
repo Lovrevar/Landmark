@@ -175,18 +175,18 @@ const RetailLandPlots: React.FC = () => {
           <Table.Body>
             {filteredPlots.map((plot) => (
               <Table.Tr key={plot.id}>
-                <Table.Td className="font-medium text-gray-900 dark:text-white">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
-                <Table.Td>{plot.plot_number}</Table.Td>
-                <Table.Td>{plot.location || '-'}</Table.Td>
-                <Table.Td>
+                <Table.Td label={t('retail_land_plots.table.owner')} className="font-medium text-gray-900 dark:text-white">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
+                <Table.Td label={t('retail_land_plots.table.plot')}>{plot.plot_number}</Table.Td>
+                <Table.Td label={t('retail_land_plots.table.location')}>{plot.location || '-'}</Table.Td>
+                <Table.Td label={t('retail_land_plots.table.area')}>
                   <div>{plot.purchased_area_m2.toLocaleString()} m²</div>
                   {plot.purchased_area_m2 < plot.total_area_m2 && (
                     <div className="text-xs text-gray-500 dark:text-gray-400">{t('retail_land_plots.table.of')} {plot.total_area_m2.toLocaleString()} m²</div>
                   )}
                 </Table.Td>
-                <Table.Td>€{plot.price_per_m2.toLocaleString()}</Table.Td>
-                <Table.Td className="font-semibold">€{plot.total_price.toLocaleString()}</Table.Td>
-                <Table.Td>
+                <Table.Td label={t('retail_land_plots.table.price_per_m2')}>€{plot.price_per_m2.toLocaleString()}</Table.Td>
+                <Table.Td label={t('common.total')} className="font-semibold">€{plot.total_price.toLocaleString()}</Table.Td>
+                <Table.Td label={t('common.status')}>
                   <div className="space-y-1">
                     <Badge variant={plot.payment_status === 'paid' ? 'green' : plot.payment_status === 'partial' ? 'yellow' : 'gray'}>
                       {plot.payment_status === 'paid' ? t('common.paid') : plot.payment_status === 'partial' ? t('common.partial') : t('common.pending')}
@@ -216,7 +216,7 @@ const RetailLandPlots: React.FC = () => {
         <Modal.Header title={editingId ? t('retail_land_plots.edit_plot') : t('retail_land_plots.new_plot')} onClose={closeFormModal} />
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('retail_land_plots.form.owner_first_name')} required error={fieldErrors.owner_first_name}>
                 <Input value={formData.owner_first_name} onChange={set('owner_first_name')} />
               </FormField>
@@ -267,7 +267,7 @@ const RetailLandPlots: React.FC = () => {
         {selectedPlot && (
           <>
             <Modal.Body>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.owner')}</p>
                   <p className="text-lg font-semibold">{selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</p>

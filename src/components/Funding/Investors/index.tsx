@@ -45,7 +45,7 @@ const InvestorsManagement: React.FC = () => {
         title={t('funding.investors.title')}
         description={t('funding.investors.description')}
         actions={
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             <Button icon={Plus} onClick={() => bankForm.setShowBankForm(true)}>{t('funding.investors.add_investor')}</Button>
             <Button icon={Plus} variant="success" onClick={() => creditForm.setShowCreditForm(true)}>{t('funding.investors.add_loan')}</Button>
             <Button icon={Plus} variant="primary" onClick={() => equityForm.setShowEquityForm(true)}>{t('funding.investors.add_equity')}</Button>

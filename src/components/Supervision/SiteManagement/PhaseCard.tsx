@@ -336,7 +336,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         {t('common.invoices')}
                       </Button>
                     )}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
                         variant="primary"
                         size="sm"

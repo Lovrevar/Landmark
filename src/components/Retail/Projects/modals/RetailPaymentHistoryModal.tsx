@@ -92,7 +92,7 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
         <p className="text-xs text-blue-600 mb-4">{t('retail_projects.payment_history_modal.amounts_note')}</p>
 
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_projects.payment_history_modal.contract_amount')}</p>
               <p className="text-lg font-bold text-gray-900 dark:text-white">€{contract.contract_amount.toLocaleString('hr-HR')}</p>

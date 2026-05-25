@@ -63,11 +63,11 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col`}>
         {children}
       </div>
     </div>
@@ -85,14 +85,14 @@ interface ModalHeaderProps {
 
 function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-        {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between items-center gap-3 flex-shrink-0 rounded-t-lg">
+      <div className="min-w-0">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
+        {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{subtitle}</p>}
       </div>
       <button
         onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
       >
         <X className="w-6 h-6" />
       </button>
@@ -109,7 +109,7 @@ interface ModalBodyProps {
 function ModalBody({ children, className = '', noPadding = false }: ModalBodyProps) {
   const baseClasses = [
     'overflow-y-auto flex-1',
-    noPadding ? '' : 'p-6 space-y-4',
+    noPadding ? '' : 'p-4 sm:p-6 space-y-4',
     className,
   ].filter(Boolean).join(' ')
 
@@ -123,7 +123,8 @@ interface ModalFooterProps {
 
 function ModalFooter({ children, sticky = true }: ModalFooterProps) {
   const baseClasses = [
-    'bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end space-x-3 rounded-b-lg',
+    'bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 rounded-b-lg',
+    'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 [&>*]:w-full sm:[&>*]:w-auto',
     sticky ? 'sticky bottom-0' : '',
   ].filter(Boolean).join(' ')
 

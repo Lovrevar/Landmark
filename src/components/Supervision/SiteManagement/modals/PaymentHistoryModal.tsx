@@ -97,7 +97,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
       <Modal.Body>
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_invoices')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">

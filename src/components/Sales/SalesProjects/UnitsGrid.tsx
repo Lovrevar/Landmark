@@ -142,10 +142,10 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
         })}
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('sales_projects.filter_by_status')}:</span>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
           {[
             { value: 'all', label: t('sales_projects.filter.all') },
             { value: 'available', label: t('sales_projects.filter.available') },

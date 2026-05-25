@@ -319,16 +319,16 @@ const ProjectDetailsEnhanced: React.FC = () => {
                 <Table.Body>
                   {apartments.map((apt) => (
                     <Table.Tr key={apt.id}>
-                      <Table.Td className="font-medium text-gray-900 dark:text-white">{apt.number}</Table.Td>
-                      <Table.Td>{apt.floor}</Table.Td>
-                      <Table.Td>{apt.size_m2}</Table.Td>
-                      <Table.Td className="font-semibold text-gray-900 dark:text-white">€{apt.price.toLocaleString('hr-HR')}</Table.Td>
-                      <Table.Td>
+                      <Table.Td label={t('common.unit')} className="font-medium text-gray-900 dark:text-white">{apt.number}</Table.Td>
+                      <Table.Td label={t('common.floor')}>{apt.floor}</Table.Td>
+                      <Table.Td label={t('general_projects.size_m2')}>{apt.size_m2}</Table.Td>
+                      <Table.Td label={t('general_projects.price')} className="font-semibold text-gray-900 dark:text-white">€{apt.price.toLocaleString('hr-HR')}</Table.Td>
+                      <Table.Td label={t('common.status')}>
                         <Badge variant={apt.status === 'Sold' ? 'green' : apt.status === 'Reserved' ? 'yellow' : 'blue'} size="sm">
                           {apt.status}
                         </Badge>
                       </Table.Td>
-                      <Table.Td>{apt.buyer_name || '-'}</Table.Td>
+                      <Table.Td label={t('general_projects.buyer')}>{apt.buyer_name || '-'}</Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Body>
@@ -422,9 +422,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
           {activeTab === 'milestones' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.milestones_title')}</h3>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {milestones.length > 0 && phaseStatuses.length > 0 && (
                     <button
                       type="button"

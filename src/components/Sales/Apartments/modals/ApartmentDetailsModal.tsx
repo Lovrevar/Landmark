@@ -50,7 +50,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Apartment Number</p>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">{apartment.number}</p>
@@ -69,7 +69,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.location')}</h4>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{t('common.project')}:</span>
                 <span className="font-medium text-gray-900 dark:text-white">{apartment.project_name}</span>
@@ -93,7 +93,7 @@ export const ApartmentDetailsModal: React.FC<ApartmentDetailsModalProps> = ({
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('apartments.details_modal.specs')}</h4>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               {apartment.tip_stana && (
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Type (Tip stana):</span>

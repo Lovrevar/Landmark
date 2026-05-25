@@ -114,7 +114,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               {error}
             </Alert>
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t('customers.form.first_name')} required error={fieldErrors.name}>
               <Input
                 type="text"
@@ -131,7 +131,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t('customers.form.email')} required error={fieldErrors.email}>
               <Input
                 type="email"
@@ -148,7 +148,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t('customers.form.status')} required>
               <Select
                 value={formData.status}
@@ -181,7 +181,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t('customers.form.bank_account')}>
               <Input
                 type="text"
@@ -212,7 +212,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           {(formData.status === 'interested' || formData.status === 'hot_lead' || formData.status === 'negotiating') && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.form.preferences')}</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label={t('customers.form.min_budget')}>
                   <Input
                     type="number"

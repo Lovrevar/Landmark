@@ -152,7 +152,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
 
           <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
             <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.bulk_units_modal.preview')}</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_units_modal.total_label')} {getUnitLabel()}:</span>
                 <span className="font-medium text-blue-900 dark:text-blue-100 ml-2">{preview.totalUnits}</span>

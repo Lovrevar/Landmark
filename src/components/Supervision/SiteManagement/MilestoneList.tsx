@@ -214,7 +214,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
             description={t('supervision.site_management.milestone_list.none_desc')}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto responsive-table">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -239,26 +239,26 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
                   return (
                     <tr key={milestone.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
+                      <td data-label="#" className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
                         {milestone.milestone_number}
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label={t('supervision.site_management.milestone_list.col_name')} className="py-3 px-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">{milestone.milestone_name}</div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label={t('common.description')} className="py-3 px-4">
                         <div className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
                           {milestone.description || '-'}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td data-label={t('supervision.site_management.milestone_list.col_percentage')} className="py-3 px-4 text-right">
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">{milestone.percentage}%</div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td data-label={t('common.amount')} className="py-3 px-4 text-right">
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">
                           €{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td data-label={t('common.paid')} className="py-3 px-4 text-right">
                         <div className="space-y-1">
                           <div className="text-sm font-semibold text-gray-900 dark:text-white">
                             €{paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -270,12 +270,12 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label={t('supervision.site_management.milestone_list.col_due_date')} className="py-3 px-4">
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           {milestone.due_date ? format(new Date(milestone.due_date), 'MMM dd, yyyy') : '-'}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td data-label={t('common.status')} className="py-3 px-4 text-center">
                         <Badge variant={
                           isFullyPaid ? 'green' :
                           isPartiallyPaid ? 'yellow' :

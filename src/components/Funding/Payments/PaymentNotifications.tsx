@@ -328,7 +328,7 @@ const PaymentNotifications: React.FC<PaymentNotificationsProps> = ({ onPaymentCl
                     <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
                       <div className="bg-white dark:bg-gray-800 bg-opacity-50 rounded-lg p-4">
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('funding.payments.notifications.payment_details_heading')}</h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {notification.payment_source === 'bank' ? (
                             <>
                               <div>

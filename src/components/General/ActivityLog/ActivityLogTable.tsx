@@ -57,12 +57,12 @@ const ActivityLogTable: React.FC<Props> = ({ logs, onViewDetail }) => {
           const severity = (log.metadata?.severity as string) || 'low'
           return (
             <Table.Tr key={log.id}>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_timestamp')}>
                 <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {formatTimestamp(log.created_at)}
                 </span>
               </Table.Td>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_user')}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
                     {log.username}
@@ -72,12 +72,12 @@ const ActivityLogTable: React.FC<Props> = ({ logs, onViewDetail }) => {
                   </Badge>
                 </div>
               </Table.Td>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_action')}>
                 <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
                   {t(`activity_log.actions.${log.action}`, log.action)}
                 </span>
               </Table.Td>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_entity')}>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {log.entity}
                   {log.entity_id && (
@@ -87,12 +87,12 @@ const ActivityLogTable: React.FC<Props> = ({ logs, onViewDetail }) => {
                   )}
                 </span>
               </Table.Td>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_project')}>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {log.project_name || '—'}
                 </span>
               </Table.Td>
-              <Table.Td>
+              <Table.Td label={t('activity_log.col_severity')}>
                 <Badge variant={SEVERITY_VARIANT[severity] || 'gray'} size="sm">
                   {t(`activity_log.severity.${severity}`, severity)}
                 </Badge>

@@ -105,7 +105,7 @@ const RetailInvoicesManagement: React.FC = () => {
           description={t('retail_invoices.no_invoices_desc')}
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="responsive-table overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <table className="w-full min-w-[1200px] bg-white dark:bg-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -140,28 +140,28 @@ const RetailInvoicesManagement: React.FC = () => {
                       {invoice.approved ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td data-label={t('retail_invoices.table.invoice_number')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>
+                  <td data-label={t('retail_invoices.table.type')} className="px-4 py-3 whitespace-nowrap">
                     <Badge variant={invoice.invoice_type.startsWith('INCOMING') ? 'blue' : 'gray'} size="sm">
                       {INVOICE_TYPE_LABELS[invoice.invoice_type] || invoice.invoice_type}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                  <td data-label={t('common.date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                  <td data-label={t('retail_invoices.table.due_date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
+                  <td data-label={t('common.project')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
+                  <td data-label={t('retail_invoices.table.supplier_customer')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
                     {invoice.supplier_name || invoice.customer_name || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td data-label={t('common.company')} className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{invoice.company_name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
+                  <td data-label={t('common.amount')} className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td data-label={t('common.status')} className="px-4 py-3 whitespace-nowrap">
                     <Badge variant={
                       invoice.status === 'PAID' ? 'green'
                         : invoice.status === 'PARTIALLY_PAID' ? 'yellow'

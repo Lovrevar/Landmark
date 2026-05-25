@@ -160,7 +160,7 @@ const RetailCustomers: React.FC = () => {
         {selectedCustomer && (
           <>
             <Modal.Body>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.form.name')}</p>
                   <p className="text-lg font-semibold">{selectedCustomer.name}</p>

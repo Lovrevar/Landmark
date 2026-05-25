@@ -97,13 +97,13 @@ const PaymentsManagement: React.FC = () => {
           <Table.Body>
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
-                <Table.Td>
+                <Table.Td label={t('supervision.payments.col.date')}>
                   {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
                 </Table.Td>
-                <Table.Td className="font-medium">{payment.subcontractor_name}</Table.Td>
-                <Table.Td>{payment.project_name}</Table.Td>
-                <Table.Td className="text-gray-500 dark:text-gray-400">{payment.phase_name || '-'}</Table.Td>
-                <Table.Td>
+                <Table.Td label={t('supervision.payments.col.subcontractor')} className="font-medium">{payment.subcontractor_name}</Table.Td>
+                <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>
+                <Table.Td label={t('supervision.payments.col.phase')} className="text-gray-500 dark:text-gray-400">{payment.phase_name || '-'}</Table.Td>
+                <Table.Td label={t('supervision.payments.col.paid_by')}>
                   {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
                     <div className="flex items-center space-x-2">
                       <Building2 className="w-4 h-4 text-blue-600" />
@@ -113,10 +113,10 @@ const PaymentsManagement: React.FC = () => {
                     <span className="text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </Table.Td>
-                <Table.Td align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('supervision.payments.col.amount')} align="right" className="font-semibold text-green-600">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td className="text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                <Table.Td label={t('common.notes')} className="text-gray-500 dark:text-gray-400 max-w-xs truncate">
                   {payment.notes || '-'}
                 </Table.Td>
               </Table.Tr>

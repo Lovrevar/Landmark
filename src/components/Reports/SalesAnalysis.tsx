@@ -79,27 +79,27 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
                   : 0
                 return (
                   <Table.Tr key={customer.id} className="transition-colors">
-                    <Table.Td className="py-3">
+                    <Table.Td label={t('common.customer')} className="py-3">
                       <p className="font-medium text-gray-900 dark:text-white">{customer.name}</p>
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
+                    <Table.Td label={t('common.contracts')} className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {customer.total_contracts}
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
+                    <Table.Td label={t('reports.sales_analysis.area')} className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {customer.total_area_m2.toLocaleString('hr-HR')} m2
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">
+                    <Table.Td label={t('reports.sales_analysis.contracted')} className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {formatCurrency(customer.total_amount)}
                     </Table.Td>
-                    <Table.Td className="py-3 text-right text-green-600 font-medium">
+                    <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 font-medium">
                       {formatCurrency(customer.total_paid)}
                     </Table.Td>
-                    <Table.Td className="py-3 text-right">
+                    <Table.Td label={t('common.unpaid')} className="py-3 text-right">
                       <span className={`text-sm font-medium ${customer.total_remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
                         {formatCurrency(customer.total_remaining)}
                       </span>
                     </Table.Td>
-                    <Table.Td className="py-3 text-right">
+                    <Table.Td label={t('reports.sales_analysis.collection_col')} className="py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                           <div

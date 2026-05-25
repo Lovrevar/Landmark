@@ -56,7 +56,7 @@ const AccountingLoans: React.FC = () => {
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto responsive-table">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -93,15 +93,15 @@ const AccountingLoans: React.FC = () => {
               ) : (
                 filteredLoans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <td data-label={t('loans.table.date')} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {format(new Date(loan.loan_date), 'dd.MM.yyyy')}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td data-label={t('loans.table.from')} className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {loan.from_company.name}
                       </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td data-label={t('loans.table.from_account')} className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <div className="font-medium">{loan.from_bank_account.bank_name}</div>
                         {loan.from_bank_account.account_number && (
@@ -109,12 +109,12 @@ const AccountingLoans: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td data-label={t('loans.table.to')} className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {loan.to_company.name}
                       </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td data-label={t('loans.table.to_account')} className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <div className="font-medium">{loan.to_bank_account.bank_name}</div>
                         {loan.to_bank_account.account_number && (
@@ -122,7 +122,7 @@ const AccountingLoans: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('loans.table.amount')} className="px-4 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
                         €{loan.amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>

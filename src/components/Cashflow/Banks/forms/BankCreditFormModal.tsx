@@ -80,7 +80,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
         {calculation && (
           <div className="mb-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
             <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('banks.credit_form.schedule_preview')}</h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">{t('banks.credit_form.principal_payment')}</p>
                 <p className="text-xl font-bold text-blue-900 dark:text-blue-100">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>

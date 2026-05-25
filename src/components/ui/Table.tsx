@@ -6,8 +6,9 @@ interface TableRootProps {
 }
 
 function TableRoot({ children, className = '' }: TableRootProps) {
+  // `responsive-table` enables the card-view layout on mobile (see index.css).
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+    <div className={`responsive-table bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-max">
           {children}
@@ -60,17 +61,19 @@ function Th({ sortable = false, sticky = false, children, className = '', ...pro
 
 interface TdProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
   sticky?: boolean
+  /** Column label shown beside the value in the mobile card view. */
+  label?: string
   children?: React.ReactNode
 }
 
-function Td({ sticky = false, children, className = '', ...props }: TdProps) {
+function Td({ sticky = false, label, children, className = '', ...props }: TdProps) {
   const classes = [
     'px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100',
     sticky ? 'sticky right-0 bg-white dark:bg-gray-800' : '',
     className,
   ].filter(Boolean).join(' ')
 
-  return <td className={classes} {...props}>{children}</td>
+  return <td className={classes} data-label={label} {...props}>{children}</td>
 }
 
 interface TrProps extends React.HTMLAttributes<HTMLTableRowElement> {

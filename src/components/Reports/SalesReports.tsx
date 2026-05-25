@@ -268,10 +268,10 @@ const SalesReports: React.FC = () => {
               <Table.Body>
                 {projectReport.monthly_sales.map((month, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
-                    <Table.Td>{month.units_sold}</Table.Td>
-                    <Table.Td>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
-                    <Table.Td>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
+                    <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                    <Table.Td label={t('reports.sales.units_sold_col')}>{month.units_sold}</Table.Td>
+                    <Table.Td label={t('reports.sales.revenue_col')}>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
+                    <Table.Td label={t('reports.sales.avg_price_col')}>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Body>

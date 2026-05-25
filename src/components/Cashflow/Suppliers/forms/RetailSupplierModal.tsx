@@ -172,7 +172,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label={t('suppliers.form.phone')}>
               <Input
                 type="tel"

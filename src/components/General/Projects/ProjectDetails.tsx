@@ -109,7 +109,7 @@ const ProjectDetails: React.FC = () => {
           {t('general_projects.back_to_dashboard')}
         </Button>
         <PageHeader title={project.name} description={project.location} />
-        <div className="flex items-center space-x-4 mt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
           <Badge variant={
             project.status === 'Completed' ? 'green'
               : project.status === 'In Progress' ? 'blue'
@@ -129,7 +129,7 @@ const ProjectDetails: React.FC = () => {
       </StatGrid>
 
       <div className="mb-6">
-        <nav className="flex space-x-8">
+        <nav className="flex space-x-8 overflow-x-auto">
           {[
             { id: 'overview', name: t('common.overview'), icon: Building2 },
             { id: 'milestones', name: t('general_projects.milestones'), icon: Target },
@@ -314,7 +314,7 @@ const ProjectDetails: React.FC = () => {
                                 {status.status}
                               </Badge>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
                               {milestone.due_date && (
                                 <div className="flex items-center">
                                   <Calendar className="w-4 h-4 mr-1" />
@@ -369,7 +369,7 @@ const ProjectDetails: React.FC = () => {
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 dark:text-white mb-2">{sub.name}</h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{sub.job_description}</p>
-                          <div className="flex items-center space-x-4">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.contact')}: {sub.contact}</span>
                             <span className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.cost')}: €{sub.cost.toLocaleString('hr-HR')}</span>
                             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>

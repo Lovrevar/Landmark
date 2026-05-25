@@ -110,7 +110,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               className={isOverdue(invoice.due_date, invoice.status) ? 'bg-red-50 dark:bg-red-900/20' : ''}
             >
               {visibleColumns.approved && (
-                <Table.Td>
+                <Table.Td label={t('invoices.table.approved')}>
                   <div className="flex items-center justify-center w-5 h-5">
                     {invoice.approved ? (
                       <Check className="w-5 h-5 text-green-600" />
@@ -121,46 +121,46 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.type && (
-                <Table.Td>
+                <Table.Td label={t('invoices.table.type')}>
                   <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
                     {getTypeLabel(invoice.invoice_type)}
                   </span>
                 </Table.Td>
               )}
               {visibleColumns.invoice_number && (
-                <Table.Td className="font-medium">
+                <Table.Td label={t('invoices.table.number')} className="font-medium">
                   {invoice.invoice_number}
                 </Table.Td>
               )}
               {visibleColumns.company && (
-                <Table.Td>
+                <Table.Td label={t('invoices.table.company')}>
                   {invoice.companies?.name}
                 </Table.Td>
               )}
               {visibleColumns.supplier_customer && (
-                <Table.Td>
+                <Table.Td label={filterDirection === 'OUTGOING' ? t('invoices.table.buyer') : t('invoices.table.supplier')}>
                   {getSupplierCustomerName(invoice)}
                 </Table.Td>
               )}
               {visibleColumns.category && (
-                <Table.Td className="text-gray-600 dark:text-gray-400">
+                <Table.Td label={t('invoices.table.category')} className="text-gray-600 dark:text-gray-400">
                   {invoice.category}
                 </Table.Td>
               )}
               {visibleColumns.issue_date && (
-                <Table.Td className="text-gray-600 dark:text-gray-400">
+                <Table.Td label={t('invoices.table.issue_date')} className="text-gray-600 dark:text-gray-400">
                   {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
                 </Table.Td>
               )}
               {visibleColumns.due_date && (
-                <Table.Td className="text-gray-600 dark:text-gray-400">
+                <Table.Td label={t('invoices.table.due_date')} className="text-gray-600 dark:text-gray-400">
                   <span className={isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-semibold' : ''}>
                     {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                   </span>
                 </Table.Td>
               )}
               {visibleColumns.base_amount && (
-                <Table.Td>
+                <Table.Td label={t('invoices.table.base')}>
                   {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                     <div className="space-y-0.5">
                       {invoice.base_amount_1 > 0 && (
@@ -182,7 +182,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.vat && (
-                <Table.Td className="text-gray-600 dark:text-gray-400">
+                <Table.Td label={t('invoices.table.vat')} className="text-gray-600 dark:text-gray-400">
                   {(invoice.base_amount_1 > 0 || invoice.base_amount_2 > 0 || invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
                     <div className="space-y-0.5">
                       {invoice.base_amount_1 > 0 && (
@@ -204,22 +204,22 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.total_amount && (
-                <Table.Td className="font-semibold">
+                <Table.Td label={t('invoices.table.total')} className="font-semibold">
                   €{formatCurrency(invoice.total_amount)}
                 </Table.Td>
               )}
               {visibleColumns.paid_amount && (
-                <Table.Td className="text-green-600">
+                <Table.Td label={t('invoices.table.paid')} className="text-green-600">
                   €{formatCurrency(invoice.paid_amount)}
                 </Table.Td>
               )}
               {visibleColumns.remaining_amount && (
-                <Table.Td className="text-red-600 font-medium">
+                <Table.Td label={t('invoices.table.remaining')} className="text-red-600 font-medium">
                   €{formatCurrency(invoice.remaining_amount)}
                 </Table.Td>
               )}
               {visibleColumns.status && (
-                <Table.Td>
+                <Table.Td label={t('invoices.table.status')}>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
                     {invoice.status === 'UNPAID' ? t('common.unpaid') :
                      invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.paid')}

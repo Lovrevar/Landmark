@@ -183,19 +183,19 @@ const RetailSales: React.FC = () => {
           <Table.Body>
             {filteredSales.map((sale) => (
               <Table.Tr key={sale.id}>
-                <Table.Td><div className="text-sm font-medium text-gray-900 dark:text-white">{sale.customer?.name || 'N/A'}</div></Table.Td>
-                <Table.Td><div className="text-sm text-gray-900 dark:text-white">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
-                <Table.Td>
+                <Table.Td label={t('common.customer')}><div className="text-sm font-medium text-gray-900 dark:text-white">{sale.customer?.name || 'N/A'}</div></Table.Td>
+                <Table.Td label={t('common.parcel')}><div className="text-sm text-gray-900 dark:text-white">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
+                <Table.Td label={t('retail_sales.table.area')}>
                   <div className="text-sm text-gray-900 dark:text-white">{sale.sale_area_m2.toLocaleString()} m²</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">€{sale.sale_price_per_m2}/m²</div>
                 </Table.Td>
-                <Table.Td><div className="text-sm font-semibold text-gray-900 dark:text-white">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
-                <Table.Td>
+                <Table.Td label={t('common.total')}><div className="text-sm font-semibold text-gray-900 dark:text-white">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
+                <Table.Td label={t('common.paid')}>
                   <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">{t('common.remaining')}: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
                 </Table.Td>
-                <Table.Td><div className="text-sm text-gray-900 dark:text-white">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
-                <Table.Td>
+                <Table.Td label={t('retail_sales.table.deadline')}><div className="text-sm text-gray-900 dark:text-white">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
+                <Table.Td label={t('common.status')}>
                   <Badge variant={
                     sale.payment_status === 'paid' ? 'green'
                       : sale.payment_status === 'partial' ? 'yellow'
@@ -244,7 +244,7 @@ const RetailSales: React.FC = () => {
               </Select>
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('retail_sales.form.area')} required error={fieldErrors.sale_area_m2}>
                 <Input type="number" step="0.01" value={formData.sale_area_m2} onChange={set('sale_area_m2')} />
               </FormField>

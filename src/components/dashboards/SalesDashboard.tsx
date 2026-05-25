@@ -185,7 +185,7 @@ const SalesDashboard: React.FC = () => {
           <Building2 className="w-5 h-5 text-blue-600 mr-2" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.project_performance')}</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto responsive-table">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
@@ -201,12 +201,12 @@ const SalesDashboard: React.FC = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {projectStats.map((project) => (
                 <tr key={project.project_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{project.project_name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{project.total_units}</td>
-                  <td className="px-6 py-4 text-sm text-green-600 font-medium">{project.sold_units}</td>
-                  <td className="px-6 py-4 text-sm text-yellow-600 font-medium">{project.reserved_units}</td>
-                  <td className="px-6 py-4 text-sm text-blue-600 font-medium">{project.available_units}</td>
-                  <td className="px-6 py-4">
+                  <td data-label={t('common.project')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{project.project_name}</td>
+                  <td data-label={t('dashboards.sales.total_units')} className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{project.total_units}</td>
+                  <td data-label={t('dashboards.sales.sold')} className="px-6 py-4 text-sm text-green-600 font-medium">{project.sold_units}</td>
+                  <td data-label={t('dashboards.sales.reserved')} className="px-6 py-4 text-sm text-yellow-600 font-medium">{project.reserved_units}</td>
+                  <td data-label={t('dashboards.sales.available')} className="px-6 py-4 text-sm text-blue-600 font-medium">{project.available_units}</td>
+                  <td data-label={t('dashboards.sales.sales_rate')} className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mr-2">
                         <div
@@ -217,7 +217,7 @@ const SalesDashboard: React.FC = () => {
                       <span className="text-sm font-medium text-gray-900 dark:text-white">{project.sales_rate.toFixed(1)}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                  <td data-label={t('common.amount')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     €{(project.total_revenue / 1000000).toFixed(2)}M
                   </td>
                 </tr>

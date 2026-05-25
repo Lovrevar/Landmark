@@ -182,19 +182,20 @@ function SupplierRow({ supplier, formatCurrency }: {
   supplier: SupplierReportData
   formatCurrency: (n: number) => string
 }) {
+  const { t } = useTranslation()
   const remaining = supplier.total_amount - supplier.total_paid
   return (
     <Table.Tr className="transition-colors">
-      <Table.Td className="py-3 font-medium">{supplier.name}</Table.Td>
-      <Table.Td className="py-3">
+      <Table.Td label={t('common.supplier')} className="py-3 font-medium">{supplier.name}</Table.Td>
+      <Table.Td label={t('common.status')} className="py-3">
         <Badge variant={typeBadgeVariants[supplier.supplier_type] || 'gray'} size="sm">
           {supplier.supplier_type}
         </Badge>
       </Table.Td>
-      <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">{supplier.total_contracts}</Table.Td>
-      <Table.Td className="py-3 text-right text-gray-700 dark:text-gray-200">{formatCurrency(supplier.total_amount)}</Table.Td>
-      <Table.Td className="py-3 text-right text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
-      <Table.Td className="py-3 text-right">
+      <Table.Td label={t('common.contracts')} className="py-3 text-right text-gray-700 dark:text-gray-200">{supplier.total_contracts}</Table.Td>
+      <Table.Td label={t('reports.costs.contracted')} className="py-3 text-right text-gray-700 dark:text-gray-200">{formatCurrency(supplier.total_amount)}</Table.Td>
+      <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
+      <Table.Td label={t('common.remaining')} className="py-3 text-right">
         <span className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
           {formatCurrency(remaining)}
         </span>

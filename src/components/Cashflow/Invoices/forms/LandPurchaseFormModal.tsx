@@ -228,7 +228,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           </div>
 
           <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{t('invoices.land_purchase.basic_info')}</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                 {t('invoices.land_purchase.company_label')}
@@ -341,7 +341,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
           {selectedContract && (
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-slate-600 dark:text-gray-400">{t('invoices.land_purchase.contract_number')}</span>
                   <span className="ml-2 font-semibold text-slate-800 dark:text-gray-100">{selectedContract.contract_number}</span>
@@ -382,7 +382,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
           <>
             <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-lg mb-5 border border-green-200 dark:border-green-800">
               <h3 className="text-base font-semibold text-green-900 dark:text-green-300 mb-4">{t('invoices.land_purchase.deposit_section')}</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.deposit_amount')}
@@ -408,7 +408,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
 
             <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-lg mb-5 border border-orange-200 dark:border-orange-800">
               <h3 className="text-base font-semibold text-orange-900 dark:text-orange-300 mb-4">{t('invoices.land_purchase.remaining_section')}</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">
                     {t('invoices.land_purchase.remaining_amount')}

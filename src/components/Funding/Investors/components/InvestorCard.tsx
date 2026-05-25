@@ -46,7 +46,7 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <div className="text-center">
           <p className="text-xl font-bold text-green-600">€{(bank.credit_utilized / 1000000).toFixed(1)}M</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_utilized')}</p>

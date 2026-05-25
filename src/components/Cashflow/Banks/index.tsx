@@ -236,8 +236,8 @@ const AccountingBanks: React.FC = () => {
                             </div>
 
                             <div className="mt-4">
-                              <div className="flex justify-between mb-2">
-                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                              <div className="flex flex-wrap justify-between gap-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
                                   <span className="font-medium text-gray-700 dark:text-gray-200">{t('banks.index.credit.allocation_progress')}</span>
                                   {paidOutPercentage > 0 && (
                                     <span className="flex items-center gap-1">
