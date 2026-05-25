@@ -30,7 +30,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
       <Modal.Body>
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-start">
               <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500 mr-3 mt-0.5" />
               <div>
@@ -140,7 +140,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                     </div>
                                   )}
 
-                                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-2 text-xs">
+                                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                     <div>
                                       <p className="text-gray-600 dark:text-gray-400">{t('common.paid')}</p>
                                       <p className="font-semibold text-green-700">€{(unit.total_paid || 0).toLocaleString('hr-HR')}</p>
@@ -201,7 +201,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
           {(customer.status === 'interested' || customer.status === 'hot_lead' || customer.status === 'negotiating') && customer.preferences && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.detail_modal.preferences')}</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {customer.preferences.budget_min && customer.preferences.budget_max && (
                   <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('customers.detail_modal.budget_range')}</p>

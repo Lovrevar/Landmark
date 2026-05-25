@@ -149,14 +149,14 @@ const AccountingApprovals: React.FC = () => {
       </StatGrid>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t('approvals.search_placeholder')}
             className="max-w-md"
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {selectedCount > 0 && (
               <>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -204,7 +204,7 @@ const AccountingApprovals: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto responsive-table">
             <table className="w-full min-w-full">
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
@@ -246,36 +246,36 @@ const AccountingApprovals: React.FC = () => {
                       />
                     </td>
                     {visibleColumns.category && (
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td data-label={t('approvals.column_labels.category')} className="px-4 py-4 whitespace-nowrap">
                         <Badge variant={invoice.is_retail ? 'teal' : 'blue'} size="sm">
                           {invoice.is_retail ? t('approvals.category_retail') : t('approvals.category_subcontractor')}
                         </Badge>
                       </td>
                     )}
-                    {visibleColumns.invoice_number && <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>}
-                    {visibleColumns.supplier_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>}
-                    {visibleColumns.project_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.project_name}</td>}
-                    {visibleColumns.phase_name && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.phase_name}</td>}
-                    {visibleColumns.contract_number && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.contract_number}</td>}
-                    {visibleColumns.issue_date && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
-                    {visibleColumns.due_date && <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.invoice_number && <td data-label={t('approvals.column_labels.invoice_number')} className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>}
+                    {visibleColumns.supplier_name && <td data-label={t('approvals.column_labels.supplier_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>}
+                    {visibleColumns.project_name && <td data-label={t('approvals.column_labels.project_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.project_name}</td>}
+                    {visibleColumns.phase_name && <td data-label={t('approvals.column_labels.phase_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.phase_name}</td>}
+                    {visibleColumns.contract_number && <td data-label={t('approvals.column_labels.contract_number')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.contract_number}</td>}
+                    {visibleColumns.issue_date && <td data-label={t('approvals.column_labels.issue_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.due_date && <td data-label={t('approvals.column_labels.due_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
                     {visibleColumns.base_amount && (
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
+                      <td data-label={t('approvals.column_labels.base_amount')} className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.vat_amount && (
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
+                      <td data-label={t('approvals.column_labels.vat_amount')} className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.vat_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.total_amount && (
-                      <td className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
+                      <td data-label={t('approvals.column_labels.total_amount')} className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     )}
                     {visibleColumns.status && (
-                      <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                      <td data-label={t('approvals.column_labels.status')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
                             {invoice.status}

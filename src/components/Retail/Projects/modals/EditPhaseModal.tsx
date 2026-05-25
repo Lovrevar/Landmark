@@ -123,7 +123,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             </Select>
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t('retail_projects.phase_form.start_date')}>
               <Input
                 type="date"

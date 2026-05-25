@@ -105,7 +105,7 @@ const WorkLogs: React.FC = () => {
 
         <Form onSubmit={handleValidatedSubmit}>
           <Modal.Body>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('supervision.work_logs.form.project')} required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
@@ -158,7 +158,7 @@ const WorkLogs: React.FC = () => {
               )}
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('supervision.work_logs.form.date')} required error={fieldErrors.date}>
                 <Input
                   type="date"
@@ -217,7 +217,7 @@ const WorkLogs: React.FC = () => {
                 <Palette className="w-4 h-4 inline mr-1" />
                 {t('supervision.work_logs.form.color_label')}
               </label>
-              <div className="grid grid-cols-8 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                 {['blue', 'green', 'red', 'yellow', 'orange', 'purple', 'pink', 'gray'].map((color) => (
                   <button
                     key={color}

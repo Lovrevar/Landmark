@@ -141,7 +141,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <p className="text-xs text-blue-700 dark:text-blue-300">{t('supervision.subcontractor_details.contract_number')}</p>
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{contractData.contract_number}</p>
@@ -196,7 +196,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
 
           {/* Payment Status */}
           {subcontractor.has_contract !== false ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
                   <DollarSign className="w-4 h-4 text-gray-600 dark:text-gray-400 mr-1" />

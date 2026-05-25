@@ -91,7 +91,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       {contract.status}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {contract.has_contract === false ? t('suppliers.details.invoice_value') : t('suppliers.details.contract_value')}
@@ -151,7 +151,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                        invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{t('suppliers.details.total_with_vat')}</p>
                       <p className="text-sm font-medium">€{parseFloat((invoice.total_amount || 0).toString()).toLocaleString('hr-HR')}</p>

@@ -161,7 +161,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
           <div className="space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Import Summary</h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Total garages:</span>
                   <span className="ml-2 font-medium">{parsedRows.length}</span>
@@ -182,7 +182,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
             </div>
 
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
+              <div className="max-h-96 overflow-y-auto overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
                     <tr>
@@ -226,7 +226,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
                 <div className="text-sm text-green-600 mb-1">{t('sales_projects.excel_import.created')}</div>
                 <div className="text-3xl font-bold text-green-700">{importResults.created}</div>

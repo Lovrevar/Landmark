@@ -239,37 +239,37 @@ const OfficeSuppliers: React.FC = () => {
                   <Table.Body>
                     {supplierInvoices.map((invoice) => (
                       <Table.Tr key={invoice.id}>
-                        <Table.Td className="font-medium">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.invoice_number')} className="font-medium">
                           {invoice.invoice_number}
                         </Table.Td>
-                        <Table.Td className="text-gray-600 dark:text-gray-400">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.issue_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
                             {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
                           </div>
                         </Table.Td>
-                        <Table.Td className="text-gray-600 dark:text-gray-400">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.due_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
                             {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                           </div>
                         </Table.Td>
-                        <Table.Td className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.description')} className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
                           {invoice.description || '-'}
                         </Table.Td>
-                        <Table.Td className="text-right">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.base')} className="text-right">
                           €{parseFloat(invoice.base_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td className="text-right font-medium">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.total')} className="text-right font-medium">
                           €{parseFloat(invoice.total_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td className="text-right text-green-600">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600">
                           €{parseFloat(invoice.paid_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td className="text-right text-orange-600">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600">
                           €{parseFloat(invoice.remaining_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td className="text-center">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
                           <Badge
                             variant={
                               invoice.status === 'PAID'

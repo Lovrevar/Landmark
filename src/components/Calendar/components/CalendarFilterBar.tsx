@@ -76,7 +76,7 @@ export default function CalendarFilterBar({
 
         <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <SearchableSelect
             value={activeProjectId}
             options={projectOptions}
@@ -87,7 +87,7 @@ export default function CalendarFilterBar({
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <SearchableSelect
             value={selectedParticipantId}
             options={userOptions}

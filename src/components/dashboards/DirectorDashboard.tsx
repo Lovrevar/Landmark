@@ -89,12 +89,12 @@ const DirectorDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.director.last_updated')}</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
         </div>

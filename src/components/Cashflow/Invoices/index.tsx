@@ -176,7 +176,7 @@ const AccountingInvoices: React.FC = () => {
         title={t('invoices.title')}
         description={t('invoices.subtitle')}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ColumnMenuDropdown
               showColumnMenu={showColumnMenu}
               visibleColumns={visibleColumns}

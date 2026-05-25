@@ -88,12 +88,12 @@ const SupervisionDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.supervision.site_supervision')}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.supervision.subtitle')}</p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.supervision.this_week')}</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd')} -{' '}
@@ -116,7 +116,7 @@ const SupervisionDashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         <button className={tabClass('week')} onClick={() => setSelectedView('week')}>
           <Activity className="w-4 h-4 inline mr-2" />
           {t('dashboards.supervision.tab_week')}

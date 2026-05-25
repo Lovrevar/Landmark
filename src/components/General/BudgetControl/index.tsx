@@ -118,12 +118,12 @@ export default function BudgetControl() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('budget_control.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('budget_control.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('budget_control.project')}:</label>
           <select
             value={selectedProjectId}
             onChange={e => setSelectedProjectId(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px]"
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:min-w-[220px]"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>

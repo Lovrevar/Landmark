@@ -245,7 +245,7 @@ const AccountingCalendar: React.FC = () => {
               {t('cashflow_calendar.table.heading', { day: selectedDate.getDate(), month: monthNames[selectedDate.getMonth()], count: selectedInvoices.length })}
             </h4>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto responsive-table">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
@@ -276,7 +276,7 @@ const AccountingCalendar: React.FC = () => {
                           : 'bg-yellow-50 dark:bg-yellow-900/20'
                       }`}
                     >
-                      <td className="px-4 py-3">
+                      <td data-label={t('cashflow_calendar.table.invoice_number')} className="px-4 py-3">
                         <div className="flex items-center space-x-2">
                           <span className="font-semibold text-sm text-gray-900 dark:text-white">{invoice.invoice_number}</span>
                           {isOverdue && (
@@ -284,23 +284,23 @@ const AccountingCalendar: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-200">{getTypeLabel(invoice)}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      <td data-label={t('cashflow_calendar.table.type')} className="px-4 py-3 text-xs text-gray-700 dark:text-gray-200">{getTypeLabel(invoice)}</td>
+                      <td data-label={t('cashflow_calendar.table.supplier_customer')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                         {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as unknown as { retail_supplier?: { name: string } }).retail_supplier?.name || (invoice as unknown as { retail_contracts?: { retail_suppliers?: { name: string } } }).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{invoice.company?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{invoice.category || '-'}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
-                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
-                      <td className={`px-4 py-3 text-right text-sm font-semibold ${
+                      <td data-label={t('cashflow_calendar.table.my_company')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{invoice.company?.name || 'N/A'}</td>
+                      <td data-label={t('cashflow_calendar.table.category')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{invoice.category || '-'}</td>
+                      <td data-label={t('cashflow_calendar.table.base')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
+                      <td data-label={t('cashflow_calendar.table.vat')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
+                      <td data-label={t('cashflow_calendar.table.total')} className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
+                      <td data-label={t('cashflow_calendar.table.paid')} className={`px-4 py-3 text-right text-sm font-semibold ${
                         invoice.invoice_type.startsWith('INCOMING_')
                           ? 'text-red-600'
                           : 'text-green-600'
                       }`}>
                         €{invoice.paid_amount.toLocaleString('hr-HR')}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td data-label={t('cashflow_calendar.table.status')} className="px-4 py-3 text-center">
                         <Badge
                           variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'red'}
                           size="sm"

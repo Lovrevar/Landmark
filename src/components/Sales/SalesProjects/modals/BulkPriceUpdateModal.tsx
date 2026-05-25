@@ -91,7 +91,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
         <Form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.bulk_price.selection_summary')}</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_price.selected_units')}:</p>
                 <p className="font-bold text-blue-900 dark:text-blue-100">{selectedUnits.length}</p>
@@ -112,7 +112,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('sales_projects.bulk_price.adjustment_type')}
             </label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => setAdjustmentType('increase')}

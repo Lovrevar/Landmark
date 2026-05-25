@@ -137,7 +137,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.edit_subcontractor.project_phase')}</h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('supervision.edit_subcontractor.phase')} required error={fieldErrors.phase_id}>
                 <Select
                   value={selectedPhaseId}
@@ -209,7 +209,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
           {hasContract && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   label={t('supervision.edit_subcontractor.base')}
                   helperText={t('supervision.edit_subcontractor.base_help')}
@@ -236,7 +236,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                 </FormField>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                 <div>
                   <label className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.vat_amount')}</label>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatEuro(vatAmount)}</p>

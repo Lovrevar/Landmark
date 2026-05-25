@@ -33,7 +33,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
       <Modal.Header title={t('invoices.detail.title')} onClose={onClose} />
 
       <Modal.Body className="px-6 py-4 space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('invoices.detail.basic_info')}</h3>
             <div className="space-y-2">
@@ -103,7 +103,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
 
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('invoices.detail.entities')}</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.company')}</span>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.companies?.name || '-'}</p>
@@ -130,7 +130,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
         {(invoice.projects || invoice.contracts) && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('invoices.detail.projects_contracts')}</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {invoice.projects && (
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.project')}</span>
@@ -157,7 +157,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
         {(invoice.reference_number || invoice.iban || invoice.refunds) && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('invoices.detail.payment_details')}</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {invoice.reference_number && (
                 <div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.reference')}</span>

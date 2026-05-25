@@ -112,7 +112,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
               {availableGarages.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">{t('apartments.link_units_modal.no_garages')}</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {availableGarages.map((garage) => {
                     const isSelected = selectedGarageIds.includes(garage.id)
                     const isAvailable = garage.status === 'Available' || isSelected
@@ -152,7 +152,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
               {availableStorages.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">{t('apartments.link_units_modal.no_storages')}</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {availableStorages.map((storage) => {
                     const isSelected = selectedStorageIds.includes(storage.id)
                     const isAvailable = storage.status === 'Available' || isSelected

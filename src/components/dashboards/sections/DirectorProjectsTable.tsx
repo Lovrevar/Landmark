@@ -24,7 +24,7 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto responsive-table">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -52,13 +52,13 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                   onClick={() => navigate(`/projects/${project.id}`)}
                 >
-                  <td className="px-6 py-4">
+                  <td data-label={t('dashboards.director.project_col')} className="px-6 py-4">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">{project.name}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{project.location}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td data-label={t('dashboards.director.status_col')} className="px-6 py-4">
                     <Badge variant={
                       project.status === 'Completed' ? 'green' :
                       project.status === 'In Progress' ? 'blue' :
@@ -67,16 +67,16 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                       {project.status}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                  <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     €{(project.budget / 1000000).toFixed(2)}M
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-red-600">
+                  <td data-label={t('dashboards.director.expenses_col')} className="px-6 py-4 text-sm font-medium text-red-600">
                     €{(project.total_expenses / 1000000).toFixed(2)}M
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-green-600">
+                  <td data-label={t('dashboards.director.revenue_col')} className="px-6 py-4 text-sm font-medium text-green-600">
                     €{(project.apartment_sales / 1000000).toFixed(2)}M
                   </td>
-                  <td className="px-6 py-4">
+                  <td data-label={t('dashboards.director.profit_margin_col')} className="px-6 py-4">
                     <span className={`inline-flex items-center text-sm font-semibold ${
                       project.profit_margin >= 20 ? 'text-green-600' :
                       project.profit_margin >= 10 ? 'text-blue-600' :
@@ -85,7 +85,7 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                       {project.profit_margin >= 0 ? '+' : ''}{project.profit_margin.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td data-label={t('dashboards.director.completion_col')} className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mr-2">
                         <div

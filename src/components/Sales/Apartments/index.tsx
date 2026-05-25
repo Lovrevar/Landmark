@@ -224,7 +224,7 @@ const ApartmentManagement: React.FC = () => {
           </Select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilterStatus('all')}
             className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -407,7 +407,7 @@ const ApartmentManagement: React.FC = () => {
                       {t('apartments.link_units')}
                     </Button>
                   )}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Button
                       variant="primary"
                       size="sm"

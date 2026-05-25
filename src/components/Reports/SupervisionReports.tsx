@@ -266,10 +266,10 @@ const SupervisionReports: React.FC = () => {
               <Table.Body>
                 {projectReport.monthly_data.map((month, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
-                    <Table.Td>{month.contracts}</Table.Td>
-                    <Table.Td>{month.subcontractors_paid}</Table.Td>
-                    <Table.Td>€{month.payments.toLocaleString()}</Table.Td>
+                    <Table.Td label="Month" className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                    <Table.Td label="Contracts">{month.contracts}</Table.Td>
+                    <Table.Td label="Subcontractors Paid">{month.subcontractors_paid}</Table.Td>
+                    <Table.Td label="Payments">€{month.payments.toLocaleString()}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Body>

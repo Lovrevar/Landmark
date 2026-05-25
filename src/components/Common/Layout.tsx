@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { useIsDesktop } from '../../hooks/useMediaQuery'
+import { useModalOverflow } from '../../hooks/useModalOverflow'
 import {
   Building2,
   LogOut,
@@ -32,7 +34,9 @@ import {
   ScrollText,
   MessageCircle,
   CheckSquare,
-  Files
+  Files,
+  Menu as MenuIcon,
+  X
 } from 'lucide-react'
 import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
@@ -53,8 +57,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentProfile, setCurrentProfile, logout, user } = useAuth()
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
+  const isDesktop = useIsDesktop()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -65,6 +71,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { unreadCount } = useChatNotifications()
   const { unreadCount: taskUnread } = useTasksNotifications()
   const { unreadCount: eventUnread } = useCalendarNotifications()
+
+  // Below lg the sidebar is a full-width drawer; the collapsed (w-16) state only applies to desktop.
+  const sidebarExpanded = !isDesktop || sidebarOpen
+
+  // Lock background scroll while the mobile nav drawer is open.
+  useModalOverflow(mobileNavOpen)
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -218,18 +235,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [showPasswordModal])
 
+  const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="w-full px-6">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 safe-top">
+        <div className="w-full px-3 lg:px-6">
           <div className="flex justify-between h-16">
-            <div className="flex items-center pl-8">
-              <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Cognilion</h1>
+            <div className="flex items-center gap-1 lg:pl-8">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden touch-target flex items-center justify-center -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                aria-label="Open navigation menu"
+              >
+                <MenuIcon className="w-6 h-6" />
+              </button>
+              <Building2 className="w-7 h-7 lg:w-8 lg:h-8 text-blue-600 lg:mr-3" />
+              <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Cognilion</h1>
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-1 lg:space-x-6">
               {user?.role !== 'Supervision' && (
-                <div className="relative" ref={profileDropdownRef}>
+                <div className="relative hidden lg:block" ref={profileDropdownRef}>
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                     className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
@@ -241,7 +267,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                   {showProfileDropdown && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
-                      {(['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail'] satisfies Profile[]).map((profile) => (
+                      {profiles.map((profile) => (
                         <button
                           key={profile}
                           onClick={() => handleProfileChange(profile)}
@@ -315,10 +341,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </button>
               <button
                 onClick={logout}
-                className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
+                className="flex items-center px-2 lg:px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
               >
-                <LogOut className="w-4 h-4 mr-1" />
-                {t('auth.logout')}
+                <LogOut className="w-4 h-4 lg:mr-1" />
+                <span className="hidden lg:inline">{t('auth.logout')}</span>
               </button>
             </div>
           </div>
@@ -326,22 +352,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </nav>
 
       <div className="flex relative">
+        {/* Mobile drawer backdrop */}
+        {mobileNavOpen && (
+          <div
+            className="fixed inset-0 top-16 bg-black/50 z-30 lg:hidden"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <aside
-          className={`relative bg-white dark:bg-gray-800 shadow-sm border-r border-gray-200 dark:border-gray-700 min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex-shrink-0`}
-        > 
+          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0
+            fixed top-16 bottom-0 left-0 z-40 w-64 overflow-y-auto lg:overflow-visible shadow-lg
+            transform transition-transform duration-300 ease-in-out
+            lg:static lg:top-0 lg:bottom-auto lg:z-auto lg:min-h-screen lg:shadow-sm lg:translate-x-0 lg:transition-all
+            ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}
+            ${sidebarOpen ? 'lg:w-64' : 'lg:w-16'}`}
+        >
+          {/* Desktop-only collapse toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
+            className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
             title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
           >
             {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
           </button>
 
-          <div className="flex flex-col h-full">
-            <div className={`px-4 pt-5 pb-3 ${sidebarOpen ? 'block' : 'hidden'}`}>
+          <div className="flex flex-col min-h-full">
+            <div className={`flex items-center justify-between px-4 pt-5 pb-3 ${sidebarExpanded ? 'block' : 'hidden'}`}>
               <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">Menu</span>
+              {/* Mobile-only close button */}
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="lg:hidden touch-target flex items-center justify-center text-gray-500 dark:text-gray-400"
+                aria-label="Close navigation menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className={sidebarOpen ? 'hidden' : 'h-14'} />
+            <div className={sidebarExpanded ? 'hidden' : 'h-14'} />
 
             <nav className="p-2 flex-1">
               <ul className="space-y-1">
@@ -351,20 +400,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <li key={item.name}>
                       <Link
                         to={item.path}
-                        className={`flex items-center py-2 px-3 rounded-lg transition-colors duration-200 group relative
+                        onClick={() => setMobileNavOpen(false)}
+                        className={`flex items-center py-2.5 lg:py-2 px-3 rounded-lg transition-colors duration-200 group relative
                           ${isActive
                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                           }`}
-                        title={!sidebarOpen ? item.name : undefined}
+                        title={!sidebarExpanded ? item.name : undefined}
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0 min-w-[1.25rem]" />
                         <span
-                          className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarOpen ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
+                          className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarExpanded ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
                         >
                           {item.name}
                         </span>
-                        {!sidebarOpen && (
+                        {!sidebarExpanded && (
                           <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
                             {item.name}
                           </div>
@@ -375,10 +425,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 })}
               </ul>
             </nav>
+
+            {/* Mobile-only profile switcher (lives in the header on desktop) */}
+            {user?.role !== 'Supervision' && (
+              <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2 safe-bottom">
+                <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {t('profiles.title', 'Profile')}
+                </p>
+                <ul className="space-y-1">
+                  {profiles.map((profile) => (
+                    <li key={profile}>
+                      <button
+                        onClick={() => handleProfileChange(profile)}
+                        className={`w-full flex items-center justify-between py-2.5 px-3 rounded-lg text-sm transition-colors duration-200 ${
+                          currentProfile === profile
+                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          {profile}
+                        </span>
+                        {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </aside>
 
-        <main className="flex-1 p-6 overflow-x-auto">
+        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
           {children}
         </main>
       </div>
@@ -386,10 +465,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AiChatWidget />
 
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>

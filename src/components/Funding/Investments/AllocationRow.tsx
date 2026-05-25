@@ -150,7 +150,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           )}
 
           {credit.disbursed_to_account ? (
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.allocated_label')}</p>
                 <p className="font-semibold text-blue-600">
@@ -165,7 +165,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.allocated_label')}</p>
                 <p className="font-semibold text-blue-600">
@@ -223,7 +223,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                     {t('funding.allocation_row.no_invoices')}
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto responsive-table">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
@@ -252,22 +252,22 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                           const statusCfg = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
                           return (
                             <tr key={inv.payment_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                              <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
+                              <td data-label={t('funding.allocation_row.table.invoice_number')} className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
                                 {inv.invoice_number}
                               </td>
-                              <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
+                              <td data-label={t('funding.allocation_row.table.supplier')} className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
                                 {inv.supplier_name ?? '-'}
                               </td>
-                              <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
+                              <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
                                 {format(new Date(inv.payment_date), 'dd.MM.yyyy')}
                               </td>
-                              <td className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
+                              <td data-label={t('funding.allocation_row.table.payment_amount')} className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
                                 €{inv.payment_amount.toLocaleString('hr-HR')}
                               </td>
-                              <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-200">
+                              <td data-label={t('funding.allocation_row.table.total_amount')} className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-200">
                                 €{inv.total_amount.toLocaleString('hr-HR')}
                               </td>
-                              <td className="px-4 py-2.5 text-center">
+                              <td data-label={t('funding.allocation_row.table.status')} className="px-4 py-2.5 text-center">
                                 <Badge variant={statusCfg.variant}>
                                   {statusCfg.label}
                                 </Badge>

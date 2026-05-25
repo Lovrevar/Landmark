@@ -115,7 +115,7 @@ const AccountingSuppliers: React.FC = () => {
                         <Badge variant="gray" size="sm">{supplier.supplier_type}</Badge>
                       )}
                     </div>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-1" />
                         {supplier.contact}
@@ -129,7 +129,7 @@ const AccountingSuppliers: React.FC = () => {
                         {t('suppliers.invoices_count', { count: supplier.total_invoices })}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-6 mt-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2 text-sm">
                       <div>
                         <span className="text-gray-600 dark:text-gray-400">{t('suppliers.value_label')}</span>
                         <span className="font-semibold text-gray-900 dark:text-white">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>

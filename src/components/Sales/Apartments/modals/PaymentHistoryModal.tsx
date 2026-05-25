@@ -80,7 +80,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {apartment.project_name} - {apartment.building_name} - Unit {apartment.number}
             </p>
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.payment_history_modal.total_value')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">€{totalPrice.toLocaleString('hr-HR')}</p>
@@ -112,7 +112,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                   <Home className="w-3 h-3 mr-1 text-blue-600" />

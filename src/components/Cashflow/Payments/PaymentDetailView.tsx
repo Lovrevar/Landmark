@@ -84,7 +84,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
       <Modal.Header title={t('payments.detail.title')} onClose={onClose} />
 
       <Modal.Body className="px-6 py-4 space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.basic_info')}</h3>
             <div className="space-y-2">
@@ -161,7 +161,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
         {invoice && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.entities')}</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.my_company')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.companies?.name || '-'}</p>

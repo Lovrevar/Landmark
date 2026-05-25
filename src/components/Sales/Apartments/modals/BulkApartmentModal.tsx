@@ -62,7 +62,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('apartments.form.project')} required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
@@ -89,7 +89,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('apartments.form.starting_number')} required error={fieldErrors.start_number}>
                 <Input
                   type="number"
@@ -110,7 +110,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField label={t('apartments.form.floor')} required error={fieldErrors.floor}>
                 <Input
                   type="number"

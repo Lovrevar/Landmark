@@ -139,7 +139,7 @@ const DebtStatus: React.FC = () => {
             description={t('debt_status.empty.description')}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto responsive-table">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
@@ -193,26 +193,26 @@ const DebtStatus: React.FC = () => {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {sortedData.map((debt) => (
                   <tr key={debt.supplier_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label={t('debt_status.table.supplier')} className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">{debt.supplier_name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label={t('debt_status.table.type')} className="px-6 py-4 whitespace-nowrap">
                       {getSupplierTypeBadge(debt.supplier_type)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label={t('debt_status.table.invoices')} className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600 dark:text-gray-400">{debt.invoice_count}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('debt_status.table.unpaid')} className="px-6 py-4 whitespace-nowrap text-right">
                       <div className={`text-sm font-semibold ${debt.total_unpaid > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                         €{formatEuropeanNumber(debt.total_unpaid)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('debt_status.table.paid')} className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-semibold text-green-600">
                         €{formatEuropeanNumber(debt.total_paid)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td data-label={t('debt_status.table.total')} className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
                         €{formatEuropeanNumber(debt.total_unpaid + debt.total_paid)}
                       </div>
@@ -223,13 +223,13 @@ const DebtStatus: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" colSpan={3}>
                     {t('debt_status.table.grand_total')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600">
+                  <td data-label={t('debt_status.table.unpaid')} className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600">
                     €{formatEuropeanNumber(totalUnpaid)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-600">
+                  <td data-label={t('debt_status.table.paid')} className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-600">
                     €{formatEuropeanNumber(totalPaid)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
+                  <td data-label={t('debt_status.table.total')} className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
                     €{formatEuropeanNumber(totalUnpaid + totalPaid)}
                   </td>
                 </tr>

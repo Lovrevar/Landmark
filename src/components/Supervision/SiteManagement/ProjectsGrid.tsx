@@ -108,7 +108,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">€{(project.budget / 1000000).toFixed(1)}M</p>

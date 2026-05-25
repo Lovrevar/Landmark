@@ -50,7 +50,7 @@ const GeneralReports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
             <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
@@ -346,10 +346,10 @@ const GeneralReports: React.FC = () => {
           <Table.Body>
             {report.cash_flow.map((month, index) => (
               <Table.Tr key={index}>
-                <Table.Td className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
-                <Table.Td>€{(month.inflow / 1000).toFixed(0)}K</Table.Td>
-                <Table.Td>€{(month.outflow / 1000).toFixed(0)}K</Table.Td>
-                <Table.Td className={`font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                <Table.Td label={t('reports.general.inflow_col')}>€{(month.inflow / 1000).toFixed(0)}K</Table.Td>
+                <Table.Td label={t('reports.general.outflow_col')}>€{(month.outflow / 1000).toFixed(0)}K</Table.Td>
+                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   €{(month.net / 1000).toFixed(0)}K
                 </Table.Td>
               </Table.Tr>

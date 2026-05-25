@@ -32,7 +32,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             </Badge>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{project.total_buildings}</p>
               <p className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.buildings')}</p>

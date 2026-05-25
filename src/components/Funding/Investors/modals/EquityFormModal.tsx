@@ -112,7 +112,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
                 <div className="md:col-span-2 space-y-4">
                   <h4 className="font-medium text-gray-900 dark:text-white">{t('funding.equity_form.payment_schedule_details_heading')}</h4>
                   {formData.custom_payments.map((payment, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <FormField label={t('funding.equity_form.payment_date_label', { num: index + 1 })} required>
                         <Input
                           type="date"

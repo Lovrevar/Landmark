@@ -37,7 +37,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
               <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
               {t('sales_projects.linking_modal.link_garage')}
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {availableGarages.map((garage) => (
                 <button
                   key={garage.id}
@@ -67,7 +67,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
               <Package className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
               {t('sales_projects.linking_modal.link_repository')}
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {availableRepositories.map((repository) => (
                 <button
                   key={repository.id}

@@ -311,7 +311,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                         <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                           <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">{t('funding.projects.modal.total_committed_label')}</p>
                           <p className="text-lg font-bold text-blue-900 dark:text-blue-100">€{source.totalAmount.toLocaleString('hr-HR')}</p>

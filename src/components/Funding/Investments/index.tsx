@@ -81,7 +81,7 @@ const CreditsManagement: React.FC = () => {
             return (
               <div key={credit.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center space-x-4">
                       <button
                         onClick={() => toggleCredit(credit.id)}

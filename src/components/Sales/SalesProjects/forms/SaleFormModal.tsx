@@ -234,7 +234,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
 
           <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
             <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('sale_form.sale_summary')}</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('sale_form.sale_price')}:</span>
                 <span className="font-medium text-gray-900 dark:text-white ml-2">€{formData.sale_price.toLocaleString('hr-HR')}</span>

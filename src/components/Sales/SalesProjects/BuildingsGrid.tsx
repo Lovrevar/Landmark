@@ -43,7 +43,7 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
               <div className="text-center">
                 <p className="text-lg font-bold text-blue-600">{building.total_apartments}</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.units.apartments')}</p>

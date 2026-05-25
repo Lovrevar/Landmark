@@ -56,22 +56,22 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             return (
               <Table.Tr key={payment.id} onClick={() => onView(payment)} className="cursor-pointer">
                 {visibleColumns.payment_date && (
-                  <Table.Td>
+                  <Table.Td label={t('payments.table.payment_date')}>
                     {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
                   </Table.Td>
                 )}
                 {visibleColumns.invoice_number && (
-                  <Table.Td className="font-medium">
+                  <Table.Td label={t('payments.table.invoice_number')} className="font-medium">
                     {invoice.invoice_number}
                   </Table.Td>
                 )}
                 {visibleColumns.my_company && (
-                  <Table.Td className="text-gray-700 dark:text-gray-200">
+                  <Table.Td label={t('payments.table.my_company')} className="text-gray-700 dark:text-gray-200">
                     {invoice.companies?.name || '-'}
                   </Table.Td>
                 )}
                 {visibleColumns.invoice_type && (
-                  <Table.Td>
+                  <Table.Td label={t('payments.table.invoice_type')}>
                     <span className={`text-xs font-semibold ${
                       invoice.invoice_type.startsWith('INCOMING_')
                       ? 'text-red-600' : 'text-green-600'}`}>
@@ -81,7 +81,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.company_supplier && (
-                  <Table.Td>
+                  <Table.Td label={t('payments.table.company_supplier')}>
                     {invoice.bank_company?.name ||
                      invoice.office_suppliers?.name ||
                      invoice.retail_suppliers?.name ||
@@ -92,24 +92,24 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.amount && (
-                  <Table.Td className="font-semibold text-green-600">
+                  <Table.Td label={t('payments.table.amount')} className="font-semibold text-green-600">
                     €{payment.amount.toLocaleString('hr-HR')}
                   </Table.Td>
                 )}
                 {visibleColumns.payment_method && (
-                  <Table.Td>
+                  <Table.Td label={t('payments.table.payment_method')}>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method)}`}>
                       {getPaymentMethodLabel(payment.payment_method)}
                     </span>
                   </Table.Td>
                 )}
                 {visibleColumns.reference_number && (
-                  <Table.Td className="text-gray-600 dark:text-gray-400">
+                  <Table.Td label={t('payments.table.reference_number')} className="text-gray-600 dark:text-gray-400">
                     {payment.reference_number || '-'}
                   </Table.Td>
                 )}
                 {visibleColumns.description && (
-                  <Table.Td className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                  <Table.Td label={t('payments.table.description')} className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
                     {payment.is_cesija && payment.cesija_company_name ? (
                       <span className="font-medium text-purple-700 dark:text-purple-400">
                         {t('payments.cesija_prefix')}{payment.cesija_company_name}

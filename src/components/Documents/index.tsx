@@ -587,7 +587,7 @@ const DocumentListTable: React.FC<DocumentListTableProps> = ({
                       <ChevronRight className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
                     </button>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td label={t('documents.page.table.filename')}>
                     <div className="flex items-center gap-2 min-w-0">
                       <Files className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       <span className="font-medium text-gray-900 dark:text-white truncate">
@@ -595,12 +595,12 @@ const DocumentListTable: React.FC<DocumentListTableProps> = ({
                       </span>
                     </div>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td label={t('documents.page.table.category')}>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {breadcrumbFor(cat) || '—'}
                     </span>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td label={t('documents.page.table.project')}>
                     {projects.length === 0
                       ? <span className="text-xs text-gray-400">—</span>
                       : (
@@ -609,7 +609,7 @@ const DocumentListTable: React.FC<DocumentListTableProps> = ({
                         </div>
                       )}
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td label={t('documents.page.table.uploaded_at')}>
                     <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                       {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
                     </span>

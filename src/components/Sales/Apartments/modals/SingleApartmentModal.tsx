@@ -72,7 +72,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
       <Form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <Modal.Body>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('apartments.form.project')} required error={fieldErrors.project_id}>
                 <Select
                   value={formData.project_id}
@@ -99,7 +99,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('apartments.form.number')} required error={fieldErrors.number}>
                 <Input
                   type="text"
@@ -119,7 +119,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField label={t('apartments.form.floor')} required error={fieldErrors.floor}>
                 <Input
                   type="number"
@@ -148,7 +148,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField label={t('apartments.form.saleable_area')} required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
@@ -179,7 +179,7 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
               </FormField>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('apartments.form.price')} required error={fieldErrors.price}>
                 <Input
                   type="number"
