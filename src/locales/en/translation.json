@@ -1,5 +1,9 @@
 {
   "common": {
+    "account": "Account",
+    "language": "Language",
+    "light_mode": "Light theme",
+    "dark_mode": "Dark theme",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",

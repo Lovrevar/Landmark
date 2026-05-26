@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../../../lib/supabase'
-import { logActivity } from '../../../../lib/activityLog'
 import { useAuth } from '../../../../contexts/AuthContext'
 import { LineItem, calculateTotals } from '../utils/ticFormatters'
-
-interface Project {
-  id: string
-  name: string
-}
+import {
+  fetchTICProjects,
+  fetchTICForProject,
+  updateTIC,
+  createTIC,
+  type TICProject,
+} from '../services/ticService'
 
 const defaultLineItems: LineItem[] = [
   { name: 'Priprema projekta', vlastita: 0, kreditna: 0 },
@@ -30,7 +30,7 @@ const defaultLineItems: LineItem[] = [
 
 export function useTIC() {
   const { user } = useAuth()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<TICProject[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [ticId, setTicId] = useState<string | null>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>(defaultLineItems)
@@ -47,16 +47,11 @@ export function useTIC() {
 
   const loadProjects = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, name')
-        .order('name')
+      const data = await fetchTICProjects()
+      setProjects(data)
 
-      if (error) throw error
-      setProjects(data || [])
-
-      if (data && data.length > 0) {
-        const funtanaProject = data.find((p: Project) => p.name.toLowerCase().includes('funtana'))
+      if (data.length > 0) {
+        const funtanaProject = data.find((p) => p.name.toLowerCase().includes('funtana'))
         setSelectedProjectId(funtanaProject?.id || data[0].id)
       }
     } catch (error) {
@@ -68,19 +63,12 @@ export function useTIC() {
   const loadTICForProject = useCallback(async (projectId: string) => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('tic_cost_structures')
-        .select('*')
-        .eq('project_id', projectId)
-        .maybeSingle()
-
-      if (error) throw error
-
+      const data = await fetchTICForProject(projectId)
       if (data) {
         setTicId(data.id)
         setInvestorName(data.investor_name)
         setDocumentDate(data.document_date)
-        setLineItems(data.line_items as LineItem[])
+        setLineItems(data.line_items)
       } else {
         setTicId(null)
         setInvestorName('RAVNICE CITY D.O.O.')
@@ -103,38 +91,20 @@ export function useTIC() {
 
     setSaving(true)
     try {
-      const ticData = {
+      const payload = {
         project_id: selectedProjectId,
         investor_name: investorName,
         document_date: documentDate,
         line_items: lineItems,
         created_by: user?.id,
-        updated_at: new Date().toISOString(),
       }
 
       if (ticId) {
-        const { error } = await supabase
-          .from('tic_cost_structures')
-          .update(ticData)
-          .eq('id', ticId)
-
-        if (error) throw error
-
-        logActivity({ action: 'tic.update', entity: 'tic_line_item', entityId: ticId, projectId: selectedProjectId, metadata: { severity: 'medium' } })
-
+        await updateTIC(ticId, payload, selectedProjectId)
         showMessage('success', 'TIC uspješno ažuriran')
       } else {
-        const { data, error } = await supabase
-          .from('tic_cost_structures')
-          .insert([ticData])
-          .select()
-          .single()
-
-        if (error) throw error
-        setTicId(data.id)
-
-        logActivity({ action: 'tic.update', entity: 'tic_line_item', entityId: data.id, projectId: selectedProjectId, metadata: { severity: 'medium' } })
-
+        const newId = await createTIC(payload)
+        setTicId(newId)
         showMessage('success', 'TIC uspješno spremljen')
       }
     } catch (error) {

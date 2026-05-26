@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
+import {
+  fetchProjectById,
+  updateProject,
+  createProject,
+  deleteProject,
+} from '../services/projectFormService'
 
 interface ProjectForm {
   name: string
@@ -39,14 +44,7 @@ export function useProjectForm(
   const fetchProject = async () => {
     if (!projectId) return
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single()
-
-      if (error) throw error
-
+      const data = await fetchProjectById(projectId)
       if (data) {
         setForm({
           name: data.name || '',
@@ -93,16 +91,9 @@ export function useProjectForm(
       }
 
       if (projectId) {
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', projectId)
-        if (error) throw error
+        await updateProject(projectId, projectData)
       } else {
-        const { error } = await supabase
-          .from('projects')
-          .insert([projectData])
-        if (error) throw error
+        await createProject(projectData)
       }
 
       onSaved()
@@ -123,11 +114,7 @@ export function useProjectForm(
     if (!projectId) return
     setDeleting(true)
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId)
-      if (error) throw error
+      await deleteProject(projectId)
       onDeleted()
     } catch (err: unknown) {
       console.error('Error deleting project:', err)

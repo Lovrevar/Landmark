@@ -45,7 +45,10 @@ type RawInvoice = Record<string, unknown> & {
   supplier?: { name?: string } | null
   company?: { name?: string } | null
   project?: { name?: string } | null
-  contract?: { phase_id?: string; contract_number?: string } | null
+  contract?: {
+    contract_number?: string
+    phase?: { id: string; phase_name?: string } | null
+  } | null
 }
 
 export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> {
@@ -56,7 +59,11 @@ export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> 
       supplier:subcontractors!accounting_invoices_supplier_id_fkey(id, name),
       company:accounting_companies!accounting_invoices_company_id_fkey(id, name),
       project:projects!accounting_invoices_project_id_fkey(id, name),
-      contract:contracts!accounting_invoices_contract_id_fkey(id, contract_number, phase_id)
+      contract:contracts!accounting_invoices_contract_id_fkey(
+        id,
+        contract_number,
+        phase:project_phases(id, phase_name)
+      )
     `)
     .in('invoice_category', ['SUBCONTRACTOR', 'SUPERVISION'])
     .not('project_id', 'is', null)
@@ -64,10 +71,7 @@ export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> 
 
   if (invoicesError) throw invoicesError
 
-  const { data: phasesData } = await supabase.from('project_phases').select('id, phase_name')
-
   return (invoicesData || []).map((invoice: RawInvoice) => {
-    const phase = phasesData?.find(p => p.id === invoice.contract?.phase_id)
     return {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
@@ -84,7 +88,7 @@ export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> 
       supplier_name: invoice.supplier?.name || '-',
       company_name: invoice.company?.name || '-',
       project_name: invoice.project?.name || '-',
-      phase_name: phase?.phase_name || '-',
+      phase_name: invoice.contract?.phase?.phase_name || '-',
       contract_number: invoice.contract?.contract_number || '-',
     }
   })

@@ -1,13 +1,6 @@
 import { useState, useCallback } from 'react'
-import { supabase, BankCreditPayment } from '../../../../lib/supabase'
 import { useToast } from '../../../../contexts/ToastContext'
-
-interface BankPaymentWithDetails extends BankCreditPayment {
-  bank_name?: string
-  credit_type?: string
-  project_name?: string
-  payment_type: 'bank'
-}
+import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
 
 type CombinedPayment = BankPaymentWithDetails
 
@@ -52,48 +45,7 @@ export function usePaymentsData() {
   const refetch = useCallback(async () => {
     setLoading(true)
     try {
-      const { data: bankPaymentsData, error: bankError } = await supabase
-        .from('accounting_payments')
-        .select(`
-          *,
-          invoice:accounting_invoices!inner(
-            bank_credit_id,
-            bank_credits(
-              credit_type,
-              project_id,
-              bank_id,
-              banks(name)
-            )
-          )
-        `)
-        .not('invoice.bank_credit_id', 'is', null)
-        .order('payment_date', { ascending: false })
-
-      if (bankError) throw bankError
-
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name')
-
-      if (projectsError) throw projectsError
-
-      const enrichedBankPayments: BankPaymentWithDetails[] = (bankPaymentsData || []).map(payment => {
-        const bankCredit = payment.invoice?.bank_credits
-        const project = bankCredit?.project_id
-          ? projectsData?.find((p: { id: string; name: string }) => p.id === bankCredit.project_id)
-          : undefined
-
-        return {
-          ...payment,
-          bank_name: bankCredit?.banks?.name || 'Unknown Bank',
-          credit_type: bankCredit?.credit_type || 'N/A',
-          project_name: project?.name || 'No Project',
-          payment_type: 'bank' as const,
-          created_at: payment.created_at,
-          notes: payment.description
-        }
-      })
-
+      const enrichedBankPayments = await fetchBankPayments()
       setPayments(enrichedBankPayments)
       setStats(calculateStats(enrichedBankPayments))
     } catch (error) {
@@ -102,7 +54,7 @@ export function usePaymentsData() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   return { payments, stats, loading, refetch }
 }

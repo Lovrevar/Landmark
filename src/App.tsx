@@ -66,13 +66,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <Layout>{children}</Layout>
 }
 
-// Guards Cashflow routes — requires both the Cashflow password unlock AND a role
-// of Director or Accounting. The password alone is not sufficient.
+// Guards Cashflow routes. The role check is the real access control (mirrored
+// by RLS policies at the database level — see migration
+// 20260526084700_tighten_cashflow_rls.sql). The sessionStorage unlock is a UX
+// speedbump for screen-shares, NOT a security boundary — the password ships in
+// the JS bundle via VITE_CASHFLOW_PASSWORD.
 const CashflowRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth()
   const unlocked = sessionStorage.getItem('cashflow_unlocked') === 'true'
   const roleAllowed = user?.role === 'Director' || user?.role === 'Accounting'
   if (!unlocked || !roleAllowed) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+// Director-only routes. RLS prevents non-Director users from reading the
+// underlying portfolio-wide data; this guard prevents the confusing empty-PDF
+// experience that would otherwise result.
+const DirectorRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth()
+  if (user?.role !== 'Director') {
     return <Navigate to="/" replace />
   }
   return <>{children}</>
@@ -240,7 +254,7 @@ function AppContent() {
           path="/general-reports"
           element={
             <ProtectedRoute>
-              <GeneralReports />
+              <DirectorRoute><GeneralReports /></DirectorRoute>
             </ProtectedRoute>
           }
         />

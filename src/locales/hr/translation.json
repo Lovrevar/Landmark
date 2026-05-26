@@ -1,5 +1,9 @@
 {
   "common": {
+    "account": "Račun",
+    "language": "Jezik",
+    "light_mode": "Svijetla tema",
+    "dark_mode": "Tamna tema",
     "save": "Spremi",
     "cancel": "Odustani",
     "delete": "Obriši",

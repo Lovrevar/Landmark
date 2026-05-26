@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import type { Project, BankCredit, FinancialSummary } from '../../types/investment'
 import { formatEuropean } from '../../utils/formatters'
+import { yieldToUI } from '../../utils/yieldToUI'
 
 const addHeader = (doc: import('jspdf').jsPDF, yPos: number) => {
   doc.setFillColor(15, 23, 42)
@@ -398,99 +399,101 @@ if (highUtilizationCredits > 0) {
 
   yPos = addSectionTitle(doc, 'ACTIVE INVESTMENTS DETAILS', yPos)
 
-  bankCredits
-    .sort((a, b) => Number(b.amount) - Number(a.amount))
-    .forEach((credit) => {
-      const hasAllocations = credit.credit_allocations && credit.credit_allocations.length > 0
-      const allocationCount = hasAllocations ? credit.credit_allocations!.length : 0
-      const baseHeight = 38
-      const allocationHeight = allocationCount * 6
-      const boxHeight = baseHeight + allocationHeight
-      const requiredHeight = boxHeight + 3
+  const sortedCredits = [...bankCredits].sort((a, b) => Number(b.amount) - Number(a.amount))
+  for (let creditIdx = 0; creditIdx < sortedCredits.length; creditIdx++) {
+    const credit = sortedCredits[creditIdx]
+    const hasAllocations = credit.credit_allocations && credit.credit_allocations.length > 0
+    const allocationCount = hasAllocations ? credit.credit_allocations!.length : 0
+    const baseHeight = 38
+    const allocationHeight = allocationCount * 6
+    const boxHeight = baseHeight + allocationHeight
+    const requiredHeight = boxHeight + 3
 
-      if (yPos + requiredHeight > 260) {
-        doc.addPage()
-        yPos = 20
-      }
+    if (yPos + requiredHeight > 260) {
+      doc.addPage()
+      yPos = 20
+    }
 
-      const utilizationPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
-      const bgColor: [number, number, number] = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
+    const utilizationPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
+    const bgColor: [number, number, number] = credit.status === 'active' ? [220, 252, 231] : [254, 243, 199]
 
-      doc.setFillColor(...bgColor)
-      doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
+    doc.setFillColor(...bgColor)
+    doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
 
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(30, 30, 30)
-      doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`, 23, yPos + 5)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(30, 30, 30)
+    doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`, 23, yPos + 5)
 
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(60, 60, 60)
+
+    const detailY = yPos + 11
+
+    doc.text(`Amount: €${formatEuropean(credit.amount)}`, 23, detailY)
+    doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 70, detailY)
+    doc.text(`Available: €${formatEuropean(credit.amount - credit.used_amount)}`, 117, detailY)
+
+    doc.text(`Outstanding: €${formatEuropean(credit.outstanding_balance)}`, 23, detailY + 5)
+    doc.text(`Repaid: €${formatEuropean(credit.repaid_amount)}`, 70, detailY + 5)
+    doc.text(`Interest: ${Number(credit.interest_rate).toFixed(2)}%`, 117, detailY + 5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Start: ${format(new Date(credit.start_date), 'MMM dd, yyyy')}`, 23, detailY + 10)
+
+    if (credit.maturity_date) {
+      doc.text(`Maturity: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`, 70, detailY + 10)
+    }
+
+    if (credit.usage_expiration_date) {
+      doc.text(`Usage Expires: ${format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}`, 117, detailY + 10)
+    }
+
+    let currentY = detailY + 15
+
+    if (hasAllocations) {
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
-      doc.setTextColor(60, 60, 60)
+      doc.setTextColor(30, 58, 138)
+      doc.text('Allocations:', 23, currentY)
+      currentY += 5
 
-      const detailY = yPos + 11
+      credit.credit_allocations!.forEach(allocation => {
+        const projectName = allocation.project?.name || 'OPEX'
+        const allocPercent = allocation.allocated_amount > 0 ? (allocation.allocated_amount / credit.amount) * 100 : 0
 
-      doc.text(`Amount: €${formatEuropean(credit.amount)}`, 23, detailY)
-      doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 70, detailY)
-      doc.text(`Available: €${formatEuropean(credit.amount - credit.used_amount)}`, 117, detailY)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7)
+        doc.setTextColor(60, 60, 60)
+        doc.text(`• ${projectName}: €${formatEuropean(allocation.allocated_amount)} (${allocPercent.toFixed(1)}%)`, 26, currentY)
 
-      doc.text(`Outstanding: €${formatEuropean(credit.outstanding_balance)}`, 23, detailY + 5)
-      doc.text(`Repaid: €${formatEuropean(credit.repaid_amount)}`, 70, detailY + 5)
-      doc.text(`Interest: ${Number(credit.interest_rate).toFixed(2)}%`, 117, detailY + 5)
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.setTextColor(100, 100, 100)
-      doc.text(`Start: ${format(new Date(credit.start_date), 'MMM dd, yyyy')}`, 23, detailY + 10)
-
-      if (credit.maturity_date) {
-        doc.text(`Maturity: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`, 70, detailY + 10)
-      }
-
-      if (credit.usage_expiration_date) {
-        doc.text(`Usage Expires: ${format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}`, 117, detailY + 10)
-      }
-
-      let currentY = detailY + 15
-
-      if (hasAllocations) {
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8)
-        doc.setTextColor(30, 58, 138)
-        doc.text('Allocations:', 23, currentY)
         currentY += 5
+      })
+    }
 
-        credit.credit_allocations!.forEach(allocation => {
-          const projectName = allocation.project?.name || 'OPEX'
-          const allocPercent = allocation.allocated_amount > 0 ? (allocation.allocated_amount / credit.amount) * 100 : 0
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    const utilizationY = boxHeight - 8
+    doc.text('Utilization:', 23, yPos + utilizationY)
+    doc.text(`${utilizationPercent.toFixed(1)}%`, 187, yPos + utilizationY, { align: 'right' })
 
-          doc.setFont('helvetica', 'normal')
-          doc.setFontSize(7)
-          doc.setTextColor(60, 60, 60)
-          doc.text(`• ${projectName}: €${formatEuropean(allocation.allocated_amount)} (${allocPercent.toFixed(1)}%)`, 26, currentY)
+    const barStartX = 45
+    const barWidth = 142
+    doc.setFillColor(226, 232, 240)
+    doc.roundedRect(barStartX, yPos + utilizationY - 3, barWidth, 4, 1, 1, 'F')
 
-          currentY += 5
-        })
-      }
+    const utilBarColor: [number, number, number] = utilizationPercent >= 90 ? [239, 68, 68] : utilizationPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
+    doc.setFillColor(...utilBarColor)
+    doc.roundedRect(barStartX, yPos + utilizationY - 3, (barWidth * Math.min(utilizationPercent, 100)) / 100, 4, 1, 1, 'F')
 
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      const utilizationY = boxHeight - 8
-      doc.text('Utilization:', 23, yPos + utilizationY)
-      doc.text(`${utilizationPercent.toFixed(1)}%`, 187, yPos + utilizationY, { align: 'right' })
+    yPos += boxHeight + 3
 
-      const barStartX = 45
-      const barWidth = 142
-      doc.setFillColor(226, 232, 240)
-      doc.roundedRect(barStartX, yPos + utilizationY - 3, barWidth, 4, 1, 1, 'F')
-
-      const utilBarColor: [number, number, number] = utilizationPercent >= 90 ? [239, 68, 68] : utilizationPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
-      doc.setFillColor(...utilBarColor)
-      doc.roundedRect(barStartX, yPos + utilizationY - 3, (barWidth * Math.min(utilizationPercent, 100)) / 100, 4, 1, 1, 'F')
-
-      yPos += boxHeight + 3
-    })
+    if ((creditIdx + 1) % 25 === 0) await yieldToUI()
+  }
 
   if (yPos > 260 && projects.length > 0) {
     doc.addPage()
