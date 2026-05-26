@@ -10,6 +10,8 @@ export const TOOL_LABELS_HR: Record<string, string> = {
   get_project_financial_summary: 'Financijski sažetak projekta',
   list_unpaid_invoices: 'Neplaćeni računi',
   create_document: 'Izrada dokumenta',
+  list_documents_for_entity: 'Pretraživanje priloženih dokumenata',
+  get_document_download_link: 'Priprema dokumenta za preuzimanje',
 }
 
 export const ERROR_LABELS_HR: Record<string, string> = {
@@ -62,6 +64,8 @@ export const UI_LABELS_HR = {
   downloadDocument: 'Preuzmi dokument',
   preparingDocument: 'Priprema dokumenta...',
   documentGenerationFailed: 'Greška pri izradi dokumenta.',
+  fetchingServerDocument: 'Dohvaćanje dokumenta...',
+  serverDocumentFetchFailed: 'Greška pri dohvaćanju dokumenta.',
 } as const
 
 export function toolLabel(tool: string): string {

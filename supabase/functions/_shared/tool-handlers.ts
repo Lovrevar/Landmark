@@ -77,6 +77,26 @@ export interface GetProjectFinancialSummaryInput {
   project_id: string
 }
 
+export type DocumentEntityType =
+  | 'project'
+  | 'phase'
+  | 'subcontractor'
+  | 'contract'
+  | 'unit'
+  | 'customer'
+  | 'credit'
+  | 'company'
+
+export interface ListDocumentsForEntityInput {
+  entity_type: DocumentEntityType
+  entity_id: string
+  limit?: number
+}
+
+export interface GetDocumentDownloadLinkInput {
+  document_id: string
+}
+
 // ---------------------------------------------------------------------------
 // Output shapes.
 // ---------------------------------------------------------------------------
@@ -170,6 +190,37 @@ export type GetProjectFinancialSummaryOutput =
     }
   | { error: string }
 
+interface DocumentSummary {
+  id: string
+  file_name: string
+  mime_type: string | null
+  file_size: number
+  category: string | null
+  uploaded_at: string
+}
+
+export type ListDocumentsForEntityOutput =
+  | { data: { documents: DocumentSummary[]; count: number } }
+  | { error: string }
+
+export type DocumentDownloadSource =
+  | 'app_upload'
+  | 'legacy_subcontractor'
+  | 'accounting_sync'
+  | 'filesystem_scan'
+
+export type GetDocumentDownloadLinkOutput =
+  | {
+      data: {
+        document_id: string
+        file_name: string
+        mime_type: string | null
+        file_path: string
+        source: DocumentDownloadSource
+      }
+    }
+  | { error: string }
+
 export type GetSubcontractorPaymentStatusOutput =
   | {
       data: {
@@ -214,6 +265,18 @@ function escapeIlike(s: string): string {
   return s.replace(/[%_]/g, '\\$&')
 }
 
+// Strips common Croatian inflection tails so a locative/dative/genitive form
+// from the user (e.g. "prečku", "kopka", "investitorima") still hits the
+// nominative stored in the DB ("Prečko", "Kopko", "Investitori"). Only
+// applied when the resulting stem stays >= 4 chars so a single-word query
+// like "u" doesn't degenerate to an empty string.
+function croatianStem(s: string): string {
+  const trimmed = s.trim()
+  if (trimmed.length < 5) return trimmed
+  const stripped = trimmed.replace(/(ovima|evima|ima|ama|ovi|evi|om|em|ju|u|a|e|i|o)$/i, '')
+  return stripped.length >= 4 ? stripped : trimmed
+}
+
 // Strict canonical UUID format. Used to validate model-supplied UUIDs before
 // they are interpolated into PostgREST filter strings (.or() in particular,
 // which does not parameterize the way .eq() does).
@@ -231,12 +294,11 @@ export async function handleSearchProjects(
   if (!query) return { data: { projects: [], count: 0 } }
 
   const limit = clampLimit(input.limit)
-  const escaped = escapeIlike(query)
 
-  const { data, error } = await ctx.userClient
+  const { data: firstPass, error } = await ctx.userClient
     .from('projects')
     .select('id, name, location, status')
-    .ilike('name', `%${escaped}%`)
+    .ilike('name', `%${escapeIlike(query)}%`)
     .order('name', { ascending: true })
     .limit(limit)
 
@@ -248,7 +310,24 @@ export async function handleSearchProjects(
     return { error: 'Failed to search projects' }
   }
 
-  const projects = data ?? []
+  // Croatian declension fallback: if the user typed an inflected form ("prečku")
+  // that doesn't substring-match the nominative stored in the DB ("Prečko zapad"),
+  // retry once with a stripped stem. Skip if first pass already returned results
+  // or if the stem ends up identical to the original.
+  let projects = firstPass ?? []
+  if (projects.length === 0) {
+    const stem = croatianStem(query)
+    if (stem !== query) {
+      const retry = await ctx.userClient
+        .from('projects')
+        .select('id, name, location, status')
+        .ilike('name', `%${escapeIlike(stem)}%`)
+        .order('name', { ascending: true })
+        .limit(limit)
+      if (!retry.error && retry.data) projects = retry.data
+    }
+  }
+
   return { data: { projects, count: projects.length } }
 }
 
@@ -358,14 +437,13 @@ export async function handleSearchSubcontractors(
   if (!query) return { data: { subcontractors: [], count: 0 } }
 
   const limit = clampLimit(input.limit)
-  const escaped = escapeIlike(query)
 
   // RLS on subcontractors is USING(true) — Supervision users see all,
   // intentionally (per design decision in 3.2a spec).
-  const { data, error } = await ctx.userClient
+  const { data: firstPass, error } = await ctx.userClient
     .from('subcontractors')
     .select('id, name, contact, active_contracts_count')
-    .ilike('name', `%${escaped}%`)
+    .ilike('name', `%${escapeIlike(query)}%`)
     .order('name', { ascending: true })
     .limit(limit)
 
@@ -377,7 +455,20 @@ export async function handleSearchSubcontractors(
     return { error: 'Failed to search subcontractors' }
   }
 
-  const subcontractors = data ?? []
+  let subcontractors = firstPass ?? []
+  if (subcontractors.length === 0) {
+    const stem = croatianStem(query)
+    if (stem !== query) {
+      const retry = await ctx.userClient
+        .from('subcontractors')
+        .select('id, name, contact, active_contracts_count')
+        .ilike('name', `%${escapeIlike(stem)}%`)
+        .order('name', { ascending: true })
+        .limit(limit)
+      if (!retry.error && retry.data) subcontractors = retry.data
+    }
+  }
+
   return { data: { subcontractors, count: subcontractors.length } }
 }
 
@@ -861,6 +952,206 @@ export async function handleGetProjectFinancialSummary(
         remaining_to_spend: project_budget - contracts_total_realized,
         over_budget: contracts_total_amount > project_budget,
       },
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// list_documents_for_entity / get_document_download_link
+//
+// IMPORTANT: `documents` and `document_associations` ship with RLS USING(true)
+// (effectively open) and the `documents` / `contract-documents` storage buckets
+// have NO storage.objects policies. That means RLS does NOT protect documents
+// today — application code is the only gate. These two handlers compensate by
+// joining through to a parent entity that DOES have RLS and checking that the
+// caller's userClient can see it. If not, we refuse.
+// ---------------------------------------------------------------------------
+
+// Parent-entity access gate. supabase-js typings require literal table names
+// at the call site, so we dispatch on entity_type rather than indexing a
+// `Record<string, string>`. Returns:
+//   { ok: true }                                 — caller can see the parent
+//   { ok: false, reason: 'not_found' }           — parent hidden by RLS or missing
+//   { ok: false, reason: 'error', code: string } — Supabase error
+type GateResult =
+  | { ok: true }
+  | { ok: false, reason: 'not_found' }
+  | { ok: false, reason: 'error', code: string | undefined }
+
+async function probeParentEntity(
+  entityType: DocumentEntityType,
+  entityId: string,
+  ctx: AuthContext,
+): Promise<GateResult> {
+  // Same query (select id by id), one branch per literal table name. supabase-js
+  // narrows the row type per branch which keeps `.from()` happy.
+  const c = ctx.userClient
+  const res = await (
+    entityType === 'project'       ? c.from('projects')             .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'phase'         ? c.from('project_phases')       .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'subcontractor' ? c.from('subcontractors')       .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'contract'      ? c.from('contracts')            .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'unit'          ? c.from('apartments')           .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'customer'      ? c.from('customers')            .select('id').eq('id', entityId).maybeSingle() :
+    entityType === 'credit'        ? c.from('bank_credits')         .select('id').eq('id', entityId).maybeSingle() :
+                                     c.from('accounting_companies') .select('id').eq('id', entityId).maybeSingle()
+  )
+  if (res.error) return { ok: false, reason: 'error', code: res.error.code }
+  if (!res.data) return { ok: false, reason: 'not_found' }
+  return { ok: true }
+}
+
+export async function handleListDocumentsForEntity(
+  input: ListDocumentsForEntityInput,
+  ctx: AuthContext,
+): Promise<ListDocumentsForEntityOutput> {
+  const entityType = input?.entity_type
+  const entityId = input?.entity_id
+
+  const VALID_TYPES: DocumentEntityType[] = [
+    'project', 'phase', 'subcontractor', 'contract', 'unit', 'customer', 'credit', 'company',
+  ]
+  if (!entityType || !VALID_TYPES.includes(entityType)) {
+    return { error: 'Unsupported entity_type' }
+  }
+  if (typeof entityId !== 'string' || !UUID_RE.test(entityId)) {
+    return { error: 'entity_id must be a valid UUID' }
+  }
+
+  // Access gate: the userClient respects RLS on the parent table. If the
+  // caller cannot see the parent, they cannot see its documents either.
+  const gate = await probeParentEntity(entityType, entityId, ctx)
+
+  if (!gate.ok && gate.reason === 'error') {
+    console.error('[ai-chat:tool] list_documents_for_entity gate failed', {
+      userId: ctx.userId,
+      entityType,
+      code: gate.code,
+    })
+    return { error: 'Failed to verify entity access' }
+  }
+  if (!gate.ok) {
+    return { error: 'Entity not found or not accessible' }
+  }
+
+  const limit = clampLimit(input.limit)
+
+  // RLS on document_associations is USING(true), so userClient is fine; we
+  // already proved the caller has access to the parent above.
+  const { data, error } = await ctx.userClient
+    .from('document_associations')
+    .select(
+      'document:documents!inner(id, file_name, file_size, mime_type, uploaded_at, category:document_categories(name_hr))'
+    )
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+    .limit(limit)
+
+  if (error) {
+    console.error('[ai-chat:tool] list_documents_for_entity fetch failed', {
+      userId: ctx.userId,
+      entityType,
+      code: error.code,
+    })
+    return { error: 'Failed to list documents' }
+  }
+
+  // Each row has shape { document: {...} } where document may be an object
+  // or (per supabase-js typing) an array. Normalize to a flat list.
+  type AssocRow = {
+    document:
+      | { id: string; file_name: string; file_size: number; mime_type: string | null; uploaded_at: string; category: { name_hr: string } | { name_hr: string }[] | null }
+      | null
+  }
+  const documents: DocumentSummary[] = []
+  for (const row of (data ?? []) as AssocRow[]) {
+    const doc = row.document
+    if (!doc) continue
+    const cat = Array.isArray(doc.category) ? doc.category[0] : doc.category
+    documents.push({
+      id: doc.id,
+      file_name: doc.file_name,
+      mime_type: doc.mime_type,
+      file_size: doc.file_size,
+      category: cat?.name_hr ?? null,
+      uploaded_at: doc.uploaded_at,
+    })
+  }
+  documents.sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))
+
+  return { data: { documents, count: documents.length } }
+}
+
+export async function handleGetDocumentDownloadLink(
+  input: GetDocumentDownloadLinkInput,
+  ctx: AuthContext,
+): Promise<GetDocumentDownloadLinkOutput> {
+  const documentId = input?.document_id
+  if (typeof documentId !== 'string' || !UUID_RE.test(documentId)) {
+    return { error: 'document_id must be a valid UUID' }
+  }
+
+  // Service client because the document/association rows are needed in full to
+  // compute the access gate; we apply our own check against the parent entity
+  // below, so RLS being open here is fine.
+  const { data: doc, error: docErr } = await ctx.serviceClient
+    .from('documents')
+    .select('id, file_path, file_name, mime_type, source')
+    .eq('id', documentId)
+    .maybeSingle()
+
+  if (docErr) {
+    console.error('[ai-chat:tool] get_document_download_link doc lookup failed', {
+      userId: ctx.userId,
+      code: docErr.code,
+    })
+    return { error: 'Failed to fetch document' }
+  }
+  if (!doc) {
+    return { error: 'Document not found' }
+  }
+
+  const { data: assocs, error: assocErr } = await ctx.serviceClient
+    .from('document_associations')
+    .select('entity_type, entity_id')
+    .eq('document_id', documentId)
+
+  if (assocErr) {
+    console.error('[ai-chat:tool] get_document_download_link assoc lookup failed', {
+      userId: ctx.userId,
+      code: assocErr.code,
+    })
+    return { error: 'Failed to verify document access' }
+  }
+
+  // Director/Accounting can always download; for everyone else we require
+  // userClient-visible access to at least one parent entity. Orphan documents
+  // (no associations) are restricted to the finance roles.
+  const VALID_TYPES: ReadonlySet<DocumentEntityType> = new Set([
+    'project', 'phase', 'subcontractor', 'contract', 'unit', 'customer', 'credit', 'company',
+  ])
+  const isFinanceRole = ctx.role === 'Director' || ctx.role === 'Accounting'
+  let allowed = isFinanceRole
+  if (!allowed) {
+    for (const a of (assocs ?? [])) {
+      const t = a.entity_type as DocumentEntityType
+      if (!VALID_TYPES.has(t)) continue
+      const probe = await probeParentEntity(t, a.entity_id, ctx)
+      if (probe.ok) { allowed = true; break }
+    }
+  }
+
+  if (!allowed) {
+    return { error: 'Document not accessible' }
+  }
+
+  return {
+    data: {
+      document_id: doc.id,
+      file_name: doc.file_name,
+      mime_type: doc.mime_type,
+      file_path: doc.file_path,
+      source: doc.source as DocumentDownloadSource,
     },
   }
 }
