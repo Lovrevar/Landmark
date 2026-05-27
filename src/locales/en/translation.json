@@ -2393,6 +2393,7 @@
       "adding": "Adding...",
       "add": "Add Subcontractor",
       "no_contract_section": "No Contract:",
+      "document_upload_failed": "Subcontractor was added, but the contract documents failed to upload. Please try attaching them again from the subcontractor's documents section.",
       "errors": {
         "select_category": "Please select a contract category",
         "select_subcontractor": "Please select a subcontractor",

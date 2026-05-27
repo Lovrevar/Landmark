@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import * as siteService from '../services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [pendingDeleteSubcontractor, setPendingDeleteSubcontractor] = useState<string | null>(null)
   const [deletingSubcontractor, setDeletingSubcontractor] = useState(false)
   const addSubcontractorToPhase = async (
@@ -113,7 +115,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           await siteService.uploadSubcontractorDocuments(newSubcontractorId, newContractId, pendingFiles)
         } catch (uploadError) {
           console.error('Error uploading contract documents:', uploadError)
-          // Non-blocking: subcontractor was added, documents can be added later
+          toast.warning(t('supervision.subcontractor_form.document_upload_failed'))
         }
       }
 

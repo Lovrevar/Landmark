@@ -34,7 +34,12 @@ const ENTITY_FETCH_LIMIT = 5000
 // ---------------------------------------------------------------------------
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  // Supabase Storage rejects keys containing ".." (treated as path traversal),
+  // which trips on Croatian company suffixes like "d.o.o." + ".pdf" extension.
+  return name
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+(?=\.[^.]*$|$)/g, '')
 }
 
 // Legacy rows migrated from `subcontractor_documents` keep their original

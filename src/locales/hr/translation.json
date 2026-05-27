@@ -2397,6 +2397,7 @@
       "adding": "Dodavanje...",
       "add": "Dodaj podugovaratelja",
       "no_contract_section": "Bez ugovora:",
+      "document_upload_failed": "Podugovaratelj je dodan, ali dokumenti ugovora nisu uspješno učitani. Pokušajte ih ponovno priložiti kroz dokumente podugovaratelja.",
       "errors": {
         "select_category": "Odaberite kategoriju ugovora",
         "select_subcontractor": "Odaberite podugovaratelja",
