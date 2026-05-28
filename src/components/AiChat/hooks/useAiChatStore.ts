@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
-import { supabase } from '../../../lib/supabase'
 import {
   deleteSession as deleteSessionService,
   listSessions,
   loadSession,
   renameSession as renameSessionService,
+  sendCancelBeacon,
   streamMessage,
   type AttachmentRequestBody,
 } from '../services/aiChatService'
@@ -791,15 +791,7 @@ export function useAiChatStore(): AiChatStore {
     // the UI has already returned to idle either way.
     const sid = currentSessionIdRef.current
     if (sid) {
-      void supabase
-        .from('ai_sessions')
-        .update({ cancel_requested_at: new Date().toISOString() })
-        .eq('id', sid)
-        .then(({ error }) => {
-          if (error) {
-            console.error('[useAiChatStore] cancel beacon write failed:', error)
-          }
-        })
+      sendCancelBeacon(sid)
     }
   }, [])
 

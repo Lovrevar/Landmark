@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../../../lib/supabase'
-import { logActivity } from '../../../../lib/activityLog'
 import type { BankCredit } from '../../../../lib/supabase'
 import { INITIAL_CREDIT_FORM, type CreditFormData, type CompanyBankAccount } from '../types'
 import { calculateAnnuityPayment, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
 import { useToast } from '../../../../contexts/ToastContext'
+import {
+  fetchCompanyBankAccounts,
+  createCredit,
+  updateCredit,
+  deleteCredit,
+} from '../services/creditService'
 
 export function useCreditForm(onSaved: () => Promise<void>) {
   const toast = useToast()
@@ -16,22 +20,16 @@ export function useCreditForm(onSaved: () => Promise<void>) {
 
   useEffect(() => {
     if (newCredit.company_id && newCredit.disbursed_to_account) {
-      fetchCompanyBankAccounts(newCredit.company_id)
+      loadCompanyBankAccounts(newCredit.company_id)
     } else {
       setCompanyBankAccounts([])
     }
   }, [newCredit.company_id, newCredit.disbursed_to_account])
 
-  const fetchCompanyBankAccounts = async (companyId: string) => {
+  const loadCompanyBankAccounts = async (companyId: string) => {
     try {
       setLoadingAccounts(true)
-      const { data, error } = await supabase
-        .from('company_bank_accounts')
-        .select(`id, company_id, bank_name, account_number, current_balance`)
-        .eq('company_id', companyId)
-
-      if (error) throw error
-      setCompanyBankAccounts(data || [])
+      setCompanyBankAccounts(await fetchCompanyBankAccounts(companyId))
     } catch (error) {
       console.error('Error fetching company bank accounts:', error)
       setCompanyBankAccounts([])
@@ -96,28 +94,11 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     const { creditType: actualCreditType, seniority } = parseCreditTypeAndSeniority(newCredit.credit_type)
 
     try {
-      const { error } = await supabase
-        .from('bank_credits')
-        .insert({
-          ...newCredit,
-          company_id: newCredit.company_id || null,
-          project_id: newCredit.project_id || null,
-          start_date: newCredit.start_date || null,
-          maturity_date: newCredit.maturity_date || null,
-          usage_expiration_date: newCredit.usage_expiration_date || null,
-          disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null,
-          credit_type: actualCreditType,
-          credit_seniority: seniority,
-          outstanding_balance: 0,
-          monthly_payment: monthlyPayment,
-          principal_repayment_type: newCredit.principal_repayment_type,
-          interest_repayment_type: newCredit.interest_repayment_type
-        })
-
-      if (error) throw error
-
-      logActivity({ action: 'bank_credit.create', entity: 'bank_credit', metadata: { severity: 'high', entity_name: newCredit.credit_name, amount: newCredit.amount } })
-
+      await createCredit(newCredit, {
+        credit_type: actualCreditType,
+        credit_seniority: seniority,
+        monthly_payment: monthlyPayment,
+      })
       resetCreditForm()
       await onSaved()
     } catch (error) {
@@ -146,36 +127,11 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     const { creditType: actualCreditType, seniority } = parseCreditTypeAndSeniority(newCredit.credit_type)
 
     try {
-      const { error } = await supabase
-        .from('bank_credits')
-        .update({
-          bank_id: newCredit.bank_id,
-          company_id: newCredit.company_id || null,
-          project_id: newCredit.project_id || null,
-          credit_name: newCredit.credit_name,
-          credit_type: actualCreditType,
-          credit_seniority: seniority,
-          amount: newCredit.amount,
-          interest_rate: newCredit.interest_rate,
-          start_date: newCredit.start_date,
-          maturity_date: newCredit.maturity_date,
-          outstanding_balance: newCredit.outstanding_balance,
-          monthly_payment: monthlyPayment,
-          purpose: newCredit.purpose,
-          usage_expiration_date: newCredit.usage_expiration_date || null,
-          grace_period: newCredit.grace_period,
-          repayment_type: newCredit.repayment_type,
-          principal_repayment_type: newCredit.principal_repayment_type,
-          interest_repayment_type: newCredit.interest_repayment_type,
-          disbursed_to_account: newCredit.disbursed_to_account || false,
-          disbursed_to_bank_account_id: newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id ? newCredit.disbursed_to_bank_account_id : null
-        })
-        .eq('id', editingCredit.id)
-
-      if (error) throw error
-
-      logActivity({ action: 'bank_credit.update', entity: 'bank_credit', entityId: editingCredit.id, metadata: { severity: 'high', entity_name: newCredit.credit_name } })
-
+      await updateCredit(editingCredit.id, newCredit, {
+        credit_type: actualCreditType,
+        credit_seniority: seniority,
+        monthly_payment: monthlyPayment,
+      })
       resetCreditForm()
       await onSaved()
     } catch (error) {
@@ -193,11 +149,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     if (!pendingDeleteId) return
     setDeleting(true)
     try {
-      const { error } = await supabase.from('bank_credits').delete().eq('id', pendingDeleteId)
-      if (error) throw error
-
-      logActivity({ action: 'bank_credit.delete', entity: 'bank_credit', entityId: pendingDeleteId, metadata: { severity: 'high' } })
-
+      await deleteCredit(pendingDeleteId)
       await onSaved()
     } catch (error) {
       console.error('Error deleting credit:', error)

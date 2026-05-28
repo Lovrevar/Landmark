@@ -31,9 +31,9 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     { data: retailContractsData },
     { data: retailInvoicesData }
   ] = await Promise.all([
-    supabase.from('contracts').select('id, subcontractor_id, contract_amount, has_contract').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
+    supabase.from('contracts').select('id, subcontractor_id, contract_amount, has_contract, projects:project_id(name)').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
     supabase.from('accounting_invoices').select('id, supplier_id, remaining_amount, status, base_amount, contract_id').in('supplier_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
-    supabase.from('retail_contracts').select('id, supplier_id, contract_amount, has_contract').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
+    supabase.from('retail_contracts').select('id, supplier_id, contract_amount, has_contract, retail_project_phases:phase_id(retail_projects:project_id(name))').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
     supabase.from('accounting_invoices').select('id, retail_supplier_id, remaining_amount, status, base_amount, retail_contract_id').in('retail_supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000'])
   ])
 
@@ -44,6 +44,14 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
   }
 
   const siteStats = buildStatsMap(supplierIds)
+
+  const siteProjectNames = new Map<string, Set<string>>()
+  const retailProjectNames = new Map<string, Set<string>>()
+  const addProjectName = (map: Map<string, Set<string>>, supplierId: string, name?: string | null) => {
+    if (!name) return
+    if (!map.has(supplierId)) map.set(supplierId, new Set())
+    map.get(supplierId)!.add(name)
+  }
 
   const siteContractInvoiceTotals = new Map<string, number>()
   ;(invoicesData || []).forEach(inv => {
@@ -64,6 +72,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
         s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
       }
     }
+    addProjectName(siteProjectNames, c.subcontractor_id, (c as { projects?: { name?: string } }).projects?.name)
   })
 
   ;(invoicesData || []).forEach(inv => {
@@ -96,6 +105,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
         s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
       }
     }
+    addProjectName(retailProjectNames, c.supplier_id, (c as { retail_project_phases?: { retail_projects?: { name?: string } } }).retail_project_phases?.retail_projects?.name)
   })
 
   ;(retailInvoicesData || []).forEach(inv => {
@@ -112,6 +122,7 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
   const mapToSummary = (
     data: RawSupplier[],
     statsMap: Map<string, SupplierStatsEntry>,
+    projectsMap: Map<string, Set<string>>,
     source: 'site' | 'retail'
   ): SupplierSummary[] =>
     data.map(supplier => {
@@ -133,13 +144,14 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
         total_paid_total: stats.totalPaid,
         total_remaining: stats.totalRemaining,
         total_invoices: stats.invoiceCount,
+        project_names: Array.from(projectsMap.get(supplier.id) || []).sort((a, b) => a.localeCompare(b)),
         contracts: [],
         invoices: []
       }
     })
 
-  const siteSuppliers = mapToSummary(suppliersData || [], siteStats, 'site')
-  const retailSuppliers = mapToSummary((retailSuppliersData || []) as unknown as RawSupplier[], retailStats, 'retail')
+  const siteSuppliers = mapToSummary(suppliersData || [], siteStats, siteProjectNames, 'site')
+  const retailSuppliers = mapToSummary((retailSuppliersData || []) as unknown as RawSupplier[], retailStats, retailProjectNames, 'retail')
   const all = [...siteSuppliers, ...retailSuppliers].sort((a, b) => a.name.localeCompare(b.name))
 
   return all

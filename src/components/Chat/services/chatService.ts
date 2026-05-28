@@ -53,6 +53,37 @@ export async function fetchConversations(userId: string): Promise<ChatConversati
 
   const userMap = new Map((users || []).map(u => [u.id, u]))
 
+  const { data: msgIndex, error: miErr } = await supabase
+    .from('chat_messages')
+    .select('id, conversation_id, sender_id, created_at')
+    .in('conversation_id', conversationIds)
+    .order('created_at', { ascending: false })
+
+  if (miErr) throw miErr
+
+  const indexByConv = new Map<string, Array<{ id: string; sender_id: string; created_at: string }>>()
+  for (const m of msgIndex || []) {
+    const bucket = indexByConv.get(m.conversation_id)
+    const entry = { id: m.id, sender_id: m.sender_id, created_at: m.created_at }
+    if (bucket) bucket.push(entry)
+    else indexByConv.set(m.conversation_id, [entry])
+  }
+
+  const lastMsgIds = conversations
+    .map(c => indexByConv.get(c.id)?.[0]?.id)
+    .filter((id): id is string => Boolean(id))
+
+  let lastMsgById = new Map<string, ChatMessage>()
+  if (lastMsgIds.length > 0) {
+    const { data: lastMsgRows, error: lmErr } = await supabase
+      .from('chat_messages')
+      .select(MSG_FIELDS)
+      .in('id', lastMsgIds)
+
+    if (lmErr) throw lmErr
+    lastMsgById = new Map((lastMsgRows || []).map(m => [m.id, m as ChatMessage]))
+  }
+
   const result: ChatConversation[] = []
 
   for (const conv of conversations) {
@@ -64,29 +95,18 @@ export async function fetchConversations(userId: string): Promise<ChatConversati
       }))
 
     const myParticipant = participants.find(p => p.user_id === userId)
+    const convIndex = indexByConv.get(conv.id) || []
+    const lastEntry = convIndex[0]
+    const lastMsgRow = lastEntry ? lastMsgById.get(lastEntry.id) : undefined
 
-    const { data: lastMsg } = await supabase
-      .from('chat_messages')
-      .select(MSG_FIELDS)
-      .eq('conversation_id', conv.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const unreadCount = myParticipant
+      ? convIndex.filter(
+          m => m.created_at > myParticipant.last_read_at && m.sender_id !== userId
+        ).length
+      : 0
 
-    let unreadCount = 0
-    if (myParticipant) {
-      const { count } = await supabase
-        .from('chat_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', conv.id)
-        .gt('created_at', myParticipant.last_read_at)
-        .neq('sender_id', userId)
-
-      unreadCount = count || 0
-    }
-
-    const lastMessage = lastMsg
-      ? { ...lastMsg, sender: userMap.get(lastMsg.sender_id) || undefined }
+    const lastMessage = lastMsgRow
+      ? { ...lastMsgRow, sender: userMap.get(lastMsgRow.sender_id) || undefined }
       : null
 
     result.push({
@@ -294,17 +314,26 @@ export async function getTotalUnreadCount(userId: string): Promise<number> {
 
   if (pErr || !participantRows || participantRows.length === 0) return 0
 
+  const minLastReadAt = participantRows.reduce(
+    (min, p) => (p.last_read_at < min ? p.last_read_at : min),
+    participantRows[0].last_read_at
+  )
+  const conversationIds = participantRows.map(p => p.conversation_id)
+  const lastReadByConv = new Map(participantRows.map(p => [p.conversation_id, p.last_read_at]))
+
+  const { data: candidates, error: cErr } = await supabase
+    .from('chat_messages')
+    .select('conversation_id, created_at, sender_id')
+    .in('conversation_id', conversationIds)
+    .gt('created_at', minLastReadAt)
+    .neq('sender_id', userId)
+
+  if (cErr) throw cErr
+
   let total = 0
-  for (const p of participantRows) {
-    const { count } = await supabase
-      .from('chat_messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('conversation_id', p.conversation_id)
-      .gt('created_at', p.last_read_at)
-      .neq('sender_id', userId)
-
-    total += count || 0
+  for (const m of candidates || []) {
+    const lastRead = lastReadByConv.get(m.conversation_id)
+    if (lastRead && m.created_at > lastRead) total++
   }
-
   return total
 }

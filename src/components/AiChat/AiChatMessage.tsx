@@ -17,6 +17,7 @@ import { useAiChat } from './AiChatProvider'
 import { useAutoGrowTextarea } from './hooks/useAutoGrowTextarea'
 import MessageAttachment from './components/MessageAttachment'
 import DocumentCard from './components/DocumentCard'
+import ServerDocumentCard from './components/ServerDocumentCard'
 
 interface AiChatMessageProps {
   message: RenderMessage
@@ -219,6 +220,9 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
 
     case 'document':
       return <DocumentCard message={message} />
+
+    case 'server_document':
+      return <ServerDocumentCard message={message} />
 
     case 'error':
       return (

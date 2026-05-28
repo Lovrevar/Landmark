@@ -44,7 +44,7 @@ These are business-specific — do not simplify or generalize them:
 - **Multi-VAT invoices** — a single invoice can have up to 4 different VAT rates (Croatian accounting requirement)
 - **Cesija (Assignment of debt)** — third-party payments where company A pays on behalf of company B; a legally specific Croatian concept
 - **Kompenzacija (Compensation)** — mutual debt offset between two parties
-- **Cashflow profile** — password-protected sensitive module; never bypass this protection
+- **Cashflow profile** — gated by Director/Accounting role at the database level (RLS policies on `accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`, plus role-gated `get_invoice_statistics` RPC). A `VITE_CASHFLOW_PASSWORD` UX speedbump exists in the React UI to reduce accidental data exposure during screen-shares, but it is **not a security boundary** — the bundled JS ships the password, and RLS is the real enforcement
 - **Unit types** — `stan` (apartment), `garaža` (garage), `repozitorij` (storage unit); these are linked to each other
 - **Credit allocation** — bank credit lines can be allocated across multiple projects/contracts
 - **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects

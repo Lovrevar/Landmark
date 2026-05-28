@@ -10,6 +10,24 @@ import type {
 // tree (i.e. their underlying row has siblings sharing the same parent_id).
 // The store uses prev/nextSiblingLeafId to switch the active branch — both
 // are pre-computed as the most-recent leaf of the chosen sibling's subtree.
+// Mirror of the edge-function `documents.source` check constraint. Tells
+// the client which storage bucket to use when minting a signed URL.
+export type ServerDocumentSource =
+  | 'app_upload'
+  | 'legacy_subcontractor'
+  | 'accounting_sync'
+  | 'filesystem_scan'
+
+// Shape of the data block returned by the get_document_download_link tool.
+// Matches GetDocumentDownloadLinkOutput in tool-handlers.ts; keep in sync.
+export interface ServerDocumentRef {
+  documentId: string
+  fileName: string
+  mimeType: string | null
+  filePath: string
+  source: ServerDocumentSource
+}
+
 export interface BranchInfo {
   siblingIndex: number  // 0-based among siblings sorted by created_at asc
   siblingCount: number
@@ -50,6 +68,24 @@ export type RenderMessage =
       toolUseId: string
       status: 'pending' | 'done' | 'error'
       spec: DocumentSpec
+      createdAt: string
+    }
+  // A `get_document_download_link` tool call. The pointer to the file (the
+  // `file_path` + storage `source`) arrives in the tool_result, not the
+  // tool_call input — fields are filled in once status flips to 'done'. The
+  // chip mints a fresh signed URL on click, so the message survives reloads
+  // past the signed-URL TTL.
+  | {
+      kind: 'server_document'
+      id: string
+      rowId: string
+      toolUseId: string
+      status: 'pending' | 'done' | 'error'
+      documentId: string | null
+      fileName: string | null
+      mimeType: string | null
+      filePath: string | null
+      source: ServerDocumentSource | null
       createdAt: string
     }
   | { kind: 'error'; id: string; rowId: string; code: string; message: string; createdAt: string }
@@ -138,6 +174,40 @@ export function parseDocumentSpec(input: unknown): DocumentSpec | null {
   const markdown = typeof o.markdown === 'string' ? o.markdown : ''
   if (!markdown.trim()) return null
   return { title, format, markdown }
+}
+
+// Strictly parse the `get_document_download_link` tool_result output into a
+// ServerDocumentRef. Returns null on any malformed/unexpected shape — the
+// caller leaves the message in 'error' state. Mirrors the server's
+// GetDocumentDownloadLinkOutput contract.
+export function parseServerDocumentRef(output: unknown): ServerDocumentRef | null {
+  if (typeof output !== 'object' || output === null) return null
+  const o = output as Record<string, unknown>
+  // Edge-function wraps successful results in { data: {...} } and errors in
+  // { error: string }. Anything without a `data` object is treated as a miss.
+  const data = typeof o.data === 'object' && o.data !== null ? (o.data as Record<string, unknown>) : null
+  if (!data) return null
+
+  const documentId = typeof data.document_id === 'string' ? data.document_id : ''
+  const fileName = typeof data.file_name === 'string' ? data.file_name : ''
+  const filePath = typeof data.file_path === 'string' ? data.file_path : ''
+  const mimeType =
+    typeof data.mime_type === 'string' ? data.mime_type :
+    data.mime_type === null ? null : null
+  const sourceRaw = typeof data.source === 'string' ? data.source : ''
+  const VALID_SOURCES: ServerDocumentSource[] = [
+    'app_upload', 'legacy_subcontractor', 'accounting_sync', 'filesystem_scan',
+  ]
+  if (!documentId || !fileName || !filePath) return null
+  if (!VALID_SOURCES.includes(sourceRaw as ServerDocumentSource)) return null
+
+  return {
+    documentId,
+    fileName,
+    mimeType,
+    filePath,
+    source: sourceRaw as ServerDocumentSource,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -283,9 +353,9 @@ export function deriveActiveBranch(
         if (!isToolResultBlock(block)) continue
         const target = out.find(
           (m) =>
-            (m.kind === 'tool' || m.kind === 'document') &&
+            (m.kind === 'tool' || m.kind === 'document' || m.kind === 'server_document') &&
             m.toolUseId === block.tool_use_id,
-        ) as Extract<RenderMessage, { kind: 'tool' | 'document' }> | undefined
+        ) as Extract<RenderMessage, { kind: 'tool' | 'document' | 'server_document' }> | undefined
         if (!target) {
           console.warn(
             '[normalizeMessages] tool_result with no matching tool_use:',
@@ -294,6 +364,27 @@ export function deriveActiveBranch(
           continue
         }
         target.status = block.is_error ? 'error' : 'done'
+        // Server-document tool_results carry the file reference in the
+        // result content. Persisted content is a JSON-string of the result
+        // payload (see ai-chat/index.ts toolResultBlocks build); parse it.
+        if (target.kind === 'server_document' && !block.is_error) {
+          let parsedOutput: unknown = block.content
+          if (typeof block.content === 'string') {
+            try { parsedOutput = JSON.parse(block.content) } catch { parsedOutput = null }
+          }
+          const ref = parseServerDocumentRef(parsedOutput)
+          if (ref) {
+            target.documentId = ref.documentId
+            target.fileName = ref.fileName
+            target.mimeType = ref.mimeType
+            target.filePath = ref.filePath
+            target.source = ref.source
+          } else {
+            // Malformed payload — treat as error rather than leave the chip
+            // in a half-loaded state.
+            target.status = 'error'
+          }
+        }
       }
       continue
     }
@@ -323,6 +414,24 @@ export function deriveActiveBranch(
             })
             return
           }
+        }
+        if (block.name === 'get_document_download_link') {
+          // The pointer fields are populated when the matching tool_result
+          // block is processed (see the user-role branch above).
+          out.push({
+            kind: 'server_document',
+            id: `${row.id}:${blockIndex}`,
+            rowId: row.id,
+            toolUseId: block.id,
+            status: 'pending',
+            documentId: null,
+            fileName: null,
+            mimeType: null,
+            filePath: null,
+            source: null,
+            createdAt: row.created_at,
+          })
+          return
         }
         out.push({
           kind: 'tool',
@@ -390,6 +499,24 @@ export function applyEventToMessages(
           ]
         }
       }
+      if (event.tool === 'get_document_download_link') {
+        return [
+          ...messages,
+          {
+            kind: 'server_document',
+            id,
+            rowId: id,
+            toolUseId: event.tool_use_id,
+            status: 'pending',
+            documentId: null,
+            fileName: null,
+            mimeType: null,
+            filePath: null,
+            source: null,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      }
       return [
         ...messages,
         {
@@ -407,7 +534,7 @@ export function applyEventToMessages(
     case 'tool_result': {
       const idx = messages.findIndex(
         (m) =>
-          (m.kind === 'tool' || m.kind === 'document') &&
+          (m.kind === 'tool' || m.kind === 'document' || m.kind === 'server_document') &&
           m.toolUseId === event.tool_use_id,
       )
       if (idx === -1) {
@@ -418,8 +545,28 @@ export function applyEventToMessages(
         return messages
       }
       const next = messages.slice()
-      const existing = next[idx] as Extract<RenderMessage, { kind: 'tool' | 'document' }>
-      next[idx] = { ...existing, status: event.is_error ? 'error' : 'done' }
+      const existing = next[idx] as Extract<
+        RenderMessage,
+        { kind: 'tool' | 'document' | 'server_document' }
+      >
+      if (existing.kind === 'server_document' && !event.is_error) {
+        const ref = parseServerDocumentRef(event.output)
+        if (ref) {
+          next[idx] = {
+            ...existing,
+            status: 'done',
+            documentId: ref.documentId,
+            fileName: ref.fileName,
+            mimeType: ref.mimeType,
+            filePath: ref.filePath,
+            source: ref.source,
+          }
+        } else {
+          next[idx] = { ...existing, status: 'error' }
+        }
+      } else {
+        next[idx] = { ...existing, status: event.is_error ? 'error' : 'done' }
+      }
       return next
     }
 

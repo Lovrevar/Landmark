@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect, useRef } from 'react'
+import React, { ReactNode, Suspense, useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
@@ -44,6 +44,7 @@ import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
+import PageFallback from './PageFallback'
 
 interface LayoutProps {
   children: ReactNode
@@ -331,17 +332,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </span>
                 )}
               </button>
-              <LanguageSwitcher />
+              <div className="hidden lg:block">
+                <LanguageSwitcher />
+              </div>
               <button
                 onClick={toggleTheme}
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200"
+                className="hidden lg:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200"
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
               <button
                 onClick={logout}
-                className="flex items-center px-2 lg:px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
+                className="hidden lg:flex items-center px-2 lg:px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4 lg:mr-1" />
                 <span className="hidden lg:inline">{t('auth.logout')}</span>
@@ -428,7 +431,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Mobile-only profile switcher (lives in the header on desktop) */}
             {user?.role !== 'Supervision' && (
-              <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2 safe-bottom">
+              <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2">
                 <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {t('profiles.title', 'Profile')}
                 </p>
@@ -454,11 +457,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </ul>
               </div>
             )}
+
+            {/* Mobile-only account section (language, theme, logout live in the header on desktop) */}
+            <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2 safe-bottom">
+              <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                {t('common.account', 'Account')}
+              </p>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('common.language', 'Language')}
+                </span>
+                <LanguageSwitcher />
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center gap-2 py-2.5 px-3 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                <span>
+                  {isDark ? t('common.light_mode', 'Light mode') : t('common.dark_mode', 'Dark mode')}
+                </span>
+              </button>
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2 py-2.5 px-3 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{t('auth.logout')}</span>
+              </button>
+            </div>
           </div>
         </aside>
 
         <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
-          {children}
+          <Suspense fallback={<PageFallback />}>
+            {children}
+          </Suspense>
         </main>
       </div>
 

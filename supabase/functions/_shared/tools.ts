@@ -12,22 +12,26 @@
 import type { AuthContext, Role } from './auth.ts'
 import {
   handleCreateDocument,
+  handleGetDocumentDownloadLink,
   handleGetInvoiceSummary,
   handleGetProjectDetails,
   handleGetProjectFinancialSummary,
   handleGetSubcontractorPaymentStatus,
   handleListContracts,
+  handleListDocumentsForEntity,
   handleListPaymentsForSubcontractor,
   handleListProjectPhases,
   handleListUnpaidInvoices,
   handleSearchProjects,
   handleSearchSubcontractors,
   type CreateDocumentInput,
+  type GetDocumentDownloadLinkInput,
   type GetInvoiceSummaryInput,
   type GetProjectDetailsInput,
   type GetProjectFinancialSummaryInput,
   type GetSubcontractorPaymentStatusInput,
   type ListContractsInput,
+  type ListDocumentsForEntityInput,
   type ListPaymentsForSubcontractorInput,
   type ListProjectPhasesInput,
   type ListUnpaidInvoicesInput,
@@ -364,6 +368,68 @@ export const TOOLS: ToolDefinition[] = [
   },
 
   {
+    name: 'list_documents_for_entity',
+    description:
+      'List files attached to a single entity in the platform — typically a contract, project, subcontractor, ' +
+      'or apartment unit. Use this when the user asks for "the document", "the contract file", "the attached invoice", ' +
+      'or any phrasing that refers to a file already in the system (not a new report). Returns metadata only: ' +
+      'id, file_name, mime_type, file_size, category, uploaded_at. To deliver one of the listed files to the user, ' +
+      'pass its `id` to `get_document_download_link`.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        entity_type: {
+          type: 'string',
+          enum: ['project', 'phase', 'subcontractor', 'contract', 'unit', 'customer', 'credit', 'company'],
+          description: 'The kind of entity whose attached documents to list. "unit" maps to apartments.',
+        },
+        entity_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID of the entity, obtained from a prior search tool (e.g. `list_contracts`, `search_projects`).',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 20,
+          description: 'Maximum number of document rows to return.',
+        },
+      },
+      required: ['entity_type', 'entity_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) =>
+      handleListDocumentsForEntity(input as unknown as ListDocumentsForEntityInput, ctx),
+  },
+
+  {
+    name: 'get_document_download_link',
+    description:
+      'Deliver an attached document to the user as a downloadable chip in the chat. Call this AFTER ' +
+      '`list_documents_for_entity` has returned a document whose `id` you want to surface. Does not return raw ' +
+      'bytes or a URL in the tool result text — the UI renders a download button that mints a fresh signed URL ' +
+      'on click, so the user can always retry across session reloads. After this tool succeeds, briefly confirm ' +
+      'the document is ready in your reply; do not paste the filename twice or repeat the metadata.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        document_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID of the document, taken from `list_documents_for_entity`.',
+        },
+      },
+      required: ['document_id'],
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) =>
+      handleGetDocumentDownloadLink(input as unknown as GetDocumentDownloadLinkInput, ctx),
+  },
+
+  {
     name: 'create_document',
     description:
       'Generate a downloadable document for the user — a PDF, an Excel spreadsheet, or a Markdown file. ' +
@@ -375,7 +441,11 @@ export const TOOLS: ToolDefinition[] = [
       'Use format "pdf" or "markdown" with the `markdown` field for prose write-ups (reports, summaries, memos). ' +
       'Use format "xlsx" with the `sheets` field for tabular data exports. ' +
       'Stay within the limits: markdown <= 50000 chars; <= 10 sheets, <= 50 columns and <= 5000 rows per sheet. ' +
-      'After the tool succeeds, briefly tell the user the document is ready — do NOT paste its full content into the reply.',
+      'After the tool succeeds, briefly tell the user the document is ready — do NOT paste its full content into the reply. ' +
+      'If the user asks for a document that is likely ALREADY attached to an entity in the system (e.g. "send me the contract", ' +
+      '"I need that invoice"), first call `list_documents_for_entity` for that entity. If the listing contains a document that ' +
+      'matches the request, deliver it via `get_document_download_link` instead of generating a new one. Use `create_document` ' +
+      'for new reports, summaries, or exports the user could not have had before.',
     input_schema: {
       type: 'object',
       properties: {

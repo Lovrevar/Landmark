@@ -44,15 +44,10 @@ const SupervisionDashboard: React.FC = () => {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [logs, contracts] = await Promise.all([
-        supervisionService.fetchWeekLogs(),
-        supervisionService.fetchContractStatusData()
-      ])
-      const statusData = await supervisionService.fetchSubcontractorStatus(contracts)
-      const weeklyStats = supervisionService.buildWeeklyStats(contracts, statusData, logs)
-      setWeekLogs(logs)
-      setSubcontractorStatus(statusData)
-      setStats(weeklyStats)
+      const data = await supervisionService.fetchSupervisionDashboard()
+      setWeekLogs(data.weekLogs)
+      setSubcontractorStatus(data.subcontractorStatus)
+      setStats(data.stats)
     } catch (error) {
       console.error('Error fetching supervision data:', error)
     } finally {

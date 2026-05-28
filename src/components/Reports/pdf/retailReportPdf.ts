@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { yieldToUI } from '../../../utils/yieldToUI'
 import type { RetailReportData } from '../retailReportTypes'
 
 const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
@@ -181,11 +182,13 @@ export async function generateRetailReportPdf(data: RetailReportData) {
 
   // Customers
   sectionTitle('Kupci')
-  data.customers.forEach(c => {
+  for (let i = 0; i < data.customers.length; i++) {
+    const c = data.customers[i]
     checkPage(12)
     row(c.name, fmt(c.total_amount))
     row('  Plaćeno / Neplaćeno', `${fmt(c.total_paid)} / ${fmt(c.total_remaining)}`, 5)
-  })
+    if ((i + 1) % 25 === 0) await yieldToUI()
+  }
   if (data.customers.length === 0) {
     pdf.text('Nema podataka o kupcima', margin + 5, y)
     y += 6

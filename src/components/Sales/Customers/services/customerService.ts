@@ -18,116 +18,139 @@ export const customerService = {
 
     if (error) throw error
 
-    const customersWithDetails = await Promise.all(
-      (customersData || []).map(async (customer) => {
-        if (customer.status === 'buyer') {
-          const { data: salesData } = await supabase
-            .from('sales')
-            .select('apartment_id, sale_price, sale_date, down_payment, total_paid')
-            .eq('customer_id', customer.id)
+    const customers = customersData || []
+    const buyerIds = customers.filter(c => c.status === 'buyer').map(c => c.id)
 
-          if (salesData && salesData.length > 0) {
-            const purchasedUnits: Record<string, unknown>[] = []
+    if (buyerIds.length === 0) {
+      return customers
+    }
 
-            for (const sale of salesData) {
-              if (sale.apartment_id) {
-                const { data: aptData } = await supabase
-                  .from('apartments')
-                  .select('id, number, floor, size_m2, price, project_id')
-                  .eq('id', sale.apartment_id)
-                  .maybeSingle()
+    const { data: salesData } = await supabase
+      .from('sales')
+      .select('apartment_id, sale_price, sale_date, down_payment, total_paid, customer_id')
+      .in('customer_id', buyerIds)
 
-                if (aptData) {
-                  const { data: projData } = await supabase
-                    .from('projects')
-                    .select('name')
-                    .eq('id', aptData.project_id)
-                    .maybeSingle()
+    const sales = (salesData || []).filter(s => s.apartment_id)
+    const apartmentIds = [...new Set(sales.map(s => s.apartment_id as string))]
 
-                  let garageData = null
-                  let repositoryData = null
+    if (apartmentIds.length === 0) {
+      return customers.map(c => c.status === 'buyer' ? { ...c, apartments: [] } : c)
+    }
 
-                  const { data: garageLink } = await supabase
-                    .from('apartment_garages')
-                    .select('garage_id')
-                    .eq('apartment_id', aptData.id)
-                    .maybeSingle()
+    const [apartmentsRes, garageLinksRes, repoLinksRes, invoicesRes] = await Promise.all([
+      supabase
+        .from('apartments')
+        .select('id, number, floor, size_m2, price, project_id')
+        .in('id', apartmentIds),
+      supabase
+        .from('apartment_garages')
+        .select('apartment_id, garage_id')
+        .in('apartment_id', apartmentIds),
+      supabase
+        .from('apartment_repositories')
+        .select('apartment_id, repository_id')
+        .in('apartment_id', apartmentIds),
+      supabase
+        .from('accounting_invoices')
+        .select('id, apartment_id, customer_id')
+        .in('apartment_id', apartmentIds)
+        .in('customer_id', buyerIds)
+        .eq('invoice_type', 'OUTGOING_SALES'),
+    ])
 
-                  if (garageLink?.garage_id) {
-                    const { data: gData } = await supabase
-                      .from('garages')
-                      .select('id, number, price')
-                      .eq('id', garageLink.garage_id)
-                      .maybeSingle()
-                    garageData = gData
-                  }
+    const apartments = apartmentsRes.data || []
+    const garageLinks = garageLinksRes.data || []
+    const repoLinks = repoLinksRes.data || []
+    const invoices = invoicesRes.data || []
 
-                  const { data: repoLink } = await supabase
-                    .from('apartment_repositories')
-                    .select('repository_id')
-                    .eq('apartment_id', aptData.id)
-                    .maybeSingle()
+    const projectIds = [...new Set(apartments.map(a => a.project_id).filter(Boolean))]
+    const garageIds = garageLinks.map(l => l.garage_id).filter(Boolean) as string[]
+    const repoIds = repoLinks.map(l => l.repository_id).filter(Boolean) as string[]
+    const invoiceIds = invoices.map(i => i.id)
 
-                  if (repoLink?.repository_id) {
-                    const { data: rData } = await supabase
-                      .from('repositories')
-                      .select('id, number, price')
-                      .eq('id', repoLink.repository_id)
-                      .maybeSingle()
-                    repositoryData = rData
-                  }
+    const [projectsRes, garagesRes, reposRes, paymentsRes] = await Promise.all([
+      projectIds.length > 0
+        ? supabase.from('projects').select('id, name').in('id', projectIds)
+        : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+      garageIds.length > 0
+        ? supabase.from('garages').select('id, number, price').in('id', garageIds)
+        : Promise.resolve({ data: [] as { id: string; number: string; price: number }[] }),
+      repoIds.length > 0
+        ? supabase.from('repositories').select('id, number, price').in('id', repoIds)
+        : Promise.resolve({ data: [] as { id: string; number: string; price: number }[] }),
+      invoiceIds.length > 0
+        ? supabase.from('accounting_payments').select('amount, invoice_id').in('invoice_id', invoiceIds)
+        : Promise.resolve({ data: [] as { amount: string; invoice_id: string }[] }),
+    ])
 
-                  // Calculate actual total paid from accounting_payments
-                  const { data: invoicesData } = await supabase
-                    .from('accounting_invoices')
-                    .select('id')
-                    .eq('apartment_id', aptData.id)
-                    .eq('customer_id', customer.id)
-                    .eq('invoice_type', 'OUTGOING_SALES')
+    const projects = projectsRes.data || []
+    const garages = garagesRes.data || []
+    const repos = reposRes.data || []
+    const payments = paymentsRes.data || []
 
-                  let actualTotalPaid = 0
-                  if (invoicesData && invoicesData.length > 0) {
-                    const invoiceIds = invoicesData.map(inv => inv.id)
-                    const { data: paymentsData } = await supabase
-                      .from('accounting_payments')
-                      .select('amount')
-                      .in('invoice_id', invoiceIds)
+    const apartmentById = new Map(apartments.map(a => [a.id, a]))
+    const projectById = new Map(projects.map(p => [p.id, p]))
+    const garageById = new Map(garages.map(g => [g.id, g]))
+    const repoById = new Map(repos.map(r => [r.id, r]))
 
-                    actualTotalPaid = paymentsData?.reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0
-                  }
+    const garageByApartment = new Map<string, typeof garages[number] | null>()
+    for (const link of garageLinks) {
+      if (link.garage_id) garageByApartment.set(link.apartment_id, garageById.get(link.garage_id) || null)
+    }
+    const repoByApartment = new Map<string, typeof repos[number] | null>()
+    for (const link of repoLinks) {
+      if (link.repository_id) repoByApartment.set(link.apartment_id, repoById.get(link.repository_id) || null)
+    }
 
-                  purchasedUnits.push({
-                    type: 'apartment',
-                    id: aptData.id,
-                    number: aptData.number,
-                    floor: aptData.floor,
-                    size_m2: aptData.size_m2,
-                    price: aptData.price,
-                    project_name: projData?.name || 'Unknown',
-                    project_id: aptData.project_id,
-                    sale_price: sale.sale_price,
-                    sale_date: sale.sale_date,
-                    down_payment: sale.down_payment,
-                    total_paid: actualTotalPaid,
-                    garage: garageData,
-                    repository: repositoryData
-                  })
-                }
-              }
-            }
+    const paidByInvoice = new Map<string, number>()
+    for (const p of payments) {
+      paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) || 0) + parseFloat(p.amount))
+    }
 
-            return {
-              ...customer,
-              apartments: purchasedUnits
-            }
-          }
-        }
+    const paidByCustomerApt = new Map<string, number>()
+    for (const inv of invoices) {
+      const key = `${inv.customer_id}|${inv.apartment_id}`
+      const paid = paidByInvoice.get(inv.id) || 0
+      paidByCustomerApt.set(key, (paidByCustomerApt.get(key) || 0) + paid)
+    }
 
-        return customer
-      })
-    )
+    const salesByCustomer = new Map<string, typeof sales>()
+    for (const sale of sales) {
+      const arr = salesByCustomer.get(sale.customer_id) || []
+      arr.push(sale)
+      salesByCustomer.set(sale.customer_id, arr)
+    }
 
-    return customersWithDetails
+    return customers.map(customer => {
+      if (customer.status !== 'buyer') return customer
+
+      const customerSales = salesByCustomer.get(customer.id) || []
+      const purchasedUnits: Record<string, unknown>[] = []
+
+      for (const sale of customerSales) {
+        const apt = apartmentById.get(sale.apartment_id as string)
+        if (!apt) continue
+        const proj = projectById.get(apt.project_id)
+        purchasedUnits.push({
+          type: 'apartment',
+          id: apt.id,
+          number: apt.number,
+          floor: apt.floor,
+          size_m2: apt.size_m2,
+          price: apt.price,
+          project_name: proj?.name || 'Unknown',
+          project_id: apt.project_id,
+          sale_price: sale.sale_price,
+          sale_date: sale.sale_date,
+          down_payment: sale.down_payment,
+          total_paid: paidByCustomerApt.get(`${customer.id}|${apt.id}`) || 0,
+          garage: garageByApartment.get(apt.id) || null,
+          repository: repoByApartment.get(apt.id) || null,
+        })
+      }
+
+      return customerSales.length > 0 ? { ...customer, apartments: purchasedUnits } : customer
+    })
   },
 
   async fetchCustomerCounts(): Promise<CustomerCounts> {

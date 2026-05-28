@@ -1,5 +1,22 @@
 {
   "common": {
+    "contact": "Contact",
+    "value": "Value",
+    "all_projects": "All projects",
+    "view_cards": "Cards",
+    "view_table": "Table",
+    "sort_name": "Name (A–Z)",
+    "sort_remaining": "Remaining (high to low)",
+    "sort_value": "Value (high to low)",
+    "sort_paid": "Paid (high to low)",
+    "filter_active": "Active contracts",
+    "filter_outstanding": "Outstanding",
+    "filter_paid": "Fully paid",
+    "filter_no_contracts": "No contracts",
+    "account": "Account",
+    "language": "Language",
+    "light_mode": "Light theme",
+    "dark_mode": "Dark theme",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -43,6 +60,7 @@
     "import": "Import",
     "filter": "Filter",
     "clear": "Clear",
+    "clear_filters": "Clear filters",
     "select": "Select",
     "select_all": "Select all",
     "deselect_all": "Deselect all",
@@ -232,6 +250,8 @@
   "status": {
     "planning": "Planning",
     "active": "Active",
+    "draft": "Draft",
+    "terminated": "Terminated",
     "in_progress": "In Progress",
     "completed": "Completed",
     "on_hold": "On Hold",
@@ -760,6 +780,10 @@
     }
   },
   "suppliers": {
+    "source_label": "Source",
+    "source_site": "Site",
+    "source_retail": "Retail",
+    "invoices_label": "Invoices",
     "title": "Suppliers",
     "subtitle": "Overview of all suppliers, contracts and payments",
     "add": "Add Supplier",
@@ -1691,6 +1715,13 @@
     "no_contracts": "No contracts yet",
     "contract_amount": "Contract Amount",
     "budget_realized": "Budget Realized",
+    "job_description": "Job Description",
+    "search_subcontractors": "Search subcontractors...",
+    "total_contract_value": "Total Contract Value",
+    "total_realized": "Total Realized",
+    "total_remaining": "Total Remaining",
+    "contract_count": "Contracts",
+    "no_contracts_match_filters": "No contracts match the selected filters",
     "contact": "Contact",
     "cost": "Cost",
     "due": "Due",
@@ -1896,6 +1927,7 @@
   "apartments": {
     "title": "Apartments",
     "subtitle": "Manage apartments",
+    "item_label": "apartments",
     "add": "Add Apartment",
     "bulk_create": "Bulk Create",
     "edit": "Edit Apartment",
@@ -2314,6 +2346,10 @@
       }
     },
     "subcontractors": {
+      "active_contracts": "Active contracts",
+      "contracts_short": "{{count}} contracts",
+      "active_short": "{{count}} active",
+      "completed_short": "{{count}} done",
       "title": "Subcontractors",
       "add": "Add Subcontractor",
       "edit": "Edit Subcontractor",
@@ -2389,6 +2425,7 @@
       "adding": "Adding...",
       "add": "Add Subcontractor",
       "no_contract_section": "No Contract:",
+      "document_upload_failed": "Subcontractor was added, but the contract documents failed to upload. Please try attaching them again from the subcontractor's documents section.",
       "errors": {
         "select_category": "Please select a contract category",
         "select_subcontractor": "Please select a subcontractor",
@@ -4063,6 +4100,7 @@
   "retail_land_plots": {
     "title": "Land Plots",
     "description": "Manage land plots and parcels",
+    "item_label": "land plots",
     "new_plot": "New Land Plot",
     "edit_plot": "Edit Land Plot",
     "details_title": "Land Plot Details",
@@ -4237,7 +4275,12 @@
     "completion": "Completion",
     "current": "Current",
     "chart_label": "Budget",
-    "no_projects": "No projects found."
+    "no_projects": "No projects found.",
+    "no_budget_data": "No budget data for this project",
+    "no_budget_data_sub": "Add phases with allocated budgets and contracts to see EVM performance.",
+    "target_line": "Target (1.0)",
+    "warning_line": "Warning (0.9)",
+    "evm_indices_caption": "Earned value is based on completed contract milestones."
   },
   "chat": {
     "title": "Chat",

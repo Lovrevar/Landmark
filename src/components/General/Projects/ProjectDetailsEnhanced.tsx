@@ -20,6 +20,8 @@ import { format, differenceInDays, parseISO } from 'date-fns'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
 import MilestoneTemplateModal from './forms/MilestoneTemplateModal'
+import PhasesContractsTab from './tabs/PhasesContractsTab'
+import SubcontractorsTab from './tabs/SubcontractorsTab'
 import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
@@ -239,54 +241,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
           )}
 
           {activeTab === 'phases' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.project_phases')}</h3>
-              </div>
-              {phases.length === 0 ? (
-                <EmptyState icon={Briefcase} title={t('general_projects.no_phases')} />
-              ) : (
-                <div className="space-y-4">
-                  {phases.map((phase) => (
-                    <div key={phase.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {t('common.phase')} {phase.phase_number}: {phase.phase_name}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('common.status')}: <span className="font-medium">{phase.status}</span></p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.budget')}</p>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">€{phase.budget_allocated.toLocaleString('hr-HR')}</p>
-                          <p className="text-sm text-blue-600">{t('general_projects.used')}: €{phase.budget_used.toLocaleString('hr-HR')}</p>
-                        </div>
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                        <h5 className="font-medium text-gray-900 dark:text-white mb-3">{t('general_projects.contracts_in_phase')}</h5>
-                        <div className="space-y-2">
-                          {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).map((contract) => (
-                            <div key={contract.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex justify-between items-center">
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-white">{contract.subcontractor.name}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{contract.job_description}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">{t('general_projects.realized')}: €{contract.budget_realized.toLocaleString('hr-HR')}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {contracts.filter((c) => c.phase?.phase_name === phase.phase_name).length === 0 && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{t('general_projects.no_contracts_in_phase')}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PhasesContractsTab phases={phases} contracts={contracts} projectId={id} />
           )}
 
           {activeTab === 'apartments' && (
@@ -337,53 +292,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
           )}
 
           {activeTab === 'subcontractors' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.subcontractors_contracts')}</h3>
-              {contracts.length === 0 ? (
-                <EmptyState icon={Users} title={t('general_projects.no_contracts')} />
-              ) : (
-                <div className="space-y-4">
-                  {contracts.map((contract) => (
-                    <div key={contract.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{contract.subcontractor.name}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{contract.job_description}</p>
-                          {contract.phase && (
-                            <p className="text-sm text-blue-600 mt-1">{t('common.phase')}: {contract.phase.phase_name}</p>
-                          )}
-                        </div>
-                        <Badge variant={
-                          contract.status === 'active' ? 'green' : contract.status === 'completed' ? 'gray' : 'yellow'
-                        } size="sm">
-                          {contract.status}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.contract_amount')}</p>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">€{contract.contract_amount.toLocaleString('hr-HR')}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.budget_realized')}</p>
-                          <p className="text-lg font-semibold text-blue-600 mt-1">€{contract.budget_realized.toLocaleString('hr-HR')}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.remaining')}</p>
-                          <p className="text-lg font-semibold text-green-600 mt-1">
-                            €{(contract.contract_amount - contract.budget_realized).toLocaleString('hr-HR')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{t('general_projects.contact')}</p>
-                          <p className="text-sm text-gray-900 dark:text-white mt-1">{contract.subcontractor.contact}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SubcontractorsTab contracts={contracts} phases={phases} projectId={id} />
           )}
 
           {activeTab === 'financing' && (

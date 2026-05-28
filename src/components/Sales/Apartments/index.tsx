@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../contexts/AuthContext'
-import { Home, Filter, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
-import { LoadingSpinner, SearchInput, Button, Select, EmptyState, Alert, PageHeader, ConfirmDialog } from '../../ui'
+import { Home, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
+import { LoadingSpinner, SearchInput, Button, Select, EmptyState, PageHeader, ConfirmDialog, Pagination } from '../../ui'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './types'
 import * as apartmentService from './services/apartmentService'
 import { useApartmentData } from './hooks/useApartmentData'
@@ -19,6 +19,7 @@ const ApartmentManagement: React.FC = () => {
   useAuth()
   const {
     apartments,
+    totalCount,
     projects,
     buildings,
     apartmentPaymentTotals,
@@ -27,13 +28,19 @@ const ApartmentManagement: React.FC = () => {
     linkedGarages,
     linkedStorages,
     loading,
-    refetch: fetchData
+    refetch: fetchData,
+    pageSize,
+    currentPage,
+    setCurrentPage,
+    searchTerm,
+    setSearchTerm,
+    filterProject,
+    setFilterProject,
+    filterBuilding,
+    setFilterBuilding,
+    filterStatus,
+    setFilterStatus,
   } = useApartmentData()
-
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterProject, setFilterProject] = useState<string>('all')
-  const [filterBuilding, setFilterBuilding] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
 
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [showSingleModal, setShowSingleModal] = useState(false)
@@ -148,21 +155,7 @@ const ApartmentManagement: React.FC = () => {
     }
   }
 
-  const filteredApartments = apartments.filter(apt => {
-    const matchesSearch =
-      apt.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apt.buyer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apt.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apt.building_name.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesProject = filterProject === 'all' || apt.project_id === filterProject
-    const matchesBuilding = filterBuilding === 'all' || apt.building_id === filterBuilding
-    const matchesStatus = filterStatus === 'all' || apt.status === filterStatus
-
-    return matchesSearch && matchesProject && matchesBuilding && matchesStatus
-  })
-
-  if (loading) {
+  if (loading && apartments.length === 0) {
     return <LoadingSpinner message={t('common.loading')} />
   }
 
@@ -175,7 +168,7 @@ const ApartmentManagement: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.title')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{apartments.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalCount}</p>
             </div>
             <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
               {t('apartments.bulk_create')}
@@ -268,7 +261,7 @@ const ApartmentManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredApartments.length === 0 ? (
+      {apartments.length === 0 ? (
         <EmptyState
           icon={Home}
           title={t('common.no_data')}
@@ -276,7 +269,7 @@ const ApartmentManagement: React.FC = () => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredApartments.map((apartment) => {
+          {apartments.map((apartment) => {
             const aptLinkedGarages = linkedGarages[apartment.id] || []
             const aptLinkedStorages = linkedStorages[apartment.id] || []
 
@@ -443,19 +436,14 @@ const ApartmentManagement: React.FC = () => {
         </div>
       )}
 
-      {filteredApartments.length > 0 && (
-        <Alert variant="info">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center">
-              <Filter className="w-5 h-5 mr-2" />
-              <span className="font-medium">{t('customers.sales_payments.filtered_results')}</span>
-            </div>
-            <div>
-              Showing <span className="font-semibold">{filteredApartments.length}</span> of{' '}
-              <span className="font-semibold">{apartments.length}</span> {t('apartments.title').toLowerCase()}
-            </div>
-          </div>
-        </Alert>
+      {apartments.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalCount={totalCount}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel={t('apartments.item_label')}
+        />
       )}
 
       <BulkApartmentModal

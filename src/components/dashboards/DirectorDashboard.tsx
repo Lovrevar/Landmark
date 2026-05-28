@@ -62,20 +62,13 @@ const DirectorDashboard: React.FC = () => {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [projectsData, financial, sales, construction, funding] = await Promise.all([
-        directorService.fetchProjectsData(),
-        directorService.fetchFinancialMetrics(),
-        directorService.fetchSalesMetrics(),
-        directorService.fetchConstructionMetrics(),
-        directorService.fetchFundingMetrics()
-      ])
-      setProjects(projectsData)
-      setFinancialMetrics(financial)
-      setSalesMetrics(sales)
-      setConstructionMetrics(construction)
-      setFundingMetrics(funding)
-      const alertsData = await directorService.fetchAlerts(financial, sales)
-      setAlerts(alertsData)
+      const data = await directorService.fetchDirectorDashboard()
+      setProjects(data.projects)
+      setFinancialMetrics(data.financial)
+      setSalesMetrics(data.sales)
+      setConstructionMetrics(data.construction)
+      setFundingMetrics(data.funding)
+      setAlerts(data.alerts)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {

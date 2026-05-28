@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   fetchLandPlotsWithProjects,
+  fetchLandPlotStats,
   fetchLandPlotSales,
   upsertLandPlot,
   deleteLandPlot,
   type LandPlotWithProject,
   type LandPlotPayload,
-  type LandPlotSaleRow
+  type LandPlotSaleRow,
+  type LandPlotStats
 } from '../services/landPlotService'
 import { useToast } from '../../../../contexts/ToastContext'
 
@@ -14,27 +16,53 @@ export interface LandPlotWithSales extends LandPlotWithProject {
   sales?: LandPlotSaleRow[]
 }
 
+export const LAND_PLOTS_PAGE_SIZE = 50
+
 export function useLandPlots() {
   const toast = useToast()
-  const [landPlots, setLandPlots] = useState<LandPlotWithProject[]>([])
+  const [plots, setPlots] = useState<LandPlotWithProject[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [stats, setStats] = useState<LandPlotStats>({ total_plots: 0, total_invested: 0, total_area: 0, paid_count: 0 })
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const hasLoadedRef = useRef(false)
 
-  const loadData = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchTerm])
+
+  const loadData = useCallback(async () => {
+    if (hasLoadedRef.current) setRefreshing(true)
+    else setLoading(true)
     try {
-      setLoading(true)
-      setLandPlots(await fetchLandPlotsWithProjects())
+      const [pageResult, statsResult] = await Promise.all([
+        fetchLandPlotsWithProjects(currentPage, LAND_PLOTS_PAGE_SIZE, debouncedSearchTerm),
+        fetchLandPlotStats(),
+      ])
+      setPlots(pageResult.plots)
+      setTotalCount(pageResult.totalCount)
+      setStats(statsResult)
+      hasLoadedRef.current = true
     } catch (error) {
       console.error('Error fetching land plots:', error)
       toast.error('Greška pri učitavanju zemljišta')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
-  }
+  }, [currentPage, debouncedSearchTerm, toast])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   const handleSave = async (payload: LandPlotPayload, id?: string) => {
     await upsertLandPlot(payload, id)
@@ -68,27 +96,15 @@ export function useLandPlots() {
     return { ...plot, sales }
   }
 
-  const filteredPlots = useMemo(() =>
-    landPlots.filter(plot =>
-      plot.owner_first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plot.owner_last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plot.plot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (plot.location && plot.location.toLowerCase().includes(searchTerm.toLowerCase()))
-    ),
-    [landPlots, searchTerm]
-  )
-
-  const totalStats = useMemo(() => ({
-    total_plots: landPlots.length,
-    total_invested: landPlots.reduce((sum, p) => sum + p.total_price, 0),
-    total_area: landPlots.reduce((sum, p) => sum + p.purchased_area_m2, 0),
-    paid_count: landPlots.filter(p => p.payment_status === 'paid').length
-  }), [landPlots])
-
   return {
     loading,
-    filteredPlots,
-    totalStats,
+    refreshing,
+    plots,
+    totalCount,
+    pageSize: LAND_PLOTS_PAGE_SIZE,
+    currentPage,
+    setCurrentPage,
+    totalStats: stats,
     searchTerm,
     setSearchTerm,
     handleSave,

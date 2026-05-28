@@ -5,6 +5,7 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import { useBankInvoiceData } from '../hooks/useBankInvoiceData'
 import InvoicePreview from '../../Invoices/InvoicePreview'
 import type { BankInvoiceFormModalProps, BankInvoiceFormData, CalculatedTotals } from '../bankInvoiceTypes'
+import { calculateVatBreakdown } from '../../../../utils/vatCalculations'
 import { Alert, Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { createBankInvoice } from '../../Invoices/services/invoiceService'
 import { checkDuplicateInvoiceNumber, isInvoiceNumberDuplicateError } from '../../Invoices/services/invoiceValidation'
@@ -59,31 +60,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     setFormData(prev => ({ ...prev, credit_allocation_id: '' }))
   }, [formData.bank_credit_id])
 
-  const calculateTotal = (): CalculatedTotals => {
-    const base1 = formData.base_amount_1 || 0
-    const base2 = formData.base_amount_2 || 0
-    const base3 = formData.base_amount_3 || 0
-    const base4 = formData.base_amount_4 || 0
-
-    const vat1 = base1 * 0.25
-    const vat2 = base2 * 0.13
-    const vat3 = 0
-    const vat4 = base4 * 0.05
-
-    const total = (base1 + vat1) + (base2 + vat2) + base3 + (base4 + vat4)
-
-    return {
-      vat1,
-      vat2,
-      vat3,
-      vat4,
-      subtotal1: base1 + vat1,
-      subtotal2: base2 + vat2,
-      subtotal3: base3,
-      subtotal4: base4 + vat4,
-      total
-    }
-  }
+  const calculateTotal = (): CalculatedTotals => calculateVatBreakdown(
+    formData.base_amount_1,
+    formData.base_amount_2,
+    formData.base_amount_3,
+    formData.base_amount_4,
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

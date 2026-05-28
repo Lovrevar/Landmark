@@ -13,6 +13,12 @@ html.dark body {
   background-color: #111827; /* gray-900 */
 }
 
+/* Tell the browser which theme to use when painting native form controls
+   (date/time picker icon + pop-up, autofill, etc.). Without this the
+   ::-webkit-calendar-picker-indicator stays near-black in dark mode. */
+html      { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
 /* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

@@ -49,6 +49,7 @@ export interface SupplierSummary {
   total_paid_total: number
   total_remaining: number
   total_invoices: number
+  project_names: string[]
   contracts: Contract[]
   invoices: Invoice[]
 }

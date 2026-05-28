@@ -34,7 +34,12 @@ const ENTITY_FETCH_LIMIT = 5000
 // ---------------------------------------------------------------------------
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  // Supabase Storage rejects keys containing ".." (treated as path traversal),
+  // which trips on Croatian company suffixes like "d.o.o." + ".pdf" extension.
+  return name
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^\.+|\.+(?=\.[^.]*$|$)/g, '')
 }
 
 // Legacy rows migrated from `subcontractor_documents` keep their original
@@ -153,8 +158,26 @@ export async function fetchDocuments(
 
 // One round-trip grouped count for the sidebar tree. NULL category_id rows
 // contribute to `total` and `uncategorizedCount`, but no category node claims them.
-export async function fetchCategoryCounts(): Promise<DocumentCategoryCounts> {
-  const { data, error } = await supabase.rpc('get_document_category_counts')
+//
+// Accepts the same filter object as `fetchDocuments` but ignores `categoryIds` —
+// the sidebar must keep showing how every category bucket would look under the
+// other active filters, otherwise picking a category would zero out the rest.
+export async function fetchCategoryCounts(
+  filters: DocumentFilters = {},
+): Promise<DocumentCategoryCounts> {
+  const fileNameSearch =
+    filters.fileNameSearch && filters.fileNameSearch.trim()
+      ? `%${escapeLike(filters.fileNameSearch.trim())}%`
+      : null
+
+  const { data, error } = await supabase.rpc('get_document_category_counts', {
+    p_project_id: filters.projectId ?? null,
+    p_entity_type: filters.entityType ?? null,
+    p_entity_id: filters.entityId ?? null,
+    p_file_name_search: fileNameSearch,
+    p_uploaded_from: filters.uploadedFrom ?? null,
+    p_uploaded_to: filters.uploadedTo ?? null,
+  })
   if (error) throw error
 
   const byCategoryId = new Map<string, number>()

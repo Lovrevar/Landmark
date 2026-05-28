@@ -1,5 +1,22 @@
 {
   "common": {
+    "contact": "Kontakt",
+    "value": "Vrijednost",
+    "all_projects": "Svi projekti",
+    "view_cards": "Kartice",
+    "view_table": "Tablica",
+    "sort_name": "Naziv (A–Ž)",
+    "sort_remaining": "Preostalo (silazno)",
+    "sort_value": "Vrijednost (silazno)",
+    "sort_paid": "Plaćeno (silazno)",
+    "filter_active": "Aktivni ugovori",
+    "filter_outstanding": "Nepodmireno",
+    "filter_paid": "Podmireno",
+    "filter_no_contracts": "Bez ugovora",
+    "account": "Račun",
+    "language": "Jezik",
+    "light_mode": "Svijetla tema",
+    "dark_mode": "Tamna tema",
     "save": "Spremi",
     "cancel": "Odustani",
     "delete": "Obriši",
@@ -43,6 +60,7 @@
     "import": "Uvoz",
     "filter": "Filtriraj",
     "clear": "Očisti",
+    "clear_filters": "Očisti filtere",
     "select": "Odaberi",
     "select_all": "Odaberi sve",
     "deselect_all": "Odznači sve",
@@ -231,7 +249,9 @@
   },
   "status": {
     "planning": "Planiranje",
-    "active": "Aktivno",
+    "active": "Aktivan",
+    "draft": "Nacrt",
+    "terminated": "Raskinuto",
     "in_progress": "U tijeku",
     "completed": "Završeno",
     "on_hold": "Na čekanju",
@@ -760,6 +780,10 @@
     }
   },
   "suppliers": {
+    "source_label": "Vrsta",
+    "source_site": "Site",
+    "source_retail": "Retail",
+    "invoices_label": "Računi",
     "title": "Dobavljači",
     "subtitle": "Pregled svih dobavljača, ugovora i plaćanja",
     "add": "Dodaj dobavljača",
@@ -1695,6 +1719,13 @@
     "no_contracts": "Nema ugovora",
     "contract_amount": "Iznos ugovora",
     "budget_realized": "Realizirani budžet",
+    "job_description": "Opis posla",
+    "search_subcontractors": "Pretraži podugovaratelje...",
+    "total_contract_value": "Ukupna vrijednost ugovora",
+    "total_realized": "Ukupno realizirano",
+    "total_remaining": "Ukupno preostalo",
+    "contract_count": "Broj ugovora",
+    "no_contracts_match_filters": "Nijedan ugovor ne odgovara odabranim filtrima",
     "contact": "Kontakt",
     "cost": "Trošak",
     "due": "Rok",
@@ -1900,6 +1931,7 @@
   "apartments": {
     "title": "Stanovi",
     "subtitle": "Upravljanje stanovima",
+    "item_label": "stanova",
     "add": "Dodaj stan",
     "bulk_create": "Masovno dodavanje",
     "edit": "Uredi stan",
@@ -2318,6 +2350,10 @@
       }
     },
     "subcontractors": {
+      "active_contracts": "Aktivni ugovori",
+      "contracts_short": "{{count}} ugovora",
+      "active_short": "{{count}} aktivnih",
+      "completed_short": "{{count}} završenih",
       "title": "Podugovaratelji",
       "add": "Dodaj podugovaratelja",
       "edit": "Uredi podugovaratelja",
@@ -2393,6 +2429,7 @@
       "adding": "Dodavanje...",
       "add": "Dodaj podugovaratelja",
       "no_contract_section": "Bez ugovora:",
+      "document_upload_failed": "Podugovaratelj je dodan, ali dokumenti ugovora nisu uspješno učitani. Pokušajte ih ponovno priložiti kroz dokumente podugovaratelja.",
       "errors": {
         "select_category": "Odaberite kategoriju ugovora",
         "select_subcontractor": "Odaberite podugovaratelja",
@@ -4067,6 +4104,7 @@
   "retail_land_plots": {
     "title": "Zemljišta",
     "description": "Upravljanje zemljištima i česticama",
+    "item_label": "zemljišta",
     "new_plot": "Novo zemljište",
     "edit_plot": "Uredi zemljište",
     "details_title": "Detalji zemljišta",
@@ -4241,7 +4279,12 @@
     "completion": "Dovršenost",
     "current": "Trenutno",
     "chart_label": "Proračun",
-    "no_projects": "Nema pronađenih projekata."
+    "no_projects": "Nema pronađenih projekata.",
+    "no_budget_data": "Nema podataka o proračunu za ovaj projekt",
+    "no_budget_data_sub": "Dodajte faze s dodijeljenim proračunom i ugovore za prikaz EVM performansi.",
+    "target_line": "Cilj (1.0)",
+    "warning_line": "Upozorenje (0.9)",
+    "evm_indices_caption": "Ostvarena vrijednost temelji se na dovršenim fazama ugovora."
   },
   "chat": {
     "title": "Chat",

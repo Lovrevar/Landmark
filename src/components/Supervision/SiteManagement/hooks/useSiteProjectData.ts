@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
 import * as siteService from '../services/siteService'
@@ -6,25 +6,29 @@ import * as siteService from '../services/siteService'
 export const useSiteProjectData = () => {
   const [projects, setProjects] = useState<ProjectWithPhases[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
+  const hasLoadedRef = useRef(false)
 
   const fetchProjects = async () => {
-    setLoading(true)
+    if (hasLoadedRef.current) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
     try {
-      const projectsData = await siteService.fetchAllProjects()
-      const phasesData = await siteService.fetchProjectPhases()
-      const subcontractorsWithPhaseData = await siteService.fetchSubcontractorsWithPhases()
-      const allSubcontractorsData = await siteService.fetchAllSubcontractors()
+      const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData] = await Promise.all([
+        siteService.fetchAllProjects(),
+        siteService.fetchProjectPhases(),
+        siteService.fetchSubcontractorsWithPhases(),
+        siteService.fetchAllSubcontractors(),
+      ])
 
       setExistingSubcontractors(allSubcontractorsData)
 
-      const invoiceStatsResults = await Promise.all(
-        subcontractorsWithPhaseData.map(async (sub) => {
-          const stats = await siteService.fetchSubcontractorInvoiceStats(sub.subcontractor_id, sub.id)
-          return { contractId: sub.id, ...stats }
-        })
+      const invoiceStatsMap = await siteService.fetchInvoiceStatsForContracts(
+        subcontractorsWithPhaseData.map(sub => sub.id)
       )
-      const invoiceStatsMap = new Map(invoiceStatsResults.map(stat => [stat.contractId, stat]))
 
       const projectsWithPhases = projectsData.map(project => {
         const projectPhases = phasesData.filter(phase => phase.project_id === project.id)
@@ -70,10 +74,12 @@ export const useSiteProjectData = () => {
       })
 
       setProjects(projectsWithPhases)
+      hasLoadedRef.current = true
     } catch (error) {
       console.error('Error fetching projects:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -81,5 +87,5 @@ export const useSiteProjectData = () => {
     fetchProjects()
   }, [])
 
-  return { projects, loading, existingSubcontractors, fetchProjects }
+  return { projects, loading, refreshing, existingSubcontractors, fetchProjects }
 }

@@ -1,20 +1,29 @@
-import React from 'react'
+import React, { createContext, useContext } from 'react'
+
+// Lets Th/Td pick tighter padding when the table opts into dense mode.
+const DensityContext = createContext(false)
 
 interface TableRootProps {
   children: React.ReactNode
   className?: string
+  dense?: boolean
+  /** Size the table to its content (left-aligned) instead of stretching to fill the
+   *  container. Avoids wide inter-column gaps on sparse tables on large screens. */
+  fitContent?: boolean
 }
 
-function TableRoot({ children, className = '' }: TableRootProps) {
+function TableRoot({ children, className = '', dense = false, fitContent = false }: TableRootProps) {
   // `responsive-table` enables the card-view layout on mobile (see index.css).
   return (
-    <div className={`responsive-table bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-max">
-          {children}
-        </table>
+    <DensityContext.Provider value={dense}>
+      <div className={`responsive-table bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+        <div className="overflow-x-auto">
+          <table className={fitContent ? 'min-w-max' : 'w-full min-w-max'}>
+            {children}
+          </table>
+        </div>
       </div>
-    </div>
+    </DensityContext.Provider>
   )
 }
 
@@ -49,8 +58,10 @@ interface ThProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
 }
 
 function Th({ sortable = false, sticky = false, children, className = '', ...props }: ThProps) {
+  const dense = useContext(DensityContext)
   const classes = [
-    'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider',
+    dense ? 'px-3 py-2' : 'px-4 py-3',
+    'text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider',
     sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 select-none' : '',
     sticky ? 'sticky right-0 bg-gray-50 dark:bg-gray-900' : '',
     className,
@@ -67,8 +78,10 @@ interface TdProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
 }
 
 function Td({ sticky = false, label, children, className = '', ...props }: TdProps) {
+  const dense = useContext(DensityContext)
   const classes = [
-    'px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100',
+    dense ? 'px-3 py-2.5' : 'px-4 py-4',
+    'whitespace-nowrap text-sm text-gray-900 dark:text-gray-100',
     sticky ? 'sticky right-0 bg-white dark:bg-gray-800' : '',
     className,
   ].filter(Boolean).join(' ')

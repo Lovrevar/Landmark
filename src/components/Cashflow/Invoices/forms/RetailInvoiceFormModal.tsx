@@ -11,6 +11,7 @@ import {
   RetailInvoiceFormData,
   VatCalculation
 } from '../retailInvoiceTypes'
+import { calculateVatBreakdown } from '../../../../utils/vatCalculations'
 
 export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   onClose,
@@ -159,29 +160,13 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   }, [formData.retail_contract_id])
 
   const calculateVatAndTotal = (): VatCalculation => {
-    const base1 = formData.base_amount_1 || 0
-    const base2 = formData.base_amount_2 || 0
-    const base3 = formData.base_amount_3 || 0
-    const base4 = formData.base_amount_4 || 0
-
-    const vat1 = base1 * 0.25
-    const vat2 = base2 * 0.13
-    const vat3 = 0
-    const vat4 = base4 * 0.05
-
-    const totalAmount = (base1 + vat1) + (base2 + vat2) + base3 + (base4 + vat4)
-
-    return {
-      vat1,
-      vat2,
-      vat3,
-      vat4,
-      subtotal1: base1 + vat1,
-      subtotal2: base2 + vat2,
-      subtotal3: base3,
-      subtotal4: base4 + vat4,
-      totalAmount
-    }
+    const { total, ...rest } = calculateVatBreakdown(
+      formData.base_amount_1,
+      formData.base_amount_2,
+      formData.base_amount_3,
+      formData.base_amount_4,
+    )
+    return { ...rest, totalAmount: total }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

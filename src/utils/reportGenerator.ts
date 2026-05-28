@@ -3,6 +3,7 @@ import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { Project, Task, Subcontractor, Invoice, Apartment } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import { loadUnicodeFont } from './pdfFont'
+import { yieldToUI } from './yieldToUI'
 
 type ProjectForReport = Project & {
   total_spent?: number
@@ -191,7 +192,8 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
   yPosition += 60
 
   // Project Details
-  for (const project of projects) {
+  for (let projIdx = 0; projIdx < projects.length; projIdx++) {
+    const project = projects[projIdx]
     checkPageBreak(80)
     
     // Project header
@@ -314,6 +316,8 @@ export const generateDirectorReport = async (projects: ProjectWithStats[]) => {
     pdf.setDrawColor(229, 231, 235)
     pdf.line(margin, yPosition, pageWidth - margin, yPosition)
     yPosition += 10
+
+    if ((projIdx + 1) % 25 === 0) await yieldToUI()
   }
 
   // Footer
@@ -952,7 +956,8 @@ export const generateComprehensiveExecutiveReport = async () => {
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(10)
 
-    projects.forEach(project => {
+    for (let projIdx = 0; projIdx < projects.length; projIdx++) {
+      const project = projects[projIdx]
       checkPageBreak(50)
 
       pdf.setFillColor(230, 230, 230)
@@ -1028,7 +1033,9 @@ export const generateComprehensiveExecutiveReport = async () => {
       pdf.setDrawColor(200, 200, 200)
       pdf.line(margin, yPosition, pageWidth - margin, yPosition)
       yPosition += 8
-    })
+
+      if ((projIdx + 1) % 25 === 0) await yieldToUI()
+    }
 
     checkPageBreak(60)
     pdf.setFillColor(248, 250, 252)

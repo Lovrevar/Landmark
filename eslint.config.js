@@ -34,5 +34,35 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'off',
       'no-empty-pattern': 'off',
     },
+  },
+  {
+    // Enforce the documented architecture: UI → Hook → Service → Supabase.
+    // Hooks should orchestrate state and call services; services own the DB
+    // queries (and the logActivity calls that go with them).
+    files: ['src/components/**/hooks/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "ImportDeclaration[source.value=/lib\\u002Fsupabase$/] ImportSpecifier[imported.name='supabase']",
+          message: 'Hooks must call services, not supabase directly. Move queries/mutations to a services/ file and import the function from there. See CLAUDE.md "Architecture Pattern".',
+        },
+      ],
+    },
+  },
+  {
+    // Realtime/notification hooks legitimately need supabase.channel() and
+    // .removeChannel(); there is no analogous service layer for subscriptions.
+    files: [
+      'src/components/Tasks/hooks/useTasksRealtime.ts',
+      'src/components/Chat/hooks/useChat.ts',
+      'src/components/Chat/hooks/useChatNotifications.ts',
+      'src/components/Calendar/hooks/useTasksInRange.ts',
+      'src/components/Calendar/hooks/useEventsInRange.ts',
+      'src/components/Calendar/hooks/useCalendarReminderToasts.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
   }
 );

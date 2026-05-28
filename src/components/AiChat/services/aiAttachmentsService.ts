@@ -218,3 +218,36 @@ export async function getAiAttachmentSignedUrl(
   }
   return data.signedUrl
 }
+
+// Issue a short-lived signed URL for a system-stored document (the ones
+// surfaced by the `get_document_download_link` AI tool). Bucket selection
+// mirrors documentService.bucketForSource: legacy_subcontractor rows live
+// in the old `contract-documents` bucket; everything else in `documents`.
+// We re-implement the rule here so AiChat has no dependency on the
+// Documents module.
+const SERVER_DOCUMENTS_BUCKET = 'documents'
+const SERVER_DOCUMENTS_LEGACY_BUCKET = 'contract-documents'
+
+export type ServerDocumentSourceKind =
+  | 'app_upload'
+  | 'legacy_subcontractor'
+  | 'accounting_sync'
+  | 'filesystem_scan'
+
+export async function getServerDocumentSignedUrl(
+  filePath: string,
+  source: ServerDocumentSourceKind,
+  ttl: number = SIGNED_URL_TTL_SECONDS,
+): Promise<string | null> {
+  const bucket = source === 'legacy_subcontractor'
+    ? SERVER_DOCUMENTS_LEGACY_BUCKET
+    : SERVER_DOCUMENTS_BUCKET
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(filePath, ttl)
+  if (error || !data?.signedUrl) {
+    console.warn('[aiAttachmentsService] server document signed URL failed:', filePath, error)
+    return null
+  }
+  return data.signedUrl
+}

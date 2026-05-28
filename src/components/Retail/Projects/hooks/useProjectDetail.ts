@@ -14,13 +14,12 @@ export function useProjectDetail(projectId: string) {
       if (data) {
         setProject(data)
 
+        const phaseIds = data.phases.map(p => p.id)
+        const contractsByPhase = await retailProjectService.fetchContractsByPhases(phaseIds)
         const map: Record<string, RetailContract[]> = {}
-        await Promise.all(
-          data.phases.map(async (phase) => {
-            const contracts = await retailProjectService.fetchContractsByPhase(phase.id)
-            map[phase.id] = contracts
-          })
-        )
+        for (const [phaseId, contracts] of contractsByPhase) {
+          map[phaseId] = contracts
+        }
         setContractsMap(map)
       }
     } catch (error) {

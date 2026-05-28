@@ -92,7 +92,7 @@ const ProjectDetails: React.FC = () => {
     return { status: t('status.in_progress'), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700' }
   }
 
-  if (loading) return <LoadingSpinner message={t('general_projects.loading_details')} />
+  if (loading && !project) return <LoadingSpinner message={t('general_projects.loading_details')} />
   if (!project) return <div className="text-center py-12">{t('general_projects.not_found')}</div>
 
   const milestoneStats = {

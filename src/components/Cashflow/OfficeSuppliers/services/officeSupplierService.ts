@@ -10,29 +10,37 @@ export const fetchSuppliersWithStats = async (): Promise<OfficeSupplierWithStats
 
   if (suppliersError) throw suppliersError
 
-  const suppliersWithStats = await Promise.all(
-    (suppliersData || []).map(async (supplier) => {
-      const { data: invoicesData } = await supabase
-        .from('accounting_invoices')
-        .select('base_amount, total_amount, paid_amount, remaining_amount')
-        .eq('office_supplier_id', supplier.id)
+  const suppliers = suppliersData || []
+  if (suppliers.length === 0) return []
 
-      const invoices = invoicesData || []
-      const total_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.base_amount || 0), 0)
-      const total_amount_with_vat = invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0)
-      const paid_amount = invoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+  const supplierIds = suppliers.map(s => s.id)
+  const { data: invoicesData } = await supabase
+    .from('accounting_invoices')
+    .select('office_supplier_id, base_amount, total_amount, paid_amount, remaining_amount')
+    .in('office_supplier_id', supplierIds)
 
-      return {
-        ...supplier,
-        total_invoices: invoices.length,
-        total_amount,
-        paid_amount,
-        remaining_amount: total_amount_with_vat - paid_amount
-      }
-    })
-  )
+  const statsBySupplier = new Map<string, { count: number; base: number; total: number; paid: number }>()
+  for (const id of supplierIds) statsBySupplier.set(id, { count: 0, base: 0, total: 0, paid: 0 })
 
-  return suppliersWithStats
+  for (const inv of invoicesData || []) {
+    const stats = statsBySupplier.get(inv.office_supplier_id)
+    if (!stats) continue
+    stats.count += 1
+    stats.base += parseFloat(inv.base_amount || 0)
+    stats.total += parseFloat(inv.total_amount || 0)
+    stats.paid += parseFloat(inv.paid_amount || 0)
+  }
+
+  return suppliers.map(supplier => {
+    const stats = statsBySupplier.get(supplier.id) || { count: 0, base: 0, total: 0, paid: 0 }
+    return {
+      ...supplier,
+      total_invoices: stats.count,
+      total_amount: stats.base,
+      paid_amount: stats.paid,
+      remaining_amount: stats.total - stats.paid
+    }
+  })
 }
 
 export const createSupplier = async (formData: OfficeSupplierFormData): Promise<void> => {

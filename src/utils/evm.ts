@@ -12,6 +12,32 @@ export interface EVMMetrics {
   SV: number
 }
 
+export interface MilestoneProgress {
+  contract_id: string
+  percentage: number
+  status: 'pending' | 'completed' | 'paid'
+}
+
+// Physical % complete of a single contract, derived from the share of its
+// milestones whose work is done (completed or paid). This is independent of
+// money spent, which is what makes CPI/SPI meaningful. Falls back to the
+// financial proxy (realized / committed) when a contract has no milestones.
+function contractPhysicalPct(
+  contractId: string,
+  contractAmount: number,
+  budgetRealized: number,
+  milestonesByContract: Map<string, MilestoneProgress[]>
+): number {
+  const milestones = milestonesByContract.get(contractId)
+  if (milestones && milestones.length > 0) {
+    const done = milestones
+      .filter(m => m.status === 'completed' || m.status === 'paid')
+      .reduce((sum, m) => sum + Number(m.percentage || 0), 0)
+    return Math.min(100, Math.max(0, done))
+  }
+  return contractAmount > 0 ? Math.min(100, (budgetRealized / contractAmount) * 100) : 0
+}
+
 export function calculatePhaseEVM(
   plannedBudget: number,
   physicalCompletionPct: number,
@@ -43,18 +69,31 @@ export function calculatePhaseEVM(
 
 export function calculateProjectEVM(
   phases: Phase[],
-  contracts: ContractWithDetails[]
+  contracts: ContractWithDetails[],
+  milestones: MilestoneProgress[] = []
 ): EVMMetrics {
   let totalPV = 0, totalEV = 0, totalAC = 0, totalBudget = 0
+
+  const milestonesByContract = new Map<string, MilestoneProgress[]>()
+  milestones.forEach(m => {
+    const list = milestonesByContract.get(m.contract_id)
+    if (list) list.push(m)
+    else milestonesByContract.set(m.contract_id, [m])
+  })
 
   phases.forEach(phase => {
     const phaseContracts = contracts.filter(c => c.phase?.phase_name === phase.phase_name)
     const phaseCommitted = phaseContracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
     const phaseAC = phaseContracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
-    // Derive physical completion from financial progress (budget_realized / contract_amount)
-    const physicalCompletionPct = phaseCommitted > 0
-      ? Math.min(100, (phaseAC / phaseCommitted) * 100)
-      : 0
+    // Physical completion = contract-value-weighted average of each contract's
+    // milestone-based physical progress. Independent of money spent (see
+    // contractPhysicalPct), so EV no longer collapses onto AC.
+    const weightedPhysical = phaseContracts.reduce((sum, c) => {
+      const amount = Number(c.contract_amount || 0)
+      const pct = contractPhysicalPct(c.id, amount, Number(c.budget_realized || 0), milestonesByContract)
+      return sum + amount * pct
+    }, 0)
+    const physicalCompletionPct = phaseCommitted > 0 ? weightedPhysical / phaseCommitted : 0
 
     if (phase.start_date && phase.end_date) {
       const phaseMetrics = calculatePhaseEVM(

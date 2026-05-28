@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog, Pagination } from '../../ui'
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 import { useToast } from '../../../contexts/ToastContext'
@@ -35,7 +35,7 @@ const emptyForm = (): FormState => ({
 const RetailLandPlots: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { loading, filteredPlots, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails } = useLandPlots()
+  const { loading, plots, totalCount, pageSize, currentPage, setCurrentPage, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails } = useLandPlots()
 
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -126,7 +126,7 @@ const RetailLandPlots: React.FC = () => {
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setFormData(prev => ({ ...prev, [key]: e.target.value }))
 
-  if (loading) return <LoadingSpinner message={t('common.loading')} />
+  if (loading && plots.length === 0) return <LoadingSpinner message={t('common.loading')} />
 
   return (
     <div className="space-y-6">
@@ -152,7 +152,7 @@ const RetailLandPlots: React.FC = () => {
         />
       </div>
 
-      {filteredPlots.length === 0 ? (
+      {plots.length === 0 ? (
         <EmptyState
           icon={MapPin}
           title={searchTerm ? t('common.no_results') : t('retail_land_plots.no_plots')}
@@ -173,7 +173,7 @@ const RetailLandPlots: React.FC = () => {
             </Table.Tr>
           </Table.Head>
           <Table.Body>
-            {filteredPlots.map((plot) => (
+            {plots.map((plot) => (
               <Table.Tr key={plot.id}>
                 <Table.Td label={t('retail_land_plots.table.owner')} className="font-medium text-gray-900 dark:text-white">{plot.owner_first_name} {plot.owner_last_name}</Table.Td>
                 <Table.Td label={t('retail_land_plots.table.plot')}>{plot.plot_number}</Table.Td>
@@ -210,6 +210,16 @@ const RetailLandPlots: React.FC = () => {
             ))}
           </Table.Body>
         </Table>
+      )}
+
+      {plots.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalCount={totalCount}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel={t('retail_land_plots.item_label')}
+        />
       )}
 
       <Modal show={showFormModal} onClose={closeFormModal}>

@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { yieldToUI } from '../../../utils/yieldToUI'
 import type { ProjectSalesReport, CustomerReport } from '../types'
 
 export async function generateSalesReportPDF(
@@ -143,7 +144,8 @@ export async function generateSalesReportPDF(
     pdf.setFontSize(9)
     pdf.setFont('helvetica', 'normal')
 
-    projectReport.apartments.forEach((apt) => {
+    for (let i = 0; i < projectReport.apartments.length; i++) {
+      const apt = projectReport.apartments[i]
       checkPageBreak(8)
       const statusColor = apt.status === 'Sold' ? [34, 197, 94] : apt.status === 'Reserved' ? [245, 158, 11] : [59, 130, 246]
 
@@ -161,7 +163,9 @@ export async function generateSalesReportPDF(
         pdf.text(`(${apt.buyer_name})`, margin + 145, yPosition)
       }
       yPosition += 8
-    })
+
+      if ((i + 1) % 25 === 0) await yieldToUI()
+    }
 
   } else if (reportType === 'customer' && customerReport) {
     pdf.setFillColor(37, 99, 235)

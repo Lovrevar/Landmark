@@ -74,6 +74,22 @@ export async function deleteSession(sessionId: string): Promise<void> {
   if (error) throw error
 }
 
+// Fire-and-forget cancel beacon. Returns a promise that the caller is expected
+// to ignore (the edge function compares this beacon against its own request-
+// start timestamp; a slightly stale write still works as long as it lands
+// within the loop's polling window).
+export function sendCancelBeacon(sessionId: string): void {
+  void supabase
+    .from('ai_sessions')
+    .update({ cancel_requested_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .then(({ error }) => {
+      if (error) {
+        console.error('[aiChatService] cancel beacon write failed:', error)
+      }
+    })
+}
+
 // Body shape for an attachment included alongside the user turn. Matches the
 // server-side AttachmentInput in supabase/functions/ai-chat/index.ts; keep
 // these in sync.
