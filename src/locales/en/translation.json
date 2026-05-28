@@ -1,5 +1,18 @@
 {
   "common": {
+    "contact": "Contact",
+    "value": "Value",
+    "all_projects": "All projects",
+    "view_cards": "Cards",
+    "view_table": "Table",
+    "sort_name": "Name (A–Z)",
+    "sort_remaining": "Remaining (high to low)",
+    "sort_value": "Value (high to low)",
+    "sort_paid": "Paid (high to low)",
+    "filter_active": "Active contracts",
+    "filter_outstanding": "Outstanding",
+    "filter_paid": "Fully paid",
+    "filter_no_contracts": "No contracts",
     "account": "Account",
     "language": "Language",
     "light_mode": "Light theme",
@@ -764,6 +777,10 @@
     }
   },
   "suppliers": {
+    "source_label": "Source",
+    "source_site": "Site",
+    "source_retail": "Retail",
+    "invoices_label": "Invoices",
     "title": "Suppliers",
     "subtitle": "Overview of all suppliers, contracts and payments",
     "add": "Add Supplier",
@@ -1900,6 +1917,7 @@
   "apartments": {
     "title": "Apartments",
     "subtitle": "Manage apartments",
+    "item_label": "apartments",
     "add": "Add Apartment",
     "bulk_create": "Bulk Create",
     "edit": "Edit Apartment",
@@ -2318,6 +2336,10 @@
       }
     },
     "subcontractors": {
+      "active_contracts": "Active contracts",
+      "contracts_short": "{{count}} contracts",
+      "active_short": "{{count}} active",
+      "completed_short": "{{count}} done",
       "title": "Subcontractors",
       "add": "Add Subcontractor",
       "edit": "Edit Subcontractor",
@@ -4068,6 +4090,7 @@
   "retail_land_plots": {
     "title": "Land Plots",
     "description": "Manage land plots and parcels",
+    "item_label": "land plots",
     "new_plot": "New Land Plot",
     "edit_plot": "Edit Land Plot",
     "details_title": "Land Plot Details",

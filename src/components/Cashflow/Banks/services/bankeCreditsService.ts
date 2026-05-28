@@ -98,52 +98,62 @@ async function fetchDisbursedAmounts(creditIds: string[]): Promise<Map<string, n
   return map
 }
 
-async function fetchAllocationsForCredit(creditId: string): Promise<BankeCreditAllocation[]> {
+async function fetchAllocationsByCredits(creditIds: string[]): Promise<Map<string, BankeCreditAllocation[]>> {
+  const result = new Map<string, BankeCreditAllocation[]>()
+  for (const id of creditIds) result.set(id, [])
+  if (creditIds.length === 0) return result
+
   const { data, error } = await supabase
     .from('credit_allocations')
     .select(`*, project:projects(id, name)`)
-    .eq('credit_id', creditId)
+    .in('credit_id', creditIds)
     .order('created_at', { ascending: false })
 
   if (error) throw error
+  const allocations = data || []
+  if (allocations.length === 0) return result
 
-  return Promise.all(
-    (data || []).map(async (allocation) => {
-      if (allocation.allocation_type === 'refinancing' && allocation.refinancing_entity_id) {
-        if (allocation.refinancing_entity_type === 'company') {
-          const { data: company } = await supabase
-            .from('accounting_companies')
-            .select('id, name')
-            .eq('id', allocation.refinancing_entity_id)
-            .maybeSingle()
-          return { ...allocation, refinancing_company: company }
-        } else if (allocation.refinancing_entity_type === 'bank') {
-          const { data: bank } = await supabase
-            .from('banks')
-            .select('id, name')
-            .eq('id', allocation.refinancing_entity_id)
-            .maybeSingle()
-          return { ...allocation, refinancing_bank: bank }
-        }
+  const refinancing = allocations.filter(a => a.allocation_type === 'refinancing' && a.refinancing_entity_id)
+  const companyIds = refinancing.filter(a => a.refinancing_entity_type === 'company').map(a => a.refinancing_entity_id as string)
+  const bankIds = refinancing.filter(a => a.refinancing_entity_type === 'bank').map(a => a.refinancing_entity_id as string)
+
+  const [companiesRes, banksRes] = await Promise.all([
+    companyIds.length > 0
+      ? supabase.from('accounting_companies').select('id, name').in('id', companyIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    bankIds.length > 0
+      ? supabase.from('banks').select('id, name').in('id', bankIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ])
+
+  const companyById = new Map((companiesRes.data || []).map(c => [c.id, c]))
+  const bankById = new Map((banksRes.data || []).map(b => [b.id, b]))
+
+  for (const allocation of allocations) {
+    let enriched = allocation
+    if (allocation.allocation_type === 'refinancing' && allocation.refinancing_entity_id) {
+      if (allocation.refinancing_entity_type === 'company') {
+        enriched = { ...allocation, refinancing_company: companyById.get(allocation.refinancing_entity_id) || null }
+      } else if (allocation.refinancing_entity_type === 'bank') {
+        enriched = { ...allocation, refinancing_bank: bankById.get(allocation.refinancing_entity_id) || null }
       }
-      return allocation
-    })
-  )
+    }
+    const arr = result.get(allocation.credit_id) || []
+    arr.push(enriched as BankeCreditAllocation)
+    result.set(allocation.credit_id, arr)
+  }
+
+  return result
 }
 
 export async function fetchBankeCreditsData(): Promise<BankeCreditsData> {
   const [banks, credits] = await Promise.all([fetchBanks(), fetchCredits()])
 
   const creditIds = credits.map((c) => c.id)
-  const [allocationsPerCredit, disbursedAmounts] = await Promise.all([
-    Promise.all(credits.map((c) => fetchAllocationsForCredit(c.id))),
+  const [allocations, disbursedAmounts] = await Promise.all([
+    fetchAllocationsByCredits(creditIds),
     fetchDisbursedAmounts(creditIds),
   ])
-
-  const allocations = new Map<string, BankeCreditAllocation[]>()
-  credits.forEach((credit, i) => {
-    allocations.set(credit.id, allocationsPerCredit[i])
-  })
 
   return { banks, credits, allocations, disbursedAmounts }
 }

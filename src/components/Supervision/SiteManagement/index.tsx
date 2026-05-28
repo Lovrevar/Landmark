@@ -24,6 +24,7 @@ const SiteManagement: React.FC = () => {
   const {
     projects,
     loading,
+    refreshing,
     existingSubcontractors,
     fetchProjects,
     createProjectPhases,
@@ -250,7 +251,7 @@ const SiteManagement: React.FC = () => {
     ? projects.filter(p => accessibleProjectIds.includes(p.id))
     : projects
 
-  if (loading) {
+  if (loading && projects.length === 0) {
     return <LoadingSpinner message="Loading site management..." />
   }
 
@@ -470,7 +471,7 @@ const SiteManagement: React.FC = () => {
       projects={filteredProjects}
       onSelectProject={setSelectedProject}
       onRefresh={fetchProjects}
-      isRefreshing={loading}
+      isRefreshing={refreshing}
       emptyStateVariant={isSupervisionRole(user) ? 'no_assignments' : 'no_projects'}
     />
   )

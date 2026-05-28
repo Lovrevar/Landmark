@@ -35,26 +35,33 @@ export async function fetchAllocationsForCredit(creditId: string): Promise<Credi
 
   if (error) throw error
 
-  const enriched = await Promise.all((data || []).map(async (allocation) => {
+  const allocations = data || []
+  const refinancing = allocations.filter(a => a.allocation_type === 'refinancing' && a.refinancing_entity_id)
+  const companyIds = refinancing.filter(a => a.refinancing_entity_type === 'company').map(a => a.refinancing_entity_id as string)
+  const bankIds = refinancing.filter(a => a.refinancing_entity_type === 'bank').map(a => a.refinancing_entity_id as string)
+
+  const [companiesRes, banksRes] = await Promise.all([
+    companyIds.length > 0
+      ? supabase.from('accounting_companies').select('id, name').in('id', companyIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    bankIds.length > 0
+      ? supabase.from('banks').select('id, name').in('id', bankIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ])
+
+  const companyById = new Map((companiesRes.data || []).map(c => [c.id, c]))
+  const bankById = new Map((banksRes.data || []).map(b => [b.id, b]))
+
+  const enriched = allocations.map(allocation => {
     if (allocation.allocation_type === 'refinancing' && allocation.refinancing_entity_id) {
       if (allocation.refinancing_entity_type === 'company') {
-        const { data: company } = await supabase
-          .from('accounting_companies')
-          .select('id, name')
-          .eq('id', allocation.refinancing_entity_id)
-          .maybeSingle()
-        return { ...allocation, refinancing_company: company }
+        return { ...allocation, refinancing_company: companyById.get(allocation.refinancing_entity_id) || null }
       } else if (allocation.refinancing_entity_type === 'bank') {
-        const { data: bank } = await supabase
-          .from('banks')
-          .select('id, name')
-          .eq('id', allocation.refinancing_entity_id)
-          .maybeSingle()
-        return { ...allocation, refinancing_bank: bank }
+        return { ...allocation, refinancing_bank: bankById.get(allocation.refinancing_entity_id) || null }
       }
     }
     return allocation
-  }))
+  })
 
   return enriched as CreditAllocation[]
 }

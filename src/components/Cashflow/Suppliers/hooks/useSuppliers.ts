@@ -8,8 +8,6 @@ export const useSuppliers = () => {
   const toast = useToast()
   const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
@@ -27,8 +25,6 @@ export const useSuppliers = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [loadingProjects, setLoadingProjects] = useState(false)
-
-  const itemsPerPage = 50
 
   useEffect(() => {
     fetchData()
@@ -185,27 +181,9 @@ export const useSuppliers = () => {
     setShowLinkModal(false)
   }
 
-  const filteredSuppliers = suppliers.filter(supplier =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.contact.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedSuppliers = filteredSuppliers.slice(startIndex, endIndex)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm])
-
   return {
     suppliers,
     loading,
-    searchTerm,
-    setSearchTerm,
-    currentPage,
-    setCurrentPage,
     showAddModal,
     showDetailsModal,
     selectedSupplier,
@@ -218,12 +196,6 @@ export const useSuppliers = () => {
     projects,
     phases,
     loadingProjects,
-    itemsPerPage,
-    filteredSuppliers,
-    paginatedSuppliers,
-    totalPages,
-    startIndex,
-    endIndex,
     fetchData,
     handleOpenAddModal,
     handleCloseAddModal,

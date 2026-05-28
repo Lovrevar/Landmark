@@ -2,60 +2,116 @@ import { supabase } from '../../../lib/supabase'
 import { format, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns'
 import type { WorkLog, SubcontractorStatus, WeeklyStats } from '../types/supervisionTypes'
 
-export async function fetchWeekLogs(): Promise<WorkLog[]> {
+interface ContractStatus {
+  id: string
+  subcontractor_id: string
+  name: string
+  deadline: string | undefined
+  progress: number
+  cost: number
+  budget_realized: number
+  phase_id: string | undefined
+  completed_at: string | undefined
+  project_name: string
+}
+
+interface RecentLog {
+  id: string
+  date: string
+}
+
+export interface SupervisionDashboardData {
+  weekLogs: WorkLog[]
+  subcontractorStatus: SubcontractorStatus[]
+  stats: WeeklyStats
+}
+
+export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardData> {
   const today = new Date()
   const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
   const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+  const sevenDaysAgo = format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
-  const { data: workLogs, error } = await supabase
-    .from('work_logs')
-    .select(`
-      *,
-      subcontractors!work_logs_subcontractor_id_fkey (name),
-      contracts!work_logs_contract_id_fkey (contract_number, job_description)
-    `)
-    .gte('date', weekStart)
-    .lte('date', weekEnd)
-    .order('created_at', { ascending: false })
+  const [
+    { data: weekLogsData, error: weekLogsError },
+    { data: contractsData, error: contractsError },
+    { data: invoicesData, error: invoicesError },
+    { data: recentLogsData, error: recentLogsError }
+  ] = await Promise.all([
+    supabase
+      .from('work_logs')
+      .select(
+        'id, date, subcontractor_id, work_description, notes, status, color, blocker_details, created_at, subcontractors!work_logs_subcontractor_id_fkey(name), contracts!work_logs_contract_id_fkey(contract_number, job_description)'
+      )
+      .gte('date', weekStart)
+      .lte('date', weekEnd)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('contracts')
+      .select(
+        'id, status, end_date, contract_amount, has_contract, budget_realized, phase_id, subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, completed_at), phase:project_phases!contracts_phase_id_fkey(project_id, project:projects!project_phases_project_id_fkey(name))'
+      )
+      .in('status', ['draft', 'active'])
+      .order('end_date', { ascending: true }),
+    supabase
+      .from('accounting_invoices')
+      .select('contract_id, paid_amount')
+      .eq('invoice_category', 'SUBCONTRACTOR'),
+    supabase
+      .from('work_logs')
+      .select('id, date, subcontractor_id')
+      .gte('date', sevenDaysAgo)
+      .order('date', { ascending: false })
+  ])
 
-  if (error) throw error
+  if (weekLogsError) throw weekLogsError
+  if (contractsError) throw contractsError
+  if (invoicesError) throw invoicesError
+  if (recentLogsError) throw recentLogsError
 
-  return (workLogs || []).map(log => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const weekLogs: WorkLog[] = (weekLogsData || []).map((log: any) => ({
     ...log,
     subcontractor_name: log.subcontractors?.name || 'Unknown'
   }))
+
+  const recentLogsBySubcontractor = new Map<string, RecentLog[]>()
+  for (const log of recentLogsData || []) {
+    if (!log.subcontractor_id) continue
+    const bucket = recentLogsBySubcontractor.get(log.subcontractor_id)
+    if (bucket) bucket.push(log)
+    else recentLogsBySubcontractor.set(log.subcontractor_id, [log])
+  }
+
+  const contractsStatus = deriveContractStatus(contractsData || [], invoicesData || [])
+  const subcontractorStatus = deriveSubcontractorStatus(contractsStatus, recentLogsBySubcontractor)
+  const stats = buildWeeklyStats(contractsStatus, subcontractorStatus, weekLogs)
+
+  return { weekLogs, subcontractorStatus, stats }
 }
 
-export async function fetchContractStatusData() {
-  const { data: contractsData, error: subError } = await supabase
-    .from('contracts')
-    .select(`
-      *,
-      subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, completed_at),
-      phase:project_phases!contracts_phase_id_fkey(
-        project_id,
-        project:projects!project_phases_project_id_fkey(name)
-      )
-    `)
-    .in('status', ['draft', 'active'])
-    .order('end_date', { ascending: true })
-
-  if (subError) throw subError
-
-  const { data: invoicesData, error: invoicesError } = await supabase
-    .from('accounting_invoices')
-    .select('contract_id, base_amount, paid_amount, remaining_amount')
-    .eq('invoice_category', 'SUBCONTRACTOR')
-
-  if (invoicesError) throw invoicesError
-
+function deriveContractStatus(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (contractsData || []).map((c: any) => {
+  contracts: any[],
+  invoices: Array<{ contract_id: string | null; paid_amount: number | string | null }>
+): ContractStatus[] {
+  const invoicesByContract = new Map<string, typeof invoices>()
+  for (const inv of invoices) {
+    if (!inv.contract_id) continue
+    const bucket = invoicesByContract.get(inv.contract_id)
+    if (bucket) bucket.push(inv)
+    else invoicesByContract.set(inv.contract_id, [inv])
+  }
+
+  return contracts.map(c => {
     const cost = parseFloat(c.contract_amount || 0)
-    const contractInvoices = (invoicesData || []).filter(inv => inv.contract_id === c.id)
+    const contractInvoices = invoicesByContract.get(c.id) || []
     let budgetRealized = 0
     if (contractInvoices.length > 0) {
-      budgetRealized = contractInvoices.reduce((sum, inv) => sum + parseFloat(inv.paid_amount || 0), 0)
+      budgetRealized = contractInvoices.reduce(
+        (sum, inv) => sum + parseFloat(String(inv.paid_amount || 0)),
+        0
+      )
     } else if (c.has_contract && cost > 0) {
       budgetRealized = parseFloat(c.budget_realized || 0)
     }
@@ -76,22 +132,12 @@ export async function fetchContractStatusData() {
   })
 }
 
-export async function fetchSubcontractorStatus(contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; deadline?: string; project_name?: string; cost?: number; budget_realized?: number; phase_id?: string }>): Promise<SubcontractorStatus[]> {
-  const sevenDaysAgo = format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-
-  const recentLogsResults = await Promise.all(
-    contracts.map(sub =>
-      supabase
-        .from('work_logs')
-        .select('id, date')
-        .eq('subcontractor_id', sub.id)
-        .gte('date', sevenDaysAgo)
-        .order('date', { ascending: false })
-    )
-  )
-
-  return contracts.map((sub, i) => {
-    const recentLogs = recentLogsResults[i].data || []
+function deriveSubcontractorStatus(
+  contracts: ContractStatus[],
+  recentLogsBySubcontractor: Map<string, RecentLog[]>
+): SubcontractorStatus[] {
+  return contracts.map(sub => {
+    const recentLogs = recentLogsBySubcontractor.get(sub.subcontractor_id) || []
     const daysUntilDeadline = sub.deadline ? differenceInDays(parseISO(sub.deadline), new Date()) : 999
     const isOverdue = sub.deadline ? daysUntilDeadline < 0 && sub.progress < 100 : false
     const lastActivity = recentLogs.length > 0 ? recentLogs[0].date : null
@@ -112,8 +158,8 @@ export async function fetchSubcontractorStatus(contracts: Array<{ id: string; na
   })
 }
 
-export function buildWeeklyStats(
-  contracts: Array<{ id: string; name: string; progress: number; completed_at?: string; phase_id?: string }>,
+function buildWeeklyStats(
+  contracts: ContractStatus[],
   subcontractorStatus: SubcontractorStatus[],
   weekLogs: WorkLog[]
 ): WeeklyStats {
@@ -121,12 +167,16 @@ export function buildWeeklyStats(
   const completedThisWeek = contracts.filter(sub => {
     if (!sub.completed_at) return false
     const completedDate = parseISO(sub.completed_at)
-    return completedDate >= startOfWeek(today, { weekStartsOn: 1 }) &&
-           completedDate <= endOfWeek(today, { weekStartsOn: 1 })
+    return (
+      completedDate >= startOfWeek(today, { weekStartsOn: 1 }) &&
+      completedDate <= endOfWeek(today, { weekStartsOn: 1 })
+    )
   }).length
 
   const activeCrews = subcontractorStatus.filter(s => s.progress < 100).length
-  const activePhaseIds = new Set(contracts.filter(sub => sub.progress < 100).map(sub => sub.phase_id))
+  const activePhaseIds = new Set(
+    contracts.filter(sub => sub.progress < 100).map(sub => sub.phase_id)
+  )
   const overdueCount = subcontractorStatus.filter(s => s.is_overdue).length
   const criticalDeadlines = subcontractorStatus.filter(
     s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100

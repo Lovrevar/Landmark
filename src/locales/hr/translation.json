@@ -1,5 +1,18 @@
 {
   "common": {
+    "contact": "Kontakt",
+    "value": "Vrijednost",
+    "all_projects": "Svi projekti",
+    "view_cards": "Kartice",
+    "view_table": "Tablica",
+    "sort_name": "Naziv (A–Ž)",
+    "sort_remaining": "Preostalo (silazno)",
+    "sort_value": "Vrijednost (silazno)",
+    "sort_paid": "Plaćeno (silazno)",
+    "filter_active": "Aktivni ugovori",
+    "filter_outstanding": "Nepodmireno",
+    "filter_paid": "Podmireno",
+    "filter_no_contracts": "Bez ugovora",
     "account": "Račun",
     "language": "Jezik",
     "light_mode": "Svijetla tema",
@@ -764,6 +777,10 @@
     }
   },
   "suppliers": {
+    "source_label": "Vrsta",
+    "source_site": "Site",
+    "source_retail": "Retail",
+    "invoices_label": "Računi",
     "title": "Dobavljači",
     "subtitle": "Pregled svih dobavljača, ugovora i plaćanja",
     "add": "Dodaj dobavljača",
@@ -1904,6 +1921,7 @@
   "apartments": {
     "title": "Stanovi",
     "subtitle": "Upravljanje stanovima",
+    "item_label": "stanova",
     "add": "Dodaj stan",
     "bulk_create": "Masovno dodavanje",
     "edit": "Uredi stan",
@@ -2322,6 +2340,10 @@
       }
     },
     "subcontractors": {
+      "active_contracts": "Aktivni ugovori",
+      "contracts_short": "{{count}} ugovora",
+      "active_short": "{{count}} aktivnih",
+      "completed_short": "{{count}} završenih",
       "title": "Podugovaratelji",
       "add": "Dodaj podugovaratelja",
       "edit": "Uredi podugovaratelja",
@@ -4072,6 +4094,7 @@
   "retail_land_plots": {
     "title": "Zemljišta",
     "description": "Upravljanje zemljištima i česticama",
+    "item_label": "zemljišta",
     "new_plot": "Novo zemljište",
     "edit_plot": "Uredi zemljište",
     "details_title": "Detalji zemljišta",

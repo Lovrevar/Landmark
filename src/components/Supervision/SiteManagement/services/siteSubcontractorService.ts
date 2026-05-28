@@ -252,6 +252,36 @@ export const updateSubcontractorRecord = async (id: string, data: { name: string
   if (error) throw error
 }
 
+export const fetchInvoiceStatsForContracts = async (contractIds: string[]) => {
+  const map = new Map<string, { totalPaid: number; totalOwed: number }>()
+  if (contractIds.length === 0) return map
+
+  const { data, error } = await supabase
+    .from('accounting_invoices')
+    .select('contract_id, total_amount, paid_amount, status')
+    .in('contract_id', contractIds)
+
+  if (error) {
+    console.error('Error fetching batch invoice stats:', error)
+    return map
+  }
+
+  for (const id of contractIds) map.set(id, { totalPaid: 0, totalOwed: 0 })
+
+  for (const inv of data || []) {
+    const cid = inv.contract_id as string | null
+    if (!cid) continue
+    const entry = map.get(cid) ?? { totalPaid: 0, totalOwed: 0 }
+    const paid = parseFloat(inv.paid_amount?.toString() || '0')
+    const total = parseFloat(inv.total_amount?.toString() || '0')
+    entry.totalPaid += paid
+    if (inv.status !== 'PAID') entry.totalOwed += (total - paid)
+    map.set(cid, entry)
+  }
+
+  return map
+}
+
 export const fetchSubcontractorInvoiceStats = async (subcontractorId: string, contractId?: string) => {
   let query = supabase
     .from('accounting_invoices')

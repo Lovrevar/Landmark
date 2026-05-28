@@ -1,22 +1,40 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Users, Plus, DollarSign, Briefcase, Phone, FileText, Edit, Trash2, Eye, TrendingUp, ChevronLeft, ChevronRight, Store, Link2 } from 'lucide-react'
+import { Users, Plus, DollarSign, Briefcase, TrendingUp, Trash2, Eye, Store, Link2, Pencil } from 'lucide-react'
 import RetailSupplierModal from './forms/RetailSupplierModal'
 import SupplierFormModal from './forms/SupplierFormModal'
 import SupplierDetailsModal from './modals/SupplierDetailsModal'
+import SupplierCard from './SupplierCard'
 import { LinkSupplierToProjectModal } from './forms/LinkSupplierToProjectModal'
 import { useSuppliers } from './hooks/useSuppliers'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge, ConfirmDialog } from '../../ui'
+import { useListPreferences } from '../../../hooks/useListPreferences'
+import { formatEuropean } from '../../../utils/formatters'
+import { SupplierSummary } from './types'
+import {
+  PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge,
+  ConfirmDialog, Table, FilterBar, FilterChip, ListViewToggle, SortDropdown,
+} from '../../ui'
+import type { ListViewMode } from '../../ui'
+
+type StatusFilter = 'all' | 'active' | 'paid' | 'outstanding' | 'no_contracts'
+type SourceFilter = 'all' | 'site' | 'retail'
+type SortKey = 'name' | 'remaining' | 'value' | 'paid'
+
+interface ListPrefs {
+  viewMode: ListViewMode
+  sort: SortKey
+  statusFilter: StatusFilter
+  sourceFilter: SourceFilter
+  projectFilter: string
+}
+
+const DEFAULT_PREFS: ListPrefs = { viewMode: 'cards', sort: 'name', statusFilter: 'all', sourceFilter: 'all', projectFilter: '' }
 
 const AccountingSuppliers: React.FC = () => {
   const { t } = useTranslation()
   const {
     suppliers,
     loading,
-    searchTerm,
-    setSearchTerm,
-    currentPage,
-    setCurrentPage,
     showAddModal,
     showDetailsModal,
     selectedSupplier,
@@ -29,11 +47,6 @@ const AccountingSuppliers: React.FC = () => {
     projects,
     phases,
     loadingProjects,
-    filteredSuppliers,
-    paginatedSuppliers,
-    totalPages,
-    startIndex,
-    endIndex,
     fetchData,
     handleOpenAddModal,
     handleCloseAddModal,
@@ -48,6 +61,64 @@ const AccountingSuppliers: React.FC = () => {
     handleOpenLinkModal,
     handleCloseLinkModal
   } = useSuppliers()
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [prefs, setPrefs] = useListPreferences<ListPrefs>('suppliers.prefs', DEFAULT_PREFS)
+
+  const availableProjects = useMemo(() => {
+    const set = new Set<string>()
+    suppliers.forEach(s => s.project_names.forEach(p => set.add(p)))
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [suppliers])
+
+  const matchesStatus = (s: SupplierSummary): boolean => {
+    switch (prefs.statusFilter) {
+      case 'active': return s.total_contracts > 0
+      case 'paid': return s.total_contract_value > 0 && s.total_remaining <= 0
+      case 'outstanding': return s.total_remaining > 0
+      case 'no_contracts': return s.total_contracts === 0
+      default: return true
+    }
+  }
+
+  const filteredSuppliers = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    const list = suppliers.filter(s =>
+      (s.name.toLowerCase().includes(term) || s.contact.toLowerCase().includes(term)) &&
+      matchesStatus(s) &&
+      (prefs.sourceFilter === 'all' || s.source === prefs.sourceFilter) &&
+      (!prefs.projectFilter || s.project_names.includes(prefs.projectFilter))
+    )
+    const sorted = [...list]
+    switch (prefs.sort) {
+      case 'remaining': sorted.sort((a, b) => b.total_remaining - a.total_remaining); break
+      case 'value': sorted.sort((a, b) => b.total_contract_value - a.total_contract_value); break
+      case 'paid': sorted.sort((a, b) => b.total_paid - a.total_paid); break
+      default: sorted.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return sorted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suppliers, searchTerm, prefs.statusFilter, prefs.sourceFilter, prefs.projectFilter, prefs.sort])
+
+  const statusChips: { value: StatusFilter; label: string }[] = [
+    { value: 'active', label: t('common.filter_active') },
+    { value: 'outstanding', label: t('common.filter_outstanding') },
+    { value: 'paid', label: t('common.filter_paid') },
+    { value: 'no_contracts', label: t('common.filter_no_contracts') },
+  ]
+
+  const sourceChips: { value: SourceFilter; label: string }[] = [
+    { value: 'all', label: t('common.all') },
+    { value: 'site', label: t('suppliers.source_site') },
+    { value: 'retail', label: t('suppliers.source_retail') },
+  ]
+
+  const sortOptions = [
+    { value: 'name' as SortKey, label: t('common.sort_name') },
+    { value: 'remaining' as SortKey, label: t('common.sort_remaining') },
+    { value: 'value' as SortKey, label: t('common.sort_value') },
+    { value: 'paid' as SortKey, label: t('common.sort_paid') },
+  ]
 
   if (loading) {
     return <LoadingSpinner message={t('common.loading')} />
@@ -76,174 +147,128 @@ const AccountingSuppliers: React.FC = () => {
       <StatGrid columns={4}>
         <StatCard label={t('suppliers.stats.total_count')} value={suppliers.length} icon={Users} />
         <StatCard label={t('suppliers.stats.total_contracts')} value={suppliers.reduce((sum, s) => sum + s.total_contracts, 0)} icon={Briefcase} color="gray" />
-        <StatCard label={t('suppliers.stats.total_paid')} value={`€${suppliers.reduce((sum, s) => sum + s.total_paid, 0).toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
-        <StatCard label={t('suppliers.stats.total_remaining')} value={`€${suppliers.reduce((sum, s) => sum + s.total_remaining, 0).toLocaleString('hr-HR')}`} icon={TrendingUp} color="yellow" />
+        <StatCard label={t('suppliers.stats.total_paid')} value={`€${formatEuropean(suppliers.reduce((sum, s) => sum + s.total_paid, 0))}`} icon={DollarSign} color="green" />
+        <StatCard label={t('suppliers.stats.total_remaining')} value={`€${formatEuropean(suppliers.reduce((sum, s) => sum + s.total_remaining, 0))}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-3">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onClear={() => setSearchTerm('')}
           placeholder={t('suppliers.search')}
         />
+        <FilterBar className="justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 mr-2">
+              {sourceChips.map(chip => (
+                <FilterChip
+                  key={chip.value}
+                  size="sm"
+                  active={prefs.sourceFilter === chip.value}
+                  onClick={() => setPrefs({ sourceFilter: chip.value })}
+                >
+                  {chip.label}
+                </FilterChip>
+              ))}
+            </div>
+            {statusChips.map(chip => (
+              <FilterChip
+                key={chip.value}
+                size="sm"
+                active={prefs.statusFilter === chip.value}
+                onClick={() => setPrefs({ statusFilter: prefs.statusFilter === chip.value ? 'all' : chip.value })}
+              >
+                {chip.label}
+              </FilterChip>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label={t('common.project')}
+              value={prefs.projectFilter}
+              onChange={(e) => setPrefs({ projectFilter: e.target.value })}
+              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px]"
+            >
+              <option value="">{t('common.all_projects')}</option>
+              {availableProjects.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <SortDropdown value={prefs.sort} options={sortOptions} onChange={(v) => setPrefs({ sort: v })} />
+            <ListViewToggle
+              value={prefs.viewMode}
+              onChange={(v) => setPrefs({ viewMode: v })}
+              cardsLabel={t('common.view_cards')}
+              tableLabel={t('common.view_table')}
+              size="sm"
+            />
+          </div>
+        </FilterBar>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {filteredSuppliers.length === 0 ? (
+      {filteredSuppliers.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Users}
             title={searchTerm ? t('common.no_results') : t('suppliers.no_suppliers')}
             description={searchTerm ? t('suppliers.no_results_hint') : t('suppliers.no_suppliers_hint')}
           />
-        ) : (
-          <>
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedSuppliers.map((supplier) => (
-                <div
-                  key={supplier.id}
-                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer flex items-center justify-between"
-                  onClick={() => handleViewDetails(supplier)}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{supplier.name}</h3>
-                      <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
-                        {supplier.source === 'retail' ? 'Retail' : 'Site'}
-                      </Badge>
-                      {supplier.supplier_type && (
-                        <Badge variant="gray" size="sm">{supplier.supplier_type}</Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center">
-                        <Phone className="w-4 h-4 mr-1" />
-                        {supplier.contact}
-                      </div>
-                      <div className="flex items-center">
-                        <Briefcase className="w-4 h-4 mr-1" />
-                        {t('suppliers.contracts_count', { count: supplier.total_contracts })}
-                      </div>
-                      <div className="flex items-center">
-                        <FileText className="w-4 h-4 mr-1" />
-                        {t('suppliers.invoices_count', { count: supplier.total_invoices })}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2 text-sm">
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.value_label')}</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">€{supplier.total_contract_value.toLocaleString('hr-HR')}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.paid_label')}</span>
-                        <span className="font-semibold text-green-600">€{supplier.total_paid.toLocaleString('hr-HR')}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">{t('suppliers.remaining_label')}</span>
-                        <span className="font-semibold text-orange-600">€{supplier.total_remaining.toLocaleString('hr-HR')}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
+        </div>
+      ) : prefs.viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredSuppliers.map(supplier => (
+            <SupplierCard
+              key={supplier.id}
+              supplier={supplier}
+              onSelect={() => handleViewDetails(supplier)}
+              onEdit={(e) => { e.stopPropagation(); handleOpenAddModal(supplier) }}
+              onDelete={(e) => { e.stopPropagation(); handleDelete(supplier) }}
+            />
+          ))}
+        </div>
+      ) : (
+        <Table>
+          <Table.Head>
+            <Table.Tr hoverable={false}>
+              <Table.Th>{t('common.name')}</Table.Th>
+              <Table.Th>{t('suppliers.source_label')}</Table.Th>
+              <Table.Th>{t('common.contact')}</Table.Th>
+              <Table.Th>{t('suppliers.stats.total_contracts')}</Table.Th>
+              <Table.Th>{t('suppliers.invoices_label')}</Table.Th>
+              <Table.Th className="text-right">{t('common.value')}</Table.Th>
+              <Table.Th className="text-right">{t('common.total_paid')}</Table.Th>
+              <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
+              <Table.Th sticky className="text-right">{t('common.actions')}</Table.Th>
+            </Table.Tr>
+          </Table.Head>
+          <Table.Body>
+            {filteredSuppliers.map(supplier => (
+              <Table.Tr key={supplier.id} className="cursor-pointer" onClick={() => handleViewDetails(supplier)}>
+                <Table.Td label={t('common.name')} className="font-medium">{supplier.name}</Table.Td>
+                <Table.Td label={t('suppliers.source_label')}>
+                  <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
+                    {supplier.source === 'retail' ? t('suppliers.source_retail') : t('suppliers.source_site')}
+                  </Badge>
+                </Table.Td>
+                <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{supplier.contact || '-'}</Table.Td>
+                <Table.Td label={t('suppliers.stats.total_contracts')}>{supplier.total_contracts}</Table.Td>
+                <Table.Td label={t('suppliers.invoices_label')}>{supplier.total_invoices}</Table.Td>
+                <Table.Td label={t('common.value')} className="text-right font-semibold">€{formatEuropean(supplier.total_contract_value)}</Table.Td>
+                <Table.Td label={t('common.total_paid')} className="text-right text-green-600">€{formatEuropean(supplier.total_paid)}</Table.Td>
+                <Table.Td label={t('common.remaining')} className="text-right text-orange-600">€{formatEuropean(supplier.total_remaining)}</Table.Td>
+                <Table.Td sticky className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="inline-flex items-center gap-1">
                     {supplier.source === 'site' && (
-                      <Button variant="ghost" size="icon-sm" icon={Edit} title="Uredi" onClick={(e) => { e.stopPropagation(); handleOpenAddModal(supplier) }} />
+                      <Button variant="ghost" size="icon-sm" icon={Pencil} title={t('common.edit')} onClick={() => handleOpenAddModal(supplier)} />
                     )}
-                    <Button variant="outline-danger" size="icon-sm" icon={Trash2} title="Obriši" onClick={(e) => { e.stopPropagation(); handleDelete(supplier) }} />
-                    <Eye className="w-5 h-5 text-blue-600 ml-2" />
+                    <Button variant="outline-danger" size="icon-sm" icon={Trash2} title={t('common.delete')} onClick={() => handleDelete(supplier)} />
+                    <Eye className="w-4 h-4 text-blue-600" />
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('common.previous')}
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('common.next')}
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">
-                      {t('suppliers.pagination.shown', { from: startIndex + 1, to: Math.min(endIndex, filteredSuppliers.length), total: filteredSuppliers.length })}
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => {
-                          if (totalPages <= 7) return true
-                          if (page === 1 || page === totalPages) return true
-                          if (page >= currentPage - 1 && page <= currentPage + 1) return true
-                          return false
-                        })
-                        .map((page, index, array) => {
-                          if (index > 0 && page - array[index - 1] > 1) {
-                            return (
-                              <React.Fragment key={`dots-${page}`}>
-                                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200">
-                                  ...
-                                </span>
-                                <button
-                                  onClick={() => setCurrentPage(page)}
-                                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                    currentPage === page
-                                      ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600'
-                                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              </React.Fragment>
-                            )
-                          }
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                currentPage === page
-                                  ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600'
-                                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          )
-                        })}
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
 
       <SupplierFormModal
         showModal={showAddModal}

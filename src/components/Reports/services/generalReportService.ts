@@ -6,38 +6,65 @@ export async function fetchGeneralReportData(
   selectedProject: string,
   dateRange: { start: string; end: string }
 ): Promise<ComprehensiveReport> {
-  const { data: projects } = await supabase.from('projects').select('*')
-  const { data: apartments } = await supabase.from('apartments').select('*')
-  const { data: sales } = await supabase.from('sales').select('sale_price, apartment_id')
-  const { data: customers } = await supabase.from('customers').select('*')
-  const { data: contracts } = await supabase.from('contracts').select('*, contract_types(name)')
-  const { data: subcontractors } = await supabase.from('subcontractors').select('*')
-  const { data: projectPhases } = await supabase.from('project_phases').select('*')
-  const { data: workLogs } = await supabase.from('work_logs').select('*')
-
-  const { data: accountingInvoices } = await supabase.from('accounting_invoices').select('*')
-  const { data: accountingPayments } = await supabase.from('accounting_payments').select('*')
-  const { data: accountingCompanies } = await supabase.from('accounting_companies').select('*')
-  const { data: banks } = await supabase.from('banks').select('*')
-  const { data: companyBankAccounts } = await supabase.from('company_bank_accounts').select('*')
-  const { data: ticCostStructures } = await supabase.from('tic_cost_structures').select('*')
-  const { data: officeSuppliers } = await supabase.from('office_suppliers').select('*')
-  const { data: bankCredits } = await supabase.from('bank_credits').select('*')
-  const { data: companyLoans } = await supabase.from('company_loans').select('*')
-  const { data: creditAllocations } = await supabase.from('credit_allocations').select('*')
-
-  const { data: buildings } = await supabase.from('buildings').select('*')
-  const { data: garages } = await supabase.from('garages').select('*')
-  const { data: repositories } = await supabase.from('repositories').select('*')
-  const { data: subcontractorMilestones } = await supabase.from('subcontractor_milestones').select('*')
-  await supabase.from('contract_types').select('*')
-
-  const { data: retailProjects } = await supabase.from('retail_projects').select('*')
-  const { data: retailContracts } = await supabase.from('retail_contracts').select('*')
-  const { data: retailPhases } = await supabase.from('retail_project_phases').select('*')
-  const { data: retailLandPlots } = await supabase.from('retail_land_plots').select('*')
-  const { data: retailCustomers } = await supabase.from('retail_customers').select('*')
-  const { data: retailSuppliers } = await supabase.from('retail_suppliers').select('*')
+  const [
+    { data: projects },
+    { data: apartments },
+    { data: sales },
+    { data: customers },
+    { data: contracts },
+    { data: subcontractors },
+    { data: projectPhases },
+    { data: workLogs },
+    { data: accountingInvoices },
+    { data: accountingPayments },
+    { data: accountingCompanies },
+    { data: banks },
+    { data: companyBankAccounts },
+    { data: ticCostStructures },
+    { data: officeSuppliers },
+    { data: bankCredits },
+    { data: companyLoans },
+    { data: creditAllocations },
+    { data: buildings },
+    { data: garages },
+    { data: repositories },
+    { data: subcontractorMilestones },
+    { data: retailProjects },
+    { data: retailContracts },
+    { data: retailPhases },
+    { data: retailLandPlots },
+    { data: retailCustomers },
+    { data: retailSuppliers },
+  ] = await Promise.all([
+    supabase.from('projects').select('*'),
+    supabase.from('apartments').select('*'),
+    supabase.from('sales').select('sale_price, apartment_id'),
+    supabase.from('customers').select('*'),
+    supabase.from('contracts').select('*, contract_types(name)'),
+    supabase.from('subcontractors').select('*'),
+    supabase.from('project_phases').select('*'),
+    supabase.from('work_logs').select('*'),
+    supabase.from('accounting_invoices').select('*'),
+    supabase.from('accounting_payments').select('*'),
+    supabase.from('accounting_companies').select('*'),
+    supabase.from('banks').select('*'),
+    supabase.from('company_bank_accounts').select('*'),
+    supabase.from('tic_cost_structures').select('*'),
+    supabase.from('office_suppliers').select('*'),
+    supabase.from('bank_credits').select('*'),
+    supabase.from('company_loans').select('*'),
+    supabase.from('credit_allocations').select('*'),
+    supabase.from('buildings').select('*'),
+    supabase.from('garages').select('*'),
+    supabase.from('repositories').select('*'),
+    supabase.from('subcontractor_milestones').select('*'),
+    supabase.from('retail_projects').select('*'),
+    supabase.from('retail_contracts').select('*'),
+    supabase.from('retail_project_phases').select('*'),
+    supabase.from('retail_land_plots').select('*'),
+    supabase.from('retail_customers').select('*'),
+    supabase.from('retail_suppliers').select('*'),
+  ])
 
   const projectsArray = projects || []
   const apartmentsArray = apartments || []
@@ -89,15 +116,16 @@ export async function fetchGeneralReportData(
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
   const storageIds = apartmentsArray.map(apt => apt.repository_id).filter(Boolean)
 
-  const { data: garagesData } = await supabase
-    .from('garages')
-    .select('id, price')
-    .in('id', garageIds.length > 0 ? garageIds : [''])
-
-  const { data: storagesData } = await supabase
-    .from('repositories')
-    .select('id, price')
-    .in('id', storageIds.length > 0 ? storageIds : [''])
+  const [{ data: garagesData }, { data: storagesData }] = await Promise.all([
+    supabase
+      .from('garages')
+      .select('id, price')
+      .in('id', garageIds.length > 0 ? garageIds : ['']),
+    supabase
+      .from('repositories')
+      .select('id, price')
+      .in('id', storageIds.length > 0 ? storageIds : ['']),
+  ])
 
   const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
   const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))

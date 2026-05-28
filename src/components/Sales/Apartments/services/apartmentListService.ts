@@ -9,10 +9,23 @@ export interface LinkedUnit {
   status: string
 }
 
-export interface ApartmentListData {
-  apartments: ApartmentWithDetails[]
+export interface ApartmentFilterOptions {
   projects: Array<{ id: string; name: string }>
   buildings: Array<{ id: string; name: string; project_id: string }>
+}
+
+export interface ApartmentListParams {
+  page: number
+  pageSize: number
+  searchTerm: string
+  projectId: string
+  buildingId: string
+  status: string
+}
+
+export interface ApartmentListPage {
+  apartments: ApartmentWithDetails[]
+  totalCount: number
   apartmentPaymentTotals: Record<string, number>
   linkedGarages: Record<string, LinkedUnit[]>
   linkedStorages: Record<string, LinkedUnit[]>
@@ -23,35 +36,75 @@ type PaymentRow = { amount: string; invoice?: { apartment_id: string } | null }
 type GarageLink = { apartment_id: string; garage: LinkedUnit | null }
 type StorageLink = { apartment_id: string; repository: LinkedUnit | null }
 
-export async function fetchApartmentListData(): Promise<ApartmentListData> {
-  const { data: apartmentsData, error: apartmentsError } = await supabase
-    .from('apartments')
-    .select('*')
-    .order('number')
-
-  if (apartmentsError) throw apartmentsError
-
-  const [{ data: allProjects }, { data: allBuildings }] = await Promise.all([
+export async function fetchApartmentFilterOptions(): Promise<ApartmentFilterOptions> {
+  const [{ data: projects }, { data: buildings }] = await Promise.all([
     supabase.from('projects').select('id, name').order('name'),
     supabase.from('buildings').select('id, name, project_id').order('name'),
   ])
+  return { projects: projects || [], buildings: buildings || [] }
+}
 
-  const projectIds = [...new Set((apartmentsData || []).map((a: RawApartment) => a.project_id as string))]
+export async function fetchApartmentListPage(params: ApartmentListParams): Promise<ApartmentListPage> {
+  const from = (params.page - 1) * params.pageSize
+  const to = from + params.pageSize - 1
+
+  let query = supabase
+    .from('apartments')
+    .select('*', { count: 'exact' })
+    .order('number')
+    .range(from, to)
+
+  const term = params.searchTerm.trim()
+  if (term) {
+    query = query.or(`number.ilike.%${term}%,buyer_name.ilike.%${term}%`)
+  }
+  if (params.projectId !== 'all') query = query.eq('project_id', params.projectId)
+  if (params.buildingId !== 'all') query = query.eq('building_id', params.buildingId)
+  if (params.status !== 'all') query = query.eq('status', params.status)
+
+  const { data: apartmentsData, error, count } = await query
+  if (error) throw error
+
+  const apartments = apartmentsData || []
+  if (apartments.length === 0) {
+    return {
+      apartments: [],
+      totalCount: count ?? 0,
+      apartmentPaymentTotals: {},
+      linkedGarages: {},
+      linkedStorages: {},
+    }
+  }
+
+  const apartmentIds = apartments.map((a: RawApartment) => a.id as string)
+  const projectIds = [...new Set(apartments.map((a: RawApartment) => a.project_id as string))]
   const buildingIds = [
     ...new Set(
-      (apartmentsData || [])
+      apartments
         .map((a: RawApartment) => a.building_id as string | null)
         .filter((id): id is string => Boolean(id))
     ),
   ]
 
-  const [{ data: projectsData }, { data: buildingsData }, { data: paymentsData }] = await Promise.all([
-    supabase.from('projects').select('id, name').in('id', projectIds),
-    supabase.from('buildings').select('id, name').in('id', buildingIds),
+  const [{ data: projectsData }, { data: buildingsData }, { data: paymentsData }, { data: garageLinks }, { data: repositoryLinks }] = await Promise.all([
+    projectIds.length > 0
+      ? supabase.from('projects').select('id, name').in('id', projectIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
+    buildingIds.length > 0
+      ? supabase.from('buildings').select('id, name').in('id', buildingIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
     supabase
       .from('accounting_payments')
       .select('amount, invoice:accounting_invoices!inner(apartment_id)')
-      .not('invoice.apartment_id', 'is', null),
+      .in('invoice.apartment_id', apartmentIds),
+    supabase
+      .from('apartment_garages')
+      .select('apartment_id, garage:garages(id, number, size_m2, price, status)')
+      .in('apartment_id', apartmentIds),
+    supabase
+      .from('apartment_repositories')
+      .select('apartment_id, repository:repositories(id, number, size_m2, price, status)')
+      .in('apartment_id', apartmentIds),
   ])
 
   const aptPaymentTotals: Record<string, number> = {}
@@ -59,8 +112,7 @@ export async function fetchApartmentListData(): Promise<ApartmentListData> {
     (paymentsData as unknown as PaymentRow[]).forEach((payment) => {
       const apartmentId = payment.invoice?.apartment_id
       if (apartmentId) {
-        if (!aptPaymentTotals[apartmentId]) aptPaymentTotals[apartmentId] = 0
-        aptPaymentTotals[apartmentId] += parseFloat(payment.amount)
+        aptPaymentTotals[apartmentId] = (aptPaymentTotals[apartmentId] || 0) + parseFloat(payment.amount)
       }
     })
   }
@@ -68,36 +120,21 @@ export async function fetchApartmentListData(): Promise<ApartmentListData> {
   const garagesMap: Record<string, LinkedUnit[]> = {}
   const storagesMap: Record<string, LinkedUnit[]> = {}
 
-  if (apartmentsData && apartmentsData.length > 0) {
-    const apartmentIds = apartmentsData.map((a: RawApartment) => a.id as string)
-
-    const [{ data: garageLinks }, { data: repositoryLinks }] = await Promise.all([
-      supabase
-        .from('apartment_garages')
-        .select('apartment_id, garage:garages(id, number, size_m2, price, status)')
-        .in('apartment_id', apartmentIds),
-      supabase
-        .from('apartment_repositories')
-        .select('apartment_id, repository:repositories(id, number, size_m2, price, status)')
-        .in('apartment_id', apartmentIds),
-    ])
-
-    if (garageLinks) {
-      (garageLinks as unknown as GarageLink[]).forEach((link) => {
-        if (!garagesMap[link.apartment_id]) garagesMap[link.apartment_id] = []
-        if (link.garage) garagesMap[link.apartment_id].push(link.garage)
-      })
-    }
-
-    if (repositoryLinks) {
-      (repositoryLinks as unknown as StorageLink[]).forEach((link) => {
-        if (!storagesMap[link.apartment_id]) storagesMap[link.apartment_id] = []
-        if (link.repository) storagesMap[link.apartment_id].push(link.repository)
-      })
-    }
+  if (garageLinks) {
+    (garageLinks as unknown as GarageLink[]).forEach((link) => {
+      if (!garagesMap[link.apartment_id]) garagesMap[link.apartment_id] = []
+      if (link.garage) garagesMap[link.apartment_id].push(link.garage)
+    })
   }
 
-  const apartmentsWithDetails = ((apartmentsData || []).map((apt: RawApartment) => {
+  if (repositoryLinks) {
+    (repositoryLinks as unknown as StorageLink[]).forEach((link) => {
+      if (!storagesMap[link.apartment_id]) storagesMap[link.apartment_id] = []
+      if (link.repository) storagesMap[link.apartment_id].push(link.repository)
+    })
+  }
+
+  const apartmentsWithDetails = (apartments.map((apt: RawApartment) => {
     const project = projectsData?.find(p => p.id === apt.project_id)
     const building = buildingsData?.find(b => b.id === apt.building_id)
     return {
@@ -130,8 +167,7 @@ export async function fetchApartmentListData(): Promise<ApartmentListData> {
 
   return {
     apartments: apartmentsWithDetails,
-    projects: allProjects || [],
-    buildings: allBuildings || [],
+    totalCount: count ?? 0,
     apartmentPaymentTotals: aptPaymentTotals,
     linkedGarages: garagesMap,
     linkedStorages: storagesMap,

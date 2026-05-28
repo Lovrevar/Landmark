@@ -21,59 +21,43 @@ export async function generateProjectReport(
   const project = projects.find(p => p.id === selectedProject)
   if (!project) throw new Error('Project not found')
 
-  const { data: contractsData, error: contractsError } = await supabase
-    .from('contracts')
-    .select('*')
-    .eq('project_id', selectedProject)
+  const [
+    { data: contractsData, error: contractsError },
+    { data: phasesData, error: phasesError },
+    { data: paymentsData, error: paymentsError },
+    { data: subcontractorsData, error: subcontractorsError },
+    { data: workLogsData, error: workLogsError },
+    { data: bankCreditsData, error: bankCreditsError },
+    { data: allocationsData, error: allocationsError },
+  ] = await Promise.all([
+    supabase.from('contracts').select('*').eq('project_id', selectedProject),
+    supabase.from('project_phases').select('*').eq('project_id', selectedProject),
+    supabase
+      .from('subcontractor_payments')
+      .select(`*, contracts!inner(project_id)`)
+      .eq('contracts.project_id', selectedProject),
+    supabase.from('subcontractors').select('*'),
+    supabase
+      .from('work_logs')
+      .select(`
+        *,
+        subcontractors!work_logs_subcontractor_id_fkey (name),
+        contracts!work_logs_contract_id_fkey (contract_number, job_description)
+      `)
+      .eq('project_id', selectedProject)
+      .gte('date', dateRange.start)
+      .lte('date', dateRange.end)
+      .order('date', { ascending: false }),
+    supabase.from('bank_credits').select('*, banks(name)').eq('project_id', selectedProject),
+    supabase.from('credit_allocations').select('*, bank_credits(banks(name))').eq('project_id', selectedProject),
+  ])
 
   if (contractsError) throw contractsError
-
-  const { data: phasesData, error: phasesError } = await supabase
-    .from('project_phases')
-    .select('*')
-    .eq('project_id', selectedProject)
-
   if (phasesError) throw phasesError
-
-  const { data: paymentsData, error: paymentsError } = await supabase
-    .from('subcontractor_payments')
-    .select(`*, contracts!inner(project_id)`)
-    .eq('contracts.project_id', selectedProject)
-
   if (paymentsError) throw paymentsError
-
-  const { data: subcontractorsData, error: subcontractorsError } = await supabase
-    .from('subcontractors')
-    .select('*')
-
   if (subcontractorsError) throw subcontractorsError
-
-  const { data: workLogsData, error: workLogsError } = await supabase
-    .from('work_logs')
-    .select(`
-      *,
-      subcontractors!work_logs_subcontractor_id_fkey (name),
-      contracts!work_logs_contract_id_fkey (contract_number, job_description)
-    `)
-    .eq('project_id', selectedProject)
-    .gte('date', dateRange.start)
-    .lte('date', dateRange.end)
-    .order('date', { ascending: false })
-
   if (workLogsError) throw workLogsError
-
-  const { data: bankCreditsData, error: bankCreditsError } = await supabase
-    .from('bank_credits')
-    .select('*, banks(name)')
-    .eq('project_id', selectedProject)
-
   if (bankCreditsError) throw bankCreditsError
-
-  const { data: allocationsData, error: allocationsError } = await supabase
-    .from('credit_allocations')
-    .select('*, bank_credits(banks(name))')
-    .eq('project_id', selectedProject)
-
   if (allocationsError) throw allocationsError
 
   const contracts = contractsData || []

@@ -10,19 +10,78 @@ export interface LandPlotSaleRow extends Omit<RetailSale, 'customer'> {
   customer?: { name: string } | null
 }
 
-export async function fetchLandPlotsWithProjects(): Promise<LandPlotWithProject[]> {
-  const [plotsRes, projectsRes] = await Promise.all([
-    supabase.from('retail_land_plots').select('*').order('created_at', { ascending: false }),
-    supabase.from('retail_projects').select('id, land_plot_id, name').not('land_plot_id', 'is', null)
-  ])
+export interface PaginatedLandPlotsResult {
+  plots: LandPlotWithProject[]
+  totalCount: number
+}
 
-  if (plotsRes.error) throw plotsRes.error
-  if (projectsRes.error) throw projectsRes.error
+export interface LandPlotStats {
+  total_plots: number
+  total_invested: number
+  total_area: number
+  paid_count: number
+}
 
-  return (plotsRes.data || []).map(plot => ({
-    ...plot,
-    connectedProject: projectsRes.data?.find(p => p.land_plot_id === plot.id) || null
-  }))
+export async function fetchLandPlotsWithProjects(
+  page: number,
+  pageSize: number,
+  searchTerm: string
+): Promise<PaginatedLandPlotsResult> {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  let query = supabase
+    .from('retail_land_plots')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  const term = searchTerm.trim()
+  if (term) {
+    query = query.or(
+      `plot_number.ilike.%${term}%,owner_first_name.ilike.%${term}%,owner_last_name.ilike.%${term}%,location.ilike.%${term}%`
+    )
+  }
+
+  const { data: plots, error, count } = await query
+  if (error) throw error
+
+  const plotList = plots || []
+  if (plotList.length === 0) {
+    return { plots: [], totalCount: count ?? 0 }
+  }
+
+  const plotIds = plotList.map(p => p.id)
+  const { data: projects, error: projectsError } = await supabase
+    .from('retail_projects')
+    .select('id, land_plot_id, name')
+    .in('land_plot_id', plotIds)
+
+  if (projectsError) throw projectsError
+
+  return {
+    plots: plotList.map(plot => ({
+      ...plot,
+      connectedProject: projects?.find(p => p.land_plot_id === plot.id) || null
+    })),
+    totalCount: count ?? 0
+  }
+}
+
+export async function fetchLandPlotStats(): Promise<LandPlotStats> {
+  const { data, error, count } = await supabase
+    .from('retail_land_plots')
+    .select('total_price, purchased_area_m2, payment_status', { count: 'exact' })
+
+  if (error) throw error
+
+  const plots = data || []
+  return {
+    total_plots: count ?? plots.length,
+    total_invested: plots.reduce((sum, p) => sum + (p.total_price || 0), 0),
+    total_area: plots.reduce((sum, p) => sum + (p.purchased_area_m2 || 0), 0),
+    paid_count: plots.filter(p => p.payment_status === 'paid').length,
+  }
 }
 
 export async function fetchLandPlotSales(plotId: string): Promise<LandPlotSaleRow[]> {

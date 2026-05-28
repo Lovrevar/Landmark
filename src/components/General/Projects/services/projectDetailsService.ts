@@ -2,24 +2,49 @@ import { supabase } from '../../../../lib/supabase'
 import type { ProjectWithDetails, Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, ProjectDisplay } from '../types'
 
 export async function fetchProjectDetails(id: string): Promise<ProjectWithDetails> {
-  const { data: projectData, error: projectError } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .single()
-  if (projectError) throw projectError
+  const [
+    { data: projectData, error: projectError },
+    { data: contractsData, error: subError },
+    { data: invoicesData, error: invoicesError },
+    { data: apartmentsData, error: apartmentsError },
+    { data: milestonesData, error: milestonesError },
+    { data: bankCreditsData, error: bankCreditsError },
+    { data: allocationsData, error: allocationsError },
+  ] = await Promise.all([
+    supabase.from('projects').select('*').eq('id', id).single(),
+    supabase
+      .from('contracts')
+      .select(`
+        *,
+        subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
+        phase:project_phases!contracts_phase_id_fkey(phase_name)
+      `)
+      .eq('project_id', id)
+      .in('status', ['draft', 'active'])
+      .order('end_date', { ascending: true }),
+    supabase.from('invoices').select('*').eq('project_id', id).order('due_date', { ascending: true }),
+    supabase
+      .from('apartments')
+      .select('*')
+      .eq('project_id', id)
+      .order('floor', { ascending: true })
+      .order('number', { ascending: true }),
+    supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', id)
+      .order('created_at', { ascending: true }),
+    supabase.from('bank_credits').select('*, banks(name)').eq('project_id', id),
+    supabase.from('credit_allocations').select('*, bank_credits(banks(name))').eq('project_id', id),
+  ])
 
-  const { data: contractsData, error: subError } = await supabase
-    .from('contracts')
-    .select(`
-      *,
-      subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-      phase:project_phases!contracts_phase_id_fkey(phase_name)
-    `)
-    .eq('project_id', id)
-    .in('status', ['draft', 'active'])
-    .order('end_date', { ascending: true })
+  if (projectError) throw projectError
   if (subError) throw subError
+  if (invoicesError) throw invoicesError
+  if (apartmentsError) throw apartmentsError
+  if (milestonesError) throw milestonesError
+  if (bankCreditsError) throw bankCreditsError
+  if (allocationsError) throw allocationsError
 
   type RawContract = {
     id: string
@@ -46,40 +71,6 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
       phase_name: c.phase?.phase_name
     }
   })
-
-  const { data: invoicesData, error: invoicesError } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('project_id', id)
-    .order('due_date', { ascending: true })
-  if (invoicesError) throw invoicesError
-
-  const { data: apartmentsData, error: apartmentsError } = await supabase
-    .from('apartments')
-    .select('*')
-    .eq('project_id', id)
-    .order('floor', { ascending: true })
-    .order('number', { ascending: true })
-  if (apartmentsError) throw apartmentsError
-
-  const { data: milestonesData, error: milestonesError } = await supabase
-    .from('project_milestones')
-    .select('*')
-    .eq('project_id', id)
-    .order('created_at', { ascending: true })
-  if (milestonesError) throw milestonesError
-
-  const { data: bankCreditsData, error: bankCreditsError } = await supabase
-    .from('bank_credits')
-    .select('*, banks(name)')
-    .eq('project_id', id)
-  if (bankCreditsError) throw bankCreditsError
-
-  const { data: allocationsData, error: allocationsError } = await supabase
-    .from('credit_allocations')
-    .select('*, bank_credits(banks(name))')
-    .eq('project_id', id)
-  if (allocationsError) throw allocationsError
 
   const invoices = invoicesData || []
   const apartments = apartmentsData || []
@@ -117,53 +108,53 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   apartments: ApartmentItem[]
   investments: CreditAllocationItem[]
 }> {
-  const { data: projectData, error: projectError } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const [
+    { data: projectData, error: projectError },
+    { data: milestonesData },
+    { data: phasesData },
+    { data: contractsData },
+    { data: apartmentsData },
+    { data: investmentsData },
+  ] = await Promise.all([
+    supabase.from('projects').select('*').eq('id', id).single(),
+    supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', id)
+      .order('due_date', { ascending: true }),
+    supabase
+      .from('project_phases')
+      .select('*')
+      .eq('project_id', id)
+      .order('phase_number', { ascending: true }),
+    supabase
+      .from('contracts')
+      .select(`
+        *,
+        subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
+        phase:project_phases!contracts_phase_id_fkey(phase_name)
+      `)
+      .eq('project_id', id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('apartments')
+      .select('*')
+      .eq('project_id', id)
+      .order('floor', { ascending: true }),
+    supabase
+      .from('credit_allocations')
+      .select(`
+        id,
+        allocated_amount,
+        used_amount,
+        description,
+        created_at,
+        bank_credits(credit_name, credit_type, start_date, banks(name))
+      `)
+      .eq('project_id', id)
+      .order('created_at', { ascending: false }),
+  ])
   if (projectError) throw projectError
-
-  const { data: milestonesData } = await supabase
-    .from('project_milestones')
-    .select('*')
-    .eq('project_id', id)
-    .order('due_date', { ascending: true })
-
-  const { data: phasesData } = await supabase
-    .from('project_phases')
-    .select('*')
-    .eq('project_id', id)
-    .order('phase_number', { ascending: true })
-
-  const { data: contractsData } = await supabase
-    .from('contracts')
-    .select(`
-      *,
-      subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-      phase:project_phases!contracts_phase_id_fkey(phase_name)
-    `)
-    .eq('project_id', id)
-    .order('created_at', { ascending: false })
-
-  const { data: apartmentsData } = await supabase
-    .from('apartments')
-    .select('*')
-    .eq('project_id', id)
-    .order('floor', { ascending: true })
-
-  const { data: investmentsData } = await supabase
-    .from('credit_allocations')
-    .select(`
-      id,
-      allocated_amount,
-      used_amount,
-      description,
-      created_at,
-      bank_credits(credit_name, credit_type, start_date, banks(name))
-    `)
-    .eq('project_id', id)
-    .order('created_at', { ascending: false })
 
   return {
     project: projectData as unknown as ProjectDisplay,

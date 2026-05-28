@@ -1,5 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
-import { BankWithCredits, Project, Company, NewCreditForm } from '../bankTypes'
+import { BankWithCredits, BankCredit, Project, Company, NewCreditForm } from '../bankTypes'
 
 export const fetchProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase
@@ -28,41 +28,46 @@ export const fetchBanksWithCredits = async (): Promise<BankWithCredits[]> => {
     .order('name')
 
   if (banksError) throw banksError
+  if (!banksData || banksData.length === 0) return []
 
-  const banksWithCredits: BankWithCredits[] = []
+  const bankIds = banksData.map(b => b.id)
+  const { data: creditsData, error: creditsError } = await supabase
+    .from('bank_credits')
+    .select(`
+      *,
+      used_amount,
+      repaid_amount,
+      projects(id, name),
+      accounting_companies(name)
+    `)
+    .in('bank_id', bankIds)
+    .order('start_date', { ascending: false })
 
-  for (const bank of banksData || []) {
-    const { data: creditsData, error: creditsError } = await supabase
-      .from('bank_credits')
-      .select(`
-        *,
-        used_amount,
-        repaid_amount,
-        projects(id, name),
-        accounting_companies(name)
-      `)
-      .eq('bank_id', bank.id)
-      .order('start_date', { ascending: false })
+  if (creditsError) throw creditsError
 
-    if (creditsError) throw creditsError
+  const creditsByBank = new Map<string, BankCredit[]>()
+  for (const credit of (creditsData || []) as BankCredit[]) {
+    const bucket = creditsByBank.get(credit.bank_id)
+    if (bucket) bucket.push(credit)
+    else creditsByBank.set(credit.bank_id, [credit])
+  }
 
-    const credits = creditsData || []
+  return banksData.map(bank => {
+    const credits = creditsByBank.get(bank.id) || []
     const totalCreditLimit = credits.reduce((sum, c) => sum + c.amount, 0)
     const totalUsed = credits.reduce((sum, c) => sum + (c.used_amount || 0), 0)
     const totalRepaid = credits.reduce((sum, c) => sum + (c.repaid_amount || 0), 0)
     const totalOutstanding = credits.reduce((sum, c) => sum + c.outstanding_balance, 0)
 
-    banksWithCredits.push({
+    return {
       ...bank,
       total_credit_limit: totalCreditLimit,
       total_used: totalUsed,
       total_repaid: totalRepaid,
       total_outstanding: totalOutstanding,
       credits
-    })
-  }
-
-  return banksWithCredits
+    }
+  })
 }
 
 export const calculateRateAmount = (credit: NewCreditForm): number => {

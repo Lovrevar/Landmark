@@ -35,22 +35,27 @@ export const retailProjectService = {
 
     if (projectsError) throw projectsError
 
-    const projectsWithPhases = await Promise.all(
-      (projects || []).map(async (project) => {
-        const { data: phases } = await supabase
-          .from('retail_project_phases')
-          .select('*')
-          .eq('project_id', project.id)
-          .order('phase_order', { ascending: true })
+    const projectList = projects || []
+    if (projectList.length === 0) return []
 
-        return {
-          ...project,
-          phases: phases || []
-        }
-      })
-    )
+    const projectIds = projectList.map(p => p.id)
+    const { data: phasesData } = await supabase
+      .from('retail_project_phases')
+      .select('*')
+      .in('project_id', projectIds)
+      .order('phase_order', { ascending: true })
 
-    return projectsWithPhases
+    const phasesByProject = new Map<string, RetailProjectPhase[]>()
+    for (const phase of phasesData || []) {
+      const arr = phasesByProject.get(phase.project_id) || []
+      arr.push(phase)
+      phasesByProject.set(phase.project_id, arr)
+    }
+
+    return projectList.map(project => ({
+      ...project,
+      phases: phasesByProject.get(project.id) || []
+    }))
   },
 
   async fetchProjectById(id: string): Promise<RetailProjectWithPhases | null> {
@@ -310,6 +315,57 @@ export const retailProjectService = {
 
     if (error) throw error
     return data
+  },
+
+  async fetchContractsByPhases(phaseIds: string[]): Promise<Map<string, RetailContract[]>> {
+    const result = new Map<string, RetailContract[]>()
+    if (phaseIds.length === 0) return result
+    for (const id of phaseIds) result.set(id, [])
+
+    const { data, error } = await supabase
+      .from('retail_contracts')
+      .select(`
+        *,
+        supplier:retail_suppliers(*),
+        customer:retail_customers(*)
+      `)
+      .in('phase_id', phaseIds)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    const contracts = data || []
+    if (contracts.length === 0) return result
+
+    const contractIds = contracts.map(c => c.id)
+    const { data: invoices } = await supabase
+      .from('accounting_invoices')
+      .select('retail_contract_id, paid_amount, remaining_amount, status')
+      .in('retail_contract_id', contractIds)
+
+    const paidMap = new Map<string, number>()
+    const remainingMap = new Map<string, number>()
+
+    ;(invoices || []).forEach(inv => {
+      const currentPaid = paidMap.get(inv.retail_contract_id) || 0
+      paidMap.set(inv.retail_contract_id, currentPaid + parseFloat(inv.paid_amount?.toString() || '0'))
+      if (inv.status !== 'PAID') {
+        const currentRemaining = remainingMap.get(inv.retail_contract_id) || 0
+        remainingMap.set(inv.retail_contract_id, currentRemaining + parseFloat(inv.remaining_amount?.toString() || '0'))
+      }
+    })
+
+    for (const c of contracts) {
+      const enriched = {
+        ...c,
+        invoice_total_paid: paidMap.get(c.id) || 0,
+        invoiced_remaining: remainingMap.get(c.id) || 0
+      } as RetailContract
+      const arr = result.get(c.phase_id) || []
+      arr.push(enriched)
+      result.set(c.phase_id, arr)
+    }
+
+    return result
   },
 
   async fetchContractsByPhase(phaseId: string): Promise<RetailContract[]> {
