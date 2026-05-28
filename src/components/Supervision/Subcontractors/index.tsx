@@ -228,7 +228,7 @@ const SubcontractorManagement: React.FC = () => {
           ))}
         </div>
       ) : (
-        <Table>
+        <Table dense fitContent className="md:w-fit max-w-full">
           <Table.Head>
             <Table.Tr hoverable={false}>
               <Table.Th>{t('common.name')}</Table.Th>
