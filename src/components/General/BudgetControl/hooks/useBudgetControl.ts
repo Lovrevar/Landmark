@@ -51,7 +51,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
       setLoading(true)
       setError(null)
       try {
-        const { project, phases, contracts } = await fetchProjectBudgetData(selectedProjectId)
+        const { project, phases, contracts, milestones } = await fetchProjectBudgetData(selectedProjectId)
 
         const plannedBudget = phases.reduce((sum, p) => sum + Number(p.budget_allocated || 0), 0)
         const committed = contracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
@@ -60,7 +60,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
         const totalCommitted = committed
         const completionPct = totalCommitted > 0 ? Math.min(100, (paid / totalCommitted) * 100) : 0
 
-        const metrics = calculateProjectEVM(phases, contracts)
+        const metrics = calculateProjectEVM(phases, contracts, milestones)
 
         setData({
           tic: Number(project.budget || 0),

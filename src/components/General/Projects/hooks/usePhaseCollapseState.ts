@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PhaseStatus } from '../utils'
 
-const STORAGE_PREFIX = 'cognilion.milestone_phase_collapse.'
+const DEFAULT_NAMESPACE = 'milestone_phase_collapse'
 
-function storageKeyFor(projectId: string | undefined): string | null {
-  return projectId ? `${STORAGE_PREFIX}${projectId}` : null
+function storageKeyFor(projectId: string | undefined, namespace: string): string | null {
+  return projectId ? `cognilion.${namespace}.${projectId}` : null
 }
 
-function readOverrides(projectId: string | undefined): Record<string, boolean> {
-  const key = storageKeyFor(projectId)
+function readOverrides(projectId: string | undefined, namespace: string): Record<string, boolean> {
+  const key = storageKeyFor(projectId, namespace)
   if (!key || typeof window === 'undefined') return {}
   try {
     const raw = window.localStorage.getItem(key)
@@ -48,20 +48,21 @@ export interface PhaseCollapseController {
 
 export function usePhaseCollapseState(
   projectId: string | undefined,
-  phases: PhaseStatus[]
+  phases: PhaseStatus[],
+  namespace: string = DEFAULT_NAMESPACE
 ): PhaseCollapseController {
-  const [overrides, setOverrides] = useState<Record<string, boolean>>(() => readOverrides(projectId))
+  const [overrides, setOverrides] = useState<Record<string, boolean>>(() => readOverrides(projectId, namespace))
   const hydratedFor = useRef<string | undefined>(projectId)
 
   useEffect(() => {
     if (hydratedFor.current !== projectId) {
       hydratedFor.current = projectId
-      setOverrides(readOverrides(projectId))
+      setOverrides(readOverrides(projectId, namespace))
     }
-  }, [projectId])
+  }, [projectId, namespace])
 
   useEffect(() => {
-    const key = storageKeyFor(projectId)
+    const key = storageKeyFor(projectId, namespace)
     if (!key || typeof window === 'undefined') return
     if (hydratedFor.current !== projectId) return
     try {
@@ -69,7 +70,7 @@ export function usePhaseCollapseState(
     } catch {
       // localStorage may be unavailable (private mode, quota); silently ignore.
     }
-  }, [projectId, overrides])
+  }, [projectId, namespace, overrides])
 
   const resolve = useCallback(
     (key: string): boolean => {

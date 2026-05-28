@@ -68,7 +68,7 @@ function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
 
 function getIndexStatus(value: number, type: 'CPI' | 'SPI'): { status: 'good' | 'warning' | 'bad'; label: string } {
   if (value >= 1.0) return { status: 'good', label: type === 'CPI' ? 'Under budget ✓' : 'On schedule ✓' }
-  if (value >= 0.95) return { status: 'warning', label: type === 'CPI' ? 'Slightly over budget' : 'Slightly behind' }
+  if (value >= 0.9) return { status: 'warning', label: type === 'CPI' ? 'Slightly over budget' : 'Slightly behind' }
   return { status: 'bad', label: type === 'CPI' ? 'Over budget ✗' : 'Behind schedule ✗' }
 }
 
@@ -107,8 +107,9 @@ export default function BudgetControl() {
   const scatterCPI = data ? [{ x: t('budget_control.current'), y: data.metrics.CPI }] : []
   const scatterSPI = data ? [{ x: t('budget_control.current'), y: data.metrics.SPI }] : []
 
-  const cpiStatus = data ? getIndexStatus(data.metrics.CPI, 'CPI') : null
-  const spiStatus = data ? getIndexStatus(data.metrics.SPI, 'SPI') : null
+  const hasBudgetData = !!data && data.plannedBudget > 0
+  const cpiStatus = hasBudgetData ? getIndexStatus(data.metrics.CPI, 'CPI') : null
+  const spiStatus = hasBudgetData ? getIndexStatus(data.metrics.SPI, 'SPI') : null
 
   return (
     <div className="p-6 space-y-6">
@@ -144,7 +145,14 @@ export default function BudgetControl() {
         </div>
       )}
 
-      {!loading && data && (
+      {!loading && data && !hasBudgetData && (
+        <div className="text-center py-16">
+          <p className="text-base font-medium text-gray-700 dark:text-gray-200">{t('budget_control.no_budget_data')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('budget_control.no_budget_data_sub')}</p>
+        </div>
+      )}
+
+      {!loading && hasBudgetData && (
         <>
           {/* Top Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -230,8 +238,8 @@ export default function BudgetControl() {
                     contentStyle={tooltipStyle}
                   />
                   <Legend />
-                  <ReferenceLine y={1.0} stroke="#f59e0b" strokeDasharray="6 3" label={{ value: 'Target (1.0)', fill: '#f59e0b', fontSize: 11 }} />
-                  <ReferenceLine y={0.95} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Warning (0.95)', fill: '#ef4444', fontSize: 11 }} />
+                  <ReferenceLine y={1.0} stroke="#f59e0b" strokeDasharray="6 3" label={{ value: t('budget_control.target_line'), fill: '#f59e0b', fontSize: 11, position: 'insideTopLeft' }} />
+                  <ReferenceLine y={0.9} stroke="#ef4444" strokeDasharray="4 4" label={{ value: t('budget_control.warning_line'), fill: '#ef4444', fontSize: 11, position: 'insideBottomRight' }} />
                   <Scatter
                     name={t('budget_control.cpi')}
                     data={scatterCPI}
@@ -248,7 +256,7 @@ export default function BudgetControl() {
                   />
                 </ScatterChart>
               </ResponsiveContainer>
-
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('budget_control.evm_indices_caption')}</p>
             </div>
           </div>
 
