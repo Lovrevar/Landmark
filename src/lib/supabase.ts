@@ -31,16 +31,6 @@ if (typeof document !== 'undefined') {
   })
 }
 
-export type User = {
-  id: string
-  username: string
-  password: string
-  role: 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
-  created_at: string
-}
-
-export type Profile = 'General' | 'Supervision' | 'Sales' | 'Funding'
-
 export type Project = {
   id: string
   name: string
