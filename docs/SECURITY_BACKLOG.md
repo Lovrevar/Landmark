@@ -92,31 +92,49 @@ When `VITE_CASHFLOW_PASSWORD` is unset, the Cashflow profile remains selectable 
 
 ## SEC-003: RLS policies on project_managers compare wrong UUID columns
 
-**Status:** Open
+**Status:** Resolved — not present in applied schema (verified 2026-05-29)
 **Severity:** Medium
 **Filed:** 2026-05-08
-**Affected components:** RLS policies on `public.project_managers` (visible at [supabase/full_schema.sql](../supabase/full_schema.sql) lines 11643, 11668, 11731), all frontend code that reads or writes `project_managers` via the standard supabase-js userClient
+**Resolved:** 2026-05-29
+**Affected components:** RLS policies on `public.project_managers`, all frontend code that reads or writes `project_managers` via the standard supabase-js userClient
 
-### Summary
+### Resolution (2026-05-29)
 
-Three RLS policies on `public.project_managers` use the predicate `users.id = auth.uid()` where they should use `users.auth_user_id = auth.uid()`. Because `public.users.id` is a generated uuid distinct from `auth.users.id` (the bridge column is `public.users.auth_user_id`), the predicate can never match for any real user. Consequently, the userClient cannot SELECT, INSERT, or DELETE on `project_managers` — even for Directors. Frontend code that goes through this path silently returns 0 rows and does no I/O.
+This bug is **not present in the schema that is actually applied to the database**. The evidence below was sourced from `supabase/full_schema.sql`, a reconnaissance dump committed 2026-05-12 (during the AI-chat work) and **removed 2026-05-29** (see note below). The authoritative applied state is the consolidated baseline [supabase/migrations/00000000000000_baseline_schema.sql](../supabase/migrations/00000000000000_baseline_schema.sql), committed **2026-05-15** — three days *after* the dump — under "Migration history reconciliation: baseline + neuter historical".
+
+All four `project_managers` policies in the baseline use the **correct** `users.auth_user_id = auth.uid()` bridge:
+
+- `Directors can create project manager assignments` — baseline line 8604 — `users.auth_user_id = ( SELECT auth.uid() AS uid)`
+- `Directors can delete project manager assignments` — baseline line 8631 — same
+- `Directors can view all project manager assignments` — baseline line 8694 — same
+- `Supervision users can view their own assignments` — baseline line 9166 — `user_id IN ( SELECT users.id FROM users WHERE users.auth_user_id = auth.uid())`
+
+End-to-end check: the Supervision self-view policy aligns exactly with the frontend query in [src/contexts/AuthContext.tsx:90-100](../src/contexts/AuthContext.tsx) (`.eq('user_id', data.id)` where `data.id` is `public.users.id`), so Supervision users' `assignedProjects` is correctly populated. No migration is required.
+
+`full_schema.sql` is stale (it also still contains legacy lowercase roles such as `'admin'`/`'project_manager'` that are not in the live `users_role_check` constraint). It should not be treated as ground truth — see the note at the end of this entry.
+
+### Summary (historical — applied only to the stale full_schema.sql dump)
+
+Three RLS policies on `public.project_managers` used the predicate `users.id = auth.uid()` where they should use `users.auth_user_id = auth.uid()`. Because `public.users.id` is a generated uuid distinct from `auth.users.id` (the bridge column is `public.users.auth_user_id`), the predicate can never match for any real user. Consequently, the userClient cannot SELECT, INSERT, or DELETE on `project_managers` — even for Directors. Frontend code that goes through this path silently returns 0 rows and does no I/O. **This described the dump, not the deployed baseline, which already uses the correct bridge (see Resolution above).**
 
 ### Why it exists
 
-The repository has a project-wide ambiguity between `auth.uid()` (= `auth.users.id`) and `public.users.id`. Several other policies use the correct `users.auth_user_id = auth.uid()` bridge (e.g. `accounting_invoices` at [supabase/full_schema.sql:11394-11396](../supabase/full_schema.sql)), but at least these three policies on `project_managers` use the broken `users.id = auth.uid()` form. The mistake likely dates to a copy-paste from a draft pattern and was never caught because Director-only project-manager management is rarely exercised through the userClient and the AI chat reads this table via the service role.
+The repository has a project-wide ambiguity between `auth.uid()` (= `auth.users.id`) and `public.users.id`. Several other policies use the correct `users.auth_user_id = auth.uid()` bridge (e.g. `accounting_invoices` at `full_schema.sql:11394-11396`), but at least these three policies on `project_managers` use the broken `users.id = auth.uid()` form. The mistake likely dates to a copy-paste from a draft pattern and was never caught because Director-only project-manager management is rarely exercised through the userClient and the AI chat reads this table via the service role.
 
 ### Evidence
 
-- [supabase/full_schema.sql:11641-11643](../supabase/full_schema.sql) (`Directors can create project manager assignments`):
+- `full_schema.sql:11641-11643` (`Directors can create project manager assignments`):
   ```sql
   CREATE POLICY "Directors can create project manager assignments" ON public.project_managers FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
      FROM public.users
     WHERE ((users.id = ( SELECT auth.uid() AS uid)) AND (users.role = 'Director'::text)))));
   ```
-- [supabase/full_schema.sql:11668-11670](../supabase/full_schema.sql) (`Directors can delete project manager assignments`): same `users.id = ( SELECT auth.uid() AS uid)` predicate.
-- [supabase/full_schema.sql:11731-11733](../supabase/full_schema.sql) (`Directors can view all project manager assignments`): same predicate.
-- For comparison, the correct pattern (used by other tables): `users.auth_user_id = auth.uid()`. Quoted at [supabase/full_schema.sql:11394-11396](../supabase/full_schema.sql).
-- `public.users.id` is `gen_random_uuid()` (per [supabase/full_schema.sql:6717-6725](../supabase/full_schema.sql)); `auth.users.id` is the Supabase Auth user UUID; the bridge column is `public.users.auth_user_id` with `UNIQUE` + FK to `auth.users(id)` ON DELETE CASCADE.
+- `full_schema.sql:11668-11670` (`Directors can delete project manager assignments`): same `users.id = ( SELECT auth.uid() AS uid)` predicate.
+- `full_schema.sql:11731-11733` (`Directors can view all project manager assignments`): same predicate.
+- For comparison, the correct pattern (used by other tables): `users.auth_user_id = auth.uid()`. Quoted at `full_schema.sql:11394-11396`.
+- `public.users.id` is `gen_random_uuid()` (per `full_schema.sql:6717-6725`); `auth.users.id` is the Supabase Auth user UUID; the bridge column is `public.users.auth_user_id` with `UNIQUE` + FK to `auth.users(id)` ON DELETE CASCADE.
+
+> Note: line references above point at the now-removed `full_schema.sql` dump and are retained only for historical context. The applied policies (all correct) are in `supabase/migrations/00000000000000_baseline_schema.sql`.
 
 ### Threat model
 
@@ -139,11 +157,18 @@ A small forward-fix migration:
 
 ### Why it isn't fixed yet
 
-This bug was discovered during AI-chat schema reconnaissance (Phase 3.1). The AI chat path is unaffected because `_shared/auth.ts` reads `project_managers` via the service client. Fixing this on its own requires a forward-fix migration plus a frontend audit — appropriate for its own focused PR with verification steps, not folded into the AI-chat work.
+~~This bug was discovered during AI-chat schema reconnaissance (Phase 3.1)...~~ — **Moot.** The bug was never in the applied schema; it existed only in the stale `full_schema.sql` recon dump. The baseline reconciliation on 2026-05-15 already deployed the correct predicate. No forward-fix migration is needed. (Original note retained below for history: the AI chat path was independently unaffected because `_shared/auth.ts` reads `project_managers` via the service client.)
+
+### Note: `full_schema.sql` is stale and should not be trusted as ground truth
+
+The root cause of this false positive is that `supabase/full_schema.sql` (committed 2026-05-12) predated the consolidated baseline (`supabase/migrations/00000000000000_baseline_schema.sql`, 2026-05-15) and was never regenerated. A repo-wide sweep on 2026-05-29 found **14** occurrences of the broken `users.id = auth.uid()` predicate in `full_schema.sql` and **0** in the applied migrations — and `full_schema.sql` still referenced legacy lowercase roles (`'admin'`, `'project_manager'`) that the live `users_role_check` constraint forbids. Nothing in the build/tooling consumed it.
+
+**Resolved 2026-05-29:** `supabase/full_schema.sql` was deleted in favour of the baseline migration (the single source of truth), and the one stale code reference to it was fixed ([supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) now cites the policy by name instead of `full_schema.sql:12000`). For a readable full-schema reference, regenerate from the linked DB on demand (`supabase db dump`); do not re-commit a static copy that can drift out of sync again.
 
 ### Cross-references
 
-- [supabase/full_schema.sql](../supabase/full_schema.sql) lines 11641-11643, 11668-11670, 11731-11733
-- [src/contexts/AuthContext.tsx](../src/contexts/AuthContext.tsx) lines 90-115 (`assignedProjects` reads `project_managers` via the standard client)
-- [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) (uses service client for the same lookup, unaffected)
-- Discovered during AI chat plan, Phase 3.1 schema reconnaissance (May 2026)
+- [supabase/migrations/00000000000000_baseline_schema.sql](../supabase/migrations/00000000000000_baseline_schema.sql) lines 8604, 8631, 8694, 9166 (the **correct**, applied policies)
+- [src/contexts/AuthContext.tsx](../src/contexts/AuthContext.tsx) lines 90-115 (`assignedProjects` reads `project_managers` via the standard client — verified consistent with the applied Supervision policy)
+- [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) (uses service client for the same lookup, independently unaffected)
+- `supabase/full_schema.sql` lines 11641-11643, 11668-11670, 11731-11733 (the **stale dump** where the phantom bug appeared — file removed 2026-05-29)
+- Discovered during AI chat plan, Phase 3.1 schema reconnaissance (May 2026); verified resolved 2026-05-29

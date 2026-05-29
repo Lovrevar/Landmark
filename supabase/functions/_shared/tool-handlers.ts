@@ -670,7 +670,8 @@ export async function handleListUnpaidInvoices(
   const limit = clampLimit(input.limit)
 
   // RLS handles role/project scoping (Director/Accounting see all; Supervision
-  // is scoped to assigned projects via the policy at full_schema.sql:12000).
+  // is scoped to assigned projects via the "Supervision can view invoices for
+  // managed projects" policy in the baseline migration).
   let query = ctx.userClient
     .from('accounting_invoices')
     .select(`
