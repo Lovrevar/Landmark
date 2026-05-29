@@ -1,6 +1,37 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
-import type { ChatConversation, ChatMessage, ChatUser } from '../../../types/chat'
+import type { ChatConversation, ChatMessage, ChatUser, ChatParticipant } from '../../../types/chat'
+
+// Shape of one row from the get_chat_conversation_summaries() RPC. Declared
+// locally because the migration that adds the RPC
+// (20260529120000_chat_conversation_summaries.sql) must be applied before
+// `npm run db:types` can pick it up into src/types/database.ts; until then the
+// generated Database type doesn't know the function, so we bridge with a cast.
+type ChatConversationSummaryRow = {
+  id: string
+  name: string | null
+  is_group: boolean
+  created_by: string
+  created_at: string
+  last_message_id: string | null
+  last_content: string | null
+  last_created_at: string | null
+  last_sender_id: string | null
+  last_file_url: string | null
+  last_file_name: string | null
+  last_file_size: number | null
+  last_file_type: string | null
+  unread_count: number
+}
+
+type ParticipantWithUserRow = {
+  id: string
+  conversation_id: string
+  user_id: string
+  joined_at: string
+  last_read_at: string
+  user: ChatUser | null
+}
 
 const MSG_FIELDS = 'id, conversation_id, sender_id, content, created_at, file_url, file_name, file_size, file_type'
 
@@ -16,114 +47,77 @@ export async function fetchAllUsers(): Promise<ChatUser[]> {
   return data || []
 }
 
-export async function fetchConversations(userId: string): Promise<ChatConversation[]> {
-  const { data: participantRows, error: pErr } = await supabase
+export async function fetchConversations(): Promise<ChatConversation[]> {
+  // Last message + unread count are computed server-side (bounded by #conversations,
+  // not total message volume — see the RPC's migration). The caller is derived from
+  // auth.uid() inside the function, so no userId argument is needed.
+  const { data: summaryData, error: sErr } = await supabase.rpc(
+    'get_chat_conversation_summaries' as never,
+  )
+  if (sErr) throw sErr
+
+  const summaries = (summaryData as unknown as ChatConversationSummaryRow[] | null) ?? []
+  if (summaries.length === 0) return []
+
+  const conversationIds = summaries.map(s => s.id)
+
+  // Participants + their user record in one batched, bounded query (FK embed on
+  // chat_participants.user_id -> users.id).
+  const { data: participantData, error: pErr } = await supabase
     .from('chat_participants')
-    .select('conversation_id')
-    .eq('user_id', userId)
+    .select('id, conversation_id, user_id, joined_at, last_read_at, user:user_id (id, username, role)')
+    .in('conversation_id', conversationIds)
 
   if (pErr) throw pErr
-  if (!participantRows || participantRows.length === 0) return []
 
-  const conversationIds = participantRows.map(p => p.conversation_id)
+  const participantRows = (participantData as unknown as ParticipantWithUserRow[] | null) ?? []
 
-  const { data: conversations, error: cErr } = await supabase
-    .from('chat_conversations')
-    .select('id, name, is_group, created_by, created_at')
-    .in('id', conversationIds)
-    .order('created_at', { ascending: false })
-
-  if (cErr) throw cErr
-  if (!conversations) return []
-
-  const { data: allParticipants, error: apErr } = await supabase
-    .from('chat_participants')
-    .select('id, conversation_id, user_id, joined_at, last_read_at')
-    .in('conversation_id', conversationIds)
-
-  if (apErr) throw apErr
-
-  const participantUserIds = [...new Set((allParticipants || []).map(p => p.user_id))]
-  const { data: users, error: uErr } = await supabase
-    .from('users')
-    .select('id, username, role')
-    .in('id', participantUserIds)
-
-  if (uErr) throw uErr
-
-  const userMap = new Map((users || []).map(u => [u.id, u]))
-
-  const { data: msgIndex, error: miErr } = await supabase
-    .from('chat_messages')
-    .select('id, conversation_id, sender_id, created_at')
-    .in('conversation_id', conversationIds)
-    .order('created_at', { ascending: false })
-
-  if (miErr) throw miErr
-
-  const indexByConv = new Map<string, Array<{ id: string; sender_id: string; created_at: string }>>()
-  for (const m of msgIndex || []) {
-    const bucket = indexByConv.get(m.conversation_id)
-    const entry = { id: m.id, sender_id: m.sender_id, created_at: m.created_at }
-    if (bucket) bucket.push(entry)
-    else indexByConv.set(m.conversation_id, [entry])
+  const participantsByConv = new Map<string, ChatParticipant[]>()
+  const userById = new Map<string, ChatUser>()
+  for (const p of participantRows) {
+    const user = p.user || undefined
+    if (user) userById.set(p.user_id, user)
+    const participant: ChatParticipant = {
+      id: p.id,
+      conversation_id: p.conversation_id,
+      user_id: p.user_id,
+      joined_at: p.joined_at,
+      last_read_at: p.last_read_at,
+      user,
+    }
+    const bucket = participantsByConv.get(p.conversation_id)
+    if (bucket) bucket.push(participant)
+    else participantsByConv.set(p.conversation_id, [participant])
   }
 
-  const lastMsgIds = conversations
-    .map(c => indexByConv.get(c.id)?.[0]?.id)
-    .filter((id): id is string => Boolean(id))
-
-  let lastMsgById = new Map<string, ChatMessage>()
-  if (lastMsgIds.length > 0) {
-    const { data: lastMsgRows, error: lmErr } = await supabase
-      .from('chat_messages')
-      .select(MSG_FIELDS)
-      .in('id', lastMsgIds)
-
-    if (lmErr) throw lmErr
-    lastMsgById = new Map((lastMsgRows || []).map(m => [m.id, m as ChatMessage]))
-  }
-
-  const result: ChatConversation[] = []
-
-  for (const conv of conversations) {
-    const participants = (allParticipants || [])
-      .filter(p => p.conversation_id === conv.id)
-      .map(p => ({
-        ...p,
-        user: userMap.get(p.user_id) || undefined,
-      }))
-
-    const myParticipant = participants.find(p => p.user_id === userId)
-    const convIndex = indexByConv.get(conv.id) || []
-    const lastEntry = convIndex[0]
-    const lastMsgRow = lastEntry ? lastMsgById.get(lastEntry.id) : undefined
-
-    const unreadCount = myParticipant
-      ? convIndex.filter(
-          m => m.created_at > myParticipant.last_read_at && m.sender_id !== userId
-        ).length
-      : 0
-
-    const lastMessage = lastMsgRow
-      ? { ...lastMsgRow, sender: userMap.get(lastMsgRow.sender_id) || undefined }
+  // The RPC already orders by last activity (desc), so preserve its order.
+  return summaries.map(s => {
+    const lastMessage: ChatMessage | null = s.last_message_id
+      ? {
+          id: s.last_message_id,
+          conversation_id: s.id,
+          sender_id: s.last_sender_id ?? '',
+          content: s.last_content ?? '',
+          created_at: s.last_created_at ?? s.created_at,
+          file_url: s.last_file_url,
+          file_name: s.last_file_name,
+          file_size: s.last_file_size,
+          file_type: s.last_file_type,
+          sender: s.last_sender_id ? userById.get(s.last_sender_id) : undefined,
+        }
       : null
 
-    result.push({
-      ...conv,
-      participants,
+    return {
+      id: s.id,
+      name: s.name,
+      is_group: s.is_group,
+      created_by: s.created_by,
+      created_at: s.created_at,
+      participants: participantsByConv.get(s.id) || [],
       last_message: lastMessage,
-      unread_count: unreadCount,
-    })
-  }
-
-  result.sort((a, b) => {
-    const aTime = a.last_message?.created_at || a.created_at
-    const bTime = b.last_message?.created_at || b.created_at
-    return new Date(bTime).getTime() - new Date(aTime).getTime()
+      unread_count: Number(s.unread_count) || 0,
+    }
   })
-
-  return result
 }
 
 export async function fetchMessages(
