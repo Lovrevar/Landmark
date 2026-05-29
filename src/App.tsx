@@ -5,9 +5,10 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
-import Dashboard from './components/Common/Dashboard'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
+
+const Dashboard = lazy(() => import('./components/Common/Dashboard'))
 
 const SubcontractorManagement = lazy(() => import('./components/Supervision/Subcontractors/index'))
 const ProjectDetailsEnhanced = lazy(() => import('./components/General/Projects/ProjectDetailsEnhanced'))
