@@ -1,8 +1,12 @@
+import { lazy, Suspense } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAiChat } from './AiChatProvider'
 import AiChatTrigger from './AiChatTrigger'
-import AiChatPanel from './AiChatPanel'
+
+// Lazy so react-markdown/remark-gfm (~150 KB) load only when the panel first
+// opens, instead of being bundled into the eagerly-mounted widget at startup.
+const AiChatPanel = lazy(() => import('./AiChatPanel'))
 
 export default function AiChatWidget() {
   const location = useLocation()
@@ -15,7 +19,11 @@ export default function AiChatWidget() {
   return (
     <>
       <AiChatTrigger />
-      {isOpen && <AiChatPanel />}
+      {isOpen && (
+        <Suspense fallback={null}>
+          <AiChatPanel />
+        </Suspense>
+      )}
     </>
   )
 }
