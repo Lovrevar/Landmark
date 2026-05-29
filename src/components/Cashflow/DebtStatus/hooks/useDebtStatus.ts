@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DebtSummary } from '../types'
 import { fetchDebtData, fetchProjects } from '../services/debtService'
 
@@ -16,24 +16,16 @@ export const useDebtStatus = () => {
   const [sortBy, setSortBy] = useState<'name' | 'unpaid' | 'paid'>('unpaid')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  useEffect(() => {
-    loadProjects()
-  }, [])
-
-  useEffect(() => {
-    loadDebtData()
-  }, [selectedProjectId])
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const data = await fetchProjects()
       setProjects(data)
     } catch (error) {
       console.error('Error fetching projects:', error)
     }
-  }
+  }, [])
 
-  const loadDebtData = async () => {
+  const loadDebtData = useCallback(async () => {
     try {
       setLoading(true)
       const data = await fetchDebtData(selectedProjectId || undefined)
@@ -43,7 +35,15 @@ export const useDebtStatus = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedProjectId])
+
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+
+  useEffect(() => {
+    loadDebtData()
+  }, [loadDebtData])
 
   const sortedData = [...debtData].sort((a, b) => {
     let compareValue = 0

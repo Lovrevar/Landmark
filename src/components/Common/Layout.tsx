@@ -1,4 +1,4 @@
-import React, { ReactNode, Suspense, useState, useEffect, useRef } from 'react'
+import React, { ReactNode, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
@@ -213,7 +213,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }
 
-  const handlePasswordCancel = () => {
+  const handlePasswordCancel = useCallback(() => {
     if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
       setCurrentProfile('General')
       navigate('/')
@@ -222,7 +222,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setPassword('')
     setPasswordError('')
     setPendingProfile(null)
-  }
+  }, [currentProfile, cashflowUnlocked, navigate, setCurrentProfile])
 
   useEffect(() => {
     if (!showPasswordModal) return
@@ -234,7 +234,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [showPasswordModal])
+  }, [showPasswordModal, handlePasswordCancel])
 
   const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
 

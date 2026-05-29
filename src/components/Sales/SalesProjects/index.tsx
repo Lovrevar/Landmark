@@ -44,21 +44,23 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
 
   React.useEffect(() => {
-    if (selectedProject) {
-      const updatedProject = projects.find(p => p.id === selectedProject.id)
-      if (updatedProject) {
-        setSelectedProject(updatedProject)
-      }
-    }
+    // Re-sync the selected project to the freshest object after the list
+    // refreshes. Functional updater avoids needing `selectedProject` as a dep.
+    setSelectedProject(prev => {
+      if (!prev) return prev
+      const updatedProject = projects.find(p => p.id === prev.id)
+      return updatedProject ?? prev
+    })
   }, [projects])
 
   React.useEffect(() => {
-    if (selectedBuilding && selectedProject) {
-      const updatedBuilding = selectedProject.buildings.find(b => b.id === selectedBuilding.id)
-      if (updatedBuilding) {
-        setSelectedBuilding(updatedBuilding)
-      }
-    }
+    if (!selectedProject) return
+    // Functional updater avoids needing `selectedBuilding` as a dep.
+    setSelectedBuilding(prev => {
+      if (!prev) return prev
+      const updatedBuilding = selectedProject.buildings.find(b => b.id === prev.id)
+      return updatedBuilding ?? prev
+    })
   }, [selectedProject])
 
   const [showBuildingQuantityForm, setShowBuildingQuantityForm] = useState(false)

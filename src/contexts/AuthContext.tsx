@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates AuthProvider with the useAuth hook + exported types (idiomatic
+// context pattern); the mixed-exports warning is a fast-refresh DX concern.
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -66,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return (saved as Profile) || 'General'
   })
 
-  const fetchUserData = async (authUser: SupabaseUser): Promise<User | null> => {
+  const fetchUserData = useCallback(async (authUser: SupabaseUser): Promise<User | null> => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -126,9 +129,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Exception fetching user data:', error)
       return null
     }
-  }
+  }, [])
 
-  const handleAuthChange = (authUser: SupabaseUser | null) => {
+  const handleAuthChange = useCallback((authUser: SupabaseUser | null) => {
     (async () => {
       if (authUser) {
         const userData = await fetchUserData(authUser)
@@ -144,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false)
       }
     })()
-  }
+  }, [fetchUserData])
 
   useEffect(() => {
     let mounted = true
@@ -190,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchUserData, handleAuthChange])
 
   const mapAuthError = (error: unknown): LoginErrorCode => {
     if (!error || typeof error !== 'object') return 'unknown'

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { ActivityLogEntry, ActionCategory, SeverityFilter } from '../types'
 import * as queryService from '../services/activityLogQueryService'
 
@@ -26,38 +26,7 @@ export function useActivityLog() {
   // Detail modal state
   const [selectedLog, setSelectedLog] = useState<ActivityLogEntry | null>(null)
 
-  // Debounced search (500ms, same as useInvoices)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filterUserId, filterCategory, filterSeverity, filterProjectId, dateFrom, dateTo, debouncedSearchTerm])
-
-  // Fetch logs when filters or page change
-  useEffect(() => {
-    fetchLogs()
-  }, [currentPage, filterUserId, filterCategory, filterSeverity, filterProjectId, dateFrom, dateTo, debouncedSearchTerm])
-
-  // Fetch reference data once on mount
-  useEffect(() => {
-    Promise.all([
-      queryService.fetchLogUsers(),
-      queryService.fetchProjects(),
-    ]).then(([usersData, projectsData]) => {
-      setUsers(usersData)
-      setProjects(projectsData)
-    }).catch((err) => {
-      console.error('Error fetching reference data:', err)
-    })
-  }, [])
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true)
       const data = await queryService.fetchActivityLogs(
@@ -83,7 +52,47 @@ export function useActivityLog() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [
+    filterUserId,
+    filterCategory,
+    filterSeverity,
+    debouncedSearchTerm,
+    dateFrom,
+    dateTo,
+    filterProjectId,
+    currentPage,
+  ])
+
+  // Debounced search (500ms, same as useInvoices)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterUserId, filterCategory, filterSeverity, filterProjectId, dateFrom, dateTo, debouncedSearchTerm])
+
+  // Fetch logs when filters or page change
+  useEffect(() => {
+    fetchLogs()
+  }, [fetchLogs])
+
+  // Fetch reference data once on mount
+  useEffect(() => {
+    Promise.all([
+      queryService.fetchLogUsers(),
+      queryService.fetchProjects(),
+    ]).then(([usersData, projectsData]) => {
+      setUsers(usersData)
+      setProjects(projectsData)
+    }).catch((err) => {
+      console.error('Error fetching reference data:', err)
+    })
+  }, [])
 
   const resetFilters = () => {
     setSearchTerm('')

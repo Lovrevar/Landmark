@@ -71,7 +71,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
     return t('sales_projects.units.repositories')
   }
 
-  const getFilteredUnits = () => {
+  const filteredUnits = useMemo(() => {
     let units: { id: string; status: string; [key: string]: unknown }[] = []
     if (activeUnitType === 'apartment') units = building.apartments
     else if (activeUnitType === 'garage') units = building.garages
@@ -84,9 +84,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
       if (filterStatus === 'sold') return unit.status === 'Sold'
       return true
     })
-  }
-
-  const filteredUnits = useMemo(() => getFilteredUnits(), [activeUnitType, filterStatus, building])
+  }, [activeUnitType, filterStatus, building])
   const allFilteredSelected = filteredUnits.length > 0 && filteredUnits.every(u => selectedUnitIds.includes(u.id))
 
   return (

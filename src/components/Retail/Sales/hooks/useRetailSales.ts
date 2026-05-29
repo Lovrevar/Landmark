@@ -26,7 +26,7 @@ export function useRetailSales() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadPayments() }, [loadPayments])
 

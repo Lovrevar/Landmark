@@ -107,7 +107,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
   }, [conversation, loading, messages])
 
   useEffect(() => {
-    if (conversation) {
+    if (conversation?.id) {
       inputRef.current?.focus()
     }
   }, [conversation?.id])

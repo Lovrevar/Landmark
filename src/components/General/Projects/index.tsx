@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FolderKanban, Plus } from 'lucide-react'
 import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
@@ -16,15 +16,7 @@ const ProjectsManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
 
-  useEffect(() => {
-    loadProjects()
-  }, [])
-
-  useEffect(() => {
-    filterProjects()
-  }, [projects, searchTerm, statusFilter])
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       setLoading(true)
       const data = await fetchProjectsWithStats()
@@ -34,9 +26,9 @@ const ProjectsManagement: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const filterProjects = () => {
+  const filterProjects = useCallback(() => {
     let filtered = projects
     if (searchTerm) {
       filtered = filtered.filter(p =>
@@ -48,7 +40,15 @@ const ProjectsManagement: React.FC = () => {
       filtered = filtered.filter(p => p.status === statusFilter)
     }
     setFilteredProjects(filtered)
-  }
+  }, [projects, searchTerm, statusFilter])
+
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+
+  useEffect(() => {
+    filterProjects()
+  }, [filterProjects])
 
   return (
     <div className="space-y-6">

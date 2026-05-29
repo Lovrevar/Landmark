@@ -29,7 +29,7 @@ export function useSalesPayments() {
       }
     }
     load()
-  }, [])
+  }, [toast])
 
   const stats: SalesPaymentStats = useMemo(() => calculateSalesPaymentStats(payments), [payments])
 

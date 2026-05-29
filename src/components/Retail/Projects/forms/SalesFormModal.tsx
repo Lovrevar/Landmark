@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
@@ -45,12 +45,30 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
+  const loadCustomers = useCallback(async () => {
+    try {
+      const data = await retailProjectService.fetchCustomers()
+      setCustomers(data)
+    } catch (err) {
+      console.error('Error loading customers:', err)
+    }
+  }, [])
+
+  const generateContractNumber = useCallback(async () => {
+    try {
+      const number = await retailProjectService.generateContractNumber(phase.project_id)
+      setFormData(prev => ({ ...prev, contract_number: number }))
+    } catch (err) {
+      console.error('Error generating contract number:', err)
+    }
+  }, [phase.project_id])
+
   useEffect(() => {
     loadCustomers()
     if (!contract) {
       generateContractNumber()
     }
-  }, [])
+  }, [contract, loadCustomers, generateContractNumber])
 
   useEffect(() => {
     const amount = parseFloat(formData.contract_amount)
@@ -63,24 +81,6 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
       setFormData(prev => ({ ...prev, price_per_m2: '' }))
     }
   }, [formData.contract_amount, formData.total_surface_m2])
-
-  const loadCustomers = async () => {
-    try {
-      const data = await retailProjectService.fetchCustomers()
-      setCustomers(data)
-    } catch (err) {
-      console.error('Error loading customers:', err)
-    }
-  }
-
-  const generateContractNumber = async () => {
-    try {
-      const number = await retailProjectService.generateContractNumber(phase.project_id)
-      setFormData(prev => ({ ...prev, contract_number: number }))
-    } catch (err) {
-      console.error('Error generating contract number:', err)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

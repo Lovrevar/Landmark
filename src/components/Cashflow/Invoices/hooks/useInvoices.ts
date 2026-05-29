@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types'
 import * as invoiceService from '../services/invoiceService'
@@ -70,34 +70,7 @@ export const useInvoices = () => {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  useEffect(() => {
-    fetchData()
-  }, [currentPage, filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
-
-  useEffect(() => {
-    const loadMilestones = async () => {
-      if (formData.contract_id) {
-        try {
-          const data = await invoiceService.fetchMilestones(formData.contract_id)
-          setMilestones(data)
-        } catch (error) {
-          console.error('Error loading milestones:', error)
-          setMilestones([])
-        }
-      } else {
-        setMilestones([])
-        setFormData(prev => ({ ...prev, milestone_id: '' }))
-      }
-    }
-
-    loadMilestones()
-  }, [formData.contract_id])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -134,7 +107,34 @@ export const useInvoices = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, currentPage, pageSize])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
+
+  useEffect(() => {
+    const loadMilestones = async () => {
+      if (formData.contract_id) {
+        try {
+          const data = await invoiceService.fetchMilestones(formData.contract_id)
+          setMilestones(data)
+        } catch (error) {
+          console.error('Error loading milestones:', error)
+          setMilestones([])
+        }
+      } else {
+        setMilestones([])
+        setFormData(prev => ({ ...prev, milestone_id: '' }))
+      }
+    }
+
+    loadMilestones()
+  }, [formData.contract_id])
 
   const handleOpenModal = (invoice?: Invoice) => {
     setFieldErrors({})

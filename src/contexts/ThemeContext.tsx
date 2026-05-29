@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates ThemeProvider with the useTheme hook (idiomatic context pattern);
+// the mixed-exports warning is a fast-refresh DX concern, not correctness.
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 interface ThemeContextValue {

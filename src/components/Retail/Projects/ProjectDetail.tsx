@@ -50,7 +50,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
   useEffect(() => {
     loadProjectDetails()
-  }, [initialProject.id])
+  }, [loadProjectDetails])
 
   const handleRefresh = async () => {
     setRefreshing(true)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -44,11 +44,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
   const [deletingMilestone, setDeletingMilestone] = useState(false)
 
-  useEffect(() => {
-    loadMilestones()
-  }, [contractId])
-
-  const loadMilestones = async () => {
+  const loadMilestones = useCallback(async () => {
     try {
       setLoading(true)
       const data = await retailProjectService.fetchMilestonesByContract(contractId)
@@ -61,7 +57,11 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [contractId, contractCost])
+
+  useEffect(() => {
+    loadMilestones()
+  }, [loadMilestones])
 
   const handleAddMilestone = async (data: { contract_id: string; milestone_name: string; description: string; percentage: number; due_date: string | null }) => {
     try {

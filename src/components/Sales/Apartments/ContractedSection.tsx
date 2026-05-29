@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates the ContractedSection component with its contract-field mapping
+// helpers; the mixed-exports warning is a fast-refresh DX concern, not correctness.
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight } from 'lucide-react'

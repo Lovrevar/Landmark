@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { BankCompany, BankCredit, CreditAllocation, MyCompany, InvoiceCategory } from '../bankInvoiceTypes'
 import { useToast } from '../../../../contexts/ToastContext'
 import {
@@ -17,14 +17,14 @@ export const useBankInvoiceData = (bankId: string, creditId?: string) => {
   const [myCompanies, setMyCompanies] = useState<MyCompany[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<InvoiceCategory[]>([])
 
-  const fetchBanks = async () => {
+  const fetchBanks = useCallback(async () => {
     try {
       setBanks(await fetchBanksForInvoice())
     } catch (error) {
       console.error('Error fetching banks:', error)
       toast.error('Greška pri učitavanju banaka')
     }
-  }
+  }, [toast])
 
   const fetchCredits = async (bId: string) => {
     try {
@@ -35,7 +35,7 @@ export const useBankInvoiceData = (bankId: string, creditId?: string) => {
     }
   }
 
-  const fetchMyCompanies = async () => {
+  const fetchMyCompanies = useCallback(async () => {
     try {
       const data = await fetchMyCompaniesForInvoice()
       setMyCompanies(data)
@@ -44,21 +44,21 @@ export const useBankInvoiceData = (bankId: string, creditId?: string) => {
       console.error('Error fetching companies:', error)
       return []
     }
-  }
+  }, [])
 
-  const fetchInvoiceCategories = async () => {
+  const fetchInvoiceCategories = useCallback(async () => {
     try {
       setInvoiceCategories(await fetchActiveInvoiceCategories())
     } catch (error) {
       console.error('Error fetching invoice categories:', error)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchBanks()
     fetchMyCompanies()
     fetchInvoiceCategories()
-  }, [])
+  }, [fetchBanks, fetchMyCompanies, fetchInvoiceCategories])
 
   const fetchAllocations = async (cId: string) => {
     try {

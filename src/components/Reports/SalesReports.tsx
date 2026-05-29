@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Project } from '../../lib/supabase'
 import {
@@ -39,14 +39,6 @@ const SalesReports: React.FC = () => {
     loadProjects()
   }, [])
 
-  useEffect(() => {
-    if (reportType === 'project' && selectedProject) {
-      loadProjectReport()
-    } else if (reportType === 'customer') {
-      loadCustomerReport()
-    }
-  }, [selectedProject, dateRange, reportType])
-
   const loadProjects = async () => {
     setLoading(true)
     try {
@@ -60,7 +52,7 @@ const SalesReports: React.FC = () => {
     }
   }
 
-  const loadProjectReport = async () => {
+  const loadProjectReport = useCallback(async () => {
     if (!selectedProject) return
     setGeneratingReport(true)
     try {
@@ -71,9 +63,9 @@ const SalesReports: React.FC = () => {
     } finally {
       setGeneratingReport(false)
     }
-  }
+  }, [selectedProject, projects, dateRange])
 
-  const loadCustomerReport = async () => {
+  const loadCustomerReport = useCallback(async () => {
     setGeneratingReport(true)
     try {
       const report = await generateCustomerReport(dateRange)
@@ -83,7 +75,15 @@ const SalesReports: React.FC = () => {
     } finally {
       setGeneratingReport(false)
     }
-  }
+  }, [dateRange])
+
+  useEffect(() => {
+    if (reportType === 'project' && selectedProject) {
+      loadProjectReport()
+    } else if (reportType === 'customer') {
+      loadCustomerReport()
+    }
+  }, [selectedProject, dateRange, reportType, loadProjectReport, loadCustomerReport])
 
   const handleGeneratePDF = async () => {
     if (reportType === 'project' && !projectReport) return

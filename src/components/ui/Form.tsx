@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates the Form component with its FormSubmittingContext + useFormSubmitting
+// hook; the mixed-exports warning is a fast-refresh DX concern, not correctness.
 import React, { createContext, useContext, useState } from 'react'
 
 export const FormSubmittingContext = createContext(false)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   TrendingUp,
@@ -33,12 +33,6 @@ const SupervisionReports: React.FC = () => {
     loadProjects()
   }, [])
 
-  useEffect(() => {
-    if (selectedProject) {
-      loadProjectReport()
-    }
-  }, [selectedProject, dateRange])
-
   const loadProjects = async () => {
     setLoading(true)
     try {
@@ -54,7 +48,7 @@ const SupervisionReports: React.FC = () => {
     }
   }
 
-  const loadProjectReport = async () => {
+  const loadProjectReport = useCallback(async () => {
     if (!selectedProject) return
     setGeneratingReport(true)
     try {
@@ -65,7 +59,13 @@ const SupervisionReports: React.FC = () => {
     } finally {
       setGeneratingReport(false)
     }
-  }
+  }, [selectedProject, projects, dateRange])
+
+  useEffect(() => {
+    if (selectedProject) {
+      loadProjectReport()
+    }
+  }, [selectedProject, dateRange, loadProjectReport])
 
   const handleGeneratePDF = async () => {
     if (!projectReport) return

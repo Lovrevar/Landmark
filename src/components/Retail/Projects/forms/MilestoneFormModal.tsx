@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
@@ -52,6 +52,18 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
   const [remainingPercentage, setRemainingPercentage] = useState(100)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
+  const loadRemainingPercentage = useCallback(async () => {
+    try {
+      const validation = await retailProjectService.validateMilestonePercentagesForContract(
+        contractId,
+        editingMilestone?.id
+      )
+      setRemainingPercentage(validation.remainingPercentage)
+    } catch (error) {
+      console.error('Error loading remaining percentage:', error)
+    }
+  }, [contractId, editingMilestone?.id])
+
   useEffect(() => {
     if (visible) {
       if (editingMilestone) {
@@ -73,19 +85,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
       }
       loadRemainingPercentage()
     }
-  }, [visible, contractId, editingMilestone])
-
-  const loadRemainingPercentage = async () => {
-    try {
-      const validation = await retailProjectService.validateMilestonePercentagesForContract(
-        contractId,
-        editingMilestone?.id
-      )
-      setRemainingPercentage(validation.remainingPercentage)
-    } catch (error) {
-      console.error('Error loading remaining percentage:', error)
-    }
-  }
+  }, [visible, contractId, editingMilestone, loadRemainingPercentage])
 
   const handleSubmit = () => {
     const errors: Record<string, string> = {}

@@ -43,8 +43,7 @@ function fakeAnthropic(responses: ScriptedTool[] = []) {
   const client = {
     calls,
     messages: {
-      // deno-lint-ignore no-explicit-any
-      create: (params: any) => {
+      create: (params: Record<string, unknown>) => {
         calls.push(params)
         const r = responses[i++]
         if (!r) throw new Error(`fakeAnthropic: unexpected call #${i} (none queued)`)
