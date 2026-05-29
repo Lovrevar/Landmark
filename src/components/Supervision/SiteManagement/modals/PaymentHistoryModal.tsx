@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
@@ -56,13 +56,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     }
   }, [visible])
 
-  useEffect(() => {
-    if (visible && subcontractor) {
-      fetchInvoiceTotals()
-    }
-  }, [visible, subcontractor])
-
-  const fetchInvoiceTotals = async () => {
+  const fetchInvoiceTotals = useCallback(async () => {
     if (!subcontractor) return
 
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
@@ -79,7 +73,13 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [subcontractor])
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      fetchInvoiceTotals()
+    }
+  }, [visible, subcontractor, fetchInvoiceTotals])
 
   const getStatusVariant = (status: string): 'green' | 'yellow' => {
     return status === 'paid' ? 'green' : 'yellow'

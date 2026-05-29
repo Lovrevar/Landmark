@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../../lib/supabase'
@@ -62,21 +62,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
   const { vatAmount, totalAmount } = useVATCalculation(baseAmount, vatRate)
 
-  useEffect(() => {
-    if (visible && subcontractor) {
-      setHasContract((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).has_contract !== false)
-      setSelectedPhaseId((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).phase_id || '')
-      setName(subcontractor.name || '')
-      setContact(subcontractor.contact || '')
-      setJobDescription(subcontractor.job_description || '')
-      setDeadline(subcontractor.deadline || '')
-
-      loadContractFormData()
-      loadContractTypes()
-    }
-  }, [visible, subcontractor])
-
-  const loadContractFormData = async () => {
+  const loadContractFormData = useCallback(async () => {
     if (!subcontractor) return
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
     try {
@@ -91,7 +77,21 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
     } finally {
       setLoadingPhases(false)
     }
-  }
+  }, [subcontractor])
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      setHasContract((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).has_contract !== false)
+      setSelectedPhaseId((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).phase_id || '')
+      setName(subcontractor.name || '')
+      setContact(subcontractor.contact || '')
+      setJobDescription(subcontractor.job_description || '')
+      setDeadline(subcontractor.deadline || '')
+
+      loadContractFormData()
+      loadContractTypes()
+    }
+  }, [visible, subcontractor, loadContractFormData, loadContractTypes])
 
   const handleUploadFiles = async () => {
     const contractId = getContractId(subcontractor)

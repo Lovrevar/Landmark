@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -32,13 +32,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [pendingDeleteDoc, setPendingDeleteDoc] = useState<DocumentWithRelations | null>(null)
 
-  useEffect(() => {
-    if (contractId || subcontractorId) {
-      loadDocuments()
-    }
-  }, [subcontractorId, contractId])
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -51,7 +45,13 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [contractId, subcontractorId, t])
+
+  useEffect(() => {
+    if (contractId || subcontractorId) {
+      loadDocuments()
+    }
+  }, [contractId, subcontractorId, loadDocuments])
 
   const handleOpen = async (doc: DocumentWithRelations) => {
     try {

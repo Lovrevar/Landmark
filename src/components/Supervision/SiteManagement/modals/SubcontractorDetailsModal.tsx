@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
@@ -41,17 +41,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   const [contractData, setContractData] = useState<ContractData | null>(null)
   const [, setLoadingContract] = useState(false)
 
-  useEffect(() => {
-    if (visible && subcontractor) {
-      loadFunderInfo()
-      loadContractData()
-    } else {
-      setFunderName(null)
-      setContractData(null)
-    }
-  }, [visible, subcontractor])
-
-  const loadContractData = async () => {
+  const loadContractData = useCallback(async () => {
     if (!subcontractor) return
     const contractId = subcontractor.contract_id || subcontractor.id
     try {
@@ -63,9 +53,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
     } finally {
       setLoadingContract(false)
     }
-  }
+  }, [subcontractor])
 
-  const loadFunderInfo = async () => {
+  const loadFunderInfo = useCallback(async () => {
     if (!subcontractor) return
     if (!subcontractor.financed_by_bank_id) {
       setFunderName(null)
@@ -80,7 +70,17 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
     } finally {
       setLoadingFunder(false)
     }
-  }
+  }, [subcontractor])
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      loadFunderInfo()
+      loadContractData()
+    } else {
+      setFunderName(null)
+      setContractData(null)
+    }
+  }, [visible, subcontractor, loadFunderInfo, loadContractData])
 
   if (!visible || !subcontractor) return null
 

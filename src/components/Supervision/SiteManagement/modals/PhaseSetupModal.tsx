@@ -22,16 +22,24 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   const [phaseCount, setPhaseCount] = useState(4)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
 
+  // Initialise the phase list when the modal opens. Intentionally keyed on
+  // `visible` only — we do not want to rebuild when initializePhases' inputs
+  // (editMode/project.phases/phaseCount) change, which would clobber edits.
   useEffect(() => {
     if (visible) {
       initializePhases()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
+  // Rebuild the default phase list when the count changes — create mode only.
+  // `editMode`/`initializePhases`/`visible` are intentionally excluded so this
+  // never disturbs edit-mode entries or double-fires with the open effect above.
   useEffect(() => {
     if (visible && !editMode) {
       initializePhases()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phaseCount])
 
   const initializePhases = () => {

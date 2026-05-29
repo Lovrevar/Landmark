@@ -49,12 +49,13 @@ const SiteManagement: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<ProjectWithPhases | null>(null)
 
   useEffect(() => {
-    if (selectedProject) {
-      const updatedProject = projects.find(p => p.id === selectedProject.id)
-      if (updatedProject) {
-        setSelectedProject(updatedProject)
-      }
-    }
+    // Re-sync the selected project to the freshest object after the list
+    // refreshes. Functional updater avoids needing `selectedProject` as a dep.
+    setSelectedProject(prev => {
+      if (!prev) return prev
+      const updatedProject = projects.find(p => p.id === prev.id)
+      return updatedProject ?? prev
+    })
   }, [projects])
   const [showPhaseSetup, setShowPhaseSetup] = useState(false)
   const [isPhaseSetupEditMode, setIsPhaseSetupEditMode] = useState(false)
