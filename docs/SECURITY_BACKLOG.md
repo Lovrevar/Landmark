@@ -28,6 +28,7 @@ The password gate predates the role-based RLS. Layering RLS-level cashflow enfor
 - `VITE_CASHFLOW_PASSWORD` is inlined into the JS bundle at build time (Vite static replacement). Anyone with browser devtools and a valid Director/Accounting JWT can extract it; the password is therefore not a secret.
 - `CashflowRoute` ([src/App.tsx](../src/App.tsx)) checks `sessionStorage.getItem('cashflow_unlocked') === 'true'` plus role. Both checks are client-side and easily bypassed.
 - RLS policies on cashflow tables (e.g. [supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql](../supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql)) gate by `users.role IN ('Director', 'Accounting')` only.
+- **Correction (2026-05-26):** five tables were NOT even role-gated — `accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, and `company_bank_accounts` carried blanket `USING (true)` policies, so *any* authenticated user (Sales, Supervision, Investment, Retail) could read every row from the browser console. This was a broader exposure than the role-gated posture described above. Closed by [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../supabase/migrations/20260526084700_tighten_cashflow_rls.sql) — see the Update and Mitigations sections below.
 - There is no rate limiting, no lockout, no audit log of password attempts.
 - There is no token-revocation path: changing `VITE_CASHFLOW_PASSWORD` and redeploying does not invalidate already-set `sessionStorage['cashflow_unlocked']` flags.
 - e2e tests ([e2e/support/auth.ts](../e2e/support/auth.ts), `fixtures.ts`, `globalSetup.ts`) bypass the modal by writing `sessionStorage` directly, confirming the gate is purely client-side.
@@ -42,6 +43,11 @@ The password gate predates the role-based RLS. Layering RLS-level cashflow enfor
 - Roles are gate-kept at user creation (`handle_new_user` trigger + role CHECK constraint).
 - The `'admin'` fallback default for `VITE_CASHFLOW_PASSWORD` was removed in step 1.5.1 of the AI chat plan; the modal now fails closed when the env var is unset.
 - The AI chat (v1) does NOT layer additional cashflow enforcement on top of role — it inherits the same role-gated posture as the rest of the app, intentionally and visibly. See [docs/AI_CHAT.md §2 / Security posture](./AI_CHAT.md).
+- **(2026-05-26)** The five previously blanket-open tables (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated by [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../supabase/migrations/20260526084700_tighten_cashflow_rls.sql), with scoped exceptions for the Sales apartment-payment workflow and broad SELECT retained on `accounting_companies` (names + OIB are public reference data). The SECURITY DEFINER `get_invoice_statistics` RPC now rejects non-`Director`/`Accounting` callers up front ([supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql](../supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql)).
+
+### Update (2026-05-26): partial remediation, item stays open
+
+The 2026-05-26 RLS-tightening migrations close the **blanket-`USING (true)`** sub-gap (cross-role exposure of five tables) but do **not** resolve SEC-001 itself. The core limitation — cashflow access is role-gated only, the password modal is UI-only and decoupled from RLS — is unchanged: a `Director`/`Accounting` JWT can still read all cashflow data via supabase-js without entering the password. The Proposed fix below (server-side unlock + JWT claim consumed by RLS) is still required. **Status remains Open.**
 
 ### Proposed fix
 
@@ -61,6 +67,8 @@ The fix touches ~15 RLS policies across 11 tables, requires choosing between Sup
 
 - [docs/CASHFLOW.md](./CASHFLOW.md) (overview of the cashflow module)
 - [docs/AI_CHAT.md](./AI_CHAT.md) §2 / Security posture (how the AI chat inherits this limitation)
+- [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../supabase/migrations/20260526084700_tighten_cashflow_rls.sql) (2026-05-26, closes the blanket-open sub-gap)
+- [supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql](../supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql) (2026-05-26, RPC role check)
 - Discovered during AI chat plan, Phase 1.5 (May 2026)
 
 ---

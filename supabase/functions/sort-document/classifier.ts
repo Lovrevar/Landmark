@@ -54,14 +54,14 @@ export interface CategoryRow {
 }
 
 // One candidate row from an entity table, flattened for matching.
-interface EntityCandidate {
+export interface EntityCandidate {
   id: string
   entity_type: EntityType
   label: string // human-readable, shown to Claude during disambiguation
   haystack: string // normalized searchable text
 }
 
-interface EntityHint {
+export interface EntityHint {
   entity_type: EntityType
   search_terms: string[]
 }
@@ -91,7 +91,7 @@ export interface EmailContext {
 
 // Lowercase, strip diacritics (š č ć ž decompose via NFD; đ handled manually),
 // collapse whitespace. Used on both sides of every match comparison.
-function normalize(input: string): string {
+export function normalize(input: string): string {
   return input
     .toLowerCase()
     .replace(/đ/g, 'd')
@@ -383,12 +383,12 @@ async function disambiguate(
 
 // A candidate matches a search term when either string contains the other
 // (normalized). Terms shorter than 3 chars are ignored — too noisy.
-function matchesTerm(candidate: EntityCandidate, normTerm: string): boolean {
+export function matchesTerm(candidate: EntityCandidate, normTerm: string): boolean {
   if (normTerm.length < 3) return false
   return candidate.haystack.includes(normTerm) || normTerm.includes(candidate.haystack)
 }
 
-async function resolveHints(
+export async function resolveHints(
   anthropic: Anthropic,
   model: string,
   email: EmailContext,

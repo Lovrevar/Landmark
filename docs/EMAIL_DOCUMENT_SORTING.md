@@ -14,6 +14,7 @@ it into the existing Documents module — no manual upload, no manual categorisa
 - [Classification Logic](#classification-logic)
 - [Duplicate Detection](#duplicate-detection)
 - [Data Model](#data-model)
+- [Documents Module UI](#documents-module-ui)
 - [Configuration & Secrets](#configuration--secrets)
 - [Error Handling](#error-handling)
 - [Deployment](#deployment)
@@ -39,8 +40,9 @@ Confirmed behaviour (from the requirements gathering):
 
 - **Sort depth:** category **and** entity links — Claude reads the content and matches
   real projects, suppliers, contracts, units, etc.
-- **Low confidence:** the document is still stored, but with `category_id = null` so it
-  surfaces under the existing **Uncategorized** filter; Claude's best-guess reasoning is
+- **Low confidence:** the document is still stored, but with `category_id = null`, so it
+  stays in the **All documents** view and is tallied into the **Uncategorized** count
+  (there is no dedicated Uncategorized filter node); Claude's best-guess reasoning is
   saved in the `description` field.
 - **Email scope:** only PDF/image attachments are processed; the email subject + body
   are always passed to Claude as extra classification context.
@@ -223,8 +225,10 @@ filed with `category_id = null` if **any** of these hold:
 - `category_id` is `null`, or
 - `category_id` is not a real category id.
 
-A null category makes the document appear under the existing **Uncategorized** sidebar
-filter on the Documents page (`fetchCategoryCounts` already buckets null-category rows).
+A null category leaves the document in the **All documents** view on the Documents page,
+where it is tallied into the **Uncategorized** count shown in the sidebar
+(`fetchCategoryCounts` already buckets null-category rows); there is no separate
+Uncategorized node to filter on.
 `description` is written with Claude's reasoning **regardless** of confidence, and
 entity associations from Pass 2 are written **even when uncategorized** — a weak
 category guess does not invalidate a strong project match.
@@ -257,13 +261,13 @@ null, so deduplication currently covers email imports only — see
 ## Data Model
 
 No new tables — the feature reuses `documents`, `document_categories`,
-`document_associations`, and the `documents` storage bucket. Two migrations extend the
-`documents` table:
+`document_associations`, and the `documents` storage bucket. The relevant migrations:
 
 | Migration | Change |
 |---|---|
 | [`20260521120000_documents_source_email_import.sql`](../supabase/migrations/20260521120000_documents_source_email_import.sql) | Extends the `documents_source_check` constraint with `'email_import'`. |
 | [`20260521130000_documents_content_hash.sql`](../supabase/migrations/20260521130000_documents_content_hash.sql) | Adds the nullable `content_hash` column + its partial index. |
+| [`20260525120000_documents_category_counts_filtered.sql`](../supabase/migrations/20260525120000_documents_category_counts_filtered.sql) | Replaces the parameter-less `get_document_category_counts()` RPC with a filter-aware version (project / entity / file-name / upload-date range) so the sidebar counts track the page's active filters. Email-imported rows are counted exactly like any other; NULL-`category_id` rows feed the **Uncategorized** total. |
 
 Email-imported rows are written as:
 - `source = 'email_import'`
@@ -276,6 +280,49 @@ Email-imported rows are written as:
 The TypeScript `DocumentSource` union and `Document` interface in
 [`src/components/Documents/types.ts`](../src/components/Documents/types.ts) were updated
 to match (`'email_import'` and `content_hash`).
+
+---
+
+## Documents Module UI
+
+The email pipeline adds **no** frontend code — emailed documents land in the same
+[`src/components/Documents/`](../src/components/Documents/) module that staff use for
+manual uploads and browsing. That module was since refactored from two monolithic files
+into a composed set of components, a service, and tested utils; this section is the map
+of where things now live, so the email feature's UI touchpoints (category counts, the
+Uncategorized total, the classified document appearing in the list) stay traceable.
+
+### Page composition
+
+[`index.tsx`](../src/components/Documents/index.tsx) is now a thin orchestrator. It owns
+the page state (selected category, filters, pagination, expanded tree nodes), runs the
+fetch effects, and composes the pieces below. Two-column layout: a category sidebar on
+the left and a filter bar + document list on the right.
+
+| Piece | File | Role |
+|---|---|---|
+| `CategoryRow` | [`components/CategoryRow.tsx`](../src/components/Documents/components/CategoryRow.tsx) | One recursive row of the **sidebar** category tree. Renders the Croatian `name_hr` label, the rolled-up document count, and the expand/collapse chevron. `index.tsx` maps the root nodes to `CategoryRow`; clicking a row selects the category (and expands, never collapses), the chevron is the collapse control. |
+| `DocumentListTable` | [`components/DocumentListTable.tsx`](../src/components/Documents/components/DocumentListTable.tsx) | The right-hand document list. Per-row category breadcrumb, project badges, open/delete actions, and an expandable detail row showing `description` (where email imports surface Claude's reasoning), other associations, and file size. Owns its own row-expansion state. |
+| `EntityPicker` | [`components/EntityPicker.tsx`](../src/components/Documents/components/EntityPicker.tsx) | A `SearchableSelect` form field that lazily loads its options for a given `PickerEntity` (`project`, `subcontractor`, `contract`, `unit`, `customer`, `credit`), with optional subcontractor/project scoping. Used by the upload modal. |
+| `FilePickerField` | [`components/FilePickerField.tsx`](../src/components/Documents/components/FilePickerField.tsx) | Drag-and-drop / click file input for the upload modal: multi-file, dedups on `(name, size)`, rejects files over the 50 MB bucket cap with a per-file toast. |
+| `CategoryTree` | [`components/CategoryTree.tsx`](../src/components/Documents/components/CategoryTree.tsx) | A compact, scrollable category **picker** tree (distinct from the sidebar `CategoryRow` — no counts, bordered box). Used inside [`DocumentUploadModal`](../src/components/Documents/DocumentUploadModal.tsx) for choosing a category on upload. |
+
+### Service & utils
+
+| Piece | File | Role |
+|---|---|---|
+| `documentService` | [`services/documentService.ts`](../src/components/Documents/services/documentService.ts) | Unchanged in shape — the read/write/storage layer (`fetchCategories`, `fetchDocuments` via the `search_documents` RPC, `fetchCategoryCounts`, `uploadDocument`, `updateDocument`, `deleteDocument`, `getDocumentSignedUrl`). `fetchCategoryCounts` now takes the same `DocumentFilters` object as `fetchDocuments` (ignoring `categoryIds`) and calls the filter-aware RPC. `sanitizeFilename` was hardened to collapse `..` runs so Croatian `d.o.o.` filenames don't trip Storage's path-traversal check. |
+| `documentOptionsService` | [`services/documentOptionsService.ts`](../src/components/Documents/services/documentOptionsService.ts) | New service holding the dropdown-option fetchers (`fetchProjectOptions`, `fetchSubcontractorOptions`, `fetchPhaseOptions`, `fetchContractOptions`, `fetchCreditOptions`) plus `fetchEntityOptions(type, scope)`, which `EntityPicker` uses to load scoped options (e.g. only contracts under the chosen subcontractor/project). Extracted out of `index.tsx`/the modal. |
+| `treeHelpers` | [`utils/treeHelpers.ts`](../src/components/Documents/utils/treeHelpers.ts) | Pure tree functions: `buildIdMap` (id → category), `buildDescendantsMap` (a category click expands to its `[self + descendants]` uuid list for the search RPC), `rollupCounts` (sums own-counts up the tree so a parent shows its subtree total), and `flattenTree`. Unit-tested in [`treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts). |
+| `entityHelpers` | [`utils/entityHelpers.ts`](../src/components/Documents/utils/entityHelpers.ts) | `badgeVariantForType` (badge colour per entity type) and `resolveEntityLabel` (turns an association's `entity_id` into a human label via the loaded option lists, falling back to a short id). Used by `DocumentListTable`. |
+
+### How an emailed document surfaces
+
+When the `sort-document` function files a row, the next sidebar-count fetch picks it up
+via `fetchCategoryCounts` → `get_document_category_counts` → `rollupCounts`, and the row
+appears in `DocumentListTable` under its category breadcrumb. A low-confidence import
+(`category_id = null`) is counted toward the **Uncategorized** total and shows Claude's
+reasoning in the expandable detail row's `description`.
 
 ---
 
@@ -338,6 +385,13 @@ verify_jwt = false
 
 ## Verification
 
+The classification logic (`normalize`, `matchesTerm`, `resolveHints` ambiguity /
+hallucination guards, and the confidence/validity collapse in `classifyDocument`) is
+covered by unit tests in
+[`classifier.test.ts`](../supabase/functions/sort-document/classifier.test.ts) — no
+network, no DB, no Claude tokens. Run `npm run test:functions` (or, from
+`supabase/functions/`, `deno task test`).
+
 1. **Happy path** — `supabase functions serve sort-document`, then:
    ```
    curl -X POST http://localhost:54321/functions/v1/sort-document \
@@ -353,8 +407,8 @@ verify_jwt = false
    `content_hash`, the file in the `documents` bucket, and matching
    `document_associations` rows.
 5. **UI** — open the Documents page: the document appears under its classified
-   category; a deliberately ambiguous test file appears under the **Uncategorized**
-   filter with Claude's reasoning in the description.
+   category; a deliberately ambiguous test file stays in **All documents** and is
+   tallied into the **Uncategorized** count, with Claude's reasoning in the description.
 6. **Low-confidence path** — feed a blank/irrelevant image → `category_id` null,
    `description` populated.
 7. **End-to-end** — forward a real email with a PDF + an image + a `.docx` → two

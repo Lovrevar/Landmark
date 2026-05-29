@@ -99,7 +99,7 @@ Full documentation: [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
 
 ## Codebase Index
 Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
-When working in a specific module, read the relevant file in `docs/modules/` before making changes.
+When working in a specific module, read the relevant file in `docs/` (e.g. `docs/SALES.md`, `docs/FUNDING.md`) before making changes.
 After creating new files or doing major updates, update the relevant docs.
 
 ## graphify

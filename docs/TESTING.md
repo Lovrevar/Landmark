@@ -1,11 +1,54 @@
 # Cognilion — Testing
 
-Two complementary layers:
+Three complementary layers:
 
-1. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision.
-2. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
+1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions (formatters, VAT calculations, price/credit math, TIC formatters, tree helpers).
+2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision.
+3. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
 
-Run E2E first to catch the blunt-force regressions, then walk the relevant manual sheet for the module you touched.
+Run the unit suite for instant feedback on the logic you touched, then E2E to catch the blunt-force regressions, and finally walk the relevant manual sheet for the module you touched.
+
+---
+
+## Unit suite
+
+**Runner:** [Vitest](https://vitest.dev/) (`vitest` ^1.6.1). Config: [`vitest.config.ts`](../vitest.config.ts). Tests run in-process — no Supabase, no browser, no network.
+
+### What it covers
+
+Pure functions only — the deterministic calculation and formatting helpers that back the financial/UI layers. Component rendering and integration flows are left to the E2E suite.
+
+| Target | File | Covers |
+|---|---|---|
+| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro` |
+| VAT calculations | [`src/utils/vatCalculations.test.ts`](../src/utils/vatCalculations.test.ts) | `CROATIAN_VAT_RATES`, `calculateVatBreakdown` — the 4-slot multi-VAT engine (25/13/0/5%), null-safe, total = sum of subtotals invariant |
+| Sales price utils | [`src/components/Sales/utils/priceUtils.test.ts`](../src/components/Sales/utils/priceUtils.test.ts) | `calculateAdjustedPriceRange` — increase/decrease with clamp-to-zero |
+| Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
+| TIC formatters | [`src/components/Funding/TIC/utils/ticFormatters.test.ts`](../src/components/Funding/TIC/utils/ticFormatters.test.ts) | `calculateRowPercentages`, `calculateTotals` (vlastita/kreditna), `formatNumber`, `formatPercentage` |
+| Documents tree helpers | [`src/components/Documents/utils/treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts) | `buildIdMap`, `buildDescendantsMap`, `rollupCounts`, `flattenTree` |
+
+### Configuration ([`vitest.config.ts`](../vitest.config.ts))
+
+- **Plugins:** `@vitejs/plugin-react` (shares the Vite transform pipeline; TS/JSX handled out of the box).
+- **Environment:** `node` — these are pure-function tests, no DOM needed. No globals (`describe`/`it`/`expect` are imported explicitly from `vitest` in each spec) and no setup file.
+- **Include:** `src/**/*.test.ts`.
+- **Exclude:** `e2e/**`, `node_modules/**` — keeps the Playwright specs out of the Vitest run.
+- **Coverage:** v8 provider (`@vitest/coverage-v8`), reporters `text` + `html`, measured over `src/**/*.ts`.
+
+### Conventions
+
+- Tests live **next to the code** as `*.test.ts`, typically inside the module's `utils/` folder (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`).
+- Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
+- Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
+- Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
+
+### Running
+
+```bash
+npm test               # one-shot run (vitest run)
+npm run test:watch     # watch mode (vitest)
+npm run test:coverage  # one-shot run with v8 coverage (text + html report)
+```
 
 ---
 
@@ -69,7 +112,7 @@ First run builds the app (~10–15 s) before starting the preview server. Subseq
 
 ### CI
 
-GitHub Actions workflow [`e2e.yml`](../.github/workflows/e2e.yml) runs on PRs to `main` / `development` and on `workflow_dispatch`. Secrets required: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CASHFLOW_PASSWORD`, `E2E_ALLOWED_SUPABASE_URL`. Failed runs upload `playwright-report/` and `test-results/` with 14-day retention.
+GitHub Actions workflow [`e2e.yml`](../.github/workflows/e2e.yml) runs on PRs to `main` / `development` and on `workflow_dispatch`. After `npm ci` it runs the unit suite (`npm test`) first, then asserts the required secrets are present before the E2E run. Secrets required: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CASHFLOW_PASSWORD`, `E2E_ALLOWED_SUPABASE_URL`. Failed runs upload `playwright-report/` and `test-results/` with 14-day retention.
 
 ### Adding a test
 

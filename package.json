@@ -13,6 +13,7 @@
     "e2e:serve": "vite preview --host 127.0.0.1 --port 5173 --strictPort",
     "e2e:seed": "node scripts/seed-e2e.mjs",
     "test": "vitest run",
+    "test:functions": "cd supabase/functions && deno task test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
