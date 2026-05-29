@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
+import { buildPaymentData } from './paymentPayload'
 
 export const fetchPayments = async () => {
   const result = await supabase
@@ -115,23 +116,7 @@ export const fetchCredits = async () => {
 export const createPayment = async (formData: PaymentFormData) => {
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isKompenzacija = !formData.is_cesija && formData.payment_source_type === 'kompenzacija'
-
-  const paymentData = {
-    invoice_id: formData.invoice_id,
-    payment_source_type: formData.is_cesija ? 'bank_account' : formData.payment_source_type,
-    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' && !isKompenzacija ? (formData.company_bank_account_id || null) : null),
-    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' && !isKompenzacija ? (formData.credit_id || null) : null),
-    is_cesija: formData.is_cesija,
-    cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
-    cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,
-    payment_date: formData.payment_date,
-    amount: formData.amount,
-    payment_method: formData.payment_method,
-    reference_number: formData.reference_number || null,
-    description: formData.description,
-    created_by: user?.id
-  }
+  const paymentData = buildPaymentData(formData, user?.id)
 
   const { data: inserted, error } = await supabase
     .from('accounting_payments')
@@ -152,23 +137,7 @@ export const createPayment = async (formData: PaymentFormData) => {
 export const updatePayment = async (id: string, formData: PaymentFormData) => {
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isKompenzacija = !formData.is_cesija && formData.payment_source_type === 'kompenzacija'
-
-  const paymentData = {
-    invoice_id: formData.invoice_id,
-    payment_source_type: formData.is_cesija ? 'bank_account' : formData.payment_source_type,
-    company_bank_account_id: formData.is_cesija ? null : (formData.payment_source_type === 'bank_account' && !isKompenzacija ? (formData.company_bank_account_id || null) : null),
-    credit_id: formData.is_cesija ? null : (formData.payment_source_type === 'credit' && !isKompenzacija ? (formData.credit_id || null) : null),
-    is_cesija: formData.is_cesija,
-    cesija_company_id: formData.is_cesija ? (formData.cesija_company_id || null) : null,
-    cesija_bank_account_id: formData.is_cesija ? (formData.cesija_bank_account_id || null) : null,
-    payment_date: formData.payment_date,
-    amount: formData.amount,
-    payment_method: formData.payment_method,
-    reference_number: formData.reference_number || null,
-    description: formData.description,
-    created_by: user?.id
-  }
+  const paymentData = buildPaymentData(formData, user?.id)
 
   const { error } = await supabase
     .from('accounting_payments')
