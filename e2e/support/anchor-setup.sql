@@ -1,10 +1,16 @@
--- E2E anchor data — one-time dev-DB setup.
--- Run once per dev Supabase project before the E2E suite is first executed.
--- Safe to re-run: uses WHERE NOT EXISTS so it does not depend on unique constraints
--- that may or may not exist on a given table.
+-- E2E public-schema anchor data. Idempotent; safe to re-run.
 --
--- Usage: paste into the Supabase SQL editor for the dev project, or run via
+-- Usage: paste into the Supabase SQL editor for the DEV project, or:
 --   psql "$SUPABASE_DB_URL" -f e2e/support/anchor-setup.sql
+--
+-- NOTE on test users: the E2E auth users (the 5 role users + the dedicated
+-- e2e-logout@mail.com used by auth/session.spec) are provisioned automatically by
+-- the Playwright globalSetup via the Supabase Admin API (idempotent, version-safe),
+-- not here. Raw auth.users seeding via SQL is GoTrue-version-sensitive and was
+-- unreliable, so it was removed. After a dev-DB reset, the users re-create
+-- themselves on the next `npm run test:e2e`; run this file too (any time) for the
+-- anchor project + project_managers link below, which the Supervision/Funding/
+-- Retail tests depend on.
 
 BEGIN;
 
@@ -17,6 +23,8 @@ WHERE NOT EXISTS (
 
 -- 2. Link the Supervision test user to the anchor project via project_managers so
 --    the user's assignedProjects check in AuthContext returns a non-empty list.
+--    (Populates once the Supervision user exists — i.e. after globalSetup has run;
+--    re-run this file if you applied it before the first suite run.)
 INSERT INTO project_managers (user_id, project_id)
 SELECT u.id, p.id
 FROM users u

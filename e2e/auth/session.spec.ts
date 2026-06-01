@@ -7,7 +7,7 @@ import { storageStatePath } from '../support/auth'
 test.setTimeout(60_000)
 
 test.describe('logout', () => {
-  test.use({ storageState: storageStatePath('director') })
+  test.use({ storageState: storageStatePath('logout') })
 
   test('clears the session, hides the layout, and clears the cashflow unlock flag', async ({ page }) => {
     await page.goto('/')
@@ -35,7 +35,7 @@ test.describe('logout', () => {
 })
 
 test.describe('session persistence', () => {
-  test.use({ storageState: storageStatePath('director') })
+  test.use({ storageState: storageStatePath('logout') })
 
   test('reloading a protected route keeps the user authenticated on that route', async ({ page }) => {
     await page.goto('/projects')

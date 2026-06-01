@@ -7,22 +7,43 @@ export type RoleKey =
   | 'supervision'
   | 'investment'
 
+// Storage-state keys: the five role sessions plus a dedicated 'logout' session.
+export type SessionKey = RoleKey | 'logout'
+
+export type AppRole = 'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'
+
 export interface TestUser {
-  role: RoleKey
+  role: SessionKey
+  appRole: AppRole // public.users.role to provision (distinct from the storage-state key)
   email: string
   password: string
   unlockCashflow: boolean
 }
 
+// One shared session per role — used by the role-based specs and the smoke loop.
 export const TEST_USERS: TestUser[] = [
-  { role: 'director',    email: 'e2e-director@mail.com',    password: 'e2e123', unlockCashflow: true },
-  { role: 'accounting',  email: 'e2e-cashflow@mail.com',    password: 'e2e123', unlockCashflow: true },
-  { role: 'sales',       email: 'e2e-sales@mail.com',       password: 'e2e123', unlockCashflow: false },
-  { role: 'supervision', email: 'e2e-supervision@mail.com', password: 'e2e123', unlockCashflow: false },
-  { role: 'investment',  email: 'e2e-funding@mail.com',     password: 'e2e123', unlockCashflow: false },
+  { role: 'director',    appRole: 'Director',    email: 'e2e-director@mail.com',    password: 'e2e123', unlockCashflow: true },
+  { role: 'accounting',  appRole: 'Accounting',  email: 'e2e-cashflow@mail.com',    password: 'e2e123', unlockCashflow: true },
+  { role: 'sales',       appRole: 'Sales',       email: 'e2e-sales@mail.com',       password: 'e2e123', unlockCashflow: false },
+  { role: 'supervision', appRole: 'Supervision', email: 'e2e-supervision@mail.com', password: 'e2e123', unlockCashflow: false },
+  { role: 'investment',  appRole: 'Investment',  email: 'e2e-funding@mail.com',     password: 'e2e123', unlockCashflow: false },
 ]
 
-export function storageStatePath(role: RoleKey): string {
+// Dedicated session for auth/session.spec. That spec logs out with a global-scope
+// signOut (the app's default), which revokes EVERY session for that user — so it
+// must not share a user with any other spec, or it would invalidate that user's
+// shared role session mid-test under parallel workers (observed as intermittent
+// drops to /login). Director-equivalent (cashflow unlocked) so the "logout clears
+// the Cashflow flag" assertion stays meaningful. Deliberately NOT in TEST_USERS,
+// so the smoke loop doesn't pin a shell check to this logged-out-mid-suite user.
+export const LOGOUT_USER: TestUser = {
+  role: 'logout', appRole: 'Director', email: 'e2e-logout@mail.com', password: 'e2e123', unlockCashflow: true,
+}
+
+// Every session globalSetup must establish (role sessions + the logout session).
+export const SETUP_USERS: TestUser[] = [...TEST_USERS, LOGOUT_USER]
+
+export function storageStatePath(role: SessionKey): string {
   return `e2e/.auth/${role}.json`
 }
 
