@@ -3577,8 +3577,34 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_document_category_counts: {
+      get_chat_conversation_summaries: {
         Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          id: string
+          is_group: boolean
+          last_content: string
+          last_created_at: string
+          last_file_name: string
+          last_file_size: number
+          last_file_type: string
+          last_file_url: string
+          last_message_id: string
+          last_sender_id: string
+          name: string
+          unread_count: number
+        }[]
+      }
+      get_document_category_counts: {
+        Args: {
+          p_entity_id?: string
+          p_entity_type?: string
+          p_file_name_search?: string
+          p_project_id?: string
+          p_uploaded_from?: string
+          p_uploaded_to?: string
+        }
         Returns: {
           category_id: string
           doc_count: number

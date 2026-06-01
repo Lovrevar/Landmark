@@ -1,28 +1,13 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
 import type { ChatConversation, ChatMessage, ChatUser, ChatParticipant } from '../../../types/chat'
+import type { Database } from '../../../types/database'
 
-// Shape of one row from the get_chat_conversation_summaries() RPC. Declared
-// locally because the migration that adds the RPC
-// (20260529120000_chat_conversation_summaries.sql) must be applied before
-// `npm run db:types` can pick it up into src/types/database.ts; until then the
-// generated Database type doesn't know the function, so we bridge with a cast.
-type ChatConversationSummaryRow = {
-  id: string
-  name: string | null
-  is_group: boolean
-  created_by: string
-  created_at: string
-  last_message_id: string | null
-  last_content: string | null
-  last_created_at: string | null
-  last_sender_id: string | null
-  last_file_url: string | null
-  last_file_name: string | null
-  last_file_size: number | null
-  last_file_type: string | null
-  unread_count: number
-}
+// Row type for the get_chat_conversation_summaries() RPC, sourced from the
+// generated DB types. supabase-js can't infer this function's return shape
+// (its generated Args is `never`), so we narrow the `any` it returns to this.
+type ChatConversationSummaryRow =
+  Database['public']['Functions']['get_chat_conversation_summaries']['Returns'][number]
 
 type ParticipantWithUserRow = {
   id: string
@@ -51,12 +36,9 @@ export async function fetchConversations(): Promise<ChatConversation[]> {
   // Last message + unread count are computed server-side (bounded by #conversations,
   // not total message volume — see the RPC's migration). The caller is derived from
   // auth.uid() inside the function, so no userId argument is needed.
-  const { data: summaryData, error: sErr } = await supabase.rpc(
-    'get_chat_conversation_summaries' as never,
-  )
+  const { data, error: sErr } = await supabase.rpc('get_chat_conversation_summaries')
   if (sErr) throw sErr
-
-  const summaries = (summaryData as unknown as ChatConversationSummaryRow[] | null) ?? []
+  const summaries = (data ?? []) as ChatConversationSummaryRow[]
   if (summaries.length === 0) return []
 
   const conversationIds = summaries.map(s => s.id)
