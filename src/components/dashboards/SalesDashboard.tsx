@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
+import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import {
   Home,
@@ -25,34 +26,15 @@ const defaultStats: SalesDashboardStats = {
 
 const SalesDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [stats, setStats] = useState<SalesDashboardStats>(defaultStats)
-  const [projectStats, setProjectStats] = useState<ProjectStats[]>([])
-  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([])
-  const [recentSales, setRecentSales] = useState<RecentSale[]>([])
-  const [paymentMethodBreakdown, setPaymentMethodBreakdown] = useState<Record<string, number>>({})
-  const [loading, setLoading] = useState(true)
+  const { data, loading } = useCachedData('dashboard:sales', salesService.fetchSalesDashboardData)
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const stats: SalesDashboardStats = data?.stats ?? defaultStats
+  const projectStats: ProjectStats[] = data?.projectStats ?? []
+  const monthlyTrends: MonthlyTrend[] = data?.monthlyTrends ?? []
+  const recentSales: RecentSale[] = data?.recentSales ?? []
+  const paymentMethodBreakdown: Record<string, number> = data?.paymentMethodBreakdown ?? {}
 
-  const loadAll = async () => {
-    try {
-      const { stats: s, projectStats: ps, monthlyTrends: mt, paymentMethodBreakdown: pm, recentSales: rs } =
-        await salesService.fetchSalesDashboardData()
-      setStats(s)
-      setProjectStats(ps)
-      setMonthlyTrends(mt)
-      setPaymentMethodBreakdown(pm)
-      setRecentSales(rs)
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.sales.loading')} />
   }
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { LoadingSpinner, Button } from '../ui'
 import { useTranslation } from 'react-i18next'
 import { useAsyncExport } from '../../hooks/useAsyncExport'
+import { useCachedData } from '../../lib/useCachedData'
 import {
   Banknote,
   AlertTriangle,
@@ -25,39 +26,20 @@ const defaultFinancialSummary: FinancialSummary = {
 
 const InvestmentDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-  const [bankCredits, setBankCredits] = useState<BankCredit[]>([])
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
-  const [financialSummary, setFinancialSummary] = useState<FinancialSummary>(defaultFinancialSummary)
-  const [loading, setLoading] = useState(true)
+  const { data, loading } = useCachedData('dashboard:investment', investmentService.fetchInvestmentDashboardData)
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const companies: Company[] = data?.companies ?? []
+  const banks: Bank[] = data?.banks ?? []
+  const bankCredits: BankCredit[] = data?.bankCredits ?? []
+  const recentActivities: RecentActivity[] = data?.recentActivities ?? []
+  const financialSummary: FinancialSummary = data?.financialSummary ?? defaultFinancialSummary
 
   const { run: handleExportPDF } = useAsyncExport(
     () => generateInvestmentReportPDF(financialSummary, bankCredits, []),
     'dashboards.investment.pdf_error'
   )
 
-  const loadAll = async () => {
-    setLoading(true)
-    try {
-      const data = await investmentService.fetchInvestmentDashboardData()
-      setCompanies(data.companies)
-      setBanks(data.banks)
-      setBankCredits(data.bankCredits)
-      setRecentActivities(data.recentActivities)
-      setFinancialSummary(data.financialSummary)
-    } catch (error) {
-      console.error('Error fetching investment data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.investment.loading')} />
   }
 

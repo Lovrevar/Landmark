@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, StatGrid, Button } from '../ui'
+import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import {
   Home,
@@ -47,36 +48,16 @@ const defaultFunding: FundingMetrics = {
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const [projects, setProjects] = useState<ProjectStats[]>([])
-  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics>(defaultFinancial)
-  const [salesMetrics, setSalesMetrics] = useState<SalesMetrics>(defaultSales)
-  const [constructionMetrics, setConstructionMetrics] = useState<ConstructionMetrics>(defaultConstruction)
-  const [fundingMetrics, setFundingMetrics] = useState<FundingMetrics>(defaultFunding)
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, loading } = useCachedData('dashboard:director', directorService.fetchDirectorDashboard)
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const projects: ProjectStats[] = data?.projects ?? []
+  const financialMetrics: FinancialMetrics = data?.financial ?? defaultFinancial
+  const salesMetrics: SalesMetrics = data?.sales ?? defaultSales
+  const constructionMetrics: ConstructionMetrics = data?.construction ?? defaultConstruction
+  const fundingMetrics: FundingMetrics = data?.funding ?? defaultFunding
+  const alerts: Alert[] = data?.alerts ?? []
 
-  const loadAll = async () => {
-    setLoading(true)
-    try {
-      const data = await directorService.fetchDirectorDashboard()
-      setProjects(data.projects)
-      setFinancialMetrics(data.financial)
-      setSalesMetrics(data.sales)
-      setConstructionMetrics(data.construction)
-      setFundingMetrics(data.funding)
-      setAlerts(data.alerts)
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.director.loading')} />
   }
 

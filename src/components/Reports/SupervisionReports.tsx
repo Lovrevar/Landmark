@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCachedData } from '../../lib/useCachedData'
 import {
   TrendingUp,
   Users,
@@ -21,13 +22,17 @@ const SupervisionReports: React.FC = () => {
   const { t } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
-  const [projectReport, setProjectReport] = useState<ProjectSupervisionReport | null>(null)
   const [dateRange, setDateRange] = useState({
     start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   })
   const [loading, setLoading] = useState(true)
-  const [generatingReport, setGeneratingReport] = useState(false)
+
+  const { data: projectReport, loading: generatingReport } = useCachedData<ProjectSupervisionReport>(
+    `report:supervision:${selectedProject}:${dateRange.start}:${dateRange.end}`,
+    () => generateProjectReport(selectedProject, projects, dateRange),
+    { enabled: !!selectedProject && projects.length > 0 }
+  )
 
   useEffect(() => {
     loadProjects()
@@ -47,25 +52,6 @@ const SupervisionReports: React.FC = () => {
       setLoading(false)
     }
   }
-
-  const loadProjectReport = useCallback(async () => {
-    if (!selectedProject) return
-    setGeneratingReport(true)
-    try {
-      const report = await generateProjectReport(selectedProject, projects, dateRange)
-      setProjectReport(report)
-    } catch (error) {
-      console.error('Error generating project report:', error)
-    } finally {
-      setGeneratingReport(false)
-    }
-  }, [selectedProject, projects, dateRange])
-
-  useEffect(() => {
-    if (selectedProject) {
-      loadProjectReport()
-    }
-  }, [selectedProject, dateRange, loadProjectReport])
 
   const handleGeneratePDF = async () => {
     if (!projectReport) return

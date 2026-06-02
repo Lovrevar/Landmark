@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
 import StatCard from '../ui/StatCard'
+import { useCachedData } from '../../lib/useCachedData'
 import {
   ClipboardCheck,
   Users,
@@ -31,29 +32,12 @@ const defaultStats: WeeklyStats = {
 
 const SupervisionDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [weekLogs, setWeekLogs] = useState<WorkLog[]>([])
-  const [subcontractorStatus, setSubcontractorStatus] = useState<SubcontractorStatus[]>([])
-  const [stats, setStats] = useState<WeeklyStats>(defaultStats)
-  const [loading, setLoading] = useState(true)
+  const { data, loading } = useCachedData('dashboard:supervision', supervisionService.fetchSupervisionDashboard)
   const [selectedView, setSelectedView] = useState<'week' | 'status' | 'issues'>('week')
 
-  useEffect(() => {
-    loadAll()
-  }, [])
-
-  const loadAll = async () => {
-    setLoading(true)
-    try {
-      const data = await supervisionService.fetchSupervisionDashboard()
-      setWeekLogs(data.weekLogs)
-      setSubcontractorStatus(data.subcontractorStatus)
-      setStats(data.stats)
-    } catch (error) {
-      console.error('Error fetching supervision data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const weekLogs: WorkLog[] = data?.weekLogs ?? []
+  const subcontractorStatus: SubcontractorStatus[] = data?.subcontractorStatus ?? []
+  const stats: WeeklyStats = data?.stats ?? defaultStats
 
   const statCards = [
     { key: 'completed_this_week', label: t('dashboards.supervision.completed_this_week'), sub: t('dashboards.supervision.this_week_sub'), Icon: CheckCircle2, color: 'green' as const },
@@ -64,7 +48,7 @@ const SupervisionDashboard: React.FC = () => {
     { key: 'critical_deadlines', label: t('dashboards.supervision.critical'), sub: t('dashboards.supervision.due_this_week'), Icon: Clock, color: 'orange' as const }
   ]
 
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.supervision.loading')} />
   }
 
