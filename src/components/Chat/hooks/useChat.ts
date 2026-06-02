@@ -37,7 +37,7 @@ export function useChat() {
     if (!user) return
     try {
       setLoadingConversations(true)
-      const data = await fetchConversations(user.id)
+      const data = await fetchConversations()
       setConversations(data)
     } catch (err) {
       console.error('Failed to load conversations:', err)

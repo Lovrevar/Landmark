@@ -48,7 +48,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       }
     }
     initializeCompany()
-  }, [])
+  }, [fetchMyCompanies])
 
   useEffect(() => {
     if (!formData.bank_id) {

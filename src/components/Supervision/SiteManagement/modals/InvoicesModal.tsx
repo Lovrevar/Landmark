@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -30,11 +30,27 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
+  const fetchInvoices = useCallback(async () => {
+    if (!subcontractor) return
+
+    const contractId = (subcontractor as SubcontractorWithContractInfo).contract_id || subcontractor.id
+
+    setLoading(true)
+    try {
+      const formattedInvoices = await fetchContractInvoices(contractId)
+      setInvoices(formattedInvoices)
+    } catch (error) {
+      console.error('Error fetching invoices:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [subcontractor])
+
   useEffect(() => {
     if (isOpen && subcontractor) {
       fetchInvoices()
     }
-  }, [isOpen, subcontractor?.id])
+  }, [isOpen, subcontractor, fetchInvoices])
 
   useEffect(() => {
     if (isOpen) {
@@ -46,29 +62,6 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-
-  const fetchInvoices = async () => {
-    if (!subcontractor) return
-
-    const contractId = (subcontractor as SubcontractorWithContractInfo).contract_id || subcontractor.id
-
-    /*console.log('🔍 InvoicesModal - Fetching invoices for CONTRACT:', {
-      contract_id: contractId,
-      subcontractor_name: (subcontractor as any).company_name || subcontractor.name,
-      contract_title: (subcontractor as any).contract_title,
-      full_subcontractor_object: subcontractor
-    })*/
-
-    setLoading(true)
-    try {
-      const formattedInvoices = await fetchContractInvoices(contractId)
-      setInvoices(formattedInvoices)
-    } catch (error) {
-      console.error('Error fetching invoices:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getStatusVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
     switch (status) {

@@ -1,40 +1,28 @@
-import { useState, useEffect, useCallback } from 'react'
 import { format, subMonths } from 'date-fns'
 import { fetchGeneralReportData } from '../services/generalReportService'
+import { useCachedData } from '../../../lib/useCachedData'
 import type { ComprehensiveReport } from '../types'
 
 interface UseGeneralReportDataResult {
   report: ComprehensiveReport | null
   loading: boolean
+  /** Epoch ms of when the currently-shown report was generated, or null. */
+  fetchedAt: number | null
+  /** Force a fresh fetch, bypassing the cache. */
   refetch: () => void
 }
 
 export function useGeneralReportData(): UseGeneralReportDataResult {
-  const [report, setReport] = useState<ComprehensiveReport | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const selectedProject = 'all'
-  const dateRange = {
-    start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
-    end: format(new Date(), 'yyyy-MM-dd')
-  }
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const reportData = await fetchGeneralReportData(selectedProject, dateRange)
-      setReport(reportData)
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setLoading(false)
+  const { data, loading, fetchedAt, refetch } = useCachedData<ComprehensiveReport>(
+    'report:general',
+    () => {
+      const dateRange = {
+        start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
+        end: format(new Date(), 'yyyy-MM-dd')
+      }
+      return fetchGeneralReportData('all', dateRange)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  return { report, loading, refetch: load }
+  return { report: data, loading, fetchedAt, refetch }
 }

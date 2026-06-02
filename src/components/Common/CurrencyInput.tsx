@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates the CurrencyInput component with its formatCurrency helpers (used
+// in 20+ places); the mixed-exports warning is a fast-refresh DX concern only.
 import React, { useState, useEffect } from 'react'
 import Input from '../ui/Input'
 

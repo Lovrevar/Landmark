@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link2 } from 'lucide-react'
 import { Modal, FormField, Select, Button, Alert } from '../../../ui'
@@ -52,23 +52,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
 
-  useEffect(() => {
-    if (visible) {
-      loadSuppliers()
-      loadProjects()
-    }
-  }, [visible])
-
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadPhases(selectedProjectId)
-    } else {
-      setPhases([])
-      setSelectedPhaseId('')
-    }
-  }, [selectedProjectId])
-
-  const loadSuppliers = async () => {
+  const loadSuppliers = useCallback(async () => {
     try {
       setLoading(true)
       setSuppliers(await fetchSuppliersForLinking())
@@ -78,25 +62,41 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast, t])
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       setProjects(await fetchProjectsForLinking())
     } catch (error) {
       console.error('Error loading projects:', error)
       toast.error(t('suppliers.link.error_projects'))
     }
-  }
+  }, [toast, t])
 
-  const loadPhases = async (projectId: string) => {
+  const loadPhases = useCallback(async (projectId: string) => {
     try {
       setPhases(await fetchPhasesForProject(projectId))
     } catch (error) {
       console.error('Error loading phases:', error)
       toast.error(t('suppliers.link.error_phases'))
     }
-  }
+  }, [toast, t])
+
+  useEffect(() => {
+    if (visible) {
+      loadSuppliers()
+      loadProjects()
+    }
+  }, [visible, loadSuppliers, loadProjects])
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      loadPhases(selectedProjectId)
+    } else {
+      setPhases([])
+      setSelectedPhaseId('')
+    }
+  }, [selectedProjectId, loadPhases])
 
   const handleSubmit = async () => {
     try {

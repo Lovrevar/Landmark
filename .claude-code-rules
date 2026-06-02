@@ -1,118 +1,120 @@
 # Claude Code Rules
 
+> These rules describe how this codebase is **actually** organised. For the full
+> module map and per-file descriptions see [docs/CODEBASE_INDEX.md](./docs/CODEBASE_INDEX.md)
+> and the per-module docs in `docs/` (e.g. `docs/SALES.md`). When in doubt, those
+> docs and the existing code are authoritative.
+
 ## Module Structure
 
-ALL feature modules MUST use this structure:
+Each feature module under `src/components/[FeatureName]/` follows this layout:
 
 ```
-src/components/[FeatureName]/
-├── types/       # TypeScript interfaces, types, enums only
-├── services/    # API calls and business logic only
-├── hooks/       # Custom React hooks only
-├── views/       # Presentational components only
-└── forms/       # Modals and form components only
+Module/
+├── index.tsx       # Entry point / main view
+├── types.ts        # Module-specific TypeScript types
+├── components/      # Presentational sub-components
+├── forms/           # Form modals for create/edit
+├── modals/          # Detail/action modals
+├── hooks/           # Data fetching and local state
+└── services/        # Supabase queries and business logic
 ```
+
+Not every module has every folder — add a folder when it earns its place.
 
 ## Layer Rules
 
-### `types/`
-- ✅ Interfaces, types, enums
-- ❌ No functions, no components, no logic
-
 ### `services/`
-- ✅ API calls, data fetching, business logic, data transformation
+- ✅ Supabase queries, data fetching, business logic, data transformation
 - ❌ No JSX, no React hooks, no UI rendering
+- A module's `services/` may hold **several focused service files**
+  (e.g. `siteService.ts`, `milestoneService.ts`, `phaseService.ts`) rather than one
+  monolithic `service.ts`. Split by concern.
 
 ### `hooks/`
 - ✅ Custom hooks (must start with `use`), state management, calls to services
-- ❌ No direct API calls, no JSX
+- ❌ Components never call Supabase directly — go through a hook → service
 
-### `views/`
-- ✅ Presentational components, props-driven, local UI state only
-- ❌ No API calls, no business logic
+### `components/` (and `index.tsx`)
+- ✅ Presentational, props-driven, local UI state
+- ❌ No direct Supabase calls, no business logic
 
-### `forms/`
-- ✅ Modals, forms, validation, submission — delegate logic to services
-- ❌ No complex business logic
+### `forms/` and `modals/`
+- ✅ Form/detail modals; delegate data logic to services
+- ❌ No complex business logic inline
 
-## File Size
+### `types.ts`
+- ✅ Module-local interfaces, types, enums. Shared types live in `src/types/`.
 
-- **Target:** 150–250 lines
-- **Maximum:** 300 lines
-- **If a file exceeds 300 lines:** refactor before adding new code
+## Shared Code & Module Boundaries
 
-## Module Boundaries
+- ❌ Never import from another feature module's internals
+  (e.g. `../Sales/services/salesService`)
+- ✅ Share through top-level folders: `src/lib/`, `src/utils/`, `src/types/`,
+  and the shared primitive library `src/components/ui/`
+- ✅ **Always reuse `src/components/ui/`** (`Modal`, `Table`, `Badge`, `Card`, etc.)
+  before creating a new UI primitive
 
-- ❌ Never import from another feature module: `../Sales/services/salesService`
-- ✅ Share code through top-level shared folders: `../../lib/utils`
+## Casing Convention
+
+- Feature/domain directories use **PascalCase**: `Sales/`, `SalesProjects/`
+- Utility subdirectories always use **lowercase**: `hooks/`, `services/`, `forms/`,
+  `modals/`, `components/`
 
 ## Import Order
 
 ```typescript
 // 1. React
 import React, { useState } from 'react'
-
 // 2. Third-party
 import { Icon } from 'lucide-react'
-
 // 3. Types
-import { Project } from '../types/siteTypes'
-
+import { Project } from './types'
 // 4. Services
-import { siteService } from '../services/siteService'
-
+import { fetchProjects } from './services/siteService'
 // 5. Hooks
-import { useSiteData } from '../hooks/useSiteData'
-
-// 6. Views
-import { ProjectCard } from './ProjectCard'
+import { useSiteData } from './hooks/useSiteData'
+// 6. Components
+import { ProjectCard } from './components/ProjectCard'
 ```
-
-## Refactoring Triggers
-
-Refactor immediately when you notice:
-- File exceeds 300 lines
-- 5+ `useState` calls in one component
-- Nested ternary operators more than 2 levels deep
-- API calls inside view components
-- Business logic inside view components
-- Duplicate code across components
-
-## Component Extraction
-
-Extract to a new component when:
-- A block exceeds 100 lines
-- Logic or UI is reused in 2+ places
-- A section has a clearly distinct responsibility
 
 ## Error Handling
 
 - **Services** — throw errors, never swallow them
-- **Hooks** — catch errors from services, expose via error state (e.g. `{ data, error, loading }`)
+- **Hooks** — catch errors from services, expose via error state (`{ data, error, loading }`)
 - **Views** — never handle errors directly; receive error state as props and render accordingly
 
 ```typescript
 // services/siteService.ts
-async fetchProjects() {
+export async function fetchProjects() {
   const { data, error } = await supabase.from('projects').select('*')
   if (error) throw error
   return data
 }
-
-// hooks/useSiteData.ts
-const [error, setError] = useState<string | null>(null)
-try {
-  const data = await siteService.fetchProjects()
-  setProjects(data)
-} catch (err) {
-  setError('Failed to load projects')
-}
-
-// views/ProjectsGrid.tsx
-if (error) return <ErrorMessage message={error} />
 ```
+
+## File Size & Refactoring
+
+- **Guideline:** keep files focused; ~150–300 lines is a healthy target.
+- This is a target, not a hard gate — several large generated/report/PDF builders
+  legitimately exceed it. Prefer extracting when a file is doing several unrelated
+  jobs, not merely because it crossed a line count.
+
+Consider refactoring when you notice:
+- A component doing API calls or business logic that belongs in a hook/service
+- A block over ~100 lines, or UI/logic duplicated in 2+ places
+- 5+ `useState` calls in one component, or ternaries nested more than 2 deep
+
+## Cross-cutting Requirements
+
+- **Activity log:** every mutation (create/update/delete/bulk/import/export) must call
+  `logActivity()` from `src/lib/activityLog.ts`. See [docs/ACTIVITY_LOG.md](./docs/ACTIVITY_LOG.md).
+- **i18n:** never auto-translate ambiguous strings; Croatian domain/legal terms are
+  never translated. See the i18n rules in [CLAUDE.md](./CLAUDE.md).
+- **RLS:** the database (Row Level Security) is the real authorization boundary — never
+  bypass auth context in queries.
 
 ## Reference Implementations
 
-- `src/components/Site/` — canonical modular example
-- `src/components/Sales/` — well-organized feature module
+- `src/components/Sales/` — well-organised feature module
+- `src/components/Supervision/SiteManagement/` — multi-file `services/` split by concern

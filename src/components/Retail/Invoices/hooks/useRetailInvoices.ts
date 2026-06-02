@@ -32,7 +32,7 @@ export function useRetailInvoices() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 

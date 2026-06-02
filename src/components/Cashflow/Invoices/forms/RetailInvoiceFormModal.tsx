@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, Button, Textarea, FormField, Alert, Form } from '../../../ui'
 import { upsertRetailInvoice } from '../services/invoiceService'
@@ -20,9 +20,11 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  // A ref (not state) because it is only read inside effects, never rendered.
+  // Keeping it out of state means flipping it never re-triggers those effects.
+  const isInitialLoad = useRef(true)
 
-  const getInitialFormData = (): RetailInvoiceFormData => {
+  const getInitialFormData = useCallback((): RetailInvoiceFormData => {
     if (editingInvoice) {
       let invoiceType: 'incoming' | 'outgoing' = 'incoming'
       let entityType: 'supplier' | 'customer' = 'supplier'
@@ -114,7 +116,7 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
       category: '',
       notes: ''
     }
-  }
+  }, [editingInvoice])
 
   const [formData, setFormData] = useState<RetailInvoiceFormData>(getInitialFormData())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -133,31 +135,34 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
   } = useRetailInvoiceData(formData)
 
   useEffect(() => {
-    setIsInitialLoad(false)
-  }, [])
-
-  useEffect(() => {
     const newFormData = getInitialFormData()
     setFormData(newFormData)
-  }, [editingInvoice])
+  }, [editingInvoice, getInitialFormData])
 
   useEffect(() => {
-    if (!isInitialLoad) {
+    if (!isInitialLoad.current) {
       setFormData(prev => ({ ...prev, entity_id: '', retail_contract_id: '', retail_milestone_id: '' }))
     }
   }, [formData.entity_type])
 
   useEffect(() => {
-    if (!isInitialLoad && (!formData.retail_project_id || !formData.entity_id)) {
+    if (!isInitialLoad.current && (!formData.retail_project_id || !formData.entity_id)) {
       setFormData(prev => ({ ...prev, retail_contract_id: '', retail_milestone_id: '' }))
     }
   }, [formData.retail_project_id, formData.entity_id])
 
   useEffect(() => {
-    if (!isInitialLoad && !formData.retail_contract_id) {
+    if (!isInitialLoad.current && !formData.retail_contract_id) {
       setFormData(prev => ({ ...prev, retail_milestone_id: '' }))
     }
   }, [formData.retail_contract_id])
+
+  // Mark initial load complete AFTER the field-reset effects above have run on
+  // mount, so they skip their resets on first render (preserving edited values)
+  // and only fire on subsequent user-driven changes.
+  useEffect(() => {
+    isInitialLoad.current = false
+  }, [])
 
   const calculateVatAndTotal = (): VatCalculation => {
     const { total, ...rest } = calculateVatBreakdown(

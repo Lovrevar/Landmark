@@ -1,4 +1,3 @@
-import * as XLSX from '@e965/xlsx'
 import { supabase } from '../../../lib/supabase'
 import type { AttachmentKind } from '../../../types/aiChat'
 
@@ -102,6 +101,9 @@ async function extractTextFromFile(file: File): Promise<string> {
   const ext = inferExtension(file.name)
   if (ext === 'xlsx' || ext === 'xls') {
     try {
+      // Dynamically imported so the ~500 KB xlsx lib stays out of the eager
+      // bundle — it loads only when a user actually attaches a spreadsheet.
+      const XLSX = await import('@e965/xlsx')
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(new Uint8Array(buf), { type: 'array' })
       const firstName = wb.SheetNames[0]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   fetchProjectById,
   updateProject,
@@ -35,13 +35,7 @@ export function useProjectForm(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (projectId) {
-      fetchProject()
-    }
-  }, [projectId])
-
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     if (!projectId) return
     try {
       const data = await fetchProjectById(projectId)
@@ -60,7 +54,13 @@ export function useProjectForm(
       console.error('Error fetching project:', err)
       setError('Failed to load project data')
     }
-  }
+  }, [projectId])
+
+  useEffect(() => {
+    if (projectId) {
+      fetchProject()
+    }
+  }, [projectId, fetchProject])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()

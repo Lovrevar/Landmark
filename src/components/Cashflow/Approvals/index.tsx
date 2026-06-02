@@ -116,8 +116,7 @@ const AccountingApprovals: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title={t('approvals.title')}
-        subtitle={t('approvals.subtitle')}
-        icon={CheckCircle}
+        description={t('approvals.subtitle')}
       />
 
       <StatGrid columns={3}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Company,
   RetailSupplier,
@@ -58,7 +58,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
     }
   }
 
-  const loadContracts = async () => {
+  const loadContracts = useCallback(async () => {
     try {
       const data = await fetchRetailContracts(
         formData.retail_project_id,
@@ -70,16 +70,16 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
       console.error('Error loading contracts:', err)
       setError('Greška pri učitavanju ugovora')
     }
-  }
+  }, [formData.retail_project_id, formData.entity_type, formData.entity_id])
 
-  const loadMilestones = async () => {
+  const loadMilestones = useCallback(async () => {
     try {
       setMilestones(await fetchRetailMilestones(formData.retail_contract_id))
     } catch (err) {
       console.error('Error loading milestones:', err)
       setError('Greška pri učitavanju milestones')
     }
-  }
+  }, [formData.retail_contract_id])
 
   useEffect(() => {
     loadInitialData()
@@ -101,7 +101,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
     } else {
       setContracts([])
     }
-  }, [formData.retail_project_id, formData.entity_id, formData.entity_type])
+  }, [formData.retail_project_id, formData.entity_id, formData.entity_type, loadContracts])
 
   useEffect(() => {
     if (formData.retail_contract_id) {
@@ -109,7 +109,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
     } else {
       setMilestones([])
     }
-  }, [formData.retail_contract_id])
+  }, [formData.retail_contract_id, loadMilestones])
 
   return {
     companies,

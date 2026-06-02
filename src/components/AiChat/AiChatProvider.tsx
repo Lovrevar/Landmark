@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates AiChatProvider with the useAiChat hook (idiomatic context pattern);
+// the mixed-exports warning is a fast-refresh DX concern, not correctness.
 import { createContext, useContext, type ReactNode } from 'react'
 import { useAiChatStore, type AiChatStore } from './hooks/useAiChatStore'
 

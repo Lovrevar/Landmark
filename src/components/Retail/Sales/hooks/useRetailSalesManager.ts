@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { RetailLandPlot, RetailCustomer } from '../../../../types/retail'
 import { useToast } from '../../../../contexts/ToastContext'
 import {
@@ -21,7 +21,7 @@ export function useRetailSalesManager() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const [salesData, plotsData, customersData] = await Promise.all([
@@ -38,9 +38,9 @@ export function useRetailSalesManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const handleSave = async (payload: RetailSalePayload, id?: string) => {
     await upsertRetailSale(payload, id)

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
+import { useCachedData } from '../../lib/useCachedData'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from './types/accountingDashboardTypes'
 import * as accountingService from './services/accountingDashboardService'
 import AccountingVATSection from './sections/AccountingVATSection'
@@ -23,40 +24,24 @@ const defaultCashFlow: CashFlowStats = {
 
 const AccountingDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
-  const [vatStats, setVatStats] = useState<VATStats>(defaultVAT)
-  const [cashFlowStats, setCashFlowStats] = useState<CashFlowStats>(defaultCashFlow)
-  const [topCompanies, setTopCompanies] = useState<TopCompany[]>([])
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
-  const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null)
+  const { data, loading } = useCachedData('dashboard:accounting', async () => {
+    const [vat, cashFlow, companies, trends, budget] = await Promise.all([
+      accountingService.fetchVATStats(),
+      accountingService.fetchCashFlowStats(),
+      accountingService.fetchTopCompanies(),
+      accountingService.fetchMonthlyTrends(),
+      accountingService.fetchMonthlyBudget()
+    ])
+    return { vat, cashFlow, companies, trends, budget }
+  })
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const vatStats: VATStats = data?.vat ?? defaultVAT
+  const cashFlowStats: CashFlowStats = data?.cashFlow ?? defaultCashFlow
+  const topCompanies: TopCompany[] = data?.companies ?? []
+  const monthlyData: MonthlyData[] = data?.trends ?? []
+  const monthlyBudget: MonthlyBudget | null = data?.budget ?? null
 
-  const loadAll = async () => {
-    setLoading(true)
-    try {
-      const [vat, cashFlow, companies, trends, budget] = await Promise.all([
-        accountingService.fetchVATStats(),
-        accountingService.fetchCashFlowStats(),
-        accountingService.fetchTopCompanies(),
-        accountingService.fetchMonthlyTrends(),
-        accountingService.fetchMonthlyBudget()
-      ])
-      setVatStats(vat)
-      setCashFlowStats(cashFlow)
-      setTopCompanies(companies)
-      setMonthlyData(trends)
-      setMonthlyBudget(budget)
-    } catch (error) {
-      console.error('Error fetching accounting dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.accounting.loading')} />
   }
 

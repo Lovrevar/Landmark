@@ -40,7 +40,7 @@ export function useRetailCustomers() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadCustomers() }, [loadCustomers])
 

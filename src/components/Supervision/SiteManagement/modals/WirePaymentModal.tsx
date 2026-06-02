@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Subcontractor, SubcontractorMilestone } from '../../../../lib/supabase'
 import { fetchMilestonesBySubcontractor, fetchProjectFunders } from '../services/siteService'
@@ -44,19 +44,7 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [paidByBankId, setPaidByBankId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (visible && subcontractor) {
-      loadMilestones()
-      loadFunders()
-      setPaidByBankId(subcontractor.financed_by_bank_id || null)
-    } else {
-      setMilestones([])
-      setSelectedMilestoneId('')
-      setPaidByBankId(null)
-    }
-  }, [visible, subcontractor])
-
-  const loadMilestones = async () => {
+  const loadMilestones = useCallback(async () => {
     if (!subcontractor) return
     try {
       setLoading(true)
@@ -67,9 +55,9 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [subcontractor])
 
-  const loadFunders = async () => {
+  const loadFunders = useCallback(async () => {
     if (!projectId) return
     try {
       setLoadingFunders(true)
@@ -80,7 +68,19 @@ export const WirePaymentModal: React.FC<WirePaymentModalProps> = ({
     } finally {
       setLoadingFunders(false)
     }
-  }
+  }, [projectId])
+
+  useEffect(() => {
+    if (visible && subcontractor) {
+      loadMilestones()
+      loadFunders()
+      setPaidByBankId(subcontractor.financed_by_bank_id || null)
+    } else {
+      setMilestones([])
+      setSelectedMilestoneId('')
+      setPaidByBankId(null)
+    }
+  }, [visible, subcontractor, loadMilestones, loadFunders])
 
   const handleMilestoneSelect = (milestoneId: string) => {
     setSelectedMilestoneId(milestoneId)

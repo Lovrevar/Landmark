@@ -41,7 +41,7 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
       phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .eq('project_id', projectId)
-    .in('status', ['draft', 'active'])
+    .in('status', ['draft', 'active', 'completed'])
 
   const contracts = (contractsData || []) as unknown as ContractWithDetails[]
   const contractIds = contracts.map(c => c.id)

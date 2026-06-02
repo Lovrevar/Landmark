@@ -128,3 +128,7 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - `src/utils/reportGenerator.ts` contains an older shared PDF utility used separately from these module-specific generators
 - `dashboards/investmentReportPdf.ts` is a related PDF generator that lives in the Dashboards folder — not here
 - `retailReportPdf.ts` uses Noto Sans (dynamically loaded from Google Fonts) to ensure Croatian characters render correctly in PDF — do not replace with helvetica for this file
+- During the May 2026 audit the report services (`generalReportService`, `supervisionReportService`) were refactored to batch their queries in a single `Promise.all` instead of sequential awaits — same tables, same output shape
+- The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
+- All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged
+- **EVM is not surfaced in any report.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)

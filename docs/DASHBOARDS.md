@@ -19,12 +19,14 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - **Depends on:** supabase client
 
 ### directorService.ts
-- `fetchProjectsData()` — returns ProjectStats[] with budget, expenses, revenue, profit margin, completion %
-- `fetchFinancialMetrics()` — returns FinancialMetrics (revenue, expenses, debt, equity, receivables, payables)
-- `fetchSalesMetrics()` — returns SalesMetrics
-- `fetchConstructionMetrics()` — returns ConstructionMetrics
-- `fetchFundingMetrics()` — returns FundingMetrics
-- `fetchAlerts(financial, sales)` — derives Alert[] from financial and sales metrics
+- `fetchDirectorDashboard()` — single entry point that fetches all base tables in one `Promise.all` and returns `DirectorDashboardData` (`projects`, `financial`, `sales`, `construction`, `funding`, `alerts`). Internally delegates to private `derive*` helpers (`deriveProjects`, `deriveFinancial`, `deriveSales`, `deriveConstruction`, `deriveFunding`, `deriveAlerts`) — these are no longer separately exported
+  - `projects` → ProjectStats[] with budget, expenses, revenue, profit margin, completion %
+  - `financial` → FinancialMetrics (revenue, expenses, debt, equity, receivables, payables)
+  - `sales` → SalesMetrics
+  - `construction` → ConstructionMetrics
+  - `funding` → FundingMetrics
+  - `alerts` → Alert[] derived from milestones, credit maturities, and financial/sales metrics (capped at 10)
+- **Exports type:** `DirectorDashboardData`
 - **Depends on:** supabase client
 
 ### investmentDashboardService.ts
@@ -41,10 +43,8 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - **Depends on:** supabase client
 
 ### supervisionService.ts
-- `fetchWeekLogs()` — returns WorkLog[] for the current week
-- `fetchContractStatusData()` — returns contract records with subcontractor info
-- `fetchSubcontractorStatus(contracts)` — maps contracts to SubcontractorStatus[]
-- `buildWeeklyStats(contracts, subcontractorStatus, weekLogs)` — aggregates WeeklyStats
+- `fetchSupervisionDashboard()` — single entry point that fetches week work logs, draft/active contracts, subcontractor invoices, and the last 7 days of work logs in one `Promise.all`, then returns `SupervisionDashboardData` (`weekLogs: WorkLog[]`, `subcontractorStatus: SubcontractorStatus[]`, `stats: WeeklyStats`). Internally delegates to private helpers (`deriveContractStatus`, `deriveSubcontractorStatus`, `buildWeeklyStats`) — these are no longer separately exported. Recent-log lookups are grouped in-memory per subcontractor rather than queried per-row
+- **Exports type:** `SupervisionDashboardData`
 - **Depends on:** supabase client
 
 ### investmentReportPdf.ts
@@ -82,7 +82,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### DirectorDashboard.tsx
 - Renders financial metrics, project table, sales/construction/funding summaries, and alerts
-- **Uses services:** directorService
+- **Uses services:** directorService (`fetchDirectorDashboard()` — one call loads all sections)
 - **Uses components:** DirectorFinancialSection, DirectorProjectsTable, DirectorAlertsSection
 - **Uses Ui:** Card
 
@@ -90,8 +90,8 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - Renders investment summary cards, credit table, recent activity, and PDF export button
 - **Uses services:** investmentDashboardService
 - **Uses components:** InvestmentSummaryCards, InvestmentCreditsTable
-- **Uses services:** investmentReportPdf (for PDF export)
-- **Uses Ui:** Card, Button, useToast
+- **Uses services:** investmentReportPdf (for PDF export, driven through the `useAsyncExport` hook which handles the exporting flag and toast on failure)
+- **Uses Ui:** Card, Button
 
 ### RetailDashboard.tsx
 - Renders retail KPI cards, project overview, payment tracking, and overdue invoice warnings
@@ -105,7 +105,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### SupervisionDashboard.tsx
 - Tabbed interface switching between weekly activity view, contractor status, and issues/alerts
-- **Uses services:** supervisionService
+- **Uses services:** supervisionService (`fetchSupervisionDashboard()` — one call returns week logs, subcontractor status, and weekly stats)
 - **Uses components:** SupervisionWeekView, SupervisionStatusView, SupervisionIssuesView
 - **Uses Ui:** Tabs, StatGrid
 
@@ -170,6 +170,10 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 ---
 
 ## Notes
-- `investmentReportPdf.ts` lives in this module (not in Reports/) — it generates the investment PDF report
+- `investmentReportPdf.ts` lives in this module (not in Reports/) — it generates the investment PDF report. It runs `yieldToUI()` (`src/utils/yieldToUI.ts`) periodically during long credit/project loops so the export does not freeze the UI
+- `directorService` and `supervisionService` were consolidated during the May 2026 audit: each now exposes a single `fetch{Director,Supervision}Dashboard()` that batches all queries in one `Promise.all` and returns a typed bundle. The previous per-metric `fetch*` functions and the standalone `buildWeeklyStats` are now private helpers
+- PDF export buttons use the shared `useAsyncExport` hook (`src/hooks/useAsyncExport.ts`) for the exporting flag and error toast instead of inline try/catch
+- All dashboards are internationalised (react-i18next, keys under `dashboards.*`) and dark-mode aware; this is presentational only and does not change the data each view shows
+- **EVM is not surfaced on any dashboard.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
 - Role visibility is controlled via `src/utils/permissions.ts` and `AuthContext`
 - Dashboard services are read-only aggregation — they do not mutate data

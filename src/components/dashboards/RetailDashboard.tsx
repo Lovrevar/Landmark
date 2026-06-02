@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
+import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import { BarChart3, FolderOpen, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -21,30 +22,14 @@ const defaultStats: DashboardStats = {
 
 const RetailDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>(defaultStats)
-  const [overdueInvoices, setOverdueInvoices] = useState<OverdueInvoice[]>([])
+  const { data, loading } = useCachedData('dashboard:retail', fetchRetailDashboardData)
 
-  useEffect(() => {
-    loadAll()
-  }, [])
-
-  const loadAll = async () => {
-    try {
-      setLoading(true)
-      const { stats: s, overdueInvoices: overdue } = await fetchRetailDashboardData()
-      setStats(s)
-      setOverdueInvoices(overdue)
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const stats: DashboardStats = data?.stats ?? defaultStats
+  const overdueInvoices: OverdueInvoice[] = data?.overdueInvoices ?? []
 
   const fmt = (n: number) => `€${n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.retail.loading')} />
   }
 

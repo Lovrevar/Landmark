@@ -3,8 +3,6 @@ import React from 'react'
 interface PageHeaderProps {
   title: string
   description?: string
-  subtitle?: string
-  icon?: React.ElementType
   actions?: React.ReactNode
   className?: string
 }

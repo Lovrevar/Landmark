@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { customerService } from '../services/customerService'
 import { cache } from '../services/customerCache'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
@@ -15,7 +15,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   })
   const [loading, setLoading] = useState(true)
 
-  const fetchCustomers = async (forceRefresh = false) => {
+  const fetchCustomers = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh) {
       const cached = cache.getCustomers(activeCategory)
       if (cached) {
@@ -35,7 +35,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeCategory])
 
   const fetchCounts = async (forceRefresh = false) => {
     if (!forceRefresh) {
@@ -57,7 +57,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
 
   useEffect(() => {
     fetchCustomers()
-  }, [activeCategory])
+  }, [fetchCustomers])
 
   useEffect(() => {
     fetchCounts()

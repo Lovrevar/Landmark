@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -48,11 +48,26 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
   const [payments, setPayments] = useState<AccountingPayment[]>([])
   const [loading, setLoading] = useState(true)
 
+  const fetchPayments = useCallback(async () => {
+    const contractId = contract?.id
+    if (!contractId) return
+
+    setLoading(true)
+    try {
+      const formattedPayments = await retailProjectService.fetchRetailContractPayments(contractId)
+      setPayments(formattedPayments)
+    } catch (error) {
+      console.error('Error fetching payments:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [contract?.id])
+
   useEffect(() => {
     if (visible && contract) {
       fetchPayments()
     }
-  }, [visible, contract?.id])
+  }, [visible, contract, fetchPayments])
 
   useEffect(() => {
     if (visible) {
@@ -64,20 +79,6 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
       document.body.style.overflow = 'unset'
     }
   }, [visible])
-
-  const fetchPayments = async () => {
-    if (!contract) return
-
-    setLoading(true)
-    try {
-      const formattedPayments = await retailProjectService.fetchRetailContractPayments(contract.id)
-      setPayments(formattedPayments)
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (!visible || !contract) return null
 

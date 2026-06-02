@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   PaymentNotification,
   fetchMilestoneProjectId,
@@ -41,6 +41,37 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
   const [contractValue, setContractValue] = useState(0)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
+  const loadFunders = useCallback(async () => {
+    if (!notification?.subcontractor_id || !notification.milestone_id) return
+    try {
+      const projectId = await fetchMilestoneProjectId(notification.milestone_id)
+      const uniqueBanks = await fetchProjectBanks(projectId)
+      setBanks(uniqueBanks)
+    } catch (error) {
+      console.error('Error loading funders:', error)
+    }
+  }, [notification])
+
+  const loadPaymentHistory = useCallback(async () => {
+    if (!notification?.subcontractor_id) return
+    try {
+      const total = await fetchSubcontractorPaymentTotal(notification.subcontractor_id)
+      setAlreadyPaid(total)
+    } catch (error) {
+      console.error('Error loading payment history:', error)
+    }
+  }, [notification])
+
+  const loadSubcontractorFinancing = useCallback(async () => {
+    if (!notification?.subcontractor_id) return
+    try {
+      const bankId = await fetchSubcontractorFinancingBank(notification.subcontractor_id)
+      if (bankId) setPaidByBankId(bankId)
+    } catch (error) {
+      console.error('Error loading subcontractor financing:', error)
+    }
+  }, [notification])
+
   useEffect(() => {
     if (visible && notification && notification.payment_source === 'subcontractor') {
       setAmount(notification.amount)
@@ -50,38 +81,7 @@ export const SubcontractorNotificationPaymentModal: React.FC<SubcontractorNotifi
       loadPaymentHistory()
       loadSubcontractorFinancing()
     }
-  }, [visible, notification])
-
-  const loadFunders = async () => {
-    if (!notification?.subcontractor_id || !notification.milestone_id) return
-    try {
-      const projectId = await fetchMilestoneProjectId(notification.milestone_id)
-      const uniqueBanks = await fetchProjectBanks(projectId)
-      setBanks(uniqueBanks)
-    } catch (error) {
-      console.error('Error loading funders:', error)
-    }
-  }
-
-  const loadPaymentHistory = async () => {
-    if (!notification?.subcontractor_id) return
-    try {
-      const total = await fetchSubcontractorPaymentTotal(notification.subcontractor_id)
-      setAlreadyPaid(total)
-    } catch (error) {
-      console.error('Error loading payment history:', error)
-    }
-  }
-
-  const loadSubcontractorFinancing = async () => {
-    if (!notification?.subcontractor_id) return
-    try {
-      const bankId = await fetchSubcontractorFinancingBank(notification.subcontractor_id)
-      if (bankId) setPaidByBankId(bankId)
-    } catch (error) {
-      console.error('Error loading subcontractor financing:', error)
-    }
-  }
+  }, [visible, notification, loadFunders, loadPaymentHistory, loadSubcontractorFinancing])
 
   const handleSubmit = async () => {
     if (!notification) return

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import {
   Download,
+  RefreshCw,
   Building2,
   FileText,
   AlertTriangle,
@@ -21,7 +22,7 @@ import { useTranslation } from 'react-i18next'
 const GeneralReports: React.FC = () => {
   const toast = useToast()
   const { t } = useTranslation()
-  const { report, loading } = useGeneralReportData()
+  const { report, loading, fetchedAt, refetch } = useGeneralReportData()
   const [generatingPDF, setGeneratingPDF] = useState(false)
 
   const handleGeneratePDF = async () => {
@@ -37,7 +38,7 @@ const GeneralReports: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (loading && !report) {
     return (
       <LoadingSpinner size="lg" message={t('reports.general.loading')} className="min-h-screen" />
     )
@@ -54,16 +55,26 @@ const GeneralReports: React.FC = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
             <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
-            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(new Date(), 'MMMM dd, yyyy HH:mm')}</p>
+            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMMM dd, yyyy HH:mm')}</p>
           </div>
-          <Button
-            icon={Download}
-            onClick={handleGeneratePDF}
-            loading={generatingPDF}
-            className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
-          >
-            {t('reports.general.export_pdf')}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              icon={RefreshCw}
+              onClick={refetch}
+              loading={loading}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold"
+            >
+              {t('common.refresh')}
+            </Button>
+            <Button
+              icon={Download}
+              onClick={handleGeneratePDF}
+              loading={generatingPDF}
+              className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
+            >
+              {t('reports.general.export_pdf')}
+            </Button>
+          </div>
         </div>
       </div>
 

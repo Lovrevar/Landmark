@@ -30,7 +30,7 @@ export function useSupervisionPayments() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadPayments() }, [loadPayments])
 

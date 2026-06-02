@@ -1,11 +1,54 @@
 # Cognilion — Testing
 
-Two complementary layers:
+Three complementary layers:
 
-1. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision.
-2. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
+1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions (formatters, VAT calculations, price/credit math, TIC formatters, tree helpers).
+2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision.
+3. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
 
-Run E2E first to catch the blunt-force regressions, then walk the relevant manual sheet for the module you touched.
+Run the unit suite for instant feedback on the logic you touched, then E2E to catch the blunt-force regressions, and finally walk the relevant manual sheet for the module you touched.
+
+---
+
+## Unit suite
+
+**Runner:** [Vitest](https://vitest.dev/) (`vitest` ^1.6.1). Config: [`vitest.config.ts`](../vitest.config.ts). Tests run in-process — no Supabase, no browser, no network.
+
+### What it covers
+
+Pure functions only — the deterministic calculation and formatting helpers that back the financial/UI layers. Component rendering and integration flows are left to the E2E suite.
+
+| Target | File | Covers |
+|---|---|---|
+| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro` |
+| VAT calculations | [`src/utils/vatCalculations.test.ts`](../src/utils/vatCalculations.test.ts) | `CROATIAN_VAT_RATES`, `calculateVatBreakdown` — the 4-slot multi-VAT engine (25/13/0/5%), null-safe, total = sum of subtotals invariant |
+| Sales price utils | [`src/components/Sales/utils/priceUtils.test.ts`](../src/components/Sales/utils/priceUtils.test.ts) | `calculateAdjustedPriceRange` — increase/decrease with clamp-to-zero |
+| Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
+| TIC formatters | [`src/components/Funding/TIC/utils/ticFormatters.test.ts`](../src/components/Funding/TIC/utils/ticFormatters.test.ts) | `calculateRowPercentages`, `calculateTotals` (vlastita/kreditna), `formatNumber`, `formatPercentage` |
+| Documents tree helpers | [`src/components/Documents/utils/treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts) | `buildIdMap`, `buildDescendantsMap`, `rollupCounts`, `flattenTree` |
+
+### Configuration ([`vitest.config.ts`](../vitest.config.ts))
+
+- **Plugins:** `@vitejs/plugin-react` (shares the Vite transform pipeline; TS/JSX handled out of the box).
+- **Environment:** `node` — these are pure-function tests, no DOM needed. No globals (`describe`/`it`/`expect` are imported explicitly from `vitest` in each spec) and no setup file.
+- **Include:** `src/**/*.test.ts`.
+- **Exclude:** `e2e/**`, `node_modules/**` — keeps the Playwright specs out of the Vitest run.
+- **Coverage:** v8 provider (`@vitest/coverage-v8`), reporters `text` + `html`, measured over `src/**/*.ts`.
+
+### Conventions
+
+- Tests live **next to the code** as `*.test.ts`, typically inside the module's `utils/` folder (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`).
+- Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
+- Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
+- Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
+
+### Running
+
+```bash
+npm test               # one-shot run (vitest run)
+npm run test:watch     # watch mode (vitest)
+npm run test:coverage  # one-shot run with v8 coverage (text + html report)
+```
 
 ---
 
@@ -34,7 +77,7 @@ Total runtime on a warm system: **~1 minute**.
 
 - **Framework:** Playwright (`@playwright/test`), Chromium only, parallel by default capped to 2 workers locally (matches CI).
 - **webServer:** Playwright boots `npm run build && npm run e2e:serve` (Vite preview against the production bundle). Dev server was too slow for cold-compiled routes; preview serves a single pre-built bundle so every navigation finishes in <1 s. See [`playwright.config.ts`](../playwright.config.ts).
-- **Auth:** `globalSetup` logs in each of the 5 pre-provisioned test users and writes `storageState` to `e2e/.auth/{role}.json`. Specs declare their role via `test.use({ storageState })`.
+- **Auth:** `globalSetup` first provisions all test users via the Supabase Admin API (idempotent — a reset dev DB re-seeds itself), then logs each in and writes `storageState` to `e2e/.auth/{role}.json`. Specs declare their role via `test.use({ storageState })`. The session-lifecycle spec (`auth/session.spec`) uses a **dedicated** `e2e-logout` user, because the app's logout is a global-scope `signOut` that revokes every session for that user — sharing it with another spec would drop that spec to `/login` mid-test under parallel workers.
 - **Isolation:** shared dev DB, no wipes. Each run gets a `runId = e2e-${Date.now()}-${uuid}`. Each test gets `ns = runId-{slug}` via the `ns` fixture. Any row a test creates must carry `ns` in a namespace-able text column (invoice_number, name, etc.). A per-test `afterEach` plus a `globalTeardown` safety net delete every row matching the prefix via the service-role admin client.
 - **Namespaced tables:** registered in [`e2e/support/cleanup.ts`](../e2e/support/cleanup.ts) — currently `accounting_invoices.invoice_number`, `customers.name`, `retail_customers.name`. FK cascades handle dependent rows (e.g. `hidden_approved_invoices` cascades with its parent invoice).
 - **Factories:** helpers under [`e2e/support/factories/`](../e2e/support/factories/) seed rows that require schema-specific coupling (e.g. [`cashflowInvoices.ts`](../e2e/support/factories/cashflowInvoices.ts) picks an existing subcontractor to satisfy `check_invoice_entity_type`).
@@ -42,7 +85,9 @@ Total runtime on a warm system: **~1 minute**.
 - **Base URL pinned to `http://127.0.0.1:5173`** — on WSL2, `localhost` resolves to `::1` but Vite binds to `127.0.0.1`; Chromium hangs on the IPv6 attempt. Override via `E2E_BASE_URL` in other environments.
 - **Page.goto override:** the `page` fixture wraps `page.goto` to default to `waitUntil: 'commit'` so navigations return as soon as response headers arrive; subsequent selectors gate on real UI readiness. Prevents hangs on dev servers that never fire `load` for deeply-imported SPA entry points.
 
-### Test users (pre-provisioned in the dev Supabase project)
+### Test users (auto-provisioned by globalSetup)
+
+Created idempotently via the Supabase Admin API — no manual setup, and a reset dev DB re-seeds on the next run. `e2e-logout` is dedicated to `auth/session.spec` so its global-scope signOut can't invalidate a shared role session under parallel workers.
 
 | Email | Password | Role |
 |---|---|---|
@@ -51,10 +96,11 @@ Total runtime on a warm system: **~1 minute**.
 | `e2e-sales@mail.com` | `e2e123` | Sales |
 | `e2e-supervision@mail.com` | `e2e123` | Supervision |
 | `e2e-funding@mail.com` | `e2e123` | Investment |
+| `e2e-logout@mail.com` | `e2e123` | Director (session-lifecycle spec only) |
 
 ### Anchor data
 
-One-time dev-DB seed (idempotent) at [`e2e/support/anchor-setup.sql`](../e2e/support/anchor-setup.sql): creates `E2E Anchor Project` and links `e2e-supervision@mail.com` via `project_managers`. Run once per dev Supabase project before the first test run.
+One-time dev-DB seed (idempotent) at [`e2e/support/anchor-setup.sql`](../e2e/support/anchor-setup.sql): creates `E2E Anchor Project` and links `e2e-supervision@mail.com` via `project_managers` — public-schema data only (the test users themselves are auto-provisioned by globalSetup). The PM link populates once the Supervision user exists (i.e. after globalSetup has run once).
 
 ### Running
 
@@ -69,7 +115,7 @@ First run builds the app (~10–15 s) before starting the preview server. Subseq
 
 ### CI
 
-GitHub Actions workflow [`e2e.yml`](../.github/workflows/e2e.yml) runs on PRs to `main` / `development` and on `workflow_dispatch`. Secrets required: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CASHFLOW_PASSWORD`, `E2E_ALLOWED_SUPABASE_URL`. Failed runs upload `playwright-report/` and `test-results/` with 14-day retention.
+GitHub Actions workflow [`e2e.yml`](../.github/workflows/e2e.yml) runs on PRs to `main` / `development` and on `workflow_dispatch`. After `npm ci` it runs the unit suite (`npm test`) first, then asserts the required secrets are present before the E2E run. Secrets required: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CASHFLOW_PASSWORD`, `E2E_ALLOWED_SUPABASE_URL`. Failed runs upload `playwright-report/` and `test-results/` with 14-day retention.
 
 ### Adding a test
 
@@ -77,6 +123,7 @@ GitHub Actions workflow [`e2e.yml`](../.github/workflows/e2e.yml) runs on PRs to
 2. `import { test, expect } from '../support/fixtures'` — don't import raw `@playwright/test` unless you specifically need to bypass the shared fixtures (the Cashflow unlock spec is the only current case, because it needs `sessionStorage.cashflow_unlocked` to start empty).
 3. If the test writes data, namespace it: `${ns}-something`. Register the new table in [`cleanup.ts`](../e2e/support/cleanup.ts) if it isn't already.
 4. Keep specs scoped: one user flow per `test(...)`, one spec per feature. Pick selectors by role / accessible name; fall back to scoped positional selectors inside a portaled modal when FormField-style unlinked label-input pairs make `getByLabel` unreliable.
+5. If your spec signs the session out (or otherwise destroys it), give it a **dedicated user** — see `LOGOUT_USER`/`SETUP_USERS` in [`e2e/support/auth.ts`](../e2e/support/auth.ts) — never a shared role. The app's `signOut` is global-scope and revokes the user's other sessions, which flakes any parallel spec sharing that user.
 
 ---
 

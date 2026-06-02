@@ -16,6 +16,10 @@ const NAMESPACED_COLUMNS: NamespacedColumn[] = [
   // Retail — retail_customers.name is seeded with the namespace by the retail
   // customers form test. retail_sales referencing these cascade via FK.
   { table: 'retail_customers', column: 'name' },
+  // Sales — the complete-sale factory seeds projects.name with the namespace.
+  // buildings/apartments/garages and sales all cascade up to projects via FK
+  // ON DELETE CASCADE, so deleting the project tears down the whole seeded tree.
+  { table: 'projects', column: 'name' },
 ]
 
 export async function cleanupByPrefix(

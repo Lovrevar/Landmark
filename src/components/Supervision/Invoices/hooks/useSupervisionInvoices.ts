@@ -34,7 +34,7 @@ export function useSupervisionInvoices() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 

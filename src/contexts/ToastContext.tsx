@@ -1,4 +1,7 @@
-import React, { createContext, useCallback, useContext, useState } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+// Co-locates ToastProvider with the useToast hook (idiomatic context pattern);
+// the mixed-exports warning is a fast-refresh DX concern, not correctness.
+import React, { createContext, useCallback, useContext, useState, useMemo } from 'react'
 import ToastContainer from '../components/ui/Toast'
 
 export type ToastVariant = 'info' | 'success' | 'warning' | 'error'
@@ -20,14 +23,23 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 
 export function useToast() {
   const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast must be used within ToastProvider')
-  return {
-    toast:   (msg: string) => ctx.addToast(msg, 'info'),
-    success: (msg: string) => ctx.addToast(msg, 'success'),
-    error:   (msg: string) => ctx.addToast(msg, 'error'),
-    warning: (msg: string) => ctx.addToast(msg, 'warning'),
-    dismiss: ctx.dismiss,
-  }
+  const addToast = ctx?.addToast
+  const dismiss = ctx?.dismiss
+  // Memoised so the returned object is referentially stable across renders —
+  // addToast/dismiss are useCallback-stable, so consumers can safely list the
+  // returned helpers in useEffect/useCallback dependency arrays.
+  const api = useMemo(() => {
+    if (!addToast || !dismiss) return null
+    return {
+      toast:   (msg: string) => addToast(msg, 'info'),
+      success: (msg: string) => addToast(msg, 'success'),
+      error:   (msg: string) => addToast(msg, 'error'),
+      warning: (msg: string) => addToast(msg, 'warning'),
+      dismiss,
+    }
+  }, [addToast, dismiss])
+  if (!api) throw new Error('useToast must be used within ToastProvider')
+  return api
 }
 
 const DISMISS_DELAY = 4500

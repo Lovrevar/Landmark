@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -39,11 +39,26 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
+  const fetchInvoices = useCallback(async () => {
+    const contractId = contract?.id
+    if (!contractId) return
+
+    setLoading(true)
+    try {
+      const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contractId)
+      setInvoices(formattedInvoices)
+    } catch (error) {
+      console.error('Error fetching invoices:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [contract?.id])
+
   useEffect(() => {
     if (isOpen && contract) {
       fetchInvoices()
     }
-  }, [isOpen, contract?.id])
+  }, [isOpen, contract, fetchInvoices])
 
   useEffect(() => {
     if (isOpen) {
@@ -55,25 +70,6 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-
-  const fetchInvoices = async () => {
-    if (!contract) return
-
-    /*console.log('🔍 RetailInvoicesModal - Fetching invoices for CONTRACT:', {
-      retail_contract_id: contract.id,
-      contract_number: contract.contract_number
-    })*/
-
-    setLoading(true)
-    try {
-      const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contract.id)
-      setInvoices(formattedInvoices)
-    } catch (error) {
-      console.error('Error fetching invoices:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
     switch (status) {

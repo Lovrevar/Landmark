@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCachedData } from '../../lib/useCachedData'
 import type { Project } from '../../lib/supabase'
 import {
   TrendingUp,
@@ -26,26 +27,29 @@ const SalesReports: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
-  const [projectReport, setProjectReport] = useState<ProjectSalesReport | null>(null)
-  const [customerReport, setCustomerReport] = useState<CustomerReport | null>(null)
   const [dateRange, setDateRange] = useState({
     start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   })
   const [loading, setLoading] = useState(true)
-  const [generatingReport, setGeneratingReport] = useState(false)
+
+  const { data: projectReport, loading: loadingProjectReport } = useCachedData<ProjectSalesReport>(
+    `report:sales:project:${selectedProject}:${dateRange.start}:${dateRange.end}`,
+    () => generateProjectReport(selectedProject, projects, dateRange),
+    { enabled: reportType === 'project' && !!selectedProject && projects.length > 0 }
+  )
+
+  const { data: customerReport, loading: loadingCustomerReport } = useCachedData<CustomerReport>(
+    `report:sales:customer:${dateRange.start}:${dateRange.end}`,
+    () => generateCustomerReport(dateRange),
+    { enabled: reportType === 'customer' }
+  )
+
+  const generatingReport = reportType === 'project' ? loadingProjectReport : loadingCustomerReport
 
   useEffect(() => {
     loadProjects()
   }, [])
-
-  useEffect(() => {
-    if (reportType === 'project' && selectedProject) {
-      loadProjectReport()
-    } else if (reportType === 'customer') {
-      loadCustomerReport()
-    }
-  }, [selectedProject, dateRange, reportType])
 
   const loadProjects = async () => {
     setLoading(true)
@@ -57,31 +61,6 @@ const SalesReports: React.FC = () => {
       console.error('Error fetching projects:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const loadProjectReport = async () => {
-    if (!selectedProject) return
-    setGeneratingReport(true)
-    try {
-      const report = await generateProjectReport(selectedProject, projects, dateRange)
-      setProjectReport(report)
-    } catch (error) {
-      console.error('Error generating project report:', error)
-    } finally {
-      setGeneratingReport(false)
-    }
-  }
-
-  const loadCustomerReport = async () => {
-    setGeneratingReport(true)
-    try {
-      const report = await generateCustomerReport(dateRange)
-      setCustomerReport(report)
-    } catch (error) {
-      console.error('Error generating customer report:', error)
-    } finally {
-      setGeneratingReport(false)
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, FileText } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
@@ -67,6 +67,18 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const merge = (updates: Partial<SubcontractorFormData>) =>
     setFormData(prev => ({ ...prev, ...updates }))
 
+  const loadFunders = useCallback(async () => {
+    try {
+      setLoadingFunders(true)
+      const funders = await fetchProjectFunders(projectId)
+      setBanks(funders.banks)
+    } catch (error) {
+      console.error('Error loading funders:', error)
+    } finally {
+      setLoadingFunders(false)
+    }
+  }, [projectId])
+
   useEffect(() => {
     merge({
       has_contract: hasContract,
@@ -84,24 +96,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       loadContractTypes()
       setFieldErrors({})
     }
-  }, [visible, projectId])
+  }, [visible, projectId, loadFunders, loadContractTypes])
 
   useEffect(() => {
     document.body.style.overflow = visible ? 'hidden' : 'unset'
     return () => { document.body.style.overflow = 'unset' }
   }, [visible])
-
-  const loadFunders = async () => {
-    try {
-      setLoadingFunders(true)
-      const funders = await fetchProjectFunders(projectId)
-      setBanks(funders.banks)
-    } catch (error) {
-      console.error('Error loading funders:', error)
-    } finally {
-      setLoadingFunders(false)
-    }
-  }
 
   const handleSubmit = async () => {
     if (isSubmitting) return

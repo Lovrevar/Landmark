@@ -41,6 +41,8 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `fetchExistingGarageNumbers(buildingId)` — returns existing garage numbers to detect duplicates
 - **Depends on:** supabase client, xlsx
 
+> All mutating functions in `salesService.ts`, `apartmentImportService.ts`, and `garageImportService.ts` fire-and-forget `logActivity()` after a successful write (`building.*`, `sale.create`, `apartment.bulk_price_update`, etc.).
+
 #### Hooks
 
 ### hooks/useSalesData.ts
@@ -115,6 +117,12 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 #### Services
 
+### services/apartmentListService.ts
+- `fetchApartmentFilterOptions()` — fetches the projects and buildings used to populate the filter dropdowns; returns `ApartmentFilterOptions`
+- `fetchApartmentListPage(params)` — server-paginated, server-filtered apartment list. Runs the `apartments` query with `count: 'exact'`, search (`number`/`buyer_name` ilike), and project/building/status filters, then batch-fetches projects, buildings, `accounting_payments` totals, and linked garages/repositories for the page; returns `ApartmentListPage`
+- Exports types: `LinkedUnit`, `ApartmentFilterOptions`, `ApartmentListParams` (page, pageSize, searchTerm, projectId, buildingId, status), `ApartmentListPage` (apartments, totalCount, apartmentPaymentTotals, linkedGarages, linkedStorages)
+- **Depends on:** supabase client
+
 ### services/apartmentService.ts
 - `createBulkApartments(data)` — bulk-inserts apartments
 - `createSingleApartment(data)` — inserts a single apartment
@@ -124,20 +132,22 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - `updatePayment(id, data)` — updates a payment record
 - `deletePayment(id)` — removes a payment record
 - `fetchSaleIdForApartment(apartmentId)` — resolves the sale ID for payment creation
-- **Depends on:** supabase client
+- All mutations log via `logActivity()` (`apartment.create`, `apartment.bulk_create`, `apartment.update`, `apartment.delete`)
+- **Depends on:** supabase client, activityLog
 
 ### services/linkUnitsService.ts
 - `fetchLinkedUnitIds(apartmentId)` — returns IDs of currently linked garages and storage units
 - `fetchAvailableUnits(buildingId)` — returns unlinked garages and storage units in the building
-- `saveUnitLinks(apartmentId, garageIds, storageIds)` — upserts and removes links to match selection
-- **Depends on:** supabase client
+- `saveUnitLinks(apartmentId, garageIds, storageIds)` — upserts and removes links to match selection; logs `apartment.link_garage` / `apartment.link_repository` when links are added
+- **Depends on:** supabase client, activityLog
 
 #### Hooks
 
 ### hooks/useApartmentData.ts
-- `useApartmentData()` — fetches apartments, projects, buildings, linked units, and payment totals; returns arrays indexed by unit ID
-- **Calls:** apartmentService.ts
-- **Returns:** apartments, projects, buildings, apartmentPaymentTotals, garagePaymentTotals, storagePaymentTotals, linkedGarages, linkedStorages, loading, refetch
+- `useApartmentData()` — owns server-side pagination and filter state (search is debounced 500ms; changing any filter resets to page 1). Fetches filter options once, then re-fetches the current page whenever page/search/filters change. Exports `APARTMENTS_PAGE_SIZE` (24)
+- **Calls:** apartmentListService.ts (`fetchApartmentFilterOptions`, `fetchApartmentListPage`)
+- **Returns:** apartments, totalCount, projects, buildings, apartmentPaymentTotals, garagePaymentTotals, storagePaymentTotals, linkedGarages, linkedStorages, loading, refreshing, refetch, pageSize, currentPage, setCurrentPage, searchTerm, setSearchTerm, filterProject, setFilterProject, filterBuilding, setFilterBuilding, filterStatus, setFilterStatus
+- **Note:** `garagePaymentTotals` and `storagePaymentTotals` are kept in the return shape but are always empty — only apartment-level payment totals are computed by the service
 
 ### hooks/useLinkUnits.ts
 - `useLinkUnits(apartmentId, buildingId, enabled)` — manages available/selected garage and storage IDs with save
@@ -151,9 +161,9 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - Exports helpers: `emptyContractFields()`, `contractFieldsFromData()`, `contractFieldsToPayload()`
 
 ### index.tsx (Apartments)
-- Apartment management page: project/building/status filters, CRUD modals, payment history, linking
+- Apartment management page: project/building/status filters and search now come from `useApartmentData` (server-side); the page renders the current page and a `Pagination` control. Header shows `totalCount`. CRUD modals, payment history, and unit linking unchanged
 - **Uses hooks:** useApartmentData, useLinkUnits
-- **Uses Ui:** Card, Table, Button, Select
+- **Uses Ui:** SearchInput, Button, Select, EmptyState, PageHeader, ConfirmDialog, Pagination, LoadingSpinner
 
 #### Modals
 
@@ -197,12 +207,12 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 #### Services
 
 ### services/customerService.ts
-- `fetchCustomers(category)` — fetches customers filtered by category with linked apartment/garage/repository data
-- `createCustomer(data)` — inserts a new customer
-- `updateCustomer(id, data)` — updates a customer record
-- `deleteCustomer(id)` — removes a customer
+- `fetchCustomers(category)` — fetches customers filtered by category; for `buyer` records it enriches with linked apartment/garage/repository purchases. Now uses batched `.in()` queries (apartments, garage/repo links, invoices, payments) and in-memory maps instead of the previous per-customer/per-sale request fan-out
+- `createCustomer(data)` — inserts a new customer (captures new id; logs `customer.create`)
+- `updateCustomer(id, data)` — updates a customer record (logs `customer.update`)
+- `deleteCustomer(id)` — removes a customer (logs `customer.delete`)
 - `updateLastContact(id, date)` — updates the last contact date
-- **Depends on:** supabase client, customerCache.ts
+- **Depends on:** supabase client, customerCache.ts, activityLog
 
 ### services/customerCache.ts
 - Client-side cache with 5-minute TTL for customer data and counts
@@ -279,7 +289,8 @@ Payment tracking for apartment sales contracts.
 ## Shared Utilities
 
 ### utils/priceUtils.ts
-- `calculateAdjustedPriceRange(units, adjustment)` — computes adjusted price range for bulk price update preview
+- `calculateAdjustedPriceRange(range, adjustmentType, amount)` — applies an `'increase'` / `'decrease'` of `amount` to a `PriceRange` (`{ min, max }`) for the bulk price update preview; decrease clamps each bound to 0. Exports the `PriceRange` interface
+- Unit-tested in `priceUtils.test.ts` (vitest) covering increase/decrease, zero no-op, and negative-clamping cases
 
 ### utils/customerUtils.ts
 - `groupCustomerPurchasesByProject(purchases)` — groups a customer's units by project with per-project totals (units, total, paid, remaining)
@@ -289,4 +300,4 @@ Payment tracking for apartment sales contracts.
 ## Notes
 - Customer records here are property buyers (Sales CRM) — distinct from `Cashflow/Customers` (accounting customers)
 - Unit types: `stan` (apartment), `garaža` (garage), `repozitorij` (storage) — linked via junction tables `apartment_garages` and `apartment_repositories`
-- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item pattern — never use `window.confirm()` or `confirm()`
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item pattern — never use `window.confirm()` or `confirm()`

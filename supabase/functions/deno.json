@@ -1,6 +1,7 @@
 {
   "nodeModulesDir": "auto",
   "tasks": {
-    "check": "deno check */index.ts"
+    "check": "deno check */index.ts",
+    "test": "deno test --allow-net"
   }
 }

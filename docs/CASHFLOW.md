@@ -48,8 +48,8 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### bankService.ts
 - `fetchProjects()` — fetches all projects
-- `fetchCompanies()` — fetches all companies
-- `fetchBanksWithCredits()` — fetches banks joined with credit lines
+- `fetchCompanies()` — fetches all companies (`id, name, oib`)
+- `fetchBanksWithCredits()` — fetches banks joined with credit lines; fetches all credits in a single batched `.in('bank_id', ...)` query and buckets them per bank (previously a per-bank N+1 loop)
 - `createCredit(newCreditForm)` — inserts a new bank credit record
 - `updateCredit(creditId, newCreditForm)` — updates an existing credit
 - `deleteCredit(creditId)` — removes a credit record
@@ -57,6 +57,20 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 - `getPaymentFrequency(type)` — returns payment frequency label for a credit type
 - `calculatePayments(credit)` — generates payment schedule for a credit
 - `fetchCompanyBankAccounts(companyId)` — fetches bank accounts for a company
+- **Depends on:** supabase client
+
+### bankeCreditsService.ts
+- `fetchBankeCreditsData()` — single entry point that loads everything the Banks overview needs: banks, credits (joined to bank/project/company), per-credit allocations (with refinancing company/bank enrichment), and per-credit disbursed amounts; returns a `BankeCreditsData` struct
+- Exports the row types `BankeBank`, `BankeCredit`, `BankeCreditAllocation`, and the `BankeCreditsData` aggregate
+- Internal helpers (not exported): `fetchBanks()`, `fetchCredits()`, `fetchDisbursedAmounts(creditIds)`, `fetchAllocationsByCredits(creditIds)`
+- **Depends on:** supabase client
+
+### bankInvoiceFormDataService.ts
+- `fetchBanksForInvoice()` — fetches banks for the invoice form bank select
+- `fetchCreditsForBank(bankId)` — fetches credit lines for a selected bank
+- `fetchMyCompaniesForInvoice()` — fetches own companies from `accounting_companies`
+- `fetchActiveInvoiceCategories()` — fetches active invoice categories ordered by sort order
+- `fetchCreditAllocations(creditId)` — fetches allocations (joined to project) for a credit line
 - **Depends on:** supabase client
 
 #### Hooks
@@ -68,12 +82,12 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### useBankeCredits.ts
 - `useBankeCredits()` — fetches bank credits with allocations and disbursed amounts for display
-- **Calls:** bankService.ts (via direct supabase queries)
+- **Uses services:** bankeCreditsService.ts (`fetchBankeCreditsData`)
 - **Returns:** banks, credits, allocations, disbursedAmounts, loading, creditsByBank, refetch
 
 ### useBankInvoiceData.ts
-- `useBankInvoiceData(bankId, creditId?)` — loads all reference data needed for the bank invoice form
-- **Calls:** supabase client
+- `useBankInvoiceData(bankId, creditId?)` — loads all reference data needed for the bank invoice form; refetches credits when `bankId` changes and allocations when `creditId` changes
+- **Uses services:** bankInvoiceFormDataService.ts
 - **Returns:** banks, credits, creditAllocations, myCompanies, invoiceCategories, fetchMyCompanies
 
 #### Forms
@@ -295,6 +309,24 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - Handles creation and fetching of land purchase invoices
 - **Depends on:** supabase client
 
+### landPurchaseFormDataService.ts
+- Reference-data loader for the land purchase form; every function branches on `invoiceType` (`'projects' | 'retail'`) and reads the corresponding site or retail tables
+- `fetchLandPurchaseCompanies()` — fetches own companies from `accounting_companies`
+- `fetchLandPurchaseSuppliers(invoiceType)` — fetches suppliers that have at least one contract (`subcontractors` / `retail_suppliers`)
+- `fetchLandPurchaseProjects(invoiceType, supplierId)` — fetches distinct projects the supplier is contracted on
+- `fetchLandPurchasePhases(invoiceType, supplierId, projectId)` — fetches distinct phases for the supplier/project
+- `fetchLandPurchaseContracts(invoiceType, supplierId, projectId, phaseId)` — fetches contracts with a positive base/contract amount
+- Exports row types `Company`, `Supplier`, `Project`, `Phase`, `Contract`, and the `LandPurchaseInvoiceType` union
+- **Depends on:** supabase client
+
+### retailInvoiceFormDataService.ts
+- `fetchRetailInvoiceInitialData()` — parallel-loads companies, retail projects, active invoice categories, and refunds into a `RetailInvoiceInitialData` struct (categories/refunds fail soft to `[]`)
+- `fetchRetailSuppliers()` — fetches retail suppliers
+- `fetchRetailCustomers()` — fetches retail customers
+- `fetchRetailContracts(projectId, entityType, entityId)` — fetches contracts for the selected project and supplier/customer
+- `fetchRetailMilestones(contractId)` — fetches milestones for a retail contract
+- **Depends on:** supabase client
+
 #### Hooks
 
 ### useInvoices.ts
@@ -307,12 +339,14 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - **Returns:** visibleColumns, toggleColumn, showColumnMenu, setShowColumnMenu
 
 ### useLandPurchaseFormData.ts
-- `useLandPurchaseFormData()` — manages form state for land purchase invoice modal
-- **Returns:** form data fields and setters
+- `useLandPurchaseFormData(invoiceType, supplierId, projectId, phaseId, isOpen)` — cascading reference-data loader for the land purchase modal; each select level refetches when its parent selection changes (only while `isOpen`)
+- **Uses services:** landPurchaseFormDataService.ts
+- **Returns:** companies, suppliers, projects, phases, availableContracts
 
 ### useRetailInvoiceData.ts
-- `useRetailInvoiceData()` — loads reference data needed for retail invoice creation
-- **Returns:** projects, companies, suppliers, categories and related state
+- `useRetailInvoiceData(formData)` — loads reference data for retail invoice creation; reloads suppliers/customers, contracts, and milestones as the relevant `formData` fields change
+- **Uses services:** retailInvoiceFormDataService.ts
+- **Returns:** companies, suppliers, customers, projects, contracts, milestones, invoiceCategories, refunds, error, setError
 
 #### Forms
 
@@ -428,8 +462,12 @@ Suppliers for operational/office expenses, separate from project-linked supplier
 #### Services
 
 ### officeSupplierService.ts
-- CRUD operations for office supplier records
-- **Depends on:** supabase client
+- `fetchSuppliersWithStats()` — fetches office suppliers and aggregates per-supplier invoice stats via a single batched `.in('office_supplier_id', ...)` query (previously a per-supplier N+1 loop)
+- `createSupplier(formData)` — inserts an office supplier (logs `office_supplier.create`)
+- `updateSupplier(id, formData)` — updates an office supplier
+- `deleteSupplier(id)` — removes an office supplier (logs `office_supplier.delete`)
+- `fetchSupplierInvoices(supplierId)` — fetches all invoices for a supplier
+- **Depends on:** supabase client, activityLog.ts
 
 #### Hooks
 
@@ -546,21 +584,29 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 #### Services
 
 ### supplierService.ts
-- `fetchSuppliers()` — fetches all suppliers with aggregated contract and invoice stats
-- `fetchProjects()` — fetches projects for the link modal
-- `fetchPhases(projectId)` — fetches phases for a selected project
-- `createSupplier(formData)` — inserts a new supplier
-- `updateSupplier(supplierId, formData)` — updates a supplier
-- `deleteSupplier(supplierId)` — removes a supplier
-- `fetchSupplierDetails(supplierId)` — fetches supplier contracts, invoices, and payments
-- **Depends on:** supabase client
+- `fetchSuppliers()` — fetches site (`subcontractors`) and retail (`retail_suppliers`) suppliers with aggregated contract/invoice/payment stats; also aggregates each supplier's distinct `project_names` (via joined `projects` / `retail_project_phases → retail_projects`) for the new project filter
+- `fetchProjects()` / `fetchPhases(projectId)` — projects/phases for the add-supplier form
+- `createSupplier(formData)` — inserts a supplier (and an auto-numbered draft contract when project+phase given); logs `supplier.create`
+- `updateSupplier(id, formData)` — updates a supplier; logs `supplier.update`
+- `deleteSupplier(supplier)` — removes a site or retail supplier; logs `supplier.delete`
+- `fetchSupplierDetails(supplier)` — fetches supplier contracts and invoices with payment rollups
+- Link-modal / retail-supplier helpers: `fetchSuppliersForLinking()`, `fetchProjectsForLinking()`, `fetchPhasesForProject(projectId)`, `generateSupplierContractNumber(projectId)`, `createSupplierContract(...)`, `fetchRetailSupplierTypes()`, `fetchRetailProjectsForSupplier()`, `fetchRetailPhasesForProject(projectId)`, `createRetailSupplierWithContract(...)`
+- **Depends on:** supabase client, activityLog.ts
 
 #### Hooks
 
 ### useSuppliers.ts
-- `useSuppliers()` — manages supplier list, pagination, search, project/phase data, and modal states
+- `useSuppliers()` — manages the supplier list, add/edit/details/retail/link modal states, project/phase data for the add form, and pending-delete confirmation. Filtering, sorting, view-mode, and the project filter are handled in the view (via `useListPreferences`), not here — the hook no longer paginates
 - **Calls:** supplierService.ts
-- **Returns:** suppliers, loading, searchTerm, currentPage, showAddModal, showDetailsModal, selectedSupplier, editingSupplier, showRetailModal, showLinkModal, formData, projects, phases, loadingProjects, filteredSuppliers, paginatedSuppliers, totalPages, handlers
+- **Returns:** suppliers, loading, showAddModal, showDetailsModal, selectedSupplier, editingSupplier, showRetailModal, setShowRetailModal, showLinkModal, formData, setFormData, projects, phases, loadingProjects, fetchData, handleOpenAddModal, handleCloseAddModal, handleSubmit, handleDelete, confirmDelete, cancelDelete, pendingDeleteSupplier, deleting, handleViewDetails, handleCloseDetailsModal, handleOpenLinkModal, handleCloseLinkModal
+
+#### Components
+
+### SupplierCard.tsx
+- Card representation of a single supplier for the card view: source badge (`site`/`retail`), contact, contract/invoice counts, contract value, paid/remaining amounts, and a payment-progress bar
+- Edit action is shown only for `site` suppliers; delete is always shown
+- **Props:** supplier, onSelect, onEdit, onDelete
+- **Uses Ui:** Card, Badge
 
 #### Forms
 
@@ -587,9 +633,10 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 #### Views
 
 ### index.tsx (AccountingSuppliers)
-- Supplier list with pagination, stats cards, and CRUD actions
-- **Uses hooks:** useSuppliers
-- **Uses Ui:** Card, Table, SearchInput
+- Supplier list with stats cards, search, source/status filter chips, a project filter, sort dropdown, and a card/table view toggle. Client-side filtering and sorting live here; persisted via `useListPreferences` under `suppliers.prefs`
+- **Uses hooks:** useSuppliers, useListPreferences
+- **Uses components:** SupplierCard
+- **Uses Ui:** Card, Table, SearchInput, StatGrid, StatCard, FilterBar, FilterChip, SortDropdown, ListViewToggle, ConfirmDialog, EmptyState, Badge
 
 ---
 
@@ -598,4 +645,5 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments
 - **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
-- All delete confirmation dialogs use `ConfirmDialog` from `src/components/Ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
+  - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
+- All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`

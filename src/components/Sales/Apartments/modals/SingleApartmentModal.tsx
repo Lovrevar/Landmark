@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApartmentFormData } from '../types'
 import { Modal, FormField, Select, Input, Button, Form } from '../../../ui'
@@ -41,13 +41,16 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  const filteredBuildings = buildings.filter(b => b.project_id === formData.project_id)
+  const filteredBuildings = useMemo(
+    () => buildings.filter(b => b.project_id === formData.project_id),
+    [buildings, formData.project_id]
+  )
 
   useEffect(() => {
     if (formData.project_id && filteredBuildings.length > 0) {
       setFormData(prev => ({ ...prev, building_id: filteredBuildings[0].id }))
     }
-  }, [formData.project_id])
+  }, [formData.project_id, filteredBuildings])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
