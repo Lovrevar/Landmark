@@ -115,9 +115,12 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                     </button>
                   </Table.Td>
                   <Table.Td label={t('documents.page.table.filename')}>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 max-w-[16rem] xl:max-w-sm">
                       <Files className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                      <span className="font-medium text-gray-900 dark:text-white truncate">
+                      <span
+                        className="font-medium text-gray-900 dark:text-white truncate"
+                        title={doc.file_name}
+                      >
                         {doc.file_name}
                       </span>
                     </div>
@@ -169,10 +172,12 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                 {expanded && (
                   <tr className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700">
                     <td colSpan={6} className="px-6 py-4">
-                      <div className="space-y-4">
+                      {/* w-0 + min-w-full keeps this cell from widening the min-w-max
+                          table, so the description wraps at the visible table width */}
+                      <div className="w-0 min-w-full space-y-4">
                         <DetailRow label={t('documents.page.table.description')}>
                           {doc.description
-                            ? <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{doc.description}</span>
+                            ? <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{doc.description}</span>
                             : <span className="text-sm italic text-gray-400">{t('documents.page.table.no_description')}</span>}
                         </DetailRow>
                         {others.length > 0 && (
