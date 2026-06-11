@@ -56,14 +56,19 @@ function fakeAnthropic(responses: ScriptedTool[] = []) {
   return client as unknown as Anthropic & { calls: typeof calls }
 }
 
-// Build a candidate the way loadEntityCandidates does: haystack = normalize(raw).
+// Build a candidate the way loadEntityCandidates does: one primary haystack
+// from the joined raw keys, plus one haystack per alias.
 function cand(
   entity_type: EntityType,
   id: string,
   label: string,
-  ...raw: string[]
+  raw: string | string[],
+  aliases: string[] = [],
 ): EntityCandidate {
-  return { id, entity_type, label, haystack: normalize(raw.filter(Boolean).join(' ')) }
+  const keys = Array.isArray(raw) ? raw : [raw]
+  const haystacks = [normalize(keys.filter(Boolean).join(' ')), ...aliases.map(normalize)]
+    .filter(h => h.length > 0)
+  return { id, entity_type, label, haystacks }
 }
 
 const EMAIL: EmailContext = { subject: 'Test', body: '', from: 'a@b.hr' }
@@ -106,6 +111,21 @@ Deno.test('matchesTerm: rejects terms shorter than 3 chars', () => {
 Deno.test('matchesTerm: no overlap returns false', () => {
   const c = cand('project', 'p1', 'Pannonia', 'Pannonia')
   assertEquals(matchesTerm(c, normalize('garaza')), false)
+})
+
+Deno.test('matchesTerm: alias haystack matches', () => {
+  const c = cand('project', 'p1', 'Zona 31', ['Zona 31', 'Vukovarska'], ['Osijek'])
+  assert(matchesTerm(c, normalize('Osijek')))
+  assert(matchesTerm(c, normalize('projekt osijek, faza 1')))
+})
+
+Deno.test('matchesTerm: term spanning the name/alias boundary does not match', () => {
+  const c = cand('project', 'p1', 'Zona 31', ['Zona 31', 'Vukovarska'], ['Osijek'])
+  // "vukovarska osi" is a substring of "…vukovarska osijek" only when name and
+  // alias are concatenated into one haystack — must NOT match when separate.
+  assertEquals(matchesTerm(c, normalize('vukovarska osi')), false)
+  // But a term containing the full alias is a legitimate reverse-containment hit.
+  assert(matchesTerm(c, normalize('vukovarska osijek')))
 })
 
 // ===========================================================================
@@ -183,6 +203,29 @@ Deno.test('resolveHints: duplicate resolutions are de-duplicated', async () => {
   const fake = fakeAnthropic()
   const out = await resolveHints(fake, MODEL, EMAIL, hints, candidates)
   assertEquals(out, [{ entity_type: 'project', entity_id: 'p1' }])
+})
+
+Deno.test('resolveHints: alias-only hint resolves with no Claude call', async () => {
+  const candidates = [
+    cand('project', 'p1', 'Zona 31', ['Zona 31', 'Vukovarska'], ['Osijek']),
+    cand('project', 'p2', 'Naselje Dunav', 'Naselje Dunav'),
+  ]
+  const hints: EntityHint[] = [{ entity_type: 'project', search_terms: ['Osijek'] }]
+  const fake = fakeAnthropic()
+  const out = await resolveHints(fake, MODEL, EMAIL, hints, candidates)
+  assertEquals(out, [{ entity_type: 'project', entity_id: 'p1' }])
+  assertEquals(fake.calls.length, 0)
+})
+
+Deno.test('resolveHints: term matching both name and alias of the same project skips disambiguation', async () => {
+  // "zona 31 osijek" hits the primary haystack AND the alias of the same
+  // candidate — must count as ONE match, not trigger a Claude call.
+  const candidates = [cand('project', 'p1', 'Zona 31', ['Zona 31', 'Osijek'], ['Zona 31 Osijek'])]
+  const hints: EntityHint[] = [{ entity_type: 'project', search_terms: ['Zona 31'] }]
+  const fake = fakeAnthropic()
+  const out = await resolveHints(fake, MODEL, EMAIL, hints, candidates)
+  assertEquals(out, [{ entity_type: 'project', entity_id: 'p1' }])
+  assertEquals(fake.calls.length, 0)
 })
 
 Deno.test('resolveHints: diacritic-insensitive match (đ and accents)', async () => {
@@ -277,4 +320,83 @@ Deno.test('classifyDocument: associations are kept even when uncategorized', asy
   const r = await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, candidates)
   assertEquals(r.categoryId, null)
   assertEquals(r.associations, [{ entity_type: 'project', entity_id: 'p1' }])
+})
+
+// ===========================================================================
+// classifyDocument — forced project-pick fallback
+// ===========================================================================
+
+const PROJECT_POOL = [
+  cand('project', 'p1', 'Zona 31', ['Zona 31', 'Vukovarska']),
+  cand('project', 'p2', 'Naselje Dunav', ['Naselje Dunav', 'Vukovar']),
+  cand('subcontractor', 's1', 'Kopko d.o.o.', 'Kopko d.o.o.'),
+]
+
+Deno.test('classifyDocument: unmatched project hint triggers fallback pick over full project pool', async () => {
+  const fake = fakeAnthropic([
+    classifyResp({
+      category_id: 'cat-contract',
+      confidence: 0.9,
+      description: 'Ugovor',
+      // "Osijek" matches no candidate (no alias configured yet).
+      entity_hints: [{ entity_type: 'project', search_terms: ['Osijek'] }],
+    }),
+    { name: 'pick_entity', input: { entity_id: 'p1' } },
+  ])
+  const r = await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, PROJECT_POOL)
+  assertEquals(r.associations, [{ entity_type: 'project', entity_id: 'p1' }])
+  assertEquals(fake.calls.length, 2)
+  // The pick prompt carries the document's own terms and the FULL project pool.
+  const prompt = (fake.calls[1].messages as Array<{ content: string }>)[0].content
+  assert(prompt.includes('Osijek'))
+  assert(prompt.includes('Zona 31'))
+  assert(prompt.includes('Naselje Dunav'))
+  assertEquals(prompt.includes('Kopko'), false) // non-projects excluded
+})
+
+Deno.test('classifyDocument: fallback null / hallucinated id leaves project unset', async () => {
+  const fake = fakeAnthropic([
+    classifyResp({ category_id: null, confidence: 0.1, description: 'x', entity_hints: [] }),
+    { name: 'pick_entity', input: { entity_id: 'ghost' } },
+  ])
+  const r = await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, PROJECT_POOL)
+  assertEquals(r.associations, [])
+})
+
+Deno.test('classifyDocument: resolved project skips the fallback call', async () => {
+  const fake = fakeAnthropic([
+    classifyResp({
+      category_id: null,
+      confidence: 0.2,
+      description: 'x',
+      entity_hints: [{ entity_type: 'project', search_terms: ['Zona 31'] }],
+    }),
+    // nothing else queued — a fallback call would throw
+  ])
+  const r = await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, PROJECT_POOL)
+  assertEquals(r.associations, [{ entity_type: 'project', entity_id: 'p1' }])
+  assertEquals(fake.calls.length, 1)
+})
+
+Deno.test('classifyDocument: fallback without project hints uses subject and filename', async () => {
+  const fake = fakeAnthropic([
+    classifyResp({ category_id: null, confidence: 0.5, description: 'x', entity_hints: [] }),
+    { name: 'pick_entity', input: { entity_id: 'p2' } },
+  ])
+  const email: EmailContext = { subject: 'Ugovor Vukovar', body: '', from: 'a@b.hr' }
+  const r = await classifyDocument(fake, MODEL, DOC, email, CATEGORIES, PROJECT_POOL)
+  assertEquals(r.associations, [{ entity_type: 'project', entity_id: 'p2' }])
+  const prompt = (fake.calls[1].messages as Array<{ content: string }>)[0].content
+  assert(prompt.includes('Ugovor Vukovar'))
+  assert(prompt.includes(DOC.fileName))
+})
+
+Deno.test('classifyDocument: empty project pool skips the fallback call', async () => {
+  const fake = fakeAnthropic([
+    classifyResp({ category_id: null, confidence: 0.5, description: 'x', entity_hints: [] }),
+    // nothing else queued — a fallback call would throw
+  ])
+  const r = await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, [])
+  assertEquals(r.associations, [])
+  assertEquals(fake.calls.length, 1)
 })

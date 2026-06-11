@@ -64,6 +64,15 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
+            <FormField label={t('general_projects.form_aliases')} className="md:col-span-2">
+              <Input
+                type="text"
+                value={form.aliases}
+                onChange={(e) => setForm({ ...form, aliases: e.target.value })}
+                placeholder={t('general_projects.form_aliases_placeholder')}
+              />
+            </FormField>
+
             <FormField label={t('general_projects.form.start_date')} required error={fieldErrors.start_date}>
               <Input
                 type="date"
